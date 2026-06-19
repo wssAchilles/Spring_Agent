@@ -1,0 +1,94 @@
+/*
+ * Copyright © 2026 Qiantong Technology Co., Ltd.
+ * qKnow Knowledge Platform
+ *  *
+ * License:
+ * Released under the Apache License, Version 2.0.
+ * You may use, modify, and distribute this software for commercial purposes
+ * under the terms of the License.
+ *  *
+ * Special Notice:
+ * All derivative versions are strictly prohibited from modifying or removing
+ * the default system logo and copyright information.
+ * For brand customization, please apply for brand customization authorization via official channels.
+ *  *
+ * More information: https://qknow.qiantong.tech/business.html
+ *  *
+ * ============================================================================
+ *  *
+ * 版权所有 © 2026 江苏千桐科技有限公司
+ * qKnow 知识平台（开源版）
+ *  *
+ * 许可协议：
+ * 本项目基于 Apache License 2.0 开源协议发布，
+ * 允许在遵守协议的前提下进行商用、修改和分发。
+ *  *
+ * 特别说明：
+ * 所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
+ * 如需定制品牌，请通过官方渠道申请品牌定制授权。
+ *  *
+ * 更多信息请访问：https://qknow.qiantong.tech/business.html
+ */
+
+import Cookies from 'js-cookie';
+import bus from '@/utils/bus';
+
+const useAppStore = defineStore('app', {
+    state: () => ({
+        sidebar: {
+            opened: Cookies.get('sidebarStatus') ? !!+Cookies.get('sidebarStatus') : true,
+            withoutAnimation: false,
+            hide: false
+        },
+        device: 'desktop',
+        size: Cookies.get('size') || 'default'
+    }),
+    actions: {
+        toggleSideBar(withoutAnimation) {
+            if (this.sidebar.hide) {
+                return false;
+            }
+            const oldStatus = this.sidebar.opened;
+            this.sidebar.opened = !this.sidebar.opened;
+            this.sidebar.withoutAnimation = withoutAnimation;
+            if (this.sidebar.opened) {
+                Cookies.set('sidebarStatus', 1);
+            } else {
+                Cookies.set('sidebarStatus', 0);
+            }
+            if (oldStatus !== this.sidebar.opened) {
+                bus.emit('getsidebarStatus', this.sidebar.opened);
+            }
+        },
+        openSideBar({ withoutAnimation }) {
+            const oldStatus = this.sidebar.opened;
+            Cookies.set('sidebarStatus', 1);
+            this.sidebar.opened = true;
+            this.sidebar.withoutAnimation = withoutAnimation;
+            if (oldStatus !== this.sidebar.opened) {
+                bus.emit('getsidebarStatus', this.sidebar.opened);
+            }
+        },
+        closeSideBar({ withoutAnimation }) {
+            const oldStatus = this.sidebar.opened;
+            Cookies.set('sidebarStatus', 0);
+            this.sidebar.opened = false;
+            this.sidebar.withoutAnimation = withoutAnimation;
+            if (oldStatus !== this.sidebar.opened) {
+                bus.emit('getsidebarStatus', this.sidebar.opened);
+            }
+        },
+        toggleDevice(device) {
+            this.device = device;
+        },
+        setSize(size) {
+            this.size = size;
+            Cookies.set('size', size);
+        },
+        toggleSideBarHide(status) {
+            this.sidebar.hide = status;
+        }
+    }
+});
+
+export default useAppStore;

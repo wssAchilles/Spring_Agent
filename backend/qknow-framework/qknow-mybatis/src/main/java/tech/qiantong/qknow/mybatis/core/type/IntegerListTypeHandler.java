@@ -1,0 +1,88 @@
+/*
+ * Copyright © 2026 Qiantong Technology Co., Ltd.
+ * qKnow Knowledge Platform
+ *  *
+ * License:
+ * Released under the Apache License, Version 2.0.
+ * You may use, modify, and distribute this software for commercial purposes
+ * under the terms of the License.
+ *  *
+ * Special Notice:
+ * All derivative versions are strictly prohibited from modifying or removing
+ * the default system logo and copyright information.
+ * For brand customization, please apply for brand customization authorization via official channels.
+ *  *
+ * More information: https://qknow.qiantong.tech/business.html
+ *  *
+ * ============================================================================
+ *  *
+ * 版权所有 © 2026 江苏千桐科技有限公司
+ * qKnow 知识平台（开源版）
+ *  *
+ * 许可协议：
+ * 本项目基于 Apache License 2.0 开源协议发布，
+ * 允许在遵守协议的前提下进行商用、修改和分发。
+ *  *
+ * 特别说明：
+ * 所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
+ * 如需定制品牌，请通过官方渠道申请品牌定制授权。
+ *  *
+ * 更多信息请访问：https://qknow.qiantong.tech/business.html
+ */
+
+package tech.qiantong.qknow.mybatis.core.type;
+
+import cn.hutool.core.collection.CollUtil;
+import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.type.MappedJdbcTypes;
+import org.apache.ibatis.type.MappedTypes;
+import org.apache.ibatis.type.TypeHandler;
+import tech.qiantong.qknow.common.utils.string.StrUtils;
+
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+/**
+ * List<Integer> 的类型转换器实现类，对应数据库的 varchar 类型
+ *
+ * @author jason
+ */
+@MappedJdbcTypes(JdbcType.VARCHAR)
+@MappedTypes(List.class)
+public class IntegerListTypeHandler implements TypeHandler<List<Integer>> {
+
+    private static final String COMMA = ",";
+
+    @Override
+    public void setParameter(PreparedStatement ps, int i, List<Integer> strings, JdbcType jdbcType) throws SQLException {
+        ps.setString(i, CollUtil.join(strings, COMMA));
+    }
+
+    @Override
+    public List<Integer> getResult(ResultSet rs, String columnName) throws SQLException {
+        String value = rs.getString(columnName);
+        return getResult(value);
+    }
+
+    @Override
+    public List<Integer> getResult(ResultSet rs, int columnIndex) throws SQLException {
+        String value = rs.getString(columnIndex);
+        return getResult(value);
+    }
+
+    @Override
+    public List<Integer> getResult(CallableStatement cs, int columnIndex) throws SQLException {
+        String value = cs.getString(columnIndex);
+        return getResult(value);
+    }
+
+    private List<Integer> getResult(String value) {
+        if (value == null) {
+            return null;
+        }
+        return StrUtils.splitToInteger(value, COMMA);
+    }
+}

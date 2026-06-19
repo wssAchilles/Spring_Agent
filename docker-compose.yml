@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: agent-postgres
+    environment:
+      POSTGRES_DB: ai_agent
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./deploy/sql:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: agent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  redis_data:

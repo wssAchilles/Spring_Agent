@@ -1,0 +1,198 @@
+/*
+ * Copyright © 2026 Qiantong Technology Co., Ltd.
+ * qKnow Knowledge Platform
+ *  *
+ * License:
+ * Released under the Apache License, Version 2.0.
+ * You may use, modify, and distribute this software for commercial purposes
+ * under the terms of the License.
+ *  *
+ * Special Notice:
+ * All derivative versions are strictly prohibited from modifying or removing
+ * the default system logo and copyright information.
+ * For brand customization, please apply for brand customization authorization via official channels.
+ *  *
+ * More information: https://qknow.qiantong.tech/business.html
+ *  *
+ * ============================================================================
+ *  *
+ * 版权所有 © 2026 江苏千桐科技有限公司
+ * qKnow 知识平台（开源版）
+ *  *
+ * 许可协议：
+ * 本项目基于 Apache License 2.0 开源协议发布，
+ * 允许在遵守协议的前提下进行商用、修改和分发。
+ *  *
+ * 特别说明：
+ * 所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
+ * 如需定制品牌，请通过官方渠道申请品牌定制授权。
+ *  *
+ * 更多信息请访问：https://qknow.qiantong.tech/business.html
+ */
+
+package tech.qiantong.qknow.module.system.controller.admin.system;
+
+import java.io.IOException;
+import java.util.List;
+
+import cn.hutool.core.convert.Convert;
+import jakarta.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import tech.qiantong.qknow.common.annotation.Log;
+import tech.qiantong.qknow.common.core.controller.BaseController;
+import tech.qiantong.qknow.common.core.domain.AjaxResult;
+import tech.qiantong.qknow.common.core.domain.entity.SysDictType;
+import tech.qiantong.qknow.common.core.page.TableDataInfo;
+
+import tech.qiantong.qknow.common.enums.BusinessType;
+import tech.qiantong.qknow.common.utils.poi.ExcelUtil;
+import tech.qiantong.qknow.generator.service.IGenTableService;
+import tech.qiantong.qknow.module.system.service.ISysDictDataService;
+import tech.qiantong.qknow.module.system.service.ISysDictTypeService;
+
+/**
+ * 数据字典信息
+ *
+ * @author qknow
+ */
+@RestController
+@RequestMapping("/system/dict/type")
+public class SysDictTypeController extends BaseController
+{
+    @Autowired
+    private ISysDictTypeService dictTypeService;
+
+    @Autowired
+    private IGenTableService genTableService;
+
+
+    @PreAuthorize("@ss.hasPermi('system:dict:list')")
+    @GetMapping("/list")
+    public TableDataInfo list(SysDictType dictType)
+    {
+        startPage();
+        List<SysDictType> list = dictTypeService.selectDictTypeList(dictType);
+        return getDataTable(list);
+    }
+
+    @Log(title = "字典类型", businessType = BusinessType.EXPORT)
+    @PreAuthorize("@ss.hasPermi('system:dict:export')")
+    @PostMapping("/export")
+    public void export(HttpServletResponse response, SysDictType dictType)
+    {
+        List<SysDictType> list = dictTypeService.selectDictTypeList(dictType);
+        ExcelUtil<SysDictType> util = new ExcelUtil<SysDictType>(SysDictType.class);
+        util.exportExcel(response, list, "字典类型");
+    }
+
+    /**
+     * 查询字典类型详细
+     */
+    @PreAuthorize("@ss.hasPermi('system:dict:query')")
+    @GetMapping(value = "/{dictId}")
+    public AjaxResult getInfo(@PathVariable Long dictId)
+    {
+        return success(dictTypeService.selectDictTypeById(dictId));
+    }
+
+    /**
+     * 新增字典类型
+     */
+    @PreAuthorize("@ss.hasPermi('system:dict:add')")
+    @Log(title = "字典类型", businessType = BusinessType.INSERT)
+    @PostMapping
+    public AjaxResult add(@Validated @RequestBody SysDictType dict)
+    {
+        if (!dictTypeService.checkDictTypeUnique(dict))
+        {
+            return error("新增字典'" + dict.getDictName() + "'失败，字典类型已存在");
+        }
+        dict.setCreateBy(getNickName());
+        return toAjax(dictTypeService.insertDictType(dict));
+    }
+
+    /**
+     * 修改字典类型
+     */
+    @PreAuthorize("@ss.hasPermi('system:dict:edit')")
+    @Log(title = "字典类型", businessType = BusinessType.UPDATE)
+    @PutMapping
+    public AjaxResult edit(@Validated @RequestBody SysDictType dict)
+    {
+        if (!dictTypeService.checkDictTypeUnique(dict))
+        {
+            return error("修改字典'" + dict.getDictName() + "'失败，字典类型已存在");
+        }
+        dict.setUpdateBy(getNickName());
+        return toAjax(dictTypeService.updateDictType(dict));
+    }
+
+    /**
+     * 删除字典类型
+     */
+    @PreAuthorize("@ss.hasPermi('system:dict:remove')")
+    @Log(title = "字典类型", businessType = BusinessType.DELETE)
+    @DeleteMapping("/{dictIds}")
+    public AjaxResult remove(@PathVariable Long[] dictIds)
+    {
+        dictTypeService.deleteDictTypeByIds(dictIds);
+        return success();
+    }
+
+    /**
+     * 刷新字典缓存
+     */
+    @PreAuthorize("@ss.hasPermi('system:dict:remove')")
+    @Log(title = "字典类型", businessType = BusinessType.CLEAN)
+    @DeleteMapping("/refreshCache")
+    public AjaxResult refreshCache()
+    {
+        dictTypeService.resetDictCache();
+        return success();
+    }
+
+    /**
+     * 获取字典选择框列表
+     */
+    @GetMapping("/optionselect")
+    public AjaxResult optionselect()
+    {
+        List<SysDictType> dictTypes = dictTypeService.selectDictTypeAll();
+        return success(dictTypes);
+    }
+
+    @GetMapping("/batchDictData")
+    public void batchGenCode(HttpServletResponse response, String dictTypes) throws IOException
+    {
+        String[] dictTypesArr = Convert.toStrArray(dictTypes);
+        List<SysDictType> dictTypesList =  dictTypeService.getDictTypeAndDataList(dictTypesArr);
+        byte[] data = genTableService.downloadEnums(dictTypesList);
+        genCode(response, data);
+    }
+
+    /**
+     * 生成zip文件
+     */
+    private void genCode(HttpServletResponse response, byte[] data) throws IOException
+    {
+        response.reset();
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Expose-Headers", "Content-Disposition");
+        response.setHeader("Content-Disposition", "attachment; filename=\"qknow.zip\"");
+        response.addHeader("Content-Length", "" + data.length);
+        response.setContentType("application/octet-stream; charset=UTF-8");
+        IOUtils.write(data, response.getOutputStream());
+    }
+}

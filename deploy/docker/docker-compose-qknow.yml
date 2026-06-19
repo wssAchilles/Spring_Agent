@@ -1,0 +1,71 @@
+# Copyright © 2026 Qiantong Technology Co., Ltd.
+# qKnow Knowledge Platform
+#  *
+# License:
+# Released under the Apache License, Version 2.0.
+# You may use, modify, and distribute this software for commercial purposes
+# under the terms of the License.
+#  *
+# Special Notice:
+# All derivative versions are strictly prohibited from modifying or removing
+# the default system logo and copyright information.
+# For brand customization, please apply for brand customization authorization via official channels.
+#  *
+# More information: https://qknow.qiantong.tech/business.html
+#  *
+# ============================================================================
+#  *
+# 版权所有 © 2026 江苏千桐科技有限公司
+# qKnow 知识平台（开源版）
+#  *
+# 许可协议：
+# 本项目基于 Apache License 2.0 开源协议发布，
+# 允许在遵守协议的前提下进行商用、修改和分发。
+#  *
+# 特别说明：
+# 所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
+# 如需定制品牌，请通过官方渠道申请品牌定制授权。
+#  *
+# 更多信息请访问：https://qknow.qiantong.tech/business.html
+
+version: "2.2.1"
+
+services:
+  api:
+    privileged: true
+    image: ${QKNOW_HUB}/qknow-server-ce:${QKNOW_TAG}
+    restart: always
+    profiles: [ "qknow", "base" ]
+    env_file: .env
+    environment:
+      - TZ=Asia/Shanghai
+      - SPRING_CONFIG_LOCATION=file:/usr/app/jar/
+      - SPRING_CONFIG_NAME=application,application-file,application-ext,application-kmc,application-neo4j,application-thirdparty,application-ai
+    # 如需覆盖端口也可加：
+    #    ports:
+    #      - "8080:8080"
+    mac_address: 28-C5-D2-B7-FC-F7
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./qknow-server/logs:/usr/app/jar/logs
+      - ./qknow-server/upload:/usr/app/jar/upload
+      - ./qknow-server/application-prod.yml:/usr/app/jar/application-prod.yml
+      - ./qknow-server/application-ext-prod.yml:/usr/app/jar/application-ext-prod.yml
+      - ./qknow-server/application-file-prod.yml:/usr/app/jar/application-file-prod.yml
+      - ./qknow-server/application-ai-prod.yml:/usr/app/jar/application-ai-prod.yml
+      - ./qknow-server/application-neo4j-prod.yml:/usr/app/jar/application-neo4j-prod.yml
+      - ./qknow-server/application-kmc-prod.yml:/usr/app/jar/application-kmc-prod.yml
+      - ./qknow-server/application-thirdparty-prod.yml:/usr/app/jar/application-thirdparty-prod.yml
+      - ./qknow-server/application.yml:/usr/app/jar/application.yml
+#      - ./qknow-server/qKnow.key:/usr/app/jar/qKnow.key
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql57:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    networks:
+      - qknownet
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -1,0 +1,94 @@
+/*
+ * Copyright © 2026 Qiantong Technology Co., Ltd.
+ * qKnow Knowledge Platform
+ *  *
+ * License:
+ * Released under the Apache License, Version 2.0.
+ * You may use, modify, and distribute this software for commercial purposes
+ * under the terms of the License.
+ *  *
+ * Special Notice:
+ * All derivative versions are strictly prohibited from modifying or removing
+ * the default system logo and copyright information.
+ * For brand customization, please apply for brand customization authorization via official channels.
+ *  *
+ * More information: https://qknow.qiantong.tech/business.html
+ *  *
+ * ============================================================================
+ *  *
+ * 版权所有 © 2026 江苏千桐科技有限公司
+ * qKnow 知识平台（开源版）
+ *  *
+ * 许可协议：
+ * 本项目基于 Apache License 2.0 开源协议发布，
+ * 允许在遵守协议的前提下进行商用、修改和分发。
+ *  *
+ * 特别说明：
+ * 所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
+ * 如需定制品牌，请通过官方渠道申请品牌定制授权。
+ *  *
+ * 更多信息请访问：https://qknow.qiantong.tech/business.html
+ */
+
+package tech.qiantong.qknow.module.system.ca.mapper;
+
+import tech.qiantong.qknow.module.system.ca.domain.CaSubject;
+
+import java.util.List;
+
+/**
+ * 主体管理Mapper接口
+ *
+ * @author qknow
+ * @date 2024-08-18
+ */
+public interface CaSubjectMapper
+{
+    /**
+     * 查询主体管理
+     *
+     * @param id 主体管理主键
+     * @return 主体管理
+     */
+    public CaSubject selectCaSubjectById(Long id);
+
+    /**
+     * 查询主体管理列表
+     *
+     * @param caSubject 主体管理
+     * @return 主体管理集合
+     */
+    public List<CaSubject> selectCaSubjectList(CaSubject caSubject);
+
+    /**
+     * 新增主体管理
+     *
+     * @param caSubject 主体管理
+     * @return 结果
+     */
+    public int insertCaSubject(CaSubject caSubject);
+
+    /**
+     * 修改主体管理
+     *
+     * @param caSubject 主体管理
+     * @return 结果
+     */
+    public int updateCaSubject(CaSubject caSubject);
+
+    /**
+     * 删除主体管理
+     *
+     * @param id 主体管理主键
+     * @return 结果
+     */
+    public int deleteCaSubjectById(Long id);
+
+    /**
+     * 批量删除主体管理
+     *
+     * @param ids 需要删除的数据主键集合
+     * @return 结果
+     */
+    public int deleteCaSubjectByIds(Long[] ids);
+}
