@@ -200,6 +200,35 @@
       <el-main class="right-main">
         <div class="border-item-head">
           <span class="head-title">调试与预览 </span>
+          <div class="conversation-actions">
+            <el-select
+              v-model="currentConversationId"
+              placeholder="选择对话"
+              size="small"
+              style="width: 180px; margin-right: 8px;"
+              @change="handleConversationChange"
+              clearable
+            >
+              <el-option
+                v-for="conv in conversationList"
+                :key="conv.id"
+                :label="conv.title"
+                :value="conv.id"
+              />
+            </el-select>
+            <el-button type="primary" size="small" @click="handleNewConversation" plain>
+              新对话
+            </el-button>
+            <el-button
+              v-if="currentConversationId"
+              type="danger"
+              size="small"
+              @click="handleDeleteConversation"
+              plain
+            >
+              删除
+            </el-button>
+          </div>
         </div>
         <el-container>
           <el-main>
@@ -238,6 +267,7 @@ import knowledgeBaseMultiple from "@/views/kmc/knowledgeBase/selection/knowledge
 import {getChatModelDict} from "@/api/ai/myModel/myModel.js";
 import {addConfig, getConfigByBotId, updateConfig} from "@/api/kb/agent/config";
 import {debugAgent} from "@/api/kb/agent/debug";
+import {getConversations, createConversation, deleteConversation, getMessages} from "@/api/kb/conversation";
 import AgentMessageList from './components/MessageList.vue';
 import AgentChatInput from './components/ChatInput.vue';
 import SvgIcon from "@/components/SvgIcon/index.vue";
@@ -281,6 +311,11 @@ const messageList = ref([]); // 消息列表
 const abortController = ref(null); // 用于取消流式请求
 const isScrolling = ref(false); // 用于判断用户是否在滚动
 
+// 对话管理
+const conversationList = ref([]);
+const currentConversationId = ref(null);
+const workspaceId = ref(1001); // 默认工作区ID
+
 // 监听模型选择，自动获取 provider (modelId)
 watchEffect(() => {
   const selectedModelName = form.modelName;
@@ -294,6 +329,65 @@ watchEffect(() => {
     }
   }
 });
+
+// 加载对话列表
+function loadConversations() {
+  if (!botId.value) return;
+  getConversations(botId.value, workspaceId.value).then(res => {
+    conversationList.value = res.data || [];
+  });
+}
+
+// 创建新对话
+function handleNewConversation() {
+  if (!botId.value) {
+    proxy.$modal.msgWarning('请先保存 Agent 配置');
+    return;
+  }
+  createConversation({
+    botId: botId.value,
+    workspaceId: workspaceId.value,
+    title: '新对话 ' + new Date().toLocaleTimeString()
+  }).then(res => {
+    conversationList.value.unshift(res.data);
+    currentConversationId.value = res.data.id;
+    messageList.value = [];
+    proxy.$modal.msgSuccess('已创建新对话');
+  });
+}
+
+// 切换对话
+function handleConversationChange(conversationId) {
+  if (!conversationId) {
+    messageList.value = [];
+    return;
+  }
+  getMessages(conversationId).then(res => {
+    messageList.value = (res.data || []).map(msg => ({
+      type: msg.role === 'user' ? 0 : 1,
+      content: msg.content,
+      createTime: msg.createTime
+    }));
+    nextTick(() => {
+      if (messageListRef.value) {
+        messageListRef.value.scrollToBottom(false);
+      }
+    });
+  });
+}
+
+// 删除对话
+function handleDeleteConversation() {
+  if (!currentConversationId.value) return;
+  proxy.$modal.confirm('确认删除该对话？').then(() => {
+    deleteConversation(currentConversationId.value).then(() => {
+      conversationList.value = conversationList.value.filter(c => c.id !== currentConversationId.value);
+      currentConversationId.value = null;
+      messageList.value = [];
+      proxy.$modal.msgSuccess('已删除');
+    });
+  });
+}
 
 // 加载 Agent 配置
 function loadAgentConfig() {
@@ -351,6 +445,9 @@ function loadAgentConfig() {
         description: ''
       }));
     }
+
+    // 加载对话列表
+    loadConversations();
   }).catch((err) => {
     getModelList();
   });
@@ -422,6 +519,24 @@ function handleSendMessage(content) {
     return;
   }
 
+  // 如果没有当前对话，自动创建
+  if (!currentConversationId.value) {
+    createConversation({
+      botId: botId.value,
+      workspaceId: workspaceId.value,
+      title: content.substring(0, 20) + (content.length > 20 ? '...' : '')
+    }).then(res => {
+      conversationList.value.unshift(res.data);
+      currentConversationId.value = res.data.id;
+      doSendMessage(content);
+    });
+  } else {
+    doSendMessage(content);
+  }
+}
+
+// 实际发送消息
+function doSendMessage(content) {
   // 添加用户消息
   const userMessage = {
     type: 0,
@@ -450,17 +565,11 @@ function handleSendMessage(content) {
 
   // 构建请求参数
   const requestData = {
+    conversationId: currentConversationId.value,
     botId: botId.value,
+    workspaceId: workspaceId.value,
     question: content,
-    input: null,
-    modelConfig: JSON.stringify({
-      modelId: form.modelId,
-      modelName: form.modelName
-    }),
-    prePrompt: form.prePrompt,
-    parameters: '{}',
-    knowledgeIds: form.knowledges.map(k => k.id).join(','),
-    toolMethodIds: form.tools.map(t => t.id).join(',')
+    input: null
   };
 
   nextTick(() => {
@@ -474,7 +583,7 @@ function handleSendMessage(content) {
 
   let botContent = "";
 
-  // 调用调试接口（流式输出）
+  // 调用对话接口（流式输出）
   debugAgent(
     requestData,
     // onmessage 回调
@@ -619,6 +728,10 @@ loadAgentConfig();
       background: var(--el-color-primary);
       margin-right: 8px;
     }
+  }
+  .conversation-actions {
+    display: flex;
+    align-items: center;
   }
 }
 .left-aside {

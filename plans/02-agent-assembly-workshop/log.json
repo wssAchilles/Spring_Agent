@@ -1,0 +1,193 @@
+{
+  "stage_id": "02-agent-assembly-workshop",
+  "stage_name": "智能体装配车间",
+  "status": "completed",
+  "started_at": "2026-06-20T03:00:00+08:00",
+  "completed_at": "2026-06-20T05:00:00+08:00",
+  "context_hash": "2a692aef",
+  "objectives": [
+    {
+      "id": "2.1",
+      "description": "Conversation/Message 后端实体与服务层",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/dataobject/conversation/KbConversationDO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/dataobject/conversation/KbChatMessageDO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/mapper/conversation/KbConversationMapper.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/mapper/conversation/KbChatMessageMapper.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/IKbConversationService.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/IKbChatMessageService.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/impl/KbConversationServiceImpl.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/impl/KbChatMessageServiceImpl.java"
+      ],
+      "notes": "创建完整的 Conversation 和 Message 数据层，遵循 qKnow 现有模式 (BaseEntity, MyBatis-Plus, ServiceImpl)"
+    },
+    {
+      "id": "2.2",
+      "description": "Agent 对话控制器与历史集成",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/KbConversationController.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbConversationSaveReqVO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbConversationRespVO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbChatMessageRespVO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbChatMessageSendReqVO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/agent/vo/KbAgentConfigReqVO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/agent/impl/KbAgentConfigServiceImpl.java"
+      ],
+      "notes": "KbConversationController 提供对话 CRUD + SSE 流式聊天。KbAgentConfigReqVO 新增 historyMessages 字段。KbAgentConfigServiceImpl 的 TODO 已实现: 从 historyMessages 构建历史对话 Prompt"
+    },
+    {
+      "id": "2.3",
+      "description": "前端对话侧边栏与消息持久化",
+      "status": "done",
+      "files_touched": [
+        "frontend/src/api/kb/conversation/index.js",
+        "frontend/src/views/kb/agent/index.vue"
+      ],
+      "notes": "新增对话 API 文件。Agent 页面新增对话选择器、新建/删除/切换对话功能。发送消息时自动创建对话并持久化"
+    }
+  ],
+  "key_decisions": [
+    {
+      "decision": "将 Conversation/Message 放在 qknow-module-kb 模块而非 qknow-module-app",
+      "reason": "对话管理与 Agent 逻辑紧密耦合，放在同一模块减少跨模块依赖",
+      "alternatives_rejected": [
+        "放在 qknow-module-app（需要跨模块调用 Agent 服务）"
+      ]
+    },
+    {
+      "decision": "使用现有的 debugAgent SSE 端点模式，新增 /kb/conversation/send 端点",
+      "reason": "保持与现有 SSE 流式输出模式一致，前端复用 fetch-event-source",
+      "alternatives_rejected": [
+        "WebSocket（增加复杂度）",
+        "修改现有 /kb/agent/testChatMessages（破坏现有调试功能）"
+      ]
+    },
+    {
+      "decision": "前端自动创建对话，无需手动管理",
+      "reason": "降低用户操作门槛，首次发消息时自动创建对话",
+      "alternatives_rejected": [
+        "强制用户先创建对话（增加操作步骤）"
+      ]
+    }
+  ],
+  "issues_encountered": [
+    {
+      "issue": "KbAgentConfigService.getKbAgentConfigByBotId 方法已存在但 Controller 中调用了不存在的 getConfigByBotId",
+      "resolution": "修正 Controller 调用为 getKbAgentConfigByBotId",
+      "status": "resolved"
+    }
+  ],
+  "files_modified": [
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/dataobject/conversation/KbConversationDO.java",
+      "action": "created",
+      "description": "对话实体类"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/dataobject/conversation/KbChatMessageDO.java",
+      "action": "created",
+      "description": "聊天消息实体类"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/mapper/conversation/KbConversationMapper.java",
+      "action": "created",
+      "description": "对话 Mapper"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/mapper/conversation/KbChatMessageMapper.java",
+      "action": "created",
+      "description": "消息 Mapper"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/IKbConversationService.java",
+      "action": "created",
+      "description": "对话服务接口"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/IKbChatMessageService.java",
+      "action": "created",
+      "description": "消息服务接口"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/impl/KbConversationServiceImpl.java",
+      "action": "created",
+      "description": "对话服务实现"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/conversation/impl/KbChatMessageServiceImpl.java",
+      "action": "created",
+      "description": "消息服务实现"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/KbConversationController.java",
+      "action": "created",
+      "description": "对话管理控制器 (CRUD + SSE 聊天)"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbConversationSaveReqVO.java",
+      "action": "created",
+      "description": "对话创建请求 VO"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbConversationRespVO.java",
+      "action": "created",
+      "description": "对话响应 VO"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbChatMessageRespVO.java",
+      "action": "created",
+      "description": "消息响应 VO"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/conversation/vo/KbChatMessageSendReqVO.java",
+      "action": "created",
+      "description": "发送消息请求 VO"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/agent/vo/KbAgentConfigReqVO.java",
+      "action": "modified",
+      "description": "新增 historyMessages 字段"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/agent/impl/KbAgentConfigServiceImpl.java",
+      "action": "modified",
+      "description": "实现对话历史注入: TODO → 从 historyMessages 构建 UserMessage/AssistantMessage"
+    },
+    {
+      "path": "frontend/src/api/kb/conversation/index.js",
+      "action": "created",
+      "description": "对话 API 文件"
+    },
+    {
+      "path": "frontend/src/views/kb/agent/index.vue",
+      "action": "modified",
+      "description": "新增对话选择器、新建/删除/切换对话、消息持久化"
+    }
+  ],
+  "dependencies": {
+    "external_libs_added": [],
+    "services_required": [
+      "PostgreSQL 15+ (需安装 pgvector 扩展)",
+      "Redis 7+"
+    ]
+  },
+  "next_stage": {
+    "stage_id": "03-tool-calling-integration",
+    "objectives": [
+      "工具注册中心 (tool 表 CRUD，已有基础)",
+      "Function Calling 集成 (Spring AI FunctionCallback)",
+      "ReAct 推理循环 (已有 ReactAgent 基础)",
+      "MCP 协议适配 (扩展)"
+    ],
+    "prerequisites": [
+      "阶段二所有代码变更已编译通过",
+      "对话历史功能已验证"
+    ],
+    "risks": [
+      "Spring AI Function Calling 的 ToolCallbackResolver 可能需要额外配置",
+      "MCP 协议规范复杂度较高，可能需要简化实现"
+    ]
+  }
+}
