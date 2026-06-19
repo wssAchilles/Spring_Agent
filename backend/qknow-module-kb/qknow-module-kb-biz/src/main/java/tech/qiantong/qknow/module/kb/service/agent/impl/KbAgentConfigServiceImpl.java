@@ -78,6 +78,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -293,8 +294,17 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
             toolNames = kbToolMethodList.stream().map(KbToolMethodDO::getCode).toArray(String[]::new);
         }
 
-        // TODO 获取历史聊天记录，构建历史对话的Prompt
+        // 构建历史对话消息
         List<Message> messages = Lists.newArrayList();
+        if (kbAgentConfig.getHistoryMessages() != null && !kbAgentConfig.getHistoryMessages().isEmpty()) {
+            for (var historyMsg : kbAgentConfig.getHistoryMessages()) {
+                if ("user".equals(historyMsg.getRole())) {
+                    messages.add(new UserMessage(historyMsg.getContent()));
+                } else if ("assistant".equals(historyMsg.getRole())) {
+                    messages.add(new AssistantMessage(historyMsg.getContent()));
+                }
+            }
+        }
 
         // 获取预设提示语并且替换变量
         String systemPrompt = NodeUtils.replacePlaceholder(kbAgentConfig.getPrePrompt(), kbAgentConfig.getInput());

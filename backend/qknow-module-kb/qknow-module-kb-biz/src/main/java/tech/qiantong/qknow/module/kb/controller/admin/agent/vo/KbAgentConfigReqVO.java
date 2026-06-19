@@ -67,6 +67,9 @@ package tech.qiantong.qknow.module.kb.controller.admin.agent.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import tech.qiantong.qknow.common.core.domain.BaseEntity;
+import tech.qiantong.qknow.module.kb.dal.dataobject.conversation.KbChatMessageDO;
+
+import java.util.List;
 
 /**
  * agent配置 Request VO 对象 kb_agent_config
@@ -110,5 +113,8 @@ public class KbAgentConfigReqVO extends BaseEntity {
 
     @Schema(description = "工具ids", example = "")
     private String toolMethodIds;
+
+    @Schema(description = "历史消息列表")
+    private List<KbChatMessageDO> historyMessages;
 
 }
