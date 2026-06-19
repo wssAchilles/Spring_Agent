@@ -1,0 +1,194 @@
+{
+  "stage_id": "01-rag-knowledge-engine",
+  "stage_name": "RAG 知识引擎核心",
+  "status": "completed",
+  "started_at": "2026-06-20T00:00:00+08:00",
+  "completed_at": "2026-06-20T02:00:00+08:00",
+  "context_hash": "47272799",
+  "objectives": [
+    {
+      "id": "1.1",
+      "description": "PostgreSQL + PgVector 数据库迁移脚本",
+      "status": "done",
+      "files_touched": [
+        "deploy/sql/postgresql/00-init-extensions.sql",
+        "deploy/sql/postgresql/01-schema.sql",
+        "deploy/sql/postgresql/02-init-data.sql"
+      ],
+      "notes": "完成全部表结构迁移: 系统表、AI表、知识库表、Bot/Agent表、工作流表、向量存储表。新增 conversation、chat_message、ai_judge_score、workflow/workflow_node/workflow_edge/workflow_run 表"
+    },
+    {
+      "id": "1.2",
+      "description": "后端配置从 MySQL 切换到 PostgreSQL",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-server/src/main/resources/application-dev.yml",
+        "backend/qknow-server/src/main/resources/application.yml",
+        "backend/pom.xml"
+      ],
+      "notes": "datasource.type 改为 postgresql, PageHelper dialect 改为 postgresql, validationQuery 改为 SELECT 1, 新增 PostgreSQL JDBC 驱动依赖"
+    },
+    {
+      "id": "1.3",
+      "description": "VectorStore 从 Weaviate 重构为 PgVector",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-framework/qknow-ai/pom.xml",
+        "backend/qknow-framework/qknow-ai/src/main/java/tech/qiantong/qknow/ai/service/IVectorStoreService.java",
+        "backend/qknow-framework/qknow-ai/src/main/java/tech/qiantong/qknow/ai/service/impl/VectorStoreServiceImpl.java",
+        "backend/qknow-framework/qknow-ai/src/main/java/tech/qiantong/qknow/ai/config/WeaviateConfig.java",
+        "backend/qknow-framework/qknow-ai/src/main/resources/application-ai-dev.yml",
+        "backend/qknow-framework/qknow-ai/src/main/resources/application-ai-prod.yml",
+        "backend/qknow-module-kmc/qknow-module-kmc-biz/src/main/java/tech/qiantong/qknow/module/kmc/service/knowledgeBase/impl/KmcKnowledgeBaseServiceImpl.java",
+        "backend/qknow-module-kmc/qknow-module-kmc-biz/src/main/java/tech/qiantong/qknow/module/kmc/service/knowledgeSegment/impl/KmcDocumentSegmentServiceImpl.java",
+        "backend/qknow-module-kmc/qknow-module-kmc-biz/src/main/java/tech/qiantong/qknow/module/kmc/service/sync/impl/KmcSyncServiceImpl.java"
+      ],
+      "notes": "POM: spring-ai-weaviate-store → spring-ai-pgvector-store. IVectorStoreService 返回类型从 WeaviateVectorStore 改为 VectorStore. VectorStoreServiceImpl 使用 PgVectorStore.builder(embeddingModel, jdbcTemplate).build(). 删除 WeaviateConfig 的 WeaviateClient Bean. 3个 kmc Service 文件的 WeaviateVectorStore 引用全部替换为 VectorStore"
+    }
+  ],
+  "key_decisions": [
+    {
+      "decision": "使用 PgVector 而非独立的 Milvus/Qdrant 作为向量存储",
+      "reason": "减少运维复杂度，PgVector 作为 PostgreSQL 扩展无需额外服务，与主数据库共享连接池",
+      "alternatives_rejected": [
+        "Milvus（需独立部署）",
+        "Qdrant（需额外服务）",
+        "保留 Weaviate（与设计文档不符）"
+      ]
+    },
+    {
+      "decision": "IVectorStoreService 返回类型从 WeaviateVectorStore 改为通用 VectorStore 接口",
+      "reason": "解耦向量存储实现，后续可轻松切换底层实现而不影响业务代码",
+      "alternatives_rejected": [
+        "保留 WeaviateVectorStore 具体类型（耦合太强）"
+      ]
+    },
+    {
+      "decision": "新增 conversation、chat_message 表用于 Agent 对话管理",
+      "reason": "原 kb 模块缺少独立的对话和消息表，需要支持多轮对话上下文管理",
+      "alternatives_rejected": [
+        "复用 kb_runtime 表（语义不匹配）"
+      ]
+    }
+  ],
+  "issues_encountered": [
+    {
+      "issue": "MySQL 的 CONCAT 函数在 MyBatis Mapper XML 中使用",
+      "resolution": "PostgreSQL 也支持 CONCAT 函数，无需修改 Mapper XML",
+      "status": "resolved"
+    },
+    {
+      "issue": "MySQL 的 TINYINT(1) 用于布尔值，PostgreSQL 需要 BOOLEAN 类型",
+      "resolution": "在 PostgreSQL DDL 中统一使用 BOOLEAN 类型",
+      "status": "resolved"
+    }
+  ],
+  "files_modified": [
+    {
+      "path": "deploy/sql/postgresql/00-init-extensions.sql",
+      "action": "created",
+      "description": "PostgreSQL 扩展初始化 (vector, pg_trgm, uuid-ossp)"
+    },
+    {
+      "path": "deploy/sql/postgresql/01-schema.sql",
+      "action": "created",
+      "description": "完整 PostgreSQL DDL 建表脚本 (50+ 表)"
+    },
+    {
+      "path": "deploy/sql/postgresql/02-init-data.sql",
+      "action": "created",
+      "description": "初始数据 (admin用户、角色、菜单、字典、AI模型)"
+    },
+    {
+      "path": "backend/pom.xml",
+      "action": "modified",
+      "description": "新增 PostgreSQL JDBC 驱动依赖"
+    },
+    {
+      "path": "backend/qknow-framework/qknow-ai/pom.xml",
+      "action": "modified",
+      "description": "spring-ai-weaviate-store → spring-ai-pgvector-store"
+    },
+    {
+      "path": "backend/qknow-framework/qknow-ai/src/main/java/tech/qiantong/qknow/ai/service/IVectorStoreService.java",
+      "action": "modified",
+      "description": "返回类型从 WeaviateVectorStore 改为 VectorStore"
+    },
+    {
+      "path": "backend/qknow-framework/qknow-ai/src/main/java/tech/qiantong/qknow/ai/service/impl/VectorStoreServiceImpl.java",
+      "action": "modified",
+      "description": "完全重写为 PgVectorStore 实现"
+    },
+    {
+      "path": "backend/qknow-framework/qknow-ai/src/main/java/tech/qiantong/qknow/ai/config/WeaviateConfig.java",
+      "action": "modified",
+      "description": "移除 WeaviateClient Bean，改为占位配置类"
+    },
+    {
+      "path": "backend/qknow-framework/qknow-ai/src/main/resources/application-ai-dev.yml",
+      "action": "modified",
+      "description": "移除 Weaviate 配置"
+    },
+    {
+      "path": "backend/qknow-framework/qknow-ai/src/main/resources/application-ai-prod.yml",
+      "action": "modified",
+      "description": "移除 Weaviate 配置"
+    },
+    {
+      "path": "backend/qknow-module-kmc/qknow-module-kmc-biz/src/main/java/tech/qiantong/qknow/module/kmc/service/knowledgeBase/impl/KmcKnowledgeBaseServiceImpl.java",
+      "action": "modified",
+      "description": "WeaviateVectorStore → VectorStore"
+    },
+    {
+      "path": "backend/qknow-module-kmc/qknow-module-kmc-biz/src/main/java/tech/qiantong/qknow/module/kmc/service/knowledgeSegment/impl/KmcDocumentSegmentServiceImpl.java",
+      "action": "modified",
+      "description": "WeaviateVectorStore → VectorStore"
+    },
+    {
+      "path": "backend/qknow-module-kmc/qknow-module-kmc-biz/src/main/java/tech/qiantong/qknow/module/kmc/service/sync/impl/KmcSyncServiceImpl.java",
+      "action": "modified",
+      "description": "WeaviateVectorStore → VectorStore"
+    },
+    {
+      "path": "backend/qknow-server/src/main/resources/application-dev.yml",
+      "action": "modified",
+      "description": "datasource.type: mysql → postgresql, 新增 PostgreSQL 配置段"
+    },
+    {
+      "path": "backend/qknow-server/src/main/resources/application.yml",
+      "action": "modified",
+      "description": "pagehelper.helperDialect: mysql → postgresql"
+    }
+  ],
+  "dependencies": {
+    "external_libs_added": [
+      "org.postgresql:postgresql:42.7.4",
+      "org.springframework.ai:spring-ai-pgvector-store"
+    ],
+    "services_required": [
+      "PostgreSQL 15+ (需安装 pgvector 扩展)",
+      "Redis 7+",
+      "JDK 17+",
+      "Node.js 18+"
+    ]
+  },
+  "next_stage": {
+    "stage_id": "02-agent-assembly-workshop",
+    "objectives": [
+      "Agent 数据模型完善 (agent, agent_knowledge 表已在阶段一创建)",
+      "Agent 配置前端 (创建/编辑表单、知识库绑定选择器)",
+      "Agent 对话引擎 (会话管理、多轮对话上下文)",
+      "多模型支持 (DeepSeek + Gemini Flash 通过 Spring AI 统一接口)"
+    ],
+    "prerequisites": [
+      "PostgreSQL + PgVector 已部署并初始化",
+      "DeepSeek API Key 已配置",
+      "阶段一所有代码变更已编译通过"
+    ],
+    "risks": [
+      "Spring AI PgVectorStore 的 metadata filter 语法可能与 Weaviate 不同，需要验证",
+      "DeepSeek API 的流式响应格式需适配 Spring AI 的 SSE 规范",
+      "PgVector 在大数据量下的检索性能需验证"
+    ]
+  }
+}

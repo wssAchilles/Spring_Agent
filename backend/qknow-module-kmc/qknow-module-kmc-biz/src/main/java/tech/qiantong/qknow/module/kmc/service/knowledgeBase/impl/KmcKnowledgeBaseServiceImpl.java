@@ -26,7 +26,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
-import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -452,7 +452,7 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, reqVO.getId()).build();
         EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
                 Long.valueOf(reqVO.getEmbeddingModelProvider()), reqVO.getEmbeddingModel());
-        WeaviateVectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
+        VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
         SearchRequest searchRequest;
         if (reqVO.getScoreThresholdEnabled()) {
             searchRequest = SearchRequest.builder()

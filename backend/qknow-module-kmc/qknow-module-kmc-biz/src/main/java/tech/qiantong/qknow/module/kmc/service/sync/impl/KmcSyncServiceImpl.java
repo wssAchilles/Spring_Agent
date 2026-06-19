@@ -78,7 +78,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
-import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -500,7 +500,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
         EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
                 Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
                 knowledgeBaseDO.getEmbeddingModel());
-        WeaviateVectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
+        VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
         segmentList.forEach(document -> {
             Long segmentId = map.get(document.getId());
@@ -547,7 +547,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
         EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
                 Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
                 knowledgeBaseDO.getEmbeddingModel());
-        WeaviateVectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
+        VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
         FilterExpressionBuilder b = new FilterExpressionBuilder();
         Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, documentDO.getId()).build();
