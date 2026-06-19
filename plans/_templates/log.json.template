@@ -1,0 +1,30 @@
+{
+  "stage_id": "XX-stage-slug",
+  "stage_name": "阶段中文名称",
+  "status": "not_started",
+  "started_at": null,
+  "completed_at": null,
+  "context_hash": null,
+  "objectives": [
+    {
+      "id": "1.1",
+      "description": "目标描述",
+      "status": "pending",
+      "files_touched": [],
+      "notes": null
+    }
+  ],
+  "key_decisions": [],
+  "issues_encountered": [],
+  "files_modified": [],
+  "dependencies": {
+    "external_libs_added": [],
+    "services_required": []
+  },
+  "next_stage": {
+    "stage_id": "",
+    "objectives": [],
+    "prerequisites": [],
+    "risks": []
+  }
+}

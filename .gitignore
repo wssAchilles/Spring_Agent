@@ -1,0 +1,80 @@
+# === Java / Maven ===
+backend/**/target/
+backend/**/*.class
+backend/**/*.jar
+backend/**/*.war
+backend/**/*.ear
+backend/**/.mvn/
+backend/**/mvnw
+backend/**/mvnw.cmd
+backend/**/.factorypath
+backend/**/dependency-reduced-pom.xml
+backend/**/.flattened-pom.xml
+backend/**/maven-status/
+backend/**/maven-compiler-plugin/
+backend/**/maven-resources-plugin/
+
+# === Node / Vue ===
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/.cache/
+frontend/.temp/
+frontend/.tmp/
+frontend/.eslintcache
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# === OS ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === Logs ===
+logs/
+*.log
+*.log.*
+
+# === Env / Secrets ===
+.env
+.env.*
+!.env.example
+
+# === References (参考项目，不入库) ===
+references/
+
+# === Upload (临时文件) ===
+backend/**/upload/temp/
+backend/**/upload/file/
+
+# === 编译产物 ===
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# === 测试覆盖率 ===
+backend/**/target/site/
+backend/**/jacoco*.exec
+
+# === 前端构建分析 ===
+frontend/stats.html
+frontend/bundle-analyzer-report.html

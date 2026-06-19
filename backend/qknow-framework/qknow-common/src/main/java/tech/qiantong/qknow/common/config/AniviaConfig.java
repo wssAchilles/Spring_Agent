@@ -1,0 +1,154 @@
+/*
+ * Copyright © 2026 Qiantong Technology Co., Ltd.
+ * qKnow Knowledge Platform
+ *  *
+ * License:
+ * Released under the Apache License, Version 2.0.
+ * You may use, modify, and distribute this software for commercial purposes
+ * under the terms of the License.
+ *  *
+ * Special Notice:
+ * All derivative versions are strictly prohibited from modifying or removing
+ * the default system logo and copyright information.
+ * For brand customization, please apply for brand customization authorization via official channels.
+ *  *
+ * More information: https://qknow.qiantong.tech/business.html
+ *  *
+ * ============================================================================
+ *  *
+ * 版权所有 © 2026 江苏千桐科技有限公司
+ * qKnow 知识平台（开源版）
+ *  *
+ * 许可协议：
+ * 本项目基于 Apache License 2.0 开源协议发布，
+ * 允许在遵守协议的前提下进行商用、修改和分发。
+ *  *
+ * 特别说明：
+ * 所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
+ * 如需定制品牌，请通过官方渠道申请品牌定制授权。
+ *  *
+ * 更多信息请访问：https://qknow.qiantong.tech/business.html
+ */
+
+package tech.qiantong.qknow.common.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+/**
+ * 读取项目相关配置
+ *
+ * @author qknow
+ */
+@Component
+@ConfigurationProperties(prefix = "qknow")
+public class AniviaConfig
+{
+    /** 项目名称 */
+    private String name;
+
+    /** 版本 */
+    private String version;
+
+    /** 版权年份 */
+    private String copyrightYear;
+
+    /** 上传路径 */
+    private static String profile;
+
+    /** 获取地址开关 */
+    private static boolean addressEnabled;
+
+    /** 验证码类型 */
+    private static String captchaType;
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    public String getVersion()
+    {
+        return version;
+    }
+
+    public void setVersion(String version)
+    {
+        this.version = version;
+    }
+
+    public String getCopyrightYear()
+    {
+        return copyrightYear;
+    }
+
+    public void setCopyrightYear(String copyrightYear)
+    {
+        this.copyrightYear = copyrightYear;
+    }
+
+    public static String getProfile()
+    {
+        return profile;
+    }
+
+    public void setProfile(String profile)
+    {
+        AniviaConfig.profile = profile;
+    }
+
+    public static boolean isAddressEnabled()
+    {
+        return addressEnabled;
+    }
+
+    public void setAddressEnabled(boolean addressEnabled)
+    {
+        AniviaConfig.addressEnabled = addressEnabled;
+    }
+
+    public static String getCaptchaType() {
+        return captchaType;
+    }
+
+    public void setCaptchaType(String captchaType) {
+        AniviaConfig.captchaType = captchaType;
+    }
+
+    /**
+     * 获取导入上传路径
+     */
+    public static String getImportPath()
+    {
+        return getProfile() + "/import";
+    }
+
+    /**
+     * 获取头像上传路径
+     */
+    public static String getAvatarPath()
+    {
+        return getProfile() + "/avatar";
+    }
+
+    /**
+     * 获取下载路径
+     */
+    public static String getDownloadPath()
+    {
+        return getProfile() + "/download/";
+    }
+
+    /**
+     * 获取上传路径
+     */
+    public static String getUploadPath()
+    {
+        return getProfile() + "/upload";
+    }
+}

@@ -1,0 +1,154 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Stage Log",
+  "description": "AI Agent 阶段性工作日志的标准 Schema 定义",
+  "type": "object",
+  "required": [
+    "stage_id",
+    "stage_name",
+    "status",
+    "started_at",
+    "objectives",
+    "next_stage"
+  ],
+  "properties": {
+    "stage_id": {
+      "type": "string",
+      "pattern": "^[0-9]{2}-[a-z0-9-]+$",
+      "description": "阶段唯一标识，格式: 两位序号-短横线描述"
+    },
+    "stage_name": {
+      "type": "string",
+      "description": "阶段中文名称"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["not_started", "in_progress", "completed", "blocked"],
+      "description": "阶段状态"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "阶段开始时间，ISO 8601 格式"
+    },
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "阶段完成时间，未完成时为 null"
+    },
+    "context_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{8}$",
+      "description": "上一阶段 log.json 的 SHA-256 前 8 位"
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+$",
+            "description": "目标编号，如 '1.1', '2.3'"
+          },
+          "description": {
+            "type": "string",
+            "description": "目标描述"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "in_progress", "done", "skipped"],
+            "description": "目标完成状态"
+          },
+          "files_touched": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "该目标涉及的文件路径"
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "description": "备注"
+          }
+        }
+      }
+    },
+    "key_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["decision", "reason"],
+        "properties": {
+          "decision": { "type": "string" },
+          "reason": { "type": "string" },
+          "alternatives_rejected": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "issues_encountered": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["issue", "status"],
+        "properties": {
+          "issue": { "type": "string" },
+          "resolution": { "type": ["string", "null"] },
+          "status": {
+            "type": "string",
+            "enum": ["resolved", "open", "wont_fix"]
+          }
+        }
+      }
+    },
+    "files_modified": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "action", "description"],
+        "properties": {
+          "path": { "type": "string" },
+          "action": {
+            "type": "string",
+            "enum": ["created", "modified", "deleted"]
+          },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "external_libs_added": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "services_required": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "next_stage": {
+      "type": "object",
+      "required": ["stage_id", "objectives", "risks"],
+      "properties": {
+        "stage_id": { "type": "string" },
+        "objectives": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "risks": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
