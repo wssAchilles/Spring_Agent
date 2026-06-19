@@ -1,0 +1,96 @@
+{
+  "stage_id": "06-integration-test-and-deploy",
+  "stage_name": "集成测试与部署",
+  "status": "completed",
+  "started_at": "2026-06-20T15:00:00+08:00",
+  "completed_at": "2026-06-20T17:00:00+08:00",
+  "context_hash": "b9897ac9",
+  "objectives": [
+    {
+      "id": "6.1",
+      "description": "Docker 容器化 + 一键启动",
+      "status": "done",
+      "files_touched": [
+        "backend/Dockerfile",
+        "frontend/Dockerfile",
+        "deploy/docker/nginx.conf",
+        "docker-compose.yml",
+        "scripts/start.sh"
+      ],
+      "notes": "后端 Dockerfile (Maven 构建 + JRE 运行)。前端 Dockerfile (Node 构建 + Nginx 服务)。docker-compose.yml 包含 PostgreSQL(PgVector) + Redis + Backend + Frontend 四个服务"
+    },
+    {
+      "id": "6.2",
+      "description": "项目文档 + README 更新",
+      "status": "done",
+      "files_touched": [
+        "README.md"
+      ],
+      "notes": "README 更新: 核心功能、项目结构、快速开始 (Docker/本地)、技术栈、架构设计、API 文档、数据库、开发日志"
+    }
+  ],
+  "key_decisions": [
+    {
+      "decision": "使用 Nginx 作为前端静态文件服务和 API 反向代理",
+      "reason": "Nginx 性能优秀，支持 SSE 代理，配置简单",
+      "alternatives_rejected": [
+        "直接使用 Vite dev server（不适合生产）",
+        "使用 Spring Boot 服务静态文件（性能差）"
+      ]
+    },
+    {
+      "decision": "Docker Compose 包含完整的四服务部署",
+      "reason": "一键启动，降低部署门槛",
+      "alternatives_rejected": [
+        "只提供基础设施（需要手动配置）",
+        "Kubernetes 部署（过于复杂）"
+      ]
+    }
+  ],
+  "issues_encountered": [],
+  "files_modified": [
+    {
+      "path": "backend/Dockerfile",
+      "action": "created",
+      "description": "后端 Docker 镜像 (Maven 构建 + JRE 运行)"
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "action": "created",
+      "description": "前端 Docker 镜像 (Node 构建 + Nginx 服务)"
+    },
+    {
+      "path": "deploy/docker/nginx.conf",
+      "action": "created",
+      "description": "Nginx 配置 (静态文件 + API 反向代理)"
+    },
+    {
+      "path": "docker-compose.yml",
+      "action": "modified",
+      "description": "新增 Backend + Frontend 服务"
+    },
+    {
+      "path": "scripts/start.sh",
+      "action": "created",
+      "description": "一键启动脚本"
+    },
+    {
+      "path": "README.md",
+      "action": "modified",
+      "description": "更新项目文档"
+    }
+  ],
+  "dependencies": {
+    "external_libs_added": [],
+    "services_required": [
+      "Docker",
+      "Docker Compose"
+    ]
+  },
+  "next_stage": {
+    "stage_id": null,
+    "objectives": [],
+    "prerequisites": [],
+    "risks": []
+  }
+}
