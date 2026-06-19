@@ -65,7 +65,7 @@
 package tech.qiantong.qknow.ai.service;
 
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
 
 /**
  * vectorStore 是向量数据库的连接对象
@@ -79,5 +79,5 @@ public interface IVectorStoreService {
      * @param embeddingModel 文本向量模型
      * @return 数据库连接
      */
-    WeaviateVectorStore getVectorStore(EmbeddingModel embeddingModel);
+    VectorStore getVectorStore(EmbeddingModel embeddingModel);
 }

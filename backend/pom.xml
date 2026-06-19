@@ -192,6 +192,13 @@
                 <version>${kaptcha.version}</version>
             </dependency>
 
+            <!-- PostgreSQL JDBC Driver -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>42.7.4</version>
+            </dependency>
+
             <!-- 定时任务-->
             <dependency>
                 <groupId>tech.qiantong</groupId>

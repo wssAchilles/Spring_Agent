@@ -62,7 +62,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-weaviate-store</artifactId>
+            <artifactId>spring-ai-pgvector-store</artifactId>
         </dependency>
 
 <!--        <dependency>-->

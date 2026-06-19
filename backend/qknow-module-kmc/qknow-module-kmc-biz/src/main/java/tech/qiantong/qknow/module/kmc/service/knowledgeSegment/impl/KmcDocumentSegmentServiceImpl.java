@@ -74,7 +74,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
-import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.qiantong.qknow.ai.constant.WeaviateConstant;
@@ -454,7 +454,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
         KmcDocumentSegmentDO segmentDO = segmentDOList.get(0);
         Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, segmentDO.getId())
                 .build();
-        WeaviateVectorStore vectorStore = this.getVectorStore(knowledgeBaseDO);
+        VectorStore vectorStore = this.getVectorStore(knowledgeBaseDO);
         vectorStore.delete(expression);
     }
 
@@ -464,7 +464,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
      * @param knowledgeBaseDO 数据对象
      * @return 向量数据库的操作对象
      */
-    private WeaviateVectorStore getVectorStore(KmcKnowledgeBaseDO knowledgeBaseDO) {
+    private VectorStore getVectorStore(KmcKnowledgeBaseDO knowledgeBaseDO) {
         EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
                 Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
                 knowledgeBaseDO.getEmbeddingModel());
@@ -479,7 +479,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
      */
     public void save2VectorStore(KmcKnowledgeBaseDO knowledgeBaseDO,
                                  KmcDocumentSegmentDO segmentDO, KmcDocumentDO documentDO) {
-        WeaviateVectorStore vectorStore = getVectorStore(knowledgeBaseDO);
+        VectorStore vectorStore = getVectorStore(knowledgeBaseDO);
         Document document = segment2AiDocument(segmentDO, documentDO);
         List<Document> documentList = Collections.singletonList(document);
         vectorStore.add(documentList);
@@ -494,7 +494,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
     public void update2VectorStore(KmcKnowledgeBaseDO knowledgeBaseDO,
                                    KmcDocumentSegmentDO segmentDO,
                                    KmcDocumentDO documentDO) {
-        WeaviateVectorStore vectorStore = getVectorStore(knowledgeBaseDO);
+        VectorStore vectorStore = getVectorStore(knowledgeBaseDO);
         Document document = segment2AiDocument(segmentDO, documentDO);
 
         FilterExpressionBuilder b = new FilterExpressionBuilder();
