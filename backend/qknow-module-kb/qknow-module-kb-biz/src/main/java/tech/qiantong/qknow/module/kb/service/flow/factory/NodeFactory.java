@@ -9,6 +9,7 @@ import tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowEdgeDO;
 import tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowNodeDO;
 import tech.qiantong.qknow.module.kb.dal.enums.FlowNodeTypeEnums;
 import tech.qiantong.qknow.module.kb.service.flow.bo.BaseNodeBO;
+import tech.qiantong.qknow.module.kb.service.flow.bo.ConditionNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.LLMNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.ReplyNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.StartNodeBO;
@@ -46,7 +47,8 @@ public class NodeFactory {
             case START -> new StartNodeBO(nodeDefinition, edgeList);
             case LLM -> new LLMNodeBO(nodeDefinition, edgeList, aiModelService);
             case REPLY -> new ReplyNodeBO(nodeDefinition, edgeList);
-//
+            case CONDITION -> new ConditionNodeBO(nodeDefinition, edgeList);
+
 //            case IF:
 //                return new IFNode(nodeDefinition, edges);
 //

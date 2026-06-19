@@ -1,0 +1,102 @@
+{
+  "stage_id": "04-dag-workflow-orchestration",
+  "stage_name": "工作流编排 — DAG 画布",
+  "status": "completed",
+  "started_at": "2026-06-20T09:00:00+08:00",
+  "completed_at": "2026-06-20T11:00:00+08:00",
+  "context_hash": "e7021b5b",
+  "objectives": [
+    {
+      "id": "4.1",
+      "description": "DAG 拓扑排序 + 条件网关节点",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/dag/DagUtils.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/bo/ConditionNodeBO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/factory/NodeFactory.java"
+      ],
+      "notes": "DagUtils 提供拓扑排序 (Kahn 算法)、环检测、并行分组。ConditionNodeBO 实现条件网关节点，支持 ==, !=, >, <, >=, <= 比较操作。NodeFactory 新增 CONDITION 分支"
+    },
+    {
+      "id": "4.2",
+      "description": "并行执行引擎 + 工作流运行监控",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/dag/DagExecutor.java"
+      ],
+      "notes": "DagExecutor 支持独立分支并行执行，使用 CompletableFuture + 线程池。按拓扑分组，同组节点并行，不同组顺序执行"
+    }
+  ],
+  "key_decisions": [
+    {
+      "decision": "使用 Kahn 算法进行拓扑排序",
+      "reason": "Kahn 算法直观易懂，同时可以检测环",
+      "alternatives_rejected": [
+        "DFS 后序遍历（实现复杂）"
+      ]
+    },
+    {
+      "decision": "条件网关节点支持简单比较表达式",
+      "reason": "满足毕业设计需求，避免引入复杂的表达式引擎",
+      "alternatives_rejected": [
+        "SpEL 表达式引擎（过于复杂）",
+        "JavaScript 脚本引擎（安全风险）"
+      ]
+    },
+    {
+      "decision": "使用 CompletableFuture 实现并行执行",
+      "reason": "Java 标准库，无需额外依赖，支持异常处理",
+      "alternatives_rejected": [
+        "Reactor Flux（与现有流式输出冲突）",
+        "手动线程管理（复杂度高）"
+      ]
+    }
+  ],
+  "issues_encountered": [],
+  "files_modified": [
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/dag/DagUtils.java",
+      "action": "created",
+      "description": "DAG 工具类 (拓扑排序、环检测、并行分组)"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/dag/DagExecutor.java",
+      "action": "created",
+      "description": "DAG 并行执行器"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/bo/ConditionNodeBO.java",
+      "action": "created",
+      "description": "条件网关节点实现"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/flow/factory/NodeFactory.java",
+      "action": "modified",
+      "description": "新增 CONDITION 节点类型"
+    }
+  ],
+  "dependencies": {
+    "external_libs_added": [],
+    "services_required": [
+      "PostgreSQL 15+ (需安装 pgvector 扩展)",
+      "Redis 7+"
+    ]
+  },
+  "next_stage": {
+    "stage_id": "05-hermes-kernel-and-ai-judge",
+    "objectives": [
+      "Hermes 内核设计 (反思循环、长上下文状态机)",
+      "AI Judge 三维评分系统 (事实性、相关性、指令遵循度)",
+      "控制面与认知面对接",
+      "质量分析面板"
+    ],
+    "prerequisites": [
+      "阶段四所有代码变更已编译通过",
+      "DAG 执行引擎已验证"
+    ],
+    "risks": [
+      "AI Judge 评分的准确性依赖于 LLM 的判断能力",
+      "反思循环可能导致无限重试，需要合理的退出机制"
+    ]
+  }
+}
