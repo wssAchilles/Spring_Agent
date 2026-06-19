@@ -10,7 +10,6 @@ COPY backend/qknow-module-app ./qknow-module-app
 COPY backend/qknow-module-dm ./qknow-module-dm
 COPY backend/qknow-module-ext ./qknow-module-ext
 COPY backend/qknow-module-kg ./qknow-module-kg
-COPY backend/qknow-module-kmc ./qknow-module-kmc
 COPY backend/qknow-server ./qknow-server
 RUN mvn clean package -DskipTests -pl qknow-server -am
 

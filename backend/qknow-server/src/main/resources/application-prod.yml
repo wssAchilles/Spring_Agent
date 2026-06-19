@@ -30,7 +30,7 @@
 
 # 主数据源选择
 datasource:
-  type: mysql
+  type: postgresql
 
 # Spring配置
 spring:
@@ -86,7 +86,7 @@ spring:
         # 最小空闲连接的存活时间（毫秒）
         minEvictableIdleTimeMillis: 300000
         # 用于检测连接是否有效的SQL语句
-        validationQuery: SELECT 1 FROM DUAL
+        validationQuery: SELECT 1
         # 是否在空闲时检测连接的有效性
         testWhileIdle: true
         # 借用连接时是否测试连接的有效性
@@ -115,7 +115,18 @@ spring:
 #          username: MOON
 #          password: 1234567890
 
-# MySQL配置文件
+# PostgreSQL配置文件
+postgresql:
+  # JDBC驱动类名
+  driver-class-name: org.postgresql.Driver
+  # 主库JDBC连接URL
+  url: jdbc:postgresql://postgres:5432/ai_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+  # 主库用户名
+  username: postgres
+  # 主库密码
+  password: postgres
+
+# MySQL配置文件 (已迁移到PostgreSQL，保留备用)
 mysql:
   # JDBC驱动类名
   driver-class-name: com.mysql.cj.jdbc.Driver
