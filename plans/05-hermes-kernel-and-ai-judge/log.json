@@ -1,0 +1,128 @@
+{
+  "stage_id": "05-hermes-kernel-and-ai-judge",
+  "stage_name": "Hermes 认知内核 + AI Judge",
+  "status": "completed",
+  "started_at": "2026-06-20T12:00:00+08:00",
+  "completed_at": "2026-06-20T14:00:00+08:00",
+  "context_hash": "3228ebfb",
+  "objectives": [
+    {
+      "id": "5.1",
+      "description": "Hermes 反思循环内核",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/hermes/HermesKernel.java"
+      ],
+      "notes": "HermesKernel 实现反思循环: 生成 → AI Judge 评估 → 修正。支持最大重试次数配置，评分反馈注入下次 Prompt"
+    },
+    {
+      "id": "5.2",
+      "description": "AI Judge 三维评分系统",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/judge/AiJudgeService.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/judge/JudgeResult.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/judge/KbAiJudgeScoreService.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/dataobject/judge/KbAiJudgeScoreDO.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/mapper/judge/KbAiJudgeScoreMapper.java"
+      ],
+      "notes": "AiJudgeService 使用 LLM 进行三维评分 (事实性/相关性/指令遵循度)。评分阈值可配置 (默认 0.7)。评分记录持久化到 ai_judge_score 表"
+    },
+    {
+      "id": "5.3",
+      "description": "控制面与认知面对接 + 质量面板",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/AiJudgeController.java"
+      ],
+      "notes": "AiJudgeController 提供评分统计、历史查询、阈值配置端点"
+    }
+  ],
+  "key_decisions": [
+    {
+      "decision": "使用 LLM 自身进行评分 (AI-as-Judge)",
+      "reason": "DeepSeek 等模型具有较强的判断能力，可以对回答质量进行评估",
+      "alternatives_rejected": [
+        "人工评分（不可扩展）",
+        "规则匹配（准确度低）"
+      ]
+    },
+    {
+      "decision": "评分失败时默认通过",
+      "reason": "避免评分服务异常导致正常回答被拒绝",
+      "alternatives_rejected": [
+        "评分失败时拒绝回答（影响用户体验）"
+      ]
+    },
+    {
+      "decision": "评分反馈注入下次 Prompt",
+      "reason": "让 LLM 能够根据评分反馈改进回答",
+      "alternatives_rejected": [
+        "不提供反馈（改进效果差）"
+      ]
+    }
+  ],
+  "issues_encountered": [],
+  "files_modified": [
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/hermes/HermesKernel.java",
+      "action": "created",
+      "description": "Hermes 反思循环内核"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/judge/AiJudgeService.java",
+      "action": "created",
+      "description": "AI Judge 三维评分服务"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/judge/JudgeResult.java",
+      "action": "created",
+      "description": "评分结果对象"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/judge/KbAiJudgeScoreService.java",
+      "action": "created",
+      "description": "评分记录持久化服务"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/dataobject/judge/KbAiJudgeScoreDO.java",
+      "action": "created",
+      "description": "评分记录实体"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/dal/mapper/judge/KbAiJudgeScoreMapper.java",
+      "action": "created",
+      "description": "评分记录 Mapper"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/AiJudgeController.java",
+      "action": "created",
+      "description": "质量分析控制器"
+    }
+  ],
+  "dependencies": {
+    "external_libs_added": [],
+    "services_required": [
+      "PostgreSQL 15+ (需安装 pgvector 扩展)",
+      "Redis 7+",
+      "DeepSeek API (用于评分)"
+    ]
+  },
+  "next_stage": {
+    "stage_id": "06-integration-test-and-deploy",
+    "objectives": [
+      "端到端集成测试",
+      "性能优化",
+      "Docker 容器化",
+      "文档与答辩准备"
+    ],
+    "prerequisites": [
+      "阶段五所有代码变更已编译通过",
+      "AI Judge 评分功能已验证"
+    ],
+    "risks": [
+      "集成测试可能发现跨模块兼容性问题",
+      "Docker 容器化需要处理环境变量配置"
+    ]
+  }
+}
