@@ -1,0 +1,121 @@
+{
+  "stage_id": "03-tool-calling-integration",
+  "stage_name": "工具箱集成 — Tool Calling",
+  "status": "completed",
+  "started_at": "2026-06-20T06:00:00+08:00",
+  "completed_at": "2026-06-20T08:00:00+08:00",
+  "context_hash": "98e71571",
+  "objectives": [
+    {
+      "id": "3.1",
+      "description": "内置工具扩展 (HTTP请求, Web搜索, 文本转换)",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/function/HttpRequestToolFunction.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/function/WebSearchToolFunction.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/function/TextTransformToolFunction.java"
+      ],
+      "notes": "新增 3 个内置工具: HTTP 请求 (GET/POST)、Web 搜索 (DuckDuckGo)、文本转换 (大小写/截取/长度)"
+    },
+    {
+      "id": "3.2",
+      "description": "MCP 协议基础适配 + 工具权限系统 + 健康检查",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/mcp/McpToolAdapter.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/permission/ToolPermissionLevel.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/permission/ToolPermissionEnforcer.java",
+        "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/HealthCheckController.java"
+      ],
+      "notes": "MCP 工具适配器 (注册/发现/执行 MCP 工具)。工具权限系统 (READ_ONLY/STANDARD/ELEVATED/DANGEROUS)。健康检查端点 (数据库/MCP/系统信息)"
+    }
+  ],
+  "key_decisions": [
+    {
+      "decision": "借鉴 claw-code 的 PermissionPolicy 设计工具权限系统",
+      "reason": "claw-code 的权限系统设计精良，4 级权限控制可以防止工具越权执行",
+      "alternatives_rejected": [
+        "无权限控制（安全风险）",
+        "RBAC 权限（过于复杂）"
+      ]
+    },
+    {
+      "decision": "MCP 工具采用占位实现，不实现完整协议",
+      "reason": "MCP 协议复杂度高，毕业设计时间有限，先搭建框架后续扩展",
+      "alternatives_rejected": [
+        "完整实现 MCP 协议（工作量过大）",
+        "不支持 MCP（与设计文档不符）"
+      ]
+    },
+    {
+      "decision": "Web 搜索使用 DuckDuckGo API",
+      "reason": "DuckDuckGo API 免费无需 API Key，适合毕业设计",
+      "alternatives_rejected": [
+        "Google Search API（需要付费）",
+        "Bing Search API（需要 API Key）"
+      ]
+    }
+  ],
+  "issues_encountered": [],
+  "files_modified": [
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/function/HttpRequestToolFunction.java",
+      "action": "created",
+      "description": "HTTP 请求工具 (GET/POST)"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/function/WebSearchToolFunction.java",
+      "action": "created",
+      "description": "Web 搜索工具 (DuckDuckGo)"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/function/TextTransformToolFunction.java",
+      "action": "created",
+      "description": "文本转换工具"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/mcp/McpToolAdapter.java",
+      "action": "created",
+      "description": "MCP 工具适配器"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/permission/ToolPermissionLevel.java",
+      "action": "created",
+      "description": "工具权限级别枚举"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/tool/permission/ToolPermissionEnforcer.java",
+      "action": "created",
+      "description": "工具权限执行器"
+    },
+    {
+      "path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/controller/admin/HealthCheckController.java",
+      "action": "created",
+      "description": "健康检查端点 (类似 claw doctor)"
+    }
+  ],
+  "dependencies": {
+    "external_libs_added": [],
+    "services_required": [
+      "PostgreSQL 15+ (需安装 pgvector 扩展)",
+      "Redis 7+"
+    ]
+  },
+  "next_stage": {
+    "stage_id": "04-dag-workflow-orchestration",
+    "objectives": [
+      "DAG 数据模型完善 (workflow/workflow_node/workflow_edge 表已创建)",
+      "DAG 画布前端扩展 (基于 qKnow 画布组件)",
+      "DAG 执行引擎 (拓扑排序、条件网关)",
+      "并行执行与状态监控"
+    ],
+    "prerequisites": [
+      "阶段三所有代码变更已编译通过",
+      "工具调用功能已验证"
+    ],
+    "risks": [
+      "DAG 执行引擎的拓扑排序算法需要正确处理循环依赖",
+      "并行执行需要考虑线程安全"
+    ]
+  }
+}
