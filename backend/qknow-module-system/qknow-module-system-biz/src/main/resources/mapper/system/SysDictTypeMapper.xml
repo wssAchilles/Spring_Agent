@@ -74,7 +74,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 						AND create_time &lt;= #{params.endTime}
 					</if>
 				</when>
-
+				<when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'postgresql'">
+					<if test="dictName != null and dictName != ''">
+						AND dict_name LIKE '%' || #{dictName} || '%'
+					</if>
+					<if test="dictType != null and dictType != ''">
+						AND dict_type LIKE '%' || #{dictType} || '%'
+					</if>
+					<if test="params.beginTime != null and params.beginTime != ''">
+						AND create_time &gt;= #{params.beginTime}
+					</if>
+					<if test="params.endTime != null and params.endTime != ''">
+						AND create_time &lt;= #{params.endTime}
+					</if>
+				</when>
 				<!-- 如果是其他数据库（如 MySQL、 DM） -->
 				<otherwise>
 					<if test="dictName != null and dictName != ''">
@@ -132,7 +145,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="status != null">status = #{status},</if>
  			<if test="remark != null">remark = #{remark},</if>
  			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
- 			update_time = sysdate()
+ 			update_time = NOW()
  		</set>
  		where dict_id = #{dictId}
 	</update>
@@ -151,7 +164,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="status != null">#{status},</if>
  			<if test="remark != null and remark != ''">#{remark},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
- 			sysdate()
+ 			NOW()
  		)
 	</insert>
 

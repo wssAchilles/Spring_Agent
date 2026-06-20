@@ -97,7 +97,7 @@ export default [
   },
   {
     path: '',
-    component: 'Layout',
+    component: Layout,
     redirect: '/kd/integrated',
     meta: { title: '看板', icon: '组 24885' },
     children: [

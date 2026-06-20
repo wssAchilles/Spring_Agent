@@ -153,9 +153,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'kingbase8'">
 				SELECT
 				t.table_name,
-				COALESCE(pd.description, '') AS table_comment,  -- 获取表的注释，如果没有注释则返回空字符串
-				'' AS create_time,  -- 暂时无法直接获取创建时间
-				'' AS update_time   -- 暂时无法直接获取更新时间
+				COALESCE(pd.description, '') AS table_comment,
+				'' AS create_time,
+				'' AS update_time
 				FROM
 				information_schema.tables t
 				LEFT JOIN
@@ -163,12 +163,32 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				LEFT JOIN
 				pg_description pd ON pd.objoid = c.oid
 				WHERE
-				t.table_schema = current_schema()  -- 获取当前会话的模式
-				AND t.table_name NOT LIKE 'qrtz\_%'      -- 排除以 'qrtz_' 开头的表
-				AND t.table_name NOT LIKE 'gen\_%'        -- 排除以 'gen_' 开头的表
+				t.table_schema = current_schema()
+				AND t.table_name NOT LIKE 'qrtz\_%'
+				AND t.table_name NOT LIKE 'gen\_%'
 				AND t.table_name NOT IN (SELECT table_name FROM gen_table)
-				AND c.relkind = 'r'  -- 确保只查询普通表（'r'代表普通表对象）
-				AND pd.objsubid = 0  -- 确保只获取表的注释（objsubid=0表示对象本身的注释）
+				AND c.relkind = 'r'
+				AND pd.objsubid = 0
+			</when>
+			<when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'postgresql'">
+				SELECT
+				t.table_name,
+				COALESCE(pd.description, '') AS table_comment,
+				'' AS create_time,
+				'' AS update_time
+				FROM
+				information_schema.tables t
+				LEFT JOIN
+				pg_class c ON c.relname = t.table_name
+				LEFT JOIN
+				pg_description pd ON pd.objoid = c.oid
+				WHERE
+				t.table_schema = current_schema()
+				AND t.table_name NOT LIKE 'qrtz\_%'
+				AND t.table_name NOT LIKE 'gen\_%'
+				AND t.table_name NOT IN (SELECT table_name FROM gen_table)
+				AND c.relkind = 'r'
+				AND pd.objsubid = 0
 			</when>
 		</choose>
 
@@ -180,15 +200,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				<if test="tableComment != null and tableComment != ''">
 					AND lower(table_comment) LIKE lower('%' || #{tableComment} || '%')
 				</if>
-				<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				<if test="params.beginTime != null and params.beginTime != ''">
 					AND create_time &gt;= #{params.beginTime}
 				</if>
-				<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				<if test="params.endTime != null and params.endTime != ''">
 					AND create_time &lt;= #{params.endTime}
 				</if>
 			</when>
-
-			<!-- 如果是其他数据库（如 MySQL、 DM） -->
+			<when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'postgresql'">
+				<if test="tableName != null and tableName != ''">
+					AND lower(table_name) LIKE lower('%' || #{tableName} || '%')
+				</if>
+				<if test="tableComment != null and tableComment != ''">
+					AND lower(table_comment) LIKE lower('%' || #{tableComment} || '%')
+				</if>
+			</when>
 			<otherwise>
 				<if test="tableName != null and tableName != ''">
 					AND lower(table_name) like lower(concat('%', #{tableName}, '%'))
@@ -196,10 +222,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				<if test="tableComment != null and tableComment != ''">
 					AND lower(table_comment) like lower(concat('%', #{tableComment}, '%'))
 				</if>
-				<if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+				<if test="params.beginTime != null and params.beginTime != ''">
 					AND date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
 				</if>
-				<if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+				<if test="params.endTime != null and params.endTime != ''">
 					AND date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
 				</if>
 			</otherwise>
@@ -230,21 +256,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'kingbase8'">
 				SELECT
 				t.table_name,
-				COALESCE(pd.description, '') AS table_comment,  -- 获取表注释，如果没有则返回空字符串
-				'' AS create_time,  -- 暂时无法直接获取创建时间
-				'' AS update_time   -- 暂时无法直接获取更新时间
+				COALESCE(pd.description, '') AS table_comment,
+				'' AS create_time,
+				'' AS update_time
 				FROM
 				information_schema.tables t
 				LEFT JOIN
-				pg_class c ON c.relname = t.table_name  -- 获取表的描述
+				pg_class c ON c.relname = t.table_name
 				LEFT JOIN
-				pg_description pd ON pd.objoid = c.oid  -- 获取表的注释
+				pg_description pd ON pd.objoid = c.oid
 				WHERE
-				t.table_schema = current_schema()  -- 获取当前会话的模式
-				AND t.table_name NOT LIKE 'qrtz\_%'  -- 排除以 'qrtz_' 开头的表
-				AND t.table_name NOT LIKE 'gen\_%'    -- 排除以 'gen_' 开头的表
-				AND pd.objsubid = 0  -- 只获取表的注释，objsubid = 0 表示表本身的注释
-				AND t.table_name IN  -- 过滤特定的表名
+				t.table_schema = current_schema()
+				AND t.table_name NOT LIKE 'qrtz\_%'
+				AND t.table_name NOT LIKE 'gen\_%'
+				AND pd.objsubid = 0
+				AND t.table_name IN
+			</when>
+			<when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'postgresql'">
+				SELECT
+				t.table_name,
+				COALESCE(pd.description, '') AS table_comment,
+				'' AS create_time,
+				'' AS update_time
+				FROM
+				information_schema.tables t
+				LEFT JOIN
+				pg_class c ON c.relname = t.table_name
+				LEFT JOIN
+				pg_description pd ON pd.objoid = c.oid
+				WHERE
+				t.table_schema = current_schema()
+				AND t.table_name NOT LIKE 'qrtz\_%'
+				AND t.table_name NOT LIKE 'gen\_%'
+				AND pd.objsubid = 0
+				AND t.table_name IN
 			</when>
 		</choose>
 	    <foreach collection="array" item="name" open="(" separator="," close=")">
@@ -314,7 +359,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="genPath != null and genPath != ''">#{genPath},</if>
 			<if test="remark != null and remark != ''">#{remark},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
-			sysdate()
+			NOW()
          )
     </insert>
 
@@ -342,7 +387,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="options != null and options != ''">options = #{options},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
-            update_time = sysdate()
+            update_time = NOW()
         </set>
         where table_id = #{tableId}
     </update>

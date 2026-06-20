@@ -1,0 +1,2 @@
+# PgVector 配置 - 使用主数据源，无需额外配置
+# vector_store 表由 Spring AI PgVectorStore 自动创建

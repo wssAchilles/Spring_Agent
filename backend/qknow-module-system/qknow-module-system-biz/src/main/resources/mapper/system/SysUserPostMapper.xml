@@ -42,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</resultMap>
 
 	<delete id="deleteUserPostByUserId" parameterType="Long">
-		delete from system_user_post where user_id=#{userId}
+		delete from "system_user"_post where user_id=#{userId}
 	</delete>
 
 	<select id="countUserPostById" resultType="Integer">
@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
 
 	<delete id="deleteUserPost" parameterType="Long">
- 		delete from system_user_post where user_id in
+ 		delete from "system_user"_post where user_id in
  		<foreach collection="array" item="userId" open="(" separator="," close=")">
  			#{userId}
         </foreach>

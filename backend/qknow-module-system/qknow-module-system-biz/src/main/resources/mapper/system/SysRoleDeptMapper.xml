@@ -42,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</resultMap>
 
 	<delete id="deleteRoleDeptByRoleId" parameterType="Long">
-		delete from system_role_dept where role_id=#{roleId}
+		delete from "system_role"_dept where role_id=#{roleId}
 	</delete>
 
 	<select id="selectCountRoleDeptByDeptId" resultType="Integer">
@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
 
 	<delete id="deleteRoleDept" parameterType="Long">
- 		delete from system_role_dept where role_id in
+ 		delete from "system_role"_dept where role_id in
  		<foreach collection="array" item="roleId" open="(" separator="," close=")">
  			#{roleId}
         </foreach>

@@ -1,6 +1,5 @@
 package tech.qiantong.qknow.module.kb.controller.admin.conversation;
 
-import com.alibaba.cloud.ai.graph.GraphRunnerException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -107,7 +106,7 @@ public class KbConversationController extends BaseController {
                         // 流完成后保存助手消息 (从最后一个 receive 消息获取内容)
                         // 注意: 流式输出是增量的，完整内容需要前端拼接后保存
                     });
-        } catch (GraphRunnerException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Agent 调用失败: " + e.getMessage());
         }
     }

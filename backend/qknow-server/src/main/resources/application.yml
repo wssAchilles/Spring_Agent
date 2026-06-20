@@ -102,7 +102,7 @@ spring:
       # 示意：引入业务模块配置文件（请按照项目情况调整）
       - "classpath:application-system-${spring.profiles.active}.yml"
       - "classpath:application-ext-${spring.profiles.active}.yml"
-      - "classpath:application-neo4j-${spring.profiles.active}.yml"
+#      - "classpath:application-neo4j-${spring.profiles.active}.yml"
       - "classpath:application-kmc-${spring.profiles.active}.yml"
       - "classpath:application-thirdparty-${spring.profiles.active}.yml"
   # 文件上传
