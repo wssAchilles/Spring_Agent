@@ -39,7 +39,6 @@ services:
       context: ./backend/qknow-hermes/qknow-hermes-starter/docker
       dockerfile: Dockerfile
     container_name: qknow-hermes
-    restart: always
     environment:
       - TZ=Asia/Shanghai
       - SPRING_PROFILES_ACTIVE=prod

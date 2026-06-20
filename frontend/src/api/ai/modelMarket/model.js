@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 查询AI 模型列表
 export function listModel(query) {
   return request({
-    url: '/ai/model/list',
+    url: '/ai/model/getModelPage',
     method: 'get',
     params: query
   })
