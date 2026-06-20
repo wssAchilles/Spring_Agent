@@ -461,7 +461,7 @@ CREATE TABLE IF NOT EXISTS ai_workflow_variable (
     workspace_id BIGINT NOT NULL,
     workflow_id  BIGINT DEFAULT NULL,
     name         VARCHAR(128) DEFAULT NULL,
-    type         VARCHAR(32) DEFAULT NULL,
+    type         SMALLINT DEFAULT NULL,
     value        TEXT DEFAULT NULL,
     valid_flag   BOOLEAN NOT NULL DEFAULT TRUE,
     del_flag     BOOLEAN NOT NULL DEFAULT FALSE,
@@ -502,16 +502,28 @@ COMMENT ON TABLE kmc_category IS '知识分类';
 CREATE TABLE IF NOT EXISTS kmc_knowledge_base (
     id               BIGSERIAL PRIMARY KEY,
     workspace_id     BIGINT NOT NULL,
+    qm_dataset_id    VARCHAR(128) DEFAULT NULL,
     name             VARCHAR(128) NOT NULL,
     description      VARCHAR(512) DEFAULT NULL,
+    cover_image      VARCHAR(512) DEFAULT NULL,
+    indexing_technique VARCHAR(32) DEFAULT 'high_quality',
+    permission       VARCHAR(32) DEFAULT 'all_team_members',
     embedding_model  VARCHAR(128) DEFAULT NULL,
+    embedding_model_provider VARCHAR(128) DEFAULT NULL,
     search_method    VARCHAR(32) DEFAULT NULL,
-    reranking        BOOLEAN DEFAULT FALSE,
+    reranking_enable BOOLEAN DEFAULT FALSE,
+    reranking_provider_name VARCHAR(128) DEFAULT NULL,
+    reranking_model_name VARCHAR(128) DEFAULT NULL,
     reranking_model  VARCHAR(128) DEFAULT NULL,
     top_k            INT DEFAULT 4,
+    score_threshold_enabled BOOLEAN DEFAULT TRUE,
     score_threshold  DECIMAL(5,4) DEFAULT 0.5,
-    valid_flag       BOOLEAN NOT NULL DEFAULT TRUE,
-    del_flag         BOOLEAN NOT NULL DEFAULT FALSE,
+    keyword_weight   DECIMAL(5,4) DEFAULT 0.3,
+    vector_weight    DECIMAL(5,4) DEFAULT 0.7,
+    reranking_mode   VARCHAR(32) DEFAULT NULL,
+    tags             VARCHAR(512) DEFAULT NULL,
+    valid_flag       SMALLINT NOT NULL DEFAULT 0,
+    del_flag         SMALLINT NOT NULL DEFAULT 0,
     create_by        VARCHAR(32) DEFAULT NULL,
     creator_id       BIGINT DEFAULT NULL,
     create_time      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -743,9 +755,9 @@ CREATE TABLE IF NOT EXISTS kb_bot (
     name         VARCHAR(128) NOT NULL,
     type         SMALLINT NOT NULL,
     description  VARCHAR(256) DEFAULT NULL,
-    builtin_flag BOOLEAN NOT NULL DEFAULT FALSE,
-    valid_flag   BOOLEAN NOT NULL DEFAULT TRUE,
-    del_flag     BOOLEAN NOT NULL DEFAULT FALSE,
+    builtin_flag SMALLINT NOT NULL DEFAULT 0,
+    valid_flag   SMALLINT NOT NULL DEFAULT 0,
+    del_flag     SMALLINT NOT NULL DEFAULT 0,
     create_by    VARCHAR(32) DEFAULT NULL,
     creator_id   BIGINT DEFAULT NULL,
     create_time  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -906,7 +918,7 @@ CREATE TABLE IF NOT EXISTS kb_tool (
     workspace_id BIGINT NOT NULL,
     name         VARCHAR(128) NOT NULL,
     description  VARCHAR(512) DEFAULT NULL,
-    type         VARCHAR(32) DEFAULT NULL,
+    type         SMALLINT DEFAULT NULL,
     config       TEXT DEFAULT NULL,
     valid_flag   BOOLEAN NOT NULL DEFAULT TRUE,
     del_flag     BOOLEAN NOT NULL DEFAULT FALSE,
@@ -948,7 +960,7 @@ CREATE TABLE IF NOT EXISTS dm_datasource (
     id           BIGSERIAL PRIMARY KEY,
     workspace_id BIGINT NOT NULL,
     name         VARCHAR(128) NOT NULL,
-    type         VARCHAR(32) DEFAULT NULL,
+    type         SMALLINT DEFAULT NULL,
     url          VARCHAR(512) DEFAULT NULL,
     username     VARCHAR(128) DEFAULT NULL,
     password     VARCHAR(256) DEFAULT NULL,
@@ -992,7 +1004,7 @@ CREATE TABLE IF NOT EXISTS ext_schema_attribute (
     workspace_id BIGINT NOT NULL,
     schema_id    BIGINT DEFAULT NULL,
     name         VARCHAR(128) NOT NULL,
-    type         VARCHAR(32) DEFAULT NULL,
+    type         SMALLINT DEFAULT NULL,
     description  VARCHAR(512) DEFAULT NULL,
     valid_flag   BOOLEAN NOT NULL DEFAULT TRUE,
     del_flag     BOOLEAN NOT NULL DEFAULT FALSE,
@@ -1324,7 +1336,7 @@ CREATE TABLE IF NOT EXISTS workflow_node (
     workflow_id  BIGINT NOT NULL,
     uuid         VARCHAR(128) NOT NULL,
     name         VARCHAR(128) DEFAULT NULL,
-    type         VARCHAR(32) NOT NULL,
+    type         SMALLINT NOT NULL,
     config       JSONB DEFAULT NULL,
     position_x   DECIMAL(10,2) DEFAULT NULL,
     position_y   DECIMAL(10,2) DEFAULT NULL,
@@ -1395,3 +1407,51 @@ COMMENT ON TABLE vector_store IS 'Spring AI PgVector向量存储表';
 
 CREATE INDEX IF NOT EXISTS idx_vector_store_embedding
     ON vector_store USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- ===========================
+-- Knowledge Graph Tables (PostgreSQL 邻接表方案)
+-- ===========================
+
+CREATE TABLE IF NOT EXISTS kg_node (
+    id           BIGSERIAL PRIMARY KEY,
+    workspace_id BIGINT NOT NULL DEFAULT 1001,
+    label        VARCHAR(128) NOT NULL,
+    type         VARCHAR(64) DEFAULT 'concept',
+    properties   JSONB DEFAULT '{}',
+    valid_flag   SMALLINT NOT NULL DEFAULT 0,
+    del_flag     SMALLINT NOT NULL DEFAULT 0,
+    create_by    VARCHAR(32) DEFAULT 'admin',
+    creator_id   BIGINT,
+    create_time  TIMESTAMP NOT NULL DEFAULT NOW(),
+    update_by    VARCHAR(32) DEFAULT 'admin',
+    updater_id   BIGINT,
+    update_time  TIMESTAMP NOT NULL DEFAULT NOW(),
+    remark       VARCHAR(512)
+);
+COMMENT ON TABLE kg_node IS '知识图谱节点表';
+
+CREATE INDEX IF NOT EXISTS idx_kg_node_workspace ON kg_node(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_kg_node_type ON kg_node(type);
+
+CREATE TABLE IF NOT EXISTS kg_edge (
+    id           BIGSERIAL PRIMARY KEY,
+    workspace_id BIGINT NOT NULL DEFAULT 1001,
+    source_id    BIGINT NOT NULL,
+    target_id    BIGINT NOT NULL,
+    label        VARCHAR(128) DEFAULT 'related_to',
+    properties   JSONB DEFAULT '{}',
+    valid_flag   SMALLINT NOT NULL DEFAULT 0,
+    del_flag     SMALLINT NOT NULL DEFAULT 0,
+    create_by    VARCHAR(32) DEFAULT 'admin',
+    creator_id   BIGINT,
+    create_time  TIMESTAMP NOT NULL DEFAULT NOW(),
+    update_by    VARCHAR(32) DEFAULT 'admin',
+    updater_id   BIGINT,
+    update_time  TIMESTAMP NOT NULL DEFAULT NOW(),
+    remark       VARCHAR(512)
+);
+COMMENT ON TABLE kg_edge IS '知识图谱边表';
+
+CREATE INDEX IF NOT EXISTS idx_kg_edge_workspace ON kg_edge(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_kg_edge_source ON kg_edge(source_id);
+CREATE INDEX IF NOT EXISTS idx_kg_edge_target ON kg_edge(target_id);
