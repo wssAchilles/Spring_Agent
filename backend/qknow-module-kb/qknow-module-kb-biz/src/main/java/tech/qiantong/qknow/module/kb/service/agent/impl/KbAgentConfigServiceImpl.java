@@ -64,12 +64,6 @@
 
 package tech.qiantong.qknow.module.kb.service.agent.impl;
 
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import com.alibaba.cloud.ai.graph.streaming.OutputType;
-import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -260,15 +254,15 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         }
 
     @Override
-    public Flux<KbChatMessageSendRespVO> chatMessage(KbAgentConfigReqVO kbAgentConfig) throws GraphRunnerException {
+    public Flux<KbChatMessageSendRespVO> chatMessage(KbAgentConfigReqVO kbAgentConfig) throws Exception {
         // 1. 解析模型配置
         String modelConfig = kbAgentConfig.getModelConfig();
         if (StringUtils.isNull(modelConfig)) {
-            throw new GraphRunnerException("模型配置不能为空！");
+            throw new IllegalArgumentException("模型配置不能为空！");
         }
         JSONObject jsonObject = JSONObject.parseObject(modelConfig);
         if (StringUtils.isNull(jsonObject.getString("modelId")) || StringUtils.isNull(jsonObject.getString("modelName"))) {
-            throw new GraphRunnerException("模型不能为空！");
+            throw new IllegalArgumentException("模型不能为空！");
         }
 
         // 2. 预检索 RAG 上下文

@@ -64,7 +64,6 @@
 
 package tech.qiantong.qknow.module.kb.service.agent;
 
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.baomidou.mybatisplus.extension.service.IService;
 import reactor.core.publisher.Flux;
 import tech.qiantong.qknow.common.core.page.PageResult;
@@ -159,5 +158,5 @@ public interface IKbAgentConfigService extends IService<KbAgentConfigDO> {
      * @param kbAgentConfig
      * @return
      */
-    public Flux<KbChatMessageSendRespVO> chatMessage(KbAgentConfigReqVO kbAgentConfig) throws GraphRunnerException;
+    public Flux<KbChatMessageSendRespVO> chatMessage(KbAgentConfigReqVO kbAgentConfig) throws Exception;
 }

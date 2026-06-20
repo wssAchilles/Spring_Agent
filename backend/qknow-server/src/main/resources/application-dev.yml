@@ -122,9 +122,9 @@ postgresql:
   # 主库JDBC连接URL
   url: jdbc:postgresql://127.0.0.1:5432/ai_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
   # 主库用户名
-  username: postgres
+  username: achilles
   # 主库密码
-  password: postgres
+  password:
 
 # MySQL配置文件 (已迁移到PostgreSQL，保留备用)
 mysql:
@@ -174,3 +174,9 @@ oracle:
 flow:
   enable: false
   url: http://127.0.0.1:26859/
+
+# Hermes 微服务 gRPC 配置
+hermes:
+  grpc:
+    host: ${HERMES_GRPC_HOST:localhost}
+    port: ${HERMES_GRPC_PORT:9090}
