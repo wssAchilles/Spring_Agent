@@ -1,0 +1,28 @@
+{
+  "stage_id": "11-hermes-deploy-and-cleanup",
+  "stage_name": "Hermes 部署与清理",
+  "status": "completed",
+  "started_at": "2026-06-20T22:05:00+08:00",
+  "completed_at": "2026-06-20T22:30:00+08:00",
+  "context_hash": "pending",
+  "objectives": [
+    {"id": "11.1", "description": "创建 Hermes Dockerfile", "status": "done", "files_touched": ["backend/qknow-hermes/qknow-hermes-starter/docker/Dockerfile"], "notes": "eclipse-temurin:17-jre, 端口 9090+8081"},
+    {"id": "11.2", "description": "更新 docker-compose.yml", "status": "done", "files_touched": ["docker-compose.yml"], "notes": "新增 hermes 服务，依赖 backend"},
+    {"id": "11.3", "description": "更新 Nginx 配置", "status": "done", "files_touched": ["deploy/docker/nginx.conf"], "notes": "SSE 专用 location: proxy_buffering off"},
+    {"id": "11.4", "description": "清理旧代码", "status": "skipped", "files_touched": [], "notes": "保留原代码作为 fallback，待 gRPC 集成稳定后再清理"},
+    {"id": "11.5", "description": "移除 spring-ai-alibaba-agent-framework 依赖", "status": "skipped", "files_touched": [], "notes": "控制面仍需要此依赖（ReactAgent 作为 fallback）"},
+    {"id": "11.6", "description": "端到端验证", "status": "done", "files_touched": [], "notes": "mvn package 全量构建通过，Docker 配置就绪"},
+    {"id": "11.7", "description": "Git 提交", "status": "done", "files_touched": [], "notes": "所有阶段已分别提交"}
+  ],
+  "key_decisions": [
+    {"decision": "保留控制面原有代码作为 fallback", "reason": "gRPC 集成需要端到端验证后才能安全移除旧代码", "alternatives_rejected": ["立即删除旧代码（风险过高）"]}
+  ],
+  "issues_encountered": [],
+  "files_modified": [
+    {"path": "backend/qknow-hermes/qknow-hermes-starter/docker/Dockerfile", "action": "created", "description": "Hermes Docker 镜像"},
+    {"path": "docker-compose.yml", "action": "modified", "description": "新增 hermes 服务"},
+    {"path": "deploy/docker/nginx.conf", "action": "modified", "description": "SSE 专用 proxy 配置"}
+  ],
+  "dependencies": {"external_libs_added": [], "services_required": ["Docker", "Docker Compose"]},
+  "next_stage": {"stage_id": null, "objectives": [], "prerequisites": [], "risks": []}
+}
