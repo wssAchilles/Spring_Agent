@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>tech.qiantong</groupId>
+        <artifactId>qknow-hermes</artifactId>
+        <version>2.2.1</version>
+    </parent>
+
+    <artifactId>qknow-hermes-starter</artifactId>
+    <description>Hermes 微服务启动模块</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-hermes-core</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>3.5.8</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

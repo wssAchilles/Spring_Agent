@@ -1,0 +1,32 @@
+server:
+  port: 8081
+
+grpc:
+  server:
+    port: 9090
+    keep-alive-time: 60s
+    max-inbound-message-size: 16777216  # 16MB
+
+spring:
+  application:
+    name: qknow-hermes
+  ai:
+    openai:
+      api-key: ${HERMES_OPENAI_API_KEY:sk-placeholder}
+      base-url: ${HERMES_OPENAI_BASE_URL:https://api.openai.com}
+    ollama:
+      base-url: ${HERMES_OLLAMA_BASE_URL:http://localhost:11434}
+
+hermes:
+  control-plane:
+    base-url: ${HERMES_CONTROL_PLANE_URL:http://localhost:8099}
+    connect-timeout: 5000
+    read-timeout: 30000
+  agent:
+    max-tool-calls: 10
+    default-max-retries: 3
+
+logging:
+  level:
+    tech.qiantong.qknow.hermes: DEBUG
+    io.grpc: INFO
