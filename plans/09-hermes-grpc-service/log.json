@@ -1,0 +1,22 @@
+{
+  "stage_id": "09-hermes-grpc-service",
+  "stage_name": "Hermes gRPC 服务实现",
+  "status": "completed",
+  "started_at": "2026-06-20T21:30:00+08:00",
+  "completed_at": "2026-06-20T21:35:00+08:00",
+  "context_hash": "07713d50",
+  "objectives": [
+    {"id": "9.1", "description": "实现 HermesGrpcService.java (Chat/ExecuteFlow/HealthCheck)", "status": "done", "files_touched": ["backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/grpc/HermesGrpcService.java"], "notes": "@GrpcService 注解，3 个 RPC 方法"},
+    {"id": "9.2", "description": "gRPC server 配置 (端口 9090)", "status": "done", "files_touched": ["backend/qknow-hermes/qknow-hermes-starter/src/main/resources/application.yml"], "notes": "grpc.server.port=9090, keep-alive-time=60s"},
+    {"id": "9.3", "description": "编译验证", "status": "done", "files_touched": [], "notes": "HermesGrpcService 与 AgentOrchestrator 一起编译通过"}
+  ],
+  "key_decisions": [
+    {"decision": "在阶段 08 中一并完成 gRPC 服务", "reason": "HermesGrpcService 依赖 AgentOrchestrator，同阶段完成更高效", "alternatives_rejected": ["单独阶段（增加上下文切换）"]}
+  ],
+  "issues_encountered": [],
+  "files_modified": [
+    {"path": "backend/qknow-hermes/qknow-hermes-core/src/main/java/.../HermesGrpcService.java", "action": "created", "description": "gRPC 服务实现 (3 RPC 方法)"}
+  ],
+  "dependencies": {"external_libs_added": [], "services_required": []},
+  "next_stage": {"stage_id": "10-control-plane-integration", "objectives": ["HermesGrpcClient", "chatMessage 改造", "内部 API"], "prerequisites": ["09 编译通过"], "risks": ["gRPC 流式延迟"]}
+}
