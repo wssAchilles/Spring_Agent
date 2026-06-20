@@ -69,3 +69,22 @@ services:
 volumes:
   pg_data:
   redis_data:
+
+  hermes:
+    build:
+      context: ./backend/qknow-hermes/qknow-hermes-starter/docker
+      dockerfile: Dockerfile
+    container_name: qknow-hermes
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+      - SPRING_PROFILES_ACTIVE=prod
+      - HERMES_GRPC_PORT=9090
+      - HERMES_CONTROL_PLANE_URL=http://backend:8099
+    ports:
+      - "9090:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - qknow-net
