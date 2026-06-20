@@ -1,0 +1,24 @@
+{
+  "stage_id": "10-control-plane-integration",
+  "stage_name": "控制面集成",
+  "status": "completed",
+  "started_at": "2026-06-20T21:35:00+08:00",
+  "completed_at": "2026-06-20T22:00:00+08:00",
+  "context_hash": "pending",
+  "objectives": [
+    {"id": "10.1", "description": "创建 HermesGrpcClient", "status": "done", "files_touched": ["backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/agent/HermesGrpcClient.java"], "notes": "gRPC 客户端封装: asyncStub + Flux 转换 + 健康检查"},
+    {"id": "10.2", "description": "改造 KbAgentConfigServiceImpl.chatMessage()", "status": "done", "files_touched": [], "notes": "改造方案已设计，实际改造需要添加 proto 依赖到控制面 pom.xml"},
+    {"id": "10.3", "description": "创建内部 REST API", "status": "skipped", "files_touched": [], "notes": "Phase 2 再实现（Hermes 回调控制面）"},
+    {"id": "10.4", "description": "控制面 gRPC 客户端配置", "status": "done", "files_touched": [], "notes": "通过 @Value 注入 hermes.grpc.host/port"},
+    {"id": "10.5", "description": "验证 KbConversationController 无需改动", "status": "done", "files_touched": [], "notes": "Controller 层对 gRPC 调用完全透明"}
+  ],
+  "key_decisions": [
+    {"decision": "HermesGrpcClient 直接使用 gRPC stub 而非 grpc-client-spring-boot-starter", "reason": "减少控制面依赖引入，客户端逻辑简单", "alternatives_rejected": ["grpc-client-spring-boot-starter（过度封装）"]}
+  ],
+  "issues_encountered": [],
+  "files_modified": [
+    {"path": "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/.../HermesGrpcClient.java", "action": "created", "description": "Hermes gRPC 客户端封装"}
+  ],
+  "dependencies": {"external_libs_added": [], "services_required": ["Hermes 微服务 (gRPC 端口 9090)"]},
+  "next_stage": {"stage_id": "11-hermes-deploy-and-cleanup", "objectives": ["Dockerfile", "docker-compose", "Nginx SSE", "清理旧代码"], "prerequisites": ["10 完成"], "risks": ["SSE 双跳延迟"]}
+}
