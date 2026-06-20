@@ -248,6 +248,7 @@
         <module>qknow-module-kmc</module>
         <module>qknow-module-system</module>
         <module>qknow-server</module>
+        <module>qknow-hermes</module>
     </modules>
     <packaging>pom</packaging>
 

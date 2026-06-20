@@ -1,0 +1,145 @@
+{
+  "stage_id": "07-hermes-module-scaffold",
+  "stage_name": "Hermes 微服务模块脚手架",
+  "status": "completed",
+  "started_at": "2026-06-20T18:00:00+08:00",
+  "completed_at": "2026-06-20T19:40:00+08:00",
+  "context_hash": "7564ec71",
+  "objectives": [
+    {
+      "id": "7.1",
+      "description": "创建 backend/qknow-hermes/ Maven 多模块结构（proto/core/starter）",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-hermes/pom.xml",
+        "backend/qknow-hermes/qknow-hermes-proto/pom.xml",
+        "backend/qknow-hermes/qknow-hermes-core/pom.xml",
+        "backend/qknow-hermes/qknow-hermes-starter/pom.xml"
+      ],
+      "notes": "三个子模块: proto (gRPC stubs), core (推理引擎), starter (Spring Boot 启动+Docker)"
+    },
+    {
+      "id": "7.2",
+      "description": "定义 hermes.proto（gRPC 服务 + protobuf 消息）",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-hermes/qknow-hermes-proto/src/main/proto/hermes.proto"
+      ],
+      "notes": "3 个 RPC: Chat (server-streaming), ExecuteFlow (server-streaming), HealthCheck (unary). 消息类型: ChatRequest/ChatEvent/FlowRequest/FlowEvent 等 20+ 个"
+    },
+    {
+      "id": "7.3",
+      "description": "根 pom.xml 添加 <module>qknow-hermes</module>",
+      "status": "done",
+      "files_touched": [
+        "backend/pom.xml"
+      ],
+      "notes": "在 modules 列表中 qknow-server 之后添加"
+    },
+    {
+      "id": "7.4",
+      "description": "创建 HermesApplication.java 独立启动类",
+      "status": "done",
+      "files_touched": [
+        "backend/qknow-hermes/qknow-hermes-starter/src/main/java/tech/qiantong/qknow/hermes/HermesApplication.java",
+        "backend/qknow-hermes/qknow-hermes-starter/src/main/resources/application.yml"
+      ],
+      "notes": "@SpringBootApplication 排除 DataSourceAutoConfiguration, 端口 8081 (HTTP) + 9090 (gRPC)"
+    },
+    {
+      "id": "7.5",
+      "description": "验证 mvn 独立编译通过",
+      "status": "done",
+      "files_touched": [],
+      "notes": "mvn package -DskipTests 全量构建成功，proto 模块生成 40 个 Java 文件"
+    }
+  ],
+  "key_decisions": [
+    {
+      "decision": "grpc-server-spring-boot-starter 使用 3.1.0.RELEASE 版本",
+      "reason": "3.5.0 不存在于 Maven Central，3.1.0.RELEASE 是与 Spring Boot 3.5 兼容的最新稳定版",
+      "alternatives_rejected": ["3.5.0 (不存在)", "手动配置 gRPC Server (过于复杂)"]
+    },
+    {
+      "decision": "HermesApplication.java 放在 starter 模块而非 core 模块",
+      "reason": "Spring Boot Maven Plugin 的 repackage 目标需要在可执行 JAR 的模块中找到 main class",
+      "alternatives_rejected": ["放在 core 模块 (需要额外配置 mainClass)"]
+    }
+  ],
+  "issues_encountered": [
+    {
+      "issue": "grpc-server-spring-boot-starter:3.5.0 在 Maven Central 不存在",
+      "resolution": "改为 3.1.0.RELEASE 版本",
+      "status": "resolved"
+    },
+    {
+      "issue": "starter 模块打包时找不到 main class",
+      "resolution": "将 HermesApplication.java 从 core 模块移到 starter 模块",
+      "status": "resolved"
+    }
+  ],
+  "files_modified": [
+    {
+      "path": "backend/pom.xml",
+      "action": "modified",
+      "description": "添加 qknow-hermes module"
+    },
+    {
+      "path": "backend/qknow-hermes/pom.xml",
+      "action": "created",
+      "description": "Hermes 父 POM"
+    },
+    {
+      "path": "backend/qknow-hermes/qknow-hermes-proto/pom.xml",
+      "action": "created",
+      "description": "Proto 模块 POM (gRPC + protobuf 依赖)"
+    },
+    {
+      "path": "backend/qknow-hermes/qknow-hermes-core/pom.xml",
+      "action": "created",
+      "description": "Core 模块 POM (Spring AI + gRPC server)"
+    },
+    {
+      "path": "backend/qknow-hermes/qknow-hermes-starter/pom.xml",
+      "action": "created",
+      "description": "Starter 模块 POM (Spring Boot repackage)"
+    },
+    {
+      "path": "backend/qknow-hermes/qknow-hermes-proto/src/main/proto/hermes.proto",
+      "action": "created",
+      "description": "gRPC 协议定义 (3 RPC + 20+ 消息类型)"
+    },
+    {
+      "path": "backend/qknow-hermes/qknow-hermes-starter/src/main/java/tech/qiantong/qknow/hermes/HermesApplication.java",
+      "action": "created",
+      "description": "Spring Boot 启动类"
+    },
+    {
+      "path": "backend/qknow-hermes/qknow-hermes-starter/src/main/resources/application.yml",
+      "action": "created",
+      "description": "Hermes 服务配置 (端口 8081/9090)"
+    }
+  ],
+  "dependencies": {
+    "external_libs_added": [
+      "io.grpc:grpc-netty-shaded:1.68.0",
+      "io.grpc:grpc-protobuf:1.68.0",
+      "io.grpc:grpc-stub:1.68.0",
+      "net.devh:grpc-server-spring-boot-starter:3.1.0.RELEASE",
+      "com.google.protobuf:protoc:3.25.1"
+    ],
+    "services_required": []
+  },
+  "next_stage": {
+    "stage_id": "08-hermes-core-migration",
+    "objectives": [
+      "迁移 ChatModelFactory",
+      "迁移工具函数",
+      "迁移 AgentOrchestrator",
+      "复活 HermesKernel + AiJudgeService",
+      "迁移 DAG 引擎"
+    ],
+    "prerequisites": ["07-hermes-module-scaffold 编译通过"],
+    "risks": ["Spring AI Alibaba 版本兼容性", "工具函数依赖冲突"]
+  }
+}
