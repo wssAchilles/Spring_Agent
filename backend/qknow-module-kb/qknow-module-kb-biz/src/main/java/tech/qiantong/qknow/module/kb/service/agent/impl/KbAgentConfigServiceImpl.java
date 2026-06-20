@@ -100,6 +100,8 @@ import tech.qiantong.qknow.module.kb.dal.dataobject.tool.KbToolMethodDO;
 import tech.qiantong.qknow.module.kb.dal.mapper.agent.KbAgentConfigMapper;
 import tech.qiantong.qknow.module.kb.service.agent.IKbAgentConfigService;
 import tech.qiantong.qknow.module.kb.service.tool.IKbToolMethodService;
+import tech.qiantong.qknow.hermes.proto.*;
+import tech.qiantong.qknow.module.kb.service.agent.HermesGrpcClient;
 import tech.qiantong.qknow.module.kb.tool.function.SearchKnowledgeTool;
 import tech.qiantong.qknow.module.kb.tool.function.query.knowledgeQuery;
 import tech.qiantong.qknow.module.kb.utils.NodeUtils;
@@ -130,6 +132,8 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
     @Resource
     private ToolCallbackResolver resolver;
+    @Resource
+    private HermesGrpcClient hermesGrpcClient;
 
     @Override
     public PageResult<KbAgentConfigDO> getKbAgentConfigPage(KbAgentConfigPageReqVO pageReqVO) {
@@ -257,7 +261,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
     @Override
     public Flux<KbChatMessageSendRespVO> chatMessage(KbAgentConfigReqVO kbAgentConfig) throws GraphRunnerException {
-        // 获取模型配置
+        // 1. 解析模型配置
         String modelConfig = kbAgentConfig.getModelConfig();
         if (StringUtils.isNull(modelConfig)) {
             throw new GraphRunnerException("模型配置不能为空！");
@@ -266,109 +270,68 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         if (StringUtils.isNull(jsonObject.getString("modelId")) || StringUtils.isNull(jsonObject.getString("modelName"))) {
             throw new GraphRunnerException("模型不能为空！");
         }
-        ChatModel chatModel = aiModelService.getChatModel(
-                Long.parseLong(jsonObject.getString("modelId")),
-                jsonObject.getString("modelName")
-        );
 
-        // 获取知识库
-       List<ToolCallback> tools = Lists.newArrayList();
+        // 2. 预检索 RAG 上下文
+        List<RAGContext> ragContexts = new ArrayList<>();
         if (StringUtils.isNotEmpty(kbAgentConfig.getKnowledgeIds())) {
             Set<String> idSet = StringUtils.str2Set(kbAgentConfig.getKnowledgeIds(), ",");
             List<KmcKnowledgeBaseRespDTO> knowledgeBaseList = kmcApiService.getKnowledgeBaseByIds(idSet.stream().map(Long::parseLong).toList());
-            knowledgeBaseList.forEach(knowledgeBase -> {
-                FunctionToolCallback<knowledgeQuery, String> toolCallback = FunctionToolCallback.builder("knowledgeBase" + knowledgeBase.getId(),
-                         new SearchKnowledgeTool(kmcApiService, knowledgeBase.getId()))
-                        .inputType(knowledgeQuery.class)
-                        .description("当需要查询" + knowledgeBase.getName() + "相关的信息时调用")
-                        .build();
-                tools.add(toolCallback);
+            knowledgeBaseList.forEach(kb -> {
+                String recalled = "";
+                try {
+                    var results = kmcApiService.recallTest(kb.getId(), kbAgentConfig.getQuestion());
+                    if (results != null && !results.isEmpty()) {
+                        recalled = com.alibaba.fastjson2.JSONObject.toJSONString(results);
+                    }
+                } catch (Exception e) {
+                    log.warn("RAG 预检索失败: knowledgeId={}", kb.getId(), e);
+                }
+                ragContexts.add(RAGContext.newBuilder()
+                        .setKnowledgeId(String.valueOf(kb.getId()))
+                        .setKnowledgeName(kb.getName())
+                        .setPreRetrievedContent(recalled)
+                        .build());
             });
         }
 
-        // 根据工具方法id，获取工具列表信息
-        String[] toolNames = new String[0];
+        // 3. 获取工具方法 ID 列表
+        List<String> toolMethodIds = new ArrayList<>();
         if (StringUtils.isNotEmpty(kbAgentConfig.getToolMethodIds())) {
             Set<String> methodIdSet = StringUtils.str2Set(kbAgentConfig.getToolMethodIds(), ",");
             List<KbToolMethodDO> kbToolMethodList = kbToolMethodService.listByIds(methodIdSet);
-            toolNames = kbToolMethodList.stream().map(KbToolMethodDO::getCode).toArray(String[]::new);
+            toolMethodIds = kbToolMethodList.stream().map(KbToolMethodDO::getCode).collect(Collectors.toList());
         }
 
-        // 构建历史对话消息
-        List<Message> messages = Lists.newArrayList();
-        if (kbAgentConfig.getHistoryMessages() != null && !kbAgentConfig.getHistoryMessages().isEmpty()) {
+        // 4. 构建历史消息
+        List<ChatMessage> history = new ArrayList<>();
+        if (kbAgentConfig.getHistoryMessages() != null) {
             for (var historyMsg : kbAgentConfig.getHistoryMessages()) {
-                if ("user".equals(historyMsg.getRole())) {
-                    messages.add(new UserMessage(historyMsg.getContent()));
-                } else if ("assistant".equals(historyMsg.getRole())) {
-                    messages.add(new AssistantMessage(historyMsg.getContent()));
-                }
+                history.add(ChatMessage.newBuilder()
+                        .setRole(historyMsg.getRole())
+                        .setContent(historyMsg.getContent())
+                        .build());
             }
         }
 
-        // 获取预设提示语并且替换变量
+        // 5. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(kbAgentConfig.getPrePrompt(), kbAgentConfig.getInput());
 
-        messages.add(new UserMessage(kbAgentConfig.getQuestion()));
-
-        // 配置agent
-        ReactAgent agent = ReactAgent.builder()
-                .name("my_agent")
-                .model(chatModel)
-                // 限制最多调用 5 次
-                .hooks(ModelCallLimitHook.builder().runLimit(10).build())
-                .systemPrompt(systemPrompt)
-                .toolNames(toolNames)
-                .tools(tools)
-                .resolver(resolver)
+        // 6. 构建 gRPC ChatRequest
+        ChatRequest request = ChatRequest.newBuilder()
+                .setRequestId(UUID.randomUUID().toString())
+                .setQuestion(kbAgentConfig.getQuestion())
+                .setSystemPrompt(systemPrompt != null ? systemPrompt : "")
+                .setInputParams(kbAgentConfig.getInput() != null ? kbAgentConfig.getInput() : "")
+                .setModelConfig(ModelConfig.newBuilder()
+                        .setModelId(Long.parseLong(jsonObject.getString("modelId")))
+                        .setModelName(jsonObject.getString("modelName"))
+                        .build())
+                .addAllRagContexts(ragContexts)
+                .addAllToolMethodIds(toolMethodIds)
+                .addAllHistory(history)
                 .build();
 
-        Flux<NodeOutput> stream = agent.stream(messages);
-        return stream.map(output -> {
-            KbChatMessageSendRespVO sendRespVO = new KbChatMessageSendRespVO();
-            try {
-                // 检查是否为 StreamingOutput 类型
-                if (output instanceof StreamingOutput streamingOutput) {
-                    OutputType type = streamingOutput.getOutputType();
-
-                    // 处理模型推理的流式输出
-                    if (type == OutputType.AGENT_MODEL_STREAMING) {
-                        // 流式增量内容，逐步显示
-                        String text = streamingOutput.message().getText();
-                        // 机器人回复消息
-                        KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
-                        message.setType(MessageTypeEnums.ROBOT.code);
-                        message.setContent(text);
-                        message.setCreateTime(DateUtils.getNowDate());
-                        sendRespVO.setReceive(message); // 接收消息
-                        // 用户发送消息
-                        KbChatMessageSendRespVO.Message messageUser = new KbChatMessageSendRespVO.Message();
-                        messageUser.setType(MessageTypeEnums.USER.code);
-                        messageUser.setContent(kbAgentConfig.getQuestion());
-                        messageUser.setCreateTime(kbAgentConfig.getCreateTime());
-                        sendRespVO.setSend(messageUser); // 发送消息
-                        return sendRespVO;
-                    } else if (type == OutputType.AGENT_MODEL_FINISHED) {
-                        // 模型推理完成，可获取完整响应
-                        String text = streamingOutput.message().getText();
-                        //return "\n模型输出完成：" + (text != null ? text : "");
-                    }
-
-                    // 处理工具调用完成 - 跳过详细处理避免 JSON 转换错误
-                    if (type == OutputType.AGENT_TOOL_FINISHED) {
-                        // 只记录工具调用完成，不访问可能导致错误的 response 数据
-                        //return "\n[工具已调用]";
-                    }
-
-                    // 对于 Hook 节点，通常只关注完成事件（如果 Hook 没有有效输出可以忽略）
-                    if (type == OutputType.AGENT_HOOK_FINISHED) {
-                        //return "Hook 执行完成：" + output.node();
-                    }
-                }
-            } catch (Exception e) {
-                // 捕获任何异常并返回友好的错误信息
-            }
-            return sendRespVO;
-        });
+        // 7. 调用 Hermes 微服务
+        return hermesGrpcClient.chat(request);
     }
 }
