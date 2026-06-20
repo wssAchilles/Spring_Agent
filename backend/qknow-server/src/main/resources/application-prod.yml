@@ -174,3 +174,9 @@ oracle:
 flow:
   enable: false
   url: http://127.0.0.1:26859/
+
+# Hermes 微服务 gRPC 配置
+hermes:
+  grpc:
+    host: ${HERMES_GRPC_HOST:hermes}
+    port: ${HERMES_GRPC_PORT:9090}
