@@ -151,6 +151,18 @@
             <artifactId>qknow-module-kmc-api</artifactId>
             <version>${qknow.version}</version>
         </dependency>
+
+        <!-- Hermes gRPC Proto (Hermes 微服务通信) -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-hermes-proto</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+            <version>1.68.0</version>
+        </dependency>
     </dependencies>
 
 </project>

@@ -9,19 +9,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
 import tech.qiantong.qknow.hermes.proto.*;
-import tech.qiantong.qknow.module.kb.controller.admin.conversation.vo.KbChatMessageSendRespVO;
+import tech.qiantong.qknow.module.kb.controller.admin.agent.vo.KbChatMessageSendRespVO;
 import tech.qiantong.qknow.ai.enums.model.MessageTypeEnums;
 import tech.qiantong.qknow.common.utils.DateUtils;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Hermes gRPC 客户端
- * 控制面通过此客户端调用 Hermes 认知内核微服务
- */
 @Slf4j
 @Service
 public class HermesGrpcClient {
@@ -57,15 +52,12 @@ public class HermesGrpcClient {
         }
     }
 
-    /**
-     * 调用 Hermes Chat RPC，返回 SSE 流
-     */
     public Flux<KbChatMessageSendRespVO> chat(ChatRequest request) {
         return Flux.create(emitter -> {
             asyncStub.chat(request, new StreamObserver<>() {
                 @Override
                 public void onNext(ChatEvent event) {
-                    KbChatMessageSendRespVO respVO = convertToRespVO(event, request.getQuestion(), request.getCreateTime());
+                    KbChatMessageSendRespVO respVO = convertToRespVO(event, request.getQuestion());
                     if (respVO != null) {
                         emitter.next(respVO);
                     }
@@ -85,9 +77,6 @@ public class HermesGrpcClient {
         });
     }
 
-    /**
-     * 健康检查
-     */
     public boolean isHealthy() {
         try {
             HermesServiceGrpc.HermesServiceBlockingStub blockingStub =
@@ -100,7 +89,7 @@ public class HermesGrpcClient {
         }
     }
 
-    private KbChatMessageSendRespVO convertToRespVO(ChatEvent event, String question, String createTime) {
+    private KbChatMessageSendRespVO convertToRespVO(ChatEvent event, String question) {
         if (!event.hasChunk()) {
             return null;
         }
@@ -108,14 +97,12 @@ public class HermesGrpcClient {
         StreamingChunk chunk = event.getChunk();
         KbChatMessageSendRespVO sendRespVO = new KbChatMessageSendRespVO();
 
-        // 机器人回复消息
         KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
         message.setType(MessageTypeEnums.ROBOT.code);
         message.setContent(chunk.getText());
         message.setCreateTime(DateUtils.getNowDate());
         sendRespVO.setReceive(message);
 
-        // 用户发送消息
         KbChatMessageSendRespVO.Message messageUser = new KbChatMessageSendRespVO.Message();
         messageUser.setType(MessageTypeEnums.USER.code);
         messageUser.setContent(question);
