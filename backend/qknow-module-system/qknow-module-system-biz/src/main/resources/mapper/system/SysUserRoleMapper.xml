@@ -42,7 +42,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</resultMap>
 
 	<delete id="deleteUserRoleByUserId" parameterType="Long">
-		delete from system_user_role where user_id=#{userId}
+		delete from "system_user"_role where user_id=#{userId}
 	</delete>
 
 	<select id="countUserRoleByRoleId" resultType="Integer">
@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
 
 	<delete id="deleteUserRole" parameterType="Long">
- 		delete from system_user_role where user_id in
+ 		delete from "system_user"_role where user_id in
  		<foreach collection="array" item="userId" open="(" separator="," close=")">
  			#{userId}
         </foreach>
@@ -64,11 +64,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</insert>
 
 	<delete id="deleteUserRoleInfo" parameterType="SysUserRole">
-		delete from system_user_role where user_id=#{userId} and role_id=#{roleId}
+		delete from "system_user"_role where user_id=#{userId} and role_id=#{roleId}
 	</delete>
 
 	<delete id="deleteUserRoleInfos">
-	    delete from system_user_role where role_id=#{roleId} and user_id in
+	    delete from "system_user"_role where role_id=#{roleId} and user_id in
  	    <foreach collection="userIds" item="userId" open="(" separator="," close=")">
  	        #{userId}
             </foreach>

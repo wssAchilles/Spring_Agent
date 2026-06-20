@@ -1,35 +1,3 @@
-<!--
-  Copyright © 2026 Qiantong Technology Co., Ltd.
-  qKnow Knowledge Platform
-   *
-  License:
-  Released under the Apache License, Version 2.0.
-  You may use, modify, and distribute this software for commercial purposes
-  under the terms of the License.
-   *
-  Special Notice:
-  All derivative versions are strictly prohibited from modifying or removing
-  the default system logo and copyright information.
-  For brand customization, please apply for brand customization authorization via official channels.
-   *
-  More information: https://qknow.qiantong.tech/business.html
-   *
-  ============================================================================
-   *
-  版权所有 © 2026 江苏千桐科技有限公司
-  qKnow 知识平台（开源版）
-   *
-  许可协议：
-  本项目基于 Apache License 2.0 开源协议发布，
-  允许在遵守协议的前提下进行商用、修改和分发。
-   *
-  特别说明：
-  所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
-  如需定制品牌，请通过官方渠道申请品牌定制授权。
-   *
-  更多信息请访问：https://qknow.qiantong.tech/business.html
--->
-
 <template>
     <!-- 上次登录用户登录页面登录页面样式二 -->
     <div class="login-two sysInfo sysInfo-wrap" ref="app-container">
@@ -331,7 +299,7 @@
                         Copyright© 2026
                         <a href="https://qiantong.tech" target="_blank">江苏千桐科技有限公司</a>
                         版权所有
-                        <!-- {{ contentDetail && contentDetail.copyright ? contentDetail.copyright : `Copyright© ${parseTime(new Date(), "{y}")} 江苏千桐科技有限公司 版权所有` }}-->
+                        
                     </div>
                     <div class="record" @click="goKtPage()">
                         <img src="https://www.asktempo.com/statics/images/an.png" alt="" />
@@ -425,7 +393,7 @@
     const loading = ref(false);
     const codeUrl = ref('');
     const greetingsTitle = ref('');
-    const captchaEnabled = ref(true);
+    const captchaEnabled = ref(false);
     const codeFlag = ref(false);
     const loginForm = ref({
         username: '',
@@ -481,7 +449,7 @@
     const loginRules = {
         username: [{ required: true, trigger: 'blur', message: '请输入您的账号' }],
         password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }],
-        code: [{ required: true, trigger: 'change', message: '请输入验证码' }]
+        code: [{ required: captchaEnabled.value, trigger: 'change', message: '请输入验证码' }]
     };
 
     const logo = ref(null);

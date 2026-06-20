@@ -46,11 +46,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</select>
 
 	<delete id="deleteRoleMenuByRoleId" parameterType="Long">
-		delete from system_role_menu where role_id=#{roleId}
+		delete from "system_role"_menu where role_id=#{roleId}
 	</delete>
 
 	<delete id="deleteRoleMenu" parameterType="Long">
- 		delete from system_role_menu where role_id in
+ 		delete from "system_role"_menu where role_id in
  		<foreach collection="array" item="roleId" open="(" separator="," close=")">
  			#{roleId}
         </foreach>

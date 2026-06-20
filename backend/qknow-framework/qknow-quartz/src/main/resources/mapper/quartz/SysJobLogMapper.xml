@@ -78,7 +78,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 						AND create_time &lt;= #{params.endTime}
 					</if>
 				</when>
-
+				<when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'postgresql'">
+					<if test="jobName != null and jobName != ''">
+						AND job_name LIKE '%' || #{jobName} || '%'
+					</if>
+					<if test="invokeTarget != null and invokeTarget != ''">
+						AND invoke_target LIKE '%' || #{invokeTarget} || '%'
+					</if>
+					<if test="params.beginTime != null and params.beginTime != ''">
+						AND create_time &gt;= #{params.beginTime}
+					</if>
+					<if test="params.endTime != null and params.endTime != ''">
+						AND create_time &lt;= #{params.endTime}
+					</if>
+				</when>
 				<!-- 如果是其他数据库（如 MySQL、 DM） -->
 				<otherwise>
 					<if test="jobName != null and jobName != ''">
@@ -141,7 +154,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="jobMessage != null and jobMessage != ''">#{jobMessage},</if>
  			<if test="status != null and status != ''">#{status},</if>
  			<if test="exceptionInfo != null and exceptionInfo != ''">#{exceptionInfo},</if>
- 			sysdate()
+ 			NOW()
  		)
 	</insert>
 

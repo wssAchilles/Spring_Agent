@@ -30,7 +30,7 @@ public class VectorStoreServiceImpl implements IVectorStoreService {
     @Override
     public VectorStore getVectorStore(EmbeddingModel embeddingModel) {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        return PgVectorStore.builder(embeddingModel, jdbcTemplate)
+        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
                 .build();
     }
 }

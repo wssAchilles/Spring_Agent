@@ -108,6 +108,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 WHERE c.table_name = UPPER(#{tableName})
                 ORDER BY c.column_id
             </when>
+            <when test="@tech.qiantong.qknow.mybatis.config.MasterDataSourceConfig@getDatabaseType() == 'postgresql'">
+                SELECT LOWER(c.column_name) as column_name,
+                (CASE WHEN c.is_nullable = 'NO' THEN '1' ELSE '0' END) AS is_required,
+                (CASE WHEN pk.column_name IS NOT NULL THEN '1' ELSE '0' END) AS is_pk,
+                c.ordinal_position AS sort,
+                COALESCE(pgd.description, '') AS column_comment,
+                (CASE WHEN c.column_default LIKE 'nextval%' THEN '1' ELSE '0' END) AS is_increment,
+                c.data_type AS column_type
+                FROM information_schema.columns c
+                LEFT JOIN (
+                    SELECT ku.column_name
+                    FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage ku ON tc.constraint_name = ku.constraint_name
+                    WHERE tc.table_schema = current_schema() AND tc.table_name = #{tableName} AND tc.constraint_type = 'PRIMARY KEY'
+                ) pk ON pk.column_name = c.column_name
+                LEFT JOIN pg_class pgc ON pgc.relname = c.table_name
+                LEFT JOIN pg_description pgd ON pgd.objoid = pgc.oid AND pgd.objsubid = c.ordinal_position
+                WHERE c.table_schema = current_schema() AND c.table_name = #{tableName}
+                ORDER BY c.ordinal_position
+            </when>
         </choose>
 	</select>
 
@@ -151,7 +171,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="dictType != null and dictType != ''">#{dictType},</if>
 			<if test="sort != null">#{sort},</if>
 			<if test="createBy != null and createBy != ''">#{createBy},</if>
-			sysdate()
+			NOW()
          )
     </insert>
 
@@ -171,7 +191,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="dictType != null">dict_type = #{dictType},</if>
             <if test="sort != null">sort = #{sort},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
-            update_time = sysdate()
+            update_time = NOW()
         </set>
         where column_id = #{columnId}
     </update>

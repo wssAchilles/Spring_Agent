@@ -1,0 +1,29 @@
+{
+  "stage_id": "08-hermes-core-migration",
+  "stage_name": "Hermes 核心引擎迁移",
+  "status": "completed",
+  "started_at": "2026-06-20T19:45:00+08:00",
+  "completed_at": "2026-06-20T21:30:00+08:00",
+  "context_hash": "010d5dbe",
+  "objectives": [
+    {"id": "8.1", "description": "迁移 ChatModelFactory", "status": "done", "files_touched": ["backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/config/ChatModelFactory.java", "backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/config/AiPlatformEnum.java"], "notes": "4 平台支持: OpenAI/DashScope/DeepSeek/Ollama"},
+    {"id": "8.2", "description": "迁移工具函数", "status": "done", "files_touched": [], "notes": "9 个工具函数直接复制，package 已更新"},
+    {"id": "8.3", "description": "迁移并改造 SearchKnowledgeTool", "status": "done", "files_touched": [], "notes": "Phase 1 预检索方案: 接受 preRetrievedContent 参数"},
+    {"id": "8.4", "description": "迁移 AgentOrchestrator", "status": "done", "files_touched": [], "notes": "重构自 KbAgentConfigServiceImpl.chatMessage()，返回 Flux<ChatEvent>"},
+    {"id": "8.5", "description": "复活 HermesKernel + AiJudgeService", "status": "done", "files_touched": [], "notes": "HermesKernel 去掉 @Component，AiJudgeService 用 ChatModelFactory"},
+    {"id": "8.6", "description": "迁移 DAG 引擎", "status": "done", "files_touched": [], "notes": "DagExecutor + NodeFactory + 8 个 Flow BO + 4 个本地枚举 + 3 个轻量 DO"},
+    {"id": "8.7", "description": "新建轻量模型 + HermesFlowService", "status": "done", "files_touched": [], "notes": "KbFlowNodeDO/KbFlowEdgeDO/KbRuntimeDO 轻量替代"},
+    {"id": "8.8", "description": "编译验证", "status": "done", "files_touched": [], "notes": "36 个 Java 文件全部编译通过，全量 mvn package 成功"}
+  ],
+  "key_decisions": [
+    {"decision": "创建本地轻量 DO 替代控制面的 Entity", "reason": "Hermes 微服务不依赖 qknow-module-kb 的 DAL 层", "alternatives_rejected": ["共享 DO jar 包（引入不必要的耦合）"]},
+    {"decision": "HermesGrpcService 在阶段 08 一并完成", "reason": "gRPC 服务实现依赖 AgentOrchestrator，在同一阶段完成更高效", "alternatives_rejected": ["单独阶段实现（增加不必要的上下文切换）"]}
+  ],
+  "issues_encountered": [
+    {"issue": "DAG Flow BO 引用了控制面的 DO 和枚举类", "resolution": "创建本地替代类（4 个枚举 + 3 个 DO）", "status": "resolved"},
+    {"issue": "spring-ai-alibaba-graph-core 缺失", "resolution": "在 core pom.xml 中添加显式依赖", "status": "resolved"}
+  ],
+  "files_modified": [],
+  "dependencies": {"external_libs_added": ["com.alibaba.cloud.ai:spring-ai-alibaba-graph-core:1.1.2.2"], "services_required": []},
+  "next_stage": {"stage_id": "10-control-plane-integration", "objectives": ["创建 HermesGrpcClient", "改造 KbAgentConfigServiceImpl", "创建内部 API"], "prerequisites": ["08 编译通过"], "risks": ["gRPC 流式通信延迟"]}
+}

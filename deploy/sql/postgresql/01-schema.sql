@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS system_dept (
 );
 COMMENT ON TABLE system_dept IS '部门表';
 
-CREATE TABLE IF NOT EXISTS system_user (
+CREATE TABLE IF NOT EXISTS "system_user" (
     user_id      BIGSERIAL PRIMARY KEY,
     dept_id      BIGINT DEFAULT NULL,
     user_name    VARCHAR(30) NOT NULL,
@@ -48,9 +48,9 @@ CREATE TABLE IF NOT EXISTS system_user (
     update_time  TIMESTAMP DEFAULT NULL,
     remark       VARCHAR(500) DEFAULT NULL
 );
-COMMENT ON TABLE system_user IS '用户信息表';
+COMMENT ON TABLE "system_user" IS '用户信息表';
 
-CREATE TABLE IF NOT EXISTS system_role (
+CREATE TABLE IF NOT EXISTS "system_role" (
     role_id      BIGSERIAL PRIMARY KEY,
     role_name    VARCHAR(30) NOT NULL,
     role_key     VARCHAR(100) NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS system_role (
     update_time  TIMESTAMP DEFAULT NULL,
     remark       VARCHAR(500) DEFAULT NULL
 );
-COMMENT ON TABLE system_role IS '角色信息表';
+COMMENT ON TABLE "system_role" IS '角色信息表';
 
 CREATE TABLE IF NOT EXISTS system_post (
     post_id      BIGSERIAL PRIMARY KEY,
@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS system_menu (
     path        VARCHAR(200) DEFAULT '',
     component   VARCHAR(255) DEFAULT NULL,
     query       VARCHAR(255) DEFAULT NULL,
+    route_name  VARCHAR(50) DEFAULT '',
     is_frame    INT DEFAULT 1,
     is_cache    INT DEFAULT 0,
     menu_type   CHAR(1) DEFAULT '',
@@ -256,7 +257,7 @@ CREATE TABLE IF NOT EXISTS system_notice (
 );
 COMMENT ON TABLE system_notice IS '通知公告表';
 
-CREATE TABLE IF NOT EXISTS system_content (
+CREATE TABLE IF NOT EXISTS "system_content" (
     id            BIGSERIAL PRIMARY KEY,
     title         VARCHAR(255) DEFAULT NULL,
     content_type  VARCHAR(64) DEFAULT NULL,
@@ -269,21 +270,31 @@ CREATE TABLE IF NOT EXISTS system_content (
     update_time   TIMESTAMP DEFAULT NULL,
     remark        VARCHAR(500) DEFAULT NULL
 );
-COMMENT ON TABLE system_content IS '系统内容配置';
+COMMENT ON TABLE "system_content" IS '系统内容配置';
 
 CREATE TABLE IF NOT EXISTS message (
-    id             BIGSERIAL PRIMARY KEY,
-    template_id    BIGINT DEFAULT NULL,
-    receiver_id    BIGINT DEFAULT NULL,
-    sender_id      BIGINT DEFAULT NULL,
-    content        VARCHAR(512) DEFAULT NULL,
-    is_read        BOOLEAN DEFAULT FALSE,
-    status         SMALLINT DEFAULT 0,
-    create_by      VARCHAR(64) DEFAULT '',
-    create_time    TIMESTAMP DEFAULT NULL,
-    update_by      VARCHAR(64) DEFAULT '',
-    update_time    TIMESTAMP DEFAULT NULL,
-    remark         VARCHAR(500) DEFAULT NULL
+    id              BIGSERIAL PRIMARY KEY,
+    sender_id       BIGINT DEFAULT NULL,
+    receiver_id     BIGINT DEFAULT NULL,
+    title           VARCHAR(128) NOT NULL DEFAULT '',
+    content         VARCHAR(3072) NOT NULL DEFAULT '',
+    category        SMALLINT NOT NULL DEFAULT 0,
+    msg_level       SMALLINT NOT NULL DEFAULT 0,
+    module          SMALLINT NOT NULL DEFAULT 0,
+    entity_type     SMALLINT DEFAULT NULL,
+    entity_id       BIGINT DEFAULT NULL,
+    entity_url      VARCHAR(256) DEFAULT NULL,
+    has_read        SMALLINT DEFAULT 0,
+    has_retraction  SMALLINT DEFAULT 0,
+    valid_flag      SMALLINT NOT NULL DEFAULT 1,
+    del_flag        SMALLINT NOT NULL DEFAULT 0,
+    create_by       VARCHAR(32) DEFAULT NULL,
+    creator_id      BIGINT DEFAULT NULL,
+    create_time     TIMESTAMP NOT NULL DEFAULT NOW(),
+    update_by       VARCHAR(32) DEFAULT NULL,
+    update_time     TIMESTAMP NOT NULL DEFAULT NOW(),
+    updater_id      BIGINT DEFAULT NULL,
+    remark          VARCHAR(512) DEFAULT NULL
 );
 COMMENT ON TABLE message IS '消息通知表';
 
