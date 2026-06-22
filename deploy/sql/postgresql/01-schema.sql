@@ -137,6 +137,7 @@ COMMENT ON TABLE system_user_post IS '用户与岗位关联表';
 CREATE TABLE IF NOT EXISTS system_dict_type (
     dict_id     BIGSERIAL PRIMARY KEY,
     dict_name   VARCHAR(100) DEFAULT '',
+    dict_sort   INT DEFAULT 0,
     dict_type   VARCHAR(100) DEFAULT '',
     status      CHAR(1) DEFAULT '0',
     create_by   VARCHAR(64) DEFAULT '',
@@ -150,9 +151,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_dict_type ON system_dict_type(dict_type);
 
 CREATE TABLE IF NOT EXISTS system_dict_data (
     dict_code   BIGSERIAL PRIMARY KEY,
-    sort        INT DEFAULT 0,
-    label       VARCHAR(100) DEFAULT '',
-    value       VARCHAR(100) DEFAULT '',
+    dict_sort   INT DEFAULT 0,
+    dict_label  VARCHAR(100) DEFAULT '',
+    dict_value  VARCHAR(100) DEFAULT '',
     dict_type   VARCHAR(100) DEFAULT '',
     css_class   VARCHAR(100) DEFAULT NULL,
     list_class  VARCHAR(100) DEFAULT NULL,

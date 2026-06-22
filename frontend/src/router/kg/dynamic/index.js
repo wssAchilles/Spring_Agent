@@ -74,8 +74,8 @@ export default [
     children: [
       {
         path: 'graph',
-        component: () => import('@/views/app/graphExploration/index.vue'),
-        meta: { title: '知识图谱', activeMenu: '/kg/graph', tagsView: false, sidebar: false } // 标记此页面不使用标签视图
+        component: () => import('@/views/kg/graph/index.vue'),
+        meta: { title: '知识图谱', activeMenu: '/kg/graph', tagsView: false, sidebar: false }
       },
     ]
   },

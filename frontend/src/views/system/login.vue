@@ -161,23 +161,6 @@
                                 </template>
                             </el-input>
                         </el-form-item>
-                        <el-form-item prop="code" v-if="captchaEnabled">
-                            <el-input
-                                v-model="loginForm.code"
-                                auto-complete="off"
-                                placeholder="验证码"
-                                class="code-class"
-                                @keyup.enter.native="handleLogin"
-                            >
-                                <template #prefix>
-                                    <i class="iconfont">&#xeb4a;</i>
-                                </template>
-                            </el-input>
-                            <div class="login-code">
-                                <img :src="codeUrl" @click="getCode" class="login-code-img" />
-                            </div>
-                        </el-form-item>
-
                         <el-form-item style="width: 100%">
                             <el-button
                                 :loading="loading"
@@ -370,7 +353,6 @@
 
 <script setup>
     import { ref } from 'vue';
-    import { getCodeImg } from '@/api/system/login';
     import Cookies from 'js-cookie';
     import { encrypt, decrypt } from '@/utils/jsencrypt';
     import Swiper from 'swiper';
@@ -391,16 +373,12 @@
     const dialogVisible = ref(false);
     const { proxy } = getCurrentInstance();
     const loading = ref(false);
-    const codeUrl = ref('');
     const greetingsTitle = ref('');
-    const captchaEnabled = ref(false);
     const codeFlag = ref(false);
     const loginForm = ref({
         username: '',
         password: '',
-        rememberMe: false,
-        code: '',
-        uuid: ''
+        rememberMe: false
     });
     const fpForm = ref({
         username: '',
@@ -448,8 +426,7 @@
 
     const loginRules = {
         username: [{ required: true, trigger: 'blur', message: '请输入您的账号' }],
-        password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }],
-        code: [{ required: captchaEnabled.value, trigger: 'change', message: '请输入验证码' }]
+        password: [{ required: true, trigger: 'blur', message: '请输入您的密码' }]
     };
 
     const logo = ref(null);
@@ -527,18 +504,6 @@
 
     getCookie();
 
-    function getCode() {
-        getCodeImg().then((res) => {
-            captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled;
-            if (captchaEnabled.value) {
-                codeUrl.value = 'data:image/gif;base64,' + res.img;
-                loginForm.value.uuid = res.uuid;
-            }
-        });
-    }
-
-    getCode();
-
     function handleLogin() {
         localStorage.setItem('username', loginForm.value.username);
         proxy.$refs.loginRef.validate((valid) => {
@@ -565,10 +530,6 @@
                     })
                     .catch(() => {
                         loading.value = false;
-                        // 重新获取验证码
-                        if (captchaEnabled.value) {
-                            getCode();
-                        }
                     });
             }
         });
@@ -692,17 +653,6 @@
 
         ::v-deep .el-checkbox {
             padding: 0 !important;
-        }
-
-        .login-code-img {
-            height: 100%;
-            width: 102px;
-        }
-
-        .login-code {
-            width: 104px;
-            height: 34px;
-            float: right;
         }
 
         ::v-deep .el-form-item {
@@ -857,9 +807,6 @@
                     transform: translateX(-50%);
                 }
 
-                .code-class {
-                    width: 63%;
-                }
             }
 
             ::v-deep .el-button--medium {
@@ -1000,9 +947,6 @@
                         top: 48px;
                     }
 
-                    .code-class {
-                        width: 55%;
-                    }
                 }
 
                 .description {

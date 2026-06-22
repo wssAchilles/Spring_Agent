@@ -14,7 +14,7 @@
     <description>Hermes gRPC Protobuf 定义</description>
 
     <properties>
-        <grpc.version>1.68.0</grpc.version>
+        <grpc.version>1.63.0</grpc.version>
         <protobuf.version>3.25.1</protobuf.version>
     </properties>
 
