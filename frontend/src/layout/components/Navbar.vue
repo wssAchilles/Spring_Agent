@@ -97,10 +97,12 @@
               <!--                                class="iconfont right-menu-item hover-effect"-->
               <!--                                style="font-size: 22px"-->
               <!--                            >&#xebe7;</i>-->
-              <i
-                class="iconfont icon-a-dingbulingdangxianxing right-menu-item hover-effect"
-                style="font-size: 20px"
-              ></i>
+              <span class="nav-icon-button">
+                <i
+                  class="iconfont icon-a-dingbulingdangxianxing"
+                  style="font-size: 20px"
+                ></i>
+              </span>
             </el-badge>
           </template>
           <template #default>
@@ -200,7 +202,9 @@
           ></i>
         </div> -->
 
-        <header-search id="header-search" class="right-menu-item" />
+        <el-tooltip content="搜索" placement="bottom">
+          <header-search id="header-search" class="right-menu-item nav-search" />
+        </el-tooltip>
 
         <!-- <screenfull id="screenfull" class="right-menu-item hover-effect" /> -->
 
@@ -211,7 +215,7 @@
       <div class="avatar-container">
         <el-dropdown
           @command="handleCommand"
-          class="right-menu-item hover-effect"
+          class="right-menu-item user-menu"
           trigger="click"
         >
           <div class="avatar-wrapper">
@@ -233,7 +237,7 @@
                 command="aboutUs"
                 v-if="settingsStore.showSettings"
               >
-                <span>关于我们</span>
+                <span>关于平台</span>
               </el-dropdown-item>
               <el-dropdown-item divided command="logout">
                 <span>退出登录</span>
@@ -464,16 +468,15 @@
       align-center
     >
       <div class="about-content-wrapper">
-        <img
-          src="@/assets/system/images/login/logo.png"
-          alt="qData Logo"
-          class="logo"
-        />
+        <div class="about-logo">
+          <span>K</span>
+          <strong>Knowledge Hub</strong>
+        </div>
         <div class="about-title">
           版本{{ currentVersion }}
           <!-- <span class="version-badge"></span> -->
         </div>
-        <div class="copyright">©{{ year }}江苏千桐科技有限公司版权所有</div>
+        <div class="copyright">©{{ year }} Knowledge Hub. All Rights Reserved.</div>
       </div>
 
       <template #footer>
@@ -484,10 +487,11 @@
           <div v-else class="status-text">
             版本{{ latestVersion }}
             <a
-              href="https://gitee.com/qiantongtech/qKnow"
+              href="javascript:void(0)"
               target="_blank"
               rel="noopener noreferrer"
               class="update-link"
+              @click.prevent="openUpdateLog"
             >
               检查更新
             </a>
@@ -504,7 +508,7 @@
 </template>
 
 <script setup>
-import { ElMessageBox } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import Breadcrumb from "@/components/Breadcrumb";
 import TopNav from "@/components/TopNav";
 import Hamburger from "@/components/Hamburger";
@@ -991,7 +995,7 @@ function handleAboutUs() {
 }
 
 function openUpdateLog() {
-  window.open("https://gitee.com/qiantongtech/qKnow/releases", "_blank");
+  ElMessage.info("更新日志正在整理中");
 }
 function handleCommand(command) {
   switch (command) {
@@ -1097,10 +1101,18 @@ function clearNotification() {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 10px 16px;
+  padding: 12px 16px;
   margin-bottom: 10px;
-  background: #f9f9f9;
-  border-radius: 4px;
+  background: #f7faff;
+  border: 1px solid #edf2ff;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: rgba(38, 102, 251, 0.28);
+    box-shadow: 0 10px 24px rgba(26, 73, 145, 0.08);
+    transform: translateY(-1px);
+  }
 }
 
 .icon {
@@ -1138,9 +1150,12 @@ function clearNotification() {
   position: relative;
   text-align: center;
   line-height: 60px;
-  background: url(@/assets/system/images/layout/navbar_bg.jpg) no-repeat center center;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 255, 0.92)),
+    url(@/assets/system/images/layout/navbar_bg.jpg) no-repeat center center;
   background-size: 100% 100%;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(20, 43, 82, 0.08);
+  border-bottom: 1px solid rgba(218, 226, 240, 0.8);
 
   ::v-deep(.el-menu) {
     background-color:transparent;
@@ -1224,8 +1239,10 @@ function clearNotification() {
     }
 
     .right-menu-item {
-      display: inline-block;
-      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
       height: 100%;
       font-size: 18px;
       color: #5a5e66;
@@ -1233,37 +1250,80 @@ function clearNotification() {
 
       &.hover-effect {
         cursor: pointer;
-        transition: background 0.3s;
+        transition: background 0.3s, color 0.2s;
 
         &:hover {
-          background: rgba(0, 0, 0, 0.025);
+          color: #2666fb;
         }
       }
     }
 
+    .nav-icon-button {
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      color: #52627a;
+      background: rgba(245, 248, 255, 0.9);
+      border: 1px solid rgba(222, 229, 241, 0.9);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: #2666fb;
+        border-color: rgba(38, 102, 251, 0.28);
+        box-shadow: 0 10px 22px rgba(38, 102, 251, 0.12);
+      }
+    }
+
+    .nav-search {
+      width: 38px;
+      margin: 0 4px;
+      border-radius: 10px;
+      background: rgba(245, 248, 255, 0.9);
+      border: 1px solid rgba(222, 229, 241, 0.9);
+    }
+
     .avatar-container {
-      margin: 0 15px 0 0;
+      margin: 0 18px 0 4px;
 
       .avatar-wrapper {
         display: flex;
         align-items: center;
-        margin-top: 10px;
+        height: 42px;
+        margin-top: 9px;
+        padding: 0 10px 0 4px;
         position: relative;
+        border: 1px solid rgba(222, 229, 241, 0.9);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.75);
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+        &:hover {
+          border-color: rgba(38, 102, 251, 0.28);
+          box-shadow: 0 10px 22px rgba(38, 102, 251, 0.1);
+        }
 
         .user-avatar {
           cursor: pointer;
-          width: 40px;
-          height: 40px;
-          border-radius: 20px;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
         }
 
         .nickName {
-          font-size: 15px;
+          font-size: 14px;
           /*font-weight: bold;*/
           // color: rgba(0, 0, 0, 0.65);
-          color: var(--themeColor);
+          color: #25324a;
           display: inline-block;
-          margin-left: 10px;
+          margin-left: 8px;
+          max-width: 112px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         i {
@@ -1334,13 +1394,19 @@ function clearNotification() {
   display: flex;
   height: 50px;
   line-height: 50px;
-  border-top: 1px solid #e6e6e6;
+  border-top: 1px solid #edf2ff;
 
   .btn-item {
     width: 50%;
     text-align: center;
     cursor: pointer;
-    color: rgba(0, 0, 0, 0.85);
+    color: #365170;
+    transition: background 0.2s ease, color 0.2s ease;
+
+    &:hover {
+      color: #2666fb;
+      background: #f7faff;
+    }
 
     &:last-child {
       border-left: 1px solid #e6e6e6;
@@ -1377,10 +1443,31 @@ function clearNotification() {
   //padding: 27px 0;
   //gap: 16px;
 
-  .logo {
-    height: 34px;
-    width: 146px;
-    margin-top: 27px;
+  .about-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+
+    span {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #3b82ff 0%, #42c7ff 100%);
+      box-shadow: 0 12px 28px rgba(44, 111, 255, 0.22);
+    }
+
+    strong {
+      color: #15233c;
+      font-size: 22px;
+      line-height: 1;
+    }
   }
 
   .about-title {
@@ -1400,8 +1487,8 @@ function clearNotification() {
 
   .copyright {
     color: #909399;
-    font-size: 16px;
-    margin-top: 27px;
+    font-size: 14px;
+    margin-top: 22px;
   }
 }
 
@@ -1413,14 +1500,14 @@ function clearNotification() {
   border-top: 1px solid var(--el-border-color-light); // 使用 Element Plus 主题变量
 
   .status-text {
-    font-size: 18px;
-    color: #000000;
+    font-size: 15px;
+    color: #365170;
   }
   .update-link {
     color: #126bed; // Element Plus 主色，也可以用 var(--el-color-primary)
     text-decoration: underline;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 15px;
     transition: color 0.2s;
 
     &:hover {
@@ -1446,8 +1533,8 @@ function clearNotification() {
     .el-button {
       height: 34px;
       width: 114px;
-      border-radius: 4px !important;
-      font-size: 18px;
+      border-radius: 6px !important;
+      font-size: 15px;
 
       &:hover {
         .act {

@@ -194,6 +194,7 @@
         deleteRelationship
     } from "@/api/ext/extStructTask/extStruct";
     import {getPdfPreview, updatePreviewCount, updateDownloadCount} from "@/api/kmc/kmcDocument/kmcDocument.js";
+    import {ElMessage} from "element-plus";
 
     const {proxy} = getCurrentInstance();
     const router = useRouter();
@@ -238,6 +239,8 @@
                 //文档数据
                 docList.value = response.data.docListByTaskId;
             }
+        }).catch(() => {
+            ElMessage.warning("扩展模块服务未启动，该功能暂不可用");
         });
     }
 

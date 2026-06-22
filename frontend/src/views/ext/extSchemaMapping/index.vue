@@ -453,6 +453,11 @@
             schemaList.value = response.data.rows;
       total.value = response.data.total;
       loading.value = false;
+    }).catch(() => {
+      loading.value = false;
+      schemaList.value = [];
+      total.value = 0;
+      proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
     });
   }
 

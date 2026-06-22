@@ -51,6 +51,7 @@ Desktop.ini
 logs/
 *.log
 *.log.*
+/.runtime/
 
 # === Env / Secrets ===
 .env

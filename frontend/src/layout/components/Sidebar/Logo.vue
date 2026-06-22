@@ -11,55 +11,19 @@
         class="sidebar-logo-link"
         to="/"
       >
-        <!--        <img v-if="logo" :src="simpLogo" class="sidebar-logo" />-->
-        <img v-if="logo" :src="displaySimpLogo" class="sidebar-logo" />
-        <h1
-          v-else
-          class="sidebar-title"
-          :style="{
-            color:
-              sideTheme === 'theme-dark'
-                ? variables.logoTitleColor
-                : variables.logoLightTitleColor,
-          }"
-        >
-          {{ title }}
-        </h1>
+        <span class="brand-mark brand-mark--compact">K</span>
       </router-link>
       <router-link v-else key="expand" class="sidebar-logo-link" to="/">
-        <!--        <img v-if="logo" :src="logo" class="sidebar-logo" /> -->
-        <span
-          v-if="useSplitLogo"
-          class="sidebar-logo-split"
-          :class="{ 'logo-intro': logoIntroActive }"
-        >
-          <img :src="logoK" class="sidebar-logo-k" />
-          <img :src="logoQknow" class="sidebar-logo-word" />
+        <span class="sidebar-logo-split" :class="{ 'logo-intro': logoIntroActive }">
+          <span class="brand-mark">K</span>
+          <span class="sidebar-logo-word">Knowledge Hub</span>
         </span>
-        <img v-else-if="logo" :src="displayLogo" class="sidebar-logo" />
       </router-link>
     </transition>
   </div>
 </template>
 
 <script setup>
-import variables from "@/assets/system/styles/variables.module.scss";
-import logo from "@/assets/system/logo/logo.png";
-import logo2 from "@/assets/system/logo/logo2.png";
-import simpLogo from "@/assets/system/logo/simpLogo.png";
-import logoK from "@/assets/system/logo/logo-k.png";
-import logoQknow from "@/assets/system/logo/logo-qknow.png";
-
-import useSettingsStore from "@/store/system/settings";
-import defaultSettings from "@/settings";
-import { getContent } from "@/api/system/system/content";
-
-import { computed } from "vue";
-const route = useRoute();
-// 使用 ref 来创建响应式的 logo
-const refLogo = ref(null); // 初始化 logo 为 simpLogo.png
-const refSimpLogo = ref(null); // 初始化 logo 为 simpLogo.png
-
 const logoIntroActive = ref(false);
 
 const props = defineProps({
@@ -73,61 +37,12 @@ const props = defineProps({
   },
 });
 
-const displayLogo = computed(() => {
-  console.log(
-    "defaultSettings.navbarLogoRoutes",
-    defaultSettings.navbarLogoRoutes
-  );
-  const navbarLogoRoutes = defaultSettings.navbarLogoRoutes || [];
-  const isSpecialRoute = navbarLogoRoutes.some((logoPath) =>
-    route.path.startsWith(logoPath)
-  );
-  return isSpecialRoute ? logo2 : refLogo.value;
-});
-
-const useSplitLogo = computed(() => {
-  const navbarLogoRoutes = defaultSettings.navbarLogoRoutes || [];
-  const isSpecialRoute = navbarLogoRoutes.some((logoPath) =>
-    route.path.startsWith(logoPath)
-  );
-  return !isSpecialRoute && (!refLogo.value || refLogo.value === logo);
-});
-
-const displaySimpLogo = computed(() => {
-  const navbarLogoRoutes = defaultSettings.navbarLogoRoutes || [];
-  const isSpecialRoute = navbarLogoRoutes.some((logoPath) =>
-    route.path.startsWith(logoPath)
-  );
-  return isSpecialRoute ? logo : refSimpLogo.value;
-});
 onMounted(() => {
   logoIntroActive.value = true;
   window.setTimeout(() => {
     logoIntroActive.value = false;
   }, 1800);
-  fetchContent();
 });
-// 使用 getContent 来获取数据，而不是重新定义一个 getContent 函数
-const fetchContent = async () => {
-  try {
-    const res = await getContent(1);
-    if (res.code == 200) {
-      const data = res.data;
-      const sysLogo = data.logo;
-      refLogo.value = sysLogo ? sysLogo : logo;
-      refSimpLogo.value = sysLogo ? sysLogo : simpLogo;
-    }
-
-    // this.$message.success('内容加载成功');
-  } catch (error) {
-    refLogo.value = logo;
-    refSimpLogo.value = simpLogo;
-  }
-};
-
-const title = import.meta.env.VITE_APP_TITLE;
-const settingsStore = useSettingsStore();
-const sideTheme = computed(() => settingsStore.sideTheme);
 </script>
 
 <style lang="scss" scoped>
@@ -154,40 +69,47 @@ const sideTheme = computed(() => settingsStore.sideTheme);
     height: 100%;
     width: 100%;
 
-    & .sidebar-logo {
-      height: 48px;
-      margin-top: 8px;
-      vertical-align: middle;
-      transform: scale(0.58);
-      margin-left:  -12px;
-    }
-
     & .sidebar-logo-split {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       height: 100%;
-      gap: 2px;
-      transform: translateX(-4px);
+      gap: 10px;
       vertical-align: middle;
     }
 
-    & .sidebar-logo-k {
-      display: block;
+    & .brand-mark {
+      width: 36px;
       height: 36px;
-      object-fit: contain;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+      background: linear-gradient(135deg, #3b82ff 0%, #42c7ff 100%);
+      box-shadow: 0 10px 24px rgba(44, 111, 255, 0.26);
       transform-origin: center;
     }
 
+    & .brand-mark--compact {
+      margin-top: 12px;
+    }
+
     & .sidebar-logo-word {
-      display: block;
-      height: 30px;
-      object-fit: contain;
+      display: inline-block;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
     }
 
     & .logo-intro,
     &:hover .sidebar-logo-split {
-      .sidebar-logo-k {
+      .brand-mark {
         animation: sidebarLogoKIntro 1.15s cubic-bezier(0.2, 0.85, 0.22, 1) 0.35s both;
       }
 
@@ -213,11 +135,10 @@ const sideTheme = computed(() => settingsStore.sideTheme);
   }
 
   &.collapse {
-    .sidebar-logo {
-      height: 40px;
-      margin-top: 0px;
-      margin-right: 0px;
-      margin-left: -4px;
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      font-size: 19px;
     }
   }
 }

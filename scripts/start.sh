@@ -1,124 +1,86 @@
-#!/bin/bash
-# ============================================================================
-# AI-Native RAG 智能体编排平台 — 一键启动脚本
-# 用法: ./scripts/start.sh
-# ============================================================================
+#!/usr/bin/env bash
+set -euo pipefail
 
-set -e
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/dev/common.sh"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+start_background() {
+  local service="$1"
+  shift
+  local log_file
+  log_file="$(service_log_file "$service")"
+  start_detached "$log_file" "$(service_pid_file "$service")" "$@"
+  echo "$service 启动中，日志：$log_file"
+}
 
-PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BACKEND_PORT=8099
-FRONTEND_PORT=80
-REDIS_EMBEDDED_PORT=12138
+cd "$PROJECT_DIR"
+mkdir -p "$RUNTIME_DIR"
 
-log_info()  { echo -e "${GREEN}[✓]${NC} $1"; }
-log_warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
-log_error() { echo -e "${RED}[✗]${NC} $1"; }
-log_step()  { echo -e "${BLUE}[→]${NC} $1"; }
+echo "[1/5] 启动 PostgreSQL 与 Redis"
+docker compose up -d postgres redis
 
-# ============================================================================
-# 1. 停止已有服务，释放端口
-# ============================================================================
-
-echo ""
-echo -e "${BLUE}=========================================="
-echo -e "  AI-Native RAG 智能体编排平台"
-echo -e "==========================================${NC}"
-echo ""
-
-log_step "检查并释放端口..."
-
-for PORT in $BACKEND_PORT $FRONTEND_PORT $REDIS_EMBEDDED_PORT; do
-    PID=$(lsof -ti :$PORT 2>/dev/null || true)
-    if [ -n "$PID" ]; then
-        log_warn "端口 $PORT 被进程 $PID 占用，正在释放..."
-        kill -9 $PID 2>/dev/null || true
-        sleep 1
-        log_info "端口 $PORT 已释放"
-    else
-        log_info "端口 $PORT 可用"
-    fi
+echo "[2/5] 清理旧实例并释放端口"
+for container in agent-frontend agent-backend qknow-hermes; do
+  if docker rm -f "$container" >/dev/null 2>&1; then
+    echo "已移除容器：$container"
+  fi
 done
 
-# ============================================================================
-# 2. 启动后端
-# ============================================================================
+stop_service frontend
+stop_service backend
+stop_service hermes
+stop_orphaned_dev_processes
 
-log_step "启动后端服务..."
+release_port 80 "前端端口 80"
+release_port 8099 "后端端口 8099"
+release_port 9090 "Hermes 端口 9090"
 
-cd "$PROJECT_DIR/backend"
+echo "[3/5] 启动本机主后端"
+start_background backend \
+  "$SCRIPT_DIR/dev/watch-java.sh" \
+  backend \
+  "$PROJECT_DIR/backend" \
+  qknow-server \
+  "$PROJECT_DIR/backend/qknow-server/target/qknow-server.jar" \
+  SPRING_PROFILES_ACTIVE=dev \
+  POSTGRESQL_URL="jdbc:postgresql://127.0.0.1:5432/ai_agent" \
+  POSTGRESQL_USERNAME="${POSTGRESQL_USERNAME:-achilles}" \
+  POSTGRESQL_PASSWORD="${POSTGRESQL_PASSWORD:-}" \
+  SPRING_DATA_REDIS_HOST=127.0.0.1 \
+  SPRING_DATA_REDIS_PORT=6379 \
+  HERMES_GRPC_HOST=localhost \
+  HERMES_GRPC_PORT=9090
+wait_for_http "主后端" "http://localhost:8099/captchaImage" 240
 
-# 首次运行需要编译
-if [ ! -f "qknow-server/target/qknow-server.jar" ]; then
-    log_info "首次启动，正在编译后端 (约1-2分钟)..."
-    mvn install -DskipTests -q
-    log_info "后端编译完成"
+echo "[4/5] 启动本机 Hermes"
+start_background hermes \
+  "$SCRIPT_DIR/dev/watch-java.sh" \
+  hermes \
+  "$PROJECT_DIR/backend/qknow-hermes" \
+  qknow-hermes/qknow-hermes-starter \
+  "$PROJECT_DIR/backend/qknow-hermes/qknow-hermes-starter/target/qknow-hermes-starter-2.2.1.jar" \
+  SPRING_PROFILES_ACTIVE=dev \
+  HERMES_GRPC_PORT=9090 \
+  HERMES_CONTROL_PLANE_URL=http://localhost:8099
+wait_for_tcp "Hermes" 9090 180
+
+echo "[5/5] 启动本机 Vite"
+if [[ ! -d "$PROJECT_DIR/frontend/node_modules" ]]; then
+  npm --prefix "$PROJECT_DIR/frontend" install --registry=https://registry.npmmirror.com
 fi
+start_background frontend npm --prefix "$PROJECT_DIR/frontend" run dev
+wait_for_http "前端" "http://localhost/" 60
 
-nohup java -jar qknow-server/target/qknow-server.jar > /tmp/ai-agent-backend.log 2>&1 &
-BACKEND_PID=$!
+echo
+echo "本机开发环境已启动"
+echo "前端: http://localhost/"
+echo "后端: http://localhost:8099/"
+echo "Hermes gRPC: localhost:9090"
+echo "状态: bash scripts/status.sh"
+echo "停止: bash scripts/stop.sh"
+echo
+echo "正在实时输出前端日志。按 Ctrl+C 只退出日志跟随，服务仍会继续运行。"
+echo "如需停止服务，请另开终端执行：bash scripts/stop.sh"
+echo
 
-# 等待后端就绪
-log_info "等待后端启动..."
-for i in $(seq 1 60); do
-    if curl -s http://localhost:$BACKEND_PORT/login > /dev/null 2>&1; then
-        log_info "后端启动成功 (PID: $BACKEND_PID, 端口: $BACKEND_PORT)"
-        break
-    fi
-    [ $i -eq 60 ] && { log_error "后端启动超时，查看日志: /tmp/ai-agent-backend.log"; exit 1; }
-    sleep 1
-done
-
-# ============================================================================
-# 3. 启动前端
-# ============================================================================
-
-log_step "启动前端服务..."
-
-cd "$PROJECT_DIR/frontend"
-
-# 首次运行需要安装依赖
-if [ ! -d "node_modules" ]; then
-    log_info "首次启动，正在安装前端依赖..."
-    npm install --registry=https://registry.npmmirror.com -q
-    log_info "前端依赖安装完成"
-fi
-
-nohup npm run dev > /tmp/ai-agent-frontend.log 2>&1 &
-FRONTEND_PID=$!
-
-# 等待前端就绪
-log_info "等待前端启动..."
-for i in $(seq 1 30); do
-    if curl -s http://localhost:$FRONTEND_PORT > /dev/null 2>&1; then
-        log_info "前端启动成功 (PID: $FRONTEND_PID, 端口: $FRONTEND_PORT)"
-        break
-    fi
-    [ $i -eq 30 ] && { log_error "前端启动超时，查看日志: /tmp/ai-agent-frontend.log"; exit 1; }
-    sleep 1
-done
-
-# ============================================================================
-# 4. 完成
-# ============================================================================
-
-echo ""
-echo -e "${GREEN}=========================================="
-echo -e "  启动完成!"
-echo -e "==========================================${NC}"
-echo ""
-echo -e "  前端: http://localhost:$FRONTEND_PORT"
-echo -e "  后端: http://localhost:$BACKEND_PORT"
-echo -e "  Swagger: http://localhost:$BACKEND_PORT/swagger-ui.html"
-echo ""
-echo -e "  账号: admin / admin123"
-echo ""
-echo -e "  日志: /tmp/ai-agent-backend.log"
-echo -e "        /tmp/ai-agent-frontend.log"
-echo ""
+tail -n 120 -F "$(service_log_file frontend)"

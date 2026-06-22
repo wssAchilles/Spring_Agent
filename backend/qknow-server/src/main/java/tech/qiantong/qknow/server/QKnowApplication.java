@@ -21,7 +21,6 @@ import org.springframework.context.annotation.FilterType;
     basePackages = {"tech.qiantong"},
     excludeFilters = @Filter(type = FilterType.REGEX, pattern = {
         "tech\\.qiantong\\.qknow\\.neo4j\\..*",
-        "tech\\.qiantong\\.qknow\\.module\\.app\\..*",
         "tech\\.qiantong\\.qknow\\.module\\.ext\\..*"
     })
 )

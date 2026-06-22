@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tech.qiantong.qknow.common.core.domain.AjaxResult;
 import tech.qiantong.qknow.common.core.page.PageResult;
@@ -38,7 +39,7 @@ import static tech.qiantong.qknow.neo4j.enums.Neo4jLabelEnum.get;
 @Service
 public class AppGraphServiceImpl implements AppGraphService {
 
-    @Resource
+    @Autowired(required = false)
     private DynamicRepository dynamicRepository;
 
     /**
