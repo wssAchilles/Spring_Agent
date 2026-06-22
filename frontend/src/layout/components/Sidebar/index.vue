@@ -526,3 +526,57 @@
         }
     }
 </style>
+
+<style lang="scss" scoped>
+::v-deep(.el-scrollbar) {
+    height: calc(100% - 60px) !important;
+    background: #ffffff;
+}
+
+.help {
+    display: none;
+    padding: 0 14px 14px;
+    background: #ffffff;
+
+    .wrap {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #e4e9f0;
+        border-radius: 4px;
+        background: #f8fafc;
+        box-shadow: none;
+        animation: none;
+
+        &::before,
+        &::after {
+            display: none;
+        }
+    }
+
+    .help-head {
+        margin-bottom: 10px;
+        color: #344054;
+
+        .svg-icon {
+            filter: none;
+            animation: none;
+        }
+
+        .help-desc {
+            color: #8a95a6;
+        }
+    }
+
+    .help-btn {
+        background: #ffffff;
+        border: 1px solid #dce3ec;
+        color: #2468e5;
+        box-shadow: none;
+        animation: none;
+    }
+
+    .help-second {
+        color: #7a8697;
+    }
+}
+</style>

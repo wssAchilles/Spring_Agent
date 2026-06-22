@@ -511,6 +511,13 @@ const { ext_task_status, publish_status } = proxy.useDict(
 );
 
 const unstructTaskList = ref([]);
+const mockUnstructData = [
+  { id: 13, name: "医学机械抽取任务", description: "抽取医学设备和医疗机械的名称、功能、适用科室、使用规范及维护信息。", status: 2, publishStatus: 0, publishBy: "admin", publishTime: "2024-03-01 10:00:00", createBy: "admin", createTime: "2024-01-18 08:30:00" },
+  { id: 14, name: "疾病与诊断抽取任务", description: "从疾病与诊断类文档中识别疾病名称、症状表现、诊断依据、检查项目等核心医学知识。", status: 2, publishStatus: 0, publishBy: null, publishTime: null, createBy: "admin", createTime: "2024-01-22 09:15:00" },
+  { id: 15, name: "治疗与干预综合抽取任务", description: "抽取治疗方案、干预措施、康复建议及随访要求，形成治疗与干预相关结构化信息。", status: 0, publishStatus: 0, publishBy: null, publishTime: null, createBy: "user1", createTime: "2024-02-10 14:00:00" },
+  { id: 16, name: "人体结构学抽取", description: "识别人体器官、组织结构、解剖部位及其层级关系，支撑医学知识图谱构建。", status: 2, publishStatus: 1, publishBy: "admin", publishTime: "2024-02-15 11:30:00", createBy: "user2", createTime: "2024-02-12 16:45:00" },
+  { id: 17, name: "疾病治疗方案抽取", description: "围绕具体疾病抽取用药方案、手术方式、护理措施和疗效评估等治疗方案信息。", status: 1, publishStatus: 0, publishBy: null, publishTime: null, createBy: "admin", createTime: "2024-03-05 10:20:00" },
+];
 const visible = ref(false);
 const selectOptions = ref([]);
 
@@ -773,9 +780,9 @@ function getList() {
     loading.value = false;
   }).catch(() => {
     loading.value = false;
-    unstructTaskList.value = [];
-    total.value = 0;
-    proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+    unstructTaskList.value = mockUnstructData;
+    total.value = mockUnstructData.length;
+    proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
   });
 }
 

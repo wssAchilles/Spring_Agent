@@ -55,7 +55,7 @@ public class KmcCategoryDO  extends BaseEntity {
 
     /** 删除标志 */
     @TableLogic
-    private Boolean delFlag;
+    private Integer delFlag;
 
 
     @TableField(exist = false)

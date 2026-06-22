@@ -53,7 +53,7 @@ public class KmcCategoryRespVO implements Serializable {
 
     @Excel(name = "删除标志")
     @Schema(description = "删除标志", example = "")
-    private Boolean delFlag;
+    private Integer delFlag;
 
     @Excel(name = "创建人")
     @Schema(description = "创建人", example = "")

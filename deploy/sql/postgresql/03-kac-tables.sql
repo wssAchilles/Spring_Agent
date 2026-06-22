@@ -15,10 +15,13 @@ CREATE TABLE IF NOT EXISTS kac_apply (
   config JSONB,
   valid_flag SMALLINT DEFAULT 0,
   del_flag SMALLINT DEFAULT 0,
+  creator_id BIGINT,
   create_by VARCHAR(32),
   create_time TIMESTAMP DEFAULT NOW(),
+  updater_id BIGINT,
   update_by VARCHAR(32),
-  update_time TIMESTAMP DEFAULT NOW()
+  update_time TIMESTAMP DEFAULT NOW(),
+  remark VARCHAR(512)
 );
 
 -- 解决方案表
@@ -32,10 +35,13 @@ CREATE TABLE IF NOT EXISTS kac_solution (
   workspace_id BIGINT,
   valid_flag SMALLINT DEFAULT 0,
   del_flag SMALLINT DEFAULT 0,
+  creator_id BIGINT,
   create_by VARCHAR(32),
   create_time TIMESTAMP DEFAULT NOW(),
+  updater_id BIGINT,
   update_by VARCHAR(32),
-  update_time TIMESTAMP DEFAULT NOW()
+  update_time TIMESTAMP DEFAULT NOW(),
+  remark VARCHAR(512)
 );
 
 -- 插件表
@@ -49,10 +55,77 @@ CREATE TABLE IF NOT EXISTS kac_plugin (
   workspace_id BIGINT,
   valid_flag SMALLINT DEFAULT 0,
   del_flag SMALLINT DEFAULT 0,
+  creator_id BIGINT,
   create_by VARCHAR(32),
   create_time TIMESTAMP DEFAULT NOW(),
+  updater_id BIGINT,
   update_by VARCHAR(32),
-  update_time TIMESTAMP DEFAULT NOW()
+  update_time TIMESTAMP DEFAULT NOW(),
+  remark VARCHAR(512)
+);
+
+-- 应用-Bot关联表
+CREATE TABLE IF NOT EXISTS kac_apply_bot (
+  id BIGSERIAL PRIMARY KEY,
+  apply_id BIGINT NOT NULL,
+  bot_id BIGINT NOT NULL,
+  creator_id BIGINT,
+  create_by VARCHAR(32),
+  create_time TIMESTAMP DEFAULT NOW(),
+  updater_id BIGINT,
+  update_by VARCHAR(32),
+  update_time TIMESTAMP DEFAULT NOW(),
+  remark VARCHAR(512),
+  valid_flag SMALLINT DEFAULT 0,
+  del_flag SMALLINT DEFAULT 0
+);
+
+-- 应用-知识库关联表
+CREATE TABLE IF NOT EXISTS kac_apply_knowledge (
+  id BIGSERIAL PRIMARY KEY,
+  apply_id BIGINT NOT NULL,
+  knowledge_id BIGINT NOT NULL,
+  creator_id BIGINT,
+  create_by VARCHAR(32),
+  create_time TIMESTAMP DEFAULT NOW(),
+  updater_id BIGINT,
+  update_by VARCHAR(32),
+  update_time TIMESTAMP DEFAULT NOW(),
+  remark VARCHAR(512),
+  valid_flag SMALLINT DEFAULT 0,
+  del_flag SMALLINT DEFAULT 0
+);
+
+-- 应用-图谱关联表
+CREATE TABLE IF NOT EXISTS kac_apply_graph (
+  id BIGSERIAL PRIMARY KEY,
+  apply_id BIGINT NOT NULL,
+  graph_id BIGINT NOT NULL,
+  creator_id BIGINT,
+  create_by VARCHAR(32),
+  create_time TIMESTAMP DEFAULT NOW(),
+  updater_id BIGINT,
+  update_by VARCHAR(32),
+  update_time TIMESTAMP DEFAULT NOW(),
+  remark VARCHAR(512),
+  valid_flag SMALLINT DEFAULT 0,
+  del_flag SMALLINT DEFAULT 0
+);
+
+-- 解决方案-应用关联表
+CREATE TABLE IF NOT EXISTS kac_solution_apply (
+  id BIGSERIAL PRIMARY KEY,
+  solution_id BIGINT NOT NULL,
+  apply_id BIGINT NOT NULL,
+  creator_id BIGINT,
+  create_by VARCHAR(32),
+  create_time TIMESTAMP DEFAULT NOW(),
+  updater_id BIGINT,
+  update_by VARCHAR(32),
+  update_time TIMESTAMP DEFAULT NOW(),
+  remark VARCHAR(512),
+  valid_flag SMALLINT DEFAULT 0,
+  del_flag SMALLINT DEFAULT 0
 );
 
 -- 知识图谱节点表
@@ -208,3 +281,16 @@ SELECT setval('kac_solution_id_seq', 100);
 SELECT setval('kac_plugin_id_seq', 100);
 SELECT setval('kg_node_id_seq', 100);
 SELECT setval('kg_edge_id_seq', 100);
+
+-- ============================================================================
+-- Dictionary Data: kac_horizontal_status (应用插件状态)
+-- ============================================================================
+
+INSERT INTO system_dict_type (dict_name, dict_type, status, create_by, create_time)
+VALUES ('应用插件状态', 'kac_horizontal_status', '0', 'admin', NOW())
+ON CONFLICT (dict_type) DO NOTHING;
+
+INSERT INTO system_dict_data (dict_sort, dict_label, dict_value, dict_type, status, create_by, create_time)
+VALUES
+  (1, '正常', '1', 'kac_horizontal_status', '0', 'admin', NOW()),
+  (2, '停用', '0', 'kac_horizontal_status', '0', 'admin', NOW());

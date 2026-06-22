@@ -43,6 +43,8 @@ import KmcPublicRouter from './kmc/public/index.js';
 import kbPublicRouter from './kb/public/index.js';
 /* 知识图谱模块公共路由 */
 import kgPublicRouter from './kg/public/index.js';
+/* 应用中心模块公共路由 */
+import kacPublicRouter from './kac/public/index.js';
 
 /* 系统模块动态路由 */
 import systemDynamicRouter from './system/dynamic/index.js'
@@ -79,6 +81,7 @@ export const constantRoutes = [
     ...KmcPublicRouter,
     ...kbPublicRouter,
     ...kgPublicRouter,
+    ...kacPublicRouter,
 ]
 
 // 动态路由，基于用户权限动态去加载

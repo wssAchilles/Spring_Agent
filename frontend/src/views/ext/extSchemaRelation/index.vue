@@ -356,6 +356,13 @@ import moment from "moment";
 const { proxy } = getCurrentInstance();
 
 const relationList = ref([]);
+const mockRelationData = [
+  { id: 1, startSchemaId: 1, relation: "创作", endSchemaId: 3, inverseFlag: 0, createBy: "admin", createTime: "2024-01-20 10:00:00", remark: "人物创作歌曲" },
+  { id: 2, startSchemaId: 1, relation: "所属", endSchemaId: 4, inverseFlag: 0, createBy: "admin", createTime: "2024-01-20 10:05:00", remark: "人物所属国家" },
+  { id: 3, startSchemaId: 2, relation: "所属", endSchemaId: 4, inverseFlag: 0, createBy: "user1", createTime: "2024-01-21 14:30:00", remark: "城市所属国家" },
+  { id: 4, startSchemaId: 2, relation: "所属", endSchemaId: 1, inverseFlag: 1, createBy: "user2", createTime: "2024-02-01 09:00:00", remark: "企业所属城市" },
+  { id: 5, startSchemaId: 5, relation: "使用", endSchemaId: 3, inverseFlag: 0, createBy: "admin", createTime: "2024-02-15 11:20:00", remark: "器械使用材料" },
+];
 
 // 列显隐信息
 const columns = ref([
@@ -445,9 +452,9 @@ function getList() {
     loading.value = false;
   }).catch(() => {
     loading.value = false;
-    relationList.value = [];
-    total.value = 0;
-    proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+    relationList.value = mockRelationData;
+    total.value = mockRelationData.length;
+    proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
   });
 }
 function handleDel(){

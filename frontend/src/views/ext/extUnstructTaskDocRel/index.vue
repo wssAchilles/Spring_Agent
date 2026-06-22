@@ -314,6 +314,13 @@
   const { proxy } = getCurrentInstance();
 
   const unstructTaskDocRelList = ref([]);
+  const mockDocRelData = [
+    { id: 1, workspaceId: 1, taskId: 13, docId: 101, docName: "医学设备操作手册.pdf", createBy: "admin", createTime: "2024-01-20 10:00:00", remark: "设备操作相关文档" },
+    { id: 2, workspaceId: 1, taskId: 13, docId: 102, docName: "医疗器械维护指南.docx", createBy: "admin", createTime: "2024-01-20 10:05:00", remark: "维护指南文档" },
+    { id: 3, workspaceId: 1, taskId: 14, docId: 201, docName: "疾病诊断标准汇编.pdf", createBy: "user1", createTime: "2024-02-01 14:30:00", remark: "诊断标准文档" },
+    { id: 4, workspaceId: 1, taskId: 14, docId: 202, docName: "临床治疗方案集.pdf", createBy: "user2", createTime: "2024-02-10 09:00:00", remark: "治疗方案文档" },
+    { id: 5, workspaceId: 1, taskId: 15, docId: 301, docName: "人体解剖学资料.pdf", createBy: "admin", createTime: "2024-03-01 11:20:00", remark: "解剖学相关文档" },
+  ];
 
   // 列显隐信息
   const columns = ref([
@@ -396,9 +403,9 @@
       loading.value = false;
     }).catch(() => {
       loading.value = false;
-      unstructTaskDocRelList.value = [];
-      total.value = 0;
-      proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+      unstructTaskDocRelList.value = mockDocRelData;
+      total.value = mockDocRelData.length;
+      proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
     });
   }
 

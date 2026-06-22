@@ -88,7 +88,9 @@
 import Card from "@/views/kac/horizontal/components/card.vue";
 import { ref, reactive, toRefs } from "vue";
 import { listApply } from "@/api/kac/apply/apply.js";
-import { ElMessage } from "element-plus";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const { proxy } = getCurrentInstance();
 
@@ -159,10 +161,7 @@ function applyMockData() {
 
 /** 新建应用 */
 function handleAdd() {
-  ElMessage({
-    message: "功能正在开发中",
-    type: "warning",
-  });
+  router.push({ path: "/kac/myApp/myAppDetail" });
 }
 
 /** 搜索按钮操作 */

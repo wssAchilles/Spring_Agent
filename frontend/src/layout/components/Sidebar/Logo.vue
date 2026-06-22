@@ -63,7 +63,9 @@ onMounted(() => {
   background: transparent;
   text-align: center;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.06);;
+  border: 0;
+  border-bottom: 1px solid #e7ebf1;
+  background: #ffffff;
 
   & .sidebar-logo-link {
     height: 100%;
@@ -89,8 +91,8 @@ onMounted(() => {
       font-size: 20px;
       font-weight: 800;
       line-height: 1;
-      background: linear-gradient(135deg, #3b82ff 0%, #42c7ff 100%);
-      box-shadow: 0 10px 24px rgba(44, 111, 255, 0.26);
+      background: #3478f6;
+      box-shadow: none;
       transform-origin: center;
     }
 
@@ -100,9 +102,9 @@ onMounted(() => {
 
     & .sidebar-logo-word {
       display: inline-block;
-      color: #fff;
-      font-size: 20px;
-      font-weight: 800;
+      color: #172033;
+      font-size: 18px;
+      font-weight: 700;
       line-height: 1;
       letter-spacing: 0;
     }

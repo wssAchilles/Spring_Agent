@@ -285,6 +285,9 @@
             if (data.length == 0) return;
             // 初始化树结构
             initTree();
+        }).catch(() => {
+            appLoading.value = false;
+            ElMessage.warning("扩展模块服务未启动，该功能暂不可用");
         });
     }
 

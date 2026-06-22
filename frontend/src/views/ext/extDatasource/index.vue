@@ -392,6 +392,14 @@
   const { proxy } = getCurrentInstance();
   const {ext_data_source_type,ext_data_source_connection_status} = proxy.useDict("ext_data_source_type","ext_data_source_connection_status");
 
+  const mockDatasourceData = [
+    { id: 1, name: "生产数据库", type: "mysql", host: "192.168.1.100", port: 3306, databaseName: "production", username: "root", status: "1", createBy: "admin", createTime: "2024-01-10 08:00:00", remark: "主数据库连接" },
+    { id: 2, name: "测试数据库", type: "postgresql", host: "192.168.1.101", port: 5432, databaseName: "testing", username: "tester", status: "1", createBy: "admin", createTime: "2024-01-12 09:30:00", remark: "测试环境数据库" },
+    { id: 3, name: "分析数据库", type: "oracle", host: "10.0.0.50", port: 1521, databaseName: "analytics", username: "analyst", status: "0", createBy: "user1", createTime: "2024-02-01 14:00:00", remark: "数据分析专用" },
+    { id: 4, name: "文档数据库", type: "mongodb", host: "192.168.1.102", port: 27017, databaseName: "documents", username: "docadmin", status: "1", createBy: "user2", createTime: "2024-02-15 10:20:00", remark: "文档存储数据库" },
+    { id: 5, name: "缓存数据库", type: "redis", host: "192.168.1.103", port: 6379, databaseName: "cache", username: "cacheuser", status: "1", createBy: "admin", createTime: "2024-03-01 16:45:00", remark: "高速缓存服务" },
+  ];
+
   const datasourceList = ref([]);
 
   // 列显隐信息
@@ -482,9 +490,9 @@
       loading.value = false;
     }).catch(() => {
       loading.value = false;
-      datasourceList.value = [];
-      total.value = 0;
-      proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+      datasourceList.value = mockDatasourceData;
+      total.value = mockDatasourceData.length;
+      proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
     });
   }
 

@@ -370,6 +370,13 @@
   const { proxy } = getCurrentInstance();
 
   const schemaList = ref([]);
+  const mockSchemaMappingData = [
+    { id: 1, workspaceId: 1, taskId: 1, tableName: "t_user", tableComment: "用户表", schemaId: 1, schemaName: "人物", createBy: "admin", createTime: "2024-01-20 10:00:00", remark: "用户表映射到人物概念" },
+    { id: 2, workspaceId: 1, taskId: 1, tableName: "t_company", tableComment: "企业表", schemaId: 2, schemaName: "企业", createBy: "admin", createTime: "2024-01-20 10:05:00", remark: "企业表映射到企业概念" },
+    { id: 3, workspaceId: 1, taskId: 2, tableName: "t_disease", tableComment: "疾病表", schemaId: 4, schemaName: "疾病", createBy: "user1", createTime: "2024-02-01 14:30:00", remark: "疾病表映射到疾病概念" },
+    { id: 4, workspaceId: 1, taskId: 2, tableName: "t_device", tableComment: "器械表", schemaId: 5, schemaName: "器械", createBy: "user2", createTime: "2024-02-10 09:00:00", remark: "器械表映射到器械概念" },
+    { id: 5, workspaceId: 1, taskId: 3, tableName: "t_song", tableComment: "歌曲表", schemaId: 3, schemaName: "歌曲", createBy: "admin", createTime: "2024-03-01 11:20:00", remark: "歌曲表映射到歌曲概念" },
+  ];
 
   // 列显隐信息
   const columns = ref([
@@ -455,9 +462,9 @@
       loading.value = false;
     }).catch(() => {
       loading.value = false;
-      schemaList.value = [];
-      total.value = 0;
-      proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+      schemaList.value = mockSchemaMappingData;
+      total.value = mockSchemaMappingData.length;
+      proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
     });
   }
 

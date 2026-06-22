@@ -20,7 +20,7 @@
     -webkit-transition: width .28s;
     transition: width 0.28s;
     width: $base-sidebar-width !important;
-    background-color: transparent !important;
+    background-color: #ffffff !important;
     height: 100%;
     position: fixed;
     font-size: 0px;
@@ -29,10 +29,9 @@
     left: 0;
     z-index: 1001;
     overflow: hidden;
-    -webkit-box-shadow: 2px 0 6px rgba(0,21,41,.35);
-    box-shadow: 2px 0 6px rgba(0,21,41,.35);
-    background: url(@/assets/system/images/layout/sidebar_bg.png) no-repeat center center;
-    background-size: cover;
+    -webkit-box-shadow: 1px 0 0 #e3e8ef;
+    box-shadow: 1px 0 0 #e3e8ef;
+    background: #ffffff;
 
     &.navbar-logo{
         box-shadow: none;
@@ -117,8 +116,8 @@
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
-      color: #fff;
-      font-weight: bold;
+      color: #536071;
+      font-weight: 500;
       // font-family: PingFangSC;
     }
 
@@ -128,10 +127,10 @@
 
      .el-menu-item {
         &.is-active {
-          background: linear-gradient( 90deg, #4981FF 0%, #135AFB 100%);
+          background: #eef4ff;
           border-radius: 4px;
-          color: #fff !important;
-          font-weight: bold;
+          color: #2468e5 !important;
+          font-weight: 600;
           position: relative;
           transition: none !important;
           height: 100%;
@@ -139,8 +138,8 @@
             font-size:18px !important;
             width:18px !important;
             height:18px !important;
-            filter: brightness(0) invert(1);
-            color: #fff;
+            filter: none;
+            color: #2468e5;
         }
 
         }

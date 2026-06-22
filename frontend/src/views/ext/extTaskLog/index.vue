@@ -238,6 +238,13 @@ import {listTaskLog, getDetailPage, delTaskLog} from "@/api/ext/extTaskLog/extTa
 const {proxy} = getCurrentInstance();
 
 const taskLogList = ref([]);
+const mockTaskLogData = [
+  { id: 1, taskName: "用户信息抽取", taskType: 1, status: 1, startTime: "2024-03-10 08:00:00", endTime: "2024-03-10 08:15:00", createBy: "admin", createTime: "2024-03-10 08:00:00" },
+  { id: 2, taskName: "医疗信息抽取", taskType: 1, status: 1, startTime: "2024-03-10 09:00:00", endTime: "2024-03-10 09:30:00", createBy: "admin", createTime: "2024-03-10 09:00:00" },
+  { id: 3, taskName: "疾病与诊断抽取任务", taskType: 2, status: 2, startTime: "2024-03-11 10:00:00", endTime: null, createBy: "user1", createTime: "2024-03-11 10:00:00" },
+  { id: 4, taskName: "人体结构学抽取", taskType: 2, status: 1, startTime: "2024-03-11 14:00:00", endTime: "2024-03-11 14:45:00", createBy: "user2", createTime: "2024-03-11 14:00:00" },
+  { id: 5, taskName: "医疗器械信息抽取", taskType: 1, status: 0, startTime: "2024-03-12 08:30:00", endTime: "2024-03-12 08:30:00", createBy: "admin", createTime: "2024-03-12 08:30:00" },
+];
 const taskLogDetailList = ref([]);
 const {ext_task_log_type, ext_log_status} = proxy.useDict('ext_task_log_type', 'ext_log_status');
 
@@ -313,9 +320,9 @@ function getList() {
     loading.value = false;
   }).catch(() => {
     loading.value = false;
-    taskLogList.value = [];
-    total.value = 0;
-    proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+    taskLogList.value = mockTaskLogData;
+    total.value = mockTaskLogData.length;
+    proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
   });
 }
 

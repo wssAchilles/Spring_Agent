@@ -1,215 +1,162 @@
 <template>
-  <div class="app-container stagingIndex">
-    <el-row :gutter="15">
-      <el-col :xs="24" :sm="24" :md="18" :lg="18" class="home-gutter">
-        <div class="userInfo module-1">
-          <div class="info-main">
-            <img :src="userStore.avatar" alt="" class="avatar" />
-            <div class="info-con">
-              <div class="info-con-name">
-                上午好，{{ userStore.nickName }} ，祝你开心每一天！
-              </div>
-              <div class="info-con-desc">
-                <span style="color: var(--el-color-primary)"> 系统管理员 </span>
-                <el-divider direction="vertical" />
+  <div class="stagingIndex">
+    <div class="dashboard-layout">
+      <main class="dashboard-main">
+        <section class="welcome-panel">
+          <div class="welcome-copy">
+            <el-avatar :size="58" class="avatar">
+              {{ userStore.nickName?.slice(0, 1) || "用" }}
+            </el-avatar>
+            <div>
+              <p class="eyebrow">{{ todayLabel }}</p>
+              <h1>上午好，{{ userStore.nickName }}</h1>
+              <p class="welcome-desc">
+                <span>系统管理员</span>
+                <i></i>
                 {{ xljtcont }}
-                <!-- 不要再纠缠于“长期”和“短期”，很多时候长期已经成为了现在不做事情的借口 -->
-              </div>
-            </div>
-            <div class="info-btns">
-              <div class="info-btn" @click="goprofile">
-                <div class="icon"></div>
-                <span>个人中心</span>
-              </div>
-              <div class="info-btn btn-dft" @click="logout">
-                <div class="icon"></div>
-                <span>退出登录</span>
-              </div>
+              </p>
             </div>
           </div>
+          <div class="welcome-actions">
+            <el-button type="primary" @click="goprofile">个人中心</el-button>
+            <el-button @click="logout">退出登录</el-button>
+          </div>
+        </section>
+
+        <section class="metrics-grid" aria-label="知识资产核心指标">
+          <article v-for="item in module1" :key="item.name" class="metric-item">
+            <div class="metric-heading">
+              <div>
+                <p>{{ item.name }}</p>
+                <strong>{{ item.value }}</strong>
+              </div>
+              <img :src="item.img" :alt="item.name" />
+            </div>
+            <div class="metric-trend">
+              <span>同比</span>
+              <b :class="item.up ? 'trend-up' : 'trend-down'">
+                {{ item.up ? '↑' : '↓' }} {{ item.speed }}%
+              </b>
+            </div>
+          </article>
+        </section>
+
+        <div class="analysis-grid">
+          <section class="dashboard-panel chart-panel">
+            <header class="panel-header">
+              <div>
+                <h2>文件类型统计</h2>
+                <p>知识资产内容结构与占比</p>
+              </div>
+            </header>
+            <div ref="module4ChartRef" class="chart-container"></div>
+          </section>
+
+          <section class="dashboard-panel chart-panel">
+            <header class="panel-header">
+              <div>
+                <h2>近 7 日抽取数量</h2>
+                <p>每日实体抽取任务完成情况</p>
+              </div>
+            </header>
+            <div ref="module5ChartRef" class="chart-container"></div>
+          </section>
         </div>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="6" :lg="6" class="home-gutter">
-        <!-- 模块2 -->
-        <!-- <div class="module-2">
-                    <img src="@/assets/system/images/index/weather.png" alt="" srcset="" />
-                </div> -->
-        <div class="module-2">
-          <!-- <iframe
-            width="100%"
-            scrolling="no"
-            height="150"
-            frameborder="0"
-            allowtransparency="true"
-            src="https://i.tianqi.com?c=code&id=21&icon=1&site=12"
-          ></iframe> -->
+
+        <section class="dashboard-panel asset-overview">
+          <header class="panel-header">
+            <div>
+              <h2>知识资产概览</h2>
+              <p>按领域查看当前资产构成</p>
+            </div>
+          </header>
+          <el-table :data="categoryStats" class="asset-table">
+            <el-table-column prop="category" label="类别" min-width="150">
+              <template #default="scope">
+                <el-link type="primary" :underline="false">{{ scope.row.category }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="entities" label="实体数" align="right" />
+            <el-table-column prop="relations" label="关系数" align="right" />
+            <el-table-column prop="triples" label="三元组数" align="right" />
+            <el-table-column prop="files" label="文件数" align="right" />
+            <el-table-column prop="tasks" label="抽取任务" align="right" />
+            <el-table-column prop="updatedAt" label="更新时间" align="right" min-width="130" />
+          </el-table>
+        </section>
+
+        <section class="dashboard-panel trend-panel">
+          <header class="panel-header">
+            <div>
+              <h2>近半年实体新增趋势</h2>
+              <p>知识资产持续沉淀情况</p>
+            </div>
+          </header>
+          <div ref="module8ChartRef" class="chart-container"></div>
+        </section>
+      </main>
+
+      <aside class="dashboard-aside">
+        <section class="dashboard-panel weather-panel">
           <Weather />
-        </div>
-      </el-col>
+        </section>
 
-      <el-col :xs="24" :sm="24" :md="18" :lg="18" class="home-gutter">
-        <!-- 模块3 -->
-        <div class="module-3">
-          <div
-            class="module-item"
-            v-for="(item, index) in module1"
-            :key="index"
-          >
-            <!-- <router-link to="/sy/index"> -->
-            <div class="module-item-t">
-              <div class="module-item-t-l">
-                <div class="name">{{ item.name }}</div>
-                <span>{{ item.value }}</span>
-              </div>
-              <img :src="item.img" class="module-item-t-r" />
-            </div>
-            <!-- </router-link> -->
-
-            <div class="module-item-border"></div>
-            <div class="module-item-data">
-              <span>周同比：</span>
-              <span :class="[item.up ? 'data-up' : 'data-down']"
-                >{{ item.speed }}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <el-row :gutter="15">
-          <el-col :xs="24" :sm="24" :md="12" :lg="12">
-            <!-- 模块4 饼图 -->
-            <div class="module-4 border-item">
-              <div class="border-item-head">
-                <span class="head-title">文件类型统计 </span>
-              </div>
-              <div class="border-item-body">
-                <div class="chart-container" ref="module4ChartRef"></div>
-              </div>
-            </div>
-          </el-col>
-          <el-col :xs="24" :sm="24" :md="12" :lg="12">
-            <!-- 模块3 柱状图 -->
-            <div class="module-5 border-item">
-              <div class="border-item-head">
-                <span class="head-title">近7日抽取数量统计</span>
-              </div>
-              <div class="border-item-body">
-                <div class="chart-container" ref="module5ChartRef"></div>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-      </el-col>
-
-      <el-col :xs="24" :sm="24" :md="6" :lg="6" class="home-gutter">
-        <div class="border-item module-6 home-gutter">
-          <div class="border-item-head">
-            <span class="head-title">新闻公告 </span>
-            <el-link type="primary" :underline="false" @click="goxinwen"
-              >查看更多
-            </el-link>
-          </div>
-          <div class="border-item-body">
-            <div
-              class="module-item"
+        <section class="dashboard-panel aside-panel">
+          <header class="panel-header compact">
+            <h2>公告</h2>
+            <el-link type="primary" :underline="false" @click="goxinwen">查看更多</el-link>
+          </header>
+          <div class="notice-list">
+            <button
               v-for="(item, index) in module6"
               :key="index"
+              type="button"
+              class="notice-row"
               @click="goxinwen"
             >
-              <dict-tag :options="sys_notice_type" :value="item.noticeType" />
-              <div class="value" :title="item.noticeTitle">
-                {{ item.noticeTitle }}
+              <span class="notice-title" :title="item.noticeTitle">{{ item.noticeTitle }}</span>
+              <time>{{ parseTime(item.createTime, "{y}-{m}-{d}") }}</time>
+            </button>
+            <el-empty v-if="!module6.length" description="暂无公告" :image-size="56" />
+          </div>
+        </section>
+
+        <section class="dashboard-panel aside-panel">
+          <header class="panel-header compact">
+            <h2>最近任务</h2>
+            <span class="panel-count">{{ module9.length }} 项</span>
+          </header>
+          <div class="task-list">
+            <div v-for="item in module9.slice(0, 4)" :key="item.id" class="task-row">
+              <div class="task-copy">
+                <strong :title="item.name">{{ item.name }}</strong>
+                <span>{{ item.createTime }}</span>
               </div>
-              <div class="time">
-                {{ parseTime(item.createTime, "{y}-{m}-{d}") }}
-              </div>
+              <dict-tag :options="ext_task_status" :value="item.status" />
             </div>
           </div>
-        </div>
-        <div class="border-item module-7">
-          <div class="news">
-            <div class="border-item">
-              <div class="border-item-head">
-                <span class="head-title">快捷功能入口</span>
-                <router-link to="/"> </router-link>
-              </div>
-              <div
-                class="border-item-body"
-              >
-                <div class="all-entrance">
-                  <div
-                    class="entrance-item"
-                    v-for="item in entranceList"
-                    :key="item.name"
-                    v-hasPermi="item.perm"
-                    @click="routeTo(item.path, item.query)"
-                  >
-                    <div class="image">
-                        <img :src="item.iconPath" class="icon" />
-                    </div>
-                    <div class="name">{{ item.name }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </el-col>
+        </section>
 
-      <el-col :xs="24" :sm="24" :md="9" :lg="9">
-        <div class="module-8 border-item">
-          <div class="border-item-head">
-            <span class="head-title">近半年实体新增趋势 </span>
-            <!-- <el-link type="primary" :underline="false">查看更多 </el-link> -->
+        <section class="dashboard-panel aside-panel quick-panel">
+          <header class="panel-header compact">
+            <h2>快捷功能</h2>
+          </header>
+          <div class="quick-grid">
+            <button
+              v-for="item in entranceList"
+              :key="item.name"
+              v-hasPermi="item.perm"
+              type="button"
+              class="quick-item"
+              @click="routeTo(item.path, item.query)"
+            >
+              <img :src="item.iconPath" alt="" />
+              <span>{{ item.name }}</span>
+            </button>
           </div>
-          <div class="border-item-body">
-            <div class="chart-container" ref="module8ChartRef"></div>
-          </div>
-        </div>
-      </el-col>
-
-      <el-col :xs="24" :sm="24" :md="15" :lg="15">
-        <div class="module-9 border-item">
-          <div class="border-item-head">
-            <span class="head-title">抽取任务 </span>
-            <!-- <el-link type="primary" :underline="false">查看更多 </el-link> -->
-          </div>
-          <div class="border-item-body">
-            <el-table :data="module9" style="width: 100%" height="100%">
-              <el-table-column
-                fixed
-                prop="id"
-                label="编号"
-                align="center"
-                width="80"
-                sortable
-              >
-                <template #default="scope">
-                  <div class="table-column-code">{{ scope.row.id }}</div>
-                </template>
-              </el-table-column>
-              <el-table-column prop="name" label="任务名称" width="300" :show-overflow-tooltip="{ effect: 'light' }"  />
-              <el-table-column prop="status" align="center" label="任务状态">
-                <template #default="scope">
-                  <dict-tag :options="ext_task_status" :value="scope.row.status" />
-                </template>
-              </el-table-column>
-              <el-table-column
-                prop="publishStatus"
-                align="center"
-                label="发布状态"
-              >
-                <template #default="scope">
-                  <dict-tag :options="publish_status" :value="scope.row.publishStatus" />
-                </template>
-              </el-table-column>
-              <el-table-column prop="publishBy" align="center" label="发布人" />
-              <el-table-column prop="createTime" sortable align="center" label="发布时间" width="180" />
-            </el-table>
-          </div>
-        </div>
-      </el-col>
-    </el-row>
+        </section>
+      </aside>
+    </div>
   </div>
 </template>
 
@@ -351,6 +298,20 @@ const module1 = ref([
   },
 ]);
 
+const todayLabel = new Intl.DateTimeFormat("zh-CN", {
+  month: "long",
+  day: "numeric",
+  weekday: "long",
+}).format(new Date());
+
+const categoryStats = [
+  { category: "基础理论", entities: 32, relations: 18, triples: 46, files: 20, tasks: 5, updatedAt: "2026-06-21" },
+  { category: "智能技术", entities: 38, relations: 22, triples: 62, files: 19, tasks: 5, updatedAt: "2026-06-21" },
+  { category: "行业应用", entities: 18, relations: 12, triples: 20, files: 10, tasks: 3, updatedAt: "2026-06-20" },
+  { category: "未来趋势", entities: 24, relations: 14, triples: 24, files: 15, tasks: 4, updatedAt: "2026-06-20" },
+  { category: "其他", entities: 14, relations: 6, triples: 12, files: 12, tasks: 1, updatedAt: "2026-06-19" },
+];
+
 //新闻跳转
 function goxinwen() {
   proxy.$router.push("/system/notice"); // 内部页面路径
@@ -484,17 +445,17 @@ function initModule4() {
         text: "100%",
         // subtext: 12312 + '个',
         textStyle: {
-          fontSize: 30,
-          color: "rgba(0,0,0,0.65)",
-          fontFamily: "Sharp",
+          fontSize: 26,
+          color: "#172033",
+          fontWeight: 600,
         },
         // subtextStyle: {
         //     fontSize: 20,
         //     color: 'black'
         // },
         textAlign: "center",
-        x: "34.5%",
-        y: "43%",
+        x: "34%",
+        y: "42%",
       },
     ],
     tooltip: {
@@ -596,43 +557,9 @@ function initModule4() {
           position: "outside", // 标签位置
         },
         itemStyle: {
-          normal: {
-            color: function (params) {
-              let colorList = [
-                {
-                  c1: "#1E60FB",
-                  c2: "#5D8EFE",
-                },
-                {
-                  c1: "#6CD8D0",
-                  c2: "#1DC7B5",
-                },
-                {
-                  c1: "#F9D370",
-                  c2: "#F7BD26",
-                },
-                {
-                  c1: "#B28AE9",
-                  c2: "#9358E3",
-                },
-                {
-                  c1: "#EA7283",
-                  c2: "#F53D57",
-                },
-              ];
-              return new echarts.graphic.LinearGradient(1, 0, 0, 0, [
-                {
-                  //颜色渐变函数 前四个参数分别表示四个位置依次为左、下、右、上
-                  offset: 0,
-                  color: colorList[params.dataIndex].c1,
-                },
-                {
-                  offset: 1,
-                  color: colorList[params.dataIndex].c2,
-                },
-              ]);
-            },
-          },
+          color: (params) => ["#3478f6", "#28b7ad", "#f2b43c", "#8c6bd8", "#ef5f72"][params.dataIndex],
+          borderColor: "#ffffff",
+          borderWidth: 2,
         },
         data: m2R2Data,
       },
@@ -684,25 +611,8 @@ function initModule5() {
         name: "抽取实体数量",
         barWidth: 30,
         itemStyle: {
-          normal: {
-            color: new echarts.graphic.LinearGradient(
-              0,
-              0,
-              0,
-              1,
-              [
-                {
-                  offset: 0,
-                  color: "#5b8dfe",
-                },
-                {
-                  offset: 1,
-                  color: "#2263fc",
-                },
-              ],
-              false
-            ),
-          },
+          color: "#3478f6",
+          borderRadius: [3, 3, 0, 0],
         },
         data: [800, 550, 740, 450, 800, 730, 600],
       },
@@ -820,27 +730,7 @@ function initModule8() {
         },
 
         areaStyle: {
-          normal: {
-            color: new echarts.graphic.LinearGradient(
-              0,
-              0,
-              0,
-              1,
-              [
-                {
-                  offset: 0,
-                  color: "rgba(204, 220, 254,1)",
-                },
-                {
-                  offset: 1,
-                  color: "rgba(204, 220, 254,0)",
-                },
-              ],
-              false
-            ),
-            // shadowColor: 'rgba(204, 220, 254,0.1)',
-            // shadowBlur: 20
-          },
+          color: "rgba(52, 120, 246, 0.08)",
         },
         data: [250, 100, 780, 60, 760, 200],
         type: "line",
@@ -856,7 +746,7 @@ const module9 = ref([
     name: "《2030年知识经济预测模型》",
     status: "1",
     publishStatus: "1",
-    publishBy: "小桐",
+    publishBy: "管理员",
     createTime: "2025-05-01 11:23",
   },
   {
@@ -864,7 +754,7 @@ const module9 = ref([
     name: "《金融知识图谱构建与风险预警白皮书》",
     status: "2",
     publishStatus: "1",
-    publishBy: "小桐",
+    publishBy: "管理员",
     createTime: "2025-05-01 11:23",
   },
   {
@@ -872,7 +762,7 @@ const module9 = ref([
     name: "《多模态知识融合算法白皮书》",
     status: "1",
     publishStatus: "1",
-    publishBy: "小桐",
+    publishBy: "管理员",
     createTime: "2025-05-01 11:23",
   },
   {
@@ -880,7 +770,7 @@ const module9 = ref([
     name: "《智慧城市知识管理解决方案》",
     status: "2",
     publishStatus: "0",
-    publishBy: "小桐",
+    publishBy: "管理员",
     createTime: "2025-05-01 11:23",
   },
   {
@@ -888,7 +778,7 @@ const module9 = ref([
     name: "《智能教育平台知识点分类体系》",
     status: "1",
     publishStatus: "1",
-    publishBy: "小桐",
+    publishBy: "管理员",
     createTime: "2025-05-01 11:23",
   },
 ]);
@@ -1517,6 +1407,509 @@ onMounted(() => {
 .module-9 {
   .border-item-body {
     padding: 15px 34px 15px 34px;
+  }
+}
+</style>
+
+<style scoped lang="scss">
+.stagingIndex {
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  padding: 18px;
+  background: #f5f7fa;
+  color: #172033;
+  font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+}
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  max-width: 1680px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.dashboard-main,
+.dashboard-aside {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dashboard-panel,
+.welcome-panel,
+.metrics-grid {
+  background: #fff;
+  border: 1px solid #e4e9f0;
+  border-radius: 6px;
+}
+
+.welcome-panel {
+  min-height: 116px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.welcome-copy {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.welcome-copy .avatar {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eef4ff;
+  border: 1px solid #d9e5f8;
+  color: #2468e5;
+  font-weight: 600;
+}
+
+.welcome-copy h1 {
+  margin: 3px 0 7px;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: #172033;
+  letter-spacing: 0;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: #8a95a6;
+}
+
+.welcome-desc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #6f7b8d;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.welcome-desc span {
+  color: #3478f6;
+  white-space: nowrap;
+}
+
+.welcome-desc i {
+  width: 1px;
+  height: 14px;
+  flex: 0 0 1px;
+  background: #dfe4eb;
+}
+
+.welcome-actions {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.welcome-actions :deep(.el-button) {
+  min-width: 88px;
+  height: 36px;
+  border-radius: 4px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.metric-item {
+  padding: 18px;
+  min-width: 0;
+  border-right: 1px solid #e7ebf1;
+}
+
+.metric-item:last-child {
+  border-right: 0;
+}
+
+.metric-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.metric-heading p {
+  margin: 0 0 7px;
+  font-size: 13px;
+  line-height: 20px;
+  color: #7d8898;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-heading strong {
+  display: block;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.metric-heading img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.metric-trend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f4;
+  font-size: 12px;
+  color: #8a95a6;
+}
+
+.metric-trend b {
+  font-weight: 500;
+}
+
+.trend-up {
+  color: #e5484d;
+}
+
+.trend-down {
+  color: #1a9b62;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+
+.panel-header {
+  min-height: 64px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #e9edf2;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #172033;
+  letter-spacing: 0;
+}
+
+.panel-header p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: #929cab;
+}
+
+.panel-header.compact {
+  min-height: 50px;
+  padding: 12px 14px;
+}
+
+.panel-count {
+  font-size: 12px;
+  color: #8a95a6;
+}
+
+.chart-panel .chart-container {
+  height: 318px;
+}
+
+.asset-overview {
+  overflow: hidden;
+}
+
+.asset-table {
+  width: 100%;
+  padding: 0 10px 10px;
+}
+
+.asset-table :deep(.el-table__header th.el-table__cell) {
+  height: 40px;
+  background: #f8fafc;
+  color: #677386;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.asset-table :deep(.el-table__row td.el-table__cell) {
+  height: 40px;
+  color: #4d596a;
+  font-size: 13px;
+}
+
+.asset-table :deep(.el-table__inner-wrapper::before) {
+  display: none;
+}
+
+.trend-panel .chart-container {
+  height: 260px;
+}
+
+.dashboard-aside {
+  position: sticky;
+  top: 78px;
+}
+
+.weather-panel {
+  min-height: 172px;
+  overflow: hidden;
+}
+
+.weather-panel :deep(> *) {
+  min-height: 172px;
+}
+
+.aside-panel {
+  overflow: hidden;
+}
+
+.notice-list,
+.task-list {
+  padding: 6px 14px 10px;
+}
+
+.notice-row {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #edf0f4;
+  background: transparent;
+  color: #4d596a;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notice-row:last-child {
+  border-bottom: 0;
+}
+
+.notice-row:hover .notice-title {
+  color: #3478f6;
+}
+
+.notice-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+
+.notice-row time {
+  font-size: 11px;
+  color: #9aa4b2;
+}
+
+.task-row {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.task-row:last-child {
+  border-bottom: 0;
+}
+
+.task-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.task-copy strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.task-copy span {
+  color: #98a2b3;
+  font-size: 11px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+.quick-item {
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 1px solid #e6eaf0;
+  border-radius: 4px;
+  background: #fff;
+  color: #4d596a;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.quick-item:hover,
+.quick-item:focus-visible {
+  border-color: #a9c5fa;
+  background: #f6f9ff;
+  color: #1d5fd1;
+  outline: none;
+}
+
+.quick-item img {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  object-fit: contain;
+}
+
+.quick-item span {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 17px;
+  text-align: left;
+}
+
+@media (max-width: 1360px) {
+  .dashboard-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+
+  .metric-item {
+    padding: 15px 13px;
+  }
+
+  .metric-heading img {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-aside {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weather-panel,
+  .quick-panel {
+    grid-row: span 2;
+  }
+}
+
+@media (max-width: 820px) {
+  .stagingIndex {
+    padding: 12px;
+  }
+
+  .welcome-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .welcome-actions {
+    width: 100%;
+  }
+
+  .welcome-actions :deep(.el-button) {
+    flex: 1;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-item:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .metric-item {
+    border-bottom: 1px solid #e7ebf1;
+  }
+
+  .analysis-grid,
+  .dashboard-aside {
+    grid-template-columns: 1fr;
+  }
+
+  .weather-panel,
+  .quick-panel {
+    grid-row: auto;
+  }
+
+  .asset-overview {
+    overflow-x: auto;
+  }
+
+  .asset-table {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 520px) {
+  .welcome-copy {
+    align-items: flex-start;
+  }
+
+  .welcome-desc {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-item,
+  .metric-item:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .quick-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

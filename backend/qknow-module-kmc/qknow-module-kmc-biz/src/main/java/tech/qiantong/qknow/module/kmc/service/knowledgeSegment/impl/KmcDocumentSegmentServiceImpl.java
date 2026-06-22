@@ -74,7 +74,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
         if (StringUtils.isNotEmpty(collect)) {
             List<KmcDocumentSegmentDO> childList = this.lambdaQuery()
                     .in(KmcDocumentSegmentDO::getParentId, collect)
-                    .eq(KmcDocumentSegmentDO::getDelFlag, false)
+                    .eq(KmcDocumentSegmentDO::getDelFlag, 0)
                     .list();
             list.addAll(childList);
         }
@@ -85,7 +85,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
     public List<KmcDocumentSegmentDO> getAllLevelNodes(Long documentId) {
         return this.lambdaQuery()
                 .eq(KmcDocumentSegmentDO::getDocumentId, documentId)
-                .eq(KmcDocumentSegmentDO::getDelFlag, false)
+                .eq(KmcDocumentSegmentDO::getDelFlag, 0)
                 .isNull(KmcDocumentSegmentDO::getParentId)
                 .list();
     }

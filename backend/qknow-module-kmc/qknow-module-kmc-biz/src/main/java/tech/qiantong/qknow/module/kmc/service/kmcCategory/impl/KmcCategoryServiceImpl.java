@@ -207,7 +207,7 @@ public class KmcCategoryServiceImpl extends ServiceImpl<KmcCategoryMapper, KmcCa
 
     @Override
     public List<TreeSelects> selectCategoryTreeList(KmcCategoryDO kmcCategoryDO) {
-        kmcCategoryDO.setDelFlag(false);
+        kmcCategoryDO.setDelFlag(0);
         List<KmcCategoryDO> list = SpringUtils.getAopProxy(this).getKmcCategoryAllList(kmcCategoryDO);
         return buildKmcCategoryTreeSelect(list);
     }

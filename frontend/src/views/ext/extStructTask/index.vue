@@ -416,6 +416,13 @@ const { ext_task_status, publish_status, ext_update_type } = proxy.useDict(
   "ext_update_type"
 );
 const extStructList = ref([]);
+const mockStructData = [
+  { id: 1, name: "用户信息抽取", description: "从用户资料中抽取姓名、昵称、年龄、邮箱、标签、注册时间等基础属性信息。", updateType: 0, updateFrequency: "每天", status: 2, publishStatus: 0, updateStatus: 0, publishBy: "admin", publishTime: "2024-03-01 10:00:00", createBy: "admin", createTime: "2024-01-15 08:30:00" },
+  { id: 3, name: "医疗信息抽取", description: "面向医疗业务数据抽取疾病、诊断、检查、治疗、药物等核心医学信息。", updateType: 1, updateFrequency: "每周", status: 2, publishStatus: 0, updateStatus: 0, publishBy: null, publishTime: null, createBy: "admin", createTime: "2024-01-20 09:00:00" },
+  { id: 4, name: "医疗器械信息抽取", description: "抽取医疗器械名称、型号、类别、适用科室、生产企业及基础管理信息。", updateType: 0, updateFrequency: "每天", status: 0, publishStatus: 0, updateStatus: 1, publishBy: null, publishTime: null, createBy: "user1", createTime: "2024-02-05 14:30:00" },
+  { id: 5, name: "疾病治疗信息抽取", description: "围绕疾病治疗过程抽取治疗方式、用药方案、干预措施和疗效相关信息。", updateType: 1, updateFrequency: "每月", status: 2, publishStatus: 1, updateStatus: 0, publishBy: "admin", publishTime: "2024-02-10 11:00:00", createBy: "user2", createTime: "2024-02-08 16:20:00" },
+  { id: 6, name: "人物信息综合抽取", description: "从人物资料中综合抽取身份信息、角色标签、所属关系及个人属性数据。", updateType: 0, updateFrequency: "每天", status: 1, publishStatus: 0, updateStatus: 0, publishBy: null, publishTime: null, createBy: "admin", createTime: "2024-03-01 10:15:00" },
+];
 const structTaskShow = ref(true);
 const taskVisible = ref(true);
 
@@ -621,9 +628,9 @@ function getList() {
     loading.value = false;
   }).catch(() => {
     loading.value = false;
-    extStructList.value = [];
-    total.value = 0;
-    proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+    extStructList.value = mockStructData;
+    total.value = mockStructData.length;
+    proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
   });
 }
 
