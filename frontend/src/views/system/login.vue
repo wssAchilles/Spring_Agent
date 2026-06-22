@@ -1,302 +1,95 @@
 <template>
-    <!-- 上次登录用户登录页面登录页面样式二 -->
-    <div class="login-two sysInfo sysInfo-wrap" ref="app-container">
-        <div class="left-content">
-            <div class="swiper leftSwiper">
-                <div class="swiper-wrapper">
-                    <!--          <el-carousel  style="width:100%;heght:100%;" arrow="never" autoplay>-->
-                    <!--            <el-carousel-item v-for="(item,index) in loginimglist" :key="index">-->
-                    <!--              <div :class="'swiper-slide swiper-slide-'+item.id"></div>-->
-                    <!--            </el-carousel-item>-->
-                    <!--          </el-carousel>-->
-
-                    <el-carousel
-                        style="width: 100%; height: 100%"
-                        arrow="never"
-                        autoplay
-                        indicator-position="none"
-                    >
-                        <el-carousel-item v-for="(item, index) in loginimglist" :key="index">
-                            <div class="swiper-slide" :style="getBackgroundStyle(item)"></div>
-                        </el-carousel-item>
-                    </el-carousel>
-
-                    <div class="benefit-icons-layer" aria-hidden="true">
-                        <div class="benefit-icon benefit-icon-efficiency">
-                            <img :src="benefitEfficiencyIcon" alt="" />
-                        </div>
-                        <div class="benefit-icon benefit-icon-reliable benefit-icon-animated">
-                            <img :src="benefitOpenIcon" alt="" />
-                        </div>
-                        <div class="benefit-icon benefit-icon-open benefit-icon-animated">
-                            <img :src="benefitReliableIcon" alt="" />
-                        </div>
-                    </div>
-
-                    <div class="login-effects-layer" aria-hidden="true">
-                        <div class="effect-stage effect-dev">
-                            <div class="dev-code dev-code-a">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="dev-code dev-code-b">
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="dev-scan"></div>
-                            <div class="effect-particle particle-a"></div>
-                            <div class="effect-particle particle-b"></div>
-                        </div>
-
-                        <div class="effect-stage effect-workflow">
-                            <div class="flow-node node-a"></div>
-                            <div class="flow-node node-b"></div>
-                            <div class="flow-node node-c"></div>
-                            <div class="flow-line line-a"></div>
-                            <div class="flow-line line-b"></div>
-                            <div class="flow-pulse pulse-a"></div>
-                            <div class="flow-pulse pulse-b"></div>
-                            <div class="flow-base"></div>
-                            <div class="flow-spark spark-a"></div>
-                            <div class="flow-spark spark-b"></div>
-                            <div class="flow-spark spark-c"></div>
-                            <div class="module-platform workflow-platform">
-                                <span></span>
-                                <span></span>
-                            </div>
-                        </div>
-
-                        <div class="effect-stage effect-rag">
-                            <div class="rag-doc doc-a">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="rag-doc doc-b">
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="rag-search"></div>
-                            <div class="rag-ray ray-a"></div>
-                            <div class="rag-ray ray-b"></div>
-                        </div>
-
-                        <div class="effect-stage effect-graph">
-                            <div class="graph-link link-a"></div>
-                            <div class="graph-link link-b"></div>
-                            <div class="graph-link link-c"></div>
-                            <div class="graph-link link-d"></div>
-                            <div class="graph-link link-e"></div>
-                            <div class="graph-link link-f"></div>
-                            <div class="graph-node graph-a"></div>
-                            <div class="graph-node graph-b"></div>
-                            <div class="graph-node graph-c"></div>
-                            <div class="graph-node graph-d"></div>
-                            <div class="graph-node graph-e"></div>
-                            <div class="graph-node graph-f"></div>
-                            <div class="graph-node graph-g"></div>
-                            <div class="graph-wave"></div>
-                            <div class="module-platform graph-platform">
-                                <span></span>
-                                <span></span>
-                            </div>
-                        </div>
-
-                        <div class="effect-stage effect-agent">
-                            <div class="agent-core"></div>
-                            <div class="agent-ring ring-a"></div>
-                            <div class="agent-ring ring-b"></div>
-                            <div class="agent-dot dot-a"></div>
-                            <div class="agent-dot dot-b"></div>
-                            <div class="agent-dot dot-c"></div>
-                            <div class="agent-signal signal-a"></div>
-                            <div class="agent-signal signal-b"></div>
-                        </div>
-                    </div>
+    <div class="login-redesign" ref="app-container">
+        <section class="login-showcase" aria-label="平台介绍">
+            <div class="showcase-inner">
+                <div class="product-chip">知识资产平台</div>
+                <h1>把分散知识整理成可检索、可评测、可运营的资产</h1>
+                <p class="showcase-summary">
+                    统一处理知识接入、结构治理、智能检索与应用运营，帮助团队持续沉淀高质量知识能力。
+                </p>
+                <div class="showcase-actions" aria-hidden="true">
+                    <span>知识库</span>
+                    <span>知识图谱</span>
+                    <span>Bot 运营</span>
                 </div>
-                <div class="swiper-pagination"></div>
-            </div>
-        </div>
-        <div class="right-content">
-            <div class="logo">
-                <img :src="logo" />
-            </div>
-            <div>
-                <div class="greeting">
-                    <div class="entry_period">亲爱的朋友，{{ greetingsTitle }}！</div>
-                    <div class="entry_greeting">
-                        🌟 qKnow 智能体构建平台，让企业知识沉淀为智能能力。
+                <div class="pipeline" aria-hidden="true">
+                    <div class="pipeline-card">
+                        <span>01</span>
+                        <strong>接入</strong>
+                        <p>文档、数据源、业务内容</p>
                     </div>
-                </div>
-                <div class="login-panel">
-                    <el-form ref="loginRef" :model="loginForm" :rules="loginRules">
-                        <p class="titles">
-                            <el-text type="primary" class="titles">账号登录</el-text>
-                        </p>
-
-                        <div class="titles-bar"></div>
-                        <el-form-item prop="username">
-                            <el-input
-                                v-model="loginForm.username"
-                                type="text"
-                                auto-complete="off"
-                                placeholder="账号"
-                            >
-                                <template #prefix>
-                                    <i class="iconfont">&#xeb44;</i>
-                                </template>
-                            </el-input>
-                        </el-form-item>
-                        <el-form-item prop="password">
-                            <el-input
-                                v-model="loginForm.password"
-                                type="password"
-                                auto-complete="off"
-                                placeholder="密码"
-                                @keyup.enter="handleLogin"
-                            >
-                                <template #prefix>
-                                    <i class="iconfont">&#xeb6f;</i>
-                                </template>
-                            </el-input>
-                        </el-form-item>
-                        <el-form-item style="width: 100%">
-                            <el-button
-                                :loading="loading"
-                                type="primary"
-                                style="width: 100%"
-                                @click.native.prevent="handleLogin"
-                            >
-                                <span v-if="!loading">登 录</span>
-                                <span v-else>登 录 中...</span>
-                            </el-button>
-                        </el-form-item>
-
-                        <div class="form-actions">
-                            <el-checkbox v-model="loginForm.rememberMe">记住密码</el-checkbox>
-                            <el-text type="primary" @click="dialogVisible = true">忘记密码</el-text>
-                        </div>
-                    </el-form>
+                    <div class="pipeline-line"></div>
+                    <div class="pipeline-card is-active">
+                        <span>02</span>
+                        <strong>治理</strong>
+                        <p>切片、结构化、质量规则</p>
+                    </div>
+                    <div class="pipeline-line"></div>
+                    <div class="pipeline-card">
+                        <span>03</span>
+                        <strong>应用</strong>
+                        <p>检索、问答、运营分析</p>
+                    </div>
                 </div>
             </div>
-            <div>
-                <div class="description">
-                    <div class="contact" style="float: left">
-                        <!--            <img src="@/assets/system/images/login/phone.png"/>-->
-                        <div class="contact-img">
-                            <i class="iconfont icon-dianhua-xianxing"></i>
-                        </div>
-                        <div>
-                            <p>联系电话：</p>
-                            <!--              <p>400-660-8208</p>-->
-                            <p>
-                                {{
-                                    contentDetail && contentDetail.contactNumber
-                                        ? contentDetail.contactNumber
-                                        : '400-660-8208'
-                                }}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="contact" style="padding-left: 24px">
-                        <!--            <img src="@/assets/system/images/login/email.png"/>-->
-                        <div class="contact-img">
-                            <i class="iconfont icon-youjian-xianxing"></i>
-                        </div>
-                        <div>
-                            <p>电子邮箱：</p>
-                            <!--              <p>support@qiantong.tech</p>-->
-                            <p>
-                                {{
-                                    contentDetail && contentDetail.email
-                                        ? contentDetail.email
-                                        : 'support@qiantong.tech'
-                                }}
-                            </p>
-                        </div>
-                    </div>
+        </section>
+        <section class="login-auth" aria-label="账号登录">
+            <div class="auth-card">
+                <div class="auth-brand">
+                    <span>K</span>
+                    <strong>Knowledge Hub</strong>
                 </div>
-                <div class="chrome-wrap">
-                    <img src="@/assets/system/images/login/goge-icon.png" style="height: 20px" />
-                    <span style="color: #888; font-size: 12px; line-height: 0; margin-left: 10px"
-                        >为保证最佳浏览效果，请使用</span
-                    >
-                    <span style="color: #ee2223; font-size: 12px; line-height: 0">Chrome</span>
-                    <span style="color: #888; font-size: 12px; line-height: 0"
-                        >浏览器，点击下载安装</span
-                    >
-                    <a href="https://www.google.cn/chrome/" target="_blank">
-                        <div
-                            style="
-                                margin-left: 15px;
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                            "
+                <div class="auth-heading">
+                    <p>{{ greetingsTitle }}</p>
+                    <h2>登录工作台</h2>
+                    <span>继续管理知识资产与智能应用。</span>
+                </div>
+                <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="auth-form">
+                    <el-form-item prop="username">
+                        <el-input
+                            v-model="loginForm.username"
+                            type="text"
+                            auto-complete="off"
+                            placeholder="请输入账号"
+                            size="large"
                         >
-                            <img
-                                id="window_img"
-                                src="@/assets/system/images/login/window-icon.svg"
-                                style="height: 25px"
-                            />
-                            <span
-                                style="
-                                    color: #888;
-                                    font-size: 12px;
-                                    line-height: 0;
-                                    margin-top: 7px;
-                                "
-                                >Window</span
-                            >
-                        </div>
-                    </a>
-                    <a href="https://www.google.cn/chrome/" target="_blank">
-                        <div
-                            style="
-                                margin-left: 15px;
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                            "
+                            <template #prefix>
+                                <i class="iconfont">&#xeb44;</i>
+                            </template>
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item prop="password">
+                        <el-input
+                            v-model="loginForm.password"
+                            type="password"
+                            auto-complete="off"
+                            placeholder="请输入密码"
+                            show-password
+                            size="large"
+                            @keyup.enter="handleLogin"
                         >
-                            <img
-                                id="mac_img"
-                                src="@/assets/system/images/login/mac-icon.svg"
-                                style="height: 25px"
-                            />
-                            <span
-                                style="
-                                    color: #888;
-                                    font-size: 12px;
-                                    line-height: 0;
-                                    margin-top: 7px;
-                                "
-                                >Mac</span
-                            >
-                        </div>
-                    </a>
-                </div>
-                <div class="bottom-info">
-                    <div class="copy-right">
-                        Copyright© 2026
-                        <a href="https://qiantong.tech" target="_blank">江苏千桐科技有限公司</a>
-                        版权所有
-                        
+                            <template #prefix>
+                                <i class="iconfont">&#xeb6f;</i>
+                            </template>
+                        </el-input>
+                    </el-form-item>
+                    <div class="auth-options">
+                        <el-checkbox v-model="loginForm.rememberMe">记住密码</el-checkbox>
+                        <el-button link type="primary" @click="dialogVisible = true">忘记密码</el-button>
                     </div>
-                    <div class="record" @click="goKtPage()">
-                        <img src="https://www.asktempo.com/statics/images/an.png" alt="" />
-                        <!--            &nbsp;&nbsp; 苏ICP备2022008519号-3-->
-                        &nbsp;&nbsp;
-                        {{
-                            contentDetail && contentDetail.recordNumber
-                                ? contentDetail.recordNumber
-                                : '苏ICP备2022008519号-3'
-                        }}
-                    </div>
-                </div>
+                    <el-button
+                        :loading="loading"
+                        type="primary"
+                        class="auth-submit"
+                        size="large"
+                        @click.prevent="handleLogin"
+                    >
+                        <span v-if="!loading">登录</span>
+                        <span v-else>登录中...</span>
+                    </el-button>
+                </el-form>
             </div>
-        </div>
+        </section>
     </div>
 
     <el-dialog
@@ -359,7 +152,7 @@
     import 'swiper/swiper-bundle.min.css';
     import useUserStore from '@/store/system/user.js';
     import { getContent } from '@/api/system/system/content';
-    import defaultLogo from '@/assets/system/images/login/logo.png';
+    import defaultLogo from '@/assets/system/images/entrance/kb.png';
     // 使用 import 直接引入图片路径
     import banner1 from '@/assets/system/images/login/banner.png';
     import banner2 from '@/assets/system/images/login/banner2.png';
@@ -446,7 +239,7 @@
                 const data = res.data;
                 contentDetail.value = data;
                 const sysLogo = data.loginLogo;
-                logo.value = sysLogo ? sysLogo : defaultLogo;
+                logo.value = defaultLogo;
                 const carouselImageList = data.carouselImage.split(',');
                 // console.log('-----contentDetail',contentDetail.value)
                 // console.log('-----login-----0----0--0--------0-',carouselImageList)
@@ -552,14 +345,6 @@
         }, 1000);
     }
 
-    function goPage() {
-        window.open('https://qiantong.tech/', '_blank'); // 在新窗口打开链接
-    }
-
-    //点击备案号调整工信部
-    function goKtPage() {
-        window.open('https://beian.miit.gov.cn/#/Integrated/index', '_blank'); // 在新窗口打开链接
-    }
 </script>
 
 <style lang="scss">
@@ -571,7 +356,7 @@
         .wrapper {
             width: 100%;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
 
             .el-button {
@@ -704,10 +489,168 @@
                 height: 100%;
                 position: relative;
                 overflow: hidden;
+                background:
+                    linear-gradient(135deg, rgba(236, 244, 255, 0.96), rgba(213, 229, 255, 0.88)),
+                    radial-gradient(circle at 78% 26%, rgba(38, 102, 251, 0.22), transparent 32%);
+
+                &::before {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    z-index: 1;
+                    background:
+                        linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.12)),
+                        repeating-linear-gradient(
+                            115deg,
+                            rgba(38, 102, 251, 0.05) 0,
+                            rgba(38, 102, 251, 0.05) 1px,
+                            transparent 1px,
+                            transparent 46px
+                        );
+                }
 
                 .swiper-wrapper {
                     position: relative;
                     height: 100%;
+                }
+
+                :deep(.el-carousel) {
+                    display: none;
+                }
+
+                .left-hero-copy {
+                    position: absolute;
+                    left: 9%;
+                    top: 12%;
+                    z-index: 5;
+                    width: 72%;
+                    color: #111827;
+                }
+
+                .left-hero-kicker {
+                    color: #2666fb;
+                    font-size: 16px;
+                    font-weight: 700;
+                    margin-bottom: 18px;
+                }
+
+                .left-hero-copy h1 {
+                    margin: 0;
+                    max-width: 720px;
+                    font-size: 46px;
+                    line-height: 1.22;
+                    font-weight: 800;
+                    letter-spacing: 0;
+                }
+
+                .left-hero-copy p {
+                    margin: 22px 0 0;
+                    max-width: 560px;
+                    color: #52627a;
+                    font-size: 18px;
+                    line-height: 1.75;
+                }
+
+                .left-hero-tags {
+                    display: flex;
+                    gap: 14px;
+                    margin-top: 34px;
+
+                    span {
+                        padding: 10px 18px;
+                        border: 1px solid rgba(38, 102, 251, 0.22);
+                        border-radius: 999px;
+                        background: rgba(255, 255, 255, 0.58);
+                        color: #28456f;
+                        font-size: 14px;
+                    }
+                }
+
+                .left-hero-visual {
+                    display: grid;
+                    grid-template-columns: 1fr 72px 1fr 72px 1fr;
+                    align-items: center;
+                    gap: 0;
+                    width: min(920px, 92%);
+                    margin-top: 64px;
+                }
+
+                .visual-card {
+                    min-height: 148px;
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    padding: 22px;
+                    border: 1px solid rgba(89, 135, 205, 0.2);
+                    border-radius: 12px;
+                    background: rgba(255, 255, 255, 0.62);
+                    box-shadow: 0 22px 54px rgba(38, 102, 251, 0.1);
+                    overflow: hidden;
+
+                    &::before {
+                        content: '';
+                        position: absolute;
+                        right: -26px;
+                        top: -24px;
+                        width: 96px;
+                        height: 96px;
+                        border-radius: 50%;
+                        background: radial-gradient(circle, rgba(38, 102, 251, 0.2), transparent 66%);
+                    }
+
+                    strong {
+                        position: relative;
+                        z-index: 1;
+                        color: #1e3558;
+                        font-size: 20px;
+                        line-height: 1.2;
+                    }
+
+                    i {
+                        position: relative;
+                        z-index: 1;
+                        width: 44px;
+                        height: 44px;
+                        border-radius: 12px;
+                        background: linear-gradient(135deg, #2c6fff, #5fc9ff);
+                        box-shadow: 0 12px 24px rgba(38, 102, 251, 0.24);
+                    }
+                }
+
+                .visual-index {
+                    position: relative;
+                    z-index: 1;
+                    width: max-content;
+                    padding: 5px 10px;
+                    border-radius: 999px;
+                    color: #2666fb;
+                    background: rgba(38, 102, 251, 0.1);
+                    font-size: 13px;
+                    font-weight: 800;
+                }
+
+                .visual-card-source i {
+                    border-radius: 10px;
+                }
+
+                .visual-card-graph i {
+                    border-radius: 50%;
+                    background: radial-gradient(circle at 50% 50%, #fff 0 18%, #4aa5ff 20% 44%, #2c6fff 46% 100%);
+                }
+
+                .visual-card-app i {
+                    background: linear-gradient(135deg, #27c8b9, #2c6fff);
+                }
+
+                .visual-connector {
+                    height: 2px;
+                    background: linear-gradient(90deg, rgba(38, 102, 251, 0.12), rgba(38, 102, 251, 0.48), rgba(38, 102, 251, 0.12));
+                }
+
+                .benefit-icons-layer,
+                .login-effects-layer {
+                    display: none;
                 }
 
                 .swiper-imagesize {
@@ -814,80 +757,6 @@
                 // margin-top: 10px;
             }
 
-            .description {
-                margin-top: 30px;
-                margin-left: 15%;
-
-                .contact {
-                    font-size: 14px;
-                    color: #666666;
-                    display: flex;
-                    align-items: center;
-                    height: 42px;
-                    line-height: 42px;
-                    //width: 173px;
-
-                    img {
-                        width: 32px;
-                        height: 32px;
-                        margin-right: 16px;
-                    }
-
-                    p {
-                        height: 20px;
-                        line-height: 20px;
-                        font-size: 16px;
-                        // font-weight: 500px;
-                        color: #000000;
-                        margin: 0;
-                    }
-
-                    p:first-child {
-                        font-weight: 500px;
-                        font-size: 14px;
-                        color: #6d6d6d;
-                    }
-                }
-            }
-
-            .contact-img {
-                margin-right: 16px;
-                display: flex;
-                width: 32px;
-                height: 32px;
-                align-items: center;
-                justify-content: center;
-                border-radius: 16px;
-                color: #ffffff;
-                background-color: var(--el-color-primary);
-            }
-
-            .chrome-wrap {
-                display: flex;
-                margin-left: 15%;
-                align-items: center;
-                margin-top: 8px;
-            }
-
-            .bottom-info {
-                margin-top: 20px;
-                margin-left: 15%;
-                height: 17px;
-                font-size: 12px;
-                font-weight: 400px;
-                left: 0px;
-                color: #6d6d6d;
-                line-height: 17px;
-                display: flex;
-                align-items: center;
-
-                .record {
-                    cursor: pointer;
-                    margin-left: 20px;
-                    display: flex;
-                    align-items: center;
-                }
-            }
         }
     }
 </style>
@@ -949,36 +818,6 @@
 
                 }
 
-                .description {
-                    width: 100%;
-                    margin-left: 0;
-                    margin-top: 10px;
-
-                    .contact {
-                        width: 48%;
-
-                        img {
-                            width: 28px;
-                            height: 28px;
-                            margin-right: 12px;
-                        }
-
-                        p {
-                            font-size: 12px;
-                        }
-                    }
-                }
-
-                .chrome-wrap {
-                    margin-left: 0;
-                    display: none;
-                }
-
-                .bottom-info {
-                    margin-left: 0;
-                    margin-top: 10px;
-                    flex-direction: column;
-                }
             }
         }
     }
@@ -2050,6 +1889,306 @@
         50% {
             filter: drop-shadow(0 10px 14px rgba(40, 118, 255, 0.3));
             transform: translate(-50%, calc(-50% - 4px)) scale(1.04);
+        }
+    }
+
+    .login-redesign {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(620px, 1.14fr) minmax(460px, 0.86fr);
+        background: #f6f8fc;
+        overflow: hidden;
+        color: #101828;
+    }
+
+    .login-showcase {
+        position: relative;
+        min-height: 720px;
+        display: flex;
+        align-items: center;
+        padding: 72px clamp(48px, 7vw, 118px);
+        overflow: hidden;
+        background:
+            linear-gradient(135deg, rgba(10, 31, 68, 0.96), rgba(20, 70, 137, 0.92)),
+            url('@/assets/system/images/layout/navbar_bg.jpg') center / cover no-repeat;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 78% 18%, rgba(96, 199, 255, 0.34), transparent 28%),
+                radial-gradient(circle at 16% 78%, rgba(48, 123, 255, 0.28), transparent 30%),
+                linear-gradient(115deg, rgba(255, 255, 255, 0.06), transparent 40%);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.22;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+            background-size: 56px 56px;
+            mask-image: linear-gradient(90deg, #000, transparent 78%);
+        }
+    }
+
+    .showcase-inner {
+        position: relative;
+        z-index: 1;
+        width: min(760px, 100%);
+    }
+
+    .product-chip {
+        display: inline-flex;
+        align-items: center;
+        height: 34px;
+        padding: 0 14px;
+        border: 1px solid rgba(145, 201, 255, 0.34);
+        border-radius: 999px;
+        color: #b9ddff;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .showcase-inner h1 {
+        max-width: 720px;
+        margin: 28px 0 0;
+        color: #ffffff;
+        font-size: clamp(44px, 4.7vw, 72px);
+        line-height: 1.08;
+        font-weight: 800;
+        letter-spacing: 0;
+    }
+
+    .showcase-summary {
+        max-width: 620px;
+        margin: 26px 0 0;
+        color: rgba(230, 241, 255, 0.78);
+        font-size: 18px;
+        line-height: 1.75;
+    }
+
+    .showcase-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 34px;
+
+        span {
+            padding: 10px 16px;
+            border: 1px solid rgba(145, 201, 255, 0.3);
+            border-radius: 8px;
+            color: #d9ecff;
+            background: rgba(255, 255, 255, 0.08);
+            font-size: 14px;
+        }
+    }
+
+    .pipeline {
+        display: grid;
+        grid-template-columns: 1fr 56px 1fr 56px 1fr;
+        align-items: center;
+        gap: 0;
+        margin-top: 74px;
+    }
+
+    .pipeline-card {
+        min-height: 150px;
+        padding: 20px;
+        border: 1px solid rgba(167, 207, 255, 0.2);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 22px 56px rgba(0, 20, 64, 0.2);
+        backdrop-filter: blur(14px);
+
+        span {
+            color: #79c2ff;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        strong {
+            display: block;
+            margin-top: 20px;
+            color: #ffffff;
+            font-size: 24px;
+        }
+
+        p {
+            margin: 12px 0 0;
+            color: rgba(230, 241, 255, 0.66);
+            font-size: 13px;
+            line-height: 1.55;
+        }
+    }
+
+    .pipeline-card.is-active {
+        border-color: rgba(101, 201, 255, 0.55);
+        background: rgba(40, 122, 255, 0.22);
+    }
+
+    .pipeline-line {
+        height: 1px;
+        background: linear-gradient(90deg, rgba(145, 201, 255, 0.2), rgba(145, 201, 255, 0.8), rgba(145, 201, 255, 0.2));
+    }
+
+    .login-auth {
+        min-height: 720px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.98));
+    }
+
+    .auth-card {
+        width: min(440px, 100%);
+        padding: 42px;
+        border: 1px solid #e8eef7;
+        border-radius: 10px;
+        background: #ffffff;
+        box-shadow: 0 28px 80px rgba(16, 41, 90, 0.12);
+    }
+
+    .auth-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        span {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 21px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #246bfe, #35c8d5);
+        }
+
+        strong {
+            color: #172033;
+            font-size: 19px;
+            line-height: 1;
+        }
+    }
+
+    .auth-heading {
+        margin-top: 54px;
+
+        p {
+            margin: 0 0 10px;
+            color: #2563eb;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        h2 {
+            margin: 0;
+            color: #101828;
+            font-size: 32px;
+            line-height: 1.15;
+            font-weight: 800;
+        }
+
+        span {
+            display: block;
+            margin-top: 12px;
+            color: #667085;
+            font-size: 14px;
+        }
+    }
+
+    .auth-form {
+        margin-top: 34px;
+
+        :deep(.el-form-item) {
+            margin-bottom: 18px;
+        }
+
+        :deep(.el-input__wrapper) {
+            min-height: 46px;
+            border-radius: 8px;
+            box-shadow: 0 0 0 1px #dbe3ef inset;
+            transition: box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        :deep(.el-input__wrapper:hover),
+        :deep(.el-input__wrapper.is-focus) {
+            box-shadow: 0 0 0 1px #2563eb inset, 0 12px 24px rgba(37, 99, 235, 0.08);
+        }
+
+        .iconfont {
+            color: #98a2b3;
+        }
+    }
+
+    .auth-options {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 4px 0 24px;
+    }
+
+    .auth-submit {
+        width: 100%;
+        height: 46px;
+        border-radius: 8px;
+        font-weight: 700;
+        background: linear-gradient(90deg, #246bfe, #155eef);
+        border: none;
+        box-shadow: 0 16px 32px rgba(37, 99, 235, 0.22);
+    }
+
+    @media screen and (max-width: 1100px) {
+        .login-redesign {
+            grid-template-columns: 1fr;
+            overflow: auto;
+        }
+
+        .login-showcase {
+            min-height: auto;
+            padding: 56px 36px;
+        }
+
+        .pipeline {
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-top: 40px;
+        }
+
+        .pipeline-line {
+            display: none;
+        }
+
+        .login-auth {
+            min-height: auto;
+            padding: 36px;
+        }
+    }
+
+    @media screen and (max-width: 640px) {
+        .login-showcase {
+            display: none;
+        }
+
+        .login-auth {
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-card {
+            padding: 28px;
+        }
+
+        .auth-heading {
+            margin-top: 40px;
         }
     }
 </style>

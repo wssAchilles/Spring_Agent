@@ -103,55 +103,44 @@ const edgeForm = ref({
   label: 'related_to'
 });
 
-// Fetch graph data
 const fetchGraphData = async () => {
   try {
-    console.log('Fetching graph data...');
     loading.value = true;
     const response = await request({
       url: '/kg/graph/data',
       method: 'get'
     });
-    console.log('Graph data response:', response);
-    graphData.value = response.data;
-    console.log('Graph data:', graphData.value);
-    console.log('Nodes count:', graphData.value.nodes?.length);
-    
-    // Wait for DOM update
+    const data = response.data || response;
+    graphData.value = {
+      nodes: data.nodes || [],
+      edges: data.edges || []
+    };
+
     loading.value = false;
     await nextTick();
-    await nextTick(); // Double nextTick to ensure DOM is fully updated
-    
-    console.log('Graph container:', graphContainer.value);
-    console.log('Calling renderGraph...');
-    renderGraph();
+    await nextTick();
+
+    if (graphData.value.nodes.length > 0) {
+      renderGraph();
+    }
   } catch (error) {
     console.error('Failed to fetch graph data:', error);
-    ElMessage.error('获取图谱数据失败');
-  } finally {
+    ElMessage.error('获取图谱数据失败，请确认后端服务已启动');
     loading.value = false;
   }
 };
 
-// Render graph using vis-network
 const renderGraph = async () => {
   if (!graphContainer.value || graphData.value.nodes.length === 0) return;
 
   try {
-    console.log('Loading vis-network...');
-    
-    // Load vis-network dynamically
     if (!Network) {
       const visModule = await import('vis-network/standalone');
-      console.log('vis-module:', visModule);
       Network = visModule.Network;
       DataSet = visModule.DataSet;
     }
 
-    console.log('Network:', Network, 'DataSet:', DataSet);
-
     if (!Network || !DataSet) {
-      console.error('Failed to load vis-network');
       ElMessage.error('加载图谱组件失败');
       return;
     }
@@ -160,9 +149,10 @@ const renderGraph = async () => {
       graphData.value.nodes.map(node => ({
         id: node.id,
         label: node.label,
-        title: `${node.label}\n类型: ${node.type}`,
+        title: `${node.label}\n类型: ${node.type}${node.properties ? '\n' + JSON.parse(node.properties).description : ''}`,
         color: getNodeColor(node.type),
-        font: { size: 14 }
+        font: { size: 14, color: '#333' },
+        size: 25
       }))
     );
 
@@ -173,7 +163,8 @@ const renderGraph = async () => {
         to: edge.target,
         label: edge.label,
         arrows: 'to',
-        font: { size: 10, align: 'middle' }
+        font: { size: 10, align: 'middle' },
+        color: { color: '#848484', highlight: '#409EFF' }
       }))
     );
 
@@ -192,11 +183,13 @@ const renderGraph = async () => {
       },
       interaction: {
         hover: true,
-        tooltipDelay: 200
+        tooltipDelay: 200,
+        zoomView: true,
+        dragView: true
       },
       nodes: {
         shape: 'dot',
-        size: 20,
+        size: 25,
         borderWidth: 2,
         shadow: true
       },
@@ -207,12 +200,10 @@ const renderGraph = async () => {
       }
     };
 
-    console.log('Creating Network...');
     new Network(graphContainer.value, data, options);
-    console.log('Network created successfully');
   } catch (err) {
     console.error('Failed to render graph:', err);
-    ElMessage.error('渲染图谱失败');
+    ElMessage.error('渲染图谱失败，请检查 vis-network 依赖是否安装');
   }
 };
 

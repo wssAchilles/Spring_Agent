@@ -1,13 +1,14 @@
 package tech.qiantong.qknow.module.app.api.service.impl;
 
 import com.google.common.collect.Lists;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tech.qiantong.qknow.module.app.api.service.IAppGraphApiService;
 import tech.qiantong.qknow.module.app.controller.admin.appGraph.vo.AppGraphRelationshipSaveReqVO;
 import tech.qiantong.qknow.module.app.controller.admin.appGraph.vo.AppGraphVO;
 import tech.qiantong.qknow.module.app.service.appGraph.AppGraphService;
 
-import jakarta.annotation.Resource;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +17,7 @@ import java.util.Map;
  */
 @Service
 public class AppGraphApiServiceImpl implements IAppGraphApiService {
-    @Resource
+    @Autowired(required = false)
     private AppGraphService appGraphService;
 
     /**
@@ -26,10 +27,16 @@ public class AppGraphApiServiceImpl implements IAppGraphApiService {
      * @return
      */
     public Map<String, Object> getGraph(AppGraphVO appGraphVO) {
+        if (appGraphService == null) {
+            return Collections.emptyMap();
+        }
         return appGraphService.getGraph(appGraphVO);
     }
 
     public Boolean addTripletRel(AppGraphRelationshipSaveReqVO graphRelationshipSaveReqVO) {
+        if (appGraphService == null) {
+            return false;
+        }
         List<AppGraphRelationshipSaveReqVO> appGraphRelationshipSaveReqVOS = Lists.newArrayList(graphRelationshipSaveReqVO);
         return appGraphService.addTripletRel(appGraphRelationshipSaveReqVOS);
     }

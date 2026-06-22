@@ -48,16 +48,16 @@
                         <div class="help-head">
                             <div class="help-title">
                                 <svg-icon class="img" icon-class="help-title" />
-                                <span>社区与支持</span>
+                                <span>帮助与支持</span>
                             </div>
-                            <div class="help-desc">使用帮助、常见问题解答</div>
+                            <div class="help-desc">操作指南、常见问题</div>
                         </div>
                         <div @click="handleHelp" class="help-btn">
                             <el-icon><House /></el-icon>
-                            <span>qKnow社区</span>
+                            <span>帮助中心</span>
                         </div>
                         <div class="help-second">
-                            <span @click="handleFAQ">文档站</span>
+                            <span @click="handleFAQ">操作手册</span>
                             <span class="line"></span>
                             <span @click="handleAbout">关于</span>
                         </div>
@@ -69,16 +69,16 @@
                 <div class="help-head">
                     <div class="help-title">
                         <svg-icon class="img" icon-class="help-title" />
-                        <span>社区与支持</span>
+                        <span>帮助与支持</span>
                     </div>
-                    <div class="help-desc">使用帮助、常见问题解答</div>
+                    <div class="help-desc">操作指南、常见问题</div>
                 </div>
                 <div @click="handleHelp" class="help-btn">
                     <el-icon><House /></el-icon>
-                    <span>qKnow社区</span>
+                    <span>帮助中心</span>
                 </div>
                 <div class="help-second">
-                    <span @click="handleFAQ">文档站</span>
+                    <span @click="handleFAQ">操作手册</span>
                     <span class="line"></span>
                     <span @click="handleAbout">关于</span>
                 </div>
@@ -95,6 +95,7 @@
     import useSettingsStore from '@/store/system/settings';
     import usePermissionStore from '@/store/system/permission';
     import defaultSettings from '@/settings';
+    import { ElMessage } from 'element-plus';
 
     const route = useRoute();
     const appStore = useAppStore();
@@ -126,13 +127,13 @@
     });
 
     const handleFAQ = () => {
-        window.open('https://community.qknow.ai/docs/start/introduction.html', '_blank');
+        ElMessage.info('操作手册正在整理中');
     };
     const handleAbout = () => {
-        window.open('https://qiantong.tech/', '_blank');
+        ElMessage.info('Knowledge Hub 智能知识资产平台');
     };
     const handleHelp = () => {
-        window.open('https://community.qknow.ai', '_blank');
+        ElMessage.info('帮助中心正在整理中');
     };
 </script>
 

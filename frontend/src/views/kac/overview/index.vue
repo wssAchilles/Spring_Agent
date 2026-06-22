@@ -46,33 +46,6 @@
       </aside>
     </div>
 
-    <!-- <section class="overview-section">
-      <div class="section-head">
-        <div class="panel-title">
-          <span></span>
-          精选解决方案
-        </div>
-        <button
-          class="section-more"
-          type="button"
-          @click="goToPage('/kac/solution')"
-        >
-          查看更多
-          <el-icon><ArrowRight /></el-icon>
-        </button>
-      </div>
-
-      <div class="section-content" v-loading="solutionLoading">
-        <SolutionCard
-          v-if="solutionList.length"
-          :data="solutionList"
-          source="solution"
-          variant="overview"
-        />
-        <el-empty v-else description="暂无解决方案" />
-      </div>
-    </section> -->
-
     <section class="overview-section">
       <div class="section-head">
         <div class="panel-title">
@@ -90,12 +63,38 @@
       </div>
 
       <div class="section-content" v-loading="applyLoading">
-        <Card
-          v-if="applyList.length"
-          :data="applyList"
-          source="horizontal"
-          variant="overview"
-        />
+        <div v-if="applyList.length" class="apply-grid">
+          <div v-for="item in applyList" :key="item.id" class="apply-card">
+            <div class="apply-card-header">
+              <div class="apply-icon-wrapper">
+                <el-icon :size="24" color="#409eff">
+                  <component :is="getIconComponent(item.icon)" />
+                </el-icon>
+              </div>
+              <div class="apply-info">
+                <div class="apply-name">{{ item.name }}</div>
+                <div class="apply-tags">
+                  <el-tag
+                    v-for="(tag, index) in getTags(item)"
+                    :key="index"
+                    size="small"
+                    class="apply-tag"
+                  >
+                    {{ tag.name }}
+                  </el-tag>
+                </div>
+              </div>
+              <el-tag
+                :type="item.status === 1 ? 'success' : 'warning'"
+                size="small"
+                class="apply-status"
+              >
+                {{ item.status === 1 ? '正常' : '停用' }}
+              </el-tag>
+            </div>
+            <div class="apply-description">{{ item.description }}</div>
+          </div>
+        </div>
         <el-empty v-else description="暂无应用推荐" />
       </div>
     </section>
@@ -104,12 +103,9 @@
 
 <script setup name="Overview">
 import { computed, onMounted, reactive, ref } from "vue";
-import { ArrowRight } from "@element-plus/icons-vue";
+import { ArrowRight, Edit, Search, Document, Connection, Aim, ChatDotRound, Calendar, DataAnalysis } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
-import Card from "@/views/kac/horizontal/components/card.vue";
-import SolutionCard from "@/views/kac/mySolution/components/solutionCard.vue";
-// import { listApply } from "@/api/kac/apply/apply.js";
-// import { listSolution } from "@/api/kac/solution/solution";
+import { listApply } from "@/api/kac/apply/apply.js";
 import useUserStore from "@/store/system/user.js";
 import bannerImage from "@/assets/kac/overview/banner.png";
 import quickSolutionIcon from "@/assets/kac/overview/quick-solution.png";
@@ -121,330 +117,14 @@ import quickMyAppIcon from "@/assets/kac/overview/quick-my-app.png";
 const router = useRouter();
 const userStore = useUserStore();
 
-const solutionLoading = ref(false);
 const applyLoading = ref(false);
-const solutionList = ref([
-  {
-    id: 7,
-    workspaceId: 1001,
-    name: "变电站预测性维护方案",
-    description:
-      "基于变电站主设备的在线监测数据（如油色谱、局放、红外热像），构建设备全生命周期健康画像。系统自动评估设备健康指数，预测绝缘老化与机械故障风险，将传统的定期检修转变为基于状态的预测性维护，降低运维成本。",
-    coverImage: "/2026/04/24/69ead145e4b077552f280c97.jpg",
-    tags: '[{"name":"能源电力"}, {"name":"预测性维护"}]',
-    status: null,
-    mySolutionFlag: false,
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-22 09:05:17",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-22 09:05:17",
-    remark: null,
-    heatValue: "6357",
-  },
-  {
-    id: 6,
-    workspaceId: 1001,
-    name: "大坝安全监测数据分析",
-    description:
-      "汇聚大坝变形、渗流、应力应变等海量监测数据，采用统计模型与机器学习混合算法剔除环境干扰（如水位、温度影响）。精准识别大坝结构性态的异常变化趋势，评估大坝长期服役安全性，为除险加固提供科学依据。",
-    coverImage: "/2026/04/24/69ead16ee4b077552f280c99.jpg",
-    tags: '[{"name":"水利"}, {"name":"安全监测"}]',
-    status: null,
-    mySolutionFlag: false,
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-22 09:04:58",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-22 09:04:58",
-    remark: null,
-    heatValue: "9303",
-  },
-  {
-    id: 5,
-    workspaceId: 1001,
-    name: "源网荷储AI协同调度方案",
-    description:
-      "针对新型电力系统，利用人工智能技术协调电源、电网、负荷与储能侧的实时平衡。通过超短期新能源发电预测与负荷预测，智能调度储能充放电策略与柔性负荷响应，平抑新能源波动，提升电网消纳能力与运行经济性。",
-    coverImage: "/2026/04/24/69ead0f3e4b077552f280c96.png",
-    tags: '[{"name":"能源电力"}, {"name":"协同调度"}]',
-    status: null,
-    mySolutionFlag: false,
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-22 09:04:44",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-22 09:04:44",
-    remark: null,
-    heatValue: "7654",
-  },
-  {
-    id: 4,
-    workspaceId: 1001,
-    name: "水库综合治理解决方案",
-    description:
-      "构建集雨水情监测、防洪调度、水质保护与库区安防于一体的综合管理平台。利用水文模型预测入库流量，结合多目标优化算法制定蓄泄方案，同时通过视频AI识别非法入侵与水面漂浮物，实现水库运行的数字化与生态化管理。",
-    coverImage: "/2026/04/24/69ead156e4b077552f280c98.jpg",
-    tags: '[{"name":"水利"}, {"name":"综合治理"}]',
-    status: null,
-    mySolutionFlag: false,
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-22 09:04:02",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-22 09:04:02",
-    remark: null,
-    heatValue: "1381",
-  },
-]);
-const applyList = ref([
-  {
-    id: 20,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "文章编写",
-    category: 0,
-    description:
-      "文章编写插件是一类旨在辅助用户更高效、更高质量地完成文本创作任务的软件工具或扩展程序。",
-    status: 0,
-    source: null,
-    tags: '[{"name":"写作"},{"name":"文章"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01a88de4b0d389f4f52e8e.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-23 19:54:44",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-23 19:54:44",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-  {
-    id: 8,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "批量检索",
-    category: 0,
-    description:
-      "支持一次性上传多个查询条件并行处理，汇总输出结果。大幅提升效率，适用于多项目数据对比或大规模文献调研。",
-    status: 0,
-    source: null,
-    tags: '[{"name":"效率"}, {"name":"工具"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01a9a0e4b0d389f4f52e90.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-21 18:41:23",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-21 18:41:23",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-  {
-    id: 7,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "精确检索",
-    category: 0,
-    description: "严格字符匹配，精准查找代码、条款或参数，无模糊干扰。",
-    status: 0,
-    source: null,
-    tags: '[{"name":"搜索"}, {"name":"工具"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01a9d8e4b0d389f4f52e91.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-21 18:41:10",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-21 18:41:10",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-  {
-    id: 6,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "实体关系检索",
-    category: 0,
-    description: "智能识别实体与深层关系，助力知识图谱与情报分析。\r\n\r\n",
-    status: 0,
-    source: null,
-    tags: '[{"name":"分析"}, {"name":"数据"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01a9e9e4b0d389f4f52e92.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-21 18:41:07",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-21 18:41:07",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-  {
-    id: 5,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "语义检索",
-    category: 0,
-    description:
-      "利用深度学习理解查询意图与上下文，突破关键词匹配限制。即使词汇不完全一致，也能通过语义关联精准定位内容。",
-    status: 0,
-    source: null,
-    tags: '[{"name":"搜索"}, {"name":"AI"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01a9f9e4b0d389f4f52e93.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-21 18:40:54",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-21 18:40:54",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-  {
-    id: 4,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "知识问答",
-    category: 0,
-    description:
-      "基于海量数据理解并回答各类事实性或解释性问题，提供准确简洁的答案，充当智能百科全书，满足即时信息获取需求。",
-    status: 0,
-    source: null,
-    tags: '[{"name":"问答"}, {"name":"知识"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01aa0ae4b0d389f4f52e94.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-21 18:39:46",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-21 18:39:46",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-  {
-    id: 3,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "模板报告生成",
-    category: 0,
-    description:
-      "提供多场景标准模板，引导填充并自动排版，确保企业级文档专业规范。",
-    status: 0,
-    source: null,
-    tags: '[{"name":"模板"}, {"name":"文档"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01aa17e4b0d389f4f52e95.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-21 18:37:08",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-21 18:37:08",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-  {
-    id: 2,
-    workspaceId: 1001,
-    pluginId: null,
-    name: "日报/周报/月报文章编写",
-    category: 0,
-    description:
-      "简化周期性工作汇报撰写。输入关键事项，系统自动扩展为结构完整、语气专业的报告，智能识别成果与计划，节省写作时间。",
-    status: 0,
-    source: null,
-    tags: '[{"name":"写作"}, {"name":"办公"}]',
-    myApplyFlag: false,
-    useScene: null,
-    useCount: null,
-    icon: "/2026/05/11/6a01a8f6e4b0d389f4f52e8f.png",
-    validFlag: true,
-    delFlag: false,
-    createBy: null,
-    creatorId: null,
-    createTime: "2026-04-21 18:36:52",
-    updateBy: null,
-    updaterId: null,
-    updateTime: "2026-04-21 18:36:52",
-    remark: null,
-    kacApplyKnowledgeList: null,
-    kacApplyGraphList: null,
-    kacApplyBotList: null,
-  },
-]);
+const applyList = ref([]);
 const overviewStats = reactive({
-  solutionTotal: 7,
-  applyTotal: 10,
-  mySolutionTotal: 2,
-  myApplyTotal: 2,
+  applyTotal: 0,
+  myApplyTotal: 0,
 });
+
 const quickEntries = [
-  // {
-  //   label: "解决方案",
-  //   icon: quickSolutionIcon,
-  //   path: "/kac/solution",
-  // },
   {
     label: "通用应用",
     icon: quickHorizontalIcon,
@@ -455,48 +135,25 @@ const quickEntries = [
     icon: quickVerticalIcon,
     path: "/kac/vertical",
   },
-  // {
-  //   label: "我的方案",
-  //   icon: quickMySolutionIcon,
-  //   path: "/kac/mySolution",
-  // },
   {
     label: "我的应用",
     icon: quickMyAppIcon,
     path: "/kac/myApp",
   },
 ];
+
 const quickStats = computed(() => [
-  // {
-  //   label: "解决方案",
-  //   value: overviewStats.solutionTotal,
-  //   path: "/kac/solution",
-  // },
   {
     label: "所有应用",
     value: overviewStats.applyTotal,
     path: "/kac/horizontal",
   },
-  // {
-  //   label: "我的方案",
-  //   value: overviewStats.mySolutionTotal,
-  //   path: "/kac/mySolution",
-  // },
   {
     label: "我的应用",
     value: overviewStats.myApplyTotal,
     path: "/kac/myApp",
   },
 ]);
-
-const solutionQueryParams = reactive({
-  pageNum: 1,
-  pageSize: 4,
-  name: null,
-  mySolutionFlag: 0,
-  orderByColumn: "createTime",
-  isAsc: "desc",
-});
 
 const applyQueryParams = reactive({
   pageNum: 1,
@@ -517,16 +174,29 @@ const applyQueryParams = reactive({
   isAsc: "desc",
 });
 
-async function getSolutionList() {
-  solutionLoading.value = true;
+const iconMap = {
+  Edit,
+  Search,
+  Document,
+  Connection,
+  Aim,
+  ChatDotRound,
+  Calendar,
+  DataAnalysis,
+};
+
+function getIconComponent(iconName) {
+  return iconMap[iconName] || Document;
+}
+
+function getTags(row) {
+  if (!row.tags) {
+    return [];
+  }
   try {
-    const response = await listSolution(solutionQueryParams);
-    solutionList.value = response.data.rows || [];
-    overviewStats.solutionTotal = response.data.total || 0;
+    return JSON.parse(row.tags);
   } catch {
-    solutionList.value = [];
-  } finally {
-    solutionLoading.value = false;
+    return [];
   }
 }
 
@@ -544,59 +214,29 @@ async function getApplyList() {
 }
 
 async function getOverviewStats() {
-  const [mySolutionRes, myApplyRes, allApplyRes] = await Promise.allSettled([
-    listSolution({
-      ...solutionQueryParams,
-      pageNum: 1,
-      pageSize: 1,
-      userId: userStore.id,
-      mySolutionFlag: 1,
-    }),
-    listApply({
+  try {
+    const myApplyRes = await listApply({
       ...applyQueryParams,
       pageNum: 1,
       pageSize: 1,
       category: null,
       userId: userStore.id,
       myApplyFlag: 1,
-    }),
-    listApply({
-      ...applyQueryParams,
-      pageNum: 1,
-      pageSize: 1,
-      category: null,
-      myApplyFlag: 0,
-    }),
-  ]);
-
-  if (mySolutionRes.status === "fulfilled") {
-    overviewStats.mySolutionTotal = mySolutionRes.value.data?.total || 0;
-  }
-  if (myApplyRes.status === "fulfilled") {
-    overviewStats.myApplyTotal = myApplyRes.value.data?.total || 0;
-  }
-  if (allApplyRes.status === "fulfilled") {
-    overviewStats.applyTotal =
-      allApplyRes.value.data?.total || overviewStats.applyTotal;
+    });
+    overviewStats.myApplyTotal = myApplyRes.data?.total || 0;
+  } catch {
+    overviewStats.myApplyTotal = 0;
   }
 }
 
 function goToPage(path) {
-  if (path === "/kac/solution" || path === "/kac/mySolution") {
-    ElMessage({
-      message: "功能正在开发中",
-      type: "warning",
-    });
-    return;
-  }
   router.push(path);
 }
 
-// onMounted(() => {
-//   getSolutionList();
-//   getApplyList();
-//   getOverviewStats();
-// });
+onMounted(() => {
+  getApplyList();
+  getOverviewStats();
+});
 </script>
 
 <style scoped lang="scss">
@@ -686,7 +326,6 @@ function goToPage(path) {
 
 .quick-grid {
   display: grid;
-  // grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
   margin-top: 18px;
@@ -725,7 +364,6 @@ function goToPage(path) {
 
 .stat-grid {
   display: grid;
-  // grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-columns: repeat(2, minmax(0, 1fr));
   height: 60px;
   margin-top: 16px;
@@ -802,6 +440,79 @@ function goToPage(path) {
   padding: 48px 0 24px;
 }
 
+.apply-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.apply-card {
+  background: #fff;
+  border: 1px solid #e5ebf5;
+  border-radius: 8px;
+  padding: 16px;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.apply-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.apply-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #f0f7ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.apply-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.apply-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 22px;
+  margin-bottom: 8px;
+}
+
+.apply-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.apply-tag {
+  margin: 0;
+}
+
+.apply-status {
+  flex-shrink: 0;
+}
+
+.apply-description {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 @media (max-width: 1440px) {
   .overview-top {
     grid-template-columns: minmax(0, 1fr) 500px;
@@ -810,11 +521,19 @@ function goToPage(path) {
   .overview-hero {
     padding: 42px 54px;
   }
+
+  .apply-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1200px) {
   .overview-top {
     grid-template-columns: 1fr;
+  }
+
+  .apply-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -843,6 +562,10 @@ function goToPage(path) {
 
   .stat-item:nth-child(2) {
     border-right: 0;
+  }
+
+  .apply-grid {
+    grid-template-columns: 1fr;
   }
 }
 aside {
