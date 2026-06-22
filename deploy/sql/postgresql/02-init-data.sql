@@ -34,17 +34,17 @@ INSERT INTO system_dict_type (dict_id, dict_name, dict_type, status, create_by, 
 INSERT INTO system_dict_type (dict_id, dict_name, dict_type, status, create_by, create_time, remark) VALUES (100, 'AI模型类型', 'ai_model_type', '0', 'admin', CURRENT_TIMESTAMP, 'AI模型类型');
 
 -- Default dict data
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (1, 1, '男', '0', 'sys_user_sex', '', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (2, 2, '女', '1', 'sys_user_sex', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (3, 1, '正常', '0', 'sys_normal_disable', 'primary', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (4, 2, '停用', '1', 'sys_normal_disable', 'danger', 'N', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (5, 1, '是', 'Y', 'sys_yes_no', 'primary', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (6, 2, '否', 'N', 'sys_yes_no', 'danger', 'N', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (100, 1, '对话模型', '1', 'ai_model_type', '', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (101, 2, '图片模型', '2', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (102, 3, '语音模型', '3', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (103, 5, '向量模型', '5', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
-INSERT INTO system_dict_data (dict_code, sort, label, value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (104, 6, '重排模型', '6', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (1, 1, '男', '0', 'sys_user_sex', '', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (2, 2, '女', '1', 'sys_user_sex', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (3, 1, '正常', '0', 'sys_normal_disable', 'primary', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (4, 2, '停用', '1', 'sys_normal_disable', 'danger', 'N', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (5, 1, '是', 'Y', 'sys_yes_no', 'primary', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (6, 2, '否', 'N', 'sys_yes_no', 'danger', 'N', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (100, 1, '对话模型', '1', 'ai_model_type', '', 'Y', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (101, 2, '图片模型', '2', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (102, 3, '语音模型', '3', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (103, 5, '向量模型', '5', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
+INSERT INTO system_dict_data (dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, is_default, status, create_by, create_time) VALUES (104, 6, '重排模型', '6', 'ai_model_type', '', 'N', '0', 'admin', CURRENT_TIMESTAMP);
 
 -- Default AI API Key (DeepSeek - user needs to fill in real key)
 INSERT INTO ai_api_key (id, workspace_id, name, platform, description, status, valid_flag, del_flag, create_by, create_time, update_by, update_time)

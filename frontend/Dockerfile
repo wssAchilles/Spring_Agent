@@ -3,7 +3,7 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install --registry=https://registry.npmmirror.com
 COPY frontend/ .
-RUN npm run build
+RUN npm run build:prod
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html

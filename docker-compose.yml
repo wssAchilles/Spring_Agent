@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -48,13 +46,7 @@ services:
       - "9090:9090"
     depends_on:
       backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "java", "-jar", "/usr/app/jar/hermes.jar", "--health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+        condition: service_started
     restart: unless-stopped
 
   backend:

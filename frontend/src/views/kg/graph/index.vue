@@ -9,7 +9,8 @@
       </template>
       
       <div v-if="loading" class="loading-container">
-        <el-loading :fullscreen="false" />
+        <el-icon class="is-loading" :size="40"><Loading /></el-icon>
+        <p>加载中...</p>
       </div>
       
       <div v-else-if="graphData.nodes.length === 0" class="empty-container">
@@ -73,7 +74,12 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
+import { Loading } from '@element-plus/icons-vue';
 import request from '@/utils/request';
+
+// vis-network will be loaded dynamically
+let Network = null;
+let DataSet = null;
 
 const loading = ref(true);
 const graphContainer = ref(null);
@@ -100,13 +106,24 @@ const edgeForm = ref({
 // Fetch graph data
 const fetchGraphData = async () => {
   try {
+    console.log('Fetching graph data...');
     loading.value = true;
     const response = await request({
       url: '/kg/graph/data',
       method: 'get'
     });
+    console.log('Graph data response:', response);
     graphData.value = response.data;
+    console.log('Graph data:', graphData.value);
+    console.log('Nodes count:', graphData.value.nodes?.length);
+    
+    // Wait for DOM update
+    loading.value = false;
     await nextTick();
+    await nextTick(); // Double nextTick to ensure DOM is fully updated
+    
+    console.log('Graph container:', graphContainer.value);
+    console.log('Calling renderGraph...');
     renderGraph();
   } catch (error) {
     console.error('Failed to fetch graph data:', error);
@@ -117,12 +134,29 @@ const fetchGraphData = async () => {
 };
 
 // Render graph using vis-network
-const renderGraph = () => {
+const renderGraph = async () => {
   if (!graphContainer.value || graphData.value.nodes.length === 0) return;
 
-  // Dynamic import vis-network
-  import('vis-network/standalone').then((vis) => {
-    const nodes = new vis.DataSet(
+  try {
+    console.log('Loading vis-network...');
+    
+    // Load vis-network dynamically
+    if (!Network) {
+      const visModule = await import('vis-network/standalone');
+      console.log('vis-module:', visModule);
+      Network = visModule.Network;
+      DataSet = visModule.DataSet;
+    }
+
+    console.log('Network:', Network, 'DataSet:', DataSet);
+
+    if (!Network || !DataSet) {
+      console.error('Failed to load vis-network');
+      ElMessage.error('加载图谱组件失败');
+      return;
+    }
+
+    const nodes = new DataSet(
       graphData.value.nodes.map(node => ({
         id: node.id,
         label: node.label,
@@ -132,7 +166,7 @@ const renderGraph = () => {
       }))
     );
 
-    const edges = new vis.DataSet(
+    const edges = new DataSet(
       graphData.value.edges.map(edge => ({
         id: edge.id,
         from: edge.source,
@@ -173,8 +207,13 @@ const renderGraph = () => {
       }
     };
 
-    new vis.Network(graphContainer.value, data, options);
-  });
+    console.log('Creating Network...');
+    new Network(graphContainer.value, data, options);
+    console.log('Network created successfully');
+  } catch (err) {
+    console.error('Failed to render graph:', err);
+    ElMessage.error('渲染图谱失败');
+  }
 };
 
 // Get node color based on type
