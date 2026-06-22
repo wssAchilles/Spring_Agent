@@ -1,4 +1,4 @@
-﻿
+
 <template>
   <div
     class="card-container"
@@ -323,12 +323,10 @@ function handleUpdate(row) {
 }
 
 function handleDetail(row) {
-  if (props.source === "solution") {
-    proxy.$modal.msgWarning("功能正在开发中");
-    return;
-  }
-
-  const path = "/kac/mySolution/mySolutionDetail";
+  const path =
+    props.source === "solution"
+      ? "/kac/solution/solutionDetail"
+      : "/kac/mySolution/mySolutionDetail";
   router.push({
     path,
     query: {

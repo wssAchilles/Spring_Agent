@@ -188,6 +188,6 @@
 
     <select id="selectChildrenCategoryById" parameterType="Long" resultMap="HubCategoryResult">
         select id, workspace_id, parent_id,knowledge_base_id, name, order_num, ancestors, valid_flag, del_flag, create_by, creator_id, create_time, update_by, updater_id, update_time, remark from kmc_category
-        WHERE FIND_IN_SET(#{parentId}, ancestors)
+        WHERE ',' || ancestors || ',' LIKE '%,' || #{parentId} || ',%'
     </select>
 </mapper>

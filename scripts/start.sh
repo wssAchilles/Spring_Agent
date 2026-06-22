@@ -50,7 +50,7 @@ start_background backend \
   SPRING_DATA_REDIS_PORT=6379 \
   HERMES_GRPC_HOST=localhost \
   HERMES_GRPC_PORT=9090
-wait_for_http "主后端" "http://localhost:8099/captchaImage" 240
+wait_for_tcp "主后端" 8099 240
 
 echo "[4/5] 启动本机 Hermes"
 start_background hermes \

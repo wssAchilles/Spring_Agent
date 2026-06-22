@@ -77,7 +77,7 @@ public class KmcDocumentRespDTO {
     private Integer maxTokens;
 
     /** 自定义分段标识符 */
-    @TableField(value = "`separator`")
+    @TableField(value = "\"separator\"")
     private String separator;
 
     /** 索引内容的形式 */

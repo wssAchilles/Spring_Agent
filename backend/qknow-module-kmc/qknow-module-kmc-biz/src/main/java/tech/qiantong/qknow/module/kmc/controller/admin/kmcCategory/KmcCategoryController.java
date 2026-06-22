@@ -116,7 +116,7 @@ public class KmcCategoryController extends BaseController {
     @Operation(summary = "查询全部知识分类")
     @GetMapping("/allList")
     public CommonResult<List<KmcCategoryDO>> getKmcCategoryAllList(KmcCategoryDO kmcCategoryDO) {
-        kmcCategoryDO.setDelFlag(false);
+        kmcCategoryDO.setDelFlag(0);
         List<KmcCategoryDO> list = kmcCategoryService.getKmcCategoryAllList(kmcCategoryDO);
         return CommonResult.success(list);
     }

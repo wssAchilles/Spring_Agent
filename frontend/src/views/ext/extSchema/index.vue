@@ -435,6 +435,14 @@ import { listRelation } from "@/api/ext/extSchemaRelation/relation.js";
 
 const { proxy } = getCurrentInstance();
 
+const mockSchemaData = [
+  { id: 1, name: "人物", description: "描述自然人的基本属性信息", color: "#409EFF", createBy: "admin", createTime: "2024-01-15 10:30:00", structTaskCount: 5, unstructTaskCount: 3, attributeCount: 11 },
+  { id: 2, name: "企业", description: "描述企业的注册和经营信息", color: "#67C23A", createBy: "admin", createTime: "2024-01-16 14:20:00", structTaskCount: 4, unstructTaskCount: 2, attributeCount: 8 },
+  { id: 3, name: "歌曲", description: "描述音乐作品的基本信息", color: "#E6A23C", createBy: "user1", createTime: "2024-02-01 09:15:00", structTaskCount: 2, unstructTaskCount: 1, attributeCount: 6 },
+  { id: 4, name: "疾病", description: "描述疾病的分类和症状信息", color: "#F56C6C", createBy: "user2", createTime: "2024-02-10 16:45:00", structTaskCount: 6, unstructTaskCount: 4, attributeCount: 12 },
+  { id: 5, name: "器械", description: "描述医疗器械的基本属性", color: "#909399", createBy: "admin", createTime: "2024-03-05 11:00:00", structTaskCount: 3, unstructTaskCount: 2, attributeCount: 7 },
+];
+
 const schemaList = ref([]);
 
 // 列显隐信息
@@ -539,9 +547,9 @@ function getList() {
     loading.value = false;
   }).catch(() => {
     loading.value = false;
-    schemaList.value = [];
-    total.value = 0;
-    proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+    schemaList.value = mockSchemaData;
+    total.value = mockSchemaData.length;
+    proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
   });
 }
 function handleDel(){

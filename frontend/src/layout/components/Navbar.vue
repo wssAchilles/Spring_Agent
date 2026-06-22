@@ -219,7 +219,9 @@
           trigger="click"
         >
           <div class="avatar-wrapper">
-            <img :src="userStore.avatar" class="user-avatar" />
+            <el-avatar :size="34" class="user-avatar" aria-hidden="true">
+              {{ userStore.nickName?.slice(0, 1) || "用" }}
+            </el-avatar>
             <span class="nickName">{{ userStore.nickName }}</span>
           </div>
           <template #dropdown>

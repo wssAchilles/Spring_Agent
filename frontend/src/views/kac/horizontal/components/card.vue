@@ -1,4 +1,4 @@
-﻿
+
 <template>
   <div
     class="card-container"
@@ -273,11 +273,32 @@ function checkOverflow() {
   });
 }
 
+const iconSvgMap = {
+  Edit: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Edit.svg',
+  Search: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Search.svg',
+  Document: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Document.svg',
+  Connection: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Connection.svg',
+  Aim: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Aim.svg',
+  ChatDotRound: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/ChatDotRound.svg',
+  Calendar: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Calendar.svg',
+  DataAnalysis: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/DataAnalysis.svg',
+  Monitor: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Monitor.svg',
+  Money: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Money.svg',
+  FirstAidKit: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/FirstAidKit.svg',
+  Reading: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Reading.svg',
+  ShoppingCart: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/ShoppingCart.svg',
+  CreditCard: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/CreditCard.svg',
+  EditPen: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/EditPen.svg',
+  Service: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Service.svg',
+};
+
 function getImage(row) {
-  if (!row.icon) {
-    return GraphCover;
+  if (!row.icon) return GraphCover;
+  if (iconSvgMap[row.icon]) return iconSvgMap[row.icon];
+  if (row.icon.startsWith('/') || row.icon.startsWith('http')) {
+    return `${import.meta.env.VITE_APP_BASE_API}/profile${row.icon}`;
   }
-  return `${import.meta.env.VITE_APP_BASE_API}/profile${row.icon}`;
+  return GraphCover;
 }
 
 function getStatusOption(status) {
@@ -397,156 +418,58 @@ const pageTypeMap = {
 };
 
 function handleExperience(row) {
-  ElMessage({
-    message: "功能正在开发中",
-    type: "warning",
-  });
-  return;
-  // vertical 页面时，直接提示
-  if (props.source === "vertical") {
-    ElMessage({
-      message: "功能正在开发中",
-      type: "warning",
-    });
+  if (String(row.status) === '0') {
+    ElMessage({ message: '该应用已停用', type: 'warning' });
     return;
   }
 
-  const id = Number(row.id);
-
-  // myApp 时直接跳转
-  if (props.source === "myApp") {
-    const path = "/kac/myApp/pluginApply";
+  if (props.source === 'vertical') {
     router.push({
-      path: path,
-      query: {
-        applyId: row.id,
-        title: row.name,
-      },
+      path: '/kac/vertical/verticalDetail',
+      query: { id: row.id, title: row.name },
     });
     return;
   }
 
-  // status 为 0 时，提示开发中
-  if (String(row.status) === "0") {
-    ElMessage({
-      message: "功能正在开发中",
-      type: "warning",
-    });
-    return;
-  }
-
-  // id = 1: 正常跳转
   if (row.pluginId != null) {
-    const path = "/kac/horizontal/pluginApply";
     router.push({
-      path: path,
-      query: {
-        applyId: row.id,
-        title: row.name,
-      },
+      path: '/kac/horizontal/pluginApply',
+      query: { applyId: row.id, title: row.name },
     });
     return;
   }
 
-  // id = 2, 3: 使用动态路由跳转
-  if (pageTypeMap[id]) {
-    const pageType = pageTypeMap[id];
-    const path = `/kac/horizontal/page/${pageType}`;
-    router.push({
-      path: path,
-      query: {
-        applyId: row.id,
-        title: row.name,
-      },
-    });
-    return;
-  }
-
-  // id >= 10 或其他情况，提示开发中
-  ElMessage({
-    message: "功能正在开发中",
-    type: "warning",
+  router.push({
+    path: '/kac/horizontal/horizontalDetail',
+    query: { id: row.id, title: row.name },
   });
 }
 
 function handleDetail(row) {
-  // vertical 页面时，直接提示
-  if (props.source === "vertical") {
-    ElMessage({
-      message: "功能正在开发中",
-      type: "warning",
-    });
-    return;
-  }
-
-  const id = Number(row.id);
-
-  // myApp 时直接跳转
-  if (props.source === "myApp") {
-    let path = "/kac/myApp/myAppDetail";
+  if (props.source === 'vertical') {
     router.push({
-      path,
-      query: {
-        id: row.id,
-      },
+      path: '/kac/vertical/verticalDetail',
+      query: { id: row.id },
     });
     return;
   }
 
-  // status 为 0 时，提示开发中
-  if (String(row.status) === "0") {
-    ElMessage({
-      message: "功能正在开发中",
-      type: "warning",
-    });
-    return;
-  }
-
-  // id = 1: 正常跳转
-  if (row.pluginId != null) {
-    const path = "/kac/horizontal/horizontalDetail";
+  if (props.source === 'myApp') {
     router.push({
-      path,
-      query: {
-        id: row.id,
-      },
+      path: '/kac/myApp/myAppDetail',
+      query: { id: row.id },
     });
     return;
   }
 
-  // id = 2, 3: 提示暂无详情
-  if (
-    id === 2 ||
-    id === 3 ||
-    id === 4 ||
-    id === 5 ||
-    id === 6 ||
-    id === 7 ||
-    id === 8
-  ) {
-    ElMessage({
-      message: "功能正在开发中",
-      type: "warning",
-    });
+  if (String(row.status) === '0') {
+    ElMessage({ message: '该应用已停用', type: 'warning' });
     return;
   }
 
-  // id >= 10，提示开发中
-  if (id >= 10) {
-    ElMessage({
-      message: "功能正在开发中",
-      type: "warning",
-    });
-    return;
-  }
-
-  // 其他情况正常跳转
-  const path = "/kac/horizontal/horizontalDetail";
   router.push({
-    path,
-    query: {
-      id: row.id,
-    },
+    path: '/kac/horizontal/horizontalDetail',
+    query: { id: row.id },
   });
 }
 

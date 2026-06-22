@@ -452,6 +452,13 @@
   const { proxy } = getCurrentInstance();
 
   const relationList = ref([]);
+  const mockRelationMappingData = [
+    { id: 1, workspaceId: 1, taskId: 1, tableName: "t_user", tableComment: "用户表", fieldName: "user_name", fieldComment: "用户姓名", relation: "对应", relationTable: "t_person", relationField: "name", createBy: "admin", createTime: "2024-01-20 10:00:00", remark: "用户名映射" },
+    { id: 2, workspaceId: 1, taskId: 1, tableName: "t_user", tableComment: "用户表", fieldName: "company_id", fieldComment: "企业编号", relation: "属于", relationTable: "t_company", relationField: "id", createBy: "admin", createTime: "2024-01-20 10:05:00", remark: "用户所属企业" },
+    { id: 3, workspaceId: 1, taskId: 2, tableName: "t_disease", tableComment: "疾病表", fieldName: "disease_name", fieldComment: "疾病名称", relation: "对应", relationTable: "t_medical", relationField: "name", createBy: "user1", createTime: "2024-02-01 14:30:00", remark: "疾病名称映射" },
+    { id: 4, workspaceId: 1, taskId: 2, tableName: "t_treatment", tableComment: "治疗表", fieldName: "disease_id", fieldComment: "疾病编号", relation: "治疗", relationTable: "t_disease", relationField: "id", createBy: "user2", createTime: "2024-02-10 09:00:00", remark: "治疗疾病关联" },
+    { id: 5, workspaceId: 1, taskId: 3, tableName: "t_song", tableComment: "歌曲表", fieldName: "artist_id", fieldComment: "歌手编号", relation: "创作", relationTable: "t_person", relationField: "id", createBy: "admin", createTime: "2024-03-01 11:20:00", remark: "歌曲创作者关联" },
+  ];
 
   // 列显隐信息
   const columns = ref([
@@ -545,9 +552,9 @@
       loading.value = false;
     }).catch(() => {
       loading.value = false;
-      relationList.value = [];
-      total.value = 0;
-      proxy.$modal.msgWarning("扩展模块服务未启动，该功能暂不可用");
+      relationList.value = mockRelationMappingData;
+      total.value = mockRelationMappingData.length;
+      proxy.$modal.msgWarning("扩展模块服务未启动，显示示例数据");
     });
   }
 

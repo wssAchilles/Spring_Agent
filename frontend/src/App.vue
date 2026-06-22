@@ -27,7 +27,7 @@ const storedUser = useUserStore();
 // 计算水印文本，动态获取当前路由的名称
 const watermarkText = computed(() => {
   if (localStorage.getItem("username")) {
-    if (route.path != "/login" && route.path != "/sso/login") {
+    if (!["/login", "/sso/login", "/kd/integrated"].includes(route.path)) {
       return localStorage.getItem("username") || "默认水印"; //需要水印赋值不需要给空
     } else {
       return "";

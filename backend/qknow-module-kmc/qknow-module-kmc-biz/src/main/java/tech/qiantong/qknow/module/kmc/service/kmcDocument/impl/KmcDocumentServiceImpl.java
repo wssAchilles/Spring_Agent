@@ -164,7 +164,7 @@ public class KmcDocumentServiceImpl  extends ServiceImpl<KmcDocumentMapper, KmcD
                 .select(KmcSyncDO::getQmDocumentId,KmcSyncDO::getQmDatasetId)
                 .leftJoin(KmcSyncDO.class, KmcSyncDO::getDocumentId, KmcDocumentDO::getId)
                 .eq(KmcDocumentDO::getId, id)
-                .eq(KmcSyncDO::getDelFlag, false)
+                .eq(KmcSyncDO::getDelFlag, 0)
                 .list();
         if (list.size() > 0) {
             return list.get(0);
@@ -280,7 +280,7 @@ public class KmcDocumentServiceImpl  extends ServiceImpl<KmcDocumentMapper, KmcD
     public List<Map<String, Object>> getFileTypes(Long knowledgeBaseId) {
         // 1. 获取所有未删除的分类数据
         KmcCategoryDO kmcCategoryDO = new KmcCategoryDO();
-        kmcCategoryDO.setDelFlag(false);
+        kmcCategoryDO.setDelFlag(0);
         kmcCategoryDO.setKnowledgeBaseId(knowledgeBaseId);
         List<KmcCategoryDO> allCategories = kmcCategoryService.getKmcCategoryAllList(kmcCategoryDO);
 

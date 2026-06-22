@@ -85,7 +85,7 @@ public class KmcDocumentDO extends BaseEntity {
     private Integer maxTokens;
 
     /** 自定义分段标识符 */
-    @TableField(value = "`separator`")
+    @TableField(value = "\"separator\"")
     private String separator;
 
     /** 索引内容的形式 */
@@ -115,7 +115,7 @@ public class KmcDocumentDO extends BaseEntity {
 
     /** 删除标志 */
     @TableLogic
-    private Boolean delFlag;
+    private Integer delFlag;
 
     /**  灵桐文档ID */
     @TableField(exist = false)

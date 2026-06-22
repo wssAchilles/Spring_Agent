@@ -144,7 +144,9 @@ service.interceptors.response.use(res => {
     }
       return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
     } else if (code === 500) {
-      ElMessage({ message: msg, type: 'error' })
+      if (!msg.includes('No static resource')) {
+        ElMessage({ message: msg, type: 'error' })
+      }
       return Promise.reject(new Error(msg))
     } else if (code === 601) {
       ElMessage({ message: msg, type: 'warning' })
@@ -164,7 +166,12 @@ service.interceptors.response.use(res => {
     } else if (message.includes("timeout")) {
       message = "系统接口请求超时";
     } else if (message.includes("Request failed with status code")) {
-      message = "系统接口" + message.substr(message.length - 3) + "异常";
+      const statusCode = message.substr(message.length - 3)
+      if (statusCode === '404') {
+        message = "接口不存在：" + (error.response?.data?.path || '')
+      } else {
+        message = "系统接口" + statusCode + "异常"
+      }
     } else if (message.includes("Route change: Request canceled")) {
       return null;
     }

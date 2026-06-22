@@ -91,7 +91,9 @@
 import SolutionCard from "@/views/kac/mySolution/components/solutionCard.vue";
 import { ref, reactive, toRefs } from "vue";
 import { listSolution } from "@/api/kac/solution/solution";
-import { ElMessage } from "element-plus";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const { proxy } = getCurrentInstance();
 
@@ -166,10 +168,7 @@ function applyMockData() {
 
 /** 新建方案 */
 function handleAdd() {
-  ElMessage({
-    message: "功能正在开发中",
-    type: "warning",
-  });
+  router.push({ path: "/kac/solution/solutionDetail" });
 }
 
 /** 搜索按钮操作 */
