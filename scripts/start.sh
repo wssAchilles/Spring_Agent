@@ -4,9 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/dev/common.sh"
 
-export OPENAI_API_KEY="${OPENAI_API_KEY:-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}"
-export HERMES_OPENAI_API_KEY="${HERMES_OPENAI_API_KEY:-$OPENAI_API_KEY}"
-export GITHUB_PERSONAL_ACCESS_TOKEN="${GITHUB_PERSONAL_ACCESS_TOKEN:-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}"
+# 加载 .env 文件中的密钥配置
+set -a
+source "$SCRIPT_DIR/../.env"
+set +a
 
 start_background() {
   local service="$1"
