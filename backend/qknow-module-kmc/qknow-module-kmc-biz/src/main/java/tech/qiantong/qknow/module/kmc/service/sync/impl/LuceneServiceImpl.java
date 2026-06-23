@@ -8,13 +8,13 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tech.qiantong.qknow.ai.constant.WeaviateConstant;
 import tech.qiantong.qknow.module.kmc.dal.dataobject.document.KmcDocumentDO;
 import tech.qiantong.qknow.module.kmc.dal.dataobject.knowledgeSegment.KmcDocumentSegmentDO;
 import tech.qiantong.qknow.module.kmc.service.sync.ILuceneService;
 
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -24,12 +24,43 @@ import java.util.Objects;
 
 /**
  * @author fabian
+ * @deprecated 已迁移至 PostgreSQL tsvector 全文检索，将在完全迁移后移除此实现
  */
+@Deprecated
 @Service
 public class LuceneServiceImpl implements ILuceneService {
 
-    @Value("${lucene.indexPath}")
-    private String indexPath;
+    private String indexPath = "/tmp/lucene-index";
+
+    private volatile IndexWriter indexWriter;
+    private final Object writerLock = new Object();
+
+    private IndexWriter getWriter() throws IOException {
+        if (indexWriter == null || !indexWriter.isOpen()) {
+            synchronized (writerLock) {
+                if (indexWriter == null || !indexWriter.isOpen()) {
+                    Directory directory = FSDirectory.open(Paths.get(indexPath));
+                    Analyzer analyzer = new StandardAnalyzer();
+                    IndexWriterConfig config = new IndexWriterConfig(analyzer);
+                    indexWriter = new IndexWriter(directory, config);
+                }
+            }
+        }
+        return indexWriter;
+    }
+
+    @PreDestroy
+    public void destroy() {
+        synchronized (writerLock) {
+            if (indexWriter != null && indexWriter.isOpen()) {
+                try {
+                    indexWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
     /**
      * 保存 文档片段
@@ -40,24 +71,14 @@ public class LuceneServiceImpl implements ILuceneService {
     @Override
     public void saveSegment(KmcDocumentSegmentDO segmentDO, KmcDocumentDO documentDO) {
         org.apache.lucene.document.Document doc = segment2LuceneDocument(segmentDO, documentDO);
-
-        Directory directory;
-        IndexWriter writer = null;
         try {
-            directory = FSDirectory.open(Paths.get(indexPath));
-            Analyzer analyzer = new StandardAnalyzer();
-            IndexWriterConfig config = new IndexWriterConfig(analyzer);
-            writer = new IndexWriter(directory, config);
-            writer.addDocument(doc);
+            synchronized (writerLock) {
+                IndexWriter writer = getWriter();
+                writer.addDocument(doc);
+                writer.commit();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                assert writer != null;
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -86,25 +107,16 @@ public class LuceneServiceImpl implements ILuceneService {
             }
             saveList.add(doc);
         }
-        Directory directory;
-        IndexWriter writer = null;
         try {
-            directory = FSDirectory.open(Paths.get(indexPath));
-            Analyzer analyzer = new StandardAnalyzer();
-            IndexWriterConfig config = new IndexWriterConfig(analyzer);
-            writer = new IndexWriter(directory, config);
-            Term term = new Term(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, String.valueOf(documentDO.getId()));
-            writer.deleteDocuments(term);// 先删除
-            writer.addDocuments(saveList);// 后新增
+            synchronized (writerLock) {
+                IndexWriter writer = getWriter();
+                Term term = new Term(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, String.valueOf(documentDO.getId()));
+                writer.deleteDocuments(term);// 先删除
+                writer.addDocuments(saveList);// 后新增
+                writer.commit();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                assert writer != null;
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -115,26 +127,17 @@ public class LuceneServiceImpl implements ILuceneService {
      */
     @Override
     public void deleteSegmentList(List<KmcDocumentSegmentDO> segmentDOList) {
-        Directory directory;
-        IndexWriter writer = null;
         try {
-            directory = FSDirectory.open(Paths.get(indexPath));
-            Analyzer analyzer = new StandardAnalyzer();
-            IndexWriterConfig config = new IndexWriterConfig(analyzer);
-            writer = new IndexWriter(directory, config);
-            for (KmcDocumentSegmentDO segmentDO : segmentDOList) {
-                Term term = new Term(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, String.valueOf(segmentDO.getId()));
-                writer.deleteDocuments(term);
+            synchronized (writerLock) {
+                IndexWriter writer = getWriter();
+                for (KmcDocumentSegmentDO segmentDO : segmentDOList) {
+                    Term term = new Term(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, String.valueOf(segmentDO.getId()));
+                    writer.deleteDocuments(term);
+                }
+                writer.commit();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                assert writer != null;
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -145,24 +148,15 @@ public class LuceneServiceImpl implements ILuceneService {
      */
     @Override
     public void deleteByDocumentId(String documentId) {
-        Directory directory;
-        IndexWriter writer = null;
         try {
-            directory = FSDirectory.open(Paths.get(indexPath));
-            Analyzer analyzer = new StandardAnalyzer();
-            IndexWriterConfig config = new IndexWriterConfig(analyzer);
-            writer = new IndexWriter(directory, config);
-            Term term = new Term(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, documentId);
-            writer.deleteDocuments(term);// 删除
+            synchronized (writerLock) {
+                IndexWriter writer = getWriter();
+                Term term = new Term(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, documentId);
+                writer.deleteDocuments(term);// 删除
+                writer.commit();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                assert writer != null;
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -175,24 +169,15 @@ public class LuceneServiceImpl implements ILuceneService {
     @Override
     public void updateSegment(KmcDocumentSegmentDO segmentDO, KmcDocumentDO documentDO) {
         Document doc = segment2LuceneDocument(segmentDO, documentDO);
-        Directory directory;
-        IndexWriter writer = null;
         try {
-            directory = FSDirectory.open(Paths.get(indexPath));
-            Analyzer analyzer = new StandardAnalyzer();
-            IndexWriterConfig config = new IndexWriterConfig(analyzer);
-            writer = new IndexWriter(directory, config);
-            Term term = new Term(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, String.valueOf(segmentDO.getId()));
-            writer.updateDocument(term, doc);
+            synchronized (writerLock) {
+                IndexWriter writer = getWriter();
+                Term term = new Term(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, String.valueOf(segmentDO.getId()));
+                writer.updateDocument(term, doc);
+                writer.commit();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                assert writer != null;
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 

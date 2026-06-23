@@ -77,7 +77,7 @@ public class GeneralSplitter extends TextSplitter {
      * @param chunkList 分块列表
      */
     private void setOverlap(List<String> chunkList) {
-        if (chunkOverlapSize <= 0 || CollUtil.isEmpty(chunkList)) {
+        if (chunkOverlapSize <= 0 || CollUtil.isEmpty(chunkList) || chunkList.size() < 2) {
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -86,7 +86,28 @@ public class GeneralSplitter extends TextSplitter {
         String next = chunkList.get(1);
         for (int i = 0; i < chunkList.size(); i++) {
             sb.setLength(0);
-            sb.append(overlapLast(prev)).append(current).append(overlapFirst(next));
+            boolean hasPrev = !prev.isEmpty();
+            boolean hasNext = !next.isEmpty();
+            if (hasPrev && hasNext) {
+                int available = maxChunkSize + chunkOverlapSize - current.length();
+                if (available > 0) {
+                    int prevOverlap = Math.min(chunkOverlapSize, available);
+                    sb.append(overlapLastN(prev, prevOverlap));
+                    sb.append(current);
+                    int remaining = maxChunkSize + chunkOverlapSize - sb.length();
+                    if (remaining > 0) {
+                        sb.append(overlapFirstN(next, remaining));
+                    }
+                } else {
+                    sb.append(overlapLastN(prev, chunkOverlapSize)).append(current);
+                }
+            } else if (hasPrev) {
+                sb.append(overlapLast(prev)).append(current);
+            } else if (hasNext) {
+                sb.append(current).append(overlapFirst(next));
+            } else {
+                sb.append(current);
+            }
             prev = current;
             current = next;
             if (i >= chunkList.size() - 2) {
@@ -123,5 +144,19 @@ public class GeneralSplitter extends TextSplitter {
             return str;
         }
         return str.substring(0, chunkOverlapSize);
+    }
+
+    private String overlapLastN(String str, int n) {
+        if (str.length() <= n) {
+            return str;
+        }
+        return str.substring(str.length() - n);
+    }
+
+    private String overlapFirstN(String str, int n) {
+        if (str.length() <= n) {
+            return str;
+        }
+        return str.substring(0, n);
     }
 }

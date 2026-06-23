@@ -74,6 +74,9 @@ message ChatEvent {
     ToolInvoked tool_invoked = 4;   // AGENT_TOOL_FINISHED
     ErrorEvent error = 5;           // Error
     DoneSignal done = 6;            // Stream complete
+    ReflectionStart reflection_start = 7;
+    ReflectionScore reflection_score = 8;
+    ReflectionComplete reflection_complete = 9;
   }
 }
 
@@ -98,6 +101,25 @@ message ErrorEvent {
 }
 
 message DoneSignal {}
+
+message ReflectionStart {
+  int32 round = 1;
+  int32 max_retries = 2;
+}
+
+message ReflectionScore {
+  double factuality = 1;
+  double relevance = 2;
+  double instruction = 3;
+  double overall = 4;
+  bool passed = 5;
+  string feedback = 6;
+}
+
+message ReflectionComplete {
+  int32 total_rounds = 1;
+  bool passed = 2;
+}
 
 // ============================================================
 // Flow Messages (DAG engine path)

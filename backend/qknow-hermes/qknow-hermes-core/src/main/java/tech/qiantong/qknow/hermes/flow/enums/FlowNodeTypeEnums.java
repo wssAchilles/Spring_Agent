@@ -4,7 +4,10 @@ public enum FlowNodeTypeEnums {
     START(1, "start"),
     LLM(2, "llm"),
     REPLY(3, "reply"),
-    CONDITION(4, "condition");
+    CONDITION(4, "condition"),
+    HTTP(5, "http"),
+    KNOWLEDGE(6, "knowledge"),
+    AGGREGATOR(7, "aggregator");
 
     private final Integer code;
     private final String name;

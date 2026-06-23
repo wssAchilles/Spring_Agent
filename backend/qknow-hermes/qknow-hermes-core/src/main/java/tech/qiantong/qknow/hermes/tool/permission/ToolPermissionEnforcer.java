@@ -24,7 +24,7 @@ public class ToolPermissionEnforcer {
     /**
      * 当前会话的权限级别
      */
-    private final Map<Long, ToolPermissionLevel> sessionPermissions = new ConcurrentHashMap<>();
+    private final Map<String, ToolPermissionLevel> sessionPermissions = new ConcurrentHashMap<>();
 
     /**
      * 注册工具权限
@@ -36,14 +36,14 @@ public class ToolPermissionEnforcer {
     /**
      * 设置会话权限级别
      */
-    public void setSessionPermission(Long sessionId, ToolPermissionLevel level) {
+    public void setSessionPermission(String sessionId, ToolPermissionLevel level) {
         sessionPermissions.put(sessionId, level);
     }
 
     /**
      * 检查工具是否可以执行
      */
-    public boolean checkPermission(String toolCode, Long sessionId) {
+    public boolean checkPermission(String toolCode, String sessionId) {
         ToolPermissionLevel toolLevel = toolPermissions.getOrDefault(toolCode, ToolPermissionLevel.STANDARD);
         ToolPermissionLevel sessionLevel = sessionPermissions.getOrDefault(sessionId, ToolPermissionLevel.STANDARD);
 
