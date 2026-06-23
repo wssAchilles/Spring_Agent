@@ -163,6 +163,12 @@
             <groupId>tech.qiantong</groupId>
             <artifactId>qknow-hermes-core</artifactId>
             <version>${qknow.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.devh</groupId>
+                    <artifactId>grpc-server-spring-boot-starter</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>

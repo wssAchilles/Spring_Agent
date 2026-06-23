@@ -61,6 +61,13 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- ApplicationConfig 中 @MapperScan 所需的 Boot 3 兼容 API -->
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis-spring</artifactId>
+            <version>3.0.5</version>
+        </dependency>
+
         <!-- 验证码 -->
         <dependency>
             <groupId>pro.fessional</groupId>

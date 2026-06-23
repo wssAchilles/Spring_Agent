@@ -8,6 +8,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 
@@ -38,6 +39,7 @@ public class AiJudgeService {
         this(chatModelFactory, null);
     }
 
+    @Autowired
     public AiJudgeService(ChatModelFactory chatModelFactory, JudgeConfig judgeConfig) {
         this.chatModelFactory = chatModelFactory;
         this.judgeConfig = judgeConfig;
