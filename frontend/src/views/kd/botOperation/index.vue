@@ -232,6 +232,7 @@ import alertTriangleFillIcon from "@/assets/icons/svg/alert-triangle-fill.svg";
 import archiveStackFillIcon from "@/assets/icons/svg/archive-stack-fill.svg";
 import chartIcon from "@/assets/icons/svg/chart.svg";
 import progressFillIcon from "@/assets/icons/svg/progress-6-fill.svg";
+import { getBotOperationDashboard } from "@/api/kd/dashboard";
 
 const isDemo = import.meta.env.VITE_APP_MODE === "demo";
 
@@ -451,10 +452,8 @@ function createDemoDashboardData() {
 }
 
 async function fetchBotOperationDashboard() {
-  // TODO: 后端接口就绪后，在这里接入真实数据并做格式归一化。
-  // const { data } = await getBotOperationDashboard();
-  // return normalizeBotOperationDashboard(data);
-  return createEmptyDashboardData();
+  const { data } = await getBotOperationDashboard();
+  return data;
 }
 
 async function loadDashboardData() {

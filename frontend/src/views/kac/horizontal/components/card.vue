@@ -202,7 +202,7 @@ import {
 } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
 
-import GraphCover from "@/assets/kac/wzbx.png";
+
 // import {
 //   delApply,
 //   getByApplyIdId,
@@ -293,12 +293,11 @@ const iconSvgMap = {
 };
 
 function getImage(row) {
-  if (!row.icon) return GraphCover;
   if (iconSvgMap[row.icon]) return iconSvgMap[row.icon];
-  if (row.icon.startsWith('/') || row.icon.startsWith('http')) {
-    return `${import.meta.env.VITE_APP_BASE_API}/profile${row.icon}`;
-  }
-  return GraphCover;
+  
+  // 如果没有配置图标或图标路径不可用，随便找一些临时的png图片做封面
+  const seed = row.id || row.name || Math.random();
+  return `https://picsum.photos/seed/${seed}/200/200.png`;
 }
 
 function getStatusOption(status) {
