@@ -253,6 +253,7 @@ import appsAiFillIcon from "@/assets/icons/svg/apps-ai-fill.svg";
 import archiveStackFillIcon from "@/assets/icons/svg/archive-stack-fill.svg";
 import briefcaseFillIcon from "@/assets/icons/svg/briefcase-4-fill.svg";
 import progressFillIcon from "@/assets/icons/svg/progress-6-fill.svg";
+import { getAppOperationDashboard } from "@/api/kd/dashboard";
 
 const isDemo = import.meta.env.VITE_APP_MODE === "demo";
 
@@ -510,18 +511,8 @@ function createDemoDashboardData() {
 }
 
 async function fetchAppOperationDashboard() {
-  // TODO: 后端接口就绪后，在这里接入真实数据。
-  // const { data } = await getAppOperationDashboard();
-  // return {
-  //   mode: "live",
-  //   updatedAt: data.updatedAt || "",
-  //   summary: data.summary || {},
-  //   trend: data.trend || { labels: [], visits: [], activeUsers: [] },
-  //   industryDistribution: data.industryDistribution || [],
-  //   lowActivity: data.lowActivity || [],
-  //   newRelease: data.newRelease || [],
-  // };
-  return createEmptyDashboardData();
+  const { data } = await getAppOperationDashboard();
+  return data;
 }
 
 async function loadDashboardData() {

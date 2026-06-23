@@ -269,6 +269,7 @@ import bubbleChartFillIcon from "@/assets/icons/svg/bubble-chart-fill.svg";
 import bookOpenFillIcon from "@/assets/icons/svg/book-open-fill.svg";
 import folderChartFillIcon from "@/assets/icons/svg/folder-chart-fill.svg";
 import progressFillIcon from "@/assets/icons/svg/progress-6-fill.svg";
+import { getKnowledgeAssetDashboard } from "@/api/kd/dashboard";
 
 const isDemo = import.meta.env.VITE_APP_MODE === "demo";
 
@@ -538,10 +539,8 @@ function createDemoDashboardData() {
 }
 
 async function fetchKnowledgeAssetDashboard() {
-  // TODO: 后端接口就绪后，在这里接入真实数据并做格式归一化。
-  // const { data } = await getKnowledgeAssetDashboard();
-  // return normalizeKnowledgeAssetDashboard(data);
-  return createEmptyDashboardData();
+  const { data } = await getKnowledgeAssetDashboard();
+  return data;
 }
 
 async function loadDashboardData() {
