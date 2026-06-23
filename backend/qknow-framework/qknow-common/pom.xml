@@ -43,16 +43,28 @@
             <artifactId>spring-web</artifactId>
         </dependency>
 
+        <!-- 数据库通用工具直接使用的 JDBC API -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+        </dependency>
+
         <!-- spring security 安全认证 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- pagehelper 分页插件 -->
+        <!-- PageHelper 编译时 API；自动配置由 qknow-mybatis 统一提供 -->
         <dependency>
             <groupId>com.github.pagehelper</groupId>
-            <artifactId>pagehelper-spring-boot-starter</artifactId>
+            <artifactId>pagehelper</artifactId>
+            <version>6.1.1</version>
         </dependency>
 
         <!-- 自定义验证注解 -->
@@ -173,18 +185,11 @@
             <version>1.18.42</version>
         </dependency>
 
-        <!-- mybatis-plus 增强CRUD -->
+        <!-- BaseEntity 所需核心 API；MyBatis Starter 由 qknow-mybatis 统一提供 -->
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
-            <version>3.5.8</version>
-        </dependency>
-
-        <!-- 多数据源 -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
-            <version>4.3.1</version>
+            <artifactId>mybatis-plus-core</artifactId>
+            <version>3.5.15</version>
         </dependency>
 
         <dependency>

@@ -6,6 +6,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.ai.service.IChatClientService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,11 +20,11 @@ public class QueryTransformService {
     private static final String REWRITE_SYSTEM = "Rewrite search queries to be more specific for document retrieval. Return ONLY the rewritten query, nothing else.";
     private static final String REWRITE_TEMPLATE = "Original query: {query}\n\nRewritten query:";
 
-    private final ChatClient chatClient;
+    private final IChatClientService chatClientService;
     private final QueryTransformConfig config;
 
-    public QueryTransformService(ChatClient chatClient, QueryTransformConfig config) {
-        this.chatClient = chatClient;
+    public QueryTransformService(IChatClientService chatClientService, QueryTransformConfig config) {
+        this.chatClientService = chatClientService;
         this.config = config;
     }
 
@@ -44,7 +45,7 @@ public class QueryTransformService {
                 .replace("{query}", currentQuery);
 
         try {
-            String result = chatClient.prompt()
+            String result = getChatClient().prompt()
                     .system(COMPRESS_SYSTEM)
                     .user(userPrompt)
                     .call()
@@ -72,7 +73,7 @@ public class QueryTransformService {
         String userPrompt = REWRITE_TEMPLATE.replace("{query}", query);
 
         try {
-            String result = chatClient.prompt()
+            String result = getChatClient().prompt()
                     .system(REWRITE_SYSTEM)
                     .user(userPrompt)
                     .call()
@@ -84,11 +85,20 @@ public class QueryTransformService {
         }
     }
 
+    private ChatClient getChatClient() {
+        return chatClientService.getChatClient(
+                config.getPlatform(), config.getBaseUrl(), config.getApiKey(), config.getModelName());
+    }
+
     @Data
     @Component
-    @ConfigurationProperties(prefix = "hermes.rag.queryTransform")
+    @ConfigurationProperties(prefix = "hermes.rag.query-transform")
     public static class QueryTransformConfig {
         private boolean enabled = true;
         private String strategy = "rewrite";
+        private String platform = "OpenAI";
+        private String baseUrl = "https://api.openai.com";
+        private String apiKey;
+        private String modelName = "gpt-4o-mini";
     }
 }

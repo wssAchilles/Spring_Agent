@@ -10,6 +10,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import tech.qiantong.qknow.module.kmc.service.rag.QueryTransformService;
+import tech.qiantong.qknow.ai.service.IChatClientService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,9 @@ class QueryTransformServiceTest {
     private ChatClient chatClient;
 
     @Mock
+    private IChatClientService chatClientService;
+
+    @Mock
     private ChatClient.ChatClientRequestSpec requestSpec;
 
     @Mock
@@ -38,12 +42,17 @@ class QueryTransformServiceTest {
         config = new QueryTransformService.QueryTransformConfig();
         config.setEnabled(true);
         config.setStrategy("rewrite");
+        config.setPlatform("OpenAI");
+        config.setBaseUrl("https://api.openai.com");
+        config.setApiKey("test-key");
+        config.setModelName("gpt-4o-mini");
 
-        service = new QueryTransformService(chatClient, config);
+        service = new QueryTransformService(chatClientService, config);
     }
 
     @Test
     void rewriteQueryReturnsRewrittenText() {
+        stubChatClient();
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system(anyString())).thenReturn(requestSpec);
         when(requestSpec.user(anyString())).thenReturn(requestSpec);
@@ -58,6 +67,7 @@ class QueryTransformServiceTest {
 
     @Test
     void compressQueryWithHistoryReturnsStandalone() {
+        stubChatClient();
         List<Message> history = new ArrayList<>();
         history.add(new UserMessage("What is Denmark's capital?"));
         history.add(new AssistantMessage("Copenhagen"));
@@ -90,5 +100,10 @@ class QueryTransformServiceTest {
 
         assertEquals("standalone query", result);
         verifyNoInteractions(chatClient);
+    }
+
+    private void stubChatClient() {
+        when(chatClientService.getChatClient("OpenAI", "https://api.openai.com", "test-key", "gpt-4o-mini"))
+                .thenReturn(chatClient);
     }
 }

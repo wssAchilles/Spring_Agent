@@ -110,10 +110,16 @@
             <version>4.3.0</version>
         </dependency>
 
-        <!-- pagehelper 分页插件 -->
+        <!-- PageHelper 自动配置；MyBatis Starter 由 Boot 3 版 MyBatis-Plus 提供 -->
         <dependency>
             <groupId>com.github.pagehelper</groupId>
-            <artifactId>pagehelper-spring-boot-starter</artifactId>
+            <artifactId>pagehelper-spring-boot-autoconfigure</artifactId>
+            <version>${pagehelper.boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-autoconfigure</artifactId>
+            <version>3.0.5</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

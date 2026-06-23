@@ -136,6 +136,16 @@ token:
   # 令牌有效期（默认30分钟）
   expireTime: 600
 
+hermes:
+  rag:
+    query-transform:
+      enabled: ${HERMES_RAG_QUERY_TRANSFORM_ENABLED:true}
+      strategy: ${HERMES_RAG_QUERY_TRANSFORM_STRATEGY:rewrite}
+      platform: ${HERMES_RAG_QUERY_TRANSFORM_PLATFORM:OpenAI}
+      base-url: ${HERMES_RAG_QUERY_TRANSFORM_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:}
+      model-name: ${HERMES_RAG_QUERY_TRANSFORM_MODEL:gpt-4o-mini}
+
 # MyBatis配置
 # mybatis:
   # 搜索指定包别名
@@ -260,5 +270,4 @@ knife4j:
     enable: true
     username: qknow
     password: qknow12313
-
 
