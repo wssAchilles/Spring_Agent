@@ -5,14 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.common.exception.ServiceException;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
+import tech.qiantong.qknow.hermes.flow.bo.AggregatorNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.BaseNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.ConditionNodeBO;
+import tech.qiantong.qknow.hermes.flow.bo.HttpNodeBO;
+import tech.qiantong.qknow.hermes.flow.bo.KnowledgeNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.LLMNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.ReplyNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.StartNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.KbFlowEdgeDO;
 import tech.qiantong.qknow.hermes.flow.bo.KbFlowNodeDO;
 import tech.qiantong.qknow.hermes.flow.enums.FlowNodeTypeEnums;
+import tech.qiantong.qknow.hermes.flow.rag.RagRetrievalService;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +30,9 @@ public class NodeFactory {
 
     @Resource
     private ChatModelFactory chatModelFactory;
+
+    @Resource
+    private RagRetrievalService ragRetrievalService;
 
     /**
      * 根据节点定义创建节点实例
@@ -48,25 +55,9 @@ public class NodeFactory {
             case LLM -> new LLMNodeBO(nodeDefinition, edgeList, chatModelFactory);
             case REPLY -> new ReplyNodeBO(nodeDefinition, edgeList);
             case CONDITION -> new ConditionNodeBO(nodeDefinition, edgeList);
-
-//            case IF:
-//                return new IFNode(nodeDefinition, edges);
-//
-//            case OUTPUT:
-//                return new OutputNode(nodeDefinition, edges);
-//
-//            // 预留扩展
-//            case HTTP:
-//                // return new HTTPNode(nodeDefinition, edges);
-//                throw new UnsupportedOperationException("HTTP 节点暂未实现");
-//
-//            case CODE:
-//                // return new CodeNode(nodeDefinition, edges);
-//                throw new UnsupportedOperationException("代码执行节点暂未实现");
-//
-//            case KNOWLEDGE:
-//                // return new KnowledgeNode(nodeDefinition, edges);
-//                throw new UnsupportedOperationException("知识库检索节点暂未实现");
+            case HTTP -> new HttpNodeBO(nodeDefinition, edgeList);
+            case KNOWLEDGE -> new KnowledgeNodeBO(nodeDefinition, edgeList, ragRetrievalService);
+            case AGGREGATOR -> new AggregatorNodeBO(nodeDefinition, edgeList);
 
             default -> throw new ServiceException("不支持的节点类型：" + nodeType);
         };

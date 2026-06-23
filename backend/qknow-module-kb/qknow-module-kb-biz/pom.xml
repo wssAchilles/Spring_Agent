@@ -158,6 +158,12 @@
             <artifactId>qknow-hermes-proto</artifactId>
             <version>${qknow.version}</version>
         </dependency>
+        <!-- Hermes Core (eval 包: RagasEvaluator, EvaluationDataset 等) -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-hermes-core</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-stub</artifactId>

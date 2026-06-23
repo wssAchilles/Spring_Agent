@@ -13,13 +13,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
-import org.apache.lucene.search.*;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -27,7 +21,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.qiantong.qknow.ai.constant.WeaviateConstant;
@@ -50,13 +44,12 @@ import tech.qiantong.qknow.module.kmc.service.kmcDocument.IKmcDocumentService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeRecallLogService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeRoleService;
+import tech.qiantong.qknow.module.kmc.service.rag.QueryTransformService;
 import tech.qiantong.qknow.module.system.service.ISysRoleService;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
 import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.Datasets;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,13 +80,14 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
     private IVectorStoreService vectorStoreService;
     @Resource
     private IKmcKnowledgeRecallLogService kmcKnowledgeRecallLogService;
+    @Resource
+    private QueryTransformService queryTransformService;
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
     private ExecutorService executor = null;
     // 锁对象：防止并发创建线程池
     private final Object executorLock = new Object();
-
-    @Value("${lucene.indexPath}")
-    private String indexPath;
 
     @Override
     public PageResult<KmcKnowledgeBaseDO> getKmcKnowledgeBasePage(KmcKnowledgeBasePageReqVO pageReqVO, Long userId) {
@@ -286,6 +280,9 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         kmcKnowledgeRecallLogDO.setQuery(retrieveResultReqVO.getQuery());
         kmcKnowledgeRecallLogService.save(kmcKnowledgeRecallLogDO);
 
+        // 查询改写
+        retrieveResultReqVO.setQuery(queryTransformService.rewriteQuery(retrieveResultReqVO.getQuery()));
+
         // 混合检索
         if (Objects.equals(retrieveResultReqVO.getSearchMethod(), "hybrid_search")) {
             return hybridSearch(retrieveResultReqVO);
@@ -477,63 +474,73 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
     }
 
     /**
-     * 全文检索
+     * 全文检索 (PostgreSQL tsvector)
      *
      * @param reqVO 检索条件
      * @return 检索结果，会统一封装成为 aiDocument 的形式
      */
     private List<Document> fullTextSearch(RetrieveResultReqVO reqVO) {
-        DirectoryReader reader = null;
-        List<Document> result = null;
         int topK = reqVO.getTopK().intValue();
         if (reqVO.getRerankingEnable()) {
             topK = 200;
         }
-        try {
-            Directory directory = FSDirectory.open(Paths.get(indexPath));
-            reader = DirectoryReader.open(directory);
-            IndexSearcher searcher = new IndexSearcher(reader);
-            String[] fields = {"content"};
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            // 条件1，搜索关键词
-            MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser(fields, new StandardAnalyzer());
-            Query query = multiFieldQueryParser.parse(reqVO.getQuery());
-            // 条件2，数据库id 限制
-            Term term = new Term(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, String.valueOf(reqVO.getId()));
-            TermQuery termQuery = new TermQuery(term);
 
-            builder.add(query, BooleanClause.Occur.MUST);
-            builder.add(termQuery, BooleanClause.Occur.MUST);
+        String queryText = reqVO.getQuery();
+        Long knowledgeBaseId = reqVO.getId();
 
-            TopDocs results = searcher.search(builder.build(), topK);
-            result = new ArrayList<>();
-            ScoreDoc[] scoreDocs = results.scoreDocs;
+        String sql = "SELECT id, content, knowledge_base_id, document_id, segment_id, document_name, answer, " +
+                "ts_rank(content_tsv, plainto_tsquery('simple', ?)) AS rank " +
+                "FROM kmc_document_segment " +
+                "WHERE content_tsv @@ plainto_tsquery('simple', ?) " +
+                "AND knowledge_base_id = ? " +
+                "AND del_flag = 0 ";
 
-            for (ScoreDoc scoreDoc : scoreDocs) {
-                org.apache.lucene.document.Document searchDocument = searcher.doc(scoreDoc.doc);
-                float score = scoreDoc.score;
-                if (!reqVO.getScoreThresholdEnabled()) {
-                    Document document = luceneDocument2ai(searchDocument, score);
-                    result.add(document);
-                } else {
-                    if (score > reqVO.getScoreThreshold().floatValue()) {
-                        Document document = luceneDocument2ai(searchDocument, score);
-                        result.add(document);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            if (!Objects.isNull(reader)) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        List<Object> params = new ArrayList<>();
+        params.add(queryText);
+        params.add(queryText);
+        params.add(knowledgeBaseId);
+
+        if (reqVO.getScoreThresholdEnabled()) {
+            sql += "AND ts_rank(content_tsv, plainto_tsquery('simple', ?)) > ? ";
+            params.add(queryText);
+            params.add(reqVO.getScoreThreshold().floatValue());
         }
-        return result;
+
+        sql += "ORDER BY rank DESC LIMIT ?";
+        params.add(topK);
+
+        List<Document> result = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Map<String, Object> metadata = new HashMap<>();
+            float score = rs.getFloat("rank");
+            metadata.put("score", score);
+            metadata.put(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, rs.getString("knowledge_base_id"));
+            metadata.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, rs.getString("document_id"));
+            metadata.put(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, rs.getString("segment_id"));
+            metadata.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME, rs.getString("document_name"));
+            String answer = rs.getString("answer");
+            if (StrUtil.isNotBlank(answer)) {
+                metadata.put("answer", answer);
+            }
+            return Document.builder()
+                    .text(rs.getString("content"))
+                    .score(BigDecimal.valueOf(score).doubleValue())
+                    .metadata(metadata)
+                    .build();
+        }, params.toArray());
+
+        // Java-side score threshold filtering (defense-in-depth alongside SQL filter)
+        if (reqVO.getScoreThresholdEnabled() && reqVO.getScoreThreshold() != null) {
+            double threshold = reqVO.getScoreThreshold().doubleValue();
+            List<Document> filtered = new ArrayList<>();
+            for (Document doc : result) {
+                if (doc.getScore() >= threshold) {
+                    filtered.add(doc);
+                }
+            }
+            return CollUtil.isEmpty(filtered) ? new ArrayList<>() : filtered;
+        }
+
+        return CollUtil.isEmpty(result) ? new ArrayList<>() : result;
     }
 
     /**

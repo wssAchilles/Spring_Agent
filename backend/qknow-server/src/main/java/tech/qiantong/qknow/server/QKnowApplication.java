@@ -21,7 +21,9 @@ import org.springframework.context.annotation.FilterType;
     basePackages = {"tech.qiantong"},
     excludeFilters = @Filter(type = FilterType.REGEX, pattern = {
         "tech\\.qiantong\\.qknow\\.neo4j\\..*",
-        "tech\\.qiantong\\.qknow\\.module\\.ext\\..*"
+        "tech\\.qiantong\\.qknow\\.module\\.ext\\..*",
+        "tech\\.qiantong\\.qknow\\.hermes\\..*",
+        "tech\\.qiantong\\.qknow\\.module\\.system\\.ca\\..*"
     })
 )
 @SpringBootApplication(exclude = { DataSourceAutoConfiguration.class, Neo4jAutoConfiguration.class, Neo4jDataAutoConfiguration.class })

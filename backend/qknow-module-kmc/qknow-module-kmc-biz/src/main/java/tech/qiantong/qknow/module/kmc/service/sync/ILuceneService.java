@@ -10,7 +10,9 @@ import java.util.Map;
  * 全文检索服务
  *
  * @author fabian
+ * @deprecated 已迁移至 PostgreSQL tsvector 全文检索，将在完全迁移后移除此接口
  */
+@Deprecated
 public interface ILuceneService {
 
     /**

@@ -14,8 +14,6 @@
     <description>Hermes 认知内核核心引擎</description>
 
     <properties>
-        <springAi.version>1.1.0</springAi.version>
-        <springAiAlibaba.version>1.1.2.2</springAiAlibaba.version>
         <grpc.version>1.68.0</grpc.version>
     </properties>
 
@@ -101,6 +99,13 @@
         <dependency>
             <groupId>tech.qiantong</groupId>
             <artifactId>qknow-common</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
+        <!-- qknow-ai (for IChatModelService) -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-ai</artifactId>
             <version>${qknow.version}</version>
         </dependency>
 

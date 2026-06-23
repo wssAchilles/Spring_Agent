@@ -63,6 +63,8 @@
         <poi.version>5.2.3</poi.version>
         <velocity.version>2.3</velocity.version>
         <jwt.version>0.9.1</jwt.version>
+        <springAi.version>1.1.0</springAi.version>
+        <springAiAlibaba.version>1.1.2.2</springAiAlibaba.version>
 
         <!-- Docker 镜像构建配置 -->
         <docker.hub>crpi-kf13onfj0v8f6jax.cn-shanghai.personal.cr.aliyuncs.com/qiantongkeji</docker.hub>
@@ -136,19 +138,6 @@
                 <artifactId>oshi-core</artifactId>
                 <version>${oshi.version}</version>
             </dependency>
-
-            <!-- Swagger3依赖 -->
-<!--            <dependency>
-                <groupId>io.springfox</groupId>
-                <artifactId>springfox-boot-starter</artifactId>
-                <version>${swagger.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.swagger</groupId>
-                        <artifactId>swagger-models</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>-->
 
             <!-- io常用工具类 -->
             <dependency>
@@ -249,6 +238,7 @@
         <module>qknow-module-system</module>
         <module>qknow-server</module>
         <module>qknow-hermes</module>
+        <module>tests</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -264,6 +254,13 @@
                     <encoding>${project.build.sourceEncoding}</encoding>
                     <release>${java.version}</release>
                     <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.42</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
         </plugins>

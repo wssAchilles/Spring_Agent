@@ -25,6 +25,33 @@ hermes:
   agent:
     max-tool-calls: 10
     default-max-retries: 3
+  tool:
+    timeout: 30000
+    retry:
+      maxAttempts: 3
+    circuitBreaker:
+      threshold: 5
+      recoveryTimeout: 60000
+    webSearch:
+      provider: ${HERMES_SEARCH_PROVIDER:duckduckgo}  # Options: serper, bing, duckduckgo
+  judge:
+    enabled: true
+    min-score: 0.6
+    max-reflection-rounds: 3
+  reflection:
+    enabled: true
+    max-rounds: 3
+  eval:
+    enabled: false
+  memory:
+    short-term:
+      max-messages: 50
+    long-term:
+      enabled: false
+  rag:
+    cache:
+      enabled: true
+      ttl: 300000
 
 logging:
   level:

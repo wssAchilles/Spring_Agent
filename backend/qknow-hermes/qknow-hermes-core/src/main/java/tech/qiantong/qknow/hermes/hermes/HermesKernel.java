@@ -49,7 +49,7 @@ public class HermesKernel {
         String currentAnswer = null;
         JudgeResult lastJudgeResult = null;
 
-        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
             log.info("Hermes 反思循环 - 第 {} 次尝试", attempt + 1);
 
             // 1. 生成回答

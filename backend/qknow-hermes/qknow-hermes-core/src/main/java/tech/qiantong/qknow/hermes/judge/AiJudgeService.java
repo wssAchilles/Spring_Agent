@@ -27,6 +27,7 @@ import java.util.List;
 public class AiJudgeService {
 
     private final ChatModelFactory chatModelFactory;
+    private final JudgeConfig judgeConfig;
 
     /**
      * 评分阈值 (默认 0.7)
@@ -34,7 +35,12 @@ public class AiJudgeService {
     private double threshold = 0.7;
 
     public AiJudgeService(ChatModelFactory chatModelFactory) {
+        this(chatModelFactory, null);
+    }
+
+    public AiJudgeService(ChatModelFactory chatModelFactory, JudgeConfig judgeConfig) {
         this.chatModelFactory = chatModelFactory;
+        this.judgeConfig = judgeConfig;
     }
 
     /**
@@ -48,8 +54,17 @@ public class AiJudgeService {
             messages.add(new SystemMessage(JUDGE_SYSTEM_PROMPT));
             messages.add(new UserMessage(judgePrompt));
 
-            // 使用 ChatModelFactory 创建评分模型
-            ChatModel chatModel = chatModelFactory.getChatModel("deepseek", null, null, "deepseek-chat");
+            // 使用 judgeConfig 创建评分模型 (如果配置了的话)
+            ChatModel chatModel;
+            if (judgeConfig != null) {
+                chatModel = chatModelFactory.getChatModel(
+                        judgeConfig.getPlatform(),
+                        judgeConfig.getBaseUrl(),
+                        judgeConfig.getApiKey(),
+                        judgeConfig.getModelName());
+            } else {
+                chatModel = chatModelFactory.getChatModel("deepseek", null, null, "deepseek-chat");
+            }
             ChatResponse response = chatModel.call(new Prompt(messages));
             String responseText = response.getResult().getOutput().getText();
 
@@ -57,8 +72,8 @@ public class AiJudgeService {
             return parseJudgeResponse(responseText);
         } catch (Exception e) {
             log.error("AI Judge 评分失败", e);
-            // 评分失败时默认通过
-            return JudgeResult.passed(1.0, 1.0, 1.0, "评分服务异常，默认通过");
+            // 评分失败时默认拒绝
+            return JudgeResult.failed(0.0, 0.0, 0.0, "评分服务异常，默认拒绝");
         }
     }
 
@@ -125,7 +140,8 @@ public class AiJudgeService {
             String feedback = json.getString("feedback");
 
             double overall = (factuality + relevance + instruction) / 3.0;
-            boolean passed = overall >= threshold;
+            double effectiveThreshold = (judgeConfig != null) ? judgeConfig.getThreshold() : threshold;
+            boolean passed = overall >= effectiveThreshold;
 
             if (passed) {
                 return JudgeResult.passed(factuality, relevance, instruction, feedback);
@@ -134,7 +150,7 @@ public class AiJudgeService {
             }
         } catch (Exception e) {
             log.warn("解析评分结果失败，原始响应: {}", responseText, e);
-            return JudgeResult.passed(0.8, 0.8, 0.8, "解析失败，默认通过");
+            return JudgeResult.failed(0.0, 0.0, 0.0, "解析失败，默认拒绝");
         }
     }
 }

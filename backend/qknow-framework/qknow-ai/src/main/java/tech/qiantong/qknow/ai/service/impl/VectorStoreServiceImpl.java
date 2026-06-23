@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import tech.qiantong.qknow.ai.service.IVectorStoreService;
 
 import javax.sql.DataSource;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * PgVector 向量存储实现
@@ -21,6 +22,8 @@ public class VectorStoreServiceImpl implements IVectorStoreService {
     @Resource
     private DataSource dataSource;
 
+    private final ConcurrentHashMap<String, VectorStore> vectorStoreCache = new ConcurrentHashMap<>();
+
     /**
      * 获取 VectorStore 数据库连接（基于 PostgreSQL + PgVector）
      *
@@ -29,8 +32,11 @@ public class VectorStoreServiceImpl implements IVectorStoreService {
      */
     @Override
     public VectorStore getVectorStore(EmbeddingModel embeddingModel) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
-                .build();
+        String key = embeddingModel.getClass().getName();
+        return vectorStoreCache.computeIfAbsent(key, k -> {
+            JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+            return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+                    .build();
+        });
     }
 }

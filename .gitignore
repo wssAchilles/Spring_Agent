@@ -75,6 +75,7 @@ backend/**/upload/file/
 # === 测试覆盖率 ===
 backend/**/target/site/
 backend/**/jacoco*.exec
+backend/tests/test-index/
 
 # === 前端构建分析 ===
 frontend/stats.html

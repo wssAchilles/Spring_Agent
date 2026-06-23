@@ -48,6 +48,13 @@
     </description>
 
     <dependencies>
+        <!-- 通用工具 (AjaxResult 等) -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-common</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
         <!-- 系統模块 -->
         <dependency>
             <groupId>tech.qiantong</groupId>
@@ -105,11 +112,14 @@
             <version>${qknow.version}</version>
         </dependency>
 
+        <!-- DevTools disabled - causes RestartClassLoader issues with internal modules -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <optional>true</optional>
         </dependency>
+        -->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

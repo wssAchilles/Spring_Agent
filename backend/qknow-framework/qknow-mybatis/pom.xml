@@ -93,7 +93,7 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-jsqlparser</artifactId>
-            <version>3.5.15</version>
+            <version>3.5.16</version>
         </dependency>
 
         <!-- MyBatis 联表查询 -->

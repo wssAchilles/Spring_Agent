@@ -15,7 +15,6 @@ import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.client.reactive.JdkClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -23,72 +22,43 @@ import tech.qiantong.qknow.ai.enums.model.AiPlatformEnum;
 import tech.qiantong.qknow.ai.service.IChatModelService;
 import tech.qiantong.qknow.common.exception.ServiceException;
 
-import jakarta.annotation.Resource;
 import java.net.http.HttpClient;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * springAi chatModel 服务
- *
- * @author fabian
- */
 @Service
 public class ChatModelServiceImpl implements IChatModelService {
 
-    @Resource
-    ObjectProvider<WebClient.Builder> webClientBuilderProvider;
+    private final ConcurrentHashMap<String, ChatModel> chatModelCache = new ConcurrentHashMap<>();
 
-    /**
-     * 获取 chatModel
-     *
-     * @param platForm  平台名称
-     * @param baseUrl   baseUrl
-     * @param apiKey    apiKey
-     * @param modelName 模型名称
-     * @return chatModel
-     */
     @Override
     public ChatModel getChatModel(String platForm, String baseUrl, String apiKey, String modelName) {
-        ChatModel chatModel;
-        switch (AiPlatformEnum.validatePlatform(platForm)) {
-            case OPENAI -> chatModel = this.getOpenAiChatModel(baseUrl, apiKey, modelName);
-            case TONG_YI -> chatModel = this.getDashScopeChatModel(apiKey, modelName);
-            case OLLAMA -> chatModel = this.getOllamaChatModel(baseUrl, modelName);
-            case DEEP_SEEK -> chatModel = this.getDeepSeekChatModel(apiKey, modelName);
-            default -> throw new ServiceException("暂时不支持该平台");
-        }
-        return chatModel;
+        String cacheKey = platForm + "|" + (baseUrl != null ? baseUrl : "") + "|" + (modelName != null ? modelName : "");
+        return chatModelCache.computeIfAbsent(cacheKey, k -> createChatModel(platForm, baseUrl, apiKey, modelName));
     }
 
-    /**
-     * 获取 OpenAi 聊天模型
-     *
-     * @param baseUrl   baseUrl（必需）
-     * @param apiKey    apiKey（必需）
-     * @param modelName modelName（必需）
-     * @return OpenAiChatModel
-     */
+    private ChatModel createChatModel(String platForm, String baseUrl, String apiKey, String modelName) {
+        switch (AiPlatformEnum.validatePlatform(platForm)) {
+            case OPENAI -> { return this.getOpenAiChatModel(baseUrl, apiKey, modelName); }
+            case TONG_YI -> { return this.getDashScopeChatModel(apiKey, modelName); }
+            case OLLAMA -> { return this.getOllamaChatModel(baseUrl, modelName); }
+            case DEEP_SEEK -> { return this.getDeepSeekChatModel(apiKey, modelName); }
+            default -> throw new ServiceException("暂时不支持该平台");
+        }
+    }
+
     private OpenAiChatModel getOpenAiChatModel(String baseUrl, String apiKey, String modelName) {
         if (StrUtil.hasBlank(baseUrl, apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
         }
-        WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-        webClientBuilder.clientConnector( // 重新设置ClientHttpConnector，并设置HTTP1.1版本的HttpClient
-                new JdkClientHttpConnector(
+        WebClient.Builder webClientBuilder = WebClient.builder()
+                .clientConnector(new JdkClientHttpConnector(
                         HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()));
         return OpenAiChatModel.builder()
-                .openAiApi(
-                        OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).webClientBuilder(webClientBuilder).build())
+                .openAiApi(OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).webClientBuilder(webClientBuilder).build())
                 .defaultOptions(OpenAiChatOptions.builder().model(modelName).build())
                 .build();
     }
 
-    /**
-     * 获取 阿里百炼 聊天模型
-     *
-     * @param apiKey    apiKey（必需）
-     * @param modelName modelName（必需）
-     * @return DashScopeChatModel
-     */
     private DashScopeChatModel getDashScopeChatModel(String apiKey, String modelName) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
@@ -99,13 +69,6 @@ public class ChatModelServiceImpl implements IChatModelService {
                 .build();
     }
 
-    /**
-     * 获取 ollama 聊天模型
-     *
-     * @param baseUrl   baseUrl（必需）
-     * @param modelName modelName（必需）
-     * @return OllamaChatModel
-     */
     private OllamaChatModel getOllamaChatModel(String baseUrl, String modelName) {
         if (StrUtil.hasBlank(baseUrl, modelName)) {
             throw new ServiceException("必要字段不能为空");
@@ -116,13 +79,6 @@ public class ChatModelServiceImpl implements IChatModelService {
                 .build();
     }
 
-    /**
-     * 获取 deepseek 聊天模型
-     *
-     * @param apiKey    apiKey（必需）
-     * @param modelName modelName（必需）
-     * @return DeepSeekChatModel
-     */
     private DeepSeekChatModel getDeepSeekChatModel(String apiKey, String modelName) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
