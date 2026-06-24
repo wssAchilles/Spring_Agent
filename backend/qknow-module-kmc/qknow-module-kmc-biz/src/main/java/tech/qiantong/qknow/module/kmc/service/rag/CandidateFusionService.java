@@ -45,12 +45,15 @@ public class CandidateFusionService {
         for (Map.Entry<Long, RetrievalResult> entry : bestBySegment.entrySet()) {
             RetrievalResult copy = RetrievalResult.builder()
                     .segmentId(entry.getValue().getSegmentId())
+                    .qmSegmentId(entry.getValue().getQmSegmentId())
+                    .parentSegmentId(entry.getValue().getParentSegmentId())
                     .documentId(entry.getValue().getDocumentId())
                     .documentName(entry.getValue().getDocumentName())
                     .content(entry.getValue().getContent())
                     .answer(entry.getValue().getAnswer())
                     .score(rrfScores.getOrDefault(entry.getKey(), 0.0))
                     .source(entry.getValue().getSource())
+                    .metadata(entry.getValue().getMetadata())
                     .build();
             fused.add(copy);
         }

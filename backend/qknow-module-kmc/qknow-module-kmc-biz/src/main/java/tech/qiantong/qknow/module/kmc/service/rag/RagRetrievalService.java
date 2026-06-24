@@ -127,6 +127,8 @@ public class RagRetrievalService {
                 query, fused, queryIntent, topK, rerankingProviderName, rerankingModelName);
         if (debug) {
             debugInfo.put("rerankedCount", reranked.size());
+            debugInfo.put("rerankerProvider", rerankingProviderName != null && rerankingModelName != null
+                    ? "dashscope" : "deterministic");
         }
 
         String context = ragContextBuilder.buildContext(reranked, true);
@@ -134,6 +136,10 @@ public class RagRetrievalService {
         long elapsed = System.currentTimeMillis() - startTime;
         if (debug) {
             debugInfo.put("elapsedMs", elapsed);
+            debugInfo.put("semanticCacheHit", false);
+            debugInfo.put("parentExpansionCount", reranked.stream()
+                    .filter(result -> result.getParentSegmentId() != null && !result.getParentSegmentId().isBlank())
+                    .count());
         }
 
         return RagResult.builder()

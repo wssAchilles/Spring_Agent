@@ -1,10 +1,14 @@
 package tech.qiantong.qknow.ai.transformer;
 
 import cn.hutool.core.util.StrUtil;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TextSplitter;
 
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 递归文本分块器，借鉴 LangChain RecursiveCharacterTextSplitter 设计
@@ -16,6 +20,12 @@ import java.util.List;
  * @author qknow
  */
 public class RecursiveSplitter extends TextSplitter {
+
+    public static final String METADATA_PARENT_SEGMENT_ID = "parent_segment_id";
+    public static final String METADATA_PARENT_CONTENT = "parent_content";
+    public static final String METADATA_CHUNK_LEVEL = "chunk_level";
+    public static final String CHUNK_LEVEL_PARENT = "parent";
+    public static final String CHUNK_LEVEL_CHILD = "child";
 
     private static final String[] DEFAULT_CHINESE_SEPARATORS = {
             "\n\n", "\n", "。", "；", "！", "？", "!", "?", "，", ",", " ", ""
@@ -38,6 +48,49 @@ public class RecursiveSplitter extends TextSplitter {
     @Override
     protected List<String> splitText(String text) {
         return recursiveSplit(text, separators, 0);
+    }
+
+    /**
+     * 生成父子分块：父块保留完整上下文，子块用于向量检索。
+     */
+    public List<Document> splitParentChild(List<Document> documents, int parentChunkSize, int childChunkSize,
+                                           int parentOverlap, int childOverlap) {
+        if (documents == null || documents.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        RecursiveSplitter parentSplitter = new RecursiveSplitter(parentChunkSize, parentOverlap, separators);
+        RecursiveSplitter childSplitter = new RecursiveSplitter(childChunkSize, childOverlap, separators);
+        List<Document> result = new ArrayList<>();
+
+        for (Document document : documents) {
+            List<String> parentChunks = parentSplitter.splitText(document.getText());
+            for (String parentContent : parentChunks) {
+                String parentId = UUID.randomUUID().toString();
+                Map<String, Object> parentMetadata = new HashMap<>(document.getMetadata());
+                parentMetadata.put(METADATA_CHUNK_LEVEL, CHUNK_LEVEL_PARENT);
+                parentMetadata.put(METADATA_PARENT_SEGMENT_ID, "");
+                result.add(Document.builder()
+                        .id(parentId)
+                        .text(parentContent)
+                        .metadata(parentMetadata)
+                        .build());
+
+                List<String> childChunks = childSplitter.splitText(parentContent);
+                for (String childContent : childChunks) {
+                    Map<String, Object> childMetadata = new HashMap<>(document.getMetadata());
+                    childMetadata.put(METADATA_CHUNK_LEVEL, CHUNK_LEVEL_CHILD);
+                    childMetadata.put(METADATA_PARENT_SEGMENT_ID, parentId);
+                    childMetadata.put(METADATA_PARENT_CONTENT, parentContent);
+                    result.add(Document.builder()
+                            .id(UUID.randomUUID().toString())
+                            .text(childContent)
+                            .metadata(childMetadata)
+                            .build());
+                }
+            }
+        }
+        return result;
     }
 
     /**

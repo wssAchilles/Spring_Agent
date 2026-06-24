@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.alibaba.fastjson2.JSON;
 import com.google.common.collect.Lists;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -27,6 +29,7 @@ import tech.qiantong.qknow.ai.transformer.ContinuousWhitespaceEnricher;
 import tech.qiantong.qknow.ai.transformer.GeneralSplitter;
 import tech.qiantong.qknow.ai.transformer.QuestionAnswerEnricher;
 import tech.qiantong.qknow.ai.transformer.RemoveUrlAndEmailEnricher;
+import tech.qiantong.qknow.ai.transformer.RecursiveSplitter;
 import tech.qiantong.qknow.ai.transformer.SemanticSplitter;
 import tech.qiantong.qknow.ai.transformer.SplitterFactory;
 import tech.qiantong.qknow.common.exception.ServiceException;
@@ -47,7 +50,9 @@ import tech.qiantong.qknow.module.kmc.dal.mapper.sync.KmcSyncMapper;
 import tech.qiantong.qknow.module.kmc.service.kmcDocument.IKmcDocumentService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeSegment.IKmcDocumentSegmentService;
+import tech.qiantong.qknow.module.kmc.service.rag.EntityExtractionService;
 import tech.qiantong.qknow.module.kmc.service.rag.RagCacheService;
+import tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService;
 import tech.qiantong.qknow.module.kmc.service.sync.IKmcSyncService;
 import tech.qiantong.qknow.module.kmc.service.sync.ILuceneService;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
@@ -84,9 +89,15 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     @Resource
     private IVectorStoreService vectorStoreService;
     @Resource
+    private JdbcTemplate jdbcTemplate;
+    @Resource
     private ILuceneService luceneService;
     @Resource
+    private EntityExtractionService entityExtractionService;
+    @Resource
     private RagCacheService ragCacheService;
+    @Resource
+    private SemanticCacheService semanticCacheService;
 
     @Value("${dromara.x-file-storage.local-plus[0].storage-path}")
     private String prefix;
@@ -281,6 +292,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 .eq(KmcDocumentSegmentDO::getDocumentId, kmcDocumentDO.getId());
         iKmcDocumentSegmentService.remove(queryWrapper);
         baseMapper.deleteById(kmcDocumentDO.getId());
+        evictKnowledgeCaches(kmcDocumentDO.getKnowledgeBaseId());
         return true;
     }
 
@@ -343,6 +355,14 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 }
 
                 List<Document> segmentList = splitter.split(documentList);
+                if (SplitterFactory.MODE_RECURSIVE.equals(mode) && splitter instanceof RecursiveSplitter recursiveSplitter) {
+                    int parentChunkSize = Math.max(maxTokens, 1024);
+                    int childChunkSize = Math.min(maxTokens, 128);
+                    segmentList = recursiveSplitter.splitParentChild(documentList, parentChunkSize, childChunkSize,
+                            chunkOverlap, Math.min(chunkOverlap, 32));
+                    segmentList = entityExtractionService.enrichParentChildMetadata(segmentList,
+                            createDocumentChatModel(kmcDocumentDO));
+                }
 
                 if (Objects.equals(kmcDocumentDO.getDocForm(), DocFormEnum.QA_MODEL.getType())) {
                     ChatModel chatModel = aiModelService.getChatModel(Long.valueOf(kmcDocumentDO.getChatModelProvider()),
@@ -354,13 +374,32 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 this.saveSegment(knowledgeBaseDO, kmcDocumentDO, segmentList);
                 kmcDocumentDO.setSyncStatus(DocumentSyncStatus.SUCCESS.code);
                 kmcDocumentService.updateById(kmcDocumentDO);
-                ragCacheService.evictByKnowledgeBase(kmcDocumentDO.getKnowledgeBaseId());
+                evictKnowledgeCaches(kmcDocumentDO.getKnowledgeBaseId());
                 log.info("文档同步完成：{}，切片数：{}", kmcDocumentDO.getName(), segmentList.size());
             } catch (Exception e) {
                 log.error("文档同步失败：{}，原因：{}", kmcDocumentDO.getName(), e.getMessage(), e);
                 kmcDocumentDO.setSyncStatus(DocumentSyncStatus.ERROR.code);
                 kmcDocumentService.updateById(kmcDocumentDO);
             }
+        }
+    }
+
+    private void evictKnowledgeCaches(Long knowledgeBaseId) {
+        ragCacheService.evictByKnowledgeBase(knowledgeBaseId);
+        semanticCacheService.evictByKnowledgeBase(knowledgeBaseId);
+    }
+
+    private ChatModel createDocumentChatModel(KmcDocumentDO kmcDocumentDO) {
+        if (kmcDocumentDO == null || org.apache.commons.lang3.StringUtils.isAnyBlank(
+                kmcDocumentDO.getChatModelProvider(), kmcDocumentDO.getChatModel())) {
+            return null;
+        }
+        try {
+            return aiModelService.getChatModel(Long.valueOf(kmcDocumentDO.getChatModelProvider()),
+                    kmcDocumentDO.getChatModel());
+        } catch (Exception e) {
+            log.warn("Failed to create chat model for entity extraction, regex fallback will be used: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -416,7 +455,8 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Long> save2sql(KmcDocumentDO documentDO, List<Document> segmentList) {
         List<KmcDocumentSegmentDO> saveList = new ArrayList<>(segmentList.size());
-        for (Document document : segmentList) {
+        for (int i = 0; i < segmentList.size(); i++) {
+            Document document = segmentList.get(i);
             Map<String, Object> metadata = document.getMetadata();
 
             KmcDocumentSegmentDO segmentDO = new KmcDocumentSegmentDO();
@@ -424,10 +464,11 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
             segmentDO.setDocumentName(documentDO.getName());
             segmentDO.setDocumentId(documentDO.getId());
             segmentDO.setQmSegmentId(document.getId());
-            segmentDO.setPosition(segmentList.indexOf(document) + 1L);
+            segmentDO.setParentId(stringValue(metadata.get(RecursiveSplitter.METADATA_PARENT_SEGMENT_ID)));
+            segmentDO.setPosition(i + 1L);
             segmentDO.setContent(document.getText());
             segmentDO.setSignContent(document.getText());
-            segmentDO.setAnswer(metadata.get("answer") + "");
+            segmentDO.setAnswer(stringValue(metadata.get("answer")));
 
             saveList.add(segmentDO);
         }
@@ -436,8 +477,43 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
 
         iKmcDocumentSegmentService.remove(queryWrapper);// 先删除
         iKmcDocumentSegmentService.saveBatch(saveList);// 后新增
+        saveEntityMetadata(saveList, segmentList);
         return saveList.stream()
                 .collect(Collectors.toMap(KmcDocumentSegmentDO::getQmSegmentId, KmcDocumentSegmentDO::getId));
+    }
+
+    private void saveEntityMetadata(List<KmcDocumentSegmentDO> saveList, List<Document> segmentList) {
+        try {
+            List<Object[]> rows = new ArrayList<>();
+            for (int i = 0; i < saveList.size(); i++) {
+                KmcDocumentSegmentDO segment = saveList.get(i);
+                if (segment.getId() == null) {
+                    continue;
+                }
+                Map<String, Object> metadata = segmentList.get(i).getMetadata();
+                rows.add(new Object[]{
+                        segment.getDocumentId(),
+                        segment.getId(),
+                        segment.getQmSegmentId(),
+                        JSON.toJSONString(metadata.getOrDefault("entities", List.of())),
+                        JSON.toJSONString(metadata.getOrDefault("relations", List.of()))
+                });
+            }
+            if (!rows.isEmpty()) {
+                jdbcTemplate.update("DELETE FROM kmc_segment_entity_metadata WHERE document_id = ?", saveList.get(0).getDocumentId());
+                jdbcTemplate.batchUpdate("""
+                        INSERT INTO kmc_segment_entity_metadata(document_id, segment_id, qm_segment_id, entities, relations)
+                        VALUES (?, ?, ?, ?::jsonb, ?::jsonb)
+                        ON CONFLICT (segment_id) DO UPDATE SET
+                            qm_segment_id = EXCLUDED.qm_segment_id,
+                            entities = EXCLUDED.entities,
+                            relations = EXCLUDED.relations,
+                            updated_at = CURRENT_TIMESTAMP
+                        """, rows);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to persist segment entity metadata, continuing sync", e);
+        }
     }
 
     /**
@@ -461,7 +537,12 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 knowledgeBaseDO.getEmbeddingModel());
         VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
-        segmentList.forEach(document -> {
+        List<Document> vectorDocuments = segmentList.stream()
+                .filter(document -> !RecursiveSplitter.CHUNK_LEVEL_PARENT.equals(
+                        stringValue(document.getMetadata().get(RecursiveSplitter.METADATA_CHUNK_LEVEL))))
+                .collect(Collectors.toList());
+
+        vectorDocuments.forEach(document -> {
             Long segmentId = map.get(document.getId());
             Map<String, Object> metadata = document.getMetadata();
             metadata.put(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, documentDO.getKnowledgeBaseId());
@@ -476,7 +557,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                     metadata.put(WeaviateConstant.METADATA_FIELD_DAY_NO, Integer.parseInt(matcher.group(1)));
                 }
             }
-            metadata.put(WeaviateConstant.METADATA_FIELD_POSITION, segmentList.indexOf(document));
+            metadata.put(WeaviateConstant.METADATA_FIELD_POSITION, vectorDocuments.indexOf(document));
         });
 
         int maxRetries = 3;
@@ -494,11 +575,11 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 }
 
                 // 插入新数据
-                List<List<Document>> partitions = Lists.partition(segmentList, 5);
+                List<List<Document>> partitions = Lists.partition(vectorDocuments, 5);
                 for (List<Document> partition : partitions) {
                     vectorStore.add(partition);
                 }
-                log.info("文档ID {} 向量数据插入成功，共 {} 条", documentDO.getId(), segmentList.size());
+                log.info("文档ID {} 向量数据插入成功，共 {} 条", documentDO.getId(), vectorDocuments.size());
                 return; // 成功则退出
 
             } catch (Exception e) {
@@ -538,5 +619,13 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private String stringValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value);
+        return text.isBlank() ? null : text;
     }
 }

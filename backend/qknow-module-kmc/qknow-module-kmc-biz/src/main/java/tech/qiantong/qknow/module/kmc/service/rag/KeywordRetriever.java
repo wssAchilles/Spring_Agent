@@ -33,7 +33,7 @@ public class KeywordRetriever {
 
         StringBuilder sql = new StringBuilder(
                 "SELECT s.id, s.content, d.knowledge_base_id, s.document_id, " +
-                "s.document_name, s.answer, s.position " +
+                "s.document_name, s.answer, s.position, s.qm_segment_id, s.parent_id " +
                 "FROM kmc_document_segment s " +
                 "JOIN kmc_document d ON d.id = s.document_id AND d.del_flag = 0 " +
                 "WHERE d.knowledge_base_id = ? " +
@@ -76,6 +76,8 @@ public class KeywordRetriever {
                 float score = calculateScore(documentName, content, searchTerms);
                 return RetrievalResult.builder()
                         .segmentId(rs.getLong("id"))
+                        .qmSegmentId(rs.getString("qm_segment_id"))
+                        .parentSegmentId(rs.getString("parent_id"))
                         .documentId(rs.getLong("document_id"))
                         .documentName(documentName)
                         .content(content)
