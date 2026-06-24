@@ -65,12 +65,15 @@ public class VectorRetriever {
                 Map<String, Object> metadata = doc.getMetadata();
                 results.add(RetrievalResult.builder()
                         .segmentId(toLong(metadata.get(WeaviateConstant.METADATA_FIELD_SEGMENT_ID)))
+                        .qmSegmentId(String.valueOf(doc.getId()))
+                        .parentSegmentId(stringValue(metadata.get("parent_segment_id")))
                         .documentId(toLong(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID)))
                         .documentName(String.valueOf(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME)))
                         .content(doc.getText())
                         .answer(String.valueOf(metadata.getOrDefault("answer", "")))
                         .score(doc.getScore() != null ? doc.getScore() : 0.0)
                         .source("vector")
+                        .metadata(metadata)
                         .build());
             }
             return results;
@@ -92,5 +95,13 @@ public class VectorRetriever {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private String stringValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value);
+        return text.isBlank() ? null : text;
     }
 }

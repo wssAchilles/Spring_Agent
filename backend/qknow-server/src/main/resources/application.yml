@@ -141,10 +141,10 @@ hermes:
     query-transform:
       enabled: ${HERMES_RAG_QUERY_TRANSFORM_ENABLED:true}
       strategy: ${HERMES_RAG_QUERY_TRANSFORM_STRATEGY:rewrite}
-      platform: ${HERMES_RAG_QUERY_TRANSFORM_PLATFORM:OpenAI}
-      base-url: ${HERMES_RAG_QUERY_TRANSFORM_BASE_URL:https://api.openai.com}
-      api-key: ${OPENAI_API_KEY:}
-      model-name: ${HERMES_RAG_QUERY_TRANSFORM_MODEL:gpt-4o-mini}
+      platform: ${HERMES_RAG_QUERY_TRANSFORM_PLATFORM:DeepSeek}
+      base-url: ${HERMES_RAG_QUERY_TRANSFORM_BASE_URL:https://api.deepseek.com/v1}
+      api-key: ${HERMES_OPENAI_API_KEY:}
+      model-name: ${HERMES_RAG_QUERY_TRANSFORM_MODEL:deepseek-chat}
 
 # MyBatis配置
 # mybatis:

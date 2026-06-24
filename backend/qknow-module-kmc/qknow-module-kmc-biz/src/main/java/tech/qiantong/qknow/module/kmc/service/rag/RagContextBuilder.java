@@ -27,7 +27,10 @@ public class RagContextBuilder {
 
         List<RetrievalResult> expanded = results;
         if (expandAdjacent) {
-            expanded = expandWithAdjacentSegments(results);
+            expanded = expandWithParentSegments(results);
+            if (expanded == results) {
+                expanded = expandWithAdjacentSegments(results);
+            }
         }
 
         expanded = deduplicateByContent(expanded);
@@ -106,6 +109,51 @@ public class RagContextBuilder {
         }
     }
 
+    private List<RetrievalResult> expandWithParentSegments(List<RetrievalResult> results) {
+        List<String> parentIds = results.stream()
+                .map(RetrievalResult::getParentSegmentId)
+                .filter(StrUtil::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+        if (parentIds.isEmpty()) {
+            return results;
+        }
+
+        String placeholders = parentIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = "SELECT s.id, s.qm_segment_id, s.content, s.document_id, s.document_name, s.answer, s.position " +
+                "FROM kmc_document_segment s " +
+                "WHERE s.del_flag = 0 AND s.qm_segment_id IN (" + placeholders + ") " +
+                "ORDER BY s.document_id ASC, s.position ASC NULLS LAST, s.id ASC";
+
+        try {
+            List<RetrievalResult> parents = jdbcTemplate.query(sql, (rs, rowNum) -> RetrievalResult.builder()
+                    .segmentId(rs.getLong("id"))
+                    .qmSegmentId(rs.getString("qm_segment_id"))
+                    .documentId(rs.getLong("document_id"))
+                    .documentName(rs.getString("document_name"))
+                    .content(rs.getString("content"))
+                    .answer(rs.getString("answer"))
+                    .score(0.0)
+                    .source("parent")
+                    .build(), parentIds.toArray());
+
+            if (parents == null || parents.isEmpty()) {
+                return results;
+            }
+
+            List<RetrievalResult> merged = new ArrayList<>(parents);
+            for (RetrievalResult result : results) {
+                if (StrUtil.isBlank(result.getParentSegmentId())) {
+                    merged.add(result);
+                }
+            }
+            return merged;
+        } catch (Exception e) {
+            log.warn("Failed to expand parent segments, returning original results", e);
+            return results;
+        }
+    }
+
     private List<RetrievalResult> deduplicateByContent(List<RetrievalResult> results) {
         Set<String> seen = new LinkedHashSet<>();
         List<RetrievalResult> deduplicated = new ArrayList<>(results.size());
@@ -132,7 +180,11 @@ public class RagContextBuilder {
 
         StringBuilder sb = new StringBuilder();
         sb.append("[来源 ").append(index).append("] ").append(docName)
-                .append(" / segmentId=").append(segmentId).append("\n");
+                .append(" / segmentId=").append(segmentId);
+        if (StrUtil.isNotBlank(result.getParentSegmentId())) {
+            sb.append(" / parentId=").append(result.getParentSegmentId());
+        }
+        sb.append("\n");
         sb.append("内容：").append(content).append("\n\n");
         return sb.toString();
     }

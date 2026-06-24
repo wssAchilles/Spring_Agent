@@ -21,6 +21,7 @@ import tech.qiantong.qknow.hermes.proto.*;
 import tech.qiantong.qknow.hermes.tool.function.SearchKnowledgeTool;
 import tech.qiantong.qknow.hermes.tool.function.query.knowledgeQuery;
 import tech.qiantong.qknow.hermes.util.NodeUtils;
+import cn.hutool.core.util.StrUtil;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
@@ -36,10 +37,13 @@ public class AgentOrchestrator {
 
     private final ChatModelFactory chatModelFactory;
     private final ToolCallbackResolver resolver;
+    private final RetrievalEvaluator retrievalEvaluator;
 
-    public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver) {
+    public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
+                             RetrievalEvaluator retrievalEvaluator) {
         this.chatModelFactory = chatModelFactory;
         this.resolver = resolver;
+        this.retrievalEvaluator = retrievalEvaluator;
     }
 
     /**
@@ -86,9 +90,17 @@ public class AgentOrchestrator {
             throw new IllegalArgumentException("缺少模型配置");
         }
 
-        // 2. 构建知识库工具（使用预检索的 RAG 结果）
+        // 2. CRAG 检索评估
+        RetrievalEvaluation retrievalEvaluation = retrievalEvaluator.evaluate(
+                request.getQuestion(), request.getRagContextsList(), modelConfig,
+                request.hasModelCredentials() ? request.getModelCredentials() : null);
+        List<RAGContext> effectiveRagContexts = retrievalEvaluation.isIncorrect()
+                ? List.of()
+                : request.getRagContextsList();
+
+        // 3. 构建知识库工具（使用预检索的 RAG 结果）
         List<ToolCallback> tools = new ArrayList<>();
-        for (RAGContext ragCtx : request.getRagContextsList()) {
+        for (RAGContext ragCtx : effectiveRagContexts) {
             FunctionToolCallback<knowledgeQuery, String> toolCallback = FunctionToolCallback
                     .builder("knowledgeBase" + ragCtx.getKnowledgeId(),
                             new SearchKnowledgeTool(ragCtx.getKnowledgeId(),
@@ -100,14 +112,14 @@ public class AgentOrchestrator {
             tools.add(toolCallback);
         }
 
-        // 3. 获取工具名称列表，并确保知识库工具可被调用
+        // 4. 获取工具名称列表，并确保知识库工具可被调用
         List<String> enabledToolNames = new ArrayList<>(request.getToolMethodIdsList());
-        for (RAGContext ragCtx : request.getRagContextsList()) {
+        for (RAGContext ragCtx : effectiveRagContexts) {
             enabledToolNames.add("knowledgeBase" + ragCtx.getKnowledgeId());
         }
         String[] toolNames = enabledToolNames.toArray(new String[0]);
 
-        // 4. 构建消息历史
+        // 5. 构建消息历史
         List<Message> messages = new ArrayList<>();
         for (ChatMessage historyMsg : request.getHistoryList()) {
             if ("user".equals(historyMsg.getRole())) {
@@ -117,12 +129,12 @@ public class AgentOrchestrator {
             }
         }
 
-        // 5. 构建系统提示词
+        // 6. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
-        systemPrompt = appendRagContext(systemPrompt, request.getRagContextsList());
+        systemPrompt = appendRagContext(systemPrompt, effectiveRagContexts, retrievalEvaluation);
         messages.add(new UserMessage(request.getQuestion()));
 
-        // 6. 构建 ReactAgent
+        // 7. 构建 ReactAgent
         ReactAgent agent = ReactAgent.builder()
                 .name("hermes_agent")
                 .model(chatModel)
@@ -133,7 +145,7 @@ public class AgentOrchestrator {
                 .resolver(resolver)
                 .build();
 
-        // 7. 执行推理并映射为 ChatEvent 流
+        // 8. 执行推理并映射为 ChatEvent 流
         Flux<NodeOutput> stream = agent.stream(messages);
         stream.subscribe(
                 output -> {
@@ -193,12 +205,30 @@ public class AgentOrchestrator {
         );
     }
 
-    private String appendRagContext(String systemPrompt, List<RAGContext> ragContexts) {
+    private String appendRagContext(String systemPrompt, List<RAGContext> ragContexts,
+                                    RetrievalEvaluation retrievalEvaluation) {
+        StringBuilder builder = new StringBuilder(systemPrompt != null ? systemPrompt : "");
+        if (retrievalEvaluation != null && retrievalEvaluation.isIncorrect()) {
+            builder.append("\n\n<retrieval_evaluation label=\"INCORRECT\" confidence=\"")
+                    .append(retrievalEvaluation.getConfidence())
+                    .append("\">")
+                    .append(escapeXml(retrievalEvaluation.getReason()))
+                    .append("</retrieval_evaluation>\n")
+                    .append("知识库召回结果未通过可靠性评估。回答时不要引用召回内容；如果缺少依据，请说明无法从知识库确认。");
+            String rewrittenQuery = retrievalEvaluation.getRewrittenQuery();
+            if (StrUtil.isNotBlank(rewrittenQuery)) {
+                builder.append("\n\n<retrieval_rewrite>\n")
+                        .append("原始问题可能不够精确，建议考虑以下改写版本：\"")
+                        .append(escapeXml(rewrittenQuery))
+                        .append("\"\n</retrieval_rewrite>");
+            }
+            return builder.toString();
+        }
+
         if (ragContexts == null || ragContexts.isEmpty()) {
             return systemPrompt != null ? systemPrompt : "";
         }
 
-        StringBuilder builder = new StringBuilder(systemPrompt != null ? systemPrompt : "");
         boolean hasRag = false;
         for (RAGContext ragCtx : ragContexts) {
             String content = ragCtx.getPreRetrievedContent();
@@ -206,20 +236,36 @@ public class AgentOrchestrator {
                 continue;
             }
             if (!hasRag) {
-                builder.append("\n\n=== 知识库召回内容 ===\n")
-                        .append("以下是知识库中召回的相关内容，请优先依据这些内容回答用户问题。\n")
-                        .append("重要规则：\n")
-                        .append("1. 如果召回内容与问题相关，请基于这些内容回答，不要说'知识库没有找到'。\n")
-                        .append("2. 如果问题涉及特定 Day/文档，请优先使用对应 Day 的内容回答。\n")
-                        .append("3. 如果内容部分相关，请说明根据知识库中哪部分内容回答，并补充你的理解。\n")
-                        .append("4. 只有当召回内容与问题完全无关时，才说'知识库中没有相关信息'。\n\n");
+                builder.append("\n\n<knowledge_base>\n");
+                if (retrievalEvaluation != null && retrievalEvaluation.isAmbiguous()) {
+                    builder.append("<retrieval_evaluation label=\"AMBIGUOUS\" confidence=\"")
+                            .append(retrievalEvaluation.getConfidence())
+                            .append("\">")
+                            .append(escapeXml(retrievalEvaluation.getReason()))
+                            .append("</retrieval_evaluation>\n");
+                }
                 hasRag = true;
             }
-            builder.append("知识库：").append(ragCtx.getKnowledgeName())
-                    .append("（ID=").append(ragCtx.getKnowledgeId()).append("）\n")
-                    .append(content)
-                    .append("\n\n");
+            builder.append("  <document knowledge_id=\"").append(escapeXml(ragCtx.getKnowledgeId()))
+                    .append("\" source=\"").append(escapeXml(ragCtx.getKnowledgeName())).append("\">\n")
+                    .append(escapeXml(content))
+                    .append("\n  </document>\n");
+        }
+        if (hasRag) {
+            builder.append("</knowledge_base>\n")
+                    .append("优先依据 <knowledge_base> 中的内容回答；如果内容不足，请明确说明不确定性，不要编造。");
         }
         return builder.toString();
+    }
+
+    private String escapeXml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 }

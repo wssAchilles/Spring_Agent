@@ -2,18 +2,13 @@ package tech.qiantong.qknow.rag;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-
-import javax.annotation.Resource;
 
 /**
  * RAG Golden Question Set - Regression Tests
  * Knowledge Base: 盛趣游戏实习工作日志 (ID=1)
  */
-@SpringBootTest
-@ActiveProfiles("test")
-public class RagGoldenTest {
+@DisplayName("RAG 黄金问题集测试")
+class RagGoldenTest {
 
     // TODO: Inject the retrieval service once RAG v2 is implemented
     // @Resource

@@ -13,6 +13,10 @@ public class RetrievalResult {
 
     private Long segmentId;
 
+    private String qmSegmentId;
+
+    private String parentSegmentId;
+
     private Long documentId;
 
     private String documentName;
@@ -24,4 +28,6 @@ public class RetrievalResult {
     private double score;
 
     private String source;
+
+    private java.util.Map<String, Object> metadata;
 }

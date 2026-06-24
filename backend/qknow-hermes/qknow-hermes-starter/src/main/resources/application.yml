@@ -13,7 +13,7 @@ spring:
   ai:
     openai:
       api-key: ${HERMES_OPENAI_API_KEY:sk-placeholder}
-      base-url: ${HERMES_OPENAI_BASE_URL:https://api.openai.com}
+      base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
     ollama:
       base-url: ${HERMES_OLLAMA_BASE_URL:http://localhost:11434}
 
