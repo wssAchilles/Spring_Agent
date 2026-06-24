@@ -232,429 +232,433 @@
             ]"
           ></div>
 
-          <!-- 检索设置 -->
-          <!--          <el-row :gutter="20">-->
-          <!--            <el-col :span="24">-->
-          <!--              <div class="header-text">-->
-          <!--                <div class="header-left">-->
-          <!--                  <div class="blue-bar"></div>-->
-          <!--                  检索设置-->
-          <!--                </div>-->
-          <!--              </div>-->
-          <!--              <el-form-item prop="searchMethod">-->
-          <!--                <div class="search-container">-->
-          <!--                  &lt;!&ndash; 向量检索 &ndash;&gt;-->
-          <!--                  <div-->
-          <!--                      class="search-item"-->
-          <!--                      :class="{ act: form.searchMethod === 'semantic_search' }"-->
-          <!--                      @click="form.searchMethod = 'semantic_search'"-->
-          <!--                      v-if="form.indexingTechnique !== 'economy'"-->
-          <!--                  >-->
-          <!--                    <div class="search-title">-->
-          <!--                      <el-icon class="icon">-->
-          <!--                        <img src="@/assets/kmc/Search.png" alt="" v-if="form.searchMethod !== 'semantic_search'"/>-->
-          <!--                        <img src="@/assets/kmc/Search2.png" alt="" v-if="form.searchMethod == 'semantic_search'"/>-->
-          <!--                      </el-icon>-->
-          <!--                      <span>向量检索</span>-->
-          <!--                    </div>-->
-          <!--                    <div class="search-desc">-->
-          <!--                      通过生成查询嵌入并查询与其向量表示最相似的文本分段-->
-          <!--                    </div>-->
-          <!--                    <div class="search-options">-->
-          <!--                      <el-form-item class="form-item-inline" prop="rerankingEnable">-->
-          <!--                        <div class="option-label">Rerank 模型</div>-->
-          <!--                        <el-switch v-model="vectorData.rerankingEnable"/>-->
-          <!--                      </el-form-item>-->
-          <!--                      <el-form-item class="form-item-full" prop="rerankingModelName">-->
-          <!--                        <el-select-->
-          <!--                            v-model="vectorData.rerankingModelName"-->
-          <!--                            placeholder="请选择模型"-->
-          <!--                            :disabled="!vectorData.rerankingEnable"-->
-          <!--                        >-->
-          <!--                          <el-option-group-->
-          <!--                              v-for="group in rerankingModel"-->
-          <!--                              :key="group.label.zh_Hans"-->
-          <!--                              :label="group.label.zh_Hans"-->
-          <!--                          >-->
-          <!--                            <el-option-->
-          <!--                                v-for="item in group.models"-->
-          <!--                                :key="item.model"-->
-          <!--                                :label="item.model"-->
-          <!--                                :value="item.model"-->
-          <!--                            />-->
-          <!--                          </el-option-group>-->
-          <!--                        </el-select>-->
-          <!--                      </el-form-item>-->
-          <!--                      <div class="search-config">-->
-          <!--                        <div class="config-item">-->
-          <!--                          <div class="config-label">-->
-          <!--                            <span>Top K</span>-->
-          <!--                            <el-tooltip content="选择返回的相似文本数量">-->
-          <!--                              <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />-->
-          <!--                            </el-tooltip>-->
-          <!--                          </div>-->
-          <!--                          <div class="config-content">-->
-          <!--                            <el-input-number-->
-          <!--                                v-model="vectorData.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                controls-position="right"-->
-          <!--                                class="input-number"-->
-          <!--                            />-->
-          <!--                            <el-slider-->
-          <!--                                v-model="vectorData.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                class="slider"-->
-          <!--                                :disabled="form.searchMethod !== 'semantic_search'"-->
-          <!--                            />-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                        <div class="config-item">-->
-          <!--                          <div class="config-label">-->
-          <!--                            <span>Score 阈值</span>-->
-          <!--                            <el-tooltip content="设置相似度分数的最小阈值">-->
-          <!--                              <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />-->
-          <!--                            </el-tooltip>-->
-          <!--                            <el-switch v-model="vectorData.scoreThresholdEnabled" class="switch-right"/>-->
-          <!--                          </div>-->
-          <!--                          <div class="config-content">-->
-          <!--                            <el-input-number-->
-          <!--                                v-model="vectorData.scoreThreshold"-->
-          <!--                                :min="0"-->
-          <!--                                :max="1"-->
-          <!--                                :step="0.1"-->
-          <!--                                controls-position="right"-->
-          <!--                                class="input-number"-->
-          <!--                                :disabled="!vectorData.scoreThresholdEnabled"-->
-          <!--                            />-->
-          <!--                            <el-slider-->
-          <!--                                v-model="vectorData.scoreThreshold"-->
-          <!--                                :min="0"-->
-          <!--                                :max="1"-->
-          <!--                                :step="0.1"-->
-          <!--                                class="slider"-->
-          <!--                                :disabled="!vectorData.scoreThresholdEnabled"-->
-          <!--                            />-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                      </div>-->
-          <!--                    </div>-->
-          <!--                  </div>-->
+          
+          <el-collapse v-model="activeCollapse">
+            <el-collapse-item title="高级检索设置" name="1">
+              <el-row :gutter="20">
+                <el-col :span="24">
+                  <el-form-item prop="searchMethod">
+          <div class="search-container">
+          <!-- 向量检索 -->
+          <div
+          class="search-item"
+          :class="{ act: form.searchMethod === 'semantic_search' }"
+          @click="form.searchMethod = 'semantic_search'"
+          v-if="form.indexingTechnique !== 'economy'"
+          >
+          <div class="search-title">
+          <el-icon class="icon">
+          <img src="@/assets/kmc/Search.png" alt="" v-if="form.searchMethod !== 'semantic_search'"/>
+          <img src="@/assets/kmc/Search2.png" alt="" v-if="form.searchMethod == 'semantic_search'"/>
+          </el-icon>
+          <span>向量检索</span>
+          </div>
+          <div class="search-desc">
+          通过生成查询嵌入并查询与其向量表示最相似的文本分段
+          </div>
+          <div class="search-options">
+          <el-form-item class="form-item-inline" prop="rerankingEnable">
+          <div class="option-label">Rerank 模型</div>
+          <el-switch v-model="vectorData.rerankingEnable"/>
+          </el-form-item>
+          <el-form-item class="form-item-full" prop="rerankingModelName">
+          <el-select
+          v-model="vectorData.rerankingModelName"
+          placeholder="请选择模型"
+          :disabled="!vectorData.rerankingEnable"
+          >
+          <el-option-group
+          v-for="group in rerankingModel"
+          :key="group.label.zh_Hans"
+          :label="group.label.zh_Hans"
+          >
+          <el-option
+          v-for="item in group.models"
+          :key="item.model"
+          :label="item.model"
+          :value="item.model"
+          />
+          </el-option-group>
+          </el-select>
+          </el-form-item>
+          <div class="search-config">
+          <div class="config-item">
+          <div class="config-label">
+          <span>Top K</span>
+          <el-tooltip content="选择返回的相似文本数量">
+          <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />
+          </el-tooltip>
+          </div>
+          <div class="config-content">
+          <el-input-number
+          v-model="vectorData.topK"
+          :min="1"
+          :max="10"
+          controls-position="right"
+          class="input-number"
+          />
+          <el-slider
+          v-model="vectorData.topK"
+          :min="1"
+          :max="10"
+          class="slider"
+          :disabled="form.searchMethod !== 'semantic_search'"
+          />
+          </div>
+          </div>
+          <div class="config-item">
+          <div class="config-label">
+          <span>Score 阈值</span>
+          <el-tooltip content="设置相似度分数的最小阈值">
+          <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />
+          </el-tooltip>
+          <el-switch v-model="vectorData.scoreThresholdEnabled" class="switch-right"/>
+          </div>
+          <div class="config-content">
+          <el-input-number
+          v-model="vectorData.scoreThreshold"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          controls-position="right"
+          class="input-number"
+          :disabled="!vectorData.scoreThresholdEnabled"
+          />
+          <el-slider
+          v-model="vectorData.scoreThreshold"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          class="slider"
+          :disabled="!vectorData.scoreThresholdEnabled"
+          />
+          </div>
+          </div>
+          </div>
+          </div>
+          </div>
 
-          <!--                  &lt;!&ndash; 全文检索 &ndash;&gt;-->
-          <!--                  <div-->
-          <!--                      class="search-item"-->
-          <!--                      :class="{ act: form.searchMethod === 'full_text_search' }"-->
-          <!--                      @click="form.searchMethod = 'full_text_search'"-->
-          <!--                      v-if="form.indexingTechnique !== 'economy'"-->
-          <!--                  >-->
-          <!--                    <div class="search-title">-->
-          <!--                      <el-icon class="icon">-->
-          <!--                        <img src="@/assets/kmc/Document.png" alt="" v-if="form.searchMethod !== 'full_text_search'"/>-->
-          <!--                        <img src="@/assets/kmc/Document2.png" alt="" v-if="form.searchMethod == 'full_text_search'"/>-->
-          <!--                      </el-icon>-->
-          <!--                      <span>全文检索</span>-->
-          <!--                    </div>-->
-          <!--                    <div class="search-desc">-->
-          <!--                      通过生成查询嵌入并查询与其向量表示最相似的文本分段-->
-          <!--                    </div>-->
-          <!--                    <div class="search-options">-->
-          <!--                      <el-form-item class="form-item-inline" prop="rerankingEnable">-->
-          <!--                        <div class="option-label">Rerank 模型</div>-->
-          <!--                        <el-switch v-model="fullTextData.rerankingEnable"/>-->
-          <!--                      </el-form-item>-->
-          <!--                      <el-form-item class="form-item-full" prop="rerankingModelName">-->
-          <!--                        <el-select-->
-          <!--                            v-model="fullTextData.rerankingModelName"-->
-          <!--                            placeholder="请选择模型"-->
-          <!--                            :disabled="!fullTextData.rerankingEnable"-->
-          <!--                        >-->
-          <!--                          <el-option-group-->
-          <!--                              v-for="group in rerankingModel"-->
-          <!--                              :key="group.label.zh_Hans"-->
-          <!--                              :label="group.label.zh_Hans"-->
-          <!--                          >-->
-          <!--                            <el-option-->
-          <!--                                v-for="item in group.models"-->
-          <!--                                :key="item.model"-->
-          <!--                                :label="item.model"-->
-          <!--                                :value="item.model"-->
-          <!--                            />-->
-          <!--                          </el-option-group>-->
-          <!--                        </el-select>-->
-          <!--                      </el-form-item>-->
-          <!--                      <div class="search-config">-->
-          <!--                        <div class="config-item">-->
-          <!--                          <div class="config-label">-->
-          <!--                            <span>Top K</span>-->
-          <!--                            <el-tooltip content="选择返回的相似文本数量">-->
-          <!--                              <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />-->
-          <!--                            </el-tooltip>-->
-          <!--                          </div>-->
-          <!--                          <div class="config-content">-->
-          <!--                            <el-input-number-->
-          <!--                                v-model="fullTextData.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                controls-position="right"-->
-          <!--                                class="input-number"-->
-          <!--                            />-->
-          <!--                            <el-slider-->
-          <!--                                v-model="fullTextData.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                class="slider"-->
-          <!--                                :disabled="form.searchMethod !== 'full_text_search'"-->
-          <!--                            />-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                        <div class="config-item">-->
-          <!--                          <div class="config-label">-->
-          <!--                            <span>Score 阈值</span>-->
-          <!--                            <el-tooltip content="设置相似度分数的最小阈值">-->
-          <!--                              <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />-->
-          <!--                            </el-tooltip>-->
-          <!--                            <el-switch v-model="fullTextData.scoreThresholdEnabled" class="switch-right"/>-->
-          <!--                          </div>-->
-          <!--                          <div class="config-content">-->
-          <!--                            <el-input-number-->
-          <!--                                v-model="fullTextData.scoreThreshold"-->
-          <!--                                :min="0"-->
-          <!--                                :max="1"-->
-          <!--                                :step="0.1"-->
-          <!--                                controls-position="right"-->
-          <!--                                class="input-number"-->
-          <!--                                :disabled="!fullTextData.scoreThresholdEnabled"-->
-          <!--                            />-->
-          <!--                            <el-slider-->
-          <!--                                v-model="fullTextData.scoreThreshold"-->
-          <!--                                :min="0"-->
-          <!--                                :max="1"-->
-          <!--                                :step="0.1"-->
-          <!--                                class="slider"-->
-          <!--                                :disabled="!fullTextData.scoreThresholdEnabled"-->
-          <!--                            />-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                      </div>-->
-          <!--                    </div>-->
-          <!--                  </div>-->
+          <!-- 全文检索 -->
+          <div
+          class="search-item"
+          :class="{ act: form.searchMethod === 'full_text_search' }"
+          @click="form.searchMethod = 'full_text_search'"
+          v-if="form.indexingTechnique !== 'economy'"
+          >
+          <div class="search-title">
+          <el-icon class="icon">
+          <img src="@/assets/kmc/Document.png" alt="" v-if="form.searchMethod !== 'full_text_search'"/>
+          <img src="@/assets/kmc/Document2.png" alt="" v-if="form.searchMethod == 'full_text_search'"/>
+          </el-icon>
+          <span>全文检索</span>
+          </div>
+          <div class="search-desc">
+          通过生成查询嵌入并查询与其向量表示最相似的文本分段
+          </div>
+          <div class="search-options">
+          <el-form-item class="form-item-inline" prop="rerankingEnable">
+          <div class="option-label">Rerank 模型</div>
+          <el-switch v-model="fullTextData.rerankingEnable"/>
+          </el-form-item>
+          <el-form-item class="form-item-full" prop="rerankingModelName">
+          <el-select
+          v-model="fullTextData.rerankingModelName"
+          placeholder="请选择模型"
+          :disabled="!fullTextData.rerankingEnable"
+          >
+          <el-option-group
+          v-for="group in rerankingModel"
+          :key="group.label.zh_Hans"
+          :label="group.label.zh_Hans"
+          >
+          <el-option
+          v-for="item in group.models"
+          :key="item.model"
+          :label="item.model"
+          :value="item.model"
+          />
+          </el-option-group>
+          </el-select>
+          </el-form-item>
+          <div class="search-config">
+          <div class="config-item">
+          <div class="config-label">
+          <span>Top K</span>
+          <el-tooltip content="选择返回的相似文本数量">
+          <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />
+          </el-tooltip>
+          </div>
+          <div class="config-content">
+          <el-input-number
+          v-model="fullTextData.topK"
+          :min="1"
+          :max="10"
+          controls-position="right"
+          class="input-number"
+          />
+          <el-slider
+          v-model="fullTextData.topK"
+          :min="1"
+          :max="10"
+          class="slider"
+          :disabled="form.searchMethod !== 'full_text_search'"
+          />
+          </div>
+          </div>
+          <div class="config-item">
+          <div class="config-label">
+          <span>Score 阈值</span>
+          <el-tooltip content="设置相似度分数的最小阈值">
+          <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />
+          </el-tooltip>
+          <el-switch v-model="fullTextData.scoreThresholdEnabled" class="switch-right"/>
+          </div>
+          <div class="config-content">
+          <el-input-number
+          v-model="fullTextData.scoreThreshold"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          controls-position="right"
+          class="input-number"
+          :disabled="!fullTextData.scoreThresholdEnabled"
+          />
+          <el-slider
+          v-model="fullTextData.scoreThreshold"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          class="slider"
+          :disabled="!fullTextData.scoreThresholdEnabled"
+          />
+          </div>
+          </div>
+          </div>
+          </div>
+          </div>
 
-          <!--                  &lt;!&ndash; 混合检索 &ndash;&gt;-->
-          <!--                  <div-->
-          <!--                      class="search-item"-->
-          <!--                      :class="{ act: form.searchMethod === 'hybrid_search' }"-->
-          <!--                      @click="form.searchMethod = 'hybrid_search'"-->
-          <!--                      v-if="form.indexingTechnique !== 'economy'"-->
-          <!--                  >-->
-          <!--                    <div class="search-title">-->
-          <!--                      <div class="search-recommend">-->
-          <!--                        <el-icon class="icon">-->
-          <!--                          <img src="@/assets/kmc/Files.png" alt="" v-if="form.searchMethod !== 'hybrid_search'"/>-->
-          <!--                          <img src="@/assets/kmc/Files2.png" alt="" v-if="form.searchMethod == 'hybrid_search'"/>-->
-          <!--                        </el-icon>-->
-          <!--                        <span>混合检索</span>-->
-          <!--                        <el-tag size="small" type="primary" class="recommend-tag">推荐</el-tag>-->
-          <!--                      </div>-->
-          <!--                    </div>-->
-          <!--                    <div class="search-desc">-->
-          <!--                      通过生成查询嵌入并查询与其向量表示最相似的文本分段-->
-          <!--                    </div>-->
-          <!--                    <div class="search-options">-->
-          <!--                      <el-form-item class="form-item-full" prop="rerankingMode">-->
-          <!--                        <div class="mode-selector">-->
-          <!--                          <div-->
-          <!--                              class="mode-item"-->
-          <!--                              :class="{ act: mixData.rerankingMode === 'weighted_score' }"-->
-          <!--                              @click="mixData.rerankingMode = 'weighted_score'"-->
-          <!--                          >-->
+          <!-- 混合检索 -->
+          <div
+          class="search-item"
+          :class="{ act: form.searchMethod === 'hybrid_search' }"
+          @click="form.searchMethod = 'hybrid_search'"
+          v-if="form.indexingTechnique !== 'economy'"
+          >
+          <div class="search-title">
+          <div class="search-recommend">
+          <el-icon class="icon">
+          <img src="@/assets/kmc/Files.png" alt="" v-if="form.searchMethod !== 'hybrid_search'"/>
+          <img src="@/assets/kmc/Files2.png" alt="" v-if="form.searchMethod == 'hybrid_search'"/>
+          </el-icon>
+          <span>混合检索</span>
+          <el-tag size="small" type="primary" class="recommend-tag">推荐</el-tag>
+          </div>
+          </div>
+          <div class="search-desc">
+          通过生成查询嵌入并查询与其向量表示最相似的文本分段
+          </div>
+          <div class="search-options">
+          <el-form-item class="form-item-full" prop="rerankingMode">
+          <div class="mode-selector">
+          <div
+          class="mode-item"
+          :class="{ act: mixData.rerankingMode === 'weighted_score' }"
+          @click="mixData.rerankingMode = 'weighted_score'"
+          >
 
-          <!--                            <div class="img-title-radio">-->
-          <!--                            <img src="@/assets/kmc/weight.png" alt="" class="mode-icon" />-->
-          <!--                              <div class="text-radio">-->
-          <!--                            <div class="mode-text">-->
-          <!--                              <div class="mode-title">权重设置</div>-->
-          <!--                            </div>-->
-          <!--                            <el-radio-->
-          <!--                                v-model="mixData.rerankingMode"-->
-          <!--                                label="weighted_score"-->
-          <!--                            ></el-radio>-->
-          <!--                              </div>-->
-          <!--                            </div>-->
-          <!--                            <div class="mode-desc">-->
-          <!--                              通过调整分配的权重，重新排序策略确定是优先进行语义匹配还是关键字匹配。-->
-          <!--                            </div>-->
-          <!--                          </div>-->
-          <!--                          <div-->
-          <!--                              class="mode-item"-->
-          <!--                              :class="{ act: mixData.rerankingMode === 'reranking_model' }"-->
-          <!--                              @click="mixData.rerankingMode = 'reranking_model'"-->
-          <!--                          >-->
-          <!--                            <div class="img-title-radio">-->
-          <!--                            <img src="@/assets/kmc/share.png" alt="" class="mode-icon" />-->
-          <!--                            <div class="mode-text">-->
-          <!--                              <div class="mode-title">Rerank模型</div>-->
-          <!--                            </div>-->
-          <!--                            <el-radio-->
-          <!--                                v-model="mixData.rerankingMode"-->
-          <!--                                label="reranking_model"-->
-          <!--                            ></el-radio>-->
-          <!--                            </div>-->
-          <!--                            <div class="mode-desc">-->
-          <!--                              重排序模型将根据候选文档列表与用户问题语义匹配度进行重新排序。-->
-          <!--                            </div>-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                      </el-form-item>-->
-          <!--                      <el-form-item-->
-          <!--                          class="form-item-full"-->
-          <!--                          prop="rerankingModelName"-->
-          <!--                          v-if="mixData.rerankingMode === 'reranking_model'"-->
-          <!--                      >-->
-          <!--                        <div class="option-label">Rerank 模型</div>-->
-          <!--                        <el-select-->
-          <!--                            v-model="mixData.rerankingModelName"-->
-          <!--                            placeholder="请选择模型"-->
-          <!--                            :disabled="!mixData.rerankingEnable"-->
-          <!--                        >-->
-          <!--                          <el-option-group-->
-          <!--                              v-for="group in rerankingModel"-->
-          <!--                              :key="group.label.zh_Hans"-->
-          <!--                              :label="group.label.zh_Hans"-->
-          <!--                          >-->
-          <!--                            <el-option-->
-          <!--                                v-for="item in group.models"-->
-          <!--                                :key="item.model"-->
-          <!--                                :label="item.model"-->
-          <!--                                :value="item.model"-->
-          <!--                            />-->
-          <!--                          </el-option-group>-->
-          <!--                        </el-select>-->
-          <!--                      </el-form-item>-->
-          <!--                      <el-form-item-->
-          <!--                          class="form-item-full"-->
-          <!--                          prop="keywordWeight"-->
-          <!--                          v-if="mixData.rerankingMode !== 'reranking_model'"-->
-          <!--                      >-->
-          <!--                        <div class="option-label">权重分配</div>-->
-          <!--                        <div class="weight-config">-->
-          <!--                          <el-slider-->
-          <!--                              v-model="mixData.keywordWeight"-->
-          <!--                              :min="0"-->
-          <!--                              :max="1.0"-->
-          <!--                              :step="0.1"-->
-          <!--                              class="weight-slider"-->
-          <!--                          ></el-slider>-->
-          <!--                          <div class="weight-desc">-->
-          <!--                            <div>语义 {{ mixData.keywordWeight }}</div>-->
-          <!--                            <div class="keyword-weight">关键词 {{ mixData.vectorWeight }}</div>-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                      </el-form-item>-->
-          <!--                      <div class="search-config">-->
-          <!--                        <div class="config-item">-->
-          <!--                          <div class="config-label">-->
-          <!--                            <span>Top K</span>-->
-          <!--                            <el-tooltip content="选择返回的相似文本数量">-->
-          <!--                              <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />-->
-          <!--                            </el-tooltip>-->
-          <!--                          </div>-->
-          <!--                          <div class="config-content">-->
-          <!--                            <el-input-number-->
-          <!--                                v-model="mixData.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                controls-position="right"-->
-          <!--                                class="input-number"-->
-          <!--                            />-->
-          <!--                            <el-slider-->
-          <!--                                v-model="mixData.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                class="slider"-->
-          <!--                                :disabled="form.searchMethod !== 'hybrid_search'"-->
-          <!--                            />-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                        <div class="config-item">-->
-          <!--                          <div class="config-label">-->
-          <!--                            <span>Score 阈值</span>-->
-          <!--                            <el-tooltip content="设置相似度分数的最小阈值">-->
-          <!--                              <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />-->
-          <!--                            </el-tooltip>-->
-          <!--                            <el-switch v-model="mixData.scoreThresholdEnabled" class="switch-right"/>-->
-          <!--                          </div>-->
-          <!--                          <div class="config-content">-->
-          <!--                            <el-input-number-->
-          <!--                                v-model="mixData.scoreThreshold"-->
-          <!--                                :min="0"-->
-          <!--                                :max="1"-->
-          <!--                                :step="0.1"-->
-          <!--                                controls-position="right"-->
-          <!--                                class="input-number"-->
-          <!--                                :disabled="!mixData.scoreThresholdEnabled"-->
-          <!--                            />-->
-          <!--                            <el-slider-->
-          <!--                                v-model="mixData.scoreThreshold"-->
-          <!--                                :min="0"-->
-          <!--                                :max="1"-->
-          <!--                                :step="0.1"-->
-          <!--                                class="slider"-->
-          <!--                                :disabled="!mixData.scoreThresholdEnabled"-->
-          <!--                            />-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                      </div>-->
-          <!--                    </div>-->
-          <!--                  </div>-->
+          <div class="img-title-radio">
+          <img src="@/assets/kmc/weight.png" alt="" class="mode-icon" />
+          <div class="text-radio">
+          <div class="mode-text">
+          <div class="mode-title">权重设置</div>
+          </div>
+          <el-radio
+          v-model="mixData.rerankingMode"
+          label="weighted_score"
+          ></el-radio>
+          </div>
+          </div>
+          <div class="mode-desc">
+          通过调整分配的权重，重新排序策略确定是优先进行语义匹配还是关键字匹配。
+          </div>
+          </div>
+          <div
+          class="mode-item"
+          :class="{ act: mixData.rerankingMode === 'reranking_model' }"
+          @click="mixData.rerankingMode = 'reranking_model'"
+          >
+          <div class="img-title-radio">
+          <img src="@/assets/kmc/share.png" alt="" class="mode-icon" />
+          <div class="mode-text">
+          <div class="mode-title">Rerank模型</div>
+          </div>
+          <el-radio
+          v-model="mixData.rerankingMode"
+          label="reranking_model"
+          ></el-radio>
+          </div>
+          <div class="mode-desc">
+          重排序模型将根据候选文档列表与用户问题语义匹配度进行重新排序。
+          </div>
+          </div>
+          </div>
+          </el-form-item>
+          <el-form-item
+          class="form-item-full"
+          prop="rerankingModelName"
+          v-if="mixData.rerankingMode === 'reranking_model'"
+          >
+          <div class="option-label">Rerank 模型</div>
+          <el-select
+          v-model="mixData.rerankingModelName"
+          placeholder="请选择模型"
+          :disabled="!mixData.rerankingEnable"
+          >
+          <el-option-group
+          v-for="group in rerankingModel"
+          :key="group.label.zh_Hans"
+          :label="group.label.zh_Hans"
+          >
+          <el-option
+          v-for="item in group.models"
+          :key="item.model"
+          :label="item.model"
+          :value="item.model"
+          />
+          </el-option-group>
+          </el-select>
+          </el-form-item>
+          <el-form-item
+          class="form-item-full"
+          prop="keywordWeight"
+          v-if="mixData.rerankingMode !== 'reranking_model'"
+          >
+          <div class="option-label">权重分配</div>
+          <div class="weight-config">
+          <el-slider
+          v-model="mixData.keywordWeight"
+          :min="0"
+          :max="1.0"
+          :step="0.1"
+          class="weight-slider"
+          ></el-slider>
+          <div class="weight-desc">
+          <div>语义 {{ mixData.keywordWeight }}</div>
+          <div class="keyword-weight">关键词 {{ mixData.vectorWeight }}</div>
+          </div>
+          </div>
+          </el-form-item>
+          <div class="search-config">
+          <div class="config-item">
+          <div class="config-label">
+          <span>Top K</span>
+          <el-tooltip content="选择返回的相似文本数量">
+          <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />
+          </el-tooltip>
+          </div>
+          <div class="config-content">
+          <el-input-number
+          v-model="mixData.topK"
+          :min="1"
+          :max="10"
+          controls-position="right"
+          class="input-number"
+          />
+          <el-slider
+          v-model="mixData.topK"
+          :min="1"
+          :max="10"
+          class="slider"
+          :disabled="form.searchMethod !== 'hybrid_search'"
+          />
+          </div>
+          </div>
+          <div class="config-item">
+          <div class="config-label">
+          <span>Score 阈值</span>
+          <el-tooltip content="设置相似度分数的最小阈值">
+          <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />
+          </el-tooltip>
+          <el-switch v-model="mixData.scoreThresholdEnabled" class="switch-right"/>
+          </div>
+          <div class="config-content">
+          <el-input-number
+          v-model="mixData.scoreThreshold"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          controls-position="right"
+          class="input-number"
+          :disabled="!mixData.scoreThresholdEnabled"
+          />
+          <el-slider
+          v-model="mixData.scoreThreshold"
+          :min="0"
+          :max="1"
+          :step="0.1"
+          class="slider"
+          :disabled="!mixData.scoreThresholdEnabled"
+          />
+          </div>
+          </div>
+          </div>
+          </div>
+          </div>
 
-          <!--                  &lt;!&ndash; 经济模式下的倒排索引 &ndash;&gt;-->
-          <!--                  <div-->
-          <!--                      class="search-item"-->
-          <!--                      :class="{ act: form.searchMethod === 'semantic_search' }"-->
-          <!--                      @click="form.searchMethod = 'semantic_search'"-->
-          <!--                      v-if="form.indexingTechnique == 'economy'"-->
-          <!--                  >-->
-          <!--                    <div class="search-title">-->
-          <!--                      <el-icon class="icon">-->
-          <!--                        <img src="@/assets/kmc/Search.png" alt="" v-if="form.searchMethod !== 'semantic_search'"/>-->
-          <!--                        <img src="@/assets/kmc/Search2.png" alt="" v-if="form.searchMethod == 'semantic_search'"/>-->
-          <!--                      </el-icon>-->
-          <!--                      <span>倒排索引</span>-->
-          <!--                    </div>-->
-          <!--                    <div class="search-options">-->
-          <!--                      <div class="search-config">-->
-          <!--                        <div class="config-item">-->
-          <!--                          <div class="config-label">-->
-          <!--                            <span>Top K</span>-->
-          <!--                            <el-tooltip content="选择返回的相似文本数量">-->
-          <!--                              <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />-->
-          <!--                            </el-tooltip>-->
-          <!--                          </div>-->
-          <!--                          <div class="config-content">-->
-          <!--                            <el-input-number-->
-          <!--                                v-model="form.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                controls-position="right"-->
-          <!--                                class="input-number"-->
-          <!--                            />-->
-          <!--                            <el-slider-->
-          <!--                                v-model="form.topK"-->
-          <!--                                :min="1"-->
-          <!--                                :max="10"-->
-          <!--                                class="slider"-->
-          <!--                            />-->
-          <!--                          </div>-->
-          <!--                        </div>-->
-          <!--                      </div>-->
-          <!--                    </div>-->
-          <!--                  </div>-->
-          <!--                </div>-->
-          <!--              </el-form-item>-->
-          <!--            </el-col>-->
-          <!--          </el-row>-->
+          <!-- 经济模式下的倒排索引 -->
+          <div
+          class="search-item"
+          :class="{ act: form.searchMethod === 'semantic_search' }"
+          @click="form.searchMethod = 'semantic_search'"
+          v-if="form.indexingTechnique == 'economy'"
+          >
+          <div class="search-title">
+          <el-icon class="icon">
+          <img src="@/assets/kmc/Search.png" alt="" v-if="form.searchMethod !== 'semantic_search'"/>
+          <img src="@/assets/kmc/Search2.png" alt="" v-if="form.searchMethod == 'semantic_search'"/>
+          </el-icon>
+          <span>倒排索引</span>
+          </div>
+          <div class="search-options">
+          <div class="search-config">
+          <div class="config-item">
+          <div class="config-label">
+          <span>Top K</span>
+          <el-tooltip content="选择返回的相似文本数量">
+          <img class="icon-question" src="@/assets/kmc/QuestionFilled.png" alt="" />
+          </el-tooltip>
+          </div>
+          <div class="config-content">
+          <el-input-number
+          v-model="form.topK"
+          :min="1"
+          :max="10"
+          controls-position="right"
+          class="input-number"
+          />
+          <el-slider
+          v-model="form.topK"
+          :min="1"
+          :max="10"
+          class="slider"
+          />
+          </div>
+          </div>
+          </div>
+          </div>
+          </div>
+          </div>
+          </el-form-item>
+                  <el-form-item label="缓存时长 (TTL)" prop="ragCacheTtl" class="index-form-item" style="margin-top: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <el-input-number v-model="form.ragCacheTtl" :min="0" :step="60" /> 
+                      <span style="color: #666; font-size: 12px;">秒 (默认为300秒，设为0则不过期)</span>
+                    </div>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-collapse-item>
+          </el-collapse>
         </el-form>
       </div>
 
@@ -795,6 +799,7 @@ const showInput = () => {
 
 // 响应式变量
 const isDisabled = ref(false);
+const activeCollapse = ref([]);
 const { form, rules } = toRefs(data);
 const title = ref("");
 const embeddingModel = ref([]);
@@ -897,6 +902,7 @@ function reset() {
     keywordWeight: null,
     vectorWeight: null,
     rerankingMode: null,
+    ragCacheTtl: 300,
   };
   proxy.resetForm("knowledgeBaseRef");
 }
@@ -977,6 +983,7 @@ function submitForm() {
     form.value.vectorWeight = mixData.value.vectorWeight;
     form.value.rerankingMode = mixData.value.rerankingMode;
   }
+  form.value.ragCacheTtl = form.value.ragCacheTtl;
   const matchedItem = embeddingModel.value.find((item) =>
     item.models.some((modelObj) => modelObj.model === form.value.embeddingModel)
   );

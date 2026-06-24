@@ -96,7 +96,7 @@ public class KmcDocumentServiceImpl  extends ServiceImpl<KmcDocumentMapper, KmcD
                 throw new ServiceException("请上传有效内容的文件");
             }
             if (StrUtil.isBlank(s)){
-                throw new ServiceException("请上传有效内容的文件");
+                log.warn("文件文本内容为空，可能为扫描版 PDF 或图片型文档，允许先入库等待后续 OCR/视觉模型处理：{}", file.getAbsolutePath());
             }
             dictType.setSyncStatus(DocumentSyncStatus.SUCCESS.getCode());
             documentList.add(dictType);

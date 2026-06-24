@@ -26,9 +26,9 @@ public class SearchKnowledgeTool implements BiFunction<knowledgeQuery, ToolConte
 
     @Override
     public String apply(knowledgeQuery query, ToolContext toolContext) {
-        if (preRetrievedContent != null && !preRetrievedContent.isEmpty()) {
-            return preRetrievedContent;
+        if (preRetrievedContent == null || preRetrievedContent.isEmpty()) {
+            return "知识库 [" + knowledgeName + "] 中没有找到 \"" + query.getQuery() + "\" 的相关信息!";
         }
-        return "知识库 [" + knowledgeName + "] 中没有找到 \"" + query.getQuery() + "\" 的相关信息!";
+        return "根据知识库检索结果：\n" + preRetrievedContent;
     }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE kmc_knowledge_base ADD COLUMN IF NOT EXISTS rag_cache_ttl BIGINT DEFAULT 300;

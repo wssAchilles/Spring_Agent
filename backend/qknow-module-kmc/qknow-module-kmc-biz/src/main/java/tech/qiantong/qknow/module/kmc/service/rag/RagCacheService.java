@@ -35,6 +35,10 @@ public class RagCacheService {
     }
 
     public List<RetrieveResultRespVO> getOrRetrieve(String cacheKey, Supplier<List<RetrieveResultRespVO>> retriever) {
+        return getOrRetrieve(cacheKey, config.getTtl(), retriever);
+    }
+
+    public List<RetrieveResultRespVO> getOrRetrieve(String cacheKey, long ttl, Supplier<List<RetrieveResultRespVO>> retriever) {
         if (!config.isEnabled()) {
             return retriever.get();
         }
@@ -55,8 +59,10 @@ public class RagCacheService {
         List<RetrieveResultRespVO> results = retriever.get();
 
         try {
-            String json = objectMapper.writeValueAsString(results);
-            redisTemplate.opsForValue().set(redisKey, json, config.getTtl(), TimeUnit.SECONDS);
+            if (results != null && !results.isEmpty()) {
+                String json = objectMapper.writeValueAsString(results);
+                redisTemplate.opsForValue().set(redisKey, json, ttl, TimeUnit.SECONDS);
+            }
         } catch (Exception e) {
             log.warn("RAG cache write failed: {}", redisKey, e);
         }

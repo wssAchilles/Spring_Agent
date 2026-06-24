@@ -1,0 +1,96 @@
+package tech.qiantong.qknow.module.kmc.service.rag;
+
+import cn.hutool.core.collection.CollUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.ai.constant.WeaviateConstant;
+import tech.qiantong.qknow.ai.service.IVectorStoreService;
+import tech.qiantong.qknow.module.ai.api.modelMarket.IAiModelApiService;
+import tech.qiantong.qknow.module.kmc.dal.dataobject.knowledgeBase.KmcKnowledgeBaseDO;
+import tech.qiantong.qknow.module.kmc.dal.mapper.knowledgeBase.KmcKnowledgeBaseMapper;
+import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
+
+import jakarta.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+@Slf4j
+@Component
+public class VectorRetriever {
+
+    @Resource
+    private IAiModelApiService aiModelService;
+
+    @Resource
+    private IVectorStoreService vectorStoreService;
+
+    @Resource
+    private KmcKnowledgeBaseMapper kmcKnowledgeBaseMapper;
+
+    public List<RetrievalResult> retrieve(Long knowledgeBaseId, String query, int topK) {
+        KmcKnowledgeBaseDO kb = kmcKnowledgeBaseMapper.selectById(knowledgeBaseId);
+        if (kb == null) {
+            log.warn("Knowledge base not found: {}", knowledgeBaseId);
+            return new ArrayList<>();
+        }
+
+        try {
+            EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
+                    Long.valueOf(kb.getEmbeddingModelProvider()), kb.getEmbeddingModel());
+            VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
+
+            FilterExpressionBuilder b = new FilterExpressionBuilder();
+            Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, knowledgeBaseId).build();
+
+            SearchRequest searchRequest = SearchRequest.builder()
+                    .filterExpression(expression)
+                    .topK(topK)
+                    .query(query)
+                    .build();
+
+            List<Document> documents = vectorStore.similaritySearch(searchRequest);
+            if (CollUtil.isEmpty(documents)) {
+                return new ArrayList<>();
+            }
+
+            List<RetrievalResult> results = new ArrayList<>(documents.size());
+            for (Document doc : documents) {
+                Map<String, Object> metadata = doc.getMetadata();
+                results.add(RetrievalResult.builder()
+                        .segmentId(toLong(metadata.get(WeaviateConstant.METADATA_FIELD_SEGMENT_ID)))
+                        .documentId(toLong(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID)))
+                        .documentName(String.valueOf(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME)))
+                        .content(doc.getText())
+                        .answer(String.valueOf(metadata.getOrDefault("answer", "")))
+                        .score(doc.getScore() != null ? doc.getScore() : 0.0)
+                        .source("vector")
+                        .build());
+            }
+            return results;
+        } catch (Exception e) {
+            log.error("Vector retrieval failed for knowledgeBaseId={}", knowledgeBaseId, e);
+            return new ArrayList<>();
+        }
+    }
+
+    private Long toLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Long l) {
+            return l;
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+}

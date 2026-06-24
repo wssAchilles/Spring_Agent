@@ -173,6 +173,7 @@ public class AiModelServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO> im
                 valueList = new ArrayList<>();
             }
             JSONObject valObj = new JSONObject();
+            valObj.put("id", aiModelDO.getId());
             valObj.put("model", aiModelDO.getName());
             valueList.add(valObj);
             resultMap.put(key, valueList);

@@ -79,7 +79,13 @@ const top = (screenHeight - height) / 2;
 
 export const filePreview = (fileUrl) => {
     // 打开新窗口并居中
-    const newWindow = window.open(baseUrl + base64Encode(getBaseURL() + fileUrl), '', `scrollbars=yes, width=${width}, height=${height}, top=${top}, left=${left}`);
+    let targetUrl = getBaseURL() + fileUrl;
+    if (fileUrl.toLowerCase().endsWith('.pdf') || !import.meta.env.VITE_APP_FILE_VIEW || import.meta.env.VITE_APP_FILE_VIEW === 'http://127.0.0.1:8012') {
+         // 直接使用浏览器原生预览
+    } else {
+         targetUrl = baseUrl + base64Encode(getBaseURL() + fileUrl);
+    }
+    const newWindow = window.open(targetUrl, '', `scrollbars=yes, width=${width}, height=${height}, top=${top}, left=${left}`);
     if (window.focus) {
         newWindow.focus();
     }

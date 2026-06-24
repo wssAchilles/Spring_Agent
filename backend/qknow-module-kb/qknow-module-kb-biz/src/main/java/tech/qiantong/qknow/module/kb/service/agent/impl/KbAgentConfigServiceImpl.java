@@ -37,6 +37,7 @@ import tech.qiantong.qknow.module.kb.tool.function.query.knowledgeQuery;
 import tech.qiantong.qknow.module.kb.utils.NodeUtils;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcKnowledgeBaseRespDTO;
 import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
+import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
 
 import java.util.*;
@@ -211,7 +212,18 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 try {
                     var results = kmcApiService.recallTest(kb.getId(), kbAgentConfig.getQuestion());
                     if (results != null && !results.isEmpty()) {
-                        recalled = com.alibaba.fastjson2.JSONObject.toJSONString(results);
+                        StringBuilder contentBuilder = new StringBuilder();
+                        for (int i = 0; i < results.size(); i++) {
+                            RetrieveResult r = results.get(i);
+                            contentBuilder.append("[来源 ").append(i + 1).append("] ")
+                                    .append(r.getDocumentName())
+                                    .append(" / segmentId=").append(r.getId())
+                                    .append("\n")
+                                    .append("内容：")
+                                    .append(r.getContent() != null ? r.getContent().substring(0, Math.min(r.getContent().length(), 500)) : "")
+                                    .append("\n\n");
+                        }
+                        recalled = contentBuilder.toString();
                     }
                 } catch (Exception e) {
                     log.warn("RAG 预检索失败: knowledgeId={}", kb.getId(), e);
@@ -228,8 +240,11 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         List<String> toolMethodIds = new ArrayList<>();
         if (StringUtils.isNotEmpty(kbAgentConfig.getToolMethodIds())) {
             Set<String> methodIdSet = StringUtils.str2Set(kbAgentConfig.getToolMethodIds(), ",");
-            List<KbToolMethodDO> kbToolMethodList = kbToolMethodService.listByIds(methodIdSet);
-            toolMethodIds = kbToolMethodList.stream().map(KbToolMethodDO::getCode).collect(Collectors.toList());
+            List<KbToolMethodDO> kbToolMethodList = kbToolMethodService.listByIds(methodIdSet.stream().map(Long::parseLong).toList());
+            toolMethodIds = kbToolMethodList.stream()
+                    .map(KbToolMethodDO::getCode)
+                    .filter(StringUtils::isNotEmpty)
+                    .collect(Collectors.toList());
         }
 
         // 4. 构建历史消息
@@ -246,6 +261,29 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         // 5. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(kbAgentConfig.getPrePrompt(), kbAgentConfig.getInput());
 
+        // 解析 modelId
+        Long modelId = Long.parseLong(jsonObject.getString("modelId"));
+        String modelName = jsonObject.getString("modelName");
+        String platform = "";
+        String baseUrl = "";
+        String apiKey = "";
+
+        // 通过 IAiModelApiService 获取平台和秘钥信息
+        tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO aiModel = aiModelService.getAiModel(modelId);
+        if (aiModel != null) {
+            platform = aiModel.getPlatform();
+            if (StringUtils.isNotEmpty(aiModel.getModel())) {
+                modelName = aiModel.getModel();
+            }
+            if (aiModel.getKeyId() != null) {
+                tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO apiInfo = aiModelService.getAiApiKey(aiModel.getKeyId());
+                if (apiInfo != null) {
+                    baseUrl = apiInfo.getUrl();
+                    apiKey = apiInfo.getApiKey();
+                }
+            }
+        }
+
         // 6. 构建 gRPC ChatRequest
         ChatRequest request = ChatRequest.newBuilder()
                 .setRequestId(UUID.randomUUID().toString())
@@ -253,8 +291,11 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 .setSystemPrompt(systemPrompt != null ? systemPrompt : "")
                 .setInputParams(kbAgentConfig.getInput() != null ? kbAgentConfig.getInput() : "")
                 .setModelConfig(ModelConfig.newBuilder()
-                        .setModelId(Long.parseLong(jsonObject.getString("modelId")))
-                        .setModelName(jsonObject.getString("modelName"))
+                        .setModelId(modelId)
+                        .setModelName(modelName != null ? modelName : "")
+                        .setPlatform(platform != null ? platform : "")
+                        .setBaseUrl(baseUrl != null ? baseUrl : "")
+                        .setApiKey(apiKey != null ? apiKey : "")
                         .build())
                 .addAllRagContexts(ragContexts)
                 .addAllToolMethodIds(toolMethodIds)

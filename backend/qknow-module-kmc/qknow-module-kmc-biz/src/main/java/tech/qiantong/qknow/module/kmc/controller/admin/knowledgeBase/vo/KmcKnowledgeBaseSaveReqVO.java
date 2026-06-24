@@ -95,6 +95,9 @@ public class KmcKnowledgeBaseSaveReqVO extends BaseEntity {
     @Size(max = 512, message = "备注长度不能超过512个字符")
     private String remark;
 
+    @Schema(description = "RAG 缓存 TTL（秒）", example = "300")
+    private Long ragCacheTtl;
+
     @Schema(description = "标签", example = "")
     private String tags;
 

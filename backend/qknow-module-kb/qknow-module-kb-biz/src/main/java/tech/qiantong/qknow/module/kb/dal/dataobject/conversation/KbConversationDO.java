@@ -31,8 +31,8 @@ public class KbConversationDO extends BaseEntity {
 
     private Integer status;
 
-    private Boolean validFlag;
+    private Integer validFlag;
 
     @TableLogic
-    private Boolean delFlag;
+    private Integer delFlag;
 }

@@ -78,7 +78,7 @@ public class KmcDocumentSegmentDO extends BaseEntity {
     private Long hitCount;
 
     /** 启用状态 */
-    private Integer enabled;
+    private Boolean enabled;
 
     /** 状态 */
     private String status;

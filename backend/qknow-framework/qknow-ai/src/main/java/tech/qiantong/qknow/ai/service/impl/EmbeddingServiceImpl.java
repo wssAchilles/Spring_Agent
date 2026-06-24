@@ -68,10 +68,7 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
         if (StrUtil.hasBlank(baseUrl, apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
         }
-        WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-        webClientBuilder.clientConnector( // 重新设置ClientHttpConnector，并设置HTTP1.1版本的HttpClient
-                new JdkClientHttpConnector(
-                        HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()));
+        WebClient.Builder webClientBuilder = WebClient.builder();
         return new OpenAiEmbeddingModel(
                 OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).webClientBuilder(webClientBuilder).build(),
                 MetadataMode.EMBED,

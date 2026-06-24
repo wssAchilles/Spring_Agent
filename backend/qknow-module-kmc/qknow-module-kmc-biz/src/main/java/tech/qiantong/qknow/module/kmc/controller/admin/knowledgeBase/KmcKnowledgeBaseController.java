@@ -136,9 +136,42 @@ public class KmcKnowledgeBaseController extends BaseController {
 
     @Operation(summary = "召回测试")
     @PostMapping("/recallTest")
-    public CommonResult<List<RetrieveResultRespVO>> recallTest(@Valid @RequestBody RetrieveResultReqVO retrieveResultReqVO) {
+    public CommonResult<List<RetrieveResultRespVO>> recallTest(
+            @Valid @RequestBody RetrieveResultReqVO retrieveResultReqVO,
+            @RequestParam(defaultValue = "false") boolean debug) {
         retrieveResultReqVO.setWorkspaceId(getWorkSpaceId());
-        return CommonResult.success(kmcKnowledgeBaseService.recallTest(retrieveResultReqVO));
+        List<RetrieveResultRespVO> result = kmcKnowledgeBaseService.recallTest(retrieveResultReqVO);
+
+        if (debug) {
+            logger.info("[RAG Debug] Query: {}, KB: {}, SearchMethod: {}, Results: {}",
+                    retrieveResultReqVO.getQuery(),
+                    retrieveResultReqVO.getId(),
+                    retrieveResultReqVO.getSearchMethod(),
+                    result.size());
+            for (RetrieveResultRespVO r : result) {
+                logger.info("[RAG Debug] - Doc: {}, Score: {}, SegmentId: {}",
+                        r.getDocumentName(), r.getScore(), r.getId());
+            }
+        }
+
+        return CommonResult.success(result);
+    }
+
+    @Operation(summary = "召回调试")
+    @PostMapping("/recallDebug")
+    public CommonResult<RecallDebugRespVO> recallDebug(
+            @Valid @RequestBody RetrieveResultReqVO retrieveResultReqVO) {
+        retrieveResultReqVO.setWorkspaceId(getWorkSpaceId());
+        return CommonResult.success(kmcKnowledgeBaseService.recallDebug(retrieveResultReqVO));
+    }
+
+    @Operation(summary = "清除RAG缓存")
+    @PreAuthorize("@ss.hasPermi('kmc:knowledgeBase:knowledgebase:edit')")
+    @Log(title = "知识库", businessType = BusinessType.CLEAN)
+    @DeleteMapping("/{id}/ragCache")
+    public CommonResult<Boolean> clearRagCache(@PathVariable("id") Long id) {
+        tech.qiantong.qknow.common.utils.spring.SpringUtils.getBean(tech.qiantong.qknow.module.kmc.service.rag.RagCacheService.class).evictByKnowledgeBase(id);
+        return CommonResult.success(true);
     }
 
     @PreAuthorize("@ss.hasPermi('kmc:knowledgeBase:role:list')")

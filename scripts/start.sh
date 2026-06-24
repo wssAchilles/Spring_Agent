@@ -21,8 +21,8 @@ start_background() {
 cd "$PROJECT_DIR"
 mkdir -p "$RUNTIME_DIR"
 
-echo "[1/5] 启动 PostgreSQL 与 Redis"
-docker compose up -d postgres redis
+echo "[1/5] 启动 Redis"
+docker compose up -d redis
 
 echo "[2/5] 清理旧实例并释放端口"
 for container in agent-frontend agent-backend qknow-hermes; do
