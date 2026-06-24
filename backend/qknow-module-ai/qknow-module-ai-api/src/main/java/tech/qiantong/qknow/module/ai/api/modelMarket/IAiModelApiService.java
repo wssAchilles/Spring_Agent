@@ -51,4 +51,14 @@ public interface IAiModelApiService {
      * @return 重排序模型
      */
     DashScopeRerankModel getRerankModel(Long keyId, String modelName);
+
+    /**
+     * 获取 AI 模型信息
+     */
+    tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO getAiModel(Long id);
+
+    /**
+     * 获取 AI API Key 信息
+     */
+    tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO getAiApiKey(Long id);
 }

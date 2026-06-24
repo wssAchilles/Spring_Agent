@@ -38,6 +38,29 @@ public class ChatModelFactory {
     @Resource
     ObjectProvider<WebClient.Builder> webClientBuilderProvider;
 
+    @Resource
+    private org.springframework.core.env.Environment environment;
+
+    /**
+     * 解析环境变量中的 apiKey（如果数据库配置了占位符）
+     */
+    private String resolveApiKey(String apiKey, String platform) {
+        if (apiKey != null && apiKey.contains("placeholder")) {
+            // 优先检查 HERMES_平台_API_KEY，再检查 平台_API_KEY
+            String upperPlatform = platform.toUpperCase().replace("-", "_");
+            String envKey1 = "HERMES_" + upperPlatform + "_API_KEY";
+            String envKey2 = upperPlatform + "_API_KEY";
+            String envValue = environment.getProperty(envKey1);
+            if (StrUtil.isBlank(envValue)) {
+                envValue = environment.getProperty(envKey2);
+            }
+            if (StrUtil.isNotBlank(envValue)) {
+                return envValue;
+            }
+        }
+        return apiKey;
+    }
+
     /**
      * 获取 chatModel
      *
@@ -48,6 +71,7 @@ public class ChatModelFactory {
      * @return chatModel
      */
     public ChatModel getChatModel(String platform, String baseUrl, String apiKey, String modelName) {
+        apiKey = resolveApiKey(apiKey, platform);
         return switch (AiPlatformEnum.validatePlatform(platform)) {
             case OPENAI -> getOpenAiChatModel(baseUrl, apiKey, modelName);
             case TONG_YI -> getDashScopeChatModel(apiKey, modelName);
@@ -66,8 +90,12 @@ public class ChatModelFactory {
      * @return OpenAiChatModel
      */
     private OpenAiChatModel getOpenAiChatModel(String baseUrl, String apiKey, String modelName) {
-        if (StrUtil.hasBlank(baseUrl, apiKey, modelName)) {
-            throw new IllegalArgumentException("OpenAI 平台必要字段不能为空");
+        System.out.println("============= OPENAI MODEL NAME IS: " + modelName + " =============");
+        if (StrUtil.hasBlank(apiKey, modelName)) {
+            throw new IllegalArgumentException("OpenAI 平台 apiKey, modelName 字段不能为空");
+        }
+        if (StrUtil.isBlank(baseUrl)) {
+            baseUrl = "https://api.openai.com";
         }
         WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder);
         webClientBuilder.clientConnector(

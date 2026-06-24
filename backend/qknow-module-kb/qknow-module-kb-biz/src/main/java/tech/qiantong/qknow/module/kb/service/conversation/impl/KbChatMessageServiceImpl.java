@@ -20,7 +20,7 @@ public class KbChatMessageServiceImpl extends ServiceImpl<KbChatMessageMapper, K
     public List<KbChatMessageDO> getMessagesByConversationId(Long conversationId) {
         return list(new LambdaQueryWrapperX<KbChatMessageDO>()
                 .eq(KbChatMessageDO::getConversationId, conversationId)
-                .eq(KbChatMessageDO::getDelFlag, false)
+                .eq(KbChatMessageDO::getDelFlag, 0)
                 .orderByAsc(KbChatMessageDO::getCreateTime));
     }
 
@@ -30,8 +30,8 @@ public class KbChatMessageServiceImpl extends ServiceImpl<KbChatMessageMapper, K
                 .conversationId(conversationId)
                 .role(role)
                 .content(content)
-                .validFlag(true)
-                .delFlag(false)
+                .validFlag(1)
+                .delFlag(0)
                 .build();
         save(message);
         return message;

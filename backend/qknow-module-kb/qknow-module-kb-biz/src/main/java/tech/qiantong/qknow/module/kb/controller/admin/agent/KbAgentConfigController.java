@@ -116,7 +116,7 @@ public class KbAgentConfigController extends BaseController {
         // 填充工具方法名称列表
         if (StringUtils.isNotBlank(kbAgentConfigDO.getToolMethodIds())) {
             Set<String> methodIdSet = StringUtils.str2Set(kbAgentConfigDO.getToolMethodIds(), ",");
-            List<KbToolMethodDO> toolList = kbToolMethodService.listByIds(methodIdSet);
+            List<KbToolMethodDO> toolList = kbToolMethodService.listByIds(methodIdSet.stream().map(Long::parseLong).toList());
             respVO.setToolMethodNames(toolList.stream().map(KbToolMethodDO::getName).toList());
         }
         return CommonResult.success(respVO);

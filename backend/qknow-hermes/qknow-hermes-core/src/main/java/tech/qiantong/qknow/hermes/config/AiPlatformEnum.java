@@ -71,7 +71,7 @@ public enum AiPlatformEnum {
 
     public static AiPlatformEnum validatePlatform(String platform) {
         for (AiPlatformEnum platformEnum : AiPlatformEnum.values()) {
-            if (platformEnum.getPlatform().equals(platform)) {
+            if (platformEnum.getPlatform().equalsIgnoreCase(platform)) {
                 return platformEnum;
             }
         }

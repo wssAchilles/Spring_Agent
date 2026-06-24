@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 知识库 Request VO 对象 kmc_knowledge_base
@@ -66,4 +67,14 @@ public class RetrieveResultReqVO {
     @Schema(description = "嵌入式模型提供", example = "")
     private String embeddingModelProvider;
 
+    @Schema(description = "多轮对话历史", example = "")
+    private List<ChatMessage> history;
+
+    @Data
+    public static class ChatMessage {
+        @Schema(description = "角色", example = "user")
+        private String role;
+        @Schema(description = "内容", example = "")
+        private String content;
+    }
 }

@@ -82,4 +82,10 @@ public class RetrieveResultRespVO {
     /** 相似度 */
     private Double score;
 
+    /** 来源 */
+    private String source;
+
+    /** 调试信息 */
+    private java.util.Map<String, Object> debugInfo;
+
 }

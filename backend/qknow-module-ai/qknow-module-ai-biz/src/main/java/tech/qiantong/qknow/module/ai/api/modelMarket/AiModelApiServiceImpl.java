@@ -126,4 +126,29 @@ public class AiModelApiServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO>
         );
     }
 
+    @Override
+    public tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO getAiModel(Long id) {
+        AiModelDO modelDO = baseMapper.selectById(id);
+        if (modelDO == null) return null;
+        tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO dto = new tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO();
+        dto.setId(modelDO.getId());
+        dto.setKeyId(modelDO.getKeyId());
+        dto.setPlatform(modelDO.getPlatform());
+        dto.setName(modelDO.getName());
+        dto.setModel(modelDO.getModel());
+        return dto;
+    }
+
+    @Override
+    public tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO getAiApiKey(Long id) {
+        AiApiKeyDO keyDO = apiKeyMapper.selectById(id);
+        if (keyDO == null) return null;
+        tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO dto = new tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO();
+        dto.setId(keyDO.getId());
+        dto.setPlatform(keyDO.getPlatform());
+        dto.setApiKey(keyDO.getApiKey());
+        dto.setUrl(keyDO.getUrl());
+        return dto;
+    }
+
 }

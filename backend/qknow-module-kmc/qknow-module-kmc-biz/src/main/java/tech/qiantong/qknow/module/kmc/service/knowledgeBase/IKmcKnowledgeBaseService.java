@@ -111,6 +111,13 @@ public interface IKmcKnowledgeBaseService extends IService<KmcKnowledgeBaseDO> {
     List<RetrieveResultRespVO> recallTest(RetrieveResultReqVO retrieveResultReqVO);
 
     /**
+     * 召回调试
+     *
+     * @return 调试返回信息
+     */
+    RecallDebugRespVO recallDebug(RetrieveResultReqVO retrieveResultReqVO);
+
+    /**
      * 设置知识库权限角色
      *
      * @param kmcKnowledgeRoleSaveReqVO

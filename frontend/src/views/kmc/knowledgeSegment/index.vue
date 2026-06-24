@@ -571,6 +571,9 @@ const title = ref("");
 const defaultSort = ref({ prop: "createTime", order: "desc" });
 const router = useRouter();
 const model = ref(proxy.$route.query.mode);
+if (model.value === 'TEXT') model.value = 'text_model';
+if (model.value === 'QA') model.value = 'qa_model';
+if (model.value === 'HIERARCHICAL') model.value = 'hierarchical_model';
 
 /*** 用户导入参数 */
 const upload = reactive({
@@ -656,7 +659,7 @@ setColumnsByMode();
 function getList() {
   loading.value = true;
   queryParams.value.documentId = Number(proxy.$route.query.id);
-  if (proxy.$route.query.mode === "hierarchical_model") {
+  if (model.value === "hierarchical_model") {
     //判断是否是分层的数据
     queryParams.value.parent = true;
     listKnowledgeSegmentTree(queryParams.value).then((response) => {
@@ -686,7 +689,7 @@ function getList() {
 }
 
 function allLevelNodes() {
-  if (proxy.$route.query.mode === "hierarchical_model") {
+  if (model.value === "hierarchical_model") {
     //判断是否是分层的数据
     getAllLevelNodes(queryParams.value).then((response) => {
       allLevelNodesList.value = response.data;

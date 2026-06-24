@@ -137,6 +137,9 @@ public class KmcKnowledgeBaseRespVO implements Serializable {
     @Excel(name = "文件数量")
     private Integer fileCount;
 
+    @Schema(description = "RAG 缓存 TTL（秒）")
+    private Long ragCacheTtl;
+
     @Excel(name = "标签")
     private String tags;
 }

@@ -100,8 +100,12 @@ public class AgentOrchestrator {
             tools.add(toolCallback);
         }
 
-        // 3. 获取工具名称列表
-        String[] toolNames = request.getToolMethodIdsList().toArray(new String[0]);
+        // 3. 获取工具名称列表，并确保知识库工具可被调用
+        List<String> enabledToolNames = new ArrayList<>(request.getToolMethodIdsList());
+        for (RAGContext ragCtx : request.getRagContextsList()) {
+            enabledToolNames.add("knowledgeBase" + ragCtx.getKnowledgeId());
+        }
+        String[] toolNames = enabledToolNames.toArray(new String[0]);
 
         // 4. 构建消息历史
         List<Message> messages = new ArrayList<>();
@@ -115,6 +119,7 @@ public class AgentOrchestrator {
 
         // 5. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
+        systemPrompt = appendRagContext(systemPrompt, request.getRagContextsList());
         messages.add(new UserMessage(request.getQuestion()));
 
         // 6. 构建 ReactAgent
@@ -186,5 +191,35 @@ public class AgentOrchestrator {
                     emitter.complete();
                 }
         );
+    }
+
+    private String appendRagContext(String systemPrompt, List<RAGContext> ragContexts) {
+        if (ragContexts == null || ragContexts.isEmpty()) {
+            return systemPrompt != null ? systemPrompt : "";
+        }
+
+        StringBuilder builder = new StringBuilder(systemPrompt != null ? systemPrompt : "");
+        boolean hasRag = false;
+        for (RAGContext ragCtx : ragContexts) {
+            String content = ragCtx.getPreRetrievedContent();
+            if (content == null || content.isBlank()) {
+                continue;
+            }
+            if (!hasRag) {
+                builder.append("\n\n=== 知识库召回内容 ===\n")
+                        .append("以下是知识库中召回的相关内容，请优先依据这些内容回答用户问题。\n")
+                        .append("重要规则：\n")
+                        .append("1. 如果召回内容与问题相关，请基于这些内容回答，不要说'知识库没有找到'。\n")
+                        .append("2. 如果问题涉及特定 Day/文档，请优先使用对应 Day 的内容回答。\n")
+                        .append("3. 如果内容部分相关，请说明根据知识库中哪部分内容回答，并补充你的理解。\n")
+                        .append("4. 只有当召回内容与问题完全无关时，才说'知识库中没有相关信息'。\n\n");
+                hasRag = true;
+            }
+            builder.append("知识库：").append(ragCtx.getKnowledgeName())
+                    .append("（ID=").append(ragCtx.getKnowledgeId()).append("）\n")
+                    .append(content)
+                    .append("\n\n");
+        }
+        return builder.toString();
     }
 }

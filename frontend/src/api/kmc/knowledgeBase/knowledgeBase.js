@@ -164,3 +164,20 @@ export function changeKnowledgeValid(id, validFlag) {
     params: { id, validFlag }
   })
 }
+
+// 召回调试
+export function recallDebug(data) {
+  return request({
+    url: '/kmc/knowledgeBase/recallDebug',
+    method: 'post',
+    data: data
+  })
+}
+
+// 清除RAG缓存
+export function clearRagCache(id) {
+  return request({
+    url: '/kmc/knowledgeBase/' + id + '/ragCache',
+    method: 'delete'
+  })
+}

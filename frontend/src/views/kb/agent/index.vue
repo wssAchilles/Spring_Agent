@@ -83,6 +83,8 @@
               <el-form-item label="知识库">
                 <el-button type="primary" size="small" @click="handleAddKnowledge" plain>
                   <i class="iconfont-mini icon-upload-cloud-line mr5"></i>导入知识库</el-button>
+                <el-button type="info" size="small" @click="handlePreviewRecall" plain v-if="form.knowledges && form.knowledges.length > 0">
+                  <i class="iconfont-mini icon-eye-line mr5"></i>召回预览</el-button>
               </el-form-item>
               <div style="margin: 0 0 10px 80px">
                 <el-table :data="form.knowledges" border style="width: 100%">
@@ -194,6 +196,12 @@
         ref="methodMultipleSelectionRef"
         @confirm="handleToolConfirm"
     />
+
+    <!-- 知识库召回预览 -->
+    <agent-recall-preview
+        ref="agentRecallPreviewRef"
+        :knowledges="form.knowledges"
+    />
   </div>
 </template>
 
@@ -206,6 +214,7 @@ import {debugAgent} from "@/api/kb/agent/debug";
 import {getConversations, createConversation, deleteConversation, getMessages} from "@/api/kb/conversation";
 import AgentMessageList from './components/MessageList.vue';
 import AgentChatInput from './components/ChatInput.vue';
+import AgentRecallPreview from './components/AgentRecallPreview.vue';
 import SvgIcon from "@/components/SvgIcon/index.vue";
 const { proxy } = getCurrentInstance();
 
@@ -214,6 +223,13 @@ const agentFormRef = ref(null);
 const knowledgeBaseMultipleRef = ref(null);
 const methodMultipleSelectionRef = ref(null);
 const messageListRef = ref(null); // 消息列表引用
+const agentRecallPreviewRef = ref(null);
+
+const handlePreviewRecall = () => {
+  if (agentRecallPreviewRef.value) {
+    agentRecallPreviewRef.value.open();
+  }
+};
 
 // 表单数据
 const form = reactive({
@@ -260,7 +276,7 @@ watchEffect(() => {
   for (const group of modelOptions.value) {
     const found = group.models?.find((item) => item.model === selectedModelName);
     if (found) {
-      form.modelId = group.provider; // 自动设置 modelId 为 provider
+      form.modelId = found.id; // 自动设置 modelId 为真实的模型 id
       return;
     }
   }
@@ -402,7 +418,7 @@ function getModelList() {
     if (!form.modelId && !form.modelName && modelOptions.value.length > 0 && modelOptions.value[0].models?.length > 0) {
       const firstGroup = modelOptions.value[0];
       const firstModel = firstGroup.models[0];
-      form.modelId = firstGroup.provider; // 使用 provider 作为 modelId
+      form.modelId = firstModel.id; // 使用真实 id 作为 modelId
       form.modelName = firstModel.model; // 使用 model 作为 modelName
     }
   });
@@ -499,13 +515,21 @@ function doSendMessage(content) {
   };
   messageList.value.push(botMessage);
 
-  // 构建请求参数
+  // 构建请求参数，包含当前表单的配置（覆盖数据库配置）
   const requestData = {
     conversationId: currentConversationId.value,
     botId: botId.value,
     workspaceId: workspaceId.value,
     question: content,
-    input: null
+    input: null,
+    modelConfig: JSON.stringify({
+      modelId: form.modelId,
+      modelName: form.modelName
+    }),
+    prePrompt: form.prePrompt,
+    parameters: '{}',
+    knowledgeIds: form.knowledges ? form.knowledges.map(k => k.id).join(',') : '',
+    toolMethodIds: form.tools ? form.tools.map(t => t.id).join(',') : ''
   };
 
   nextTick(() => {

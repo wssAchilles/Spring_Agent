@@ -21,7 +21,7 @@ public class KbConversationServiceImpl extends ServiceImpl<KbConversationMapper,
         return list(new LambdaQueryWrapperX<KbConversationDO>()
                 .eq(KbConversationDO::getBotId, botId)
                 .eq(KbConversationDO::getWorkspaceId, workspaceId)
-                .eq(KbConversationDO::getDelFlag, false)
+                .eq(KbConversationDO::getDelFlag, 0)
                 .orderByDesc(KbConversationDO::getCreateTime));
     }
 
@@ -32,8 +32,8 @@ public class KbConversationServiceImpl extends ServiceImpl<KbConversationMapper,
                 .workspaceId(workspaceId)
                 .title(title != null ? title : "新对话")
                 .status(0)
-                .validFlag(true)
-                .delFlag(false)
+                .validFlag(1)
+                .delFlag(0)
                 .build();
         save(conversation);
         return conversation;

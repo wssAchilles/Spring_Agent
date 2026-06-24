@@ -30,17 +30,18 @@ public class KmcKnowledgeRecallLogDO extends BaseEntity {
     private Long workspaceId;
 
     /** 知识库id */
+    @TableField("knowledge_base_id")
     private Long knowledgeId;
 
     /** 问题 */
     private String query;
 
     /** 是否有效 */
-    private Boolean validFlag;
+    private Integer validFlag;
 
     /** 删除标志 */
     @TableLogic
-    private Boolean delFlag;
+    private Integer delFlag;
 
 
 }

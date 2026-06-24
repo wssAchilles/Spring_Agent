@@ -31,8 +31,8 @@ public class KbChatMessageDO extends BaseEntity {
 
     private String metadata;
 
-    private Boolean validFlag;
+    private Integer validFlag;
 
     @TableLogic
-    private Boolean delFlag;
+    private Integer delFlag;
 }

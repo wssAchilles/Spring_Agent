@@ -86,7 +86,7 @@ public class KmcDocumentSegmentRespVO implements Serializable {
 
     @Excel(name = "启用状态")
     @Schema(description = "启用状态", example = "")
-    private Integer enabled;
+    private Boolean enabled;
 
     @Excel(name = "状态")
     @Schema(description = "状态", example = "")

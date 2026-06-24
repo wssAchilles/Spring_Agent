@@ -87,8 +87,12 @@
       </div>
       <div class="right-container">
         <div class="border-item">
-          <div class="border-item-head">
+          <div class="border-item-head" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <span class="head-title">召回段落 </span>
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <el-switch v-model="debugMode" active-text="显示调试信息" inactive-text="普通模式" />
+              <el-button type="danger" size="small" plain @click="handleClearCache" :loading="clearingCache">清除 RAG 缓存</el-button>
+            </div>
           </div>
           <div class="border-item-body" style="overflow-y: auto">
             <el-card v-for="item in recallList" style="margin-bottom: 20px">
@@ -96,6 +100,7 @@
                 <div class="title">
                   <img :src="getFileType(item.documentName)" />
                   <span>{{ item.documentName }}</span>
+                  <el-tag size="small" style="margin-left: 10px" v-if="debugMode && item.source" type="info">{{ getSourceText(item.source) }}</el-tag>
                   <el-progress
                     :text-inside="true"
                     :stroke-width="16"
@@ -112,6 +117,23 @@
               </div>
             </el-card>
             <el-empty v-if="recallList.length <= 0"></el-empty>
+
+            <div v-if="debugMode && debugInfo" style="margin-top: 20px; border-top: 1px solid #e8e8e8; padding-top: 15px;">
+              <h4 style="margin-top: 0; margin-bottom: 15px; color: #303133;">调试面板</h4>
+              <el-descriptions :column="2" border size="small">
+                <el-descriptions-item label="耗时(ms)">{{ debugInfo.elapsedMs }}</el-descriptions-item>
+                <el-descriptions-item label="检索模式">{{ debugInfo.searchMethod }}</el-descriptions-item>
+                <el-descriptions-item label="向量召回">{{ debugInfo.vectorResultCount || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="关键字召回">{{ debugInfo.keywordResultCount || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="元数据召回">{{ debugInfo.metadataResultCount || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="融合后结果">{{ debugInfo.fusedCount || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="重排序结果">{{ debugInfo.rerankedCount || 0 }}</el-descriptions-item>
+              </el-descriptions>
+              <div v-if="contextPreview" style="margin-top: 15px;">
+                <h4 style="color: #303133; margin-bottom: 10px;">最终注入上下文预览</h4>
+                <el-input type="textarea" :rows="10" readonly v-model="contextPreview" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -705,6 +727,8 @@ import {
   getRerank,
   getTextEmbedding,
   recallTest,
+  recallDebug,
+  clearRagCache
 } from "@/api/kmc/knowledgeBase/knowledgeBase.js";
 import { getFileFormat } from "@/utils/app/chat/chat.js";
 import { listLog } from "@/api/kmc/knowledgeBase/log.js";
@@ -714,6 +738,11 @@ const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
 
 const defaultSort = ref({ prop: "createTime", order: "descending" });
+
+const debugMode = ref(false);
+const debugInfo = ref(null);
+const contextPreview = ref("");
+const clearingCache = ref(false);
 
 const drawer = ref(false);
 const loading = ref(false);
@@ -1115,16 +1144,62 @@ const submitForm = () => {
 
 function getRecall() {
   loading.value = true;
-  recallTest(knowledgeBase.value)
-    .then((res) => {
-      loading.value = false;
-      recallList.value = res.data;
-      getLogList();
+  if (debugMode.value) {
+    recallDebug(knowledgeBase.value)
+      .then((res) => {
+        loading.value = false;
+        recallList.value = res.data.results || [];
+        debugInfo.value = res.data.debugInfo || {};
+        contextPreview.value = res.data.contextPreview || "";
+        getLogList();
+      })
+      .catch((err) => {
+        loading.value = false;
+      });
+  } else {
+    recallTest(knowledgeBase.value)
+      .then((res) => {
+        loading.value = false;
+        recallList.value = res.data;
+        debugInfo.value = null;
+        contextPreview.value = "";
+        getLogList();
+      })
+      .catch((err) => {
+        loading.value = false;
+      });
+  }
+}
+
+function handleClearCache() {
+  const kbId = route.params.kbId;
+  if (!kbId) return;
+  proxy.$modal
+    .confirm("确定要清除该知识库的检索缓存吗？")
+    .then(() => {
+      clearingCache.value = true;
+      return clearRagCache(kbId);
     })
-    .catch((err) => {
-      loading.value = false;
+    .then(() => {
+      clearingCache.value = false;
+      proxy.$modal.msgSuccess("清除缓存成功");
+    })
+    .catch(() => {
+      clearingCache.value = false;
     });
 }
+
+const getSourceText = (source) => {
+  const map = {
+    'vector': '向量检索',
+    'keyword': '关键字检索',
+    'metadata': '元数据检索',
+    'rerank': 'Rerank',
+    'agent': 'Agent召回',
+    'cache': '缓存'
+  };
+  return map[source] || source;
+};
 
 /** 排序触发事件 */
 function handleSortChange(column, prop, order) {

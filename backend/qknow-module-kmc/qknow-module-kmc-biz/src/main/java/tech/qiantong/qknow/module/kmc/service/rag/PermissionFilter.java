@@ -61,6 +61,39 @@ public class PermissionFilter {
         return b.in(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, knowledgeIds.toArray()).build();
     }
 
+    /**
+     * 获取用户可访问的知识库ID列表。
+     * 管理员返回 null（表示全部可访问），无权限返回空列表。
+     */
+    public List<Long> getAccessibleKnowledgeBaseIds(Long userId) {
+        List<SysRole> roles = sysRoleService.selectRoleByUserId(userId);
+
+        boolean isAdmin = roles.stream()
+                .anyMatch(r -> r.getRoleKey() != null && ADMIN_ROLE_KEYS.contains(r.getRoleKey()));
+        if (isAdmin) {
+            return null;
+        }
+
+        List<Long> roleIds = roles.stream()
+                .map(SysRole::getRoleId)
+                .collect(Collectors.toList());
+
+        if (roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> knowledgeIds = kmcKnowledgeRoleService.list(
+                        new LambdaQueryWrapperX<KmcKnowledgeRoleDO>()
+                                .in(KmcKnowledgeRoleDO::getRoleId, roleIds)
+                                .eq(KmcKnowledgeRoleDO::getValidFlag, true))
+                .stream()
+                .map(KmcKnowledgeRoleDO::getKnowledgeId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        return knowledgeIds;
+    }
+
     private Filter.Expression buildAlwaysFalseFilter() {
         FilterExpressionBuilder b = new FilterExpressionBuilder();
         return b.in(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, (List<Object>) Collections.emptyList()).build();

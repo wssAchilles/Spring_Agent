@@ -12,11 +12,14 @@ import org.apache.tika.exception.TikaException;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import tech.qiantong.qknow.ai.constant.WeaviateConstant;
 import tech.qiantong.qknow.ai.service.IVectorStoreService;
@@ -24,6 +27,8 @@ import tech.qiantong.qknow.ai.transformer.ContinuousWhitespaceEnricher;
 import tech.qiantong.qknow.ai.transformer.GeneralSplitter;
 import tech.qiantong.qknow.ai.transformer.QuestionAnswerEnricher;
 import tech.qiantong.qknow.ai.transformer.RemoveUrlAndEmailEnricher;
+import tech.qiantong.qknow.ai.transformer.SemanticSplitter;
+import tech.qiantong.qknow.ai.transformer.SplitterFactory;
 import tech.qiantong.qknow.common.exception.ServiceException;
 import tech.qiantong.qknow.common.utils.FileReader;
 import tech.qiantong.qknow.common.utils.StringUtils;
@@ -42,6 +47,7 @@ import tech.qiantong.qknow.module.kmc.dal.mapper.sync.KmcSyncMapper;
 import tech.qiantong.qknow.module.kmc.service.kmcDocument.IKmcDocumentService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeSegment.IKmcDocumentSegmentService;
+import tech.qiantong.qknow.module.kmc.service.rag.RagCacheService;
 import tech.qiantong.qknow.module.kmc.service.sync.IKmcSyncService;
 import tech.qiantong.qknow.module.kmc.service.sync.ILuceneService;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
@@ -79,6 +85,8 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     private IVectorStoreService vectorStoreService;
     @Resource
     private ILuceneService luceneService;
+    @Resource
+    private RagCacheService ragCacheService;
 
     @Value("${dromara.x-file-storage.local-plus[0].storage-path}")
     private String prefix;
@@ -294,51 +302,65 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     }
 
     /**
-     * 通多定时任务来进行文档的分块操作
-     * 定时任务 - 进行文档分块
+     * 定时任务 - 进行文档分块和向量化
      */
-    @SuppressWarnings("unused")
+    @Scheduled(fixedDelay = 5000)
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void updateResult() {
         List<KmcDocumentDO> documentDOList = kmcDocumentService.list(new LambdaQueryWrapperX<KmcDocumentDO>()
                 .eq(KmcDocumentDO::getSyncStatus, DocumentSyncStatus.IN.code));
         if (documentDOList.isEmpty()) {
             return;
         }
-        ContinuousWhitespaceEnricher continuousWhitespaceEnricher = new ContinuousWhitespaceEnricher();
-        RemoveUrlAndEmailEnricher removeUrlAndEmailEnricher = new RemoveUrlAndEmailEnricher();
-
-        log.debug("开始同步文档分块状态..............................");
+        log.info("开始同步文档分块，待处理文档数：{}", documentDOList.size());
         for (KmcDocumentDO kmcDocumentDO : documentDOList) {
-            KmcKnowledgeBaseDO knowledgeBaseDO = kmcKnowledgeBaseService.getById(kmcDocumentDO.getKnowledgeBaseId());
-            File file = getFile(kmcDocumentDO);
-            GeneralSplitter generalSplitter = new GeneralSplitter(kmcDocumentDO.getSeparator(), kmcDocumentDO.getMaxTokens(),
-                    Integer.parseInt(kmcDocumentDO.getChunkOverlap()));
-            List<Document> documentList = this.readFile(file);
+            try {
+                KmcKnowledgeBaseDO knowledgeBaseDO = kmcKnowledgeBaseService.getById(kmcDocumentDO.getKnowledgeBaseId());
+                File file = getFile(kmcDocumentDO);
+                String separator = kmcDocumentDO.getSeparator() != null ? kmcDocumentDO.getSeparator() : "\n\n";
+                int maxTokens = kmcDocumentDO.getMaxTokens() != null ? kmcDocumentDO.getMaxTokens() : 512;
+                int chunkOverlap = kmcDocumentDO.getChunkOverlap() != null ? Integer.parseInt(kmcDocumentDO.getChunkOverlap()) : 64;
+                String mode = kmcDocumentDO.getMode() != null ? kmcDocumentDO.getMode() : SplitterFactory.MODE_RECURSIVE;
+                TextSplitter splitter;
+                if (SplitterFactory.MODE_SEMANTIC.equals(mode)) {
+                    EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
+                            Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
+                            knowledgeBaseDO.getEmbeddingModel());
+                    splitter = new SemanticSplitter(embeddingModel, maxTokens, 100, 0.5);
+                } else {
+                    splitter = SplitterFactory.create(mode, separator, maxTokens, chunkOverlap);
+                }
+                List<Document> documentList = this.readFile(file);
 
-            // 文档预处理
-            if (kmcDocumentDO.getRemoveExtraSpaces()) {
-                documentList = continuousWhitespaceEnricher.apply(documentList);
+                ContinuousWhitespaceEnricher continuousWhitespaceEnricher = new ContinuousWhitespaceEnricher();
+                RemoveUrlAndEmailEnricher removeUrlAndEmailEnricher = new RemoveUrlAndEmailEnricher();
+
+                if (Boolean.TRUE.equals(kmcDocumentDO.getRemoveExtraSpaces())) {
+                    documentList = continuousWhitespaceEnricher.apply(documentList);
+                }
+                if (Boolean.TRUE.equals(kmcDocumentDO.getRemoveUrlsEmails())) {
+                    documentList = removeUrlAndEmailEnricher.apply(documentList);
+                }
+
+                List<Document> segmentList = splitter.split(documentList);
+
+                if (Objects.equals(kmcDocumentDO.getDocForm(), DocFormEnum.QA_MODEL.getType())) {
+                    ChatModel chatModel = aiModelService.getChatModel(Long.valueOf(kmcDocumentDO.getChatModelProvider()),
+                            kmcDocumentDO.getChatModel());
+                    QuestionAnswerEnricher questionAnswerEnricher = new QuestionAnswerEnricher(chatModel, kmcDocumentDO.getDocLanguage());
+                    segmentList = questionAnswerEnricher.apply(segmentList);
+                }
+
+                this.saveSegment(knowledgeBaseDO, kmcDocumentDO, segmentList);
+                kmcDocumentDO.setSyncStatus(DocumentSyncStatus.SUCCESS.code);
+                kmcDocumentService.updateById(kmcDocumentDO);
+                ragCacheService.evictByKnowledgeBase(kmcDocumentDO.getKnowledgeBaseId());
+                log.info("文档同步完成：{}，切片数：{}", kmcDocumentDO.getName(), segmentList.size());
+            } catch (Exception e) {
+                log.error("文档同步失败：{}，原因：{}", kmcDocumentDO.getName(), e.getMessage(), e);
+                kmcDocumentDO.setSyncStatus(DocumentSyncStatus.ERROR.code);
+                kmcDocumentService.updateById(kmcDocumentDO);
             }
-            if (kmcDocumentDO.getRemoveUrlsEmails()) {
-                documentList = removeUrlAndEmailEnricher.apply(documentList);
-            }
-
-            List<Document> segmentList = generalSplitter.split(documentList);
-
-            // qa 分块
-            if (Objects.equals(kmcDocumentDO.getDocForm(), DocFormEnum.QA_MODEL.getType())) {
-                // 首先获取chatModel
-                ChatModel chatModel = aiModelService.getChatModel(Long.valueOf(kmcDocumentDO.getChatModelProvider()),
-                        kmcDocumentDO.getChatModel());
-                QuestionAnswerEnricher questionAnswerEnricher = new QuestionAnswerEnricher(chatModel, kmcDocumentDO.getDocLanguage());
-                segmentList = questionAnswerEnricher.apply(segmentList);
-            }
-            // 保存分段
-            this.saveSegment(knowledgeBaseDO, kmcDocumentDO, segmentList);
-
-            kmcDocumentDO.setSyncStatus(DocumentSyncStatus.SUCCESS.code);
-            kmcDocumentService.updateById(kmcDocumentDO);
-            log.debug("结束同步文档分块状态..............................");
         }
     }
 
@@ -391,6 +413,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
      * @param segmentList 分段列表
      * @return key:向量数据库id, value:文档分段id
      */
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Long> save2sql(KmcDocumentDO documentDO, List<Document> segmentList) {
         List<KmcDocumentSegmentDO> saveList = new ArrayList<>(segmentList.size());
         for (Document document : segmentList) {
@@ -425,7 +448,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
      * @param segmentList     分段列表
      */
     /**
-     * 保存到向量数据库
+     * 保存到向量数据库（带自动重试）
      *
      * @param knowledgeBaseDO 知识库对象
      * @param documentDO      文档对象
@@ -445,31 +468,54 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
             metadata.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, documentDO.getId());
             metadata.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME, documentDO.getName());
             metadata.put(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, segmentId);
+
+            String docName = documentDO.getName();
+            if (docName != null) {
+                java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("Day(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(docName);
+                if (matcher.find()) {
+                    metadata.put(WeaviateConstant.METADATA_FIELD_DAY_NO, Integer.parseInt(matcher.group(1)));
+                }
+            }
+            metadata.put(WeaviateConstant.METADATA_FIELD_POSITION, segmentList.indexOf(document));
         });
 
-        try {
-            // ===================== 1. 先插入（自动创建Schema，解决 no graphql provider） =====================
-            List<List<Document>> partitions = Lists.partition(segmentList, 5);
-            for (List<Document> partition : partitions) {
-                vectorStore.add(partition);
-            }
-            log.info("文档ID {} 向量数据插入成功", documentDO.getId());
-
-            // ===================== 2. 再删除旧数据（安全删除，不存在不报错） =====================
-            FilterExpressionBuilder b = new FilterExpressionBuilder();
-            Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, documentDO.getId()).build();
-
+        int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                vectorStore.delete(expression);
-                log.info("文档ID {} 旧向量数据已清理", documentDO.getId());
-            } catch (Exception e) {
-                // 无数据/无Schema 都只打警告，不中断流程
-                log.warn("文档ID {} 旧向量数据不存在，无需删除", documentDO.getId());
-            }
+                // 先删除旧数据
+                FilterExpressionBuilder b = new FilterExpressionBuilder();
+                Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, documentDO.getId()).build();
 
-        } catch (Exception e) {
-            log.error("文档ID {} 向量库写入失败：{}", documentDO.getId(), e.getMessage(), e);
-            throw e;
+                try {
+                    vectorStore.delete(expression);
+                    log.info("文档ID {} 旧向量数据已清理", documentDO.getId());
+                } catch (Exception e) {
+                    log.warn("文档ID {} 旧向量数据不存在，无需删除", documentDO.getId());
+                }
+
+                // 插入新数据
+                List<List<Document>> partitions = Lists.partition(segmentList, 5);
+                for (List<Document> partition : partitions) {
+                    vectorStore.add(partition);
+                }
+                log.info("文档ID {} 向量数据插入成功，共 {} 条", documentDO.getId(), segmentList.size());
+                return; // 成功则退出
+
+            } catch (Exception e) {
+                if (attempt < maxRetries) {
+                    long waitTime = (long) Math.pow(2, attempt) * 1000; // 指数退避: 2s, 4s
+                    log.warn("文档ID {} 向量写入失败（第{}次），{}ms 后重试：{}", documentDO.getId(), attempt, waitTime, e.getMessage());
+                    try {
+                        Thread.sleep(waitTime);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("重试被中断", ie);
+                    }
+                } else {
+                    log.error("文档ID {} 向量写入失败（已重试{}次）：{}", documentDO.getId(), maxRetries, e.getMessage(), e);
+                    throw e;
+                }
+            }
         }
     }
 

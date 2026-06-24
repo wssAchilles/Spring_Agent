@@ -10,6 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 启动程序
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.FilterType;
  * @author qknow
  */
 @EnableFileStorage
+@EnableScheduling
 @ComponentScan(
     basePackages = {"tech.qiantong"},
     excludeFilters = @Filter(type = FilterType.REGEX, pattern = {

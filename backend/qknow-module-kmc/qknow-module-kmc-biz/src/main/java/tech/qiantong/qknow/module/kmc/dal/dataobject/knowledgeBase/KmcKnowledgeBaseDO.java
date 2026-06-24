@@ -92,6 +92,9 @@ public class KmcKnowledgeBaseDO extends BaseEntity {
     @TableLogic
     private Boolean delFlag;
 
+    /** RAG 缓存 TTL（秒） */
+    private Long ragCacheTtl;
+
     @Excel(name = "标签")
     private String tags;
 
