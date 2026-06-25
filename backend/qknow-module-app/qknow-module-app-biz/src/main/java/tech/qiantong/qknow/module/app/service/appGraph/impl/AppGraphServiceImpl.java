@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tech.qiantong.qknow.common.core.domain.AjaxResult;
 import tech.qiantong.qknow.common.core.page.PageResult;
+import tech.qiantong.qknow.common.exception.ServiceException;
 import tech.qiantong.qknow.common.utils.StringUtils;
 import tech.qiantong.qknow.module.app.controller.admin.appGraph.vo.AppGraphPageReqVO;
 import tech.qiantong.qknow.module.app.controller.admin.appGraph.vo.AppGraphRelationshipSaveReqVO;
@@ -60,7 +61,7 @@ public class AppGraphServiceImpl implements AppGraphService {
                 build.eq(neo4jLabelEnum.getEntityIdName(), appGraphVO.getEntityId());
             }
         }
-        List<DynamicEntity> dynamicEntities = dynamicRepository.find(build);
+        List<DynamicEntity> dynamicEntities = requireNeo4j().find(build);
         JSONObject dynamicEntityJSONObject = Convert.toDynamicEntityJSONObject(dynamicEntities);
         Map<String, Object> hashMap = Maps.newHashMap();
         hashMap.put("entities", dynamicEntityJSONObject.get("entities"));
@@ -84,7 +85,7 @@ public class AppGraphServiceImpl implements AppGraphService {
             build.like("name", appGraphVO.getName());
         }
         build.page(appGraphVO.getPageNum(), appGraphVO.getPageSize());
-        PageResult<DynamicEntity> page = dynamicRepository.findPage(build);
+        PageResult<DynamicEntity> page = requireNeo4j().findPage(build);
         JSONObject dynamicEntityJSONObject = Convert.toDynamicEntityJSONObject(page.getRows());
         JSONArray jsonArray = dynamicEntityJSONObject.getJSONArray("entities");
         return new PageResult<>(jsonArray.toList(JSONObject.class), page.getTotal());
@@ -96,7 +97,7 @@ public class AppGraphServiceImpl implements AppGraphService {
      * @return
      */
     public Map<String, Object> getGraphDataStatistics(AppGraphVO appGraphVO){
-        List<DynamicEntity> dynamicEntities = dynamicRepository.findAll();
+        List<DynamicEntity> dynamicEntities = requireNeo4j().findAll();
         JSONObject dynamicEntityJSONObject = Convert.toDynamicEntityJSONObject(dynamicEntities);
         JSONArray entities = dynamicEntityJSONObject.getJSONArray("entities");
         JSONArray relationships = dynamicEntityJSONObject.getJSONArray("relationships");
@@ -124,7 +125,8 @@ public class AppGraphServiceImpl implements AppGraphService {
                 .filter(jsonObject -> jsonObject.containsKey("id") && jsonObject.get("id") != null)
                 .map(jsonObject -> jsonObject.getLong("id"))
                 .collect(Collectors.toSet());
-        List<DynamicEntity> graphEntityList = dynamicRepository.findAllById(idSet);
+        DynamicRepository repository = requireNeo4j();
+        List<DynamicEntity> graphEntityList = repository.findAllById(idSet);
         Map<Long, DynamicEntity> entityMap = graphEntityList.stream()
                 .collect(Collectors.toMap(DynamicEntity::getId, entity -> entity));
         List<DynamicEntity> entityList = Lists.newArrayList();
@@ -159,7 +161,7 @@ public class AppGraphServiceImpl implements AppGraphService {
             }
             entityList.add(graphEntity);
         }
-        dynamicRepository.saveAll(entityList);
+        repository.saveAll(entityList);
         return true;
     }
 
@@ -177,7 +179,8 @@ public class AppGraphServiceImpl implements AppGraphService {
                 .flatMap(user -> Stream.of(user.getEntityId1(), user.getEntityId2()))
                 .collect(Collectors.toSet());
         // 查询出所有的实体
-        List<DynamicEntity> graphEntityList = dynamicRepository.findAllById(idSet);
+        DynamicRepository repository = requireNeo4j();
+        List<DynamicEntity> graphEntityList = repository.findAllById(idSet);
         Map<Long, DynamicEntity> graphEntityMap = graphEntityList.stream()
                 .collect(Collectors.toMap(DynamicEntity::getId, graphEntity -> graphEntity));
         List<Long> relationshipIds = graphRelationshipSaveReqVOList.stream()
@@ -186,7 +189,7 @@ public class AppGraphServiceImpl implements AppGraphService {
                 .collect(Collectors.toList());
         if (!relationshipIds.isEmpty()) {
             // 删除关系
-            dynamicRepository.deleteNodeByIds(relationshipIds);
+            repository.deleteNodeByIds(relationshipIds);
         }
         // 新增/更新关系
         graphRelationshipSaveReqVOList.forEach(appGraphRelationshipSaveReqVO -> {
@@ -210,7 +213,7 @@ public class AppGraphServiceImpl implements AppGraphService {
             entityMap.put(appGraphRelationshipSaveReqVO.getRelationshipType (), graphEntityRelationshipList);
             graphEntity1.setRelationshipEntityMap(entityMap);
         });
-        dynamicRepository.saveAll(graphEntityList);
+        repository.saveAll(graphEntityList);
         return true;
     }
 
@@ -221,7 +224,7 @@ public class AppGraphServiceImpl implements AppGraphService {
      * @return
      */
     public AjaxResult deleteNodeAttributeById(DeleteNodeAttributeVO deleteNodeAttributeVO) {
-        dynamicRepository.deleteNodeAttributeById(deleteNodeAttributeVO.getNodeId(), deleteNodeAttributeVO.getAttributeKey());
+        requireNeo4j().deleteNodeAttributeById(deleteNodeAttributeVO.getNodeId(), deleteNodeAttributeVO.getAttributeKey());
         return AjaxResult.success("操作成功");
     }
 
@@ -240,7 +243,7 @@ public class AppGraphServiceImpl implements AppGraphService {
             //修改属性内容
             HashMap<String, Object> updateMap = Maps.newHashMap();
             updateMap.put("release_status", appGraphVO.getReleaseStatus());//发布状态 0未发布 1已发布
-            dynamicRepository.updateQuery(new Neo4jBuildWrapper<>(DynamicEntity.class), label, paramMap, updateMap);
+            requireNeo4j().updateQuery(new Neo4jBuildWrapper<>(DynamicEntity.class), label, paramMap, updateMap);
         }
         return AjaxResult.success("操作成功");
     }
@@ -253,14 +256,14 @@ public class AppGraphServiceImpl implements AppGraphService {
      */
     @Override
     public AjaxResult deleteNode(Long id) {
-        dynamicRepository.deleteNodeById(id);
+        requireNeo4j().deleteNodeById(id);
         return AjaxResult.success("删除成功");
     }
 
     @Override
     public Boolean deleteNodeByIds(Long[] ids) {
         List<Long> idList = Arrays.asList(ids);
-        dynamicRepository.deleteNodeByIds(idList);
+        requireNeo4j().deleteNodeByIds(idList);
         return true;
     }
 
@@ -273,7 +276,7 @@ public class AppGraphServiceImpl implements AppGraphService {
      */
     @Override
     public AjaxResult deleteRelationshipById(Long id) {
-        dynamicRepository.deleteRelationshipById(id);
+        requireNeo4j().deleteRelationshipById(id);
         return AjaxResult.success("删除成功");
     }
 
@@ -286,7 +289,14 @@ public class AppGraphServiceImpl implements AppGraphService {
     @Override
     public AjaxResult deleteRelationshipsByIds(Long[] ids) {
         List<Long> idList = Arrays.asList(ids);
-        dynamicRepository.deleteRelationshipsByIds(idList);
+        requireNeo4j().deleteRelationshipsByIds(idList);
         return AjaxResult.success("删除成功");
+    }
+
+    private DynamicRepository requireNeo4j() {
+        if (dynamicRepository == null) {
+            throw new ServiceException("Neo4j 未启用");
+        }
+        return dynamicRepository;
     }
 }

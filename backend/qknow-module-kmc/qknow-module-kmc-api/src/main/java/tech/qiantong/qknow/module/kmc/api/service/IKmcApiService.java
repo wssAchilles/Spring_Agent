@@ -4,6 +4,8 @@ package tech.qiantong.qknow.module.kmc.api.service;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.KmcDocumentRespDTO;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.TreeSelectsDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcKnowledgeBaseRespDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagResult;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagSearchReqDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheHitDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheLookupReqDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheSaveReqDTO;
@@ -61,6 +63,8 @@ public interface IKmcApiService {
     Optional<SemanticCacheHitDTO> findSemanticAnswer(SemanticCacheLookupReqDTO req);
 
     void saveSemanticAnswer(SemanticCacheSaveReqDTO req);
+
+    List<GraphRagResult> graphSearch(GraphRagSearchReqDTO req);
 
 
     /**

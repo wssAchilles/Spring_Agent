@@ -6,11 +6,11 @@ import org.springframework.stereotype.Component;
 
 @Data
 @Component
-@ConfigurationProperties(prefix = "hermes.eval.ragas")
+@ConfigurationProperties(prefix = "qknow.rag.eval")
 public class RagasEvalConfig {
     private boolean enabled = true;
-    private double threshold = 0.7;
-    private String platform = "deepseek";
+    private double threshold = 0.85;
+    private String platform = "DeepSeek";
     private String modelName = "deepseek-chat";
     private String baseUrl;
     private String apiKey;

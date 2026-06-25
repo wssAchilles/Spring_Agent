@@ -12,6 +12,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
+import tech.qiantong.qknow.hermes.eval.LlmAsAJudgeEvaluator;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
 import tech.qiantong.qknow.hermes.eval.RagasEvalConfig;
 import tech.qiantong.qknow.hermes.eval.RagasEvaluator;
@@ -43,6 +44,7 @@ class LlmAsAJudgeEvaluatorTest {
         when(config.getBaseUrl()).thenReturn(null);
         when(config.getApiKey()).thenReturn(null);
         when(config.getModelName()).thenReturn("deepseek-chat");
+        when(config.getThreshold()).thenReturn(0.85);
         evaluator = new RagasEvaluator(chatModelFactory, config);
     }
 
@@ -121,6 +123,25 @@ class LlmAsAJudgeEvaluatorTest {
                 "测试问题", "测试回答", List.of("上下文"), "期望答案");
 
         assertFalse(scores.isAllAboveThreshold(), "faithfulness < 0.85 时不应通过");
+    }
+
+    @Test
+    @DisplayName("LlmAsAJudgeEvaluator 使用四项指标做 0.85 门禁")
+    void llmAsJudgeUsesFourMetrics() {
+        when(chatModelFactory.getChatModel(anyString(), isNull(), isNull(), anyString()))
+                .thenReturn(chatModel);
+        when(chatModel.call(any(Prompt.class)))
+                .thenReturn(buildResponse("{\"score\": 0.9, \"feedback\": \"ok\"}"))
+                .thenReturn(buildResponse("{\"score\": 0.9, \"feedback\": \"ok\"}"))
+                .thenReturn(buildResponse("{\"score\": 0.9, \"feedback\": \"ok\"}"))
+                .thenReturn(buildResponse("{\"score\": 0.1, \"feedback\": \"low recall not gated\"}"));
+
+        LlmAsAJudgeEvaluator judge = new LlmAsAJudgeEvaluator(evaluator, config);
+        LlmAsAJudgeEvaluator.Judgement judgement = judge.evaluate(
+                "问题", "回答", List.of("上下文"), "期望答案");
+
+        assertFalse(judgement.passed());
+        assertEquals(0.85, judgement.threshold());
     }
 
     private void mockAllMetrics(String responseJson) {

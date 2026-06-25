@@ -1,11 +1,13 @@
 package tech.qiantong.qknow.kb.eval;
 
+import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
 import tech.qiantong.qknow.hermes.eval.EvaluationDataset;
 import tech.qiantong.qknow.hermes.eval.EvaluationReport;
 import tech.qiantong.qknow.hermes.eval.RagasEvaluator;
@@ -13,6 +15,7 @@ import tech.qiantong.qknow.module.kb.service.eval.EvalDatasetDTO;
 import tech.qiantong.qknow.module.kb.service.eval.EvalDatasetService;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,22 +27,22 @@ class EvalDatasetServiceTest {
     @Mock
     private RagasEvaluator ragasEvaluator;
 
+    private JdbcTemplate jdbcTemplate;
     private EvalDatasetService evalDatasetService;
 
     @BeforeEach
     void setUp() {
-        evalDatasetService = new EvalDatasetService(ragasEvaluator);
+        JdbcDataSource dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:mem:eval_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
+        jdbcTemplate = new JdbcTemplate(dataSource);
+        createSchema();
+        evalDatasetService = new EvalDatasetService(ragasEvaluator, jdbcTemplate);
     }
 
     @Test
-    @DisplayName("CRUD lifecycle - create, get, update, delete")
-    void crudLifecycle() {
-        EvalDatasetDTO createDto = new EvalDatasetDTO();
-        createDto.setName("test-dataset");
-        createDto.setKnowledgeBaseId(100L);
-
-        Long id = evalDatasetService.createDataset(createDto);
-        assertNotNull(id);
+    @DisplayName("CRUD lifecycle persists dataset and items")
+    void crudLifecyclePersistsData() {
+        Long id = createDataset("test-dataset", 100L, List.of());
 
         EvalDatasetDTO fetched = evalDatasetService.getDataset(id);
         assertEquals("test-dataset", fetched.getName());
@@ -49,26 +52,24 @@ class EvalDatasetServiceTest {
         updateDto.setId(id);
         updateDto.setName("updated-dataset");
         updateDto.setKnowledgeBaseId(200L);
+        updateDto.setItems(List.of(new EvaluationDataset.EvalItem("q", "a", List.of("ctx"))));
         evalDatasetService.updateDataset(updateDto);
 
-        EvalDatasetDTO updated = evalDatasetService.getDataset(id);
+        EvalDatasetService rebuilt = new EvalDatasetService(ragasEvaluator, jdbcTemplate);
+        EvalDatasetDTO updated = rebuilt.getDataset(id);
         assertEquals("updated-dataset", updated.getName());
-        assertEquals(200L, updated.getKnowledgeBaseId());
+        assertEquals(1, updated.getItems().size());
+        assertEquals("q", updated.getItems().get(0).getQuery());
 
-        List<EvalDatasetDTO> list = evalDatasetService.listByKnowledgeBase(200L);
-        assertEquals(1, list.size());
-
-        evalDatasetService.deleteDataset(id);
-        assertThrows(IllegalArgumentException.class, () -> evalDatasetService.getDataset(id));
+        assertEquals(1, rebuilt.listByKnowledgeBase(200L).size());
+        rebuilt.deleteDataset(id);
+        assertThrows(IllegalArgumentException.class, () -> rebuilt.getDataset(id));
     }
 
     @Test
     @DisplayName("Import/export roundtrip")
     void importExportRoundtrip() {
-        EvalDatasetDTO dto = new EvalDatasetDTO();
-        dto.setName("roundtrip-test");
-        dto.setKnowledgeBaseId(1L);
-        Long id = evalDatasetService.createDataset(dto);
+        Long id = createDataset("roundtrip-test", 1L, List.of());
 
         String importJson = """
                 {
@@ -87,33 +88,81 @@ class EvalDatasetServiceTest {
         assertEquals("What is X?", afterImport.getItems().get(0).getQuery());
 
         String exported = evalDatasetService.exportToJson(id);
-        assertNotNull(exported);
         assertTrue(exported.contains("What is X?"));
         assertTrue(exported.contains("What is Z?"));
     }
 
     @Test
-    @DisplayName("Async evaluation trigger returns runId")
-    void asyncEvaluationTrigger() {
-        EvalDatasetDTO dto = new EvalDatasetDTO();
-        dto.setName("eval-test");
-        dto.setKnowledgeBaseId(1L);
-
-        EvaluationDataset.EvalItem item = new EvaluationDataset.EvalItem();
-        item.setQuery("test query");
-        item.setExpectedAnswer("test answer");
-        item.setGroundTruthContexts(List.of("context"));
-        dto.setItems(List.of(item));
-
-        Long id = evalDatasetService.createDataset(dto);
+    @DisplayName("Evaluation run persists report")
+    void runEvaluationPersistsReport() {
+        Long id = createDataset("eval-test", 1L,
+                List.of(new EvaluationDataset.EvalItem("test query", "test answer", List.of("context"))));
 
         EvaluationReport report = new EvaluationReport();
         report.setRunId("test-run-id");
         report.setDatasetName("eval-test");
+        report.setMetricScores(Map.of("faithfulness", 0.9));
         when(ragasEvaluator.evaluate(any(EvaluationDataset.class))).thenReturn(report);
 
         String runId = evalDatasetService.runEvaluation(id);
-        assertNotNull(runId);
-        assertFalse(runId.isEmpty());
+        EvaluationReport persisted = evalDatasetService.getReport(runId);
+
+        assertNotNull(persisted);
+        assertEquals("eval-test", persisted.getDatasetName());
+        assertEquals(0.9, persisted.getMetricScores().get("faithfulness"));
+    }
+
+    private Long createDataset(String name, Long kbId, List<EvaluationDataset.EvalItem> items) {
+        EvalDatasetDTO dto = new EvalDatasetDTO();
+        dto.setName(name);
+        dto.setKnowledgeBaseId(kbId);
+        dto.setItems(items);
+        return evalDatasetService.createDataset(dto);
+    }
+
+    private void createSchema() {
+        jdbcTemplate.execute("DROP ALL OBJECTS");
+        jdbcTemplate.execute("""
+                CREATE TABLE eval_dataset (
+                    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    knowledge_base_id BIGINT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE eval_dataset_item (
+                    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+                    dataset_id BIGINT NOT NULL,
+                    position INTEGER DEFAULT 0,
+                    query TEXT NOT NULL,
+                    expected_answer TEXT,
+                    ground_truth_contexts TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE eval_run (
+                    run_id VARCHAR(64) PRIMARY KEY,
+                    dataset_id BIGINT NOT NULL,
+                    status VARCHAR(32) NOT NULL,
+                    report_json TEXT,
+                    error_message TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TIMESTAMP
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE eval_run_item (
+                    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+                    run_id VARCHAR(64) NOT NULL,
+                    query TEXT NOT NULL,
+                    answer TEXT,
+                    scores_json TEXT,
+                    feedback TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """);
     }
 }

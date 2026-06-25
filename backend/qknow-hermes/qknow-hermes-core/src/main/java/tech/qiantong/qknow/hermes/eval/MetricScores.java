@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class MetricScores {
+    public static final double DEFAULT_GATE_THRESHOLD = 0.85;
+
     private double faithfulness;
     private double answerRelevance;
     private double contextPrecision;
@@ -26,6 +28,6 @@ public class MetricScores {
     }
 
     public boolean isAllAboveThreshold() {
-        return isAboveThreshold(0.5);
+        return isAboveThreshold(DEFAULT_GATE_THRESHOLD);
     }
 }

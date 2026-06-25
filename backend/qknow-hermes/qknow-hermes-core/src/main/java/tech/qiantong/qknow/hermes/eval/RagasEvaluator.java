@@ -93,7 +93,7 @@ public class RagasEvaluator {
         double contextRecall = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_recall"));
         scores.setContextRecall(contextRecall);
 
-        scores.setPassed(scores.isAllAboveThreshold());
+        scores.setPassed(scores.isAboveThreshold(config.getThreshold()));
         return scores;
     }
 

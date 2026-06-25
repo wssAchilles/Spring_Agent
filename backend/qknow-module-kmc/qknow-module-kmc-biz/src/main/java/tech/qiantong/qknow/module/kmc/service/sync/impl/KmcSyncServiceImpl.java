@@ -51,6 +51,7 @@ import tech.qiantong.qknow.module.kmc.service.kmcDocument.IKmcDocumentService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeSegment.IKmcDocumentSegmentService;
 import tech.qiantong.qknow.module.kmc.service.rag.EntityExtractionService;
+import tech.qiantong.qknow.module.kmc.service.rag.GraphRagSyncService;
 import tech.qiantong.qknow.module.kmc.service.rag.RagCacheService;
 import tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService;
 import tech.qiantong.qknow.module.kmc.service.sync.IKmcSyncService;
@@ -98,6 +99,8 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     private RagCacheService ragCacheService;
     @Resource
     private SemanticCacheService semanticCacheService;
+    @Resource
+    private GraphRagSyncService graphRagSyncService;
 
     @Value("${dromara.x-file-storage.local-plus[0].storage-path}")
     private String prefix;
@@ -510,6 +513,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                             relations = EXCLUDED.relations,
                             updated_at = CURRENT_TIMESTAMP
                         """, rows);
+                graphRagSyncService.syncRows(rows);
             }
         } catch (Exception e) {
             log.warn("Failed to persist segment entity metadata, continuing sync", e);

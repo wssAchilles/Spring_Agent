@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import tech.qiantong.qknow.common.core.domain.entity.SysRole;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.KmcDocumentRespDTO;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.TreeSelectsDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagResult;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagSearchReqDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcKnowledgeBaseRespDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheHitDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheLookupReqDTO;
@@ -27,6 +29,7 @@ import tech.qiantong.qknow.module.kmc.service.kmcCategory.IKmcCategoryService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeRoleService;
 import tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService;
+import tech.qiantong.qknow.module.kmc.service.rag.GraphRagRetriever;
 import tech.qiantong.qknow.module.ai.api.modelMarket.IAiModelApiService;
 import tech.qiantong.qknow.module.system.service.ISysRoleService;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
@@ -66,6 +69,8 @@ public class KmcApiServiceImpl implements IKmcApiService {
     private SemanticCacheService.SemanticCacheConfig semanticCacheConfig;
     @Resource
     private IAiModelApiService aiModelService;
+    @Resource
+    private GraphRagRetriever graphRagRetriever;
 
     @Override
     public List<KmcDocumentRespDTO> getKmcDocumentList() {
@@ -187,6 +192,14 @@ public class KmcApiServiceImpl implements IKmcApiService {
         semanticCacheService.saveAnswer(req.getWorkspaceId(), req.getBotId(), req.getKnowledgeBaseIds(),
                 knowledgeIdsHash(req.getKnowledgeBaseIds()), req.getQuery(), req.getAnswer(), req.getModelName(),
                 req.getSourcesJson(), embeddingModel, semanticCacheConfig.getTtl());
+    }
+
+    @Override
+    public List<GraphRagResult> graphSearch(GraphRagSearchReqDTO req) {
+        if (req == null || req.getKnowledgeBaseId() == null) {
+            return List.of();
+        }
+        return graphRagRetriever.graphSearch(req.getKnowledgeBaseId(), req.getEntities(), req.getTopK(), req.getMaxHops());
     }
 
     private EmbeddingModel getEmbeddingModel(Long knowledgeBaseId) {
