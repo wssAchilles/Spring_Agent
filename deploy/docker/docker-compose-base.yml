@@ -51,7 +51,7 @@ services:
       - qknownet
 
   neo4j:
-    image: neo4j:4.4.40
+    image: neo4j:5.26.0
     profiles: ["base"]
     restart: always
     environment:
@@ -138,4 +138,3 @@ services:
       retries: 5
     networks:
       - qknownet
-

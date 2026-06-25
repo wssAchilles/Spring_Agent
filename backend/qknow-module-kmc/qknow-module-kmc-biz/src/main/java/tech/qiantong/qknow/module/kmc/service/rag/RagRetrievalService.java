@@ -34,6 +34,9 @@ public class RagRetrievalService {
     private MetadataRetriever metadataRetriever;
 
     @Resource
+    private GraphRagRetriever graphRagRetriever;
+
+    @Resource
     private CandidateFusionService candidateFusionService;
 
     @Resource
@@ -130,6 +133,7 @@ public class RagRetrievalService {
         List<RetrievalResult> vectorResults;
         List<RetrievalResult> keywordResults;
         List<RetrievalResult> metadataResults;
+        List<RetrievalResult> graphResults;
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
         try {
@@ -143,10 +147,13 @@ public class RagRetrievalService {
             queryIntent.setEntities(getFuture(entityFuture, "query-entity"));
             Future<List<RetrievalResult>> metadataFuture = executor.submit(
                     () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK));
+            Future<List<RetrievalResult>> graphFuture = executor.submit(
+                    () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent.getEntities(), candidateTopK));
 
             vectorResults = getFuture(vectorFuture, "vector");
             keywordResults = getFuture(keywordFuture, "keyword");
             metadataResults = getFuture(metadataFuture, "metadata");
+            graphResults = getFuture(graphFuture, "graph");
         } finally {
             executor.shutdown();
         }
@@ -156,6 +163,7 @@ public class RagRetrievalService {
             debugInfo.put(phase + "VectorResultCount", vectorResults.size());
             debugInfo.put(phase + "KeywordResultCount", keywordResults.size());
             debugInfo.put(phase + "MetadataResultCount", metadataResults.size());
+            debugInfo.put(phase + "GraphResultCount", graphResults.size());
         }
 
         List<List<RetrievalResult>> allResults = new ArrayList<>();
@@ -167,6 +175,9 @@ public class RagRetrievalService {
         }
         if (CollUtil.isNotEmpty(metadataResults)) {
             allResults.add(metadataResults);
+        }
+        if (CollUtil.isNotEmpty(graphResults)) {
+            allResults.add(graphResults);
         }
 
         List<RetrievalResult> fused = candidateFusionService.fuse(allResults);

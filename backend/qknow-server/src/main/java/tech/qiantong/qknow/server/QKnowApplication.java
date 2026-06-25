@@ -3,9 +3,7 @@ package tech.qiantong.qknow.server;
 import org.dromara.x.file.storage.spring.EnableFileStorage;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -22,12 +20,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(
     basePackages = {"tech.qiantong"},
     excludeFilters = @Filter(type = FilterType.REGEX, pattern = {
-        "tech\\.qiantong\\.qknow\\.neo4j\\..*",
         "tech\\.qiantong\\.qknow\\.module\\.ext\\..*",
         "tech\\.qiantong\\.qknow\\.hermes\\..*"
     })
 )
-@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class, Neo4jAutoConfiguration.class, Neo4jDataAutoConfiguration.class })
+@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class QKnowApplication
 {

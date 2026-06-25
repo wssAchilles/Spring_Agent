@@ -1,0 +1,10 @@
+{"id":"smoke-001","query":"Day01 的主要工作内容是什么？","expectedAnswer":"应回答 Day01 中记录的项目架构、环境熟悉或核心工作内容。","expectedSources":["Day01"],"tags":["smoke"]}
+{"id":"smoke-002","query":"实习日志中提到的 RAG 检索优化做了哪些事情？","expectedAnswer":"应概括 RAG 检索优化相关的拆分、召回、重排或上下文构建工作。","expectedSources":["Day15","Day16","RAG"],"tags":["smoke"]}
+{"id":"smoke-003","query":"项目中如何处理知识库文档切分？","expectedAnswer":"应说明 chunk、父子块或递归切分相关策略。","expectedSources":["知识库","切分"],"tags":["smoke"]}
+{"id":"smoke-004","query":"语义缓存的作用是什么？","expectedAnswer":"应说明相似问题命中缓存后减少重复生成和 token 消耗。","expectedSources":["semantic_cache","语义缓存"],"tags":["smoke"]}
+{"id":"smoke-005","query":"CRAG 在检索流程中解决什么问题？","expectedAnswer":"应说明 CRAG 评估召回上下文质量，并在低质量时重写或降级。","expectedSources":["CRAG"],"tags":["smoke"]}
+{"id":"smoke-006","query":"GraphRAG 为什么需要实体和关系？","expectedAnswer":"应说明实体关系用于跨文档、多跳问题和关系追踪。","expectedSources":["GraphRAG","entities","relations"],"tags":["smoke"]}
+{"id":"smoke-007","query":"Hermes Agent 的主要职责是什么？","expectedAnswer":"应说明 Hermes 负责模型调用、工具编排和流式输出。","expectedSources":["Hermes","Agent"],"tags":["smoke"]}
+{"id":"smoke-008","query":"KMC 模块在 RAG 中承担什么职责？","expectedAnswer":"应说明 KMC 负责知识库检索、召回、重排和上下文构建。","expectedSources":["KMC","RAG"],"tags":["smoke"]}
+{"id":"smoke-009","query":"父块上下文扩展有什么价值？","expectedAnswer":"应说明父块扩展可以保留更完整语义，减少片段化上下文导致的误答。","expectedSources":["父块","parent"],"tags":["smoke"]}
+{"id":"smoke-010","query":"为什么需要自动化 RAG 评测？","expectedAnswer":"应说明自动评测用于检测检索、Prompt 或模型变更导致的质量回归。","expectedSources":["评测","RAG"],"tags":["smoke"]}

@@ -47,6 +47,10 @@ public class WorkerAgent extends BaseAgent {
                 List<Message> history = (List<Message>) context.get("history");
                 messages.addAll(history);
             }
+            String previousResults = formatPreviousResults(context);
+            if (!previousResults.isBlank()) {
+                messages.add(new UserMessage("已有前置子任务结果：\n" + previousResults));
+            }
 
             messages.add(new UserMessage(question));
 
@@ -58,6 +62,20 @@ public class WorkerAgent extends BaseAgent {
             log.error("WorkerAgent {} 执行失败", getName(), e);
             return "执行失败: " + getName() + " - " + e.getMessage();
         }
+    }
+
+    private String formatPreviousResults(Map<String, Object> context) {
+        if (context == null || !context.containsKey("previousResults")) {
+            return "";
+        }
+        Object value = context.get("previousResults");
+        if (!(value instanceof Map<?, ?> results) || results.isEmpty()) {
+            return "";
+        }
+        return results.entrySet().stream()
+                .map(entry -> "## " + entry.getKey() + "\n" + entry.getValue())
+                .reduce((left, right) -> left + "\n\n" + right)
+                .orElse("");
     }
 
     /**
