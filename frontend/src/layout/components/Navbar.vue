@@ -1150,7 +1150,9 @@ function clearNotification() {
   height: 60px;
   overflow: hidden;
   position: relative;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   line-height: 60px;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 255, 0.92)),
@@ -1193,7 +1195,6 @@ function clearNotification() {
   .hamburger-container {
     line-height: 60px;
     height: 100%;
-    float: left;
     cursor: pointer;
     transition: background 0.3s;
     -webkit-tap-highlight-color: transparent;
@@ -1204,15 +1205,14 @@ function clearNotification() {
   }
 
   .breadcrumb-container {
-    float: left;
+    flex: 1;
+    min-width: 0;
   }
 
   .topmenu-container {
-    position: absolute;
-    left: 50px;
-    &.has-navbar-logo {
-      left: 200px;
-    }
+    flex: 1;
+    min-width: 0;
+    height: 100%;
   }
 
   .errLog-container {
@@ -1221,10 +1221,10 @@ function clearNotification() {
   }
 
   .right-menu {
-    float: right;
     height: 100%;
     line-height: 60px;
     display: flex;
+    flex-shrink: 0;
 
     &:focus {
       outline: none;

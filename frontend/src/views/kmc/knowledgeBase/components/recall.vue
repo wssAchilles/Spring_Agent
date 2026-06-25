@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container recall-glass-app">
     <GuideTip tip-id="kmc/recall" />
     <div class="container">
       <div class="left-container">
@@ -1615,12 +1615,22 @@ init();
 }
 
 // 原有页面样式保留
+.recall-glass-app.app-container {
+  background: linear-gradient(135deg, #f6f8fd 0%, #f1f5f9 100%) !important;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(38, 102, 251, 0.08) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, rgba(0, 208, 255, 0.08) 0, transparent 50%) !important;
+  padding: 24px !important;
+  min-height: calc(100vh - 84px);
+}
+
 .container {
-  font-family: PingFangSC, PingFang SC;
+  font-family: PingFangSC, PingFang SC, sans-serif;
   display: flex;
-  gap: 15px;
+  gap: 24px;
   overflow: hidden;
   height: 100%;
+  background-color: transparent;
 
   :deep(.el-progress-bar__inner) {
     background: var(--el-color-primary);
@@ -1633,13 +1643,42 @@ init();
 
 .left-container {
   flex: 1;
+  min-width: 0;
   gap: 20px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .right-container {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  
+  :deep(.el-card) {
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.04);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+    
+    .el-card__header {
+      border-bottom: 1px solid rgba(0,0,0,0.03);
+      padding: 15px 20px;
+      background-color: rgba(248,250,252, 0.5);
+    }
+    
+    .el-card__body {
+      padding: 20px;
+    }
+  }
+
   .title {
     display: flex;
     align-items: center;
@@ -1664,38 +1703,39 @@ init();
 .border-item {
   width: 100%;
   height: 100%;
-  background: #fff;
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
   display: inline-flex;
   flex-direction: column;
 }
 
 .border-item .border-item-head {
-  height: 50px;
-  padding: 0 20px;
+  height: 64px;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+  gap: 16px;
 }
 
 .border-item .border-item-head .head-title {
-  font-size: 16px;
-  color: rgba(0, 0, 0, 0.85);
+  font-size: 18px;
+  color: #1e293b;
   display: flex;
   align-items: center;
-  font-family: PingFang SC;
-  font-weight: 500;
+  font-family: PingFang SC, sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .border-item .border-item-head .head-title:before {
-  display: inline-block;
-  content: "";
-  width: 6px;
-  height: 16px;
-  border-radius: 3px;
-  background: var(--el-color-primary);
-  margin-right: 10px;
+  display: none;
 }
 
 .border-item .border-item-body {
@@ -1705,54 +1745,72 @@ init();
 }
 
 .module-1 {
-  height: 406px;
+  height: 420px;
+  flex-shrink: 0;
 
   .border-item-body {
-    border-radius: 2px;
-    border: 1px solid var(--el-color-primary);
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.04);
+    overflow: hidden;
 
     .title {
-      padding: 10px 15px;
-      background-color: #f2f4f7;
+      padding: 12px 20px;
+      background-color: transparent;
+      border-bottom: 1px solid rgba(0,0,0,0.03);
       width: 100%;
       display: flex;
       align-items: center;
 
       span {
-        font-size: 16px;
-        font-weight: 600;
+        font-size: 15px;
+        color: #475569;
+        font-weight: 500;
       }
     }
 
     .content {
       display: flex;
       flex-direction: column;
-      padding-bottom: 10px;
+      padding-bottom: 15px;
+      background-color: #f1f5f9;
 
       .input-text {
         height: 220px;
-        padding: 10px 15px;
+        padding: 15px 20px;
 
         :deep(.el-textarea__inner) {
           height: 100%;
           box-shadow: none;
+          background: transparent;
+          border: none;
           resize: none;
           padding: 0;
+          font-size: 14px;
+          color: #334155;
+          
+          &:focus {
+            box-shadow: none;
+          }
         }
       }
 
       .input-btn {
         margin-left: auto;
-        margin-right: 15px;
-        width: 100px;
+        margin-right: 20px;
+        width: 120px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
       }
     }
   }
 }
 
-// .module-2 {
-//   height: calc(100% - 406px);
-// }
+.module-2 {
+  flex: 1;
+  height: auto;
+  min-height: 350px;
+  flex-shrink: 0;
+}
 
 %search-method {
   display: flex;
@@ -1788,9 +1846,8 @@ init();
   margin-left: 28px !important; // 距离输入框底部的距离
 }
 :deep(.el-dialog__body) {
-  overflow: visible !important;
-  // height: 550px;
+  overflow-y: auto !important;
+  max-height: calc(100vh - 200px);
   padding: 20px 40px !important;
-  // border: 1px solid red;
 }
 </style>
