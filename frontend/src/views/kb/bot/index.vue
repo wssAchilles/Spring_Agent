@@ -452,8 +452,19 @@ const route = useRoute()
 
 watch(() => route.fullPath,
     () => {
-      // 获取 id
-      botType.value = Number(route.query.botType)
+      // 获取 id，优先从路径推断，再从 query 取
+      if (route.path.includes('/workflow')) {
+        botType.value = 0;
+      } else if (route.path.includes('/chatflow')) {
+        botType.value = 1;
+      } else if (route.path.includes('/agent')) {
+        botType.value = 2;
+      } else if (route.query.botType !== undefined) {
+        botType.value = Number(route.query.botType);
+      } else {
+        botType.value = 0; // fallback default
+      }
+
       let path = '';
       if (botType.value === 0) {
         botTypeName.value = '工作流'
@@ -461,18 +472,26 @@ watch(() => route.fullPath,
       } else if (botType.value === 1) {
         botTypeName.value = 'chatflow'
         path = '/kb/bot/chatflow'
-      } else if (botType.value === 3) {
+      } else if (botType.value === 2) {
         botTypeName.value = 'agent'
         path = '/kb/bot/agent'
-      }else {
+      } else {
         return
       }
-      router.push({
-        path: path,
-        query: {
-          botType: botType.value,
-        },
-      });
+
+      // 如果当前路径或参数不匹配，则纠正路由（使用 replace 避免历史记录堆叠）
+      if (route.path !== path || Number(route.query.botType) !== botType.value) {
+        router.replace({
+          path: path,
+          query: {
+            ...route.query,
+            botType: botType.value,
+          },
+        });
+      }
+      
+      // 更新列表，避免 getList 使用到未准备好的 queryParams
+      queryParams.value.type = botType.value;
     }, {immediate: true})
 
 /** 查询bot 管理列表 */
@@ -480,8 +499,10 @@ function getList() {
   queryParams.value.type = botType.value
   loading.value = true;
   listBot(queryParams.value).then((response) => {
-    botList.value = response.data.rows;
-    total.value = response.data.total;
+    botList.value = response.data?.rows || [];
+    total.value = response.data?.total || 0;
+    loading.value = false;
+  }).catch(() => {
     loading.value = false;
   });
 }

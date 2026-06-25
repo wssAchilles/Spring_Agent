@@ -60,6 +60,7 @@ public class KbRuntimeDO extends BaseEntity {
     /**
      * 运行时间(毫秒)
      */
+    @TableField("runtime_ms")
     private Long runtime;
 
     /**

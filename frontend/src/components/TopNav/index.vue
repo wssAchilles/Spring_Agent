@@ -157,12 +157,10 @@
 
     // 计算可用宽度下的顶部导航栏可显示菜单数量
     function calculateVisibleMenus() {
-        const bodyWidth = document.body.getBoundingClientRect().width;
-        const leftWidth = 210 + 50; // Logo + 小图标，左边最大宽度
-        const rightWidth = 410; // 右侧功能区，右边最大宽度
+        const container = document.getElementById('topmenu-container');
+        if (!container) return;
+        const availableWidth = container.clientWidth;
         const menuWidth = 124; // 每个菜单项宽度
-
-        const availableWidth = bodyWidth - leftWidth - rightWidth;
 
         if (availableWidth < 0) {
             visibleNumber.value = 0;

@@ -127,9 +127,9 @@
 
      .el-menu-item {
         &.is-active {
-          background: #eef4ff;
+          background: var(--el-color-primary) !important;
           border-radius: 4px;
-          color: #2468e5 !important;
+          color: #ffffff !important;
           font-weight: 600;
           position: relative;
           transition: none !important;
@@ -139,7 +139,10 @@
             width:18px !important;
             height:18px !important;
             filter: none;
-            color: #2468e5;
+            color: #ffffff !important;
+        }
+        .menu-title {
+            color: #ffffff !important;
         }
 
         }

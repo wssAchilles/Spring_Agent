@@ -42,7 +42,8 @@ public class KbBotController extends BaseController {
         PageResult<KbBotDO> page = kbBotService.getKbBotPage(kbBot);
         PageResult<KbBotRespVO> kbBotRespVOPageResult = BeanUtils.toBean(page, KbBotRespVO.class);
         kbBotRespVOPageResult.getList().forEach(item -> {
-            item.setNodeNum((int) (item.getId()+item.getBuiltinFlag())/3 +1);
+            int builtinFlag = item.getBuiltinFlag() != null ? item.getBuiltinFlag() : 0;
+            item.setNodeNum((int) (item.getId() + builtinFlag) / 3 + 1);
             item.setApiKeyNum(2);
         });
         return CommonResult.success(kbBotRespVOPageResult);
