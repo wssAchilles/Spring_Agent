@@ -326,7 +326,6 @@ deploy/sql/postgresql/07-add-rag-cache-ttl.sql
 
 ```bash
 # DeepSeek API（Agent 对话、查询重写、质量评分）
-HERMES_OPENAI_API_KEY=sk-bff765d54582457fb25ed46a049157b4
 HERMES_OPENAI_BASE_URL=https://api.deepseek.com
 
 # 通义千问 API（Embedding 向量化）
