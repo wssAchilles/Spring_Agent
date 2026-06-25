@@ -329,7 +329,6 @@ deploy/sql/postgresql/07-add-rag-cache-ttl.sql
 HERMES_OPENAI_BASE_URL=https://api.deepseek.com
 
 # 通义千问 API（Embedding 向量化）
-TONGYI_API_KEY=sk-ws-H.RYHDIDL.Ix8p...
 
 # PostgreSQL
 POSTGRESQL_USERNAME=achilles
