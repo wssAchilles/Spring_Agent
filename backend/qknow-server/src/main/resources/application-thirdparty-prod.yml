@@ -1,42 +1,4 @@
-# Copyright (c) 2026 Jiangsu Qiantong Technology Co., Ltd.
-#  *
-# Software Name: qKnow Knowledge Platform (Business Edition)
-# Software Copyright Registration No. 15980140
-#  *
-# [RIGHTS AND LICENSE STATEMENT]
-# This file contains non-public commercial source code of which Jiangsu Qiantong
-# Technology Co., Ltd. lawfully possesses complete intellectual property rights.
-#  *
-# Access and use are limited to entities or individuals who have signed a valid
-# commercial license agreement, within the scope stipulated in the agreement.
-# The "accessibility" of this source code is premised on lawful authorization
-# and does not constitute any form of transfer of intellectual property rights
-# or implied licensing.
-#  *
-# [PROHIBITIONS]
-# Unless explicitly agreed in the license agreement, the following acts in any
-# form are strictly prohibited:
-# 1. Copying, disseminating, disclosing, selling, renting, or redistributing
-# this source code;
-# 2. Providing the software's functionality to third parties via SaaS, PaaS,
-# cloud hosting, or other means;
-# 3. Using this software or its derivative versions to develop products that
-# compete with the Right Holder;
-# 4. Providing or displaying this source code or related technical information
-# to unauthorized third parties;
-# 5. Tampering with, circumventing, or destroying copyright notices, license
-# verifications, or other technical protection measures.
-#  *
-# [LEGAL LIABILITY]
-# Any unauthorized use constitutes an infringement of trade secrets and
-# intellectual property rights.
-#  *
-# The Right Holder will strictly pursue liability for breach of contract and
-# infringement in accordance with the commercial agreement and laws such as
-# the "Copyright Law of the People's Republic of China" and the "Anti-Unfair
-# Competition Law".
-#  *
-# 
+
 
 app:
   model:
