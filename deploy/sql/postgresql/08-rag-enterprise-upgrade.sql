@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS semantic_cache_store (
     query TEXT NOT NULL,
     query_embedding vector NOT NULL,
     answer TEXT NOT NULL,
+    sources_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     model_name VARCHAR(128) NOT NULL,
     hit_count BIGINT NOT NULL DEFAULT 0,
     last_hit_at TIMESTAMP,
@@ -21,6 +22,18 @@ CREATE INDEX IF NOT EXISTS idx_semantic_cache_scope
 
 CREATE INDEX IF NOT EXISTS idx_semantic_cache_expires_at
     ON semantic_cache_store(expires_at);
+
+ALTER TABLE semantic_cache_store
+    ADD COLUMN IF NOT EXISTS sources_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+CREATE TABLE IF NOT EXISTS semantic_cache_knowledge_rel (
+    cache_id BIGINT NOT NULL REFERENCES semantic_cache_store(id) ON DELETE CASCADE,
+    knowledge_base_id BIGINT NOT NULL,
+    PRIMARY KEY (cache_id, knowledge_base_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_semantic_cache_rel_knowledge
+    ON semantic_cache_knowledge_rel(knowledge_base_id);
 
 CREATE TABLE IF NOT EXISTS kmc_segment_entity_metadata (
     id BIGSERIAL PRIMARY KEY,

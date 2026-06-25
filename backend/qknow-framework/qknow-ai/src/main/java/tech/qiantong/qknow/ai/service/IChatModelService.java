@@ -18,4 +18,8 @@ public interface IChatModelService {
      * @return chatModel
      */
     ChatModel getChatModel(String platForm, String baseUrl, String apiKey, String modelName);
+
+    default ChatModel getChatModel(String platForm, String baseUrl, String apiKey, String modelName, Double temperature) {
+        return getChatModel(platForm, baseUrl, apiKey, modelName);
+    }
 }

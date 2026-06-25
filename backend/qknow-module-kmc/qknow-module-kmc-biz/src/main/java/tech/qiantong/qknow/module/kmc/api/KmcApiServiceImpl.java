@@ -4,12 +4,16 @@ import com.google.common.collect.Sets;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tech.qiantong.qknow.common.core.domain.entity.SysRole;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.KmcDocumentRespDTO;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.TreeSelectsDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcKnowledgeBaseRespDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheHitDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheLookupReqDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheSaveReqDTO;
 import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
 import tech.qiantong.qknow.module.kmc.controller.admin.knowledgeBase.vo.RetrieveResultRespVO;
 import tech.qiantong.qknow.module.kmc.dal.dataobject.document.KmcDocumentDO;
@@ -22,10 +26,14 @@ import tech.qiantong.qknow.module.kmc.domain.TreeSelects;
 import tech.qiantong.qknow.module.kmc.service.kmcCategory.IKmcCategoryService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeRoleService;
+import tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService;
+import tech.qiantong.qknow.module.ai.api.modelMarket.IAiModelApiService;
 import tech.qiantong.qknow.module.system.service.ISysRoleService;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
 import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,6 +60,12 @@ public class KmcApiServiceImpl implements IKmcApiService {
     private IKmcKnowledgeRoleService kmcKnowledgeRoleService;
     @Resource
     private IKmcCategoryService iKmcCategoryService;
+    @Resource
+    private SemanticCacheService semanticCacheService;
+    @Resource
+    private SemanticCacheService.SemanticCacheConfig semanticCacheConfig;
+    @Resource
+    private IAiModelApiService aiModelService;
 
     @Override
     public List<KmcDocumentRespDTO> getKmcDocumentList() {
@@ -138,6 +152,73 @@ public class KmcApiServiceImpl implements IKmcApiService {
             retrieveResults.add(result);
         }
         return retrieveResults;
+    }
+
+    @Override
+    public Optional<SemanticCacheHitDTO> findSemanticAnswer(SemanticCacheLookupReqDTO req) {
+        if (req == null || req.getKnowledgeBaseIds() == null || req.getKnowledgeBaseIds().isEmpty()) {
+            return Optional.empty();
+        }
+        EmbeddingModel embeddingModel = getEmbeddingModel(req.getKnowledgeBaseIds().get(0));
+        if (embeddingModel == null) {
+            return Optional.empty();
+        }
+        String hash = knowledgeIdsHash(req.getKnowledgeBaseIds());
+        return semanticCacheService.findAnswer(req.getWorkspaceId(), req.getBotId(), req.getKnowledgeBaseIds(),
+                        hash, req.getQuery(), req.getModelName(), embeddingModel)
+                .map(hit -> SemanticCacheHitDTO.builder()
+                        .id(hit.getId())
+                        .answer(hit.getAnswer())
+                        .sourcesJson(hit.getSourcesJson())
+                        .similarity(hit.getSimilarity())
+                        .build());
+    }
+
+    @Override
+    public void saveSemanticAnswer(SemanticCacheSaveReqDTO req) {
+        if (req == null || req.getKnowledgeBaseIds() == null || req.getKnowledgeBaseIds().isEmpty()
+                || req.getAnswer() == null || req.getAnswer().isBlank()) {
+            return;
+        }
+        EmbeddingModel embeddingModel = getEmbeddingModel(req.getKnowledgeBaseIds().get(0));
+        if (embeddingModel == null) {
+            return;
+        }
+        semanticCacheService.saveAnswer(req.getWorkspaceId(), req.getBotId(), req.getKnowledgeBaseIds(),
+                knowledgeIdsHash(req.getKnowledgeBaseIds()), req.getQuery(), req.getAnswer(), req.getModelName(),
+                req.getSourcesJson(), embeddingModel, semanticCacheConfig.getTtl());
+    }
+
+    private EmbeddingModel getEmbeddingModel(Long knowledgeBaseId) {
+        try {
+            KmcKnowledgeBaseDO kb = kmcKnowledgeBaseMapper.selectById(knowledgeBaseId);
+            if (kb == null || kb.getEmbeddingModelProvider() == null || kb.getEmbeddingModel() == null) {
+                return null;
+            }
+            return aiModelService.getEmbeddingModel(Long.valueOf(kb.getEmbeddingModelProvider()), kb.getEmbeddingModel());
+        } catch (Exception e) {
+            log.warn("Failed to create embedding model for semantic cache: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String knowledgeIdsHash(List<Long> knowledgeBaseIds) {
+        try {
+            String joined = knowledgeBaseIds.stream()
+                    .filter(Objects::nonNull)
+                    .sorted()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(joined.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (Exception e) {
+            return String.valueOf(knowledgeBaseIds);
+        }
     }
 
     @Override

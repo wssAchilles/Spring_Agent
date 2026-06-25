@@ -71,12 +71,16 @@ public class ChatModelFactory {
      * @return chatModel
      */
     public ChatModel getChatModel(String platform, String baseUrl, String apiKey, String modelName) {
+        return getChatModel(platform, baseUrl, apiKey, modelName, null);
+    }
+
+    public ChatModel getChatModel(String platform, String baseUrl, String apiKey, String modelName, Double temperature) {
         apiKey = resolveApiKey(apiKey, platform);
         return switch (AiPlatformEnum.validatePlatform(platform)) {
             case OPENAI -> getOpenAiChatModel(baseUrl, apiKey, modelName);
             case TONG_YI -> getDashScopeChatModel(apiKey, modelName);
             case OLLAMA -> getOllamaChatModel(baseUrl, modelName);
-            case DEEP_SEEK -> getDeepSeekChatModel(apiKey, modelName);
+            case DEEP_SEEK -> getDeepSeekChatModel(apiKey, modelName, temperature);
             default -> throw new IllegalArgumentException("暂时不支持该平台: " + platform);
         };
     }
@@ -151,12 +155,20 @@ public class ChatModelFactory {
      * @return DeepSeekChatModel
      */
     private DeepSeekChatModel getDeepSeekChatModel(String apiKey, String modelName) {
+        return getDeepSeekChatModel(apiKey, modelName, null);
+    }
+
+    private DeepSeekChatModel getDeepSeekChatModel(String apiKey, String modelName, Double temperature) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new IllegalArgumentException("DeepSeek 平台必要字段不能为空");
         }
+        DeepSeekChatOptions.Builder optionsBuilder = DeepSeekChatOptions.builder().model(modelName);
+        if (temperature != null) {
+            optionsBuilder.temperature(temperature);
+        }
         return DeepSeekChatModel.builder()
                 .deepSeekApi(DeepSeekApi.builder().apiKey(apiKey).build())
-                .defaultOptions(DeepSeekChatOptions.builder().model(modelName).build())
+                .defaultOptions(optionsBuilder.build())
                 .build();
     }
 }

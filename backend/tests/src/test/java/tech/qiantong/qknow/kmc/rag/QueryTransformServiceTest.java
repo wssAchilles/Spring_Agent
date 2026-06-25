@@ -10,8 +10,8 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import tech.qiantong.qknow.module.kmc.service.rag.QueryTransformService;
-import tech.qiantong.qknow.ai.service.IChatClientService;
 
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,8 +25,7 @@ class QueryTransformServiceTest {
     @Mock
     private ChatClient chatClient;
 
-    @Mock
-    private IChatClientService chatClientService;
+    private Object chatClientService;
 
     @Mock
     private ChatClient.ChatClientRequestSpec requestSpec;
@@ -38,7 +37,7 @@ class QueryTransformServiceTest {
     private QueryTransformService service;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         config = new QueryTransformService.QueryTransformConfig();
         config.setEnabled(true);
         config.setStrategy("rewrite");
@@ -47,7 +46,14 @@ class QueryTransformServiceTest {
         config.setApiKey("test-key");
         config.setModelName("gpt-4o-mini");
 
-        service = new QueryTransformService(chatClientService, config);
+        Class<?> chatClientServiceType = Class.forName("tech.qiantong.qknow.ai.service.IChatClientService");
+        chatClientService = Proxy.newProxyInstance(
+                chatClientServiceType.getClassLoader(),
+                new Class<?>[]{chatClientServiceType},
+                (proxy, method, args) -> "getChatClient".equals(method.getName()) ? chatClient : null);
+        service = (QueryTransformService) QueryTransformService.class
+                .getConstructor(chatClientServiceType, QueryTransformService.QueryTransformConfig.class)
+                .newInstance(chatClientService, config);
     }
 
     @Test
@@ -103,7 +109,6 @@ class QueryTransformServiceTest {
     }
 
     private void stubChatClient() {
-        when(chatClientService.getChatClient("OpenAI", "https://api.openai.com", "test-key", "gpt-4o-mini"))
-                .thenReturn(chatClient);
+        // The proxy created in setUp returns chatClient for the service lookup.
     }
 }

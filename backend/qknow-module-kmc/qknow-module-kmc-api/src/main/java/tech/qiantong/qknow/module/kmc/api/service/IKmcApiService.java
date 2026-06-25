@@ -4,10 +4,13 @@ package tech.qiantong.qknow.module.kmc.api.service;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.KmcDocumentRespDTO;
 import tech.qiantong.qknow.module.kmc.api.kmcDocument.dto.TreeSelectsDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcKnowledgeBaseRespDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheHitDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheLookupReqDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheSaveReqDTO;
 import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 public interface IKmcApiService {
     /**
@@ -54,6 +57,10 @@ public interface IKmcApiService {
      * @return java.util.List<tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult>
      */
     List<RetrieveResult> recallTest(Long knowledgeId, String query);
+
+    Optional<SemanticCacheHitDTO> findSemanticAnswer(SemanticCacheLookupReqDTO req);
+
+    void saveSemanticAnswer(SemanticCacheSaveReqDTO req);
 
 
     /**

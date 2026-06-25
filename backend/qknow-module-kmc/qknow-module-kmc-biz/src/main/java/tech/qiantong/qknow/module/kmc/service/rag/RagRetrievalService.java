@@ -48,6 +48,12 @@ public class RagRetrievalService {
     @Resource
     private PermissionFilter permissionFilter;
 
+    @Resource
+    private QueryEntityExtractionService queryEntityExtractionService;
+
+    @Resource
+    private CragRetrievalEvaluator cragRetrievalEvaluator;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> debugInfo = debug ? new LinkedHashMap<>() : null;
@@ -62,10 +68,50 @@ public class RagRetrievalService {
                     .build();
         }
 
-        QueryIntent queryIntent = queryIntentAnalyzer.analyze(query);
+        RagResult first = retrieveOnce(knowledgeBaseId, query, topK, debug, debugInfo, "first");
+        CragRetrievalEvaluation evaluation = cragRetrievalEvaluator.evaluate(query, first);
         if (debug) {
+            debugInfo.put("cragLabel", evaluation.getLabel() != null ? evaluation.getLabel().name() : null);
+            debugInfo.put("cragConfidence", evaluation.getConfidence());
+            debugInfo.put("cragReason", evaluation.getReason());
+            debugInfo.put("rewrittenQuery", evaluation.getRewrittenQuery());
+        }
+
+        RagResult effective = first;
+        boolean rewriteApplied = false;
+        int secondRetrievalCount = 0;
+        String rewrittenQuery = evaluation.getRewrittenQuery();
+        if (evaluation.isIncorrect()
+                && rewrittenQuery != null
+                && !rewrittenQuery.isBlank()
+                && !rewrittenQuery.trim().equalsIgnoreCase(query.trim())) {
+            effective = retrieveOnce(knowledgeBaseId, rewrittenQuery, topK, debug, debugInfo, "second");
+            rewriteApplied = true;
+            secondRetrievalCount = effective.getSources().size();
+        } else if (evaluation.isIncorrect()) {
+            effective = RagResult.builder()
+                    .context("")
+                    .sources(Collections.emptyList())
+                    .debugInfo(debugInfo != null ? debugInfo : Map.of())
+                    .build();
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        if (debug) {
+            debugInfo.put("rewriteApplied", rewriteApplied);
+            debugInfo.put("secondRetrievalCount", secondRetrievalCount);
+            debugInfo.put("elapsedMs", elapsed);
+            effective.setDebugInfo(debugInfo);
+        }
+        return effective;
+    }
+
+    private RagResult retrieveOnce(Long knowledgeBaseId, String query, int topK, boolean debug,
+                                   Map<String, Object> debugInfo, String phase) {
+        QueryIntent queryIntent = queryIntentAnalyzer.analyze(query);
+        if (debug && "first".equals(phase)) {
             debugInfo.put("queryIntent", queryIntent);
-            debugInfo.put("searchMethod", "RAG v2 混合检索");
+            debugInfo.put("searchMethod", "RAG v2 混合检索 + CRAG");
         }
 
         int candidateTopK = Math.max(topK * CANDIDATE_MULTIPLIER, DEFAULT_TOP_K);
@@ -85,12 +131,16 @@ public class RagRetrievalService {
         List<RetrievalResult> keywordResults;
         List<RetrievalResult> metadataResults;
 
-        ExecutorService executor = Executors.newFixedThreadPool(3);
+        ExecutorService executor = Executors.newFixedThreadPool(4);
         try {
+            Future<List<String>> entityFuture = executor.submit(
+                    () -> queryEntityExtractionService.extract(query, queryIntent.getKeywords()));
             Future<List<RetrievalResult>> vectorFuture = executor.submit(
                     () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
             Future<List<RetrievalResult>> keywordFuture = executor.submit(
                     () -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
+
+            queryIntent.setEntities(getFuture(entityFuture, "query-entity"));
             Future<List<RetrievalResult>> metadataFuture = executor.submit(
                     () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK));
 
@@ -102,9 +152,10 @@ public class RagRetrievalService {
         }
 
         if (debug) {
-            debugInfo.put("vectorResultCount", vectorResults.size());
-            debugInfo.put("keywordResultCount", keywordResults.size());
-            debugInfo.put("metadataResultCount", metadataResults.size());
+            debugInfo.put(phase + "QueryEntities", queryIntent.getEntities());
+            debugInfo.put(phase + "VectorResultCount", vectorResults.size());
+            debugInfo.put(phase + "KeywordResultCount", keywordResults.size());
+            debugInfo.put(phase + "MetadataResultCount", metadataResults.size());
         }
 
         List<List<RetrievalResult>> allResults = new ArrayList<>();
@@ -120,24 +171,22 @@ public class RagRetrievalService {
 
         List<RetrievalResult> fused = candidateFusionService.fuse(allResults);
         if (debug) {
-            debugInfo.put("fusedCount", fused.size());
+            debugInfo.put(phase + "FusedCount", fused.size());
         }
 
         List<RetrievalResult> reranked = ragRerankService.rerank(
                 query, fused, queryIntent, topK, rerankingProviderName, rerankingModelName);
         if (debug) {
-            debugInfo.put("rerankedCount", reranked.size());
+            debugInfo.put(phase + "RerankedCount", reranked.size());
             debugInfo.put("rerankerProvider", rerankingProviderName != null && rerankingModelName != null
                     ? "dashscope" : "deterministic");
         }
 
         String context = ragContextBuilder.buildContext(reranked, true);
 
-        long elapsed = System.currentTimeMillis() - startTime;
         if (debug) {
-            debugInfo.put("elapsedMs", elapsed);
             debugInfo.put("semanticCacheHit", false);
-            debugInfo.put("parentExpansionCount", reranked.stream()
+            debugInfo.put(phase + "ParentExpansionCount", reranked.stream()
                     .filter(result -> result.getParentSegmentId() != null && !result.getParentSegmentId().isBlank())
                     .count());
         }
@@ -149,11 +198,11 @@ public class RagRetrievalService {
                 .build();
     }
 
-    private List<RetrievalResult> getFuture(Future<List<RetrievalResult>> future, String name) {
+    private <T> List<T> getFuture(Future<List<T>> future, String name) {
         try {
             return future.get(30, TimeUnit.SECONDS);
         } catch (Exception e) {
-            log.warn("Retriever '{}' failed or timed out", name, e);
+            log.warn("Future '{}' failed or timed out", name, e);
             return new ArrayList<>();
         }
     }

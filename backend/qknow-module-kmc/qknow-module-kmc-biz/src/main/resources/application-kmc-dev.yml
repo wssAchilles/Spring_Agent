@@ -68,3 +68,8 @@ upload:
 # lucene 索引文件位置
 lucene:
   indexPath: indexDir
+
+qknow:
+  rag:
+    semantic-cache:
+      ttl: 24h
