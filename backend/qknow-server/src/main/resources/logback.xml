@@ -1,49 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Copyright © 2026 Qiantong Technology Co., Ltd.
-  qKnow Knowledge Platform
-   *
-  License:
-  Released under the Apache License, Version 2.0.
-  You may use, modify, and distribute this software for commercial purposes
-  under the terms of the License.
-   *
-  Special Notice:
-  All derivative versions are strictly prohibited from modifying or removing
-  the default system logo and copyright information.
-  For brand customization, please apply for brand customization authorization via official channels.
-   *
-  More information: https://qknow.qiantong.tech/business.html
-   *
-  ============================================================================
-   *
-  版权所有 © 2026 江苏千桐科技有限公司
-  qKnow 知识平台（开源版）
-   *
-  许可协议：
-  本项目基于 Apache License 2.0 开源协议发布，
-  允许在遵守协议的前提下进行商用、修改和分发。
-   *
-  特别说明：
-  所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
-  如需定制品牌，请通过官方渠道申请品牌定制授权。
-   *
-  更多信息请访问：https://qknow.qiantong.tech/business.html
--->
-
 <configuration>
     <!-- 日志存放路径 -->
     <property name="log.path" value="logs" />
     <!-- 日志输出格式 -->
     <property name="log.pattern" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - [%method,%line] - %msg%n" />
-
     <!-- 控制台输出 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${log.pattern}</pattern>
         </encoder>
     </appender>
-
     <!-- 系统日志输出 -->
     <appender name="file_info" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/info.log</file>
@@ -66,7 +32,6 @@
             <onMismatch>ACCEPT</onMismatch>
         </filter>
     </appender>
-
     <appender name="file_warn" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/warn.log</file>
         <!-- 循环政策：基于时间创建日志文件 -->
@@ -88,7 +53,6 @@
             <onMismatch>DENY</onMismatch>
         </filter>
     </appender>
-
     <appender name="file_error" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/error.log</file>
         <!-- 循环政策：基于时间创建日志文件 -->
@@ -110,7 +74,6 @@
             <onMismatch>DENY</onMismatch>
         </filter>
     </appender>
-
     <!-- 用户访问日志输出  -->
     <appender name="user" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/user.log</file>
@@ -124,23 +87,19 @@
             <pattern>${log.pattern}</pattern>
         </encoder>
     </appender>
-
     <!-- 系统模块日志级别控制  -->
     <logger name="tech.qiantong.qMes" level="info" />
     <!-- Spring日志级别控制  -->
     <logger name="org.springframework" level="warn" />
-
     <root level="info">
         <appender-ref ref="console" />
     </root>
-
     <!--系统操作日志-->
     <root level="info">
         <appender-ref ref="file_info" />
         <appender-ref ref="file_warn" />
         <appender-ref ref="file_error" />
     </root>
-
     <!--系统用户操作日志-->
     <logger name="user" level="info">
         <appender-ref ref="user"/>
