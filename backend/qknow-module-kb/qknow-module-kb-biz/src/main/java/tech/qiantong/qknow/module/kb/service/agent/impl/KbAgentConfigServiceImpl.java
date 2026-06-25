@@ -1,5 +1,6 @@
 package tech.qiantong.qknow.module.kb.service.agent.impl;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -16,6 +17,8 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import tech.qiantong.qknow.ai.enums.model.MessageTypeEnums;
 import tech.qiantong.qknow.ai.service.IChatModelService;
 import tech.qiantong.qknow.common.exception.ServiceException;
@@ -36,6 +39,9 @@ import tech.qiantong.qknow.module.kb.tool.function.SearchKnowledgeTool;
 import tech.qiantong.qknow.module.kb.tool.function.query.knowledgeQuery;
 import tech.qiantong.qknow.module.kb.utils.NodeUtils;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcKnowledgeBaseRespDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheHitDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheLookupReqDTO;
+import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheSaveReqDTO;
 import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
 import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
@@ -201,12 +207,38 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         if (StringUtils.isNull(jsonObject.getString("modelId")) || StringUtils.isNull(jsonObject.getString("modelName"))) {
             throw new IllegalArgumentException("模型不能为空！");
         }
+        Long modelId = Long.parseLong(jsonObject.getString("modelId"));
+        String modelName = jsonObject.getString("modelName");
+        String platform = "";
+        String baseUrl = "";
+        String apiKey = "";
+
+        tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO aiModel = aiModelService.getAiModel(modelId);
+        if (aiModel != null) {
+            platform = aiModel.getPlatform();
+            if (StringUtils.isNotEmpty(aiModel.getModel())) {
+                modelName = aiModel.getModel();
+            }
+            if (aiModel.getKeyId() != null) {
+                tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO apiInfo = aiModelService.getAiApiKey(aiModel.getKeyId());
+                if (apiInfo != null) {
+                    baseUrl = apiInfo.getUrl();
+                    apiKey = apiInfo.getApiKey();
+                }
+            }
+        }
+
+        List<Long> knowledgeBaseIds = parseKnowledgeIds(kbAgentConfig.getKnowledgeIds());
+        Optional<SemanticCacheHitDTO> cacheHit = findSemanticCache(kbAgentConfig, knowledgeBaseIds, modelName);
+        if (cacheHit.isPresent()) {
+            return cachedAnswerFlux(kbAgentConfig.getQuestion(), cacheHit.get());
+        }
 
         // 2. 预检索 RAG 上下文
         List<RAGContext> ragContexts = new ArrayList<>();
-        if (StringUtils.isNotEmpty(kbAgentConfig.getKnowledgeIds())) {
-            Set<String> idSet = StringUtils.str2Set(kbAgentConfig.getKnowledgeIds(), ",");
-            List<KmcKnowledgeBaseRespDTO> knowledgeBaseList = kmcApiService.getKnowledgeBaseByIds(idSet.stream().map(Long::parseLong).toList());
+        JSONArray sourceRefs = new JSONArray();
+        if (!knowledgeBaseIds.isEmpty()) {
+            List<KmcKnowledgeBaseRespDTO> knowledgeBaseList = kmcApiService.getKnowledgeBaseByIds(knowledgeBaseIds);
             knowledgeBaseList.forEach(kb -> {
                 String recalled = "";
                 try {
@@ -220,8 +252,15 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                                     .append(" / segmentId=").append(r.getId())
                                     .append("\n")
                                     .append("内容：")
-                                    .append(r.getContent() != null ? r.getContent().substring(0, Math.min(r.getContent().length(), 500)) : "")
+                                    .append(r.getContent() != null ? r.getContent() : "")
                                     .append("\n\n");
+                            JSONObject source = new JSONObject();
+                            source.put("documentId", r.getDocumentId());
+                            source.put("documentName", r.getDocumentName());
+                            source.put("segmentId", r.getId());
+                            source.put("knowledgeId", kb.getId());
+                            source.put("knowledgeName", kb.getName());
+                            sourceRefs.add(source);
                         }
                         recalled = contentBuilder.toString();
                     }
@@ -261,29 +300,6 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         // 5. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(kbAgentConfig.getPrePrompt(), kbAgentConfig.getInput());
 
-        // 解析 modelId
-        Long modelId = Long.parseLong(jsonObject.getString("modelId"));
-        String modelName = jsonObject.getString("modelName");
-        String platform = "";
-        String baseUrl = "";
-        String apiKey = "";
-
-        // 通过 IAiModelApiService 获取平台和秘钥信息
-        tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO aiModel = aiModelService.getAiModel(modelId);
-        if (aiModel != null) {
-            platform = aiModel.getPlatform();
-            if (StringUtils.isNotEmpty(aiModel.getModel())) {
-                modelName = aiModel.getModel();
-            }
-            if (aiModel.getKeyId() != null) {
-                tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO apiInfo = aiModelService.getAiApiKey(aiModel.getKeyId());
-                if (apiInfo != null) {
-                    baseUrl = apiInfo.getUrl();
-                    apiKey = apiInfo.getApiKey();
-                }
-            }
-        }
-
         // 6. 构建 gRPC ChatRequest
         ChatRequest request = ChatRequest.newBuilder()
                 .setRequestId(UUID.randomUUID().toString())
@@ -303,6 +319,108 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 .build();
 
         // 7. 调用 Hermes 微服务
-        return hermesGrpcClient.chat(request);
+        StringBuilder answerBuffer = new StringBuilder();
+        String finalModelName = modelName;
+        return hermesGrpcClient.chat(request)
+                .doOnNext(resp -> {
+                    if (resp.getReceive() != null && resp.getReceive().getContent() != null) {
+                        answerBuffer.append(resp.getReceive().getContent());
+                    }
+                })
+                .doOnComplete(() -> saveSemanticCacheAsync(kbAgentConfig, knowledgeBaseIds,
+                        finalModelName, answerBuffer.toString(), sourceRefs.toJSONString()));
+    }
+
+    private Optional<SemanticCacheHitDTO> findSemanticCache(KbAgentConfigReqVO req, List<Long> knowledgeBaseIds,
+                                                            String modelName) {
+        if (knowledgeBaseIds.isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            SemanticCacheLookupReqDTO lookup = new SemanticCacheLookupReqDTO();
+            lookup.setWorkspaceId(req.getWorkspaceId());
+            lookup.setBotId(req.getBotId());
+            lookup.setKnowledgeBaseIds(knowledgeBaseIds);
+            lookup.setQuery(req.getQuestion());
+            lookup.setModelName(modelName);
+            return kmcApiService.findSemanticAnswer(lookup);
+        } catch (Exception e) {
+            log.warn("Semantic cache lookup failed, continuing normal chat: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private void saveSemanticCacheAsync(KbAgentConfigReqVO req, List<Long> knowledgeBaseIds,
+                                        String modelName, String answer, String sourcesJson) {
+        if (knowledgeBaseIds.isEmpty() || answer == null || answer.isBlank()) {
+            return;
+        }
+        Mono.fromRunnable(() -> {
+                    SemanticCacheSaveReqDTO saveReq = new SemanticCacheSaveReqDTO();
+                    saveReq.setWorkspaceId(req.getWorkspaceId());
+                    saveReq.setBotId(req.getBotId());
+                    saveReq.setKnowledgeBaseIds(knowledgeBaseIds);
+                    saveReq.setQuery(req.getQuestion());
+                    saveReq.setAnswer(answer);
+                    saveReq.setModelName(modelName);
+                    saveReq.setSourcesJson(sourcesJson);
+                    kmcApiService.saveSemanticAnswer(saveReq);
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe(null, error -> log.warn("Semantic cache async save failed", error));
+    }
+
+    private Flux<KbChatMessageSendRespVO> cachedAnswerFlux(String question, SemanticCacheHitDTO hit) {
+        KbChatMessageSendRespVO resp = new KbChatMessageSendRespVO();
+        KbChatMessageSendRespVO.Message receive = new KbChatMessageSendRespVO.Message();
+        receive.setType(MessageTypeEnums.ROBOT.code);
+        receive.setContent(hit.getAnswer());
+        receive.setCreateTime(DateUtils.getNowDate());
+        applySourceRefs(receive, hit.getSourcesJson());
+        resp.setReceive(receive);
+
+        KbChatMessageSendRespVO.Message send = new KbChatMessageSendRespVO.Message();
+        send.setType(MessageTypeEnums.USER.code);
+        send.setContent(question);
+        send.setCreateTime(DateUtils.getNowDate());
+        resp.setSend(send);
+        return Flux.just(resp);
+    }
+
+    private void applySourceRefs(KbChatMessageSendRespVO.Message receive, String sourcesJson) {
+        if (sourcesJson == null || sourcesJson.isBlank()) {
+            return;
+        }
+        try {
+            JSONArray sources = JSONArray.parseArray(sourcesJson);
+            List<String> documentIds = new ArrayList<>();
+            List<String> documentNames = new ArrayList<>();
+            for (Object sourceObj : sources) {
+                if (sourceObj instanceof JSONObject source) {
+                    String documentId = source.getString("documentId");
+                    String documentName = source.getString("documentName");
+                    if (StringUtils.isNotEmpty(documentId) && !documentIds.contains(documentId)) {
+                        documentIds.add(documentId);
+                    }
+                    if (StringUtils.isNotEmpty(documentName) && !documentNames.contains(documentName)) {
+                        documentNames.add(documentName);
+                    }
+                }
+            }
+            receive.setDocumentIdList(documentIds);
+            receive.setDocumentNameList(documentNames);
+        } catch (Exception e) {
+            log.warn("Failed to parse cached source refs: {}", e.getMessage());
+        }
+    }
+
+    private List<Long> parseKnowledgeIds(String knowledgeIds) {
+        if (StringUtils.isEmpty(knowledgeIds)) {
+            return List.of();
+        }
+        return StringUtils.str2Set(knowledgeIds, ",").stream()
+                .map(Long::parseLong)
+                .sorted()
+                .collect(Collectors.toList());
     }
 }

@@ -21,5 +21,8 @@ public class QueryIntent {
     @Builder.Default
     private List<String> keywords = new ArrayList<>();
 
+    @Builder.Default
+    private List<String> entities = new ArrayList<>();
+
     private String category;
 }

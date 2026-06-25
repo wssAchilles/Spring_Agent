@@ -1,6 +1,7 @@
 package tech.qiantong.qknow.module.kmc.service.rag;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson2.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -28,9 +29,10 @@ public class MetadataRetriever {
 
         boolean hasDayNo = queryIntent.getDayNo() != null;
         boolean hasDocName = StrUtil.isNotBlank(queryIntent.getDocName());
-        boolean hasEntities = queryIntent.getKeywords() != null && !queryIntent.getKeywords().isEmpty();
+        boolean hasEntities = queryIntent.getEntities() != null && !queryIntent.getEntities().isEmpty();
+        boolean hasKeywords = queryIntent.getKeywords() != null && !queryIntent.getKeywords().isEmpty();
 
-        if (!hasDayNo && !hasDocName && !hasEntities) {
+        if (!hasDayNo && !hasDocName && !hasEntities && !hasKeywords) {
             return new ArrayList<>();
         }
 
@@ -54,8 +56,8 @@ public class MetadataRetriever {
             params.add("%" + queryIntent.getDocName() + "%");
         }
 
-        if (hasEntities) {
-            List<String> entityTerms = queryIntent.getKeywords().stream()
+        if (hasEntities || hasKeywords) {
+            List<String> entityTerms = (hasEntities ? queryIntent.getEntities() : queryIntent.getKeywords()).stream()
                     .filter(StrUtil::isNotBlank)
                     .limit(5)
                     .collect(Collectors.toList());
@@ -64,8 +66,8 @@ public class MetadataRetriever {
                         .append("WHERE em.segment_id = s.id AND (");
                 List<String> entityConditions = new ArrayList<>();
                 for (String term : entityTerms) {
-                    entityConditions.add("em.entities::text ILIKE ?");
-                    params.add("%" + term + "%");
+                    entityConditions.add("em.entities @> ?::jsonb");
+                    params.add(JSON.toJSONString(List.of(term)));
                 }
                 sql.append(String.join(" OR ", entityConditions)).append(")) ");
             }
