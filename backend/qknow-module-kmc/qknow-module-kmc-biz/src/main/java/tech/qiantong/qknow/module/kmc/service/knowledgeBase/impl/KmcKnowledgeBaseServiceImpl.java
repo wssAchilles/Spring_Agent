@@ -2,10 +2,6 @@ package tech.qiantong.qknow.module.kmc.service.knowledgeBase.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
-import com.alibaba.cloud.ai.document.DocumentWithScore;
-import com.alibaba.cloud.ai.model.RerankRequest;
-import com.alibaba.cloud.ai.model.RerankResponse;
 import com.alibaba.fastjson2.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -52,6 +48,7 @@ import tech.qiantong.qknow.module.kmc.service.rag.PermissionFilter;
 import tech.qiantong.qknow.module.kmc.service.rag.QueryTransformService;
 import tech.qiantong.qknow.module.kmc.service.rag.RagCacheService;
 import tech.qiantong.qknow.module.kmc.service.rag.RagRetrievalService;
+import tech.qiantong.qknow.module.kmc.service.rag.rerank.DashScopeRerankClient;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RagResult;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 import tech.qiantong.qknow.module.system.service.ISysRoleService;
@@ -992,36 +989,28 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         if (CollUtil.isEmpty(documentList)) {
             return new ArrayList<>(0);
         }
-        List<Document> result = new ArrayList<>();
-        DashScopeRerankModel rerankModel = aiModelService.getRerankModel(
-                Long.valueOf(reqVO.getRerankingProviderName()),
-                reqVO.getRerankingModelName());
-        RerankRequest rerankRequest = new RerankRequest(reqVO.getQuery(), documentList);
-        RerankResponse rerankResponse = rerankModel.call(rerankRequest);
+        String apiKey = aiModelService.getApiKey(reqVO.getRerankingProviderName());
+        if (StrUtil.isBlank(apiKey)) {
+            log.warn("Rerank API key not found for platform: {}", reqVO.getRerankingProviderName());
+            return documentList;
+        }
 
-        List<DocumentWithScore> reranResultList = rerankResponse.getResults();
-        if (reqVO.getScoreThresholdEnabled()) {
-            for (DocumentWithScore documentWithScore : reranResultList) {
-                if (documentWithScore.getScore() > reqVO.getScoreThreshold().doubleValue()) {
-                    Document output = documentWithScore.getOutput();
-                    Document build = Document.builder()
-                            .id(output.getId())
-                            .text(output.getText())
-                            .score(documentWithScore.getScore())
-                            .metadata(output.getMetadata()).build();
-                    result.add(build);
-                }
+        DashScopeRerankClient client = new DashScopeRerankClient(apiKey, reqVO.getRerankingModelName());
+        List<DashScopeRerankClient.RerankResult> reranked = client.rerank(
+                reqVO.getQuery(), documentList, reqVO.getTopK().intValue());
+
+        List<Document> result = new ArrayList<>();
+        for (DashScopeRerankClient.RerankResult rr : reranked) {
+            if (reqVO.getScoreThresholdEnabled() && rr.score() <= reqVO.getScoreThreshold().doubleValue()) {
+                continue;
             }
-        } else {
-            for (DocumentWithScore documentWithScore : reranResultList) {
-                Document output = documentWithScore.getOutput();
-                Document build = Document.builder()
-                        .id(output.getId())
-                        .text(output.getText())
-                        .score(documentWithScore.getScore())
-                        .metadata(output.getMetadata()).build();
-                result.add(build);
-            }
+            Document output = rr.document();
+            result.add(Document.builder()
+                    .id(output.getId())
+                    .text(output.getText())
+                    .score(rr.score())
+                    .metadata(output.getMetadata())
+                    .build());
         }
         return result.stream()
                 .sorted(Comparator.comparingDouble(Document::getScore).reversed())

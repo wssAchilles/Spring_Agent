@@ -2,10 +2,6 @@
 package tech.qiantong.qknow.ai.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
-import jakarta.annotation.Resource;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
@@ -14,14 +10,9 @@ import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.http.client.reactive.JdkClientHttpConnector;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import tech.qiantong.qknow.ai.service.IEmbeddingService;
 import tech.qiantong.qknow.common.exception.ServiceException;
-
-import java.net.http.HttpClient;
 
 /**
  * 向量化模型服务
@@ -30,9 +21,6 @@ import java.net.http.HttpClient;
  */
 @Service
 public class EmbeddingServiceImpl implements IEmbeddingService {
-
-    @Resource
-    ObjectProvider<WebClient.Builder> webClientBuilderProvider;
 
     /**
      * 获取 向量化模型
@@ -68,28 +56,27 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
         if (StrUtil.hasBlank(baseUrl, apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
         }
-        WebClient.Builder webClientBuilder = WebClient.builder();
         return new OpenAiEmbeddingModel(
-                OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).webClientBuilder(webClientBuilder).build(),
+                OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).build(),
                 MetadataMode.EMBED,
                 OpenAiEmbeddingOptions.builder().model(modelName).build());
     }
 
     /**
-     * 获取 阿里百炼 向量化模型
-     *
-     * @param apiKey    apiKey（必需）
-     * @param modelName modelName（必需）
-     * @return DashScopeEmbeddingModel
+     * 通义千问 Embedding 通过 OpenAI 兼容模式接入
+     * DashScope 兼容端点：https://dashscope.aliyuncs.com/compatible-mode/v1
      */
-    private DashScopeEmbeddingModel getDashScopeModel(String apiKey, String modelName) {
+    private OpenAiEmbeddingModel getDashScopeModel(String apiKey, String modelName) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
         }
-        return new DashScopeEmbeddingModel(
-                DashScopeApi.builder().apiKey(apiKey).build(),
+        return new OpenAiEmbeddingModel(
+                OpenAiApi.builder()
+                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
+                        .apiKey(apiKey)
+                        .build(),
                 MetadataMode.EMBED,
-                DashScopeEmbeddingOptions.builder().model(modelName).build());
+                OpenAiEmbeddingOptions.builder().model(modelName).build());
     }
 
     /**

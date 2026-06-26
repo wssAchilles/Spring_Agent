@@ -1,6 +1,5 @@
 package tech.qiantong.qknow.module.ai.service.modelMarket;
 
-import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.fastjson2.JSONArray;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.ai.chat.model.ChatModel;
@@ -69,13 +68,14 @@ public interface IAiModelService extends IService<AiModelDO> {
     JSONArray getModelDict(Integer type);
 
     /**
-     * 获取重排序模型，暂时支持通义平台的
-     *
-     * @param keyId     模型平台id
-     * @param modelName 模型名称
-     * @return 重排序模型
+     * 获取指定平台的 API Key
      */
-    DashScopeRerankModel getRerankModel(Long keyId, String modelName);
+    String getApiKey(String platform);
+
+    /**
+     * 根据 Key ID 获取 API Key
+     */
+    String getApiKeyById(Long keyId);
 
     /**
      * 获取模型分页列表

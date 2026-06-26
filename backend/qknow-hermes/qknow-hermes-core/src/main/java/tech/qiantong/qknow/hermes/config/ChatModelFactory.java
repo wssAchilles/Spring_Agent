@@ -1,9 +1,6 @@
 package tech.qiantong.qknow.hermes.config;
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
@@ -14,13 +11,7 @@ import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.http.client.reactive.JdkClientHttpConnector;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import jakarta.annotation.Resource;
-import java.net.http.HttpClient;
 
 /**
  * ChatModel 工厂
@@ -35,10 +26,7 @@ import java.net.http.HttpClient;
 @Component
 public class ChatModelFactory {
 
-    @Resource
-    ObjectProvider<WebClient.Builder> webClientBuilderProvider;
-
-    @Resource
+    @jakarta.annotation.Resource
     private org.springframework.core.env.Environment environment;
 
     /**
@@ -101,14 +89,8 @@ public class ChatModelFactory {
         if (StrUtil.isBlank(baseUrl)) {
             baseUrl = "https://api.openai.com";
         }
-        WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-        webClientBuilder.clientConnector(
-                new JdkClientHttpConnector(
-                        HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()
-                )
-        );
         return OpenAiChatModel.builder()
-                .openAiApi(OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).webClientBuilder(webClientBuilder).build())
+                .openAiApi(OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).build())
                 .defaultOptions(OpenAiChatOptions.builder().model(modelName).build())
                 .build();
     }
@@ -120,13 +102,20 @@ public class ChatModelFactory {
      * @param modelName modelName（必需）
      * @return DashScopeChatModel
      */
-    private DashScopeChatModel getDashScopeChatModel(String apiKey, String modelName) {
+    /**
+     * 通义千问通过 OpenAI 兼容模式接入
+     * DashScope 兼容端点：https://dashscope.aliyuncs.com/compatible-mode/v1
+     */
+    private OpenAiChatModel getDashScopeChatModel(String apiKey, String modelName) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new IllegalArgumentException("DashScope 平台必要字段不能为空");
         }
-        return DashScopeChatModel.builder()
-                .dashScopeApi(DashScopeApi.builder().apiKey(apiKey).build())
-                .defaultOptions(DashScopeChatOptions.builder().model(modelName).build())
+        return OpenAiChatModel.builder()
+                .openAiApi(OpenAiApi.builder()
+                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
+                        .apiKey(apiKey)
+                        .build())
+                .defaultOptions(OpenAiChatOptions.builder().model(modelName).build())
                 .build();
     }
 

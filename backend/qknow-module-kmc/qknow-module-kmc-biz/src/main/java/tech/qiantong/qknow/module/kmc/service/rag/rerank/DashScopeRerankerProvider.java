@@ -1,10 +1,6 @@
 package tech.qiantong.qknow.module.kmc.service.rag.rerank;
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
-import com.alibaba.cloud.ai.document.DocumentWithScore;
-import com.alibaba.cloud.ai.model.RerankRequest;
-import com.alibaba.cloud.ai.model.RerankResponse;
 import jakarta.annotation.Resource;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Component;
@@ -17,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * DashScope 重排序提供者
+ * 使用自定义 HTTP 客户端调用 DashScope Rerank API，消除对 Alibaba SDK 的直接依赖
+ */
 @Component
 public class DashScopeRerankerProvider implements RerankerProvider {
 
@@ -36,8 +36,13 @@ public class DashScopeRerankerProvider implements RerankerProvider {
     @Override
     public List<RetrievalResult> rerank(RerankRequestContext context, List<RetrievalResult> candidates,
                                         QueryIntent queryIntent, int topK) {
-        DashScopeRerankModel rerankModel = aiModelService.getRerankModel(context.getProviderName(), context.getModelName());
+        // 获取 API Key（providerName 是 keyId）
+        String apiKey = aiModelService.getApiKeyById(context.getProviderName());
+        if (StrUtil.isBlank(apiKey)) {
+            throw new RuntimeException("DashScope API Key not found for provider: " + context.getProviderName());
+        }
 
+        // 构建 Document 列表
         List<Document> documents = candidates.stream()
                 .map(r -> Document.builder()
                         .id(String.valueOf(r.getSegmentId()))
@@ -54,12 +59,15 @@ public class DashScopeRerankerProvider implements RerankerProvider {
                         .build())
                 .collect(Collectors.toList());
 
-        RerankResponse rerankResponse = rerankModel.call(new RerankRequest(context.getQuery(), documents));
-        List<DocumentWithScore> rerankedResults = rerankResponse.getResults();
+        // 调用 HTTP Rerank 客户端
+        DashScopeRerankClient client = new DashScopeRerankClient(apiKey, context.getModelName());
+        List<DashScopeRerankClient.RerankResult> rerankedResults = client.rerank(
+                context.getQuery(), documents, topK);
 
+        // 转换为 RetrievalResult
         List<RetrievalResult> results = new ArrayList<>(rerankedResults.size());
-        for (DocumentWithScore docWithScore : rerankedResults) {
-            Document output = docWithScore.getOutput();
+        for (DashScopeRerankClient.RerankResult rerankResult : rerankedResults) {
+            Document output = rerankResult.document();
             Map<String, Object> metadata = output.getMetadata();
             results.add(RetrievalResult.builder()
                     .segmentId(toLong(metadata.get("segmentId")))
@@ -69,7 +77,7 @@ public class DashScopeRerankerProvider implements RerankerProvider {
                     .documentName(String.valueOf(metadata.getOrDefault("documentName", "")))
                     .content(output.getText())
                     .answer(String.valueOf(metadata.getOrDefault("answer", "")))
-                    .score(docWithScore.getScore())
+                    .score(rerankResult.score())
                     .source(String.valueOf(metadata.getOrDefault("source", "")))
                     .metadata(metadata)
                     .build());
@@ -82,17 +90,9 @@ public class DashScopeRerankerProvider implements RerankerProvider {
     }
 
     private Long toLong(Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof Long l) {
-            return l;
-        }
-        try {
-            return Long.parseLong(String.valueOf(value));
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        if (value == null) return null;
+        if (value instanceof Long l) return l;
+        try { return Long.parseLong(String.valueOf(value)); } catch (NumberFormatException e) { return null; }
     }
 
     private String blankToNull(String value) {

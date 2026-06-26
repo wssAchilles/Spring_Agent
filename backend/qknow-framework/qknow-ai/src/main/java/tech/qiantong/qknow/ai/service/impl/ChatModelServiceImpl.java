@@ -2,9 +2,6 @@
 package tech.qiantong.qknow.ai.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
@@ -75,13 +72,21 @@ public class ChatModelServiceImpl implements IChatModelService {
                 .build();
     }
 
-    private DashScopeChatModel getDashScopeChatModel(String apiKey, String modelName) {
+    /**
+     * 通义千问通过 OpenAI 兼容模式接入
+     * DashScope 兼容端点：https://dashscope.aliyuncs.com/compatible-mode/v1
+     * 参考：https://help.aliyun.com/zh/model-studio/developer-reference/use-qwen-by-calling-api
+     */
+    private OpenAiChatModel getDashScopeChatModel(String apiKey, String modelName) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
         }
-        return DashScopeChatModel.builder()
-                .dashScopeApi(DashScopeApi.builder().apiKey(apiKey).build())
-                .defaultOptions(DashScopeChatOptions.builder().model(modelName).build())
+        return OpenAiChatModel.builder()
+                .openAiApi(OpenAiApi.builder()
+                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
+                        .apiKey(apiKey)
+                        .build())
+                .defaultOptions(OpenAiChatOptions.builder().model(modelName).build())
                 .build();
     }
 
