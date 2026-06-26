@@ -1,10 +1,13 @@
 package tech.qiantong.qknow.module.kb.tool.mcp;
 
+import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.stereotype.Component;
-import tech.qiantong.qknow.module.kb.dal.dataobject.tool.KbToolMethodDO;
+import tech.qiantong.qknow.hermes.tool.mcp.McpClient;
+import tech.qiantong.qknow.hermes.tool.mcp.McpException;
+import tech.qiantong.qknow.hermes.tool.mcp.StdioMcpClient;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +24,7 @@ public class McpToolAdapter {
 
     private final Map<String, McpServerConfig> serverConfigs = new ConcurrentHashMap<>();
     private final Map<String, FunctionToolCallback<?, ?>> mcpTools = new ConcurrentHashMap<>();
+    private final Map<String, McpClient> clients = new ConcurrentHashMap<>();
 
     @Data
     public static class McpServerConfig {
@@ -28,6 +32,8 @@ public class McpToolAdapter {
         private String url;
         private String apiKey;
         private Map<String, String> headers;
+        private List<String> command;
+        private Map<String, String> environment;
         private boolean enabled;
     }
 
@@ -37,15 +43,54 @@ public class McpToolAdapter {
     public void registerServer(McpServerConfig config) {
         serverConfigs.put(config.getName(), config);
         log.info("注册 MCP Server: {} ({})", config.getName(), config.getUrl());
+
+        if (!config.isEnabled()) {
+            return;
+        }
+
+        try {
+            McpClient client = getClient(config.getName());
+            if (client == null && config.getCommand() != null && !config.getCommand().isEmpty()) {
+                client = createClient(config);
+                clients.put(config.getName(), client);
+            }
+            if (client == null) {
+                return;
+            }
+
+            client.initialize();
+            for (JSONObject toolDef : client.listTools()) {
+                String toolName = toolDef.getString("name");
+                String description = toolDef.getString("description");
+                mcpTools.put("mcp." + config.getName() + "." + toolName,
+                        createMcpToolCallback(config.getName(), toolName, description));
+            }
+        } catch (McpException e) {
+            log.warn("MCP Server {} 连接失败: {}", config.getName(), e.getMessage());
+        } catch (Exception e) {
+            log.error("MCP Server {} 注册异常", config.getName(), e);
+        }
+    }
+
+    public McpClient getClient(String serverName) {
+        return clients.get(serverName);
+    }
+
+    protected McpClient createClient(McpServerConfig config) {
+        return new StdioMcpClient(config.getCommand(), config.getEnvironment());
     }
 
     /**
      * 移除 MCP Server
      */
     public void unregisterServer(String name) {
+        McpClient client = clients.remove(name);
+        if (client != null) {
+            client.disconnect();
+        }
         serverConfigs.remove(name);
         // 移除该 server 的所有工具
-        mcpTools.entrySet().removeIf(entry -> entry.getKey().startsWith(name + "."));
+        mcpTools.entrySet().removeIf(entry -> entry.getKey().startsWith("mcp." + name + "."));
         log.info("移除 MCP Server: {}", name);
     }
 
@@ -91,7 +136,7 @@ public class McpToolAdapter {
 
         return FunctionToolCallback.builder(
                 "mcp." + serverName + "." + toolName,
-                new McpToolFunction(serverName, toolName))
+                new McpToolFunction(this, serverName, toolName))
                 .inputType(McpToolRequest.class)
                 .description(description != null ? description : "MCP 工具: " + toolName)
                 .build();
@@ -108,20 +153,31 @@ public class McpToolAdapter {
     /**
      * MCP 工具执行函数
      */
-    @lombok.AllArgsConstructor
     private static class McpToolFunction implements java.util.function.Function<McpToolRequest, String> {
+        private final McpToolAdapter adapter;
         private final String serverName;
         private final String toolName;
 
+        McpToolFunction(McpToolAdapter adapter, String serverName, String toolName) {
+            this.adapter = adapter;
+            this.serverName = serverName;
+            this.toolName = toolName;
+        }
+
         @Override
         public String apply(McpToolRequest request) {
-            // TODO: 实现实际的 MCP 协议通信
-            // 这里是占位实现，实际需要:
-            // 1. 连接到 MCP Server (HTTP/SSE)
-            // 2. 发送 tools/call 请求
-            // 3. 解析响应
             log.info("调用 MCP 工具: {}.{}, 参数: {}", serverName, toolName, request.getParams());
-            return "MCP 工具 " + serverName + "." + toolName + " 执行成功 (占位响应)";
+            McpClient client = adapter.getClient(serverName);
+            if (client == null) {
+                return "{\"error\": \"MCP 工具 " + serverName + "." + toolName + " 未连接\"}";
+            }
+            try {
+                Map<String, Object> arguments = request.getParams() != null ? request.getParams() : Map.of();
+                return client.callTool(toolName, arguments).toJSONString();
+            } catch (McpException e) {
+                log.error("MCP 工具调用失败: {}.{}", serverName, toolName, e);
+                return "{\"error\": \"" + e.getMessage() + "\"}";
+            }
         }
     }
 }

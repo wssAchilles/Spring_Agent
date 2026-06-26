@@ -13,6 +13,8 @@ qknow:
       threshold: 0.85
       platform: DeepSeek
       model-name: deepseek-chat
+      base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com/v1}
+      api-key: ${HERMES_OPENAI_API_KEY:}
     semantic-cache:
       ttl: 24h
     graph:

@@ -1,6 +1,7 @@
 package tech.qiantong.qknow.integration;
 
 import com.alibaba.fastjson2.JSONObject;
+import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -90,6 +91,16 @@ class DagE2ETest {
     private RuntimeContextBO buildContext() {
         KbRuntimeDO runtime = new KbRuntimeDO();
         return new RuntimeContextBO(runtime, new JSONObject());
+    }
+
+    private void setField(Object target, String name, Object value) {
+        try {
+            var field = target.getClass().getDeclaredField(name);
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Nested
@@ -366,6 +377,44 @@ class DagE2ETest {
             assertEquals("n1", event.getNodeResult().getNodeUuid());
             assertEquals(RuntimeStatusEnums.SUCCESS.getCode(), event.getNodeResult().getStatus());
             assertEquals(100L, event.getNodeResult().getDurationMs());
+        }
+
+        @Test
+        @DisplayName("HermesGrpcService.executeFlow 推送节点结果和完成事件")
+        void grpcServiceExecuteFlowStreamsResults() {
+            FlowExecutor mockFlowExecutor = mock(FlowExecutor.class);
+            HermesGrpcService service = new HermesGrpcService();
+            setField(service, "flowExecutor", mockFlowExecutor);
+
+            FlowRequest request = buildProtoRequest("flow-grpc-service",
+                    protoNode("n1", "开始", "start"));
+            NodeRunResultBO result = NodeRunResultBO.success("n1", "开始", Map.of("ok", true));
+            result.setDuration(12L);
+            when(mockFlowExecutor.execute(request)).thenReturn(List.of(result));
+
+            List<FlowEvent> events = new ArrayList<>();
+            service.executeFlow(request, new StreamObserver<>() {
+                @Override
+                public void onNext(FlowEvent value) {
+                    events.add(value);
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    fail(t);
+                }
+
+                @Override
+                public void onCompleted() {
+                    events.add(FlowEvent.newBuilder().setRequestId("completed").build());
+                }
+            });
+
+            assertEquals(3, events.size());
+            assertTrue(events.get(0).hasNodeResult());
+            assertEquals("n1", events.get(0).getNodeResult().getNodeUuid());
+            assertTrue(events.get(1).hasFlowCompleted());
+            assertFalse(events.stream().anyMatch(FlowEvent::hasError));
         }
     }
 

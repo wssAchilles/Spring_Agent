@@ -58,6 +58,7 @@
         <kaptcha.version>2.3.3</kaptcha.version>
         <pagehelper.boot.version>2.1.1</pagehelper.boot.version>
         <fastjson.version>2.0.60</fastjson.version>
+        <jackson-annotations.version>2.21</jackson-annotations.version>
         <oshi.version>6.9.1</oshi.version>
         <commons.io.version>2.21.0</commons.io.version>
         <poi.version>5.2.3</poi.version>
@@ -109,6 +110,12 @@
                 <version>3.5.8</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson-annotations.version}</version>
             </dependency>
 
             <!-- 阿里数据库连接池 -->

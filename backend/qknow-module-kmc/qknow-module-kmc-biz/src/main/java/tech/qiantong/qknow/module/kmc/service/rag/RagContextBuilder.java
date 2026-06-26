@@ -2,6 +2,7 @@ package tech.qiantong.qknow.module.kmc.service.rag;
 
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
@@ -15,7 +16,11 @@ import java.util.stream.Collectors;
 @Component
 public class RagContextBuilder {
 
-    private static final int MAX_CONTEXT_BYTES = 12000;
+    @Value("${hermes.rag.context.max-bytes:12000}")
+    private int maxContextBytes = 12000;
+
+    @Value("${hermes.rag.context.max-tokens:0}")
+    private int maxContextTokens = 0;
 
     @Resource
     private JdbcTemplate jdbcTemplate;
@@ -36,13 +41,19 @@ public class RagContextBuilder {
         expanded = deduplicateByContent(expanded);
 
         StringBuilder sb = new StringBuilder();
+        int usedTokens = 0;
         int index = 1;
         for (RetrievalResult result : expanded) {
             String entry = formatEntry(index, result);
-            if (sb.length() + entry.getBytes(StandardCharsets.UTF_8).length > MAX_CONTEXT_BYTES) {
+            int entryTokens = estimateTokens(entry);
+            if (sb.length() + entry.getBytes(StandardCharsets.UTF_8).length > maxContextBytes) {
+                break;
+            }
+            if (maxContextTokens > 0 && usedTokens + entryTokens > maxContextTokens) {
                 break;
             }
             sb.append(entry);
+            usedTokens += entryTokens;
             index++;
         }
         return sb.toString();
@@ -171,6 +182,32 @@ public class RagContextBuilder {
             return "";
         }
         return String.valueOf(content.hashCode());
+    }
+
+    private int estimateTokens(String text) {
+        if (StrUtil.isBlank(text)) {
+            return 0;
+        }
+        int tokens = 0;
+        StringBuilder asciiWord = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch < 128 && Character.isLetterOrDigit(ch)) {
+                asciiWord.append(ch);
+                continue;
+            }
+            if (!asciiWord.isEmpty()) {
+                tokens++;
+                asciiWord.setLength(0);
+            }
+            if (!Character.isWhitespace(ch)) {
+                tokens += 2;
+            }
+        }
+        if (!asciiWord.isEmpty()) {
+            tokens++;
+        }
+        return tokens;
     }
 
     private String formatEntry(int index, RetrievalResult result) {

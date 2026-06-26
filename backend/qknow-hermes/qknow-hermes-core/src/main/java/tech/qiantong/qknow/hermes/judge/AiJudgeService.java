@@ -36,7 +36,7 @@ public class AiJudgeService {
     private double threshold = 0.7;
 
     public AiJudgeService(ChatModelFactory chatModelFactory) {
-        this(chatModelFactory, null);
+        this(chatModelFactory, new JudgeConfig());
     }
 
     @Autowired
@@ -56,17 +56,11 @@ public class AiJudgeService {
             messages.add(new SystemMessage(JUDGE_SYSTEM_PROMPT));
             messages.add(new UserMessage(judgePrompt));
 
-            // 使用 judgeConfig 创建评分模型 (如果配置了的话)
-            ChatModel chatModel;
-            if (judgeConfig != null) {
-                chatModel = chatModelFactory.getChatModel(
-                        judgeConfig.getPlatform(),
-                        judgeConfig.getBaseUrl(),
-                        judgeConfig.getApiKey(),
-                        judgeConfig.getModelName());
-            } else {
-                chatModel = chatModelFactory.getChatModel("deepseek", null, null, "deepseek-chat");
-            }
+            ChatModel chatModel = chatModelFactory.getChatModel(
+                    judgeConfig.getPlatform(),
+                    judgeConfig.getBaseUrl(),
+                    judgeConfig.getApiKey(),
+                    judgeConfig.getModelName());
             ChatResponse response = chatModel.call(new Prompt(messages));
             String responseText = response.getResult().getOutput().getText();
 

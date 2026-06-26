@@ -108,6 +108,53 @@ class QueryTransformServiceTest {
         verifyNoInteractions(chatClient);
     }
 
+    @Test
+    void noneStrategyReturnsOriginalQuery() {
+        config.setStrategy("none");
+
+        String result = service.rewriteQuery("original query");
+
+        assertEquals("original query", result);
+        verifyNoInteractions(chatClient);
+    }
+
+    @Test
+    void hydeSkipsNumericQueries() {
+        config.setStrategy("hyde");
+
+        String result = service.rewriteQuery("Day12 的收入是多少？");
+
+        assertEquals("Day12 的收入是多少？", result);
+        verifyNoInteractions(chatClient);
+    }
+
+    @Test
+    void hydeReturnsHypotheticalDocumentForTextQuery() {
+        config.setStrategy("hyde");
+        when(chatClient.prompt()).thenReturn(requestSpec);
+        when(requestSpec.system(anyString())).thenReturn(requestSpec);
+        when(requestSpec.user(anyString())).thenReturn(requestSpec);
+        when(requestSpec.call()).thenReturn(callResponseSpec);
+        when(callResponseSpec.content()).thenReturn("Copenhagen is the capital and largest city of Denmark.");
+
+        String result = service.rewriteQuery("Denmark capital?");
+
+        assertEquals("Copenhagen is the capital and largest city of Denmark.", result);
+    }
+
+    @Test
+    void expandQueriesIncludesOriginalAndVariants() {
+        when(chatClient.prompt()).thenReturn(requestSpec);
+        when(requestSpec.system(anyString())).thenReturn(requestSpec);
+        when(requestSpec.user(anyString())).thenReturn(requestSpec);
+        when(requestSpec.call()).thenReturn(callResponseSpec);
+        when(callResponseSpec.content()).thenReturn("[\"capital of Denmark\", \"Denmark main city\"]");
+
+        List<String> result = service.expandQueries("Denmark capital?", 2);
+
+        assertEquals(List.of("Denmark capital?", "capital of Denmark", "Denmark main city"), result);
+    }
+
     private void stubChatClient() {
         // The proxy created in setUp returns chatClient for the service lookup.
     }

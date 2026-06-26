@@ -83,7 +83,7 @@ class ToolCallbackMigrationTest {
         String result = callback.call("{\"query\": \"什么是AI\"}");
 
         assertNotNull(result);
-        assertEquals("\"预检索的内容\"", result);
+        assertEquals("\"根据知识库检索结果：\\n预检索的内容\"", result);
     }
 
     @Test
@@ -187,8 +187,8 @@ class ToolCallbackMigrationTest {
         String result1 = cb1.call("{\"query\": \"q\"}");
         String result2 = cb2.call("{\"query\": \"q\"}");
 
-        assertEquals("\"内容A\"", result1);
-        assertEquals("\"内容B\"", result2);
+        assertEquals("\"根据知识库检索结果：\\n内容A\"", result1);
+        assertEquals("\"根据知识库检索结果：\\n内容B\"", result2);
     }
 
     @SuppressWarnings("unchecked")

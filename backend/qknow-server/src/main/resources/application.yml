@@ -42,6 +42,9 @@ qknow:
   addressEnabled: false
   # 验证码类型 math 数字计算 char 字符验证
   captchaType: math
+  rag:
+    crag:
+      enabled: false  # 关闭 CRAG 检索评估，省 ~15% tokens
 
 # 开发环境配置
 server:
@@ -141,10 +144,14 @@ hermes:
     query-transform:
       enabled: ${HERMES_RAG_QUERY_TRANSFORM_ENABLED:true}
       strategy: ${HERMES_RAG_QUERY_TRANSFORM_STRATEGY:rewrite}
+      variant-count: ${HERMES_RAG_QUERY_TRANSFORM_VARIANT_COUNT:3}
       platform: ${HERMES_RAG_QUERY_TRANSFORM_PLATFORM:DeepSeek}
       base-url: ${HERMES_RAG_QUERY_TRANSFORM_BASE_URL:https://api.deepseek.com/v1}
       api-key: ${HERMES_OPENAI_API_KEY:}
       model-name: ${HERMES_RAG_QUERY_TRANSFORM_MODEL:deepseek-chat}
+    context:
+      max-bytes: ${HERMES_RAG_CONTEXT_MAX_BYTES:12000}
+      max-tokens: ${HERMES_RAG_CONTEXT_MAX_TOKENS:0}
 
 # MyBatis配置
 # mybatis:

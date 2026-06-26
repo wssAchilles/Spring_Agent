@@ -7,6 +7,12 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -82,5 +88,48 @@ class CostEstimatorTest {
 
         double cost = costEstimator.estimate("deepseek-chat", perModel.getPromptTokens(), perModel.getCompletionTokens());
         assertEquals(0.0029, cost, 0.0001);
+    }
+
+    @Test
+    @DisplayName("TokenCounter 并发聚合保持总量一致")
+    void tokenCounterConcurrentAggregationIsConsistent() throws Exception {
+        ChatResponse response = tokenResponse(1, 2);
+        int threads = 8;
+        int iterations = 1_000;
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Runnable> tasks = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            tasks.add(() -> {
+                try {
+                    start.await();
+                    for (int j = 0; j < iterations; j++) {
+                        tokenCounter.recordUsage("deepseek-chat", response);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+        tasks.forEach(executor::submit);
+
+        start.countDown();
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS));
+
+        TokenUsage total = tokenCounter.getTotal();
+        assertEquals((long) threads * iterations, total.getPromptTokens());
+        assertEquals((long) threads * iterations * 2, total.getCompletionTokens());
+    }
+
+    private ChatResponse tokenResponse(int promptTokens, int completionTokens) {
+        ChatResponseMetadata metadata = mock(ChatResponseMetadata.class);
+        Usage usage = mock(Usage.class);
+        doReturn(usage).when(metadata).getUsage();
+        doReturn(promptTokens).when(usage).getPromptTokens();
+        doReturn(completionTokens).when(usage).getCompletionTokens();
+        ChatResponse response = mock(ChatResponse.class);
+        when(response.getMetadata()).thenReturn(metadata);
+        return response;
     }
 }

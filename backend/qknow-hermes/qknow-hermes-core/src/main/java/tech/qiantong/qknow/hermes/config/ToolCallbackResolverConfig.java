@@ -1,6 +1,6 @@
 package tech.qiantong.qknow.hermes.config;
 
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,8 +11,14 @@ public class ToolCallbackResolverConfig {
 
     @Bean
     public ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext) {
-        return SpringBeanToolCallbackResolver.builder()
-                .applicationContext(applicationContext)
-                .build();
+        return name -> {
+            if (applicationContext.containsBean(name)) {
+                Object bean = applicationContext.getBean(name);
+                if (bean instanceof ToolCallback toolCallback) {
+                    return toolCallback;
+                }
+            }
+            return null;
+        };
     }
 }

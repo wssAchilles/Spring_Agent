@@ -2,6 +2,7 @@ package tech.qiantong.qknow.hermes.flow;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.flow.bo.KbFlowEdgeDO;
 import tech.qiantong.qknow.hermes.flow.bo.KbFlowNodeDO;
 import tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO;
@@ -21,6 +22,7 @@ import java.util.List;
  * 负责将 gRPC FlowRequest 转换为内部数据结构，并委托 DagExecutor 执行
  */
 @Slf4j
+@Component
 public class FlowExecutor {
 
     private final DagExecutor dagExecutor;

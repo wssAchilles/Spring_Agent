@@ -37,9 +37,9 @@ public class MemoryManager {
      * 会话结束时：压缩短期记忆摘要 → 存储到长期记忆 → 清空工作记忆。
      */
     public void onConversationEnd(String sessionId, String userId) {
-        shortTerm.summarize(5);
+        shortTerm.summarize(sessionId, 5);
 
-        List<Message> context = shortTerm.getContext(Integer.MAX_VALUE);
+        List<Message> context = shortTerm.getContext(sessionId, Integer.MAX_VALUE);
         String summary = context.isEmpty() ? "" : context.get(0).getText();
 
         Map<String, Object> metadata = new HashMap<>();
@@ -47,6 +47,6 @@ public class MemoryManager {
         metadata.put("userId", userId);
         longTerm.store(summary, metadata);
 
-        working.clear();
+        working.clear(sessionId);
     }
 }
