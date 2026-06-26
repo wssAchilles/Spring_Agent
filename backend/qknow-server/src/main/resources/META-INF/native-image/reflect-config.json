@@ -1,0 +1,84 @@
+{
+  "reflection": [
+    {
+      "name": "tech.qiantong.qknow.server.QKnowApplication",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true,
+      "allDeclaredFields": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.agent.AgentOrchestrator",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.agent.SupervisorAgent",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.agent.WorkerAgent",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.memory.MemoryManager",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.flow.FlowExecutor",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.flow.FlowStateStore",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.judge.AiJudgeService",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.hermes.eval.RagasEvaluator",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.module.kmc.service.rag.RagRetrievalService",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.module.kmc.service.rag.QueryTransformService",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    },
+    {
+      "name": "tech.qiantong.qknow.module.kmc.service.rag.CandidateFusionService",
+      "allDeclaredConstructors": true,
+      "allDeclaredMethods": true
+    }
+  ],
+  "resources": {
+    "includes": [
+      {"pattern": ".*\\.yml$"},
+      {"pattern": ".*\\.yaml$"},
+      {"pattern": ".*\\.properties$"},
+      {"pattern": ".*\\.xml$"},
+      {"pattern": ".*\\.sql$"},
+      {"pattern": ".*\\.json$"},
+      {"pattern": ".*\\.proto$"}
+    ]
+  },
+  "serialization": {
+    "types": [
+      {"name": "java.util.ArrayList"},
+      {"name": "java.util.HashMap"},
+      {"name": "java.util.LinkedHashMap"},
+      {"name": "java.util.concurrent.ConcurrentHashMap"}
+    ]
+  }
+}
