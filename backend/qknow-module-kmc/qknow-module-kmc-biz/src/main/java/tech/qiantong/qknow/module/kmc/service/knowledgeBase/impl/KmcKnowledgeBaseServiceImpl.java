@@ -300,10 +300,14 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
      */
     @Override
     public List<RetrieveResultRespVO> recallTest(RetrieveResultReqVO retrieveResultReqVO) {
-        // 权限检查
-        List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
-        if (accessibleKbIds != null && !accessibleKbIds.contains(retrieveResultReqVO.getId())) {
-            return new ArrayList<>();
+        // 权限检查（无用户上下文时跳过）
+        try {
+            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
+            if (accessibleKbIds != null && !accessibleKbIds.contains(retrieveResultReqVO.getId())) {
+                return new ArrayList<>();
+            }
+        } catch (Exception e) {
+            log.debug("跳过权限检查：{}", e.getMessage());
         }
 
         // 从知识库获取 Embedding 配置
@@ -416,12 +420,16 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
 
     @Override
     public RecallDebugRespVO recallDebug(RetrieveResultReqVO retrieveResultReqVO) {
-        // 权限检查
-        List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
-        if (accessibleKbIds != null && !accessibleKbIds.contains(retrieveResultReqVO.getId())) {
-            RecallDebugRespVO respVO = new RecallDebugRespVO();
-            respVO.setResults(new ArrayList<>());
-            return respVO;
+        // 权限检查（无用户上下文时跳过）
+        try {
+            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
+            if (accessibleKbIds != null && !accessibleKbIds.contains(retrieveResultReqVO.getId())) {
+                RecallDebugRespVO respVO = new RecallDebugRespVO();
+                respVO.setResults(new ArrayList<>());
+                return respVO;
+            }
+        } catch (Exception e) {
+            log.debug("跳过权限检查：{}", e.getMessage());
         }
 
         // 从知识库获取 Embedding 配置
@@ -638,7 +646,16 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         Filter.Expression kbFilter = b.eq(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, reqVO.getId()).build();
 
         // 权限过滤
-        Filter.Expression permFilter = permissionFilter.buildPermissionFilter(SecurityUtils.getUserId());
+        Filter.Expression permFilter = null;
+        try {
+            Long userId = SecurityUtils.getUserId();
+            if (userId != null) {
+                permFilter = permissionFilter.buildPermissionFilter(userId);
+            }
+        } catch (Exception e) {
+            // 无用户上下文时跳过权限过滤（如 Agent 对话）
+            log.debug("跳过权限过滤：{}", e.getMessage());
+        }
         Filter.Expression expression;
         if (permFilter == null) {
             expression = kbFilter;
@@ -684,10 +701,14 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
             topK = 200;
         }
 
-        // 权限检查
-        List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
-        if (accessibleKbIds != null && !accessibleKbIds.contains(reqVO.getId())) {
-            return new ArrayList<>();
+        // 权限检查（无用户上下文时跳过）
+        try {
+            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
+            if (accessibleKbIds != null && !accessibleKbIds.contains(reqVO.getId())) {
+                return new ArrayList<>();
+            }
+        } catch (Exception e) {
+            log.debug("跳过权限检查：{}", e.getMessage());
         }
 
         String queryText = reqVO.getQuery();
@@ -958,31 +979,6 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         vo.setWordCount(r.getContent() != null ? r.getContent().length() : 0);
         vo.setSource(r.getSource());
         return vo;
-    }
-
-    /**
-     * 将 lucene 的 document 对象转为 springai 的 document 对象
-     *
-     * @param document lucene 的document对象
-     * @param score    得分数值
-     * @return springai 的 document 对象
-     */
-    private Document luceneDocument2ai(org.apache.lucene.document.Document document, float score) {
-        Map<String, Object> mateData = new HashMap<>();
-        mateData.put("score", score);
-
-        mateData.put(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, document.get(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID));
-        mateData.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, document.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID));
-        mateData.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME, document.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME));
-        mateData.put(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, document.get(WeaviateConstant.METADATA_FIELD_SEGMENT_ID));
-        String answer = document.get("answer");
-        if (StrUtil.isNotBlank(answer)) {
-            mateData.put("answer", answer);
-        }
-        return Document.builder()
-                .text(document.get("content"))
-                .score(BigDecimal.valueOf(score).doubleValue()).metadata(mateData)
-                .build();
     }
 
     /**

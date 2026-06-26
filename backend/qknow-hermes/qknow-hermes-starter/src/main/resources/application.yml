@@ -18,28 +18,12 @@ spring:
       base-url: ${HERMES_OLLAMA_BASE_URL:http://localhost:11434}
 
 hermes:
-  control-plane:
-    base-url: ${HERMES_CONTROL_PLANE_URL:http://localhost:8099}
-    connect-timeout: 5000
-    read-timeout: 30000
-  agent:
-    max-tool-calls: 10
-    default-max-retries: 3
-  tool:
-    timeout: 30000
-    retry:
-      maxAttempts: 3
-    circuitBreaker:
-      threshold: 5
-      recoveryTimeout: 60000
-    webSearch:
-      provider: ${HERMES_SEARCH_PROVIDER:duckduckgo}  # Options: serper, bing, duckduckgo
   judge:
-    enabled: true
+    enabled: false  # 关闭反思循环，省 ~15% tokens
     min-score: 0.6
     max-reflection-rounds: 3
   reflection:
-    enabled: true
+    enabled: false  # 关闭反思
     max-rounds: 3
   eval:
     enabled: false
@@ -75,6 +59,8 @@ qknow:
       threshold: 0.85
       platform: DeepSeek
       model-name: deepseek-chat
+      base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com/v1}
+      api-key: ${HERMES_OPENAI_API_KEY:}
 
 logging:
   level:

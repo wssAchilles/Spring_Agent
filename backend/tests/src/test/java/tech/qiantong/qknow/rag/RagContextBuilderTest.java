@@ -114,6 +114,24 @@ class RagContextBuilderTest {
     }
 
     @Test
+    @DisplayName("配置字节预算后上下文自动截断")
+    void buildContext_respectsConfiguredByteBudget() throws Exception {
+        var field = RagContextBuilder.class.getDeclaredField("maxContextBytes");
+        field.setAccessible(true);
+        field.set(contextBuilder, 80);
+
+        RetrievalResult r1 = RetrievalResult.builder()
+                .segmentId(1L).documentName("Doc1").content("短内容").score(0.9).build();
+        RetrievalResult r2 = RetrievalResult.builder()
+                .segmentId(2L).documentName("Doc2").content("这是一段会超过预算的长内容").score(0.8).build();
+
+        String context = contextBuilder.buildContext(List.of(r1, r2), false);
+
+        assertTrue(context.contains("短内容"));
+        assertFalse(context.contains("这是一段会超过预算的长内容"));
+    }
+
+    @Test
     @DisplayName("空结果列表应返回空字符串")
     void buildContext_emptyResults_returnsEmptyString() {
         String context = contextBuilder.buildContext(Collections.emptyList(), false);

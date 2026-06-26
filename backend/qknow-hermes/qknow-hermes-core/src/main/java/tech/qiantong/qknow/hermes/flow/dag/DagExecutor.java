@@ -1,6 +1,7 @@
 package tech.qiantong.qknow.hermes.flow.dag;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.flow.bo.BaseNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO;
 import tech.qiantong.qknow.hermes.flow.bo.RuntimeContextBO;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
  * 支持独立分支并行执行，依赖分支顺序执行
  */
 @Slf4j
+@Component
 public class DagExecutor {
 
     private final NodeFactory nodeFactory;

@@ -18,6 +18,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import tech.qiantong.qknow.redis.service.IRedisService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +40,9 @@ class MemoryManagerTest {
 
     @Mock
     private EmbeddingModel embeddingModel;
+
+    @Mock
+    private IRedisService redisService;
 
     private ShortTermMemory shortTermMemory;
     private LongTermMemory longTermMemory;
@@ -177,6 +181,33 @@ class MemoryManagerTest {
         workingMemory.clear();
         assertEquals(0, workingMemory.size());
         assertFalse(workingMemory.containsKey("intent"));
+    }
+
+    @Test
+    @DisplayName("短期记忆按 sessionId 写入 Redis List")
+    void shortTerm_sessionMemoryUsesRedisList() {
+        ShortTermMemory redisMemory = new ShortTermMemory(chatModel, redisService);
+        when(redisService.getListSize("memory:short:sess-1")).thenReturn(1L);
+        when(redisService.range("memory:short:sess-1", 0, 0)).thenReturn(List.of("USER\thello"));
+
+        redisMemory.addMessage("sess-1", new UserMessage("hello"));
+        List<Message> context = redisMemory.getContext("sess-1", 20);
+
+        verify(redisService).rightPush("memory:short:sess-1", "USER\thello");
+        assertEquals(1, context.size());
+        assertEquals("hello", context.get(0).getText());
+    }
+
+    @Test
+    @DisplayName("工作记忆按 sessionId 写入 Redis Hash")
+    void working_sessionMemoryUsesRedisHash() {
+        WorkingMemory redisWorking = new WorkingMemory(redisService);
+        when(redisService.hashGet("memory:working:sess-1", "intent")).thenReturn("查询天气");
+
+        redisWorking.set("sess-1", "intent", "查询天气");
+
+        assertEquals("查询天气", redisWorking.get("sess-1", "intent"));
+        verify(redisService).hashPut("memory:working:sess-1", "intent", "查询天气");
     }
 
     // ========== MemoryManager Facade Tests ==========

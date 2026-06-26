@@ -109,6 +109,13 @@
             <version>${qknow.version}</version>
         </dependency>
 
+        <!-- qknow-redis (for IRedisService in Memory) -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-redis</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

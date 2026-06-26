@@ -25,9 +25,9 @@ public class TokenCounter {
         long completion = usage.getCompletionTokens() != null ? usage.getCompletionTokens().longValue() : 0L;
 
         perModelUsage.merge(modelName, new TokenUsage(prompt, completion), (existing, added) -> {
-            existing.setPromptTokens(existing.getPromptTokens() + added.getPromptTokens());
-            existing.setCompletionTokens(existing.getCompletionTokens() + added.getCompletionTokens());
-            return existing;
+            return new TokenUsage(
+                    existing.getPromptTokens() + added.getPromptTokens(),
+                    existing.getCompletionTokens() + added.getCompletionTokens());
         });
     }
 
