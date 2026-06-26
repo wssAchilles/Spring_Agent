@@ -1018,9 +1018,11 @@ public abstract class AbstractDbQueryFactory implements DbQuery {
             sql = "SELECT " + String.join(",", column) + " FROM (" + querySql + ") WHERE 1=0";
         }
         Boolean createPK = config.getBooleanValue("createPK", false);
+        Connection conn = null;
+        PreparedStatement ps = null;
         try {
-            Connection conn = this.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
+            conn = this.getConnection();
+            ps = conn.prepareStatement(sql);
             ResultSetMetaData meta = ps.getMetaData();
             StringBuilder sb = new StringBuilder();
             for (int i = 1; i <= meta.getColumnCount(); i++) {
@@ -1060,6 +1062,9 @@ public abstract class AbstractDbQueryFactory implements DbQuery {
             return sb.toString();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            try { if (ps != null) ps.close(); } catch (Exception ignored) {}
+            try { if (conn != null) conn.close(); } catch (Exception ignored) {}
         }
         return null;
     }
