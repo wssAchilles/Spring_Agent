@@ -30,6 +30,11 @@ public class ExtDatasourceQueryService {
         // SQL 查询语句
         String query = getTableData.getQuery();
 
+        // 安全校验：仅允许 SELECT 查询
+        if (query == null || !query.trim().toUpperCase().startsWith("SELECT")) {
+            throw new RuntimeException("仅允许 SELECT 查询");
+        }
+
         // 连接对象和其他资源
         Connection connection = null;
         Statement statement = null;

@@ -35,7 +35,7 @@ hermes:
   rag:
     cache:
       enabled: true
-      ttl: 300000
+      ttl: 300
 
 qknow:
   hermes:

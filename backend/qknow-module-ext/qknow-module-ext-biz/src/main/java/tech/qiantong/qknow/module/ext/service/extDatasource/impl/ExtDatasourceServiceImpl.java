@@ -69,10 +69,10 @@ public class ExtDatasourceServiceImpl extends ServiceImpl<ExtDatasourceMapper, E
      */
     public AjaxResult getTableDataByDataId(ExtDataSourceTable sourceTable) {
         DmDatasourceRespDTO datasource = daDatasourceApiService.getDatasourceById(sourceTable.getId());
-        JSONObject jsonObject = JSONObject.parseObject(datasource.getDatasourceConfig());
         if (datasource == null) {
             throw new DataQueryException("未查到数据源信息");
         }
+        JSONObject jsonObject = JSONObject.parseObject(datasource.getDatasourceConfig());
         DbQueryProperty dbQueryProperty = new DbQueryProperty(
                 datasource.getDatasourceType(),
                 datasource.getIp(),
@@ -83,10 +83,11 @@ public class ExtDatasourceServiceImpl extends ServiceImpl<ExtDatasourceMapper, E
             dbQuery.close();
             throw new DataQueryException("数据库连接失败");
         }
-        String sql = "SELECT * FROM " + sourceTable.getTableName() + " WHERE " + sourceTable.getPrimaryKey() + " = '" + sourceTable.getPrimaryKeyData().toString() + "'";
+        String sql = "SELECT * FROM " + sanitizeIdentifier(sourceTable.getTableName())
+                + " WHERE " + sanitizeIdentifier(sourceTable.getPrimaryKey()) + " = ?";
         //执行数据表数据查询
         //定义返回结果
-        List<Map<String, Object>> tableDataList =  dbQuery.queryList(sql);
+        List<Map<String, Object>> tableDataList =  dbQuery.queryList(sql, new Object[]{sourceTable.getPrimaryKeyData()});
         List<ConcurrentHashMap<String, Object>> tableData = tableDataList.stream()
                 .map(map -> {
                     map.entrySet().removeIf(entry -> entry.getKey() == null || entry.getValue() == null);
@@ -357,4 +358,14 @@ public class ExtDatasourceServiceImpl extends ServiceImpl<ExtDatasourceMapper, E
 //        }
 //        return resultMsg.toString();
 //    }
+
+    /**
+     * 校验 SQL 标识符（表名/列名），仅允许字母、数字、下划线、点号
+     */
+    private static String sanitizeIdentifier(String identifier) {
+        if (identifier == null || !identifier.matches("^[a-zA-Z0-9_.]+$")) {
+            throw new DataQueryException("非法的 SQL 标识符: " + identifier);
+        }
+        return identifier;
+    }
 }
