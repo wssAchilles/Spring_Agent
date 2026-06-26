@@ -494,7 +494,7 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
                 if (docIdObj != null) {
                     try {
                         docId = Integer.valueOf(docIdObj.toString());
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) { log.debug("doc_id 解析失败，跳过: {}", docIdObj, e); }
                 }
                 // 安全获取 workspaceId
                 String workspaceId = "";
