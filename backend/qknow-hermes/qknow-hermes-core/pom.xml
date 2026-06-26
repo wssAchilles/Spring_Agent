@@ -116,6 +116,13 @@
             <version>${qknow.version}</version>
         </dependency>
 
+        <!-- LangFuse Observability -->
+        <dependency>
+            <groupId>com.langfuse</groupId>
+            <artifactId>langfuse-java</artifactId>
+            <version>0.2.0</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

@@ -50,7 +50,7 @@ class DagE2ETest {
 
     @BeforeEach
     void setUp() {
-        flowExecutor = new FlowExecutor(dagExecutor);
+        flowExecutor = new FlowExecutor(dagExecutor, null);
     }
 
     private FlowNode protoNode(String uuid, String name, String type) {

@@ -180,7 +180,8 @@ public class RagRetrievalService {
             allResults.add(graphResults);
         }
 
-        List<RetrievalResult> fused = candidateFusionService.fuse(allResults);
+        List<String> pathNames = List.of("vector", "keyword", "metadata", "graph");
+        List<RetrievalResult> fused = candidateFusionService.fuse(allResults, pathNames);
         if (debug) {
             debugInfo.put(phase + "FusedCount", fused.size());
         }

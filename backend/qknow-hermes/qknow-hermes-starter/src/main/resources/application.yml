@@ -36,6 +36,12 @@ hermes:
     cache:
       enabled: true
       ttl: 300
+  observability:
+    langfuse:
+      enabled: ${LANGFUSE_ENABLED:false}
+      public-key: ${LANGFUSE_PUBLIC_KEY:}
+      secret-key: ${LANGFUSE_SECRET_KEY:}
+      base-url: ${LANGFUSE_BASE_URL:https://cloud.langfuse.com}
 
 qknow:
   hermes:
