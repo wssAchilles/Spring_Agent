@@ -14,6 +14,7 @@ import java.io.*;
  * @date 2023/10/27 15:20
  **/
 public class TxtConverUtil {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TxtConverUtil.class);
     /**
      * txt文本转为pdf并返回baes64编码
      */
@@ -47,7 +48,7 @@ public class TxtConverUtil {
                 document.close();
             }
         } catch (DocumentException | IOException e) {
-            e.printStackTrace();
+            log.error("TXT 转换失败", e);
         }
         return f;
     }

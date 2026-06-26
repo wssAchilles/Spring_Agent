@@ -431,8 +431,8 @@ public final class JSONUtils {
         try {
             return objectMapper.writeValueAsString(object);  // 转为 JSON 字符串
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;  // 转换失败时返回 null
+            log.error("JSON 序列化失败", e);
+            return null;
         }
     }
 }

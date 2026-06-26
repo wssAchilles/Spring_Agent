@@ -29,6 +29,7 @@ import java.util.Objects;
 @Deprecated
 @Service
 public class LuceneServiceImpl implements ILuceneService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(LuceneServiceImpl.class);
 
     private String indexPath = "/tmp/lucene-index";
 
@@ -56,7 +57,7 @@ public class LuceneServiceImpl implements ILuceneService {
                 try {
                     indexWriter.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Lucene 索引操作失败", e);
                 }
             }
         }

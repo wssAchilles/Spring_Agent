@@ -116,7 +116,7 @@ public class SysSyncDataServiceImpl implements SysSyncDataService {
                 //TODO 多个部门的数据导入不进去 千知平台deptId设置的为Long
                 sysUser.setDeptId(StringUtils.isBlank(deptId) ? null : Long.valueOf(deptId));
             } catch (NumberFormatException e) {
-                e.printStackTrace();
+                log.error("数据同步失败", e);
                 continue;
             }
             sysUser.setSex(sex);

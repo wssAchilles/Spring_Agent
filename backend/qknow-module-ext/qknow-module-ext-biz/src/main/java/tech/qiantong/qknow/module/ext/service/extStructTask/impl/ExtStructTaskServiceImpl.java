@@ -170,7 +170,7 @@ public class ExtStructTaskServiceImpl extends ServiceImpl<ExtStructTaskMapper, E
         try {
             this.execStructTask(taskId);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("结构化任务处理失败", e);
             // 捕获异常并打印日志
             log.error("结构化任务抽取处理失败: {}", e.getMessage());
 

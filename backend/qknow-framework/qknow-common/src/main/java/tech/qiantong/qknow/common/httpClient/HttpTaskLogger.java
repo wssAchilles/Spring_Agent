@@ -2,6 +2,8 @@ package tech.qiantong.qknow.common.httpClient;
 
 import cn.hutool.core.io.FileUtil;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.qiantong.qknow.common.utils.StringUtils;
 
 import java.io.File;
@@ -14,6 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class HttpTaskLogger {
+    private static final Logger log = LoggerFactory.getLogger(HttpTaskLogger.class);
 
     /**
      * 定义存储文件夹路径的变量
@@ -63,7 +66,7 @@ public class HttpTaskLogger {
             }
         } catch (Exception e) {
             //打印异常堆栈，方便调试
-            e.printStackTrace(); //
+            log.error("HTTP 任务日志写入失败", e); //
         }
     }
 
@@ -77,7 +80,7 @@ public class HttpTaskLogger {
         } catch (IOException e) {
             if (!e.getMessage().contains("File already exists")) {
                 // 如果文件不存在，则打印异常堆栈
-                e.printStackTrace();
+                log.error("HTTP 任务日志写入失败", e);
             }
             // 如果文件已存在，不打印异常，避免日志污染
         }
@@ -92,7 +95,7 @@ public class HttpTaskLogger {
             fileWriter = new FileWriter(filePath, true);
         } catch (IOException e) {
             // 打印异常堆栈
-            e.printStackTrace();
+            log.error("HTTP 任务日志写入失败", e);
         }
     }
 
@@ -111,7 +114,7 @@ public class HttpTaskLogger {
             fileWriter.flush();
         } catch (IOException e) {
             // 打印异常堆栈
-            e.printStackTrace();
+            log.error("HTTP 任务日志写入失败", e);
         }
     }
     private static String messagePage(String message){
@@ -135,7 +138,7 @@ public class HttpTaskLogger {
             }
         } catch (IOException e) {
             // 打印异常堆栈
-            e.printStackTrace();
+            log.error("HTTP 任务日志写入失败", e);
         }
     }
 }

@@ -126,7 +126,7 @@ public class LogAspect
         {
             // 记录本地异常日志
             log.error("异常信息:{}", exp.getMessage());
-            exp.printStackTrace();
+            log.error("日志切面处理失败", exp);
         }
         finally
         {

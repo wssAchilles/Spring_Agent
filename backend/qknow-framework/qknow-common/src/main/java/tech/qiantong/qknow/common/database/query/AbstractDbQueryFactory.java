@@ -8,6 +8,8 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 
 @Setter
 public abstract class AbstractDbQueryFactory implements DbQuery {
+    protected static final Logger log = LoggerFactory.getLogger(AbstractDbQueryFactory.class);
 
     AbstractDataSourceFactory dataSourceFactory = new DefaultDataSourceFactoryBean();
 
@@ -680,7 +683,7 @@ public abstract class AbstractDbQueryFactory implements DbQuery {
                 this.execute(sql);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据库查询失败", e);
             return false;
         }
         return true;
@@ -719,7 +722,7 @@ public abstract class AbstractDbQueryFactory implements DbQuery {
                 writerDbQuery.execute(sql);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据库查询失败", e);
             return false;
         }
         return true;
@@ -972,28 +975,28 @@ public abstract class AbstractDbQueryFactory implements DbQuery {
                         .build());
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据库查询失败", e);
             throw new DataQueryException("sql解析失败!");
         } finally {
             if (stmt != null) {
                 try {
                     stmt.close();
                 } catch (SQLException throwables) {
-                    throwables.printStackTrace();
+                    log.error("数据库操作失败", throwables);
                 }
             }
             if (rs != null) {
                 try {
                     rs.close();
                 } catch (SQLException throwables) {
-                    throwables.printStackTrace();
+                    log.error("数据库操作失败", throwables);
                 }
             }
             if (connection != null) {
                 try {
                     connection.close();
                 } catch (SQLException throwables) {
-                    throwables.printStackTrace();
+                    log.error("数据库操作失败", throwables);
                 }
             }
         }
@@ -1061,7 +1064,7 @@ public abstract class AbstractDbQueryFactory implements DbQuery {
             }
             return sb.toString();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据库查询失败", e);
         } finally {
             try { if (ps != null) ps.close(); } catch (Exception ignored) {}
             try { if (conn != null) conn.close(); } catch (Exception ignored) {}

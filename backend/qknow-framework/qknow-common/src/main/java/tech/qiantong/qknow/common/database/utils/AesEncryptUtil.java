@@ -54,7 +54,7 @@ public class AesEncryptUtil {
             return Base64.encode(encrypted);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("AES 加解密失败", e);
             return null;
         }
     }

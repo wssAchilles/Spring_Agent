@@ -9,6 +9,7 @@ import java.util.Enumeration;
 import java.util.List;
 
 public class IPUtil {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(IPUtil.class);
 
     public static String getLocalIP() throws SocketException {
         String localIP = null;
@@ -52,7 +53,7 @@ public class IPUtil {
                 try {
                     inet = InetAddress.getLocalHost();
                 } catch (UnknownHostException e) {
-                    e.printStackTrace();
+                    log.error("获取本机 IP 失败", e);
                 }
                 ipAddress = inet.getHostAddress();
             }
@@ -99,7 +100,7 @@ public class IPUtil {
                 try {
                     inet = InetAddress.getLocalHost();
                 } catch (UnknownHostException e) {
-                    e.printStackTrace();
+                    log.error("获取本机 IP 失败", e);
                 }
                 ipAddress = inet.getHostAddress();
             }

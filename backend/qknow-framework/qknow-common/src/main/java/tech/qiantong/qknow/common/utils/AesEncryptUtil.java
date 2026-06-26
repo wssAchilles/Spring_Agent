@@ -13,6 +13,7 @@ import javax.crypto.spec.SecretKeySpec;
  * @date: 2022/3/30 11:48
  */
 public class AesEncryptUtil {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AesEncryptUtil.class);
 
     private static final String KEY = "AD42F6697B035B75";
 
@@ -50,7 +51,7 @@ public class AesEncryptUtil {
             return Base64.encode(encrypted);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("AES 加解密失败", e);
             return null;
         }
     }
@@ -78,7 +79,7 @@ public class AesEncryptUtil {
             String originalString = new String(original);
             return originalString;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("AES 加解密失败", e);
             return null;
         }
     }

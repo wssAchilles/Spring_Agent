@@ -32,6 +32,7 @@ import java.util.List;
  * @author qknow
  */
 public class CaGenerateRootCertificate {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CaGenerateRootCertificate.class);
 
     /**
      * 根据证书信息生成主体根证书
@@ -109,7 +110,7 @@ public class CaGenerateRootCertificate {
             System.out.println("根证书和私钥已生成、转换为 MultipartFile 对象并删除原始文件");
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("证书生成失败", e);
         }
 
         return files;
@@ -128,7 +129,7 @@ public class CaGenerateRootCertificate {
             System.out.println("文件已删除: " + filePath);
         } catch (Exception e) {
             System.out.println("文件删除失败: " + filePath);
-            e.printStackTrace();
+            log.error("证书生成失败", e);
         }
     }
 
