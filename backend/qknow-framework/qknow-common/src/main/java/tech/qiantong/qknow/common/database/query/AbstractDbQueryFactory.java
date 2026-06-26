@@ -662,8 +662,7 @@ public abstract class AbstractDbQueryFactory implements DbQuery {
                 tableName = org.apache.commons.lang3.StringUtils.replace(tableName, dbQueryProperty.getDbName() + ".", "");
                 newTableName = org.apache.commons.lang3.StringUtils.replace(newTableName, dbQueryProperty.getDbName() + ".", "");
             }
-            if (org.apache.commons.lang3.StringUtils.equals(DbType.DB2.getDb(), dbQueryProperty.getDbType()) ||
-                    org.apache.commons.lang3.StringUtils.equals(DbType.DB2.getDb(), dbQueryProperty.getDbType())) {
+            if (org.apache.commons.lang3.StringUtils.equals(DbType.DB2.getDb(), dbQueryProperty.getDbType())) {
                 tableName = org.apache.commons.lang3.StringUtils.replace(tableName, dbQueryProperty.getSid() + ".", "");
                 newTableName = org.apache.commons.lang3.StringUtils.replace(newTableName, dbQueryProperty.getSid() + ".", "");
             }
