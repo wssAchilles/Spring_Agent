@@ -37,7 +37,7 @@ class FlowExecutorTest {
 
     @BeforeEach
     void setUp() {
-        flowExecutor = new FlowExecutor(dagExecutor);
+        flowExecutor = new FlowExecutor(dagExecutor, null);
     }
 
     private FlowRequest buildRequest(String flowId, FlowNode... nodes) {

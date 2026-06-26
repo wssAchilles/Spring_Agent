@@ -20,15 +20,18 @@ import java.util.List;
  * DAG 工作流执行器
  * <p>
  * 负责将 gRPC FlowRequest 转换为内部数据结构，并委托 DagExecutor 执行
+ * 支持 Durable Execution：执行前保存快照，支持故障恢复
  */
 @Slf4j
 @Component
 public class FlowExecutor {
 
     private final DagExecutor dagExecutor;
+    private final FlowStateStore stateStore;
 
-    public FlowExecutor(DagExecutor dagExecutor) {
+    public FlowExecutor(DagExecutor dagExecutor, FlowStateStore stateStore) {
         this.dagExecutor = dagExecutor;
+        this.stateStore = stateStore;
     }
 
     /**
@@ -38,8 +41,23 @@ public class FlowExecutor {
      * @return 所有节点的执行结果
      */
     public List<NodeRunResultBO> execute(FlowRequest request) {
-        log.info("开始执行工作流, requestId: {}, flowId: {}",
-                request.getRequestId(), request.getFlowId());
+        String requestId = request.getRequestId();
+        String flowId = request.getFlowId();
+        log.info("开始执行工作流, requestId: {}, flowId: {}", requestId, flowId);
+
+        // 1. 尝试加载已有快照（断点续跑）
+        FlowStateStore.FlowSnapshot snapshot = null;
+        if (stateStore != null) {
+            snapshot = stateStore.loadSnapshot(flowId, requestId);
+            if (snapshot != null && "FAILED".equals(snapshot.getStatus())) {
+                log.info("从失败快照恢复: flowId={}, 已完成 {} 个节点", flowId, snapshot.getCompletedNodeIds().size());
+                snapshot.setStatus("RUNNING");
+                stateStore.saveSnapshot(flowId, requestId, snapshot);
+            } else {
+                snapshot = FlowStateStore.FlowSnapshot.create(flowId, requestId);
+                stateStore.saveSnapshot(flowId, requestId, snapshot);
+            }
+        }
 
         // 1. 将 proto FlowNode 转换为 KbFlowNodeDO
         List<KbFlowNodeDO> nodes = convertNodes(request.getNodesList());
@@ -60,8 +78,17 @@ public class FlowExecutor {
         // 5. 委托 DagExecutor 执行
         List<NodeRunResultBO> results = dagExecutor.execute(nodes, edges, context);
 
-        log.info("工作流执行完成, requestId: {}, 共执行 {} 个节点",
-                request.getRequestId(), results.size());
+        // 6. 保存执行快照
+        if (stateStore != null && snapshot != null) {
+            snapshot.setResults(results);
+            snapshot.setCompletedNodeIds(results.stream()
+                    .map(NodeRunResultBO::getNodeUuid).toList());
+            snapshot.setStatus("COMPLETED");
+            snapshot.setTimestamp(System.currentTimeMillis());
+            stateStore.saveSnapshot(flowId, requestId, snapshot);
+        }
+
+        log.info("工作流执行完成, requestId: {}, 共执行 {} 个节点", requestId, results.size());
         return results;
     }
 

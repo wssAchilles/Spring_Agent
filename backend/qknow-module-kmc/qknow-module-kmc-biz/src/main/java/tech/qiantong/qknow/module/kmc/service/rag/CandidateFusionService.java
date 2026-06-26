@@ -11,16 +11,46 @@ import java.util.*;
 public class CandidateFusionService {
 
     private static final int RRF_K = 60;
+    private static final double WEAK_PATH_THRESHOLD = 0.3;
 
+    /**
+     * 融合多路检索结果，自动排除弱检索路径
+     * 参考：arXiv 2026 论文 — 弱检索路径拖低整体精度（短板效应）
+     */
     public List<RetrievalResult> fuse(List<List<RetrievalResult>> resultLists) {
+        return fuse(resultLists, null);
+    }
+
+    public List<RetrievalResult> fuse(List<List<RetrievalResult>> resultLists, List<String> pathNames) {
         if (resultLists == null || resultLists.isEmpty()) {
             return new ArrayList<>();
+        }
+
+        // 弱路径排除：top-1 score < 阈值的路径不参与融合
+        List<List<RetrievalResult>> filtered = new ArrayList<>();
+        for (int i = 0; i < resultLists.size(); i++) {
+            List<RetrievalResult> results = resultLists.get(i);
+            if (results == null || results.isEmpty()) {
+                continue;
+            }
+            double topScore = results.get(0).getScore();
+            if (topScore < WEAK_PATH_THRESHOLD) {
+                String pathName = (pathNames != null && i < pathNames.size()) ? pathNames.get(i) : "path-" + i;
+                log.info("弱检索路径排除: {} (top score={} < {})", pathName, topScore, WEAK_PATH_THRESHOLD);
+                continue;
+            }
+            filtered.add(results);
+        }
+
+        if (filtered.isEmpty()) {
+            log.warn("所有检索路径均被排除，回退使用原始结果");
+            filtered = resultLists.stream().filter(r -> r != null && !r.isEmpty()).toList();
         }
 
         Map<Long, RetrievalResult> bestBySegment = new LinkedHashMap<>();
         Map<Long, Double> rrfScores = new HashMap<>();
 
-        for (List<RetrievalResult> results : resultLists) {
+        for (List<RetrievalResult> results : filtered) {
             if (results == null || results.isEmpty()) {
                 continue;
             }
