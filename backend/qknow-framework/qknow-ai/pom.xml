@@ -73,12 +73,6 @@
 <!--        </dependency>-->
 
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-tool-calling-baidusearch</artifactId>
-            <version>${springAiAlibaba.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>tech.qiantong</groupId>
             <artifactId>qknow-common</artifactId>
         </dependency>

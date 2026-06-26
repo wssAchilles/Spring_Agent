@@ -5,9 +5,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
-import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -195,12 +192,18 @@ public class AiModelServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO> im
      * @return 重排序模型
      */
     @Override
-    public DashScopeRerankModel getRerankModel(Long keyId, String modelName) {
-        AiApiKeyDO aiApiKeyDO = apiKeyMapper.selectById(keyId);
-        return new DashScopeRerankModel(
-                DashScopeApi.builder().apiKey(aiApiKeyDO.getApiKey()).build(),
-                DashScopeRerankOptions.builder().model(modelName).build()
-        );
+    public String getApiKey(String platform) {
+        LambdaQueryWrapper<AiApiKeyDO> queryWrapper = Wrappers.<AiApiKeyDO>lambdaQuery()
+                .eq(AiApiKeyDO::getPlatform, platform)
+                .last("LIMIT 1");
+        AiApiKeyDO keyDO = apiKeyMapper.selectOne(queryWrapper);
+        return keyDO != null ? keyDO.getApiKey() : null;
+    }
+
+    @Override
+    public String getApiKeyById(Long keyId) {
+        AiApiKeyDO keyDO = apiKeyMapper.selectById(keyId);
+        return keyDO != null ? keyDO.getApiKey() : null;
     }
 
     /**
