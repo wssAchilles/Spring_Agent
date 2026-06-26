@@ -881,7 +881,7 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
             semanticList = semanticSubmit.get();
             fullTextList = fullTextSubmit.get();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("知识库操作失败", e);
         }
 
         if (Objects.equals(reqVO.getRerankingMode(), "weighted_score")) {// 权重设置

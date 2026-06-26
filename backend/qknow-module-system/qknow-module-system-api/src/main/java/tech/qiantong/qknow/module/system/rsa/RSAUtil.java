@@ -12,6 +12,7 @@ import java.util.Base64;
 import java.util.stream.Collectors;
 
 public class RSAUtil {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(RSAUtil.class);
 
     private static String loadPrivateKey(String fileName) throws IOException {
         InputStream inputStream = RSAUtil.class.getClassLoader().getResourceAsStream(fileName);
@@ -43,7 +44,7 @@ public class RSAUtil {
             // 返回解密后的字符串
             return new String(decryptedBytes);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("RSA 加解密失败", e);
             return null;
         }
     }
@@ -72,7 +73,7 @@ public class RSAUtil {
             // 返回加密后的字符串（通常使用Base64编码以便可读性）
             return Base64.getEncoder().encodeToString(encryptedBytes);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("RSA 加解密失败", e);
             return null;
         }
     }
@@ -102,7 +103,7 @@ public class RSAUtil {
             // 返回解密后的字符串
             return new String(decryptedBytes);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("RSA 加解密失败", e);
             return null;
         }
     }

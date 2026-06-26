@@ -281,7 +281,7 @@ public class DmDatasourceServiceImpl extends ServiceImpl<DmDatasourceMapper, DmD
             List<DbTable> tables = dbQuery.getTables(dbQueryProperty);
             return tables;
         } catch (Exception exception) {
-            exception.printStackTrace();
+            log.error("数据源操作失败", exception);
             throw new RuntimeException("数据库连接失败");
         } finally {
             dbQuery.close();
@@ -316,7 +316,7 @@ public class DmDatasourceServiceImpl extends ServiceImpl<DmDatasourceMapper, DmD
             List<DbColumn> tableColumns = dbQuery.getTableColumns(dbQueryProperty, tableName);
             return tableColumns;
         } catch (Exception exception) {
-            exception.printStackTrace();
+            log.error("数据源操作失败", exception);
             throw new RuntimeException("数据库连接失败");
         } finally {
             dbQuery.close();

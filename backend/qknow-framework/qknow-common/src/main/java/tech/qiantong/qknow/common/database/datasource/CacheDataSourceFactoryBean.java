@@ -1,6 +1,8 @@
 package tech.qiantong.qknow.common.database.datasource;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.common.database.constants.DbQueryProperty;
 
@@ -12,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class CacheDataSourceFactoryBean extends AbstractDataSourceFactory {
+	private static final Logger log = LoggerFactory.getLogger(CacheDataSourceFactoryBean.class);
 
 	/**
 	 * 数据源缓存
@@ -44,7 +47,7 @@ public class CacheDataSourceFactoryBean extends AbstractDataSourceFactory {
 		try {
 			md = MessageDigest.getInstance("MD5");
 		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
+			log.error("数据源缓存操作失败", e);
 		}
 		md.update(str.getBytes());
 		byte b[] = md.digest();

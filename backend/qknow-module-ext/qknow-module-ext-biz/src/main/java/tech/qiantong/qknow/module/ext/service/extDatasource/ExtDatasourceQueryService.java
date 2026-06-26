@@ -69,10 +69,10 @@ public class ExtDatasourceQueryService {
             log.info("-------查询结果---: {}", resultList);
             return resultList;
         } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
+            log.error("数据源查询失败", e);
             throw new RuntimeException("查询异常");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据源查询失败", e);
             throw new RuntimeException("查询异常");
         } finally {
             // 关闭资源
@@ -81,7 +81,7 @@ public class ExtDatasourceQueryService {
                 if (statement != null) statement.close();
                 if (connection != null) connection.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                log.error("数据源查询失败", e);
             }
         }
     }
@@ -149,10 +149,10 @@ public class ExtDatasourceQueryService {
             log.info("-------查询结果---: {}", resultList);
             return resultList;
         } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
+            log.error("数据源查询失败", e);
             throw new RuntimeException("查询异常");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据源查询失败", e);
             throw new RuntimeException("查询异常");
         }
     }
@@ -190,7 +190,7 @@ public class ExtDatasourceQueryService {
             }
             return AjaxResult.success(genTables);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据源查询失败", e);
             return AjaxResult.error();
         }
     }
@@ -238,12 +238,12 @@ public class ExtDatasourceQueryService {
                     return AjaxResult.success(columnsArray);
                 }
             } catch (SQLException e) {
-                e.printStackTrace();
+                log.error("数据源查询失败", e);
                 // 处理异常
             }
             return AjaxResult.error("获取表详情失败");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("数据源查询失败", e);
             return AjaxResult.error();
         }
     }

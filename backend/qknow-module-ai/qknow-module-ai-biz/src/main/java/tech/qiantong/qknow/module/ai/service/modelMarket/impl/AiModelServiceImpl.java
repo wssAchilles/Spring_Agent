@@ -264,7 +264,7 @@ public class AiModelServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO> im
                     .set(AiApiKeyDO::getStatus, ApiKeyStatus.SYNC.getCode());
             apiKeyMapper.update(updateWrapper);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("AI 模型操作失败", e);
             throw new ServiceException("同步模型数据失败");
         } finally {
             redisService.delete("redisLock");
@@ -319,7 +319,7 @@ public class AiModelServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO> im
         try {
             response = get.execute();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("AI 模型操作失败", e);
             throw new ServiceException("获取模型列表失败");
         }
         if (Objects.isNull(response) || !response.isOk()) {

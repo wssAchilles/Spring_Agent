@@ -25,6 +25,7 @@ import tech.qiantong.qknow.common.constant.Constants;
  */
 public class ServletUtils
 {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ServletUtils.class);
     /**
      * 获取String参数
      */
@@ -148,7 +149,7 @@ public class ServletUtils
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            log.error("响应写入失败", e);
         }
     }
 

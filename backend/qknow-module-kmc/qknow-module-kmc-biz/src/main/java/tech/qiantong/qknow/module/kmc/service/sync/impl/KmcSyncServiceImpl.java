@@ -621,7 +621,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
         try {
             vectorStore.delete(expression);// 删除
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("文档同步失败", e);
         }
     }
 
