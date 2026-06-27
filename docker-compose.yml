@@ -1,23 +1,4 @@
 services:
-  postgres:
-    image: pgvector/pgvector:pg16
-    container_name: agent-postgres
-    environment:
-      POSTGRES_DB: ai_agent
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-      - ./deploy/sql/postgresql:/docker-entrypoint-initdb.d
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: agent-redis
@@ -32,6 +13,23 @@ services:
       timeout: 5s
       retries: 5
 
+  neo4j:
+    image: neo4j:5.26.0
+    container_name: agent-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4jpass123}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-neo4jpass123}", "RETURN 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  pg_data:
   redis_data:
+  neo4j_data:

@@ -21,11 +21,11 @@ start_background() {
 cd "$PROJECT_DIR"
 mkdir -p "$RUNTIME_DIR"
 
-echo "[1/5] 启动 Redis"
-docker compose up -d redis
+echo "[1/6] 启动 Redis + Neo4j"
+docker compose up -d redis neo4j
 
-echo "[2/5] 清理旧实例并释放端口"
-for container in agent-frontend agent-backend qknow-hermes; do
+echo "[2/6] 清理旧实例并释放端口"
+for container in agent-frontend agent-backend qknow-hermes agent-neo4j; do
   if docker rm -f "$container" >/dev/null 2>&1; then
     echo "已移除容器：$container"
   fi
@@ -40,7 +40,7 @@ release_port 80 "前端端口 80"
 release_port 8099 "后端端口 8099"
 release_port 9090 "Hermes 端口 9090"
 
-echo "[3/5] 启动本机主后端"
+echo "[3/6] 启动本机主后端"
 start_background backend \
   "$SCRIPT_DIR/dev/watch-java.sh" \
   backend \
@@ -57,7 +57,7 @@ start_background backend \
   HERMES_GRPC_PORT=9090
 wait_for_tcp "主后端" 8099 240
 
-echo "[4/5] 启动本机 Hermes"
+echo "[4/6] 启动本机 Hermes"
 start_background hermes \
   "$SCRIPT_DIR/dev/watch-java.sh" \
   hermes \
@@ -69,7 +69,7 @@ start_background hermes \
   HERMES_CONTROL_PLANE_URL=http://localhost:8099
 wait_for_tcp "Hermes" 9090 180
 
-echo "[5/5] 启动本机 Vite"
+echo "[5/6] 启动本机 Vite"
 if [[ ! -d "$PROJECT_DIR/frontend/node_modules" ]]; then
   npm --prefix "$PROJECT_DIR/frontend" install --registry=https://registry.npmmirror.com
 fi
