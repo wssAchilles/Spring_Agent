@@ -120,15 +120,64 @@
 
             <div v-if="debugMode && debugInfo" style="margin-top: 20px; border-top: 1px solid #e8e8e8; padding-top: 15px;">
               <h4 style="margin-top: 0; margin-bottom: 15px; color: #303133;">调试面板</h4>
+
+              <!-- 查询增强信息 -->
+              <div v-if="debugInfo.queryEnhance" style="margin-bottom: 12px; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                <div style="font-weight: 500; font-size: 13px; color: #1e40af; margin-bottom: 6px;">
+                  查询增强: {{ debugInfo.queryEnhance.strategy || '无' }}
+                </div>
+                <div v-if="debugInfo.queryEnhance.originalQuery" style="font-size: 12px; color: #64748b;">
+                  原始: {{ debugInfo.queryEnhance.originalQuery }}
+                </div>
+                <div v-if="debugInfo.queryEnhance.variants?.length" style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                  变体: {{ debugInfo.queryEnhance.variants.join(' / ') }}
+                </div>
+              </div>
+
+              <!-- 弱路径排除警告 -->
+              <div v-if="debugInfo.excludedPaths?.length" style="margin-bottom: 12px; padding: 10px; background: #fffbeb; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                <div style="font-weight: 500; font-size: 13px; color: #92400e; margin-bottom: 4px;">
+                  弱路径排除
+                </div>
+                <div v-for="p in debugInfo.excludedPaths" :key="p.path" style="font-size: 12px; color: #92400e;">
+                  {{ p.path }} (top score {{ p.topScore?.toFixed(3) }} < {{ p.threshold }})
+                </div>
+              </div>
+
+              <!-- 检索统计 -->
               <el-descriptions :column="2" border size="small">
                 <el-descriptions-item label="耗时(ms)">{{ debugInfo.elapsedMs }}</el-descriptions-item>
                 <el-descriptions-item label="检索模式">{{ debugInfo.searchMethod }}</el-descriptions-item>
-                <el-descriptions-item label="向量召回">{{ debugInfo.vectorResultCount || 0 }}</el-descriptions-item>
-                <el-descriptions-item label="关键字召回">{{ debugInfo.keywordResultCount || 0 }}</el-descriptions-item>
-                <el-descriptions-item label="元数据召回">{{ debugInfo.metadataResultCount || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="向量召回">
+                  <span :style="{ color: debugInfo.vectorResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.vectorResultCount || 0 }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="关键字召回">
+                  <span :style="{ color: debugInfo.keywordResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.keywordResultCount || 0 }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="元数据召回">
+                  <span :style="{ color: debugInfo.metadataResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.metadataResultCount || 0 }}</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="图谱召回">
+                  <span :style="{ color: debugInfo.graphResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.graphResultCount || 0 }}</span>
+                </el-descriptions-item>
                 <el-descriptions-item label="融合后结果">{{ debugInfo.fusedCount || 0 }}</el-descriptions-item>
                 <el-descriptions-item label="重排序结果">{{ debugInfo.rerankedCount || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="Reranker">{{ debugInfo.rerankerProvider || 'deterministic' }}</el-descriptions-item>
               </el-descriptions>
+
+              <!-- 上下文预算条 -->
+              <div v-if="debugInfo.contextBytes" style="margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 4px;">
+                  <span>上下文预算</span>
+                  <span>{{ (debugInfo.contextBytes / 1024).toFixed(1) }}KB / {{ (debugInfo.maxContextBytes / 1024).toFixed(0) }}KB</span>
+                </div>
+                <el-progress
+                  :percentage="Math.min(100, (debugInfo.contextBytes / debugInfo.maxContextBytes) * 100)"
+                  :stroke-width="10"
+                  :color="debugInfo.contextBytes / debugInfo.maxContextBytes > 0.8 ? '#ef4444' : debugInfo.contextBytes / debugInfo.maxContextBytes > 0.6 ? '#f59e0b' : '#10b981'"
+                />
+              </div>
+
               <div v-if="contextPreview" style="margin-top: 15px;">
                 <h4 style="color: #303133; margin-bottom: 10px;">最终注入上下文预览</h4>
                 <el-input type="textarea" :rows="10" readonly v-model="contextPreview" />
