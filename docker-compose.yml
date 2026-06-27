@@ -23,6 +23,7 @@ services:
       - "7687:7687"
     volumes:
       - neo4j_data:/data
+      - neo4j_logs:/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-neo4jpass123}", "RETURN 1"]
@@ -33,3 +34,4 @@ services:
 volumes:
   redis_data:
   neo4j_data:
+  neo4j_logs:
