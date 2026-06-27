@@ -4,40 +4,48 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO;
-import tech.qiantong.qknow.redis.service.IRedisService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
  * 工作流状态持久化 — Durable Execution
  * 参考：LangGraph Durable Execution（35.8k⭐）
  *
- * 在每个节点执行前保存快照到 Redis，支持故障恢复和断点续跑。
+ * 在每个节点执行前保存快照，支持故障恢复和断点续跑。
+ * 优先使用 Redis 持久化，无 Redis 时降级为内存存储。
  */
 @Slf4j
+@Component
 public class FlowStateStore {
 
     private static final String KEY_PREFIX = "flow:state:";
     private static final long SNAPSHOT_TTL_SECONDS = 86400; // 24 hours
 
-    private final IRedisService redisService;
+    @Autowired(required = false)
+    private tech.qiantong.qknow.redis.service.IRedisService redisService;
 
-    public FlowStateStore(IRedisService redisService) {
-        this.redisService = redisService;
-    }
+    // 内存降级存储
+    private final Map<String, FlowSnapshot> memoryStore = new ConcurrentHashMap<>();
 
     /**
      * 保存执行快照
      */
     public void saveSnapshot(String flowId, String requestId, FlowSnapshot snapshot) {
-        if (redisService == null) return;
+        String key = flowId + ":" + requestId;
         try {
-            String key = KEY_PREFIX + flowId + ":" + requestId;
-            String json = JSON.toJSONString(snapshot);
-            redisService.set(key, json, SNAPSHOT_TTL_SECONDS);
+            if (redisService != null) {
+                String json = JSON.toJSONString(snapshot);
+                redisService.set(KEY_PREFIX + key, json, SNAPSHOT_TTL_SECONDS);
+            } else {
+                memoryStore.put(key, snapshot);
+            }
             log.debug("Flow snapshot saved: {}", key);
         } catch (Exception e) {
             log.warn("Failed to save flow snapshot", e);
@@ -48,12 +56,15 @@ public class FlowStateStore {
      * 加载执行快照
      */
     public FlowSnapshot loadSnapshot(String flowId, String requestId) {
-        if (redisService == null) return null;
+        String key = flowId + ":" + requestId;
         try {
-            String key = KEY_PREFIX + flowId + ":" + requestId;
-            String json = (String) redisService.get(key);
-            if (json == null) return null;
-            return JSON.parseObject(json, FlowSnapshot.class);
+            if (redisService != null) {
+                String json = (String) redisService.get(KEY_PREFIX + key);
+                if (json == null) return null;
+                return JSON.parseObject(json, FlowSnapshot.class);
+            } else {
+                return memoryStore.get(key);
+            }
         } catch (Exception e) {
             log.warn("Failed to load flow snapshot", e);
             return null;
@@ -64,10 +75,13 @@ public class FlowStateStore {
      * 清除快照
      */
     public void clearSnapshot(String flowId, String requestId) {
-        if (redisService == null) return;
+        String key = flowId + ":" + requestId;
         try {
-            String key = KEY_PREFIX + flowId + ":" + requestId;
-            redisService.delete(key);
+            if (redisService != null) {
+                redisService.delete(KEY_PREFIX + key);
+            } else {
+                memoryStore.remove(key);
+            }
         } catch (Exception e) {
             log.warn("Failed to clear flow snapshot", e);
         }
