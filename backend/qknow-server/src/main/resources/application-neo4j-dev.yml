@@ -3,7 +3,7 @@
 neo4j:
   uri: bolt://127.0.0.1:7687
   user: neo4j
-  password: InC3tmU4bijT4vkl
+  password: Neo4jPass123
 # neo4j日志
 logging:
   level:
