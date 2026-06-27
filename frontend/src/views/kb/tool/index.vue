@@ -74,7 +74,14 @@
              <span v-if="getTags(scope.row).length <= 0">-</span>
            </div>
          </template>
-       </el-table-column>
+               </el-table-column>
+        <el-table-column v-if="getColumnVisibility(6)" label="来源" align="center" width="100">
+          <template #default="scope">
+            <el-tag v-if="scope.row.source === 'mcp'" type="primary" size="small">MCP</el-tag>
+            <el-tag v-else-if="scope.row.source === 'custom'" type="success" size="small">自定义</el-tag>
+            <el-tag v-else type="info" size="small">内置</el-tag>
+          </template>
+        </el-table-column>
 <!--       <el-table-column v-if="getColumnVisibility(15)" label="备注" align="left" prop="remark" width="250"-->
 <!--                        :show-overflow-tooltip="{ effect: 'light' }">-->
 <!--         <template #default="scope">-->
@@ -211,7 +218,7 @@
             { key: 2, label: "名称", visible: true },
             { key: 3, label: "描述", visible: true },
             { key: 4, label: "标签", visible: true },
-            // { key: 6, label: "来源", visible: true },
+            { key: 6, label: "来源", visible: true },
             { key: 15, label: "备注", visible: true },
             { key: 9, label: "创建人", visible: true },
             { key: 11, label: "创建时间", visible: true },

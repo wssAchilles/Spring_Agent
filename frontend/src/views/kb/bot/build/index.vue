@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div ref="appContainerRef" class="app-container workflow-editor">
     <div class="toolbar">
       <div class="toolbar-left">
@@ -1287,8 +1287,8 @@ const addableNodeTypes = [
 ];
 
 const addNodeMenuTabs = [
-  // { key: "nodes", label: "节点" },
-  // { key: "tools", label: "工具" },
+  { key: "nodes", label: "节点" },
+  { key: "tools", label: "工具" },
 ];
 
 const currentAddMenuItems = computed(() =>
