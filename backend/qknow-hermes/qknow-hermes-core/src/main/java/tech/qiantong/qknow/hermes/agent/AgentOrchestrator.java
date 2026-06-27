@@ -54,27 +54,40 @@ public class AgentOrchestrator {
     private final RetrievalEvaluator retrievalEvaluator;
     private final PlanSolveConfig planSolveConfig;
     private final AiJudgeService aiJudgeService;
+    private final tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService;
 
     @Autowired
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator, PlanSolveConfig planSolveConfig,
-                             AiJudgeService aiJudgeService) {
+                             AiJudgeService aiJudgeService,
+                             @org.springframework.beans.factory.annotation.Autowired(required = false)
+                             tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService) {
         this.chatModelFactory = chatModelFactory;
         this.resolver = resolver;
         this.retrievalEvaluator = retrievalEvaluator;
         this.planSolveConfig = planSolveConfig;
         this.aiJudgeService = aiJudgeService;
+        this.langFuseService = langFuseService;
     }
 
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator) {
-        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null);
+        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null, null);
     }
 
     /**
      * 执行 Agent 对话（核心方法）
      */
     public Flux<ChatEvent> chat(ChatRequest request) {
+        // LangFuse: 创建对话追踪
+        String traceId = null;
+        long startTime = System.currentTimeMillis();
+        if (langFuseService != null && langFuseService.isEnabled()) {
+            traceId = langFuseService.trace(
+                request.getRequestId(), String.valueOf(request.getBotId()), request.getQuestion());
+        }
+
+        final String finalTraceId = traceId;
         return Flux.create(emitter -> {
             try {
                 executeAgent(request, emitter);

@@ -7,7 +7,8 @@ public enum FlowNodeTypeEnums {
     CONDITION(4, "condition"),
     HTTP(5, "http"),
     KNOWLEDGE(6, "knowledge"),
-    AGGREGATOR(7, "aggregator");
+    AGGREGATOR(7, "aggregator"),
+    APPROVAL(8, "approval");
 
     private final Integer code;
     private final String name;
