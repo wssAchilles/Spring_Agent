@@ -3,8 +3,10 @@ package tech.qiantong.qknow.module.kg.controller.admin.graph;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import tech.qiantong.qknow.common.core.domain.CommonResult;
+import tech.qiantong.qknow.module.kg.service.GraphCommunityService;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -17,6 +19,9 @@ public class KgGraphController {
 
     @Resource
     private DataSource dataSource;
+
+    @Autowired(required = false)
+    private GraphCommunityService communityService;
 
     @Operation(summary = "获取图谱数据")
     @GetMapping("/data")
@@ -104,5 +109,46 @@ public class KgGraphController {
             return CommonResult.error(500, "添加边失败: " + e.getMessage());
         }
         return CommonResult.error(500, "添加边失败");
+    }
+
+    @Operation(summary = "执行社区检测")
+    @PostMapping("/communities/detect")
+    public CommonResult<?> detectCommunities(@RequestParam(defaultValue = "1001") Long workspaceId) {
+        if (communityService == null) {
+            return CommonResult.error(501, "社区检测需要 Neo4j 配置，请先配置 spring.neo4j.uri");
+        }
+        try {
+            var communities = communityService.detectCommunities(String.valueOf(workspaceId));
+            communityService.saveCommunities(String.valueOf(workspaceId), communities);
+            return CommonResult.success(communities);
+        } catch (Exception e) {
+            return CommonResult.error(500, "社区检测失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取已检测的社区列表")
+    @GetMapping("/communities")
+    public CommonResult<List<Map<String, Object>>> getCommunities(@RequestParam(defaultValue = "1001") Long workspaceId) {
+        List<Map<String, Object>> communities = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection()) {
+            String sql = "SELECT community_id, size, entities, labels FROM kg_community WHERE workspace_id = ? ORDER BY size DESC";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setLong(1, workspaceId);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        Map<String, Object> community = new HashMap<>();
+                        community.put("communityId", rs.getLong("community_id"));
+                        community.put("size", rs.getInt("size"));
+                        community.put("entities", rs.getString("entities"));
+                        community.put("labels", rs.getString("labels"));
+                        communities.add(community);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            // kg_community 表可能不存在（未执行社区检测）
+            return CommonResult.success(List.of());
+        }
+        return CommonResult.success(communities);
     }
 }
