@@ -4,7 +4,13 @@
       <template #header>
         <div class="card-header">
           <span>知识图谱</span>
-          <el-button type="primary" @click="showAddNodeDialog = true">添加节点</el-button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <el-switch v-model="colorByCommunity" active-text="社区着色" inactive-text="类型着色" size="small" />
+            <el-button type="primary" plain size="small" @click="runCommunityDetection" :loading="detecting">
+              社区检测
+            </el-button>
+            <el-button type="primary" @click="showAddNodeDialog = true">添加节点</el-button>
+          </div>
         </div>
       </template>
       
@@ -72,9 +78,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Loading } from '@element-plus/icons-vue';
+import { detectCommunities, getCommunities } from '@/api/kg/graph';
 import request from '@/utils/request';
 
 // vis-network will be loaded dynamically
@@ -85,6 +92,23 @@ const loading = ref(true);
 const graphContainer = ref(null);
 const showAddNodeDialog = ref(false);
 const showAddEdgeDialog = ref(false);
+const colorByCommunity = ref(false);
+const detecting = ref(false);
+const communities = ref([]);
+
+// 社区颜色表（10 种高对比色）
+const COMMUNITY_COLORS = [
+  { background: '#3b82f6', border: '#2563eb' },  // 蓝
+  { background: '#10b981', border: '#059669' },  // 绿
+  { background: '#f59e0b', border: '#d97706' },  // 黄
+  { background: '#ef4444', border: '#dc2626' },  // 红
+  { background: '#8b5cf6', border: '#7c3aed' },  // 紫
+  { background: '#ec4899', border: '#db2777' },  // 粉
+  { background: '#06b6d4', border: '#0891b2' },  // 青
+  { background: '#f97316', border: '#ea580c' },  // 橙
+  { background: '#84cc16', border: '#65a30d' },  // 莱姆
+  { background: '#6366f1', border: '#4f46e5' },  // 靛蓝
+];
 
 const graphData = ref({
   nodes: [],
@@ -150,7 +174,7 @@ const renderGraph = async () => {
         id: node.id,
         label: node.label,
         title: `${node.label}\n类型: ${node.type}${node.properties ? '\n' + JSON.parse(node.properties).description : ''}`,
-        color: getNodeColor(node.type),
+        color: colorByCommunity.value ? getCommunityColor(node.id) : getNodeColor(node.type),
         font: { size: 14, color: '#333' },
         size: 25
       }))
@@ -218,6 +242,54 @@ const getNodeColor = (type) => {
   return colors[type] || colors.concept;
 };
 
+// Get node color based on community
+const getCommunityColor = (nodeId) => {
+  const community = communities.value.find(c =>
+    c.entities && c.entities.includes(String(nodeId))
+  );
+  if (community) {
+    const idx = community.communityId % COMMUNITY_COLORS.length;
+    return COMMUNITY_COLORS[idx];
+  }
+  return { background: '#cbd5e1', border: '#94a3b8' }; // 灰色：未分配社区
+};
+
+// 执行社区检测
+const runCommunityDetection = async () => {
+  detecting.value = true;
+  try {
+    const res = await detectCommunities(1001);
+    if (res.code === 200) {
+      communities.value = res.data || [];
+      ElMessage.success(`检测到 ${communities.value.length} 个社区`);
+      await fetchGraphData(); // 重新渲染
+    } else {
+      ElMessage.warning(res.msg || '社区检测需要配置 Neo4j');
+    }
+  } catch (e) {
+    ElMessage.error('社区检测失败: ' + (e.message || '请检查 Neo4j 配置'));
+  } finally {
+    detecting.value = false;
+  }
+};
+
+// 加载已有社区数据
+const loadCommunities = async () => {
+  try {
+    const res = await getCommunities(1001);
+    if (res.code === 200 && res.data?.length > 0) {
+      communities.value = res.data;
+    }
+  } catch (e) {
+    // 社区数据不存在，忽略
+  }
+};
+
+// 监听着色模式切换
+watch(colorByCommunity, () => {
+  if (graphData.value.nodes.length > 0) renderGraph();
+});
+
 // Add node
 const addNode = async () => {
   try {
@@ -262,6 +334,7 @@ const addEdge = async () => {
 };
 
 onMounted(() => {
+  loadCommunities();
   fetchGraphData();
 });
 </script>
