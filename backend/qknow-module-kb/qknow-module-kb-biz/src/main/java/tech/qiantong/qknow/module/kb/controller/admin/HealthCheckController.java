@@ -57,8 +57,29 @@ public class HealthCheckController {
 
     private Map<String, Object> checkMcp() {
         Map<String, Object> mcp = new HashMap<>();
-        mcp.put("servers", mcpToolAdapter.getServerConfigs().size());
+        var configs = mcpToolAdapter.getServerConfigs();
+        mcp.put("servers", configs.size());
         mcp.put("tools", mcpToolAdapter.getMcpTools().size());
+
+        // 每个 server 的详细状态
+        java.util.List<Map<String, Object>> serverDetails = new java.util.ArrayList<>();
+        for (var config : configs.values()) {
+            Map<String, Object> detail = new HashMap<>();
+            detail.put("name", config.getName());
+            detail.put("url", config.getUrl());
+            detail.put("command", config.getCommand());
+            detail.put("enabled", config.isEnabled());
+
+            // 检查连接状态
+            var client = mcpToolAdapter.getClient(config.getName());
+            if (client != null) {
+                detail.put("connected", client.isConnected());
+            } else {
+                detail.put("connected", false);
+            }
+            serverDetails.add(detail);
+        }
+        mcp.put("details", serverDetails);
         return mcp;
     }
 

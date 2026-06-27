@@ -96,6 +96,11 @@ public class StdioMcpClient implements McpClient {
         }
     }
 
+    @Override
+    public boolean isConnected() {
+        return process != null && process.isAlive() && writer != null && reader != null;
+    }
+
     private void ensureConnected() {
         if (reader != null && writer != null) {
             return;
