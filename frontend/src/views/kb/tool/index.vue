@@ -1,5 +1,8 @@
 <template>
   <div class="app-container" ref="app-container">
+    <!-- MCP Server 状态面板 -->
+    <McpServerPanel style="margin-bottom: 16px;" />
+
     <div class="pagecont-top" v-show="showSearch">
      <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" @submit.prevent>
       <el-form-item label="名称" prop="name">
@@ -207,6 +210,7 @@
 </template>
 
 <script setup name="KbTool">
+  import McpServerPanel from "./components/McpServerPanel.vue";
   import { listTool, getTool, delTool, addTool, updateTool } from "@/api/kb/tool/tool";
 
   const { proxy } = getCurrentInstance();

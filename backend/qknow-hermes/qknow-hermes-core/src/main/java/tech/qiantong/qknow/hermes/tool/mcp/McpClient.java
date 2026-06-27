@@ -17,4 +17,9 @@ public interface McpClient {
     JSONObject callTool(String toolName, Map<String, Object> arguments) throws McpException;
 
     void disconnect();
+
+    /**
+     * 检查客户端是否处于连接状态
+     */
+    default boolean isConnected() { return false; }
 }

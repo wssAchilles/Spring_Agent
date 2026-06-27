@@ -81,6 +81,11 @@ public class HttpMcpClient implements McpClient {
         }
     }
 
+    @Override
+    public boolean isConnected() {
+        return httpClient != null;
+    }
+
     private JSONObject sendRequest(String method, JSONObject params) throws McpException {
         try {
             JSONObject request = new JSONObject();
