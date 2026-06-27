@@ -36,6 +36,9 @@ public class HealthCheckController {
         // MCP 服务检查
         checks.put("mcp", checkMcp());
 
+        // LangFuse 状态
+        checks.put("langfuse", checkLangFuse());
+
         // 系统信息
         checks.put("system", getSystemInfo());
 
@@ -81,6 +84,15 @@ public class HealthCheckController {
         }
         mcp.put("details", serverDetails);
         return mcp;
+    }
+
+    private Map<String, Object> checkLangFuse() {
+        Map<String, Object> langfuse = new HashMap<>();
+        String enabled = System.getenv("LANGFUSE_ENABLED");
+        String baseUrl = System.getenv("LANGFUSE_BASE_URL");
+        langfuse.put("enabled", "true".equalsIgnoreCase(enabled));
+        langfuse.put("baseUrl", baseUrl != null ? baseUrl : "https://cloud.langfuse.com");
+        return langfuse;
     }
 
     private Map<String, Object> getSystemInfo() {
