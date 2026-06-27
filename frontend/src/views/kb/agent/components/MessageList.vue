@@ -53,16 +53,62 @@
           <div class="right-text-container">
             <div class="right-text">{{ item.content }}</div>
           </div>
-<!--          <div class="right-btns">-->
-<!--            <el-button-->
-<!--                style="margin-left: 12px"-->
-<!--                class="btn-cus"-->
-<!--                link-->
-<!--                @click="copyContent(item.content)"-->
-<!--            >-->
-<!--              <img class="btn-image" src="@/assets/app/copy.png" />-->
-<!--            </el-button>-->
-<!--          </div>-->
+        </div>
+      </div>
+      <!-- 工具调用消息 -->
+      <div class="left-message message-item" v-if="item.type === 'tool_call'">
+        <div class="avatar">
+          <el-avatar :size="36" style="background-color: #e8f5e9">
+            <el-icon><Connection /></el-icon>
+          </el-avatar>
+        </div>
+        <div class="message">
+          <div class="tool-call-container">
+            <div class="tool-call-header" @click="item._expanded = !item._expanded">
+              <el-icon><Tools /></el-icon>
+              <span class="tool-name">{{ item.toolName || '工具调用' }}</span>
+              <el-tag size="small" :type="item.status === 'success' ? 'success' : item.status === 'error' ? 'danger' : 'warning'">
+                {{ item.status || '执行中' }}
+              </el-tag>
+              <el-icon class="expand-icon" :class="{ expanded: item._expanded }"><ArrowDown /></el-icon>
+            </div>
+            <div v-if="item._expanded" class="tool-call-detail">
+              <div v-if="item.toolInput" class="tool-section">
+                <div class="tool-section-label">输入</div>
+                <pre class="tool-code">{{ formatJson(item.toolInput) }}</pre>
+              </div>
+              <div v-if="item.toolOutput" class="tool-section">
+                <div class="tool-section-label">输出</div>
+                <pre class="tool-code">{{ formatJson(item.toolOutput) }}</pre>
+              </div>
+              <div v-if="item.durationMs" class="tool-meta">
+                耗时: {{ item.durationMs }}ms
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 记忆召回消息 -->
+      <div class="left-message message-item" v-if="item.type === 'memory_recall'">
+        <div class="avatar">
+          <el-avatar :size="36" style="background-color: #fff3e0">
+            <el-icon><Memo /></el-icon>
+          </el-avatar>
+        </div>
+        <div class="message">
+          <div class="memory-recall-container">
+            <div class="memory-header">
+              <el-icon><Memo /></el-icon>
+              <span>召回 {{ item.memories?.length || 0 }} 条记忆</span>
+            </div>
+            <div v-for="(mem, mi) in item.memories" :key="mi" class="memory-item">
+              <span class="memory-text">{{ mem.content }}</span>
+              <span class="memory-score">
+                sim={{ mem.similarity?.toFixed(2) }}
+                decay={{ mem.decay?.toFixed(2) }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -79,6 +125,7 @@ import useUserStore from "@/store/system/user";
 import userAvatarDefaultImg from "@/assets/system/images/index/icon (1).png";
 import roleAvatarDefaultImg from "@/assets/app/gpt-new.svg";
 import { useClipboard } from "@vueuse/core";
+import { Connection, Tools, ArrowDown, Memo } from "@element-plus/icons-vue";
 
 const { proxy } = getCurrentInstance();
 const message = proxy.$modal; // 消息弹窗
@@ -114,7 +161,16 @@ const emits = defineEmits([
   "onRefresh",
   "onEdit",
   "onPrompt",
-]); // 定义 emits
+]);
+
+// 格式化 JSON 用于工具调用展示
+function formatJson(obj) {
+  if (!obj) return '';
+  if (typeof obj === 'string') {
+    try { return JSON.stringify(JSON.parse(obj), null, 2); } catch { return obj; }
+  }
+  return JSON.stringify(obj, null, 2);
+} // 定义 emits
 
 // ============ 处理对话滚动 ==============
 
@@ -351,5 +407,107 @@ onMounted(() => {
   z-index: 1000;
   bottom: 0;
   right: 50%;
+}
+
+// 工具调用样式
+.tool-call-container {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-width: 500px;
+
+  .tool-call-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #495057;
+
+    .tool-name {
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .expand-icon {
+      transition: transform 0.2s;
+      &.expanded { transform: rotate(180deg); }
+    }
+  }
+
+  .tool-call-detail {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e9ecef;
+
+    .tool-section {
+      margin-bottom: 6px;
+      .tool-section-label {
+        font-size: 11px;
+        color: #868e96;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+      }
+      .tool-code {
+        background: #212529;
+        color: #adb5bd;
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        overflow-x: auto;
+        max-height: 200px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    }
+    .tool-meta {
+      font-size: 11px;
+      color: #868e96;
+    }
+  }
+}
+
+// 记忆召回样式
+.memory-recall-container {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-width: 400px;
+
+  .memory-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #f57f17;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .memory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #fff3e0;
+    font-size: 12px;
+
+    .memory-text {
+      flex: 1;
+      color: #424242;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .memory-score {
+      font-size: 11px;
+      color: #868e96;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+  }
 }
 </style>
