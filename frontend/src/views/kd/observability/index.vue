@@ -106,9 +106,11 @@ LANGFUSE_SECRET_KEY=sk-lf-...</pre>
 <script setup>
 import { ref, onMounted } from 'vue';
 import { Link, Refresh, CircleCheckFilled, CircleCloseFilled, WarningFilled } from '@element-plus/icons-vue';
+import request from '@/utils/request';
 
 const langfuseEnabled = ref(false);
 const langfuseUrl = ref('https://cloud.langfuse.com');
+const loading = ref(false);
 
 const metrics = ref([
   { label: '总对话数', value: '—', unit: '', trend: 0 },
@@ -123,15 +125,36 @@ function openDashboard() {
   window.open(langfuseUrl.value, '_blank');
 }
 
-function refreshTraces() {
-  // TODO: 接入后端 trace API
+async function checkLangFuseStatus() {
+  try {
+    const res = await request({ url: '/kb/health', method: 'get' });
+    const langfuse = res.data?.langfuse;
+    if (langfuse) {
+      langfuseEnabled.value = langfuse.enabled === true;
+      if (langfuse.baseUrl) langfuseUrl.value = langfuse.baseUrl;
+    }
+  } catch (e) {
+    // 健康检查失败，保持默认状态
+  }
+}
+
+async function refreshTraces() {
+  loading.value = true;
+  try {
+    const res = await request({ url: '/kb/health', method: 'get' });
+    const mcp = res.data?.mcp;
+    if (mcp) {
+      metrics.value[0].value = String(mcp.tools || 0);
+    }
+  } catch (e) {
+    // 忽略
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(() => {
-  langfuseEnabled.value = import.meta.env.VITE_LANGFUSE_ENABLED === 'true';
-  if (import.meta.env.VITE_LANGFUSE_BASE_URL) {
-    langfuseUrl.value = import.meta.env.VITE_LANGFUSE_BASE_URL;
-  }
+  checkLangFuseStatus();
 });
 </script>
 
