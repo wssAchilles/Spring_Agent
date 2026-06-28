@@ -23,9 +23,17 @@ mkdir -p "$RUNTIME_DIR"
 
 echo "[1/6] 启动 Redis + Neo4j"
 docker compose up -d redis neo4j
+echo "等待 Neo4j 就绪..."
+for i in $(seq 1 30); do
+  if docker exec agent-neo4j cypher-shell -u neo4j -p neo4jpass123 "RETURN 1" >/dev/null 2>&1; then
+    echo "Neo4j 就绪"
+    break
+  fi
+  sleep 2
+done
 
 echo "[2/6] 清理旧实例并释放端口"
-for container in agent-frontend agent-backend qknow-hermes agent-neo4j; do
+for container in agent-frontend agent-backend qknow-hermes; do
   if docker rm -f "$container" >/dev/null 2>&1; then
     echo "已移除容器：$container"
   fi
