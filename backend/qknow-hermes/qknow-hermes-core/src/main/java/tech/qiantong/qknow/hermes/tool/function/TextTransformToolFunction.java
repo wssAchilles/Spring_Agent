@@ -55,6 +55,13 @@ public class TextTransformToolFunction
             String text = request.getText();
             String operation = request.getOperation();
 
+            if (text == null) {
+                return Response.error("text 参数不能为空");
+            }
+            if (operation == null) {
+                return Response.error("operation 参数不能为空");
+            }
+
             return switch (operation) {
                 case "uppercase" -> Response.success(text.toUpperCase());
                 case "lowercase" -> Response.success(text.toLowerCase());

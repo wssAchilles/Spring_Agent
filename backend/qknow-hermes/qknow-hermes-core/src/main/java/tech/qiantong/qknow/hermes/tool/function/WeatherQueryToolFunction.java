@@ -33,14 +33,11 @@ public class WeatherQueryToolFunction
     private static final String WEATHER_API_URL = "http://wttr.in/{}?format=j1";
 
     @Data
-    @JsonClassDescription("查询指定城市的天气信息")
+    @JsonClassDescription("查询指定城市的当前天气信息。返回温度（摄氏度）、天气状况、湿度百分比、风速（km/h）。只用于天气查询，不用于其他用途。")
     public static class Request {
 
-        /**
-         * 城市名称
-         */
         @JsonProperty(required = true, value = "city")
-        @JsonPropertyDescription("城市名称，例如：北京、上海、广州")
+        @JsonPropertyDescription("城市名称，例如：北京、上海、广州、New York")
         private String city;
 
     }
@@ -123,8 +120,10 @@ public class WeatherQueryToolFunction
             // 构建 API URL
             String url = StrUtil.format(WEATHER_API_URL, city);
 
-            // 发送 HTTP GET 请求
-            String response = HttpUtil.get(url);
+            // 发送 HTTP GET 请求（10秒超时）
+            cn.hutool.http.HttpRequest request = cn.hutool.http.HttpRequest.get(url)
+                    .timeout(10000);
+            String response = request.execute().body();
 
             // 解析 JSON 响应
             JSONObject json = JSONUtil.parseObj(response);

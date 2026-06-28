@@ -19,11 +19,11 @@ public class HttpRequestToolFunction
         implements Function<HttpRequestToolFunction.Request, HttpRequestToolFunction.Response> {
 
     @Data
-    @JsonClassDescription("发送 HTTP 请求获取网页或 API 数据")
+    @JsonClassDescription("访问已知 URL 或 API。用于获取网页内容、调用 REST API、访问特定链接。不负责搜索，必须提供完整 URL。支持 GET 和 POST，10秒超时，响应截断2000字符。")
     public static class Request {
 
         @JsonProperty(required = true, value = "url")
-        @JsonPropertyDescription("请求的 URL 地址")
+        @JsonPropertyDescription("完整的 URL 地址，必须以 http:// 或 https:// 开头")
         private String url;
 
         @JsonProperty(value = "method")
