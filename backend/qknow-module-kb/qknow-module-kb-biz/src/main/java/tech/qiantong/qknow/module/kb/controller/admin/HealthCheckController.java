@@ -172,23 +172,62 @@ public class HealthCheckController {
                 com.alibaba.fastjson2.JSONObject json = com.alibaba.fastjson2.JSON.parseObject(tracesResp.body());
                 result.put("enabled", true);
                 result.put("baseUrl", baseUrl);
-                result.put("traces", json.getJSONArray("data"));
-                result.put("meta", json.getJSONObject("meta"));
 
-                // 计算指标
+                // 获取 traces 并聚合 observations
                 com.alibaba.fastjson2.JSONArray traces = json.getJSONArray("data");
+                com.alibaba.fastjson2.JSONArray enrichedTraces = new com.alibaba.fastjson2.JSONArray();
                 int totalTraces = traces != null ? traces.size() : 0;
                 long totalLatency = 0;
                 int totalTokens = 0;
+
                 if (traces != null) {
                     for (int i = 0; i < traces.size(); i++) {
                         com.alibaba.fastjson2.JSONObject trace = traces.getJSONObject(i);
-                        com.alibaba.fastjson2.JSONObject latency = trace.getJSONObject("latency");
-                        if (latency != null) {
-                            totalLatency += latency.getLongValue("latency", 0);
+                        String traceId = trace.getString("id");
+
+                        // 获取该 trace 的 observations（spans/generations）
+                        try {
+                            java.net.http.HttpRequest obsReq = java.net.http.HttpRequest.newBuilder()
+                                .uri(java.net.URI.create(baseUrl + "/api/public/observations?traceId=" + traceId))
+                                .header("Authorization", "Basic " + auth)
+                                .header("Accept", "application/json")
+                                .GET()
+                                .build();
+                            java.net.http.HttpResponse<String> obsResp = client.send(obsReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+                            if (obsResp.statusCode() == 200) {
+                                com.alibaba.fastjson2.JSONObject obsJson = com.alibaba.fastjson2.JSON.parseObject(obsResp.body());
+                                com.alibaba.fastjson2.JSONArray observations = obsJson.getJSONArray("data");
+                                trace.put("observations", observations != null ? observations : new com.alibaba.fastjson2.JSONArray());
+
+                                // 从 observations 中提取 token 和 latency
+                                if (observations != null) {
+                                    for (int j = 0; j < observations.size(); j++) {
+                                        com.alibaba.fastjson2.JSONObject obs = observations.getJSONObject(j);
+                                        if (obs.containsKey("usage")) {
+                                            com.alibaba.fastjson2.JSONObject usage = obs.getJSONObject("usage");
+                                            if (usage != null) {
+                                                totalTokens += usage.getIntValue("totalTokens", 0);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            // 忽略 observation 获取失败
+                            trace.put("observations", new com.alibaba.fastjson2.JSONArray());
                         }
+
+                        // 提取 latency
+                        long traceLatency = trace.getLongValue("latency", 0);
+                        totalLatency += traceLatency;
+
+                        enrichedTraces.add(trace);
                     }
                 }
+
+                result.put("traces", enrichedTraces);
+                result.put("meta", json.getJSONObject("meta"));
+
                 Map<String, Object> metrics = new HashMap<>();
                 metrics.put("totalConversations", totalTraces);
                 metrics.put("avgLatency", totalTraces > 0 ? totalLatency / totalTraces : 0);

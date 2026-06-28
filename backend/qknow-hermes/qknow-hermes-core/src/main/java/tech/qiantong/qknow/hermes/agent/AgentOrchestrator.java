@@ -89,10 +89,12 @@ public class AgentOrchestrator {
 
         final String finalTraceId = traceId;
         final long finalStartTime = startTime;
+        final String modelName = request.getModelConfig().getModelName();
         StringBuilder fullAnswer = new StringBuilder();
+        long[] tokenCounts = {0L, 0L}; // [promptTokens, completionTokens]
         return Flux.<ChatEvent>create(emitter -> {
             try {
-                executeAgent(request, emitter, finalTraceId, fullAnswer);
+                executeAgent(request, emitter, finalTraceId, fullAnswer, tokenCounts);
             } catch (Exception e) {
                 log.error("Hermes Agent 执行失败", e);
                 emitter.next(ChatEvent.newBuilder()
@@ -108,18 +110,26 @@ public class AgentOrchestrator {
             // LangFuse: 记录 LLM 生成
             if (finalTraceId != null && langFuseService != null && langFuseService.isEnabled()) {
                 long latencyMs = System.currentTimeMillis() - finalStartTime;
+                String answer = fullAnswer.toString();
+                // 估算 token 数（中文约 1.5 字/token，英文约 4 字符/token）
+                long completionTokens = tokenCounts[0] > 0 ? tokenCounts[0] :
+                    (long) (answer.length() / 2.0);
                 langFuseService.recordGeneration(
                     finalTraceId,
-                    request.getModelConfig().getModelName(),
+                    modelName,
                     request.getQuestion(),
-                    fullAnswer.toString(),
-                    0L, 0L, latencyMs);
+                    answer,
+                    tokenCounts[1], // promptTokens
+                    completionTokens,
+                    latencyMs);
+                log.info("LangFuse generation recorded: traceId={}, model={}, latency={}ms, tokens={}/{}",
+                    finalTraceId, modelName, latencyMs, tokenCounts[1], completionTokens);
             }
         });
     }
 
     private void executeAgent(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter,
-                              String traceId, StringBuilder fullAnswer) throws GraphRunnerException {
+                              String traceId, StringBuilder fullAnswer, long[] tokenCounts) throws GraphRunnerException {
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
         ChatModel chatModel;
@@ -213,7 +223,10 @@ public class AgentOrchestrator {
 
                             if (type == OutputType.AGENT_MODEL_STREAMING) {
                                 String text = streamingOutput.message().getText();
-                                if (text != null) fullAnswer.append(text);
+                                if (text != null) {
+                                    fullAnswer.append(text);
+                                    tokenCounts[0]++; // 估算 completion tokens
+                                }
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
                                         .setChunk(StreamingChunk.newBuilder()
