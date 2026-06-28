@@ -158,7 +158,7 @@
     </div>
 
     <!-- 查看具体步骤 -->
-    <el-dialog v-model="open" width="800px" :append-to="$refs['app-container']" draggable>
+    <el-dialog v-model="open" width="800px" append-to="body" draggable>
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           抽取步骤
@@ -203,7 +203,7 @@
       />
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="mini" @click="cancel">关 闭</el-button>
+          <el-button size="small" @click="cancel">关 闭</el-button>
         </div>
       </template>
     </el-dialog>
@@ -224,7 +224,7 @@
       </div>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="mini" @click="centerDialogVisible=false">关 闭</el-button>
+          <el-button size="small" @click="centerDialogVisible=false">关 闭</el-button>
         </div>
       </template>
     </el-dialog>

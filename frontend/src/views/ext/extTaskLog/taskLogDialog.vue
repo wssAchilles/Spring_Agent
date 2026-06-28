@@ -73,12 +73,12 @@
     </div>
     <template #footer>
       <div class="dialog-footer">
-        <el-button type="primary" size="mini" @click="logIsShow=false">关 闭</el-button>
+        <el-button type="primary" size="small" @click="logIsShow=false">关 闭</el-button>
       </div>
     </template>
 
     <!-- 查看具体步骤 -->
-    <el-dialog v-model="open" width="800px" :append-to="$refs['app-container']" draggable>
+    <el-dialog v-model="open" width="800px" append-to="body" draggable>
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           操作步骤
@@ -132,7 +132,7 @@
       />
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" size="mini" @click="cancel">关 闭</el-button>
+          <el-button type="primary" size="small" @click="cancel">关 闭</el-button>
         </div>
       </template>
     </el-dialog>
@@ -153,7 +153,7 @@
       </div>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" size="mini" @click="centerDialogVisible=false">关 闭</el-button>
+          <el-button type="primary" size="small" @click="centerDialogVisible=false">关 闭</el-button>
         </div>
       </template>
     </el-dialog>

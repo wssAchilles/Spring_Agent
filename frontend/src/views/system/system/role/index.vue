@@ -171,7 +171,7 @@
     </div>
 
       <!-- 添加或修改角色配置对话框 -->
-      <el-dialog :title="title" v-model="open" width="800px" :append-to="$refs['app-container']"  draggable destroy-on-close>
+      <el-dialog :title="title" v-model="open" width="800px" append-to="body"  draggable destroy-on-close>
          <el-form ref="roleRef" :model="form" :rules="rules" label-width="100px">
           <el-row :gutter="20">
             <el-col :span="12">

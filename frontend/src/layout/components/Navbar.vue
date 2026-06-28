@@ -256,7 +256,7 @@
       v-model="open"
       width="800px"
       height="600px"
-      :append-to="$refs['navbar']"
+      append-to="body"
       draggable
     >
       <template #header="{ close, titleId, titleClass }">
@@ -376,7 +376,7 @@
                 <el-table-column label="操作" min-width="60">
                   <template v-slot="scope">
                     <el-button
-                      size="mini"
+                      size="small"
                       v-if="
                         tableData.length > 1 &&
                         scope.row.status != 1 &&
@@ -398,7 +398,7 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button
-            size="mini"
+            size="small"
             class="rounded-button"
             type="warning"
             @click="offFromWork"
@@ -407,11 +407,11 @@
           <el-button
             class="rounded-button"
             type="primary"
-            size="mini"
+            size="small"
             @click="submitForm"
             >提交</el-button
           >
-          <el-button class="rounded-button" size="mini" @click="cancel"
+          <el-button class="rounded-button" size="small" @click="cancel"
             >取 消</el-button
           >
         </div>

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="实体-单选" v-model="visible" width="1200px" :append-to="$refs['app-container']" draggable destroy-on-close @close="cancel">
+  <el-dialog title="实体-单选" v-model="visible" width="1200px" append-to="body" draggable destroy-on-close @close="cancel">
     <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="实体名称" prop="name">
         <el-input style="width: 240px" v-model="queryParams.name" placeholder="请输入参数名称" clearable @keyup.enter="handleQuery" />
@@ -32,8 +32,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="mini" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="mini" @click="confirm"> 确 定 </el-button>
+        <el-button size="small" @click="cancel">取 消</el-button>
+        <el-button type="primary" size="small" @click="confirm"> 确 定 </el-button>
       </div>
     </template>
   </el-dialog>

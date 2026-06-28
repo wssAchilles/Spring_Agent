@@ -5,7 +5,7 @@
     v-model="visible"
     width="1300px"
     top="5vh"
-    :append-to="$refs['app-container']"
+    append-to="body"
     draggable
     destroy-on-close
     @close="handleClose"

@@ -97,7 +97,7 @@
         title="忘记密码"
         class="fp-form-dialog"
         width="650px"
-        :append-to="$refs['app-container']"
+        append-to="body"
         draggable
         destroy-on-close
     >

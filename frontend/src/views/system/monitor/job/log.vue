@@ -143,7 +143,7 @@
       </div>
 
       <!-- 调度日志详细 -->
-      <el-dialog title="调度日志详细" v-model="open" width="800px" :append-to="$refs['app-container']" draggable destroy-on-close>
+      <el-dialog title="调度日志详细" v-model="open" width="800px" append-to="body" draggable destroy-on-close>
          <el-form :model="form" label-width="80px">
             <el-row :gutter="20">
                <el-col :span="12">

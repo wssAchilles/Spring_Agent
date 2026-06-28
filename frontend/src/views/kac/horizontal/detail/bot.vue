@@ -75,7 +75,7 @@
     :title="botDialogTitle"
     v-model="botDialogOpen"
     width="1000px"
-    :append-to="$refs['app-container']"
+    append-to="body"
     draggable
   >
     <template #header="{ close, titleId, titleClass }">
@@ -241,10 +241,10 @@
           </div>
         </div>
         <div class="button-wrapper">
-          <el-button size="mini" @click="handleCancel" :disabled="checking">取 消</el-button>
+          <el-button size="small" @click="handleCancel" :disabled="checking">取 消</el-button>
           <el-button
             type="primary"
-            size="mini"
+            size="small"
             :loading="checking"
             @click="submitBotForm"
           >

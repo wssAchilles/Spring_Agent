@@ -282,7 +282,7 @@
       :title="title"
       v-model="open"
       width="800px"
-      :append-to="$refs['app-container']"
+      append-to="body"
       draggable
     >
       <template #header="{ close, titleId, titleClass }">
@@ -372,8 +372,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="mini" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="mini" @click="submitForm"
+          <el-button size="small" @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>

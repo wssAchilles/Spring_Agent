@@ -167,7 +167,7 @@
     </div>
 
     <!-- 添加或修改专家经验对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" :append-to="$refs['app-container']" draggable>
+    <el-dialog :title="title" v-model="open" width="800px" append-to="body" draggable>
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           {{ title }}
@@ -236,14 +236,14 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="mini" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="mini" @click="submitForm">确 定</el-button>
+          <el-button size="small" @click="cancel">取 消</el-button>
+          <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>
 
     <!-- 专家经验详情对话框 -->
-    <el-dialog :title="title" v-model="openDetail" width="800px" :append-to="$refs['app-container']" draggable>
+    <el-dialog :title="title" v-model="openDetail" width="800px" append-to="body" draggable>
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           {{ title }}
@@ -325,13 +325,13 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="mini" @click="cancel">关 闭</el-button>
+          <el-button size="small" @click="cancel">关 闭</el-button>
         </div>
       </template>
     </el-dialog>
 
     <!-- 用户导入对话框 -->
-    <el-dialog :title="upload.title" v-model="upload.open" width="800px"  :append-to="$refs['app-container']" draggable destroy-on-close>
+    <el-dialog :title="upload.title" v-model="upload.open" width="800px"  append-to="body" draggable destroy-on-close>
       <el-upload
           ref="uploadRef"
           :limit="1"

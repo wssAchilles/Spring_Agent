@@ -75,7 +75,7 @@
     :title="knowledgeDialogTitle"
     v-model="knowledgeDialogOpen"
     width="1000px"
-    :append-to="$refs['app-container']"
+    append-to="body"
     draggable
   >
     <template #header="{ close, titleId, titleClass }">
@@ -193,8 +193,8 @@
     />
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="mini" @click="knowledgeDialogOpen = false">取 消</el-button>
-        <el-button type="primary" size="mini" @click="submitKnowledgeForm"
+        <el-button size="small" @click="knowledgeDialogOpen = false">取 消</el-button>
+        <el-button type="primary" size="small" @click="submitKnowledgeForm"
           >确 定</el-button
         >
       </div>

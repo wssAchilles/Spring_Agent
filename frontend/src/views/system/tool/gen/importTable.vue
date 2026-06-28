@@ -1,6 +1,6 @@
 <template>
   <!-- 导入表 -->
-  <el-dialog title="导入表" v-model="visible" width="800px" top="5vh" :append-to="$refs['app-container']"  draggable destroy-on-close>
+  <el-dialog title="导入表" v-model="visible" width="800px" top="5vh" append-to="body"  draggable destroy-on-close>
     <el-form :model="queryParams" ref="queryRef" :inline="true">
       <el-form-item label="表名称" prop="tableName">
         <el-input
