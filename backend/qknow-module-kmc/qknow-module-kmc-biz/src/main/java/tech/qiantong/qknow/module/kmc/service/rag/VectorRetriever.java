@@ -35,6 +35,10 @@ public class VectorRetriever {
     private KmcKnowledgeBaseMapper kmcKnowledgeBaseMapper;
 
     public List<RetrievalResult> retrieve(Long knowledgeBaseId, String query, int topK) {
+        return retrieve(knowledgeBaseId, query, topK, null);
+    }
+
+    public List<RetrievalResult> retrieve(Long knowledgeBaseId, String query, int topK, Integer dayNo) {
         KmcKnowledgeBaseDO kb = kmcKnowledgeBaseMapper.selectById(knowledgeBaseId);
         if (kb == null) {
             log.warn("Knowledge base not found: {}", knowledgeBaseId);
@@ -47,7 +51,14 @@ public class VectorRetriever {
             VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
             FilterExpressionBuilder b = new FilterExpressionBuilder();
-            Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, knowledgeBaseId).build();
+            Filter.Expression kbFilter = b.eq(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, knowledgeBaseId).build();
+            Filter.Expression expression = kbFilter;
+
+            if (dayNo != null) {
+                Filter.Expression dayFilter = b.eq(WeaviateConstant.METADATA_FIELD_DAY_NO, dayNo).build();
+                expression = new Filter.Expression(Filter.ExpressionType.AND, kbFilter, dayFilter);
+                log.info("Vector 检索添加 day_no 过滤: dayNo={}", dayNo);
+            }
 
             SearchRequest searchRequest = SearchRequest.builder()
                     .filterExpression(expression)

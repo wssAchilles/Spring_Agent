@@ -335,8 +335,9 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         kmcKnowledgeRecallLogDO.setDelFlag(0);
         kmcKnowledgeRecallLogService.save(kmcKnowledgeRecallLogDO);
 
-        // 查询改写
-        retrieveResultReqVO.setQuery(queryTransformService.rewriteQuery(retrieveResultReqVO.getQuery()));
+        // 查询改写（保留原始查询用于意图分析）
+        String originalQuery = retrieveResultReqVO.getQuery();
+        retrieveResultReqVO.setQuery(queryTransformService.rewriteQuery(originalQuery));
 
         // 多轮对话压缩
         if (CollUtil.isNotEmpty(retrieveResultReqVO.getHistory())) {
@@ -348,7 +349,6 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
                         return (Message) new UserMessage(h.getContent());
                     })
                     .collect(Collectors.toList());
-            String originalQuery = retrieveResultReqVO.getQuery();
             String compressed = queryTransformService.compressQuery(originalQuery, messages);
             retrieveResultReqVO.setQuery(compressed);
             log.info("[RAG] Multi-turn query compressed: '{}' -> '{}'", originalQuery, compressed);
@@ -366,7 +366,7 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
                     retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), "rag_v2");
             List<RetrieveResultRespVO> cached = ragCacheService.getOrRetrieve(ragV2CacheKey, ttl, () -> {
                 RagResult ragResult = ragRetrievalService.retrieve(
-                        retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), topK, false);
+                        retrieveResultReqVO.getId(), originalQuery, retrieveResultReqVO.getQuery(), topK, false);
                 List<RetrievalResult> sources = ragResult.getSources();
                 if (CollUtil.isEmpty(sources)) {
                     return Collections.emptyList();
@@ -457,8 +457,9 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         kmcKnowledgeRecallLogDO.setDelFlag(0);
         kmcKnowledgeRecallLogService.save(kmcKnowledgeRecallLogDO);
 
-        // 查询改写
-        retrieveResultReqVO.setQuery(queryTransformService.rewriteQuery(retrieveResultReqVO.getQuery()));
+        // 查询改写（保留原始查询用于意图分析）
+        String originalQuery = retrieveResultReqVO.getQuery();
+        retrieveResultReqVO.setQuery(queryTransformService.rewriteQuery(originalQuery));
 
         // 多轮对话压缩
         if (CollUtil.isNotEmpty(retrieveResultReqVO.getHistory())) {
@@ -470,7 +471,6 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
                         return (Message) new UserMessage(h.getContent());
                     })
                     .collect(Collectors.toList());
-            String originalQuery = retrieveResultReqVO.getQuery();
             String compressed = queryTransformService.compressQuery(originalQuery, messages);
             retrieveResultReqVO.setQuery(compressed);
             log.info("[RAG] Multi-turn query compressed: '{}' -> '{}'", originalQuery, compressed);
@@ -479,7 +479,7 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         int topK = retrieveResultReqVO.getTopK() != null ? retrieveResultReqVO.getTopK().intValue() : 10;
 
         // 走 RAG v2 调试路径，绕过缓存
-        RagResult ragResult = ragRetrievalService.retrieve(retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), topK, true);
+        RagResult ragResult = ragRetrievalService.retrieve(retrieveResultReqVO.getId(), originalQuery, retrieveResultReqVO.getQuery(), topK, true);
 
         RecallDebugRespVO respVO = new RecallDebugRespVO();
         respVO.setResults(ragResult.getSources().stream().map(this::retrievalResult2vo).collect(Collectors.toList()));
