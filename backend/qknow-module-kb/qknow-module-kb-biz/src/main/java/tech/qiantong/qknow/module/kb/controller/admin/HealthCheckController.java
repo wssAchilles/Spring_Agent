@@ -129,4 +129,82 @@ public class HealthCheckController {
         sys.put("freeMemoryMB", Runtime.getRuntime().freeMemory() / 1024 / 1024);
         return sys;
     }
+
+    @Operation(summary = "获取 LangFuse 追踪数据")
+    @GetMapping("/traces")
+    public CommonResult<Map<String, Object>> getTraces() {
+        Map<String, Object> result = new HashMap<>();
+        String langfuseEnabled = envOrDotenv("LANGFUSE_ENABLED");
+        String langfuseBaseUrl = envOrDotenv("LANGFUSE_BASE_URL");
+        String langfusePublicKey = envOrDotenv("LANGFUSE_PUBLIC_KEY");
+        String langfuseSecretKey = envOrDotenv("LANGFUSE_SECRET_KEY");
+
+        if (!"true".equalsIgnoreCase(langfuseEnabled) ||
+            langfusePublicKey == null || langfusePublicKey.isBlank() ||
+            langfuseSecretKey == null || langfuseSecretKey.isBlank()) {
+            result.put("enabled", false);
+            result.put("traces", java.util.List.of());
+            result.put("metrics", Map.of(
+                "totalConversations", 0,
+                "avgLatency", 0,
+                "totalTokens", 0
+            ));
+            return CommonResult.success(result);
+        }
+
+        try {
+            String baseUrl = langfuseBaseUrl != null && !langfuseBaseUrl.isBlank()
+                ? langfuseBaseUrl : "https://cloud.langfuse.com";
+            String auth = java.util.Base64.getEncoder()
+                .encodeToString((langfusePublicKey + ":" + langfuseSecretKey).getBytes());
+
+            // 获取最近 traces
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            java.net.http.HttpRequest tracesReq = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(baseUrl + "/api/public/traces?limit=20&orderBy=timestamp&order=desc"))
+                .header("Authorization", "Basic " + auth)
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+            java.net.http.HttpResponse<String> tracesResp = client.send(tracesReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+            if (tracesResp.statusCode() == 200) {
+                com.alibaba.fastjson2.JSONObject json = com.alibaba.fastjson2.JSON.parseObject(tracesResp.body());
+                result.put("enabled", true);
+                result.put("baseUrl", baseUrl);
+                result.put("traces", json.getJSONArray("data"));
+                result.put("meta", json.getJSONObject("meta"));
+
+                // 计算指标
+                com.alibaba.fastjson2.JSONArray traces = json.getJSONArray("data");
+                int totalTraces = traces != null ? traces.size() : 0;
+                long totalLatency = 0;
+                int totalTokens = 0;
+                if (traces != null) {
+                    for (int i = 0; i < traces.size(); i++) {
+                        com.alibaba.fastjson2.JSONObject trace = traces.getJSONObject(i);
+                        com.alibaba.fastjson2.JSONObject latency = trace.getJSONObject("latency");
+                        if (latency != null) {
+                            totalLatency += latency.getLongValue("latency", 0);
+                        }
+                    }
+                }
+                Map<String, Object> metrics = new HashMap<>();
+                metrics.put("totalConversations", totalTraces);
+                metrics.put("avgLatency", totalTraces > 0 ? totalLatency / totalTraces : 0);
+                metrics.put("totalTokens", totalTokens);
+                result.put("metrics", metrics);
+            } else {
+                result.put("enabled", true);
+                result.put("error", "LangFuse API 返回 " + tracesResp.statusCode());
+                result.put("traces", java.util.List.of());
+            }
+        } catch (Exception e) {
+            result.put("enabled", true);
+            result.put("error", e.getMessage());
+            result.put("traces", java.util.List.of());
+        }
+
+        return CommonResult.success(result);
+    }
 }
