@@ -318,10 +318,27 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 .addAllHistory(history)
                 .build();
 
-        // 7. 调用 Hermes 微服务
+        // 7. 构造 memory_recall 事件
+        KbChatMessageSendRespVO memoryRecallResp = new KbChatMessageSendRespVO();
+        KbChatMessageSendRespVO.Message memoryUser = new KbChatMessageSendRespVO.Message();
+        memoryUser.setType(MessageTypeEnums.USER.code);
+        memoryUser.setContent(kbAgentConfig.getQuestion());
+        memoryUser.setCreateTime(new Date());
+        memoryRecallResp.setSend(memoryUser);
+        KbChatMessageSendRespVO.Message memoryReceive = new KbChatMessageSendRespVO.Message();
+        memoryReceive.setType(MessageTypeEnums.ROBOT.code);
+        memoryReceive.setEventType("memory_recall");
+        memoryReceive.setContent("召回 " + sourceRefs.size() + " 条记忆");
+        memoryReceive.setCreateTime(new Date());
+        memoryRecallResp.setReceive(memoryReceive);
+
+        // 8. 调用 Hermes 微服务
         StringBuilder answerBuffer = new StringBuilder();
         String finalModelName = modelName;
-        return hermesGrpcClient.chat(request)
+        Flux<KbChatMessageSendRespVO> chatFlux = sourceRefs.isEmpty()
+                ? hermesGrpcClient.chat(request)
+                : Flux.just(memoryRecallResp).concatWith(hermesGrpcClient.chat(request));
+        return chatFlux
                 .doOnNext(resp -> {
                     if (resp.getReceive() != null && resp.getReceive().getContent() != null) {
                         answerBuffer.append(resp.getReceive().getContent());

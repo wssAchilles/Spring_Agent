@@ -26,6 +26,15 @@ public class KbChatMessageSendRespVO {
         @Schema(description = "消息类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "role")
         private Integer type; // 参见 MessageType 枚举类
 
+        @Schema(description = "事件类型", example = "text")
+        private String eventType; // text, tool_call, memory_recall
+
+        @Schema(description = "工具名称")
+        private String toolName;
+
+        @Schema(description = "工具状态")
+        private String toolStatus;
+
         @Schema(description = "聊天内容", requiredMode = Schema.RequiredMode.REQUIRED, example = "你好，你好啊")
         private String content;
 
