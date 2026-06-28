@@ -90,24 +90,34 @@ public class HermesGrpcClient {
     }
 
     private KbChatMessageSendRespVO convertToRespVO(ChatEvent event, String question) {
-        if (!event.hasChunk()) {
-            return null;
-        }
-
-        StreamingChunk chunk = event.getChunk();
         KbChatMessageSendRespVO sendRespVO = new KbChatMessageSendRespVO();
-
-        KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
-        message.setType(MessageTypeEnums.ROBOT.code);
-        message.setContent(chunk.getText());
-        message.setCreateTime(DateUtils.getNowDate());
-        sendRespVO.setReceive(message);
 
         KbChatMessageSendRespVO.Message messageUser = new KbChatMessageSendRespVO.Message();
         messageUser.setType(MessageTypeEnums.USER.code);
         messageUser.setContent(question);
         messageUser.setCreateTime(new Date());
         sendRespVO.setSend(messageUser);
+
+        if (event.hasChunk()) {
+            StreamingChunk chunk = event.getChunk();
+            KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
+            message.setType(MessageTypeEnums.ROBOT.code);
+            message.setContent(chunk.getText());
+            message.setCreateTime(DateUtils.getNowDate());
+            sendRespVO.setReceive(message);
+        } else if (event.hasToolInvoked()) {
+            ToolInvoked tool = event.getToolInvoked();
+            KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
+            message.setType(MessageTypeEnums.ROBOT.code);
+            message.setEventType("tool_call");
+            message.setToolName(tool.getToolName());
+            message.setToolStatus(tool.getStatus());
+            message.setContent("工具调用: " + tool.getToolName());
+            message.setCreateTime(DateUtils.getNowDate());
+            sendRespVO.setReceive(message);
+        } else {
+            return null;
+        }
 
         return sendRespVO;
     }
