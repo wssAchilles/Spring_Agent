@@ -73,6 +73,9 @@ public class KbConversationController extends BaseController {
     @Operation(summary = "发送消息 (SSE 流式)")
     @PostMapping(value = "/send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<KbChatMessageSendRespVO> sendMessage(@Valid @RequestBody KbChatMessageSendReqVO reqVO) {
+        // 获取历史消息，避免把本轮问题重复注入 history 和 question
+        List<KbChatMessageDO> history = chatMessageService.getMessagesByConversationId(reqVO.getConversationId());
+
         // 保存用户消息
         chatMessageService.saveMessage(reqVO.getConversationId(), "user", reqVO.getQuestion());
 
@@ -95,16 +98,29 @@ public class KbConversationController extends BaseController {
         agentReq.setGraphIds(config.getGraphIds());
         agentReq.setToolMethodIds(config.getToolMethodIds());
 
-        // 获取历史消息并注入
-        List<KbChatMessageDO> history = chatMessageService.getMessagesByConversationId(reqVO.getConversationId());
+        // 注入历史消息
         agentReq.setHistoryMessages(history);
+
+        StringBuilder assistantContent = new StringBuilder();
 
         // 调用 Agent (流式)
         try {
             return agentConfigService.chatMessage(agentReq)
+                    .doOnNext(resp -> {
+                        KbChatMessageSendRespVO.Message receive = resp.getReceive();
+                        if (receive == null || receive.getContent() == null) {
+                            return;
+                        }
+                        String eventType = receive.getEventType();
+                        if ("tool_call".equals(eventType) || "memory_recall".equals(eventType)) {
+                            return;
+                        }
+                        assistantContent.append(receive.getContent());
+                    })
                     .doOnComplete(() -> {
-                        // 流完成后保存助手消息 (从最后一个 receive 消息获取内容)
-                        // 注意: 流式输出是增量的，完整内容需要前端拼接后保存
+                        if (!assistantContent.isEmpty()) {
+                            chatMessageService.saveMessage(reqVO.getConversationId(), "assistant", assistantContent.toString());
+                        }
                     });
         } catch (Exception e) {
             throw new RuntimeException("Agent 调用失败: " + e.getMessage());

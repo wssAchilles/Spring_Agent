@@ -210,8 +210,7 @@ import methodMultipleSelection from "@/views/kb/tool/selection/method-multiple-s
 import knowledgeBaseMultiple from "@/views/kmc/knowledgeBase/selection/knowledgeBaseMultiple.vue"
 import {getChatModelDict} from "@/api/ai/myModel/myModel.js";
 import {addConfig, getConfigByBotId, updateConfig} from "@/api/kb/agent/config";
-import {debugAgent} from "@/api/kb/agent/debug";
-import {getConversations, createConversation, deleteConversation, getMessages} from "@/api/kb/conversation";
+import {getConversations, createConversation, deleteConversation, getMessages, sendMessageStream} from "@/api/kb/conversation";
 import AgentMessageList from './components/MessageList.vue';
 import AgentChatInput from './components/ChatInput.vue';
 import AgentRecallPreview from './components/AgentRecallPreview.vue';
@@ -262,11 +261,35 @@ const loading = ref(false);
 const messageList = ref([]); // 消息列表
 const abortController = ref(null); // 用于取消流式请求
 const isScrolling = ref(false); // 用于判断用户是否在滚动
+const conversationMessageCache = reactive({});
+const activeConversationStreams = reactive({});
 
 // 对话管理
 const conversationList = ref([]);
 const currentConversationId = ref(null);
 const workspaceId = ref(1001); // 默认工作区ID
+
+function syncLoading() {
+  loading.value = Boolean(currentConversationId.value && activeConversationStreams[currentConversationId.value]);
+}
+
+function updateConversationMessages(conversationId, messages) {
+  conversationMessageCache[conversationId] = messages;
+  if (currentConversationId.value === conversationId) {
+    messageList.value = messages;
+  }
+}
+
+function scrollCurrentConversation(conversationId, smooth = true) {
+  if (currentConversationId.value !== conversationId) {
+    return;
+  }
+  nextTick(() => {
+    if (messageListRef.value) {
+      messageListRef.value.scrollToBottom(smooth);
+    }
+  });
+}
 
 // 监听模型选择，自动获取 provider (modelId)
 watchEffect(() => {
@@ -303,7 +326,8 @@ function handleNewConversation() {
   }).then(res => {
     conversationList.value.unshift(res.data);
     currentConversationId.value = res.data.id;
-    messageList.value = [];
+    updateConversationMessages(res.data.id, []);
+    syncLoading();
     proxy.$modal.msgSuccess('已创建新对话');
   });
 }
@@ -312,19 +336,24 @@ function handleNewConversation() {
 function handleConversationChange(conversationId) {
   if (!conversationId) {
     messageList.value = [];
+    syncLoading();
+    return;
+  }
+  if (activeConversationStreams[conversationId] && conversationMessageCache[conversationId]) {
+    messageList.value = conversationMessageCache[conversationId];
+    syncLoading();
+    scrollCurrentConversation(conversationId, false);
     return;
   }
   getMessages(conversationId).then(res => {
-    messageList.value = (res.data || []).map(msg => ({
+    const messages = (res.data || []).map(msg => ({
       type: msg.role === 'user' ? 0 : 1,
       content: msg.content,
       createTime: msg.createTime
     }));
-    nextTick(() => {
-      if (messageListRef.value) {
-        messageListRef.value.scrollToBottom(false);
-      }
-    });
+    updateConversationMessages(conversationId, messages);
+    syncLoading();
+    scrollCurrentConversation(conversationId, false);
   });
 }
 
@@ -334,8 +363,10 @@ function handleDeleteConversation() {
   proxy.$modal.confirm('确认删除该对话？').then(() => {
     deleteConversation(currentConversationId.value).then(() => {
       conversationList.value = conversationList.value.filter(c => c.id !== currentConversationId.value);
+      delete conversationMessageCache[currentConversationId.value];
       currentConversationId.value = null;
       messageList.value = [];
+      syncLoading();
       proxy.$modal.msgSuccess('已删除');
     });
   });
@@ -480,6 +511,7 @@ function handleSendMessage(content) {
     }).then(res => {
       conversationList.value.unshift(res.data);
       currentConversationId.value = res.data.id;
+      updateConversationMessages(res.data.id, []);
       doSendMessage(content);
     });
   } else {
@@ -489,54 +521,52 @@ function handleSendMessage(content) {
 
 // 实际发送消息
 function doSendMessage(content) {
+  const conversationId = currentConversationId.value;
+  if (activeConversationStreams[conversationId]) {
+    proxy.$modal.msgWarning('当前对话正在回复中');
+    return;
+  }
+
+  const messages = conversationMessageCache[conversationId] || messageList.value || [];
+
   // 添加用户消息
   const userMessage = {
     type: 0,
     content: content,
     createTime: new Date()
   };
-  messageList.value.push(userMessage);
+  messages.push(userMessage);
 
   // 清空输入框
   chatInput.value = '';
 
   // 设置加载状态
-  loading.value = true;
+  activeConversationStreams[conversationId] = true;
+  syncLoading();
 
   // 重置用户滚动状态，确保流式输出时保持在底部
   isScrolling.value = false;
 
   // 创建机器人消息占位
-  let botMessageIndex = messageList.value.length;
+  let botMessageIndex = messages.length;
   const botMessage = {
     type: 1,
     content: '思考中',
     createTime: new Date()
   };
-  messageList.value.push(botMessage);
+  messages.push(botMessage);
+  updateConversationMessages(conversationId, messages);
 
-  // 构建请求参数，包含当前表单的配置（覆盖数据库配置）
+  // 构建持久化会话请求参数，后端按已保存的 Agent 配置执行
   const requestData = {
-    conversationId: currentConversationId.value,
+    conversationId,
     botId: botId.value,
     workspaceId: workspaceId.value,
     question: content,
-    input: null,
-    modelConfig: JSON.stringify({
-      modelId: form.modelId,
-      modelName: form.modelName
-    }),
-    prePrompt: form.prePrompt,
-    parameters: '{}',
-    knowledgeIds: form.knowledges ? form.knowledges.map(k => k.id).join(',') : '',
-    toolMethodIds: form.tools ? form.tools.map(t => t.id).join(',') : ''
+    input: null
   };
 
-  nextTick(() => {
-    if (messageListRef.value) {
-      messageListRef.value.scrollToBottom(true);
-    }
-  });
+  scrollCurrentConversation(conversationId, true);
 
   // 创建 AbortController 用于取消请求
   abortController.value = new AbortController();
@@ -544,17 +574,13 @@ function doSendMessage(content) {
   let botContent = "";
 
   const scrollMessageListToBottom = () => {
-    nextTick(() => {
-      if (messageListRef.value) {
-        messageListRef.value.scrollToBottom(true);
-      }
-    });
+    scrollCurrentConversation(conversationId, true);
   };
 
   const appendStructuredMessage = (receive) => {
     const eventType = receive?.eventType;
     if (eventType === 'tool_call') {
-      messageList.value.splice(botMessageIndex, 0, {
+      messages.splice(botMessageIndex, 0, {
         type: 'tool_call',
         toolName: receive.toolName,
         status: receive.toolStatus,
@@ -562,12 +588,13 @@ function doSendMessage(content) {
         createTime: receive.createTime || new Date()
       });
       botMessageIndex += 1;
+      updateConversationMessages(conversationId, messages);
       scrollMessageListToBottom();
       return true;
     }
     if (eventType === 'memory_recall') {
       const count = Number(receive.content?.match(/\d+/)?.[0] || 0);
-      messageList.value.splice(botMessageIndex, 0, {
+      messages.splice(botMessageIndex, 0, {
         type: 'memory_recall',
         content: receive.content,
         memoryCount: count,
@@ -575,21 +602,23 @@ function doSendMessage(content) {
         createTime: receive.createTime || new Date()
       });
       botMessageIndex += 1;
+      updateConversationMessages(conversationId, messages);
       scrollMessageListToBottom();
       return true;
     }
     return false;
   };
 
-  // 调用对话接口（流式输出）
-  debugAgent(
+  // 调用持久化对话接口（流式输出）
+  sendMessageStream(
     requestData,
     // onmessage 回调
     (event) => {
       try {
-        const data = JSON.parse(event.data);
-        if (data.code === 200 && data.data) {
-          const receive = data.data.receive || {};
+        const payload = JSON.parse(event.data);
+        const data = payload.data || payload;
+        if ((payload.code === undefined || payload.code === 200) && data) {
+          const receive = data.receive || {};
           if (appendStructuredMessage(receive)) {
             return;
           }
@@ -598,7 +627,8 @@ function doSendMessage(content) {
           if (messageContent) {
             botContent += messageContent;
             // 更新机器人消息
-            messageList.value[botMessageIndex].content = botContent;
+            messages[botMessageIndex].content = botContent;
+            updateConversationMessages(conversationId, messages);
 
             // 每次更新内容后滚动到底部
             scrollMessageListToBottom();
@@ -609,22 +639,28 @@ function doSendMessage(content) {
     },
     // onerror 回调
     (error) => {
-      messageList.value[botMessageIndex].content = `错误：${error.message || '请求失败'}`;
-      loading.value = false;
+      messages[botMessageIndex].content = `错误：${error.message || '请求失败'}`;
+      updateConversationMessages(conversationId, messages);
+      delete activeConversationStreams[conversationId];
+      syncLoading();
       throw error; // 抛出错误以终止连接
     },
     // onclose 回调
     () => {
-      loading.value = false;
+      delete activeConversationStreams[conversationId];
+      syncLoading();
       // 如果最终没有内容，显示默认消息
-      if (!messageList.value[botMessageIndex].content) {
-        messageList.value[botMessageIndex].content = '暂无回复';
+      if (!messages[botMessageIndex].content) {
+        messages[botMessageIndex].content = '暂无回复';
+        updateConversationMessages(conversationId, messages);
       }
     }
   ).catch((error) => {
-    loading.value = false;
-    if (!messageList.value[botMessageIndex].content.includes('错误')) {
-      messageList.value[botMessageIndex].content = `错误：${error.message || '请求失败'}`;
+    delete activeConversationStreams[conversationId];
+    syncLoading();
+    if (!messages[botMessageIndex].content.includes('错误')) {
+      messages[botMessageIndex].content = `错误：${error.message || '请求失败'}`;
+      updateConversationMessages(conversationId, messages);
     }
   });
 }

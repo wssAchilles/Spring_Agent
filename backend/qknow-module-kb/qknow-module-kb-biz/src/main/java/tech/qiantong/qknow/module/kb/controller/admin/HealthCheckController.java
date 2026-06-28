@@ -10,6 +10,8 @@ import tech.qiantong.qknow.common.core.domain.CommonResult;
 import tech.qiantong.qknow.module.kb.tool.mcp.McpToolAdapter;
 
 import javax.sql.DataSource;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
@@ -88,11 +90,34 @@ public class HealthCheckController {
 
     private Map<String, Object> checkLangFuse() {
         Map<String, Object> langfuse = new HashMap<>();
-        String enabled = System.getenv("LANGFUSE_ENABLED");
-        String baseUrl = System.getenv("LANGFUSE_BASE_URL");
+        String enabled = envOrDotenv("LANGFUSE_ENABLED");
+        String baseUrl = envOrDotenv("LANGFUSE_BASE_URL");
         langfuse.put("enabled", "true".equalsIgnoreCase(enabled));
         langfuse.put("baseUrl", baseUrl != null ? baseUrl : "https://cloud.langfuse.com");
         return langfuse;
+    }
+
+    private String envOrDotenv(String key) {
+        String value = System.getenv(key);
+        if (value != null && !value.isBlank()) {
+            return value;
+        }
+        for (Path dir = Path.of(System.getProperty("user.dir")).toAbsolutePath(); dir != null; dir = dir.getParent()) {
+            Path env = dir.resolve(".env");
+            if (!Files.isRegularFile(env)) {
+                continue;
+            }
+            try (var lines = Files.lines(env)) {
+                return lines
+                        .filter(line -> line.startsWith(key + "="))
+                        .map(line -> line.substring(key.length() + 1).trim())
+                        .findFirst()
+                        .orElse(null);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private Map<String, Object> getSystemInfo() {
