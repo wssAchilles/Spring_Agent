@@ -83,7 +83,7 @@ public class ChatModelServiceImpl implements IChatModelService {
         }
         return OpenAiChatModel.builder()
                 .openAiApi(OpenAiApi.builder()
-                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
+                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode")
                         .apiKey(apiKey)
                         .build())
                 .defaultOptions(OpenAiChatOptions.builder().model(modelName).build())
