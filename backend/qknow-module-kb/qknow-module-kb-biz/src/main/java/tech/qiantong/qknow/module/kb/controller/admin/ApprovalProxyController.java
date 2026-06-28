@@ -61,4 +61,21 @@ public class ApprovalProxyController {
                 .reject(flowId, requestId, nodeId, reason);
         return success ? CommonResult.success(true) : CommonResult.error(404, "审批请求不存在或已处理");
     }
+
+    @Operation(summary = "创建测试审批数据（仅 dev 环境）")
+    @PostMapping("/dev/create")
+    public CommonResult<Map<String, Object>> createTestData() {
+        String flowId = "test-flow-" + System.currentTimeMillis();
+        String requestId = "req-" + System.currentTimeMillis();
+        String nodeId = "approval-node-1";
+        String key = flowId + ":" + requestId + ":" + nodeId;
+        java.util.concurrent.CompletableFuture<Void> future = new java.util.concurrent.CompletableFuture<>();
+        PENDING.put(key, future);
+        Map<String, Object> item = new HashMap<>();
+        item.put("approvalKey", key);
+        item.put("flowId", flowId);
+        item.put("requestId", requestId);
+        item.put("nodeId", nodeId);
+        return CommonResult.success(item);
+    }
 }

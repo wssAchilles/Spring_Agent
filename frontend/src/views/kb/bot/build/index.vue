@@ -614,7 +614,7 @@
               type="button"
               class="add-node-menu-tab"
               :class="{ 'is-active': addNodeMenuActiveTab === tabItem.key }"
-              @click="handleAddNodeMenuTabChange(tabItem.key)"
+              @click.stop="handleAddNodeMenuTabChange(tabItem.key)"
             >
               {{ tabItem.label }}
             </button>
@@ -629,7 +629,7 @@
                 menuItem.type
               }`"
               class="add-node-menu-item"
-              @click="handleAddMenuItemClick(menuItem)"
+              @click.stop="handleAddMenuItemClick(menuItem)"
             >
               <NodeTypeIcon
                 class="node-icon"

@@ -22,6 +22,8 @@ public class RagContextBuilder {
     @Value("${hermes.rag.context.max-tokens:0}")
     private int maxContextTokens = 0;
 
+    public int getMaxContextBytes() { return maxContextBytes; }
+
     @Resource
     private JdbcTemplate jdbcTemplate;
 
