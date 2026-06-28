@@ -7,6 +7,7 @@ import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,7 +17,11 @@ import java.util.regex.Pattern;
 public class QueryIntentAnalyzer {
 
     private static final Pattern DAY_PATTERN = Pattern.compile(
-            "(?i)day\\s*0?(\\d{1,2})|第\\s*0?(\\d{1,2})\\s*[天日]");
+            "(?i)day\\s*0?(\\d{1,2})|第\\s*0?(\\d{1,2})\\s*[天日]|第([一二三四五六七八九十]+)\\s*[天日]");
+
+    private static final Map<String, Integer> CHINESE_NUMBERS = Map.of(
+            "一", 1, "二", 2, "三", 3, "四", 4, "五", 5,
+            "六", 6, "七", 7, "八", 8, "九", 9, "十", 10);
 
     private static final Set<String> STOP_WORDS = Set.of(
             "请", "请告诉我", "告诉我", "在", "时候", "的时候", "我", "主要",
@@ -42,24 +47,32 @@ public class QueryIntentAnalyzer {
     private Integer extractDayNo(String query) {
         Matcher matcher = DAY_PATTERN.matcher(query);
         if (matcher.find()) {
-            String number = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
-            try {
-                return Integer.parseInt(number);
-            } catch (NumberFormatException ignored) {
+            // Group 1: dayXX pattern, Group 2: 第N天 pattern, Group 3: 第X天 pattern (Chinese)
+            if (matcher.group(1) != null) {
+                try {
+                    return Integer.parseInt(matcher.group(1));
+                } catch (NumberFormatException ignored) {
+                }
+            } else if (matcher.group(2) != null) {
+                try {
+                    return Integer.parseInt(matcher.group(2));
+                } catch (NumberFormatException ignored) {
+                }
+            } else if (matcher.group(3) != null) {
+                String chineseNum = matcher.group(3);
+                Integer dayNo = CHINESE_NUMBERS.get(chineseNum);
+                if (dayNo != null) {
+                    return dayNo;
+                }
             }
         }
         return null;
     }
 
     private String extractDocName(String query) {
-        Matcher matcher = DAY_PATTERN.matcher(query);
-        if (matcher.find()) {
-            String number = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
-            try {
-                int day = Integer.parseInt(number);
-                return String.format("Day%02d", day);
-            } catch (NumberFormatException ignored) {
-            }
+        Integer dayNo = extractDayNo(query);
+        if (dayNo != null) {
+            return String.format("Day%02d", dayNo);
         }
         return null;
     }
