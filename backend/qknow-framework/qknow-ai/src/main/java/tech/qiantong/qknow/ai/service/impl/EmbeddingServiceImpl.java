@@ -72,7 +72,7 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
         }
         return new OpenAiEmbeddingModel(
                 OpenAiApi.builder()
-                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
+                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode")
                         .apiKey(apiKey)
                         .build(),
                 MetadataMode.EMBED,
