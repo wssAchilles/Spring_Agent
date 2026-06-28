@@ -32,7 +32,7 @@ public class VectorStoreServiceImpl implements IVectorStoreService {
      */
     @Override
     public VectorStore getVectorStore(EmbeddingModel embeddingModel) {
-        String key = embeddingModel.getClass().getName();
+        String key = embeddingModel.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(embeddingModel));
         return vectorStoreCache.computeIfAbsent(key, k -> {
             JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
             return PgVectorStore.builder(jdbcTemplate, embeddingModel)
