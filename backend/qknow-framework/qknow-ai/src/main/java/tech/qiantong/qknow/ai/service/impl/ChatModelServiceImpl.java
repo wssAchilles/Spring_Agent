@@ -34,8 +34,9 @@ public class ChatModelServiceImpl implements IChatModelService {
 
     @Override
     public ChatModel getChatModel(String platForm, String baseUrl, String apiKey, String modelName, Double temperature) {
+        String keyHash = apiKey != null ? String.valueOf(apiKey.hashCode()) : "";
         String cacheKey = platForm + "|" + (baseUrl != null ? baseUrl : "") + "|"
-                + (modelName != null ? modelName : "") + "|" + (temperature != null ? temperature : "");
+                + keyHash + "|" + (modelName != null ? modelName : "") + "|" + (temperature != null ? temperature : "");
         return chatModelCache.computeIfAbsent(cacheKey, k -> createChatModel(platForm, baseUrl, apiKey, modelName, temperature));
     }
 

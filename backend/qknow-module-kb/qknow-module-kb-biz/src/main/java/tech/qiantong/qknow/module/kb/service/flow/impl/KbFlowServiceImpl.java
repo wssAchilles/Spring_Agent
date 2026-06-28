@@ -122,8 +122,14 @@ public class KbFlowServiceImpl implements IKbFlowService {
 //                .map(this::margeOutPut)
 //                .map(CommonResult::success);
 //        runtimeContext.setResultFlux(Flux.concat(resultFlux, map));
-        return runtimeContext.getResultFlux().onErrorResume(throwable ->
-                Flux.just(CommonResult.error(new ServiceException("大模型调用异常", 500))));
+        Flux<CommonResult<String>> resultFlux = runtimeContext.getResultFlux();
+        if (resultFlux == null) {
+            String errorMsg = runtimeContext.getRuntimeDO() != null ? runtimeContext.getRuntimeDO().getOutput() : null;
+            String msg = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "工作流执行失败，未产生回复";
+            return Flux.just(CommonResult.error(new ServiceException(msg, 500)));
+        }
+        return resultFlux.onErrorResume(throwable ->
+                Flux.just(CommonResult.error(new ServiceException("大模型调用异常: " + throwable.getMessage(), 500))));
     }
 
     /**
@@ -154,8 +160,14 @@ public class KbFlowServiceImpl implements IKbFlowService {
             runtimeContext.setMessageList(messageList);
         }
         textExecuteFlow(kbFlowBO, runtimeContext);
-        return runtimeContext.getResultFlux().onErrorResume(throwable ->
-                Flux.just(CommonResult.error(new ServiceException("大模型调用异常", 500)))
+        Flux<CommonResult<String>> resultFlux = runtimeContext.getResultFlux();
+        if (resultFlux == null) {
+            String errorMsg = runtimeContext.getRuntimeDO() != null ? runtimeContext.getRuntimeDO().getOutput() : null;
+            String msg = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "工作流执行失败，未产生回复";
+            return Flux.just(CommonResult.error(new ServiceException(msg, 500)));
+        }
+        return resultFlux.onErrorResume(throwable ->
+                Flux.just(CommonResult.error(new ServiceException("大模型调用异常: " + throwable.getMessage(), 500)))
         );
     }
 
@@ -194,13 +206,20 @@ public class KbFlowServiceImpl implements IKbFlowService {
         runtimeContext.setBotType(BotTypeEnums.WORK_FLOW);
         executeFlow(kbFlowBO, runtimeContext);
 
-        Mono<CommonResult<String>> last = runtimeContext.getResultFlux().last();
+        Flux<CommonResult<String>> resultFlux = runtimeContext.getResultFlux();
+        if (resultFlux == null) {
+            String errorMsg = runtimeContext.getRuntimeDO() != null ? runtimeContext.getRuntimeDO().getOutput() : null;
+            String msg = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "工作流执行失败，未产生回复";
+            return Flux.just(CommonResult.error(new ServiceException(msg, 500)));
+        }
+
+        Mono<CommonResult<String>> last = resultFlux.last();
         last.subscribe(result -> {
             runtimeContext.getRuntimeDO().setOutput(result.getData());
             runtimeService.saveRunSuccess(runtimeContext.getRuntimeDO());
         });
-        return runtimeContext.getResultFlux().onErrorResume(throwable ->
-                Flux.just(CommonResult.error(new ServiceException("大模型调用异常", 500)))
+        return resultFlux.onErrorResume(throwable ->
+                Flux.just(CommonResult.error(new ServiceException("大模型调用异常: " + throwable.getMessage(), 500)))
         );
     }
 
@@ -222,8 +241,14 @@ public class KbFlowServiceImpl implements IKbFlowService {
         runtimeContext.setBotType(BotTypeEnums.CHAT_FLOW);
         runtimeContext.setMessageList(messageList);
         executeFlow(kbFlowBO, runtimeContext);
+        Flux<CommonResult<String>> resultFlux = runtimeContext.getResultFlux();
+        if (resultFlux == null) {
+            String errorMsg = runtimeContext.getRuntimeDO() != null ? runtimeContext.getRuntimeDO().getOutput() : null;
+            String msg = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "工作流执行失败，未产生回复";
+            return Flux.just(CommonResult.error(new ServiceException(msg, 500)));
+        }
         StringBuilder sb = new StringBuilder();
-        return runtimeContext.getResultFlux()
+        return resultFlux
                 .doOnNext(result -> {
                     String chatResponseContent = BotUtil.getChatResponseContent(result);
                     sb.append(chatResponseContent);
@@ -233,7 +258,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
                     runtimeService.saveRunSuccess(runtimeContext.getRuntimeDO());
                 })
                 .onErrorResume(throwable ->
-                        Flux.just(CommonResult.error(new ServiceException("大模型调用异常", 500)))
+                        Flux.just(CommonResult.error(new ServiceException("大模型调用异常: " + throwable.getMessage(), 500)))
                 );
     }
 

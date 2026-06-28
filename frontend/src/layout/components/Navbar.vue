@@ -893,12 +893,7 @@ const noticeList = ref([]);
 const sessionValue = ref(null);
 getMessageNum(); // 第一次主要获取消息
 
-const wsUri =
-  import.meta.env.VITE_APP_WEBSOCKET_API +
-  "/websocket/message/" +
-  userStore.userId;
-// 建立socket连接
-const ws = new WebSocket(wsUri);
+let ws = null;
 
 const initWebSocket = () => {
   //查询通知公告
@@ -933,6 +928,14 @@ const initWebSocket = () => {
     msgCount.value = messages.value ? messages.value.length : 0;
     console.log("------messages.value----", messages.value);
   });
+  if (!userStore.userId) {
+    return;
+  }
+  const wsUri =
+    import.meta.env.VITE_APP_WEBSOCKET_API +
+    "/websocket/message/" +
+    userStore.userId;
+  ws = new WebSocket(wsUri);
   ws.onmessage = (event) => {
     // 服务端推送数据
     // console.log('===服务端推送数据=========>',event.data)
@@ -958,7 +961,7 @@ onMounted(() => {
 // 页面注销
 onBeforeUnmount(() => {
   console.log("------页面注销----");
-  ws.close(); // 关闭socket
+  ws?.close(); // 关闭socket
 });
 
 // 格式化时间戳为 YYYY-MM-DD HH:mm:ss 格式

@@ -507,7 +507,7 @@ function doSendMessage(content) {
   isScrolling.value = false;
 
   // 创建机器人消息占位
-  const botMessageIndex = messageList.value.length;
+  let botMessageIndex = messageList.value.length;
   const botMessage = {
     type: 1,
     content: '思考中',
@@ -543,6 +543,44 @@ function doSendMessage(content) {
 
   let botContent = "";
 
+  const scrollMessageListToBottom = () => {
+    nextTick(() => {
+      if (messageListRef.value) {
+        messageListRef.value.scrollToBottom(true);
+      }
+    });
+  };
+
+  const appendStructuredMessage = (receive) => {
+    const eventType = receive?.eventType;
+    if (eventType === 'tool_call') {
+      messageList.value.splice(botMessageIndex, 0, {
+        type: 'tool_call',
+        toolName: receive.toolName,
+        status: receive.toolStatus,
+        content: receive.content,
+        createTime: receive.createTime || new Date()
+      });
+      botMessageIndex += 1;
+      scrollMessageListToBottom();
+      return true;
+    }
+    if (eventType === 'memory_recall') {
+      const count = Number(receive.content?.match(/\d+/)?.[0] || 0);
+      messageList.value.splice(botMessageIndex, 0, {
+        type: 'memory_recall',
+        content: receive.content,
+        memoryCount: count,
+        memories: [],
+        createTime: receive.createTime || new Date()
+      });
+      botMessageIndex += 1;
+      scrollMessageListToBottom();
+      return true;
+    }
+    return false;
+  };
+
   // 调用对话接口（流式输出）
   debugAgent(
     requestData,
@@ -551,19 +589,19 @@ function doSendMessage(content) {
       try {
         const data = JSON.parse(event.data);
         if (data.code === 200 && data.data) {
+          const receive = data.data.receive || {};
+          if (appendStructuredMessage(receive)) {
+            return;
+          }
           // 提取机器人回复内容
-          const messageContent = data.data.receive?.content || '';
+          const messageContent = receive.content || '';
           if (messageContent) {
             botContent += messageContent;
             // 更新机器人消息
             messageList.value[botMessageIndex].content = botContent;
 
             // 每次更新内容后滚动到底部
-            nextTick(() => {
-              if (messageListRef.value) {
-                messageListRef.value.scrollToBottom(true);
-              }
-            });
+            scrollMessageListToBottom();
           }
         }
       } catch (e) {
