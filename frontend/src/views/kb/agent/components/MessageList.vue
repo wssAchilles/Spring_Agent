@@ -99,7 +99,10 @@
           <div class="memory-recall-container">
             <div class="memory-header">
               <el-icon><Memo /></el-icon>
-              <span>召回 {{ item.memories?.length || 0 }} 条记忆</span>
+              <span>召回 {{ item.memoryCount ?? item.memories?.length ?? 0 }} 条记忆</span>
+            </div>
+            <div v-if="item.content && !item.memories?.length" class="memory-summary">
+              {{ item.content }}
             </div>
             <div v-for="(mem, mi) in item.memories" :key="mi" class="memory-item">
               <span class="memory-text">{{ mem.content }}</span>
@@ -485,6 +488,11 @@ onMounted(() => {
     color: #f57f17;
     font-weight: 500;
     margin-bottom: 6px;
+  }
+
+  .memory-summary {
+    font-size: 12px;
+    color: #6d4c41;
   }
 
   .memory-item {

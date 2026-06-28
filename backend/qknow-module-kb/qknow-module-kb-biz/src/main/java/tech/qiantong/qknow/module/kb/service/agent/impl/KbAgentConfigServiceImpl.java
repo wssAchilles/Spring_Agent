@@ -340,7 +340,9 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 : Flux.just(memoryRecallResp).concatWith(hermesGrpcClient.chat(request));
         return chatFlux
                 .doOnNext(resp -> {
-                    if (resp.getReceive() != null && resp.getReceive().getContent() != null) {
+                    if (resp.getReceive() != null
+                            && resp.getReceive().getContent() != null
+                            && StringUtils.isEmpty(resp.getReceive().getEventType())) {
                         answerBuffer.append(resp.getReceive().getContent());
                     }
                 })
@@ -391,7 +393,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         KbChatMessageSendRespVO resp = new KbChatMessageSendRespVO();
         KbChatMessageSendRespVO.Message receive = new KbChatMessageSendRespVO.Message();
         receive.setType(MessageTypeEnums.ROBOT.code);
-        receive.setContent(hit.getAnswer());
+        receive.setContent(cleanCachedAnswer(hit.getAnswer()));
         receive.setCreateTime(DateUtils.getNowDate());
         applySourceRefs(receive, hit.getSourcesJson());
         resp.setReceive(receive);
@@ -402,6 +404,15 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         send.setCreateTime(DateUtils.getNowDate());
         resp.setSend(send);
         return Flux.just(resp);
+    }
+
+    private String cleanCachedAnswer(String answer) {
+        if (answer == null) {
+            return null;
+        }
+        return answer
+                .replaceFirst("^召回 \\d+ 条记忆", "")
+                .replaceFirst("^工具调用: [^\\n。]*", "");
     }
 
     private void applySourceRefs(KbChatMessageSendRespVO.Message receive, String sourcesJson) {

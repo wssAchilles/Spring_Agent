@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -19,6 +20,7 @@ import tech.qiantong.qknow.module.kb.dal.enums.FlowNodeTypeEnums;
 
 import java.util.*;
 
+@Slf4j
 public class LLMNodeBO extends BaseNodeBO {
 
     private final IAiModelApiService aiModelService;
@@ -47,11 +49,23 @@ public class LLMNodeBO extends BaseNodeBO {
         Long provider = configJson.getLong("provider");
         String model = configJson.getString("model");
         if (Objects.isNull(provider) || StrUtil.isEmpty(model)) {
-            throw new ServiceException("模型选择错误");
+            throw new ServiceException("模型选择错误：provider=" + provider + ", model=" + model);
         }
+
+        boolean stream = isStream(context);
+        log.info("LLM 节点执行: uuid={}, name={}, provider={}, model={}, stream={}",
+                nodeDefinition.getUuid(), nodeDefinition.getName(), provider, model, stream);
+
         StringBuilder outSb = new StringBuilder();
-        ChatModel chatModel = aiModelService.getChatModel(provider, model);
-        if (isStream(context)) {
+        ChatModel chatModel;
+        try {
+            chatModel = aiModelService.getChatModel(provider, model);
+        } catch (Exception e) {
+            log.error("获取 ChatModel 失败: provider={}, model={}, error={}", provider, model, e.getMessage());
+            throw new ServiceException("模型配置错误: " + e.getMessage());
+        }
+
+        if (stream) {
             Map<String, Flux<String>> fluxMap = context.getFluxMap();
             if (Objects.isNull(fluxMap)) {
                 fluxMap = new HashMap<>();
