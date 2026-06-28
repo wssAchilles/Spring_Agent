@@ -110,7 +110,7 @@
     <el-dialog
       title="Cron表达式生成器"
       v-model="openCron"
-      :append-to="$refs['app-container']"
+      append-to="body"
       destroy-on-close
     >
       <Crontab

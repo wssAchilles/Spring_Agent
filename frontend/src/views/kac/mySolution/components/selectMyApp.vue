@@ -3,7 +3,7 @@
       title="导入关联应用"
       v-model="dialogVisible"
       width="1200px"
-      :append-to="$refs['app-container']"
+      append-to="body"
       draggable
       destroy-on-close
       @close="handleClose"

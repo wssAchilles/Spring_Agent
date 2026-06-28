@@ -128,8 +128,8 @@
           </el-row>
         </el-form>
         <div class="dialog-footer">
-<!--          <el-button size="mini" @click="handleReset">清 空</el-button>-->
-          <el-button type="primary" size="mini" :loading="loading" @click="handleSubmit">
+<!--          <el-button size="small" @click="handleReset">清 空</el-button>-->
+          <el-button type="primary" size="small" :loading="loading" @click="handleSubmit">
             <svg-icon icon-class="bc" />
             保存
           </el-button>

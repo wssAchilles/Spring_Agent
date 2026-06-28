@@ -56,7 +56,7 @@
       :title="keyTableTitle"
       v-model="showKeyOpen"
       width="800px"
-      :append-to="$refs['app-container']"
+      append-to="body"
     >
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
@@ -123,7 +123,7 @@
               <el-table-column align="center" width="110px" label="操作">
                 <template #default="scope">
                   <el-button
-                    size="mini"
+                    size="small"
                     type="danger"
                     @click="deleteItem(scope.$index, scope.row)"
                     plain
@@ -137,10 +137,10 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" size="mini" @click="submitForm"
+          <el-button type="primary" size="small" @click="submitForm"
             >提交</el-button
           >
-          <el-button size="mini" @click="handleClose">取 消</el-button>
+          <el-button size="small" @click="handleClose">取 消</el-button>
         </div>
       </template>
     </el-dialog>

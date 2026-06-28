@@ -378,7 +378,7 @@
           title="属性信息"
           v-model="attrVisible"
           width="500px"
-          :append-to="$refs['app-container']"
+          append-to="body"
           draggable
           destroy-on-close
         >

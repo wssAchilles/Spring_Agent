@@ -60,7 +60,7 @@
               <i class="iconfont-mini icon-daoru"></i>
               下载</el-button>
   <!--          <el-button-->
-  <!--            size="mini"-->
+  <!--            size="small"-->
   <!--            type="text"-->
   <!--            icon="el-icon-edit"-->
   <!--            @click="handleUpdate(scope.row)"-->
@@ -89,7 +89,7 @@
     </div>
 
     <!-- 添加或修改主体管理对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" :append-to="$refs['app-container']"   draggable destroy-on-close>
+    <el-dialog :title="title" v-model="open" width="800px" append-to="body"   draggable destroy-on-close>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-row :gutter="20">
           <el-col :span="12">

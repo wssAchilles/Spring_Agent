@@ -222,7 +222,7 @@
 
 
     <!-- 添加或修改用户配置对话框 -->
-    <el-dialog :title="title" v-model="open" width="58vh" :append-to="$refs['app-container']" draggable
+    <el-dialog :title="title" v-model="open" width="58vh" append-to="body" draggable
                destroy-on-close>
       <el-form :model="form" :rules="rules" ref="userRef" label-width="80px">
         <el-row :gutter="20">
@@ -343,7 +343,7 @@
     </el-dialog>
 
     <!-- 用户导入对话框 -->
-    <el-dialog :title="upload.title" v-model="upload.open" width="800px" :append-to="$refs['app-container']"
+    <el-dialog :title="upload.title" v-model="upload.open" width="800px" append-to="body"
                draggable destroy-on-close>
       <el-upload
           ref="uploadRef"

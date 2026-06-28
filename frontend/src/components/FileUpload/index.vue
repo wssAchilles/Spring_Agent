@@ -17,7 +17,7 @@
       :drag="dragFlag"
     >
       <!-- 上传按钮 -->
-      <el-button type="primary" size="mini" icon="Upload" plain
+      <el-button type="primary" size="small" icon="Upload" plain
         >上传附件</el-button
       >
     </el-upload>

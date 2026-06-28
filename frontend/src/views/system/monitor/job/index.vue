@@ -170,7 +170,7 @@
       </div>
 
       <!-- 添加或修改定时任务对话框 -->
-      <el-dialog :title="title" v-model="open" width="850px" :append-to="$refs['app-container']" draggable destroy-on-close>
+      <el-dialog :title="title" v-model="open" width="850px" append-to="body" draggable destroy-on-close>
          <el-form ref="jobRef" :model="form" :rules="rules" label-width="100px">
             <el-row :gutter="20">
                <el-col :span="12">
@@ -260,12 +260,12 @@
          </template>
       </el-dialog>
 
-     <el-dialog title="Cron表达式生成器" v-model="openCron" :append-to="$refs['app-container']" destroy-on-close>
+     <el-dialog title="Cron表达式生成器" v-model="openCron" append-to="body" destroy-on-close>
        <crontab ref="crontabRef" @hide="openCron=false" @fill="crontabFill" :expression="expression"></crontab>
      </el-dialog>
 
       <!-- 任务日志详细 -->
-      <el-dialog title="任务详细" v-model="openView" width="800px" :append-to="$refs['app-container']" draggable destroy-on-close>
+      <el-dialog title="任务详细" v-model="openView" width="800px" append-to="body" draggable destroy-on-close>
          <el-form :model="form" label-width="120px">
             <el-row :gutter="20">
                <el-col :span="12">

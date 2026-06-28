@@ -122,7 +122,11 @@ public class KgGraphController {
             communityService.saveCommunities(String.valueOf(workspaceId), communities);
             return CommonResult.success(communities);
         } catch (Exception e) {
-            return CommonResult.error(500, "社区检测失败: " + e.getMessage());
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("gds.") || msg.contains("Unknown function") || msg.contains("procedure")) {
+                return CommonResult.error(501, "Neo4j GDS 插件未安装，社区检测功能不可用。请安装 GDS 插件: docker exec agent-neo4j neo4j-admin plugin install graph-data-science");
+            }
+            return CommonResult.error(500, "社区检测失败: " + msg);
         }
     }
 

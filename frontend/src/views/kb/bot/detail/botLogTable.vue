@@ -64,7 +64,7 @@
       :title="botLogDialogTitle"
       v-model="botLogDialogOpen"
       width="1000px"
-      :append-to="$refs['app-container']"
+      append-to="body"
       draggable
   >
     <template #header="{ close, titleId, titleClass }">
@@ -142,7 +142,7 @@
         <div class="check-status-wrapper">
         </div>
         <div class="button-wrapper">
-          <el-button size="mini" @click="botLogDialogOpen = false">关 闭</el-button>
+          <el-button size="small" @click="botLogDialogOpen = false">关 闭</el-button>
         </div>
       </div>
     </template>

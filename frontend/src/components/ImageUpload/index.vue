@@ -36,7 +36,7 @@
       v-model="dialogVisible"
       title="预览"
       width="800px"
-      :append-to="$refs['app-container']"
+      append-to="body"
       draggable
       destroy-on-close
     >
