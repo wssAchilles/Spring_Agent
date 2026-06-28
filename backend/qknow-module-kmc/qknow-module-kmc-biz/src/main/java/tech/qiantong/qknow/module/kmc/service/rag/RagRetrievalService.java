@@ -104,6 +104,12 @@ public class RagRetrievalService {
             debugInfo.put("rewriteApplied", rewriteApplied);
             debugInfo.put("secondRetrievalCount", secondRetrievalCount);
             debugInfo.put("elapsedMs", elapsed);
+            Map<String, Object> queryEnhance = new java.util.LinkedHashMap<>();
+            queryEnhance.put("strategy", rewriteApplied ? "rewrite" : "none");
+            queryEnhance.put("originalQuery", query);
+            queryEnhance.put("variants", List.of());
+            debugInfo.put("queryEnhance", queryEnhance);
+            debugInfo.put("excludedPaths", List.of());
             effective.setDebugInfo(debugInfo);
         }
         return effective;
@@ -201,6 +207,8 @@ public class RagRetrievalService {
             debugInfo.put(phase + "ParentExpansionCount", reranked.stream()
                     .filter(result -> result.getParentSegmentId() != null && !result.getParentSegmentId().isBlank())
                     .count());
+            debugInfo.put("contextBytes", context.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+            debugInfo.put("maxContextBytes", ragContextBuilder.getMaxContextBytes());
         }
 
         return RagResult.builder()
