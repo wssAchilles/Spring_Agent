@@ -74,7 +74,11 @@ start_background hermes \
   "$PROJECT_DIR/backend/qknow-hermes/qknow-hermes-starter/target/qknow-hermes-starter-2.2.1.jar" \
   SPRING_PROFILES_ACTIVE=dev \
   HERMES_GRPC_PORT=9090 \
-  HERMES_CONTROL_PLANE_URL=http://localhost:8099
+  HERMES_CONTROL_PLANE_URL=http://localhost:8099 \
+  LANGFUSE_ENABLED="${LANGFUSE_ENABLED:-false}" \
+  LANGFUSE_PUBLIC_KEY="${LANGFUSE_PUBLIC_KEY:-}" \
+  LANGFUSE_SECRET_KEY="${LANGFUSE_SECRET_KEY:-}" \
+  LANGFUSE_BASE_URL="${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}"
 wait_for_tcp "Hermes" 9090 180
 
 echo "[5/6] 启动本机 Vite"

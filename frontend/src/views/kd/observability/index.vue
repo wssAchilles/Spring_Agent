@@ -141,10 +141,24 @@ async function checkLangFuseStatus() {
 async function refreshTraces() {
   loading.value = true;
   try {
-    const res = await request({ url: '/kb/health', method: 'get' });
-    const mcp = res.data?.mcp;
-    if (mcp) {
-      metrics.value[0].value = String(mcp.tools || 0);
+    const res = await request({ url: '/kb/health/traces', method: 'get' });
+    const data = res.data;
+    if (data && data.enabled) {
+      // 更新指标
+      const m = data.metrics || {};
+      metrics.value[0].value = String(m.totalConversations || 0);
+      metrics.value[1].value = m.avgLatency ? `${m.avgLatency}ms` : '—';
+      metrics.value[2].value = m.totalTokens ? String(m.totalTokens) : '—';
+
+      // 更新追踪列表
+      traces.value = (data.traces || []).map(t => ({
+        id: t.id,
+        query: t.input || t.name || '—',
+        duration: t.latency ? `${t.latency}ms` : '—',
+        tokens: t.usage ? String(t.usage.totalTokens || 0) : '—',
+        spans: [],
+        time: t.timestamp || t.createdAt || '—'
+      }));
     }
   } catch (e) {
     // 忽略

@@ -88,9 +88,11 @@ public class AgentOrchestrator {
         }
 
         final String finalTraceId = traceId;
-        return Flux.create(emitter -> {
+        final long finalStartTime = startTime;
+        StringBuilder fullAnswer = new StringBuilder();
+        return Flux.<ChatEvent>create(emitter -> {
             try {
-                executeAgent(request, emitter);
+                executeAgent(request, emitter, finalTraceId, fullAnswer);
             } catch (Exception e) {
                 log.error("Hermes Agent 执行失败", e);
                 emitter.next(ChatEvent.newBuilder()
@@ -102,10 +104,22 @@ public class AgentOrchestrator {
                         .build());
                 emitter.complete();
             }
+        }).doOnComplete(() -> {
+            // LangFuse: 记录 LLM 生成
+            if (finalTraceId != null && langFuseService != null && langFuseService.isEnabled()) {
+                long latencyMs = System.currentTimeMillis() - finalStartTime;
+                langFuseService.recordGeneration(
+                    finalTraceId,
+                    request.getModelConfig().getModelName(),
+                    request.getQuestion(),
+                    fullAnswer.toString(),
+                    0L, 0L, latencyMs);
+            }
         });
     }
 
-    private void executeAgent(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter) throws GraphRunnerException {
+    private void executeAgent(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter,
+                              String traceId, StringBuilder fullAnswer) throws GraphRunnerException {
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
         ChatModel chatModel;
@@ -199,6 +213,7 @@ public class AgentOrchestrator {
 
                             if (type == OutputType.AGENT_MODEL_STREAMING) {
                                 String text = streamingOutput.message().getText();
+                                if (text != null) fullAnswer.append(text);
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
                                         .setChunk(StreamingChunk.newBuilder()
