@@ -161,7 +161,7 @@ public class HealthCheckController {
             // 获取最近 traces
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
             java.net.http.HttpRequest tracesReq = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(baseUrl + "/api/public/traces?limit=20&orderBy=timestamp&order=desc"))
+                .uri(java.net.URI.create(baseUrl + "/api/public/traces?limit=20"))
                 .header("Authorization", "Basic " + auth)
                 .header("Accept", "application/json")
                 .GET()
