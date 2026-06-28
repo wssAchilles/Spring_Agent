@@ -58,6 +58,10 @@ public class RagRetrievalService {
     private CragRetrievalEvaluator cragRetrievalEvaluator;
 
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
+        return retrieve(knowledgeBaseId, query, query, topK, debug);
+    }
+
+    public RagResult retrieve(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> debugInfo = debug ? new LinkedHashMap<>() : null;
 
@@ -71,7 +75,7 @@ public class RagRetrievalService {
                     .build();
         }
 
-        RagResult first = retrieveOnce(knowledgeBaseId, query, topK, debug, debugInfo, "first");
+        RagResult first = retrieveOnce(knowledgeBaseId, originalQuery, query, topK, debug, debugInfo, "first");
         CragRetrievalEvaluation evaluation = cragRetrievalEvaluator.evaluate(query, first);
         if (debug) {
             debugInfo.put("cragLabel", evaluation.getLabel() != null ? evaluation.getLabel().name() : null);
@@ -88,7 +92,7 @@ public class RagRetrievalService {
                 && rewrittenQuery != null
                 && !rewrittenQuery.isBlank()
                 && !rewrittenQuery.trim().equalsIgnoreCase(query.trim())) {
-            effective = retrieveOnce(knowledgeBaseId, rewrittenQuery, topK, debug, debugInfo, "second");
+            effective = retrieveOnce(knowledgeBaseId, originalQuery, rewrittenQuery, topK, debug, debugInfo, "second");
             rewriteApplied = true;
             secondRetrievalCount = effective.getSources().size();
         } else if (evaluation.isIncorrect()) {
@@ -115,9 +119,9 @@ public class RagRetrievalService {
         return effective;
     }
 
-    private RagResult retrieveOnce(Long knowledgeBaseId, String query, int topK, boolean debug,
-                                   Map<String, Object> debugInfo, String phase) {
-        QueryIntent queryIntent = queryIntentAnalyzer.analyze(query);
+    private RagResult retrieveOnce(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug,
+                                    Map<String, Object> debugInfo, String phase) {
+        QueryIntent queryIntent = queryIntentAnalyzer.analyze(originalQuery);
         if (debug && "first".equals(phase)) {
             debugInfo.put("queryIntent", queryIntent);
             debugInfo.put("searchMethod", "RAG v2 混合检索 + CRAG");
@@ -146,7 +150,7 @@ public class RagRetrievalService {
             Future<List<String>> entityFuture = executor.submit(
                     () -> queryEntityExtractionService.extract(query, queryIntent.getKeywords()));
             Future<List<RetrievalResult>> vectorFuture = executor.submit(
-                    () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
+                    () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK, queryIntent.getDayNo()));
             Future<List<RetrievalResult>> keywordFuture = executor.submit(
                     () -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
 
