@@ -87,13 +87,15 @@ public class LangFuseTracingService {
                                   Long latencyMs) {
         if (httpClient == null || traceId == null) return;
         try {
+            long pt = promptTokens != null ? promptTokens : 0;
+            long ct = completionTokens != null ? completionTokens : 0;
+            long total = pt + ct;
+            long latency = latencyMs != null ? latencyMs : 0;
             String body = String.format("""
-                    {"id":"%s","traceId":"%s","type":"GENERATION","name":"%s","input":"%s","output":"%s","model":"%s","usage":{"promptTokens":%d,"completionTokens":%d},"latency":%d}
+                    {"id":"%s","traceId":"%s","type":"GENERATION","name":"%s","input":"%s","output":"%s","model":"%s","usage":{"input":%d,"output":%d,"total":%d},"promptTokens":%d,"completionTokens":%d,"totalTokens":%d,"latency":%d}
                     """, java.util.UUID.randomUUID(), traceId, model,
                     escapeJson(input), escapeJson(output), model,
-                    promptTokens != null ? promptTokens : 0,
-                    completionTokens != null ? completionTokens : 0,
-                    latencyMs != null ? latencyMs : 0);
+                    pt, ct, total, pt, ct, total, latency);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + "/api/public/generations"))
@@ -103,7 +105,10 @@ public class LangFuseTracingService {
                     .timeout(Duration.ofSeconds(5))
                     .build();
 
-            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200) {
+                log.warn("LangFuse generation recording failed: status={}, body={}", resp.statusCode(), resp.body());
+            }
         } catch (Exception e) {
             log.debug("LangFuse generation recording failed", e);
         }
