@@ -31,7 +31,7 @@ public class HttpRequestToolFunction
         private String method;
 
         @JsonProperty(value = "headers")
-        @JsonPropertyDescription("请求头，JSON 格式，例如 {\"Content-Type\": \"application/json\"}")
+        @JsonPropertyDescription("请求头，JSON 字符串格式")
         private String headers;
 
         @JsonProperty(value = "body")
