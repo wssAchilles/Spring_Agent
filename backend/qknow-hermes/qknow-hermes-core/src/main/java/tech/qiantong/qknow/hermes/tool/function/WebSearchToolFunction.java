@@ -36,11 +36,11 @@ public class WebSearchToolFunction
     }
 
     @Data
-    @JsonClassDescription("搜索互联网获取信息")
+    @JsonClassDescription("搜索互联网获取公开信息。当用户问最新资讯、公司信息、新闻、官网、公开资料、当前状态、训练知识外信息时使用。返回标题、摘要、URL。")
     public static class Request {
 
         @JsonProperty(required = true, value = "query")
-        @JsonPropertyDescription("搜索关键词")
+        @JsonPropertyDescription("搜索关键词，支持中英文")
         private String query;
     }
 
