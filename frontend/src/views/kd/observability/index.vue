@@ -113,10 +113,10 @@ const langfuseUrl = ref('https://cloud.langfuse.com');
 const loading = ref(false);
 
 const metrics = ref([
-  { label: '总对话数', value: '—', unit: '', trend: 0 },
-  { label: '平均延迟', value: '—', unit: 'ms', trend: 0 },
-  { label: 'Token 消耗', value: '—', unit: '', trend: 0 },
-  { label: 'Faithfulness', value: '—', unit: '', trend: 0 },
+  { label: '总对话数', value: '0', unit: '', trend: 0 },
+  { label: '平均延迟', value: '0', unit: 'ms', trend: 0 },
+  { label: 'Token 消耗', value: '0', unit: '', trend: 0 },
+  { label: 'Faithfulness', value: '0', unit: '', trend: 0 },
 ]);
 
 const traces = ref([]);
@@ -146,17 +146,20 @@ async function refreshTraces() {
     if (data && data.enabled) {
       // 更新指标
       const m = data.metrics || {};
-      metrics.value[0].value = String(m.totalConversations || 0);
-      metrics.value[1].value = m.avgLatency ? `${m.avgLatency}ms` : '—';
-      metrics.value[2].value = m.totalTokens ? String(m.totalTokens) : '—';
+      metrics.value[0].value = String(m.totalConversations ?? 0);
+      metrics.value[1].value = `${m.avgLatency ?? 0}ms`;
+      metrics.value[2].value = String(m.totalTokens ?? 0);
 
       // 更新追踪列表
       traces.value = (data.traces || []).map(t => ({
         id: t.id,
         query: t.input || t.name || '—',
-        duration: t.latency ? `${t.latency}ms` : '—',
-        tokens: t.usage ? String(t.usage.totalTokens || 0) : '—',
-        spans: [],
+        duration: t.latency != null ? `${t.latency}ms` : '—',
+        tokens: t.usage ? String(t.usage.totalTokens ?? 0) : '0',
+        spans: (t.observations || []).map(o => ({
+          name: o.name || o.type || 'span',
+          duration: o.latency != null ? `${o.latency}ms` : ''
+        })),
         time: t.timestamp || t.createdAt || '—'
       }));
     }
@@ -169,6 +172,7 @@ async function refreshTraces() {
 
 onMounted(() => {
   checkLangFuseStatus();
+  refreshTraces();
 });
 </script>
 
