@@ -1,6 +1,5 @@
 <template>
-  <div class="app-container">
-    <!-- 顶部状态栏 -->
+  <div class="app-container observability-page">
     <el-card shadow="never" class="status-card">
       <div class="status-row">
         <div class="status-left">
@@ -21,7 +20,6 @@
       </div>
     </el-card>
 
-    <!-- 未启用：配置引导 -->
     <el-card v-if="!langfuseEnabled" shadow="never" class="setup-card">
       <el-result icon="info" title="启用 LLM 可观测性"
         sub-title="LangFuse 提供 Agent 调用链路追踪、Token 消耗统计、质量评估面板。">
@@ -41,63 +39,80 @@ LANGFUSE_SECRET_KEY=sk-lf-...</pre>
       </el-result>
     </el-card>
 
-    <!-- 已启用：仪表盘 -->
     <template v-else>
-      <!-- 指标卡片 -->
       <el-row :gutter="16" class="metric-row">
-        <el-col :span="6" v-for="m in metrics" :key="m.label">
-          <el-card shadow="hover" class="metric-card">
+        <el-col :xs="24" :sm="12" :lg="6" v-for="m in metrics" :key="m.label">
+          <el-card shadow="never" class="metric-card">
             <div class="metric-label">{{ m.label }}</div>
-            <div class="metric-value">{{ m.value }}<span class="metric-unit">{{ m.unit }}</span></div>
-            <div class="metric-trend" :class="m.trend > 0 ? 'trend-up' : m.trend < 0 ? 'trend-down' : ''">
-              {{ m.trend > 0 ? '↑' : m.trend < 0 ? '↓' : '—' }} {{ Math.abs(m.trend) }}%
+            <div class="metric-value">
+              {{ m.value }}
+              <span v-if="m.unit" class="metric-unit">{{ m.unit }}</span>
             </div>
+            <div class="metric-desc">{{ m.desc }}</div>
           </el-card>
         </el-col>
       </el-row>
 
-      <!-- 链路追踪 -->
       <el-card shadow="never" class="trace-card">
         <template #header>
           <div class="trace-header">
-            <span>最近对话追踪</span>
-            <el-button size="small" @click="refreshTraces">
+            <div>
+              <div class="trace-title">最近对话追踪</div>
+              <div class="trace-subtitle">展示最近 20 条 LangFuse Trace 及其 Generation / Span</div>
+            </div>
+            <el-button size="small" :loading="loading" @click="refreshTraces">
               <el-icon><Refresh /></el-icon>
               刷新
             </el-button>
           </div>
         </template>
-        <el-table :data="traces" stripe style="width: 100%">
-          <el-table-column label="状态" width="60" align="center">
+        <el-table
+          v-loading="loading"
+          :data="traces"
+          stripe
+          max-height="52vh"
+          style="width: 100%"
+          empty-text="暂无追踪数据，发起一次 Agent 对话后刷新"
+        >
+          <el-table-column label="状态" width="88" align="center">
             <template #default="{ row }">
-              <el-icon :color="row.status === 'success' ? '#10b981' : '#ef4444'" :size="18">
-                <CircleCheckFilled v-if="row.status === 'success'" />
-                <CircleCloseFilled v-else />
-              </el-icon>
+              <el-tag :type="row.status === 'success' ? 'success' : 'danger'" effect="light" size="small">
+                {{ row.status === 'success' ? '成功' : '失败' }}
+              </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="query" label="查询" min-width="200" show-overflow-tooltip />
+          <el-table-column label="查询" min-width="260" show-overflow-tooltip>
+            <template #default="{ row }">
+              <div class="query-cell">{{ row.query }}</div>
+              <div class="trace-id">{{ row.id }}</div>
+            </template>
+          </el-table-column>
           <el-table-column label="延迟" width="100" align="center">
             <template #default="{ row }">
-              <span style="font-family: monospace;">{{ row.duration }}ms</span>
+              <span class="mono">{{ formatMs(row.duration) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="Token" width="100" align="center">
             <template #default="{ row }">
-              <span style="font-family: monospace;">{{ row.tokens }}</span>
+              <span class="mono">{{ formatNumber(row.tokens) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="调用链" min-width="200">
+          <el-table-column label="调用链" min-width="260">
             <template #default="{ row }">
-              <el-tag v-for="span in row.spans" :key="span.name" size="small"
-                :type="span.type" style="margin-right: 4px;">
-                {{ span.name }} {{ span.duration }}ms
+              <el-tag v-for="span in row.spans" :key="`${row.id}-${span.name}-${span.duration}`" size="small"
+                :type="span.type" class="span-tag">
+                {{ span.name }}
+                <span v-if="span.duration != null" class="span-duration">{{ formatMs(span.duration) }}</span>
               </el-tag>
+              <span v-if="row.spans.length === 0" class="muted">暂无 observation</span>
             </template>
           </el-table-column>
-          <el-table-column prop="time" label="时间" width="180" />
+          <el-table-column label="时间" width="180">
+            <template #default="{ row }">
+              <span class="muted">{{ row.time }}</span>
+            </template>
+          </el-table-column>
         </el-table>
-        <el-empty v-if="traces.length === 0" description="暂无追踪数据，发起一次 Agent 对话后刷新" />
       </el-card>
     </template>
   </div>
@@ -105,7 +120,7 @@ LANGFUSE_SECRET_KEY=sk-lf-...</pre>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Link, Refresh, CircleCheckFilled, CircleCloseFilled, WarningFilled } from '@element-plus/icons-vue';
+import { Link, Refresh, CircleCheckFilled, WarningFilled } from '@element-plus/icons-vue';
 import request from '@/utils/request';
 
 const langfuseEnabled = ref(false);
@@ -113,10 +128,10 @@ const langfuseUrl = ref('https://cloud.langfuse.com');
 const loading = ref(false);
 
 const metrics = ref([
-  { label: '总对话数', value: '0', unit: '', trend: 0 },
-  { label: '平均延迟', value: '0', unit: 'ms', trend: 0 },
-  { label: 'Token 消耗', value: '0', unit: '', trend: 0 },
-  { label: 'Faithfulness', value: '0', unit: '', trend: 0 },
+  { label: '总对话数', value: '0', unit: '', desc: '最近 Trace 数' },
+  { label: '平均延迟', value: '0', unit: 'ms', desc: 'Trace / Observation 兼容聚合' },
+  { label: 'Token 消耗', value: '0', unit: '', desc: 'Generation usage 汇总' },
+  { label: 'Faithfulness', value: '0', unit: '', desc: '待接入质量评分' },
 ]);
 
 const traces = ref([]);
@@ -147,18 +162,19 @@ async function refreshTraces() {
       // 更新指标
       const m = data.metrics || {};
       metrics.value[0].value = String(m.totalConversations ?? 0);
-      metrics.value[1].value = `${m.avgLatency ?? 0}ms`;
+      metrics.value[1].value = String(m.avgLatency ?? 0);
       metrics.value[2].value = String(m.totalTokens ?? 0);
 
-      // 更新追踪列表
       traces.value = (data.traces || []).map(t => ({
         id: t.id,
         query: t.input || t.name || '—',
-        duration: t.latency != null ? `${t.latency}ms` : '—',
-        tokens: t.usage ? String(t.usage.totalTokens ?? 0) : '0',
+        status: t.status || 'success',
+        duration: normalizeNumber(t.latency),
+        tokens: getTraceTokens(t),
         spans: (t.observations || []).map(o => ({
           name: o.name || o.type || 'span',
-          duration: o.latency != null ? `${o.latency}ms` : ''
+          duration: normalizeNumber(o.latency),
+          type: getSpanType(o)
         })),
         time: t.timestamp || t.createdAt || '—'
       }));
@@ -170,6 +186,47 @@ async function refreshTraces() {
   }
 }
 
+function normalizeNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatMs(value) {
+  const n = normalizeNumber(value);
+  return n === null ? '—' : `${n}ms`;
+}
+
+function formatNumber(value) {
+  const n = normalizeNumber(value);
+  return n === null ? '0' : String(n);
+}
+
+function getUsageTotal(usage) {
+  if (!usage) return null;
+  const total = normalizeNumber(usage.totalTokens ?? usage.total);
+  if (total !== null) return total;
+  const input = normalizeNumber(usage.input ?? usage.promptTokens);
+  const output = normalizeNumber(usage.output ?? usage.completionTokens);
+  return input !== null || output !== null ? (input || 0) + (output || 0) : null;
+}
+
+function getTraceTokens(trace) {
+  const direct = getUsageTotal(trace.usage);
+  if (direct !== null) return direct;
+  return (trace.observations || []).reduce((sum, observation) => {
+    const usageTotal = getUsageTotal(observation.usage) ?? getUsageTotal(observation.usageDetails);
+    return sum + (usageTotal || 0);
+  }, 0);
+}
+
+function getSpanType(observation) {
+  const type = String(observation.type || '').toLowerCase();
+  if (type.includes('generation')) return 'success';
+  if (type.includes('span')) return 'info';
+  return '';
+}
+
 onMounted(() => {
   checkLangFuseStatus();
   refreshTraces();
@@ -177,12 +234,21 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+.observability-page {
+  min-height: 100%;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
 .status-card {
   margin-bottom: 16px;
+  flex-shrink: 0;
   .status-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
+    min-height: 48px;
   }
   .page-title {
     font-size: 20px;
@@ -199,11 +265,13 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
   }
 }
 
 .setup-card {
   margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .config-block {
@@ -220,21 +288,25 @@ onMounted(() => {
 
 .metric-row {
   margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .metric-card {
+  border-radius: 6px;
+  min-height: 120px;
   .metric-label {
     font-size: 12px;
     color: #909399;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0;
     margin-bottom: 8px;
   }
   .metric-value {
     font-size: 28px;
     font-weight: 700;
     color: #303133;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
+    line-height: 1.2;
   }
   .metric-unit {
     font-size: 14px;
@@ -242,20 +314,69 @@ onMounted(() => {
     color: #909399;
     margin-left: 2px;
   }
-  .metric-trend {
+  .metric-desc {
     font-size: 12px;
-    margin-top: 4px;
+    color: #909399;
+    margin-top: 8px;
+    line-height: 18px;
   }
-  .trend-up { color: #10b981; }
-  .trend-down { color: #ef4444; }
 }
 
 .trace-card {
+  flex-shrink: 0;
   .trace-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-weight: 500;
+    gap: 16px;
+  }
+  .trace-title {
+    font-weight: 600;
+    color: #303133;
+  }
+  .trace-subtitle {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #909399;
+  }
+}
+
+.query-cell {
+  color: #303133;
+  line-height: 20px;
+}
+
+.trace-id {
+  margin-top: 2px;
+  color: #c0c4cc;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.span-tag {
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
+.span-duration {
+  margin-left: 4px;
+  color: #606266;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.muted {
+  color: #909399;
+}
+
+@media (max-width: 768px) {
+  .status-card .status-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
   }
 }
 </style>
