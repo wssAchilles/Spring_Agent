@@ -58,6 +58,12 @@
         </dependency>
         <dependency>
             <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-module-ai-api</artifactId>
+            <version>${qknow.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
             <artifactId>qknow-module-ext-biz</artifactId>
             <version>${qknow.version}</version>
             <scope>test</scope>
