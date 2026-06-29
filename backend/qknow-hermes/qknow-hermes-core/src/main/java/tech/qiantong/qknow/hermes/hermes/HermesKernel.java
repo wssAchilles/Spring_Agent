@@ -16,15 +16,19 @@ import tech.qiantong.qknow.hermes.judge.JudgeResult;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Hermes 认知内核
  * 实现反思循环: 生成 → 自我评估 → 修正
- *
- * 借鉴 claw-code 的 agent 循环设计
+ * 增强: fail-plausible 检测（self-consistency 检测流畅但不一致的回答）
  */
 @Slf4j
 public class HermesKernel {
+
+    private static final double CONSISTENCY_THRESHOLD = 0.6;
+    private static final int CONSISTENCY_SAMPLES = 3;
 
     private final AiJudgeService aiJudgeService;
 
@@ -65,10 +69,18 @@ public class HermesKernel {
             JudgeResult judgeResult = aiJudgeService.judge(userQuery, context, currentAnswer);
 
             // 3. 记录尝试
-            attempts.add(new ReflectionAttempt(attempt + 1, currentAnswer, judgeResult));
+            attempts.add(new ReflectionAttempt(attempt + 1, currentAnswer, judgeResult, 1.0, false));
 
-            // 4. 检查是否通过
-            if (judgeResult.isPassed()) {
+            // 4. fail-plausible 检测: self-consistency check
+            double consistency = checkSelfConsistency(chatModel, promptContent, userQuery);
+            if (consistency < CONSISTENCY_THRESHOLD) {
+                log.warn("fail-plausible 检测: consistency={} < {}, 回答可能不可靠", consistency, CONSISTENCY_THRESHOLD);
+                attempts.get(attempts.size() - 1).setConsistencyScore(consistency);
+                attempts.get(attempts.size() - 1).setFailPlausibleDetected(true);
+            }
+
+            // 5. 检查是否通过
+            if (judgeResult.isPassed() && consistency >= CONSISTENCY_THRESHOLD) {
                 log.info("Hermes 反思循环 - 第 {} 次尝试通过评分", attempt + 1);
                 return new ReflectionResult(currentAnswer, attempts, true, attempt + 1);
             }
@@ -110,6 +122,57 @@ public class HermesKernel {
         return sb.toString();
     }
 
+    /**
+     * fail-plausible 检测: self-consistency check
+     * 多次采样同一 prompt，检查回答的一致性
+     * 一致性低 + 回答流畅 = fail-plausible（静默失败）
+     */
+    private double checkSelfConsistency(ChatModel chatModel, String systemPrompt, String userQuery) {
+        try {
+            List<String> samples = IntStream.range(0, CONSISTENCY_SAMPLES)
+                    .mapToObj(i -> {
+                        try {
+                            ChatResponse resp = chatModel.call(new Prompt(List.of(
+                                    new SystemMessage(systemPrompt),
+                                    new UserMessage(userQuery)
+                            )));
+                            return resp.getResult().getOutput().getText();
+                        } catch (Exception e) {
+                            return "";
+                        }
+                    })
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.toList());
+
+            if (samples.size() < 2) return 1.0;
+
+            // 计算 pairwise similarity (简单的词级 Jaccard)
+            double totalSimilarity = 0;
+            int pairs = 0;
+            for (int i = 0; i < samples.size(); i++) {
+                for (int j = i + 1; j < samples.size(); j++) {
+                    totalSimilarity += jaccardSimilarity(samples.get(i), samples.get(j));
+                    pairs++;
+                }
+            }
+            return pairs > 0 ? totalSimilarity / pairs : 1.0;
+        } catch (Exception e) {
+            log.debug("Self-consistency check failed", e);
+            return 1.0; // 失败时假设一致
+        }
+    }
+
+    private double jaccardSimilarity(String a, String b) {
+        if (a == null || b == null) return 0.0;
+        java.util.Set<String> setA = java.util.Set.of(a.split("\\s+"));
+        java.util.Set<String> setB = java.util.Set.of(b.split("\\s+"));
+        java.util.Set<String> intersection = new java.util.HashSet<>(setA);
+        intersection.retainAll(setB);
+        java.util.Set<String> union = new java.util.HashSet<>(setA);
+        union.addAll(setB);
+        return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -127,5 +190,7 @@ public class HermesKernel {
         private int attemptNumber;
         private String answer;
         private JudgeResult judgeResult;
+        private double consistencyScore;
+        private boolean failPlausibleDetected;
     }
 }
