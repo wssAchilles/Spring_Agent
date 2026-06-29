@@ -50,8 +50,10 @@ import tech.qiantong.qknow.module.kmc.dal.mapper.sync.KmcSyncMapper;
 import tech.qiantong.qknow.module.kmc.service.kmcDocument.IKmcDocumentService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeSegment.IKmcDocumentSegmentService;
+import tech.qiantong.qknow.module.kmc.service.rag.ContextualEnrichmentService;
 import tech.qiantong.qknow.module.kmc.service.rag.EntityExtractionService;
 import tech.qiantong.qknow.module.kmc.service.rag.GraphRagSyncService;
+import tech.qiantong.qknow.module.kmc.service.rag.HyPEIndexer;
 import tech.qiantong.qknow.module.kmc.service.rag.RagCacheService;
 import tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService;
 import tech.qiantong.qknow.module.kmc.service.sync.IKmcSyncService;
@@ -101,6 +103,10 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     private SemanticCacheService semanticCacheService;
     @Resource
     private GraphRagSyncService graphRagSyncService;
+    @Resource
+    private ContextualEnrichmentService contextualEnrichmentService;
+    @Resource
+    private HyPEIndexer hypeIndexer;
 
     @Value("${dromara.x-file-storage.local-plus[0].storage-path}")
     private String prefix;
@@ -367,6 +373,31 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                             createDocumentChatModel(kmcDocumentDO));
                 }
 
+                // Contextual Retrieval: enrich chunks with context before vectorization
+                String fullDocument = documentList.stream()
+                        .map(Document::getText)
+                        .collect(Collectors.joining("\n\n"));
+                segmentList = segmentList.stream()
+                        .map(doc -> {
+                            String enriched = contextualEnrichmentService.enrich(fullDocument, doc.getText());
+                            if (!enriched.equals(doc.getText())) {
+                                Document enrichedDoc = new Document(enriched, doc.getMetadata());
+                                enrichedDoc.getMetadata().put("contextual_enriched", true);
+                                return enrichedDoc;
+                            }
+                            return doc;
+                        })
+                        .collect(Collectors.toList());
+
+                // HyPE: generate hypothetical questions for each chunk
+                List<Document> hypotheticalDocs = new ArrayList<>();
+                for (Document doc : segmentList) {
+                    hypotheticalDocs.addAll(hypeIndexer.generateHypotheticalDocuments(doc, fullDocument));
+                }
+                if (!hypotheticalDocs.isEmpty()) {
+                    log.info("HyPE 生成 {} 个假设问题文档", hypotheticalDocs.size());
+                }
+
                 if (Objects.equals(kmcDocumentDO.getDocForm(), DocFormEnum.QA_MODEL.getType())) {
                     ChatModel chatModel = aiModelService.getChatModel(Long.valueOf(kmcDocumentDO.getChatModelProvider()),
                             kmcDocumentDO.getChatModel());
@@ -375,6 +406,12 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 }
 
                 this.saveSegment(knowledgeBaseDO, kmcDocumentDO, segmentList);
+
+                // Save hypothetical questions to vector store only (not SQL)
+                if (!hypotheticalDocs.isEmpty()) {
+                    saveHypotheticalToVectorStore(knowledgeBaseDO, kmcDocumentDO, hypotheticalDocs);
+                }
+
                 kmcDocumentDO.setSyncStatus(DocumentSyncStatus.SUCCESS.code);
                 kmcDocumentService.updateById(kmcDocumentDO);
                 evictKnowledgeCaches(kmcDocumentDO.getKnowledgeBaseId());
@@ -622,6 +659,34 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
             vectorStore.delete(expression);// 删除
         } catch (Exception e) {
             log.error("文档同步失败", e);
+        }
+    }
+
+    /**
+     * 保存 HyPE 假设问题到向量数据库（不保存到 SQL）
+     */
+    public void saveHypotheticalToVectorStore(KmcKnowledgeBaseDO knowledgeBaseDO, KmcDocumentDO documentDO,
+                                              List<Document> hypotheticalDocs) {
+        EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
+                Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
+                knowledgeBaseDO.getEmbeddingModel());
+        VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
+
+        hypotheticalDocs.forEach(doc -> {
+            Map<String, Object> metadata = doc.getMetadata();
+            metadata.put(WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID, documentDO.getKnowledgeBaseId());
+            metadata.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID, documentDO.getId());
+            metadata.put(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME, documentDO.getName());
+        });
+
+        try {
+            List<List<Document>> partitions = Lists.partition(hypotheticalDocs, 5);
+            for (List<Document> partition : partitions) {
+                vectorStore.add(partition);
+            }
+            log.info("HyPE 假设问题向量写入成功，文档ID {}，共 {} 条", documentDO.getId(), hypotheticalDocs.size());
+        } catch (Exception e) {
+            log.warn("HyPE 假设问题向量写入失败，文档ID {}：{}", documentDO.getId(), e.getMessage());
         }
     }
 

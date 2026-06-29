@@ -57,6 +57,9 @@ public class RagRetrievalService {
     @Resource
     private CragRetrievalEvaluator cragRetrievalEvaluator;
 
+    @Resource
+    private QueryRouter queryRouter;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         return retrieve(knowledgeBaseId, query, query, topK, debug);
     }
@@ -64,6 +67,26 @@ public class RagRetrievalService {
     public RagResult retrieve(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> debugInfo = debug ? new LinkedHashMap<>() : null;
+
+        // Query routing
+        QueryRouter.QueryRoute route = queryRouter.classify(query);
+        if (debug) {
+            debugInfo.put("queryRoute", route.name());
+        }
+
+        // Simple queries: skip retrieval, return empty context
+        if (route == QueryRouter.QueryRoute.SIMPLE) {
+            if (debug) {
+                debugInfo.put("skippedRetrieval", true);
+                debugInfo.put("reason", "SIMPLE route - no retrieval needed");
+                debugInfo.put("elapsedMs", System.currentTimeMillis() - startTime);
+            }
+            return RagResult.builder()
+                    .context("")
+                    .sources(Collections.emptyList())
+                    .debugInfo(debugInfo != null ? debugInfo : Map.of())
+                    .build();
+        }
 
         // 权限检查
         List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
