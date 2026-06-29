@@ -128,7 +128,8 @@ public class KbFlowServiceImpl implements IKbFlowService {
             String msg = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "工作流执行失败，未产生回复";
             return Flux.just(CommonResult.error(new ServiceException(msg, 500)));
         }
-        return resultFlux.onErrorResume(throwable ->
+        Flux<CommonResult<String>> started = Flux.just(CommonResult.success("{\"event\":\"started\",\"text\":\"\"}"));
+        return Flux.concat(started, resultFlux).onErrorResume(throwable ->
                 Flux.just(CommonResult.error(new ServiceException("大模型调用异常: " + throwable.getMessage(), 500))));
     }
 

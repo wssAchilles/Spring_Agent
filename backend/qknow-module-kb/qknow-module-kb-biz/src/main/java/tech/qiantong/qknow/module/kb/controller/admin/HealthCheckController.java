@@ -184,6 +184,8 @@ public class HealthCheckController {
                     for (int i = 0; i < traces.size(); i++) {
                         com.alibaba.fastjson2.JSONObject trace = traces.getJSONObject(i);
                         String traceId = trace.getString("id");
+                        int traceTokens = 0;
+                        long observationLatency = 0;
 
                         // 获取该 trace 的 observations（spans/generations）
                         try {
@@ -203,12 +205,10 @@ public class HealthCheckController {
                                 if (observations != null) {
                                     for (int j = 0; j < observations.size(); j++) {
                                         com.alibaba.fastjson2.JSONObject obs = observations.getJSONObject(j);
-                                        if (obs.containsKey("usage")) {
-                                            com.alibaba.fastjson2.JSONObject usage = obs.getJSONObject("usage");
-                                            if (usage != null) {
-                                                totalTokens += usage.getIntValue("totalTokens", 0);
-                                            }
-                                        }
+                                        int observationTokens = readTokenTotal(obs);
+                                        traceTokens += observationTokens;
+                                        totalTokens += observationTokens;
+                                        observationLatency = Math.max(observationLatency, readLatency(obs));
                                     }
                                 }
                             }
@@ -218,7 +218,14 @@ public class HealthCheckController {
                         }
 
                         // 提取 latency
-                        long traceLatency = trace.getLongValue("latency", 0);
+                        long traceLatency = readLatency(trace);
+                        if (traceLatency == 0) {
+                            traceLatency = observationLatency;
+                            trace.put("latency", traceLatency);
+                        }
+                        if (traceTokens > 0 && !trace.containsKey("usage")) {
+                            trace.put("usage", Map.of("totalTokens", traceTokens));
+                        }
                         totalLatency += traceLatency;
 
                         enrichedTraces.add(trace);
@@ -245,5 +252,71 @@ public class HealthCheckController {
         }
 
         return CommonResult.success(result);
+    }
+
+    private int readTokenTotal(com.alibaba.fastjson2.JSONObject observation) {
+        if (observation == null) {
+            return 0;
+        }
+        Long direct = readLong(observation, "totalTokens");
+        if (direct != null && direct > 0) {
+            return direct.intValue();
+        }
+        int usageTotal = readTokenTotalFromObject(observation.getJSONObject("usage"));
+        if (usageTotal > 0) {
+            return usageTotal;
+        }
+        return readTokenTotalFromObject(observation.getJSONObject("usageDetails"));
+    }
+
+    private int readTokenTotalFromObject(com.alibaba.fastjson2.JSONObject usage) {
+        if (usage == null) {
+            return 0;
+        }
+        Long totalTokens = readLong(usage, "totalTokens");
+        if (totalTokens != null && totalTokens > 0) {
+            return totalTokens.intValue();
+        }
+        Long total = readLong(usage, "total");
+        if (total != null && total > 0) {
+            return total.intValue();
+        }
+        long input = defaultLong(readLong(usage, "input"), readLong(usage, "promptTokens"));
+        long output = defaultLong(readLong(usage, "output"), readLong(usage, "completionTokens"));
+        return (int) Math.max(0, input + output);
+    }
+
+    private long readLatency(com.alibaba.fastjson2.JSONObject object) {
+        if (object == null) {
+            return 0;
+        }
+        Long latency = readLong(object, "latency");
+        if (latency != null && latency > 0) {
+            return latency;
+        }
+        Long duration = readLong(object, "duration");
+        return duration != null && duration > 0 ? duration : 0;
+    }
+
+    private Long readLong(com.alibaba.fastjson2.JSONObject object, String key) {
+        Object value = object.get(key);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                return Long.parseLong(text);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private long defaultLong(Long first, Long second) {
+        if (first != null) {
+            return first;
+        }
+        return second != null ? second : 0;
     }
 }
