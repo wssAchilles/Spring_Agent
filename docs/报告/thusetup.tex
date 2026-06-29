@@ -1,0 +1,242 @@
+% !TeX root = ./thuthesis-example.tex
+
+% 论文基本信息配置
+
+% 技术方案基本信息配置（简化版）
+
+% 修复 TimesNewRoman 不支持小型大写字母 (small caps) 的警告
+% fontspec 加载 Times New Roman 后内部族名为 TimesNewRoman(0)
+% 声明 sc 字形回退到 n，消除 NFSS undefined shape 警告
+\AtEndPreamble{%
+  \DeclareFontShape{TU}{TimesNewRoman(0)}{m}{sc}{<->ssub*TimesNewRoman(0)/m/n}{}%
+  \DeclareFontShape{TU}{TimesNewRoman(0)}{bx}{sc}{<->ssub*TimesNewRoman(0)/bx/n}{}%
+}
+
+% 载入所需的宏包
+
+% 定理类环境宏包
+\usepackage{amsthm}
+% 也可以使用 ntheorem
+% \usepackage[amsmath,thmmarks,hyperref]{ntheorem}
+
+% 数学字体配置已简化，使用默认设置
+
+% 可以使用 nomencl 生成符号和缩略语说明
+% \usepackage{nomencl}
+% \makenomenclature
+
+% 表格加脚注
+\usepackage{threeparttable}
+
+% 表格中支持跨行
+\usepackage{multirow}
+
+% 固定宽度的表格。
+% \usepackage{tabularx}
+
+% 跨页表格
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{booktabs}  % 提供了 \toprule, \midrule, \bottomrule
+% 算法
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+%代码字体
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{10} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{10}  % for normal
+
+%代码颜色
+\usepackage{color}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+
+% 量和单位
+\usepackage{siunitx}
+
+% 参考文献使用 BibTeX + natbib 宏包
+% 顺序编码制
+\usepackage[sort]{natbib}
+\bibliographystyle{thuthesis-numeric}
+\usepackage{titlesec}
+\usepackage{tikz}
+
+% 让 \paragraph 参与编号（段级别=4）
+\setcounter{secnumdepth}{4}
+
+% 定义 \paragraph 的编号样式为纯阿拉伯数字：1, 2, 3, ...
+\makeatletter
+\renewcommand\theparagraph{\arabic{paragraph}}
+% 如果希望每个 section 内从 1 重新开始编号，保留下一行；
+% 如果希望全文连续编号，请删掉下一行。
+\@addtoreset{paragraph}{section}
+\makeatother
+
+% 把 \paragraph 改成块级标题（标题后换行）
+\titleformat{\paragraph}[block]
+{\normalfont\normalsize\bfseries}% 样式
+{\theparagraph}%                  % 显示的编号（比如 1, 2, 3）
+{0.8em}%                          % 编号与标题的间距
+{}                                % 标题前置代码
+
+% 调整段前段后间距（可按需修改）
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1ex plus .2ex}
+\usepackage{indentfirst}  % 首行缩进
+
+% 著者-出版年制
+% \usepackage{natbib}
+% \bibliographystyle{thuthesis-author-year}
+
+% 生命科学学院要求使用 Cell 参考文献格式（2023 年以前使用 author-date 格式）
+% \usepackage{natbib}
+% \bibliographystyle{cell}
+
+% 本科生参考文献的著录格式
+% \usepackage[sort]{natbib}
+% \bibliographystyle{thuthesis-bachelor}
+
+% 参考文献使用 BibLaTeX 宏包
+% \usepackage[style=thuthesis-numeric]{biblatex}
+% \usepackage[style=thuthesis-author-year]{biblatex}
+% \usepackage[style=gb7714-2015]{biblatex}
+% \usepackage[style=apa]{biblatex}
+% \usepackage[style=mla-new]{biblatex}
+% 声明 BibLaTeX 的数据库
+% \addbibresource{ref/refs.bib}
+%可固定下划线长度
+\makeatletter
+\newcommand\dlmu[2][4cm]{\hskip1pt\underline{\hb@xt@ #1{\hss#2\hss}}\hskip3pt}
+
+% 按课程模板固定页眉与摘要标题块
+\newcommand\course@report@header{计算机信息工程学院大作业报告}
+\newcommand\course@report@title{}
+\newcommand\course@report@title@en{}
+\newcommand\course@report@headformat[1]{%
+  \kaishu\fontsize{10.5bp}{12bp}\selectfont #1%
+}
+\newcommand\course@report@titleformat[1]{%
+  \vspace*{18bp}
+  \begin{center}
+    {\songti\fontsize{16bp}{20bp}\selectfont #1\par}
+    \vspace{18bp}
+  \end{center}
+}
+\newcommand\course@report@abstractname[1]{%
+  \begin{center}
+    {\songti\bfseries\fontsize{12bp}{20bp}\selectfont #1\par}
+    \vspace{20bp}
+  \end{center}
+}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \renewcommand\headrulewidth{0.75bp}%
+  \renewcommand\footrulewidth{0pt}%
+  \fancyhead[C]{\course@report@headformat{\course@report@header}}%
+  \fancyfoot[C]{\wuhao\thepage}%
+}
+\fancypagestyle{chapter}{%
+  \fancyhf{}%
+  \renewcommand\headrulewidth{0.75bp}%
+  \renewcommand\footrulewidth{0pt}%
+  \fancyhead[C]{\course@report@headformat{\course@report@header}}%
+  \fancyfoot[C]{\wuhao\thepage}%
+}
+\fancypagestyle{course@english@abstract}{%
+  \fancyhf{}%
+  \renewcommand\headrulewidth{0.75bp}%
+  \renewcommand\footrulewidth{0pt}%
+  \fancyhead[C]{\course@report@headformat{Abstract}}%
+  \fancyfoot[C]{\wuhao\thepage}%
+}
+\fancypagestyle{course@abstract}{%
+  \fancyhf{}%
+  \renewcommand\headrulewidth{0.75bp}%
+  \renewcommand\footrulewidth{0pt}%
+  \fancyhead[C]{\course@report@headformat{\course@report@header}}%
+}
+\fancypagestyle{course@english@abstract@nopage}{%
+  \fancyhf{}%
+  \renewcommand\headrulewidth{0.75bp}%
+  \renewcommand\footrulewidth{0pt}%
+  \fancyhead[C]{\course@report@headformat{Abstract}}%
+}
+\pagestyle{plain}
+\RenewDocumentEnvironment{abstract}{}{%
+  \thusetup{language = chinese}%
+  \pagestyle{course@abstract}%
+  \if@openright\cleardoublepage\else\clearpage\fi
+  \thu@pdfbookmark{0}{\thu@abstract@name}%
+  \course@report@titleformat{\course@report@title}%
+  \course@report@abstractname{\thu@abstract@name}%
+  \thispagestyle{course@abstract}%
+}{%
+  \par
+  \null\par
+  \noindent
+  \textsf{关键词：}%
+  \thu@clist@use{\thu@keywords}{；}\par
+  \gdef\thu@keywords{}%
+  \thispagestyle{course@abstract}%
+  \thu@reset@main@language
+}
+\RenewDocumentEnvironment{abstract*}{}{%
+  \thusetup{language = english}%
+  \pagestyle{course@english@abstract@nopage}%
+  \if@openright\cleardoublepage\else\clearpage\fi
+  \thu@pdfbookmark{0}{\thu@abstract@name@en}%
+  \course@report@titleformat{\course@report@title@en}%
+  \course@report@abstractname{\thu@abstract@name@en}%
+  \thispagestyle{course@english@abstract@nopage}%
+}{%
+  \par
+  \null\par
+  \noindent
+  \textbf{Keywords:} \thu@clist@use{\thu@keywords@en}{; }\par
+  \thispagestyle{course@english@abstract@nopage}%
+  \thu@reset@main@language
+}
+\makeatother
+
+\titleformat{\section}[block]{\Large\bfseries}{\thesection}{1em}{}
+% 定义所有的图片文件在 figures 子目录下
+\graphicspath{{figures/}}
+
+% 数学命令
+\makeatletter
+\newcommand\dif{%  % 微分符号
+  \mathop{}\!%
+  \ifthu@math@style@TeX
+    d%
+  \else
+    \mathrm{d}%
+  \fi
+}
+\makeatother
+
+\newcommand\cppstyle{\lstset{
+    literate={-}{{-}}1,                % 让 '-' 正常显示
+    language=C++,                      % 设置语言为C++
+    basicstyle=\ttm,                   % 基本字体样式
+    morekeywords={self},               % 根据需要添加更多关键词
+    keywordstyle=\ttb\color{deepblue}, % 关键词样式
+    emph={MyClass,__init__},           % 自定义高亮关键词
+    emphstyle=\ttb\color{deepred},     % 高亮关键词样式
+    stringstyle=\color{deepgreen},     % 字符串样式
+    frame=tb,                          % 在代码块上下添加边框
+    showstringspaces=false,            % 不显示字符串中的空格
+    caption={C++},                     % 设置标题为 "C++"
+    captionpos=t                       % 标题位置在顶部
+  }}
+
+% 定义C++环境
+\lstnewenvironment{cpp}[1][]
+{
+  \cppstyle
+  \lstset{#1}
+}
+{}
+
+% hyperref 宏包在最后调用
+\usepackage{hyperref}
