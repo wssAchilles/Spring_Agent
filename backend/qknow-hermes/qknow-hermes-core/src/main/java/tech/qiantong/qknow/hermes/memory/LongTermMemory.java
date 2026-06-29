@@ -1,26 +1,29 @@
 package tech.qiantong.qknow.hermes.memory;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 向量化长期记忆。
  * 参考：CrewAI 记忆公式（54.4k⭐）
  * composite = 0.5 × similarity + 0.3 × decay + 0.2 × importance
  * decay = 0.5 ^ (age_days / 30)  # 30 天半衰期
+ *
+ * 增强：Consolidation 机制（相似记忆合并/更新/删除）
  */
+@Slf4j
 public class LongTermMemory {
 
     private static final double WEIGHT_SIMILARITY = 0.5;
     private static final double WEIGHT_DECAY = 0.3;
     private static final double WEIGHT_IMPORTANCE = 0.2;
     private static final double DECAY_HALF_LIFE_DAYS = 30.0;
+    private static final double CONSOLIDATION_THRESHOLD = 0.85;
 
     private final VectorStore vectorStore;
     private final EmbeddingModel embeddingModel;
@@ -30,7 +33,42 @@ public class LongTermMemory {
         this.embeddingModel = embeddingModel;
     }
 
+    /**
+     * 存储记忆，带 Consolidation 检测
+     * 如果发现相似记忆（cosine > 0.85），则合并而非新增
+     */
     public void store(String content, Map<String, Object> metadata) {
+        // 检查是否有相似记忆
+        List<Document> similar = findSimilar(content, 3);
+        for (Document existing : similar) {
+            double similarity = existing.getScore() != null ? existing.getScore() : 0.0;
+            if (similarity >= CONSOLIDATION_THRESHOLD) {
+                // 合并：更新现有记忆的内容和时间戳
+                log.debug("Consolidation: merging with existing memory (similarity={})", similarity);
+                Map<String, Object> updatedMetadata = new HashMap<>(existing.getMetadata());
+                updatedMetadata.putAll(metadata);
+                updatedMetadata.put("updated_at", System.currentTimeMillis());
+                updatedMetadata.put("consolidated_count",
+                        (int) updatedMetadata.getOrDefault("consolidated_count", 1) + 1);
+                // 删除旧记录，存储合并后的新记录
+                try {
+                    vectorStore.delete(List.of(existing.getId()));
+                } catch (Exception e) {
+                    log.debug("Failed to delete old memory during consolidation", e);
+                }
+                Document merged = Document.builder()
+                        .text(content)
+                        .metadata(updatedMetadata)
+                        .build();
+                vectorStore.add(List.of(merged));
+                return;
+            }
+        }
+
+        // 无相似记忆，直接存储
+        if (!metadata.containsKey("created_at")) {
+            metadata.put("created_at", System.currentTimeMillis());
+        }
         Document doc = Document.builder()
                 .text(content)
                 .metadata(metadata)
@@ -40,20 +78,35 @@ public class LongTermMemory {
 
     /**
      * 召回并按复合评分重排序
-     * 参考 CrewAI 记忆系统：similarity + decay + importance
      */
     public List<Document> recall(String query, int topK) {
-        SearchRequest request = SearchRequest.builder()
+        return recall(query, topK, null);
+    }
+
+    /**
+     * 召回并按复合评分重排序，支持 Scope 过滤
+     */
+    public List<Document> recall(String query, int topK, String scope) {
+        int fetchSize = Math.max(topK * 3, 20);
+        SearchRequest.Builder requestBuilder = SearchRequest.builder()
                 .query(query)
-                .topK(topK * 2)  // 多取一些，重排后截断
-                .build();
+                .topK(fetchSize);
+
+        SearchRequest request = requestBuilder.build();
         List<Document> results = vectorStore.similaritySearch(request);
         if (results == null || results.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // 创建可变副本（vectorStore 可能返回不可变列表）
-        List<Document> mutable = new java.util.ArrayList<>(results);
+        List<Document> mutable = new ArrayList<>(results);
+
+        // Scope 过滤
+        if (scope != null && !scope.isBlank()) {
+            mutable.removeIf(doc -> {
+                String docScope = String.valueOf(doc.getMetadata().getOrDefault("scope", ""));
+                return !docScope.startsWith(scope);
+            });
+        }
 
         // 按复合评分重排序
         mutable.sort((a, b) -> {
@@ -63,6 +116,18 @@ public class LongTermMemory {
         });
 
         return mutable.size() > topK ? mutable.subList(0, topK) : mutable;
+    }
+
+    /**
+     * 查找与给定内容相似的记忆
+     */
+    private List<Document> findSimilar(String content, int topK) {
+        SearchRequest request = SearchRequest.builder()
+                .query(content)
+                .topK(topK)
+                .build();
+        List<Document> results = vectorStore.similaritySearch(request);
+        return results != null ? results : Collections.emptyList();
     }
 
     /**
