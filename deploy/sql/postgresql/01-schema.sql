@@ -187,6 +187,7 @@ CREATE TABLE IF NOT EXISTS system_oper_log (
     business_type  INT DEFAULT 0,
     method         VARCHAR(100) DEFAULT '',
     request_method VARCHAR(10) DEFAULT '',
+    operator_type  INT DEFAULT 0,
     oper_name      VARCHAR(50) DEFAULT '',
     dept_name      VARCHAR(50) DEFAULT '',
     oper_url       VARCHAR(255) DEFAULT '',
@@ -896,6 +897,7 @@ CREATE TABLE IF NOT EXISTS kb_runtime_node (
     workspace_id   BIGINT NOT NULL,
     runtime_id     BIGINT NOT NULL,
     node_uuid      VARCHAR(128) DEFAULT NULL,
+    step           INTEGER DEFAULT 0,
     node_name      VARCHAR(128) DEFAULT NULL,
     node_type      SMALLINT DEFAULT NULL,
     input          TEXT DEFAULT NULL,
@@ -1456,3 +1458,28 @@ COMMENT ON TABLE kg_edge IS '知识图谱边表';
 CREATE INDEX IF NOT EXISTS idx_kg_edge_workspace ON kg_edge(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_kg_edge_source ON kg_edge(source_id);
 CREATE INDEX IF NOT EXISTS idx_kg_edge_target ON kg_edge(target_id);
+-- Hermes DAG checkpoint state
+CREATE TABLE IF NOT EXISTS dag_checkpoints (
+    runtime_id VARCHAR(255) PRIMARY KEY,
+    flow_id VARCHAR(255) NOT NULL,
+    group_index INT NOT NULL,
+    completed_results TEXT,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT
+);
+
+-- KMC temporal facts for GraphRAG/Graphiti-style validity windows
+CREATE TABLE IF NOT EXISTS kmc_temporal_facts (
+    id BIGSERIAL PRIMARY KEY,
+    segment_id BIGINT NOT NULL,
+    document_id BIGINT NOT NULL,
+    entity_name VARCHAR(255) NOT NULL,
+    fact_content TEXT,
+    valid_from BIGINT,
+    valid_until BIGINT,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT,
+    UNIQUE(segment_id, entity_name)
+);
+CREATE INDEX IF NOT EXISTS idx_temporal_facts_entity ON kmc_temporal_facts(entity_name);
+CREATE INDEX IF NOT EXISTS idx_temporal_facts_validity ON kmc_temporal_facts(valid_from, valid_until);
