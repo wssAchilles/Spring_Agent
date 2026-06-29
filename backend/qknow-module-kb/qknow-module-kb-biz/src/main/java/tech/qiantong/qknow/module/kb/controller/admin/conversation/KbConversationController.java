@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 import tech.qiantong.qknow.common.core.controller.BaseController;
 import tech.qiantong.qknow.common.core.domain.CommonResult;
 import tech.qiantong.qknow.common.core.utils.object.BeanUtils;
@@ -22,6 +23,7 @@ import tech.qiantong.qknow.module.kb.service.conversation.IKbChatMessageService;
 import tech.qiantong.qknow.module.kb.service.conversation.IKbConversationService;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Tag(name = "Agent 对话管理")
 @RestController
@@ -105,23 +107,36 @@ public class KbConversationController extends BaseController {
 
         // 调用 Agent (流式)
         try {
-            return agentConfigService.chatMessage(agentReq)
-                    .doOnNext(resp -> {
+            Sinks.Many<KbChatMessageSendRespVO> sink = Sinks.many().multicast().onBackpressureBuffer();
+            AtomicBoolean clientConnected = new AtomicBoolean(true);
+            agentConfigService.chatMessage(agentReq)
+                    .subscribe(resp -> {
                         KbChatMessageSendRespVO.Message receive = resp.getReceive();
-                        if (receive == null || receive.getContent() == null) {
-                            return;
+                        if (receive != null && receive.getContent() != null) {
+                            String eventType = receive.getEventType();
+                            if (!"tool_call".equals(eventType) && !"memory_recall".equals(eventType)) {
+                                assistantContent.append(receive.getContent());
+                            }
                         }
-                        String eventType = receive.getEventType();
-                        if ("tool_call".equals(eventType) || "memory_recall".equals(eventType)) {
-                            return;
+                        if (clientConnected.get()) {
+                            sink.tryEmitNext(resp);
                         }
-                        assistantContent.append(receive.getContent());
-                    })
-                    .doOnComplete(() -> {
+                    }, error -> {
                         if (!assistantContent.isEmpty()) {
                             chatMessageService.saveMessage(reqVO.getConversationId(), "assistant", assistantContent.toString());
                         }
+                        if (clientConnected.get()) {
+                            sink.tryEmitError(error);
+                        }
+                    }, () -> {
+                        if (!assistantContent.isEmpty()) {
+                            chatMessageService.saveMessage(reqVO.getConversationId(), "assistant", assistantContent.toString());
+                        }
+                        if (clientConnected.get()) {
+                            sink.tryEmitComplete();
+                        }
                     });
+            return sink.asFlux().doOnCancel(() -> clientConnected.set(false));
         } catch (Exception e) {
             throw new RuntimeException("Agent 调用失败: " + e.getMessage());
         }

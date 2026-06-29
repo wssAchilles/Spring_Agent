@@ -42,6 +42,6 @@ public interface KbRuntimeMapper extends BaseMapperX<KbRuntimeDO> {
                 .orderBy(reqVO.getOrderByColumn(), reqVO.getIsAsc(), allowedColumns));
     }
 
-    @Update("update kb_runtime set status = #{item.status},runtime=#{item.runtime}, `output`=#{item.output}, runtime = #{item.runtime} where id = #{item.id}")
+    @Update("update kb_runtime set status = #{item.status}, runtime_ms = #{item.runtime}, \"output\" = #{item.output} where id = #{item.id}")
     void saveRunSuccess(@Param("item") KbRuntimeDO runtimeDO);
 }
