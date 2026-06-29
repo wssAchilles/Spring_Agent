@@ -1,0 +1,74 @@
+% !TeX encoding = UTF-8
+% !TeX spellcheck = en_US
+
+\documentclass[fontset=mac,openright]{thuthesis}
+ 
+\input{thusetup}
+\begin{document}
+\begin{titlepage}
+    \thispagestyle{empty}
+    \newcommand\coverfield[3]{#1\underline{\makebox[#2][c]{#3}}}
+    \begin{tikzpicture}[remember picture,overlay]
+        \node[anchor=north] at ([yshift=-35.5mm]current page.north)
+        {\includegraphics[width=81mm,trim=0 7.8mm -2mm 0,clip]{cover/cit-name.pdf}};
+        \node[anchor=north] at ([yshift=-58.2mm]current page.north)
+        {\fontspec{Times New Roman}\fontsize{12.8pt}{15pt}\selectfont CHANGZHOU\quad INSTITUTE\quad OF\quad TECHNOLOGY};
+        \node[anchor=north] at ([yshift=-77.5mm]current page.north)
+        {\scalebox{1}[0.88]{\heiti\bfseries\fontsize{30pt}{36pt}\selectfont 课程设计报告}};
+        \node[anchor=west] at ([xshift=41.4mm,yshift=-124.9mm]current page.north west)
+        {\songti\selectfont{\bfseries\fontsize{18pt}{34pt}\selectfont 课程名称：}%
+            \underline{\makebox[94mm][c]{\fontsize{22pt}{30pt}\selectfont 专业方向课程设计}}};
+
+        \node[anchor=west] at ([xshift=52.6mm,yshift=-161.8mm]current page.north west)
+        {\songti\fontsize{15pt}{18pt}\selectfont
+            \coverfield{二级学院：\ }{82mm}{计\hspace{0.55em}算\hspace{0.55em}机\hspace{0.55em}信\hspace{0.55em}息\hspace{0.55em}工\hspace{0.55em}程\hspace{0.55em}学\hspace{0.55em}院}};
+
+        \node[anchor=west] at ([xshift=52.6mm,yshift=-173.7mm]current page.north west)
+        {\songti\fontsize{15pt}{18pt}\selectfont \coverfield{课题名称：\ }{82mm}{}};
+
+        \node[anchor=west] at ([xshift=52.6mm,yshift=-185.5mm]current page.north west)
+        {\songti\fontsize{15pt}{18pt}\selectfont \coverfield{班\hspace{2em}级：\ }{82mm}{}};
+
+        \node[anchor=west] at ([xshift=52.6mm,yshift=-197.2mm]current page.north west)
+        {\songti\fontsize{15pt}{18pt}\selectfont \coverfield{学\hspace{2em}号：\ }{82mm}{}};
+
+        \node[anchor=west] at ([xshift=52.6mm,yshift=-209.1mm]current page.north west)
+        {\songti\fontsize{15pt}{18pt}\selectfont \coverfield{姓\hspace{2em}名：\ }{82mm}{}};
+
+        \node[anchor=west] at ([xshift=52.6mm,yshift=-221.0mm]current page.north west)
+        {\songti\fontsize{15pt}{18pt}\selectfont \coverfield{指导教师：\ }{82mm}{蒋巍}};
+        \node[anchor=north] at ([xshift=1.3mm,yshift=-239.8mm]current page.north)
+        {\songti\fontsize{15pt}{18pt}\selectfont 2026 年 7 月};
+    \end{tikzpicture}
+    \null
+\end{titlepage}
+
+
+\frontmatter
+\input{data/abstract}
+
+% 目录
+\tableofcontents
+
+% 插图和附表清单
+% \listoffiguresandtables  % 插图和附表清单
+
+% 正文部分
+\mainmatter
+\input{data/chap01}
+\input{data/chap02}
+\input{data/chap03}
+\input{data/chap04}
+\input{data/chap05}
+
+\input{data/acknowledgements}
+
+\bibliography{ref/refs}  % 参考文献使用 BibTeX 编译
+% \printbibliography       % 参考文献使用 BibLaTeX 编译
+
+% 附录
+%\appendix
+%\input{data/appendix}
+
+
+\end{document}
