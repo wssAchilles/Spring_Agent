@@ -60,4 +60,32 @@ class QueryRouterTest {
         assertNotNull(QueryRouter.QueryRoute.MEDIUM);
         assertNotNull(QueryRouter.QueryRoute.COMPLEX);
     }
+
+    @Test
+    @DisplayName("短查询但包含检索意图词返回MEDIUM")
+    void classify_withRetrievalIntent_returnsMedium() {
+        QueryRouter.QueryRouterConfig config = new QueryRouter.QueryRouterConfig();
+        config.setEnabled(true);
+        QueryRouter router = new QueryRouter(null, config);
+
+        // 修复核心：这些短查询不应被 length<10 短路
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("第一天我干了什么"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("Day01做了什么"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("日志内容是什么"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("帮我查一下"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("搜一下Day05"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("查一下文档"));
+    }
+
+    @Test
+    @DisplayName("纯问候短查询仍返回SIMPLE")
+    void classify_withGreeting_returnsSimple() {
+        QueryRouter.QueryRouterConfig config = new QueryRouter.QueryRouterConfig();
+        config.setEnabled(true);
+        QueryRouter router = new QueryRouter(null, config);
+
+        assertEquals(QueryRouter.QueryRoute.SIMPLE, router.classify("你好"));
+        assertEquals(QueryRouter.QueryRoute.SIMPLE, router.classify("hi"));
+        assertEquals(QueryRouter.QueryRoute.SIMPLE, router.classify("谢谢"));
+    }
 }

@@ -26,6 +26,10 @@ public class QueryRouter {
             ".*(^|\\s)(你好|hello|hi|谢谢|thanks|时间|日期|今天|天气|几点|what time|what date).*",
             Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern RETRIEVAL_INTENT_PATTERNS = Pattern.compile(
+            ".*(第一天|第二天|第三天|第1天|第2天|第3天|Day\\d+|日志|文档|知识库|干了什么|做了什么|干了啥|做了啥|干过什么|做过什么|内容是什么|写了什么|记录了什么|查一下|搜一下|找一下|帮我找|帮我查|召回|检索|搜索|查阅|查看).*",
+            Pattern.CASE_INSENSITIVE);
+
     private final IChatClientService chatClientService;
     private final QueryRouterConfig config;
 
@@ -40,6 +44,11 @@ public class QueryRouter {
         }
         if (query == null || query.isBlank()) {
             return QueryRoute.SIMPLE;
+        }
+
+        // 检索意图优先：包含文档检索意图词的查询强制走 MEDIUM
+        if (RETRIEVAL_INTENT_PATTERNS.matcher(query).matches()) {
+            return QueryRoute.MEDIUM;
         }
 
         // Rule-based fast path for obvious simple queries
