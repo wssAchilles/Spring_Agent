@@ -24,9 +24,11 @@ public class DagExecutor {
 
     private final NodeFactory nodeFactory;
     private final ExecutorService executorService;
+    private final DagCheckpointManager checkpointManager;
 
-    public DagExecutor(NodeFactory nodeFactory) {
+    public DagExecutor(NodeFactory nodeFactory, DagCheckpointManager checkpointManager) {
         this.nodeFactory = nodeFactory;
+        this.checkpointManager = checkpointManager;
         this.executorService = Executors.newFixedThreadPool(
                 Math.min(Runtime.getRuntime().availableProcessors(), 8));
     }
@@ -110,6 +112,94 @@ public class DagExecutor {
             }
         }
 
+        return allResults;
+    }
+
+    /**
+     * 带断点续传的工作流执行
+     * 支持从上次中断的位置恢复执行
+     */
+    public List<NodeRunResultBO> executeWithCheckpoint(String runtimeId, String flowId,
+                                                        List<KbFlowNodeDO> flowNodes,
+                                                        List<KbFlowEdgeDO> flowEdges,
+                                                        RuntimeContextBO context) {
+        // 尝试加载检查点
+        DagCheckpointManager.DagCheckpoint checkpoint = checkpointManager.loadCheckpoint(runtimeId);
+        int startGroupIndex = 0;
+        Map<String, NodeRunResultBO> restoredResults = new LinkedHashMap<>();
+
+        if (checkpoint != null) {
+            startGroupIndex = checkpoint.getGroupIndex();
+            restoredResults = checkpointManager.restoreCompletedResults(checkpoint);
+            log.info("从检查点恢复: runtimeId={}, groupIndex={}, 已完成节点={}", runtimeId, startGroupIndex, restoredResults.size());
+        }
+
+        // 验证 DAG
+        if (DagUtils.hasCycle(flowNodes, flowEdges)) {
+            throw new IllegalStateException("工作流存在环，无法执行");
+        }
+
+        List<List<String>> parallelGroups = DagUtils.getParallelGroups(flowNodes, flowEdges);
+        Map<String, KbFlowNodeDO> nodeMap = flowNodes.stream()
+                .collect(Collectors.toMap(KbFlowNodeDO::getUuid, n -> n));
+
+        List<NodeRunResultBO> allResults = new ArrayList<>(restoredResults.values());
+        Map<String, NodeRunResultBO> resultMap = new LinkedHashMap<>(restoredResults);
+
+        // 从断点位置开始执行
+        for (int groupIndex = startGroupIndex; groupIndex < parallelGroups.size(); groupIndex++) {
+            List<String> group = parallelGroups.get(groupIndex);
+            log.info("执行第 {} 组（断点续传），包含 {} 个节点", groupIndex + 1, group.size());
+
+            if (group.size() == 1) {
+                NodeRunResultBO result = executeNode(group.get(0), nodeMap, flowEdges, context);
+                allResults.add(result);
+                resultMap.put(group.get(0), result);
+
+                if (RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus())) {
+                    // 保存检查点后中断
+                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
+                    log.error("节点执行失败，检查点已保存，终止工作流: {}", result.getNodeName());
+                    break;
+                }
+            } else {
+                List<CompletableFuture<NodeRunResultBO>> futures = new ArrayList<>();
+                for (String nodeUuid : group) {
+                    futures.add(CompletableFuture.supplyAsync(
+                            () -> executeNode(nodeUuid, nodeMap, flowEdges, context),
+                            executorService));
+                }
+
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+                boolean hasError = false;
+                for (CompletableFuture<NodeRunResultBO> future : futures) {
+                    try {
+                        NodeRunResultBO result = future.get();
+                        allResults.add(result);
+                        resultMap.put(result.getNodeUuid(), result);
+                        if (RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus())) {
+                            hasError = true;
+                        }
+                    } catch (Exception e) {
+                        log.error("并行执行异常", e);
+                        hasError = true;
+                    }
+                }
+
+                if (hasError) {
+                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
+                    log.error("并行执行组中存在失败节点，检查点已保存，终止工作流");
+                    break;
+                }
+            }
+
+            // 每组执行完后保存检查点
+            checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex + 1, resultMap);
+        }
+
+        // 执行完成，删除检查点
+        checkpointManager.deleteCheckpoint(runtimeId);
         return allResults;
     }
 
