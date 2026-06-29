@@ -3,9 +3,6 @@ package tech.qiantong.qknow.ai.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.ai.deepseek.DeepSeekChatOptions;
-import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
@@ -15,6 +12,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.http.client.reactive.JdkClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import tech.qiantong.qknow.ai.deepseek.DeepSeekCompatibleChatModel;
 import tech.qiantong.qknow.ai.enums.model.AiPlatformEnum;
 import tech.qiantong.qknow.ai.service.IChatModelService;
 import tech.qiantong.qknow.common.exception.ServiceException;
@@ -49,7 +47,7 @@ public class ChatModelServiceImpl implements IChatModelService {
             case OPENAI -> { return this.getOpenAiChatModel(baseUrl, apiKey, modelName, temperature); }
             case TONG_YI -> { return this.getDashScopeChatModel(apiKey, modelName); }
             case OLLAMA -> { return this.getOllamaChatModel(baseUrl, modelName); }
-            case DEEP_SEEK -> { return this.getDeepSeekChatModel(apiKey, modelName, temperature); }
+            case DEEP_SEEK -> { return this.getDeepSeekCompatibleChatModel(baseUrl, apiKey, modelName, temperature); }
             default -> throw new ServiceException("暂时不支持该平台");
         }
     }
@@ -101,21 +99,11 @@ public class ChatModelServiceImpl implements IChatModelService {
                 .build();
     }
 
-    private DeepSeekChatModel getDeepSeekChatModel(String apiKey, String modelName) {
-        return getDeepSeekChatModel(apiKey, modelName, null);
-    }
-
-    private DeepSeekChatModel getDeepSeekChatModel(String apiKey, String modelName, Double temperature) {
+    private DeepSeekCompatibleChatModel getDeepSeekCompatibleChatModel(String baseUrl, String apiKey, String modelName, Double temperature) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
         }
-        DeepSeekChatOptions.Builder optionsBuilder = DeepSeekChatOptions.builder().model(modelName);
-        if (temperature != null) {
-            optionsBuilder.temperature(temperature);
-        }
-        return DeepSeekChatModel.builder()
-                .deepSeekApi(DeepSeekApi.builder().apiKey(apiKey).build())
-                .defaultOptions(optionsBuilder.build())
-                .build();
+        return new DeepSeekCompatibleChatModel(baseUrl, apiKey, modelName, temperature);
     }
+
 }
