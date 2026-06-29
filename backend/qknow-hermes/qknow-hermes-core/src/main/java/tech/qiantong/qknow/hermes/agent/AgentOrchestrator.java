@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
+import tech.qiantong.qknow.hermes.eval.MetricScores;
+import tech.qiantong.qknow.hermes.eval.RagasEvaluator;
 import tech.qiantong.qknow.hermes.judge.AiJudgeService;
 import tech.qiantong.qknow.hermes.judge.JudgeResult;
 import tech.qiantong.qknow.hermes.proto.*;
@@ -55,24 +57,28 @@ public class AgentOrchestrator {
     private final PlanSolveConfig planSolveConfig;
     private final AiJudgeService aiJudgeService;
     private final tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService;
+    private final RagasEvaluator ragasEvaluator;
 
     @Autowired
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator, PlanSolveConfig planSolveConfig,
                              AiJudgeService aiJudgeService,
                              @org.springframework.beans.factory.annotation.Autowired(required = false)
-                             tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService) {
+                             tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService,
+                             @org.springframework.beans.factory.annotation.Autowired(required = false)
+                             RagasEvaluator ragasEvaluator) {
         this.chatModelFactory = chatModelFactory;
         this.resolver = resolver;
         this.retrievalEvaluator = retrievalEvaluator;
         this.planSolveConfig = planSolveConfig;
         this.aiJudgeService = aiJudgeService;
         this.langFuseService = langFuseService;
+        this.ragasEvaluator = ragasEvaluator;
     }
 
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator) {
-        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null, null);
+        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null, null, null);
     }
 
     /**
@@ -111,19 +117,40 @@ public class AgentOrchestrator {
             if (finalTraceId != null && langFuseService != null && langFuseService.isEnabled()) {
                 long latencyMs = System.currentTimeMillis() - finalStartTime;
                 String answer = fullAnswer.toString();
-                // 估算 token 数（中文约 1.5 字/token，英文约 4 字符/token）
-                long completionTokens = tokenCounts[0] > 0 ? tokenCounts[0] :
-                    (long) (answer.length() / 2.0);
+                long promptTokens = tokenCounts[0] > 0 ? tokenCounts[0] : estimateTokenCount(request.getQuestion());
+                long completionTokens = tokenCounts[1] > 0 ? tokenCounts[1] : estimateTokenCount(answer);
                 langFuseService.recordGeneration(
                     finalTraceId,
                     modelName,
                     request.getQuestion(),
                     answer,
-                    tokenCounts[1], // promptTokens
+                    promptTokens,
                     completionTokens,
                     latencyMs);
+
+                // RAGAS 评估 → LangFuse 评分
+                if (ragasEvaluator != null && !answer.isBlank()) {
+                    try {
+                        List<String> contexts = request.getRagContextsList().stream()
+                                .map(RAGContext::getPreRetrievedContent)
+                                .filter(c -> c != null && !c.isBlank())
+                                .collect(Collectors.toList());
+                        if (!contexts.isEmpty()) {
+                            MetricScores scores = ragasEvaluator.evaluateSingle(
+                                    request.getQuestion(), answer, contexts, null);
+                            langFuseService.recordScore(finalTraceId, "faithfulness", scores.getFaithfulness());
+                            langFuseService.recordScore(finalTraceId, "answer_relevance", scores.getAnswerRelevance());
+                            langFuseService.recordScore(finalTraceId, "context_precision", scores.getContextPrecision());
+                            langFuseService.recordScore(finalTraceId, "factual_correctness", scores.getFactualCorrectness());
+                            log.debug("RAGAS scores recorded to LangFuse: traceId={}", finalTraceId);
+                        }
+                    } catch (Exception e) {
+                        log.debug("RAGAS evaluation for LangFuse failed", e);
+                    }
+                }
+
                 log.info("LangFuse generation recorded: traceId={}, model={}, latency={}ms, tokens={}/{}",
-                    finalTraceId, modelName, latencyMs, tokenCounts[1], completionTokens);
+                    finalTraceId, modelName, latencyMs, promptTokens, completionTokens);
             }
         });
     }
@@ -173,11 +200,32 @@ public class AgentOrchestrator {
                     .build();
             tools.add(toolCallback);
         }
+        if (!effectiveRagContexts.isEmpty()) {
+            String knowledgeIds = effectiveRagContexts.stream()
+                    .map(RAGContext::getKnowledgeId)
+                    .collect(Collectors.joining(","));
+            String knowledgeNames = effectiveRagContexts.stream()
+                    .map(RAGContext::getKnowledgeName)
+                    .collect(Collectors.joining(","));
+            String mergedContent = effectiveRagContexts.stream()
+                    .map(ragCtx -> "## " + ragCtx.getKnowledgeName() + "\n" + ragCtx.getPreRetrievedContent())
+                    .collect(Collectors.joining("\n\n"));
+            FunctionToolCallback<knowledgeQuery, String> queryAlias = FunctionToolCallback
+                    .builder("knowledgeQuery",
+                            new SearchKnowledgeTool(knowledgeIds, knowledgeNames, mergedContent))
+                    .inputType(knowledgeQuery.class)
+                    .description("当需要查询已绑定知识库内容时调用")
+                    .build();
+            tools.add(queryAlias);
+        }
 
         // 4. 获取工具名称列表，并确保知识库工具可被调用
         List<String> enabledToolNames = new ArrayList<>(request.getToolMethodIdsList());
         for (RAGContext ragCtx : effectiveRagContexts) {
             enabledToolNames.add("knowledgeBase" + ragCtx.getKnowledgeId());
+        }
+        if (!effectiveRagContexts.isEmpty()) {
+            enabledToolNames.add("knowledgeQuery");
         }
         String[] toolNames = enabledToolNames.toArray(new String[0]);
 
@@ -198,6 +246,9 @@ public class AgentOrchestrator {
 
         String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, tools, chatModel);
         if (planAnswer != null) {
+            fullAnswer.append(planAnswer);
+            tokenCounts[0] = estimateTokenCount(request.getQuestion());
+            tokenCounts[1] = estimateTokenCount(planAnswer);
             emitSingleAnswer(request, emitter, planAnswer);
             return;
         }
@@ -225,7 +276,7 @@ public class AgentOrchestrator {
                                 String text = streamingOutput.message().getText();
                                 if (text != null) {
                                     fullAnswer.append(text);
-                                    tokenCounts[0]++; // 估算 completion tokens
+                                    tokenCounts[1]++; // 估算 completion tokens
                                 }
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
@@ -318,13 +369,11 @@ public class AgentOrchestrator {
 
     private List<PlanTask> createPlan(String question, String systemPrompt, ChatModel chatModel) {
         String prompt = """
-                请将用户复杂任务拆解为最多 %d 个可执行子任务。
-                只返回 JSON 数组，不要 Markdown 或解释。
-                字段: taskId, objective, worker, dependencies。
-                worker 可使用 rag_worker。
-                dependencies 是前置 taskId 数组。
+                将任务拆解为最多 %d 个子任务。只返回JSON数组。
+                字段: taskId(如t1), objective(简明), dependencies(前置taskId数组,可空)。
+                规则: 目标≤50字, 无依赖的任务可并行执行。
 
-                用户任务：%s
+                任务：%s
                 """.formatted(planSolveConfig.getMaxTasks(), question);
         ChatResponse response = chatModel.call(new Prompt(List.of(
                 new SystemMessage(systemPrompt != null ? systemPrompt : ""),
@@ -381,12 +430,10 @@ public class AgentOrchestrator {
                 .map(entry -> "## " + entry.getKey() + "\n" + entry.getValue())
                 .collect(Collectors.joining("\n\n"));
         String prompt = """
-                请基于以下子任务结果回答原始问题。
+                基于子任务结果回答问题。直接给出答案，不要复述子任务内容。
 
-                原始问题：%s
-
-                子任务结果：
-                %s
+                问题：%s
+                结果：%s
                 """.formatted(question, context);
         ChatResponse response = chatModel.call(new Prompt(List.of(
                 new SystemMessage(systemPrompt != null ? systemPrompt : ""),
@@ -409,14 +456,8 @@ public class AgentOrchestrator {
                 return currentAnswer;
             }
             String prompt = """
-                    上一版回答未通过质量检查，请根据反馈重写一次。
-
-                    原始问题：%s
-                    子任务结果：
-                    %s
-                    反馈：%s
-                    上一版回答：%s
-                    """.formatted(question, context, result.getFeedback(), currentAnswer);
+                    根据反馈改进回答。问题：%s\n反馈：%s\n上版回答：%s
+                    """.formatted(question, result.getFeedback(), currentAnswer);
             ChatResponse response = chatModel.call(new Prompt(List.of(
                     new SystemMessage(systemPrompt != null ? systemPrompt : ""),
                     new UserMessage(prompt)
@@ -513,6 +554,13 @@ public class AgentOrchestrator {
 
     private String defaultString(String value, String defaultValue) {
         return StrUtil.isBlank(value) ? defaultValue : value;
+    }
+
+    private long estimateTokenCount(String text) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        return Math.max(1, Math.round(text.length() / 2.0));
     }
 
     private String appendRagContext(String systemPrompt, List<RAGContext> ragContexts,

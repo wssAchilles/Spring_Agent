@@ -32,6 +32,12 @@ public class RagasEvaluator {
                 "评估给定上下文对回答问题的精确度。只返回JSON: {\"score\": 0.0-1.0, \"feedback\": \"...\"}");
         METRIC_PROMPTS.put("context_recall",
                 "评估给定上下文对回答的召回率。只返回JSON: {\"score\": 0.0-1.0, \"feedback\": \"...\"}");
+        METRIC_PROMPTS.put("factual_correctness",
+                "评估以下回答中的事实是否与上下文中的事实一致。检查数字、日期、名称等关键事实。只返回JSON: {\"score\": 0.0-1.0, \"feedback\": \"...\"}");
+        METRIC_PROMPTS.put("noise_sensitivity",
+                "评估回答对上下文中噪声（不相关信息）的敏感程度。回答是否被不相关内容误导？只返回JSON: {\"score\": 0.0-1.0, \"feedback\": \"...\"}");
+        METRIC_PROMPTS.put("negative_rejection",
+                "当上下文中不包含答案时，评估系统是否正确拒绝回答而非编造答案。如果上下文包含答案则给1.0分。只返回JSON: {\"score\": 0.0-1.0, \"feedback\": \"...\"}");
     }
 
     public RagasEvaluator(ChatModelFactory chatModelFactory, RagasEvalConfig config) {
@@ -64,6 +70,9 @@ public class RagasEvaluator {
             scoreMap.put("answer_relevance", scores.getAnswerRelevance());
             scoreMap.put("context_precision", scores.getContextPrecision());
             scoreMap.put("context_recall", scores.getContextRecall());
+            scoreMap.put("factual_correctness", scores.getFactualCorrectness());
+            scoreMap.put("noise_sensitivity", scores.getNoiseSensitivity());
+            scoreMap.put("negative_rejection", scores.getNegativeRejection());
             result.setScores(scoreMap);
             results.add(result);
         }
@@ -92,6 +101,15 @@ public class RagasEvaluator {
 
         double contextRecall = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_recall"));
         scores.setContextRecall(contextRecall);
+
+        double factualCorrectness = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("factual_correctness"));
+        scores.setFactualCorrectness(factualCorrectness);
+
+        double noiseSensitivity = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("noise_sensitivity"));
+        scores.setNoiseSensitivity(noiseSensitivity);
+
+        double negativeRejection = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("negative_rejection"));
+        scores.setNegativeRejection(negativeRejection);
 
         scores.setPassed(scores.isAboveThreshold(config.getThreshold()));
         return scores;
@@ -149,7 +167,8 @@ public class RagasEvaluator {
     }
 
     private EvaluationReport.ReportSummary computeSummary(List<MetricScores> allScores) {
-        String[] metricNames = {"faithfulness", "answer_relevance", "context_precision", "context_recall"};
+        String[] metricNames = {"faithfulness", "answer_relevance", "context_precision", "context_recall",
+                "factual_correctness", "noise_sensitivity", "negative_rejection"};
 
         Map<String, Double> mean = new LinkedHashMap<>();
         Map<String, Double> p50 = new LinkedHashMap<>();

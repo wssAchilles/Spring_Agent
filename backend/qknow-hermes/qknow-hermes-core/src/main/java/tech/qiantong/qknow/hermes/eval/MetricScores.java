@@ -10,6 +10,9 @@ public class MetricScores {
     private double answerRelevance;
     private double contextPrecision;
     private double contextRecall;
+    private double factualCorrectness;
+    private double noiseSensitivity;
+    private double negativeRejection;
     private boolean passed;
 
     public boolean isAboveThreshold(double threshold) {
@@ -23,6 +26,9 @@ public class MetricScores {
             case "answer_relevance": return getAnswerRelevance();
             case "context_precision": return getContextPrecision();
             case "context_recall": return getContextRecall();
+            case "factual_correctness": return getFactualCorrectness();
+            case "noise_sensitivity": return getNoiseSensitivity();
+            case "negative_rejection": return getNegativeRejection();
             default: return 0.0;
         }
     }
