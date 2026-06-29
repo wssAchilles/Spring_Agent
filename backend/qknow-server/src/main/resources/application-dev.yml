@@ -155,6 +155,32 @@ hermes:
   grpc:
     host: ${HERMES_GRPC_HOST:localhost}
     port: ${HERMES_GRPC_PORT:9090}
+  rag:
+    contextual:
+      enabled: true
+      platform: DeepSeek
+      base-url: https://api.deepseek.com
+      api-key: ${HERMES_OPENAI_API_KEY:}
+      model-name: deepseek-chat
+      max-doc-chars: 8000
+      max-concurrent: 3
+    router:
+      enabled: true
+      platform: DeepSeek
+      base-url: https://api.deepseek.com
+      api-key: ${HERMES_OPENAI_API_KEY:}
+      model-name: deepseek-chat
+    hype:
+      enabled: true
+      platform: DeepSeek
+      base-url: https://api.deepseek.com
+      api-key: ${HERMES_OPENAI_API_KEY:}
+      model-name: deepseek-chat
+      question-count: 3
+      max-chunk-chars: 2000
+    colbert:
+      enabled: true
+      ngram-size: 3
 
 # Neo4j 配置（未部署时禁用）
 neo4j:

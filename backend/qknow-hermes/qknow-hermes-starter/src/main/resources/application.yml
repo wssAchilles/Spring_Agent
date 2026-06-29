@@ -36,6 +36,25 @@ hermes:
     cache:
       enabled: true
       ttl: 300
+    contextual:
+      enabled: true
+      platform: DeepSeek
+      base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
+      api-key: ${HERMES_OPENAI_API_KEY:}
+      model-name: deepseek-chat
+      max-doc-chars: 8000
+      max-concurrent: 3
+    hype:
+      enabled: true
+      platform: DeepSeek
+      base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
+      api-key: ${HERMES_OPENAI_API_KEY:}
+      model-name: deepseek-chat
+      question-count: 3
+      max-chunk-chars: 2000
+    colbert:
+      enabled: true
+      ngram-size: 3
   observability:
     langfuse:
       enabled: ${LANGFUSE_ENABLED:false}
