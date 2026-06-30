@@ -235,6 +235,7 @@ public class AgentOrchestrator {
             enabledToolNames.add("knowledgeQuery");
         }
         String[] toolNames = enabledToolNames.toArray(new String[0]);
+        log.info("Agent 工具列表: {}", enabledToolNames);
 
         // 5. 构建消息历史
         List<Message> messages = new ArrayList<>();
