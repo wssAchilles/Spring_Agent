@@ -1,3 +1,27 @@
 % !TeX root = ../thuthesis-example.tex
 
 \chapter{绪论}
+
+\section{研究背景与意义}
+
+随着大语言模型（LLM）技术的快速发展，人工智能在自然语言处理、知识推理和代码生成等领域取得了突破性进展，企业对智能化知识管理与自动化业务流程的需求日益迫切。然而，现有知识管理系统在实际应用中仍面临诸多挑战：传统的基于关键词的检索方法难以理解用户查询的语义意图，单一检索路径在面对复杂查询时召回率有限；现有 LLM 智能体系统通常采用"生成即返回"的模式，缺少对生成结果的质量评估和自修正机制，容易产生幻觉回答；工作流引擎多采用线性结构，缺乏并行执行与断点恢复能力；企业知识分散在文档、数据库、知识图谱等多种载体中，缺乏统一的融合检索机制\cite{Gao2023RAGSurvey}。针对上述问题，本文设计并实现了一个基于 RAG（Retrieval-Augmented Generation）\cite{Lewis2020RAG}与多智能体协作的知识服务平台。该平台采用"控制面＋认知面"双核架构，控制面基于 Spring Boot 3 构建，负责权限管理、RAG 知识引擎与 DAG 工作流编排；认知面以自研 Hermes 内核为核心，通过 gRPC 协议与控制面通信，实现反思循环推理与质量评分。在检索层面，平台通过"四路并行召回＋RRF 融合"策略和 CRAG\cite{Yan2024CRAG}质量评估机制显著提升了检索精度；在推理层面，通过"反思循环＋自洽性检测"双重质量保障机制有效识别和修正幻觉回答，为企业级智能知识服务提供了完整的解决方案。
+
+\section{国内外研究现状}
+
+\textbf{RAG 技术}方面，Lewis 等人\cite{Lewis2020RAG}提出了 RAG 框架，Karpukhin 等人\cite{Karpukhin2020DPR}的密集检索显著优于 BM25，Cormack 等人\cite{Cormack2009RRF}的 RRF 实现了多路融合。在质量保障方面，CRAG\cite{Yan2024CRAG}引入检索质量评估，Self-RAG\cite{Asai2023SelfRAG}实现了自反思机制。重排方面，ColBERT\cite{Khattab2020ColBERT}的后期交互架构降低了计算开销。
+
+\textbf{多智能体协作}方面，ReAct\cite{Yao2023ReAct}范式将推理与行动交替进行，CoT\cite{Wei2022CoT}引导模型生成中间推理步骤，Plan-and-Solve\cite{Wang2023PlanSolve}实现了先规划后执行。MemGPT\cite{Packer2023MemGPT}借鉴虚拟内存思想实现了分层记忆管理，LightRAG\cite{Guo2024LightRAG}通过知识图谱双层检索提升了查询效果。
+
+\textbf{工作流与评估}方面，Kahn\cite{Kahn1962Topological}的拓扑排序算法为 DAG 工作流的依赖解析提供了理论基础。在 AI 工作流编排中，LangGraph 等框架将智能体推理过程建模为有向图，支持条件分支、并行执行和持久化检查点。质量评估方面，RAGAS\cite{Es2023RAGAS}提出了七维度 RAG 评估体系，涵盖忠实度、相关性、精确度和召回率等指标；RAGChecker\cite{Ru2024RAGChecker}采用声明级蕴含判断方法，在 NeurIPS 2024 上被证明与人类评价具有更高的相关性。LangFuse 等可观测性平台则提供了从检索到生成的全链路追踪能力。
+
+\section{研究内容与主要贡献}
+
+（1）\textbf{提出"控制面＋认知面"双核架构}：控制面负责 RAG 引擎与 DAG 工作流编排，认知面以 Hermes 内核为核心实现反思循环推理，两者通过 gRPC 完全解耦。
+
+（2）\textbf{设计四路并行召回＋RRF 融合检索引擎}：同时运行向量、关键词、元数据和知识图谱四条检索路径，通过 RRF 融合排序并引入 CRAG\cite{Yan2024CRAG}质量评估与自动修正。
+
+（3）\textbf{提出带自洽性检测的反思循环机制}：实现"生成→AI Judge 三维评分→Jaccard 自洽性检测→修正"的双重质量保障闭环。自洽性检测通过对同一提示词进行多次独立采样并计算成对 Jaccard 相似度，有效识别"看似合理但实际不可靠"的幻觉回答。
+
+（4）\textbf{实现 DAG 并行工作流引擎}：基于 Kahn 算法\cite{Kahn1962Topological}拓扑排序与 BFS 分层并行分组，支持 8 种节点类型（含条件网关、人工审批和知识检索），通过双层持久化检查点（Redis 快照级 + PostgreSQL 分组级）实现断点恢复。
+
+（5）\textbf{构建完整质量评估体系}：集成 RAGAS\cite{Es2023RAGAS}七维评估、RAGChecker\cite{Ru2024RAGChecker}声明级蕴含判断和 LangFuse 全链路追踪。

@@ -2,13 +2,25 @@
 
 % 中英文摘要和关键字
 \begin{abstract}
+    现有知识管理系统普遍存在检索精度不足、智能体缺乏自主反思能力、工作流编排灵活性受限等问题。针对上述挑战，本文设计并实现了一个基于 RAG 与多智能体协作的知识服务平台。
+
+    平台采用"控制面＋认知面"双核架构。控制面基于 Spring Boot 3 构建，负责权限管理、RAG 知识引擎与 DAG 工作流编排；认知面以 Hermes 内核为核心，通过 gRPC 实现反思循环推理与 AI Judge 三维质量评分。RAG 引擎支持文档语义切块、三路并行召回与 Reciprocal Rank Fusion 融合，并引入 CRAG 机制对检索结果自动修正。智能体编排支持 SupervisorAgent 任务分解、WorkerAgent ReAct 推理与三层记忆体系。工作流引擎基于 DAG 拓扑排序实现多节点并行执行，支持条件网关与断点恢复。质量评估集成 AI Judge、RAGAS 与 RAGChecker，形成完整闭环。
+
+    前端采用 Vue 3 构建可视化 DAG 画布与对话界面，后端使用 PostgreSQL＋PgVector 实现向量检索，Neo4j 支撑知识图谱，Redis 提供缓存管理。实验表明，平台在 RAG 检索任务上达到了较高的召回精度，多智能体协作机制有效提升了复杂问答质量。
+
     \thusetup{
-        keywords = {},
+        keywords = {RAG；多智能体；知识服务；工作流编排；Hermes 认知内核},
     }
 \end{abstract}
 
 \begin{abstract*}
+    Existing knowledge management systems commonly suffer from low retrieval accuracy, lack of agent self-reflection, and limited workflow flexibility. To address these challenges, this paper designs and implements a knowledge service platform based on RAG and multi-agent collaboration.
+
+    The platform adopts a dual-core architecture of control plane and cognitive plane. The control plane, built on Spring Boot 3, handles authorization, the RAG knowledge engine, and DAG workflow orchestration. The cognitive plane, centered on the Hermes kernel, implements reflective reasoning and AI Judge quality scoring via gRPC. The RAG engine supports semantic chunking, tri-channel parallel retrieval with Reciprocal Rank Fusion, and a CRAG mechanism for automatic correction. Agent orchestration enables SupervisorAgent task decomposition, WorkerAgent ReAct reasoning, and a three-layer memory system. The workflow engine achieves parallel execution via DAG topological sorting with conditional gateways and checkpoint recovery. Quality evaluation integrates AI Judge, RAGAS, and RAGChecker into a closed loop.
+
+    The frontend provides a visual DAG canvas and conversation interface using Vue 3. The backend employs PostgreSQL with PgVector for vector retrieval, Neo4j for knowledge graphs, and Redis for caching. Experiments show that the platform achieves high recall precision, and multi-agent collaboration effectively improves complex QA quality.
+
     \thusetup{
-        keywords* = {},
+        keywords* = {RAG; multi-agent; knowledge service; workflow orchestration; Hermes cognitive kernel},
     }
 \end{abstract*}

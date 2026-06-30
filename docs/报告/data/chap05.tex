@@ -1,3 +1,39 @@
 % !TeX root = ../thuthesis-example.tex
+
 \chapter{总结与展望}
 
+\section{工作总结}
+
+本文设计并实现了一个基于 RAG 与多智能体协作的知识服务平台，主要成果包括：
+
+（1）设计了"控制面＋认知面"双核架构，通过 gRPC 实现业务逻辑与 AI 推理的完全解耦。
+
+（2）实现了四路并行召回＋RRF 融合的 RAG 检索引擎，引入 CRAG 机制进行检索质量评估与条件二次检索。
+
+（3）提出了带自洽性检测的反思循环推理机制，通过 Jaccard 相似度识别幻觉回答，双重门限确保回答质量。
+
+（4）实现了基于 DAG 拓扑排序的工作流并行执行引擎，支持 8 种节点类型和双层持久化检查点。
+
+（5）构建了集成 AI Judge、RAGAS、RAGChecker 和 LangFuse 的完整质量评估与可观测性体系。
+
+（6）实现了三层记忆体系和 MCP 协议适配，支持跨会话知识持久化和外部工具动态注册。
+
+\section{不足与展望}
+
+\subsection{当前不足}
+
+（1）自洽性检测使用词级 Jaccard 相似度，无法捕捉语义一致性。记忆系统默认使用内存存储，重启后丢失。评估模型与生成模型相同，存在自我评价偏差。测试覆盖率约 5\%，缺少 CI/CD 流水线。
+
+\subsection{未来展望}
+
+（1）\textbf{升级 Spring AI 2.0}，解决兼容性问题并使用新 API。
+
+（2）\textbf{引入语义自洽性检测}，用嵌入余弦相似度或 NLI 模型替代词级 Jaccard。
+
+（3）\textbf{实现 Contextual Retrieval}\cite{Anthropic2024ContextualRetrieval}，预期降低检索失败率 67\%。
+
+（4）\textbf{完善测试与 CI/CD}，添加控制器和数据层测试，配置 JaCoCo 覆盖率。
+
+（5）\textbf{引入时序知识图谱和 HyPE 索引优化}，提升时序感知和检索精度。
+
+（6）\textbf{实现分布式部署}，通过 Kubernetes 实现自动扩缩容。
