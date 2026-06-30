@@ -210,21 +210,21 @@
 
       <!-- 通用切分配置 -->
       <div
-        v-if="settingBase == null || settingBase.mode === 'custom'"
-        :class="['form-card', 'config-card', form.mode !== 'custom' ? 'config-inactive' : '']"
+        v-if="form.mode === 'custom'"
+        class="form-card config-card"
       >
         <div class="config-header">
           <div class="config-header-left">
-            <div :class="['mode-card-icon', 'custom-icon', 'small', form.mode === 'custom' ? '' : 'inactive']">
+            <div class="mode-card-icon custom-icon small">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             </div>
             <div>
-              <div :class="['config-title', form.mode !== 'custom' ? 'inactive' : '']">通用</div>
+              <div class="config-title">通用</div>
               <div class="config-desc">通用文本分块模式，检索和召回的块相同的</div>
             </div>
           </div>
         </div>
-        <div class="config-body" v-if="form.mode == 'custom'">
+        <div class="config-body">
           <div class="config-grid config-grid-3">
             <div class="config-item">
               <div class="config-label">
@@ -912,18 +912,6 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.02em;
 }
 
-/* --- 配置卡片 --- */
-.config-card {
-  &.config-inactive {
-    opacity: 0.5;
-    pointer-events: none;
-    &:hover {
-      box-shadow: $shadow-card;
-      border-color: $border-light;
-    }
-  }
-}
-
 .config-header {
   display: flex;
   align-items: center;
@@ -1054,11 +1042,12 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 12px;
   padding: 16px 24px;
   margin: 0 -16px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid $border-light;
-  z-index: 10;
+  z-index: 100;
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
 
   .btn-cancel {
     padding: 10px 28px;
