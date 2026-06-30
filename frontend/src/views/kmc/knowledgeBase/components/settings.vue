@@ -21,7 +21,7 @@
           ref="knowledgeBaseRef"
           :model="form"
           :rules="rules"
-          label-width="auto"
+          label-width="132px"
           @submit.prevent
         >
           <el-row :gutter="20">
@@ -95,9 +95,9 @@
               >
                 <el-radio-group v-model="form.validFlag">
                   <el-radio
-                    v-for="item in kmc_know_valid"
+                    v-for="item in knowledgeValidOptions"
                     :key="item.value"
-                    :label="item.value === 'true'"
+                    :label="normalizeValidFlag(item.value)"
                   >
                     {{ item.label }}
                   </el-radio>
@@ -225,15 +225,10 @@
             </el-col>
           </el-row>
 
-          <div
-            :class="[
-              'underline-base',
-              isAdd ? 'underline-add' : 'underline-edit',
-            ]"
-          ></div>
+          <div class="underline-base"></div>
 
           
-          <el-collapse v-model="activeCollapse">
+          <el-collapse v-model="activeCollapse" class="advanced-collapse">
             <el-collapse-item title="高级检索设置" name="1">
               <el-row :gutter="20">
                 <el-col :span="24">
@@ -649,10 +644,10 @@
           </div>
           </div>
           </el-form-item>
-                  <el-form-item label="缓存时长 (TTL)" prop="ragCacheTtl" class="index-form-item" style="margin-top: 15px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
+                  <el-form-item label="缓存时长 (TTL)" prop="ragCacheTtl" class="index-form-item cache-ttl-item">
+                    <div class="ttl-control">
                       <el-input-number v-model="form.ragCacheTtl" :min="0" :step="60" /> 
-                      <span style="color: #666; font-size: 12px;">秒 (默认为300秒，设为0则不过期)</span>
+                      <span>秒，默认为 300，设为 0 则不过期</span>
                     </div>
                   </el-form-item>
                 </el-col>
@@ -724,6 +719,17 @@ import { Trophy } from "@element-plus/icons-vue";
 
 const { proxy } = getCurrentInstance();
 const { kmc_know_valid } = proxy.useDict("kmc_know_valid");
+const fallbackKnowledgeValid = [
+  { label: "启用", value: true },
+  { label: "禁用", value: false },
+];
+const knowledgeValidOptions = computed(() =>
+  kmc_know_valid.value?.length ? kmc_know_valid.value : fallbackKnowledgeValid
+);
+
+function normalizeValidFlag(value) {
+  return value === true || value === "true" || value === 1 || value === "1";
+}
 
 const data = reactive({
   form: {
@@ -916,6 +922,7 @@ function handleUpdate(_id) {
     buttonShow.value = true;
     getKnowledgeBase(_id).then((response) => {
       form.value = response.data;
+      form.value.validFlag = normalizeValidFlag(form.value.validFlag);
       // 处理标签数据
       if (form.value.tags) {
         form.value.items = { row: JSON.parse(form.value.tags) };
@@ -1115,29 +1122,48 @@ init();
 
 // 全局容器样式
 .app-container {
+  min-height: calc(100vh - 124px);
+  background: #f4f7fb;
+  padding: 16px 18px 0;
+
   .pagecont-top {
-    padding: 15px;
-    height: 100%;
+    min-height: calc(100vh - 140px);
+    padding: 0 0 82px;
+
+    .form-div {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 28px 20px;
+      background: #fff;
+      border: 1px solid #e7edf6;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(15, 35, 80, 0.04);
+    }
+
     // 顶部标题栏样式
     .pagecont-top-title {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 11px;
+      max-width: 1180px;
+      margin: 0 auto 12px;
+      padding: 0 2px;
 
       .header-text {
         display: flex;
         align-items: center;
-        margin-bottom: 3px;
-        margin: 10px 0;
+        margin: 0;
 
         .header-left {
           display: flex;
           align-items: center;
+          color: #1f2937;
+          font-size: 18px;
+          font-weight: 600;
           .blue-bar {
             background-color: #2666fb;
             width: 6px;
-            height: 16px;
+            height: 18px;
             margin-right: 10px;
             border-radius: 3px;
           }
@@ -1208,6 +1234,13 @@ init();
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  max-width: 1180px;
+  margin: 18px auto 0;
+  padding: 14px 0 0;
+  background: linear-gradient(180deg, rgba(244, 247, 251, 0), #f4f7fb 28%);
 
   .el-button {
     img {
@@ -1228,39 +1261,29 @@ init();
 // 基础下划线样式（通用）
 .underline-base {
   border-bottom: 2px solid #f4f4f4;
-  margin-bottom: 13px; // 通用下间距
-}
-
-// 新增场景样式
-.underline-add {
-  border-bottom: 2px solid #f4f4f4;
-  margin-top: 210px; // 新增的上间距
-}
-
-// 修改场景样式
-.underline-edit {
-  border-bottom: 2px solid #f4f4f4;
-  margin-top: 166px; // 修改的上间距
+  margin: 18px 0 14px;
 }
 
 // 索引方式样式（对齐目标页面风格）
 .indexing-container {
   display: flex;
-  gap: 15px;
+  gap: 18px;
   width: 100%;
 }
 .indexing-item {
   flex: 1;
-  padding: 15px;
-  border-radius: 4px;
+  min-height: 116px;
+  padding: 18px 20px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #f9fafb;
+  background: #fbfcfe;
 
   &.act {
-    background-color: #f0f7ff;
+    background-color: #f3f7ff;
     border-color: #2666fb;
+    box-shadow: 0 0 0 2px rgba(38, 102, 251, 0.08);
     .indexing-title {
       color: #2666fb;
       font-weight: 500;
@@ -1293,7 +1316,7 @@ init();
   margin: 0;
   font-size: 12px;
   color: #666;
-  line-height: 1.5;
+  line-height: 1.65;
 }
 .recommend-tag {
   margin-left: auto;
@@ -1307,23 +1330,24 @@ init();
 .search-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 16px;
   width: 100%;
-  padding: 10px 0;
+  padding: 6px 0 0;
 }
 .search-item {
   flex: 1;
   min-width: 280px;
-  padding: 15px;
-  border-radius: 4px;
+  padding: 16px;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #f9fafb;
+  background: #fbfcfe;
 
   &.act {
-    background-color: #f0f7ff;
+    background-color: #f3f7ff;
     border-color: #2666fb;
+    box-shadow: 0 0 0 2px rgba(38, 102, 251, 0.08);
     .search-title {
       color: #2666fb;
       font-weight: 500;
@@ -1356,7 +1380,7 @@ init();
   margin: 0 0 15px 0;
   font-size: 12px;
   color: #666;
-  line-height: 1.5;
+  line-height: 1.65;
 }
 .search-options {
   margin-top: 10px;
@@ -1447,7 +1471,7 @@ init();
   gap: 10px;
   padding: 10px;
   border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-direction: column;
@@ -1497,7 +1521,7 @@ init();
   padding: 10px;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 .weight-slider {
   width: 100%;
@@ -1550,7 +1574,62 @@ init();
 //}
 
 :deep(.el-form-item__label) {
-  margin-right: 20px; // 自定义右边距（默认一般是 8px/10px）
+  margin-right: 12px;
+  color: #344054;
+  font-weight: 500;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+:deep(.el-textarea__inner) {
+  min-height: 96px !important;
+  resize: vertical;
+}
+
+:deep(.el-input__wrapper),
+:deep(.el-textarea__inner) {
+  box-shadow: 0 0 0 1px #d9e1ec inset;
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-textarea__inner:focus) {
+  box-shadow: 0 0 0 1px #2666fb inset;
+}
+
+.advanced-collapse {
+  border: 1px solid #e7edf6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+
+  :deep(.el-collapse-item__header) {
+    height: 48px;
+    padding: 0 16px;
+    color: #1f2937;
+    font-weight: 600;
+    background: #fbfcfe;
+  }
+
+  :deep(.el-collapse-item__content) {
+    padding: 18px 18px 8px;
+  }
+}
+
+.cache-ttl-item {
+  margin-top: 14px;
+}
+
+.ttl-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  span {
+    color: #667085;
+    font-size: 12px;
+  }
 }
 
 //// 穿透修改 el-form-item__label-wrap 的 margin
