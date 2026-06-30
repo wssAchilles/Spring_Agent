@@ -152,7 +152,7 @@ public class LangFuseTracingService {
         try {
             String safeName = name.replaceAll("[^a-zA-Z0-9_-]", "_");
             String body = String.format("""
-                    {"id":"%s","traceId":"%s","name":"%s","value":%s,"source":"api"%s}
+                    {"id":"%s","traceId":"%s","name":"%s","value":%s,"source":"API"%s}
                     """, java.util.UUID.randomUUID(), traceId, safeName, value,
                     observationId != null ? ",\"observationId\":\"" + observationId + "\"" : "");
 
