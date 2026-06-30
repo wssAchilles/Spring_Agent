@@ -145,6 +145,10 @@ public class LangFuseTracingService {
      */
     public void recordScore(String traceId, String observationId, String name, double value) {
         if (httpClient == null || traceId == null) return;
+        if (Double.isNaN(value) || Double.isInfinite(value)) {
+            log.debug("Skipping LangFuse score with invalid value: {}={}", name, value);
+            return;
+        }
         try {
             String safeName = name.replaceAll("[^a-zA-Z0-9_-]", "_");
             String body = String.format("""
