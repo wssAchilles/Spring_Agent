@@ -220,9 +220,9 @@
             >
               <el-radio-group v-model="form.validFlag">
                 <el-radio
-                  v-for="item in kmc_know_valid"
+                  v-for="item in knowledgeValidOptions"
                   :key="item.value"
-                  :label="item.value === 'true'"
+                  :label="normalizeValidFlag(item.value)"
                 >
                   {{ item.label }}
                 </el-radio>
@@ -278,6 +278,17 @@ import { Trophy } from "@element-plus/icons-vue";
 
 const { proxy } = getCurrentInstance();
 const { kmc_know_valid } = proxy.useDict("kmc_know_valid");
+const fallbackKnowledgeValid = [
+  { label: "启用", value: true },
+  { label: "禁用", value: false },
+];
+const knowledgeValidOptions = computed(() =>
+  kmc_know_valid.value?.length ? kmc_know_valid.value : fallbackKnowledgeValid
+);
+
+function normalizeValidFlag(value) {
+  return value === true || value === "true" || value === 1 || value === "1";
+}
 
 const knowledgeBaseList = ref([]);
 const open = ref(false);
