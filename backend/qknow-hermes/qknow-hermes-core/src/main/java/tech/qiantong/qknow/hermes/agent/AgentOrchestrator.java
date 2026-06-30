@@ -263,10 +263,30 @@ public class AgentOrchestrator {
             return;
         }
 
-        // 7. 构建 ReactAgent
+        // 7. 智能模型路由：工具调用场景切换到 GPT-4o
+        ChatModel agentModel = chatModel;
+        if (!enabledToolNames.isEmpty() && needsToolCalling(request.getQuestion(), enabledToolNames)) {
+            try {
+                String openaiKey = System.getenv("OPENAI_API_KEY");
+                if (openaiKey == null || openaiKey.isBlank()) {
+                    openaiKey = System.getProperty("OPENAI_API_KEY");
+                }
+                if (openaiKey != null && !openaiKey.isBlank()) {
+                    agentModel = chatModelFactory.getChatModel("openai", "https://api.openai.com", openaiKey, "gpt-4o");
+                    log.info("智能路由: 检测到工具调用需求，切换到 GPT-4o");
+                } else {
+                    log.warn("OPENAI_API_KEY 未配置，无法切换到 GPT-4o，使用原始模型");
+                }
+            } catch (Exception e) {
+                log.warn("GPT-4o 不可用，回退到原始模型: {}", e.getMessage());
+                agentModel = chatModel;
+            }
+        }
+
+        // 8. 构建 ReactAgent
         ReactAgent agent = ReactAgent.builder()
                 .name("hermes_agent")
-                .model(chatModel)
+                .model(agentModel)
                 .hooks(ModelCallLimitHook.builder().runLimit(10).build())
                 .systemPrompt(systemPrompt)
                 .toolNames(toolNames)
@@ -675,5 +695,46 @@ public class AgentOrchestrator {
     }
 
     private record PlanTask(String taskId, String objective, String worker, List<String> dependencies) {
+    }
+
+    /**
+     * 智能模型路由：判断查询是否需要工具调用
+     * 天气/搜索/HTTP/文本处理 → true（用 GPT-4o）
+     * 知识库相关问题 → false（用 DeepSeek）
+     */
+    private boolean needsToolCalling(String question, List<String> toolNames) {
+        if (question == null || question.isBlank()) return false;
+        String q = question.toLowerCase();
+
+        // 天气查询
+        if (toolNames.contains("weather_query") &&
+            (q.contains("天气") || q.contains("气温") || q.contains("下雨") || q.contains("weather") ||
+             q.contains("温度") || q.contains("晴") || q.contains("阴") || q.contains("雨"))) {
+            return true;
+        }
+
+        // 互联网搜索
+        if (toolNames.contains("web_search") &&
+            (q.contains("搜索") || q.contains("搜一下") || q.contains("查一下") || q.contains("search") ||
+             q.contains("最新") || q.contains("新闻") || q.contains("资讯") || q.contains("互联网") ||
+             q.contains("百度") || q.contains("谷歌") || q.contains("google"))) {
+            return true;
+        }
+
+        // HTTP 请求
+        if (toolNames.contains("http_request") &&
+            (q.contains("http://") || q.contains("https://") || q.contains("api") || q.contains("接口") ||
+             q.contains("请求") || q.contains("url"))) {
+            return true;
+        }
+
+        // 文本处理
+        if (toolNames.contains("text_transform") &&
+            (q.contains("大写") || q.contains("小写") || q.contains("转成") || q.contains("uppercase") ||
+             q.contains("lowercase") || q.contains("截取") || q.contains("长度") || q.contains("去空白"))) {
+            return true;
+        }
+
+        return false;
     }
 }
