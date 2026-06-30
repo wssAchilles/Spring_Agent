@@ -250,6 +250,8 @@ public class AgentOrchestrator {
         // 6. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
         systemPrompt = appendRagContext(systemPrompt, effectiveRagContexts, retrievalEvaluation);
+        systemPrompt = appendToolInstructions(systemPrompt, enabledToolNames);
+        log.info("Agent 系统提示词: {}", systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
         messages.add(new UserMessage(request.getQuestion()));
 
         String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, tools, chatModel);
@@ -302,6 +304,7 @@ public class AgentOrchestrator {
                                                 .build())
                                         .build());
                             } else if (type == OutputType.AGENT_TOOL_FINISHED) {
+                                log.info("工具调用完成: tool={}, status={}", output.node(), "success");
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
                                         .setToolInvoked(ToolInvoked.newBuilder()
@@ -625,6 +628,37 @@ public class AgentOrchestrator {
         if (hasRag) {
             builder.append("</knowledge_base>\n")
                     .append("优先依据 <knowledge_base> 中的内容回答；如果内容不足，请明确说明不确定性，不要编造。");
+        }
+        return builder.toString();
+    }
+
+    private String appendToolInstructions(String systemPrompt, List<String> toolNames) {
+        if (toolNames == null || toolNames.isEmpty()) {
+            return systemPrompt;
+        }
+        StringBuilder builder = new StringBuilder(systemPrompt != null ? systemPrompt : "");
+        builder.append("\n\n## 可用工具\n");
+        builder.append("你可以调用以下工具来辅助回答。当用户的问题涉及工具能处理的场景时，**必须主动调用对应工具**，不要拒绝或建议用户自行操作。\n\n");
+
+        boolean hasTool = false;
+        if (toolNames.contains("weather_query")) {
+            builder.append("- **weather_query**: 查询指定城市的实时天气。当用户询问天气、气温、是否下雨等问题时调用。参数: city(城市名)\n");
+            hasTool = true;
+        }
+        if (toolNames.contains("web_search")) {
+            builder.append("- **web_search**: 搜索互联网获取最新信息。当知识库无法回答、用户询问实时资讯、新闻、公开信息时调用。参数: query(搜索关键词)\n");
+            hasTool = true;
+        }
+        if (toolNames.contains("http_request")) {
+            builder.append("- **http_request**: 访问指定 URL 获取内容。当需要调用 API、获取网页数据时调用。参数: url(完整URL), method(GET/POST)\n");
+            hasTool = true;
+        }
+        if (toolNames.contains("text_transform")) {
+            builder.append("- **text_transform**: 文本处理工具。支持 uppercase(转大写)、lowercase(转小写)、trim(去空白)、substring(截取)、length(长度)。参数: text(文本), operation(操作类型)\n");
+            hasTool = true;
+        }
+        if (hasTool) {
+            builder.append("\n调用工具时，请根据用户问题选择最合适的工具和参数。工具返回结果后，基于结果给出回答。");
         }
         return builder.toString();
     }
