@@ -971,11 +971,39 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         vo.setDocumentId(r.getDocumentId() != null ? String.valueOf(r.getDocumentId()) : null);
         vo.setContent(r.getContent());
         vo.setAnswer(r.getAnswer());
-        vo.setDocumentName(r.getDocumentName());
+        vo.setDocumentName(resolveDocumentName(r));
         vo.setScore(r.getScore());
         vo.setWordCount(r.getContent() != null ? r.getContent().length() : 0);
         vo.setSource(r.getSource());
         return vo;
+    }
+
+    private String resolveDocumentName(RetrievalResult r) {
+        if (StrUtil.isNotBlank(r.getDocumentName()) && !"null".equalsIgnoreCase(r.getDocumentName())) {
+            return r.getDocumentName();
+        }
+        Map<String, Object> metadata = r.getMetadata();
+        if (metadata != null) {
+            Object documentName = metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME);
+            if (documentName == null) {
+                documentName = metadata.get("documentName");
+            }
+            String text = documentName == null ? null : String.valueOf(documentName);
+            if (StrUtil.isNotBlank(text) && !"null".equalsIgnoreCase(text)) {
+                return text;
+            }
+        }
+        if (r.getSegmentId() == null) {
+            return null;
+        }
+        try {
+            return jdbcTemplate.queryForObject(
+                    "SELECT document_name FROM kmc_document_segment WHERE id = ?",
+                    String.class,
+                    r.getSegmentId());
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     /**
