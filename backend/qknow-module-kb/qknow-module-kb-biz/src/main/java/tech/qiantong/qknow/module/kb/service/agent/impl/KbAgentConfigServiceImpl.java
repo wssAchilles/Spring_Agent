@@ -329,6 +329,11 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         memoryReceive.setType(MessageTypeEnums.ROBOT.code);
         memoryReceive.setEventType("memory_recall");
         memoryReceive.setContent("召回 " + sourceRefs.size() + " 条记忆");
+        memoryReceive.setDocumentNameList(sourceRefs.stream()
+                .map(ref -> ((JSONObject) ref).getString("documentName"))
+                .filter(name -> name != null && !name.isBlank())
+                .distinct()
+                .toList());
         memoryReceive.setCreateTime(new Date());
         memoryRecallResp.setReceive(memoryReceive);
 

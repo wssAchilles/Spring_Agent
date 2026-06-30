@@ -90,26 +90,26 @@ public class RagasEvaluator {
         MetricScores scores = new MetricScores();
         String contextStr = String.join("\n", contexts);
 
-        double faithfulness = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("faithfulness"));
-        scores.setFaithfulness(faithfulness);
+        // 7 个指标并行评估
+        var faithF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("faithfulness")));
+        var relF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("answer_relevance")));
+        var precF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_precision")));
+        var recallF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_recall")));
+        var factF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("factual_correctness")));
+        var noiseF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("noise_sensitivity")));
+        var rejectF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("negative_rejection")));
 
-        double answerRelevance = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("answer_relevance"));
-        scores.setAnswerRelevance(answerRelevance);
-
-        double contextPrecision = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_precision"));
-        scores.setContextPrecision(contextPrecision);
-
-        double contextRecall = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_recall"));
-        scores.setContextRecall(contextRecall);
-
-        double factualCorrectness = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("factual_correctness"));
-        scores.setFactualCorrectness(factualCorrectness);
-
-        double noiseSensitivity = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("noise_sensitivity"));
-        scores.setNoiseSensitivity(noiseSensitivity);
-
-        double negativeRejection = judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("negative_rejection"));
-        scores.setNegativeRejection(negativeRejection);
+        try {
+            scores.setFaithfulness(faithF.get());
+            scores.setAnswerRelevance(relF.get());
+            scores.setContextPrecision(precF.get());
+            scores.setContextRecall(recallF.get());
+            scores.setFactualCorrectness(factF.get());
+            scores.setNoiseSensitivity(noiseF.get());
+            scores.setNegativeRejection(rejectF.get());
+        } catch (Exception e) {
+            log.warn("Parallel metric evaluation failed", e);
+        }
 
         scores.setPassed(scores.isAboveThreshold(config.getThreshold()));
         return scores;

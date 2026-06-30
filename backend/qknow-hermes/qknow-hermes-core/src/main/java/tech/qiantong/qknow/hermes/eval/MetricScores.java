@@ -17,7 +17,8 @@ public class MetricScores {
 
     public boolean isAboveThreshold(double threshold) {
         return faithfulness >= threshold && answerRelevance >= threshold
-               && contextPrecision >= threshold && contextRecall >= threshold;
+               && contextPrecision >= threshold && contextRecall >= threshold
+               && factualCorrectness >= threshold;
     }
 
     public double getScore(String metricName) {

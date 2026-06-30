@@ -20,6 +20,8 @@ public class RagRetrievalService {
 
     private static final int DEFAULT_TOP_K = 50;
     private static final int CANDIDATE_MULTIPLIER = 3;
+    private static final ExecutorService RETRIEVAL_EXECUTOR = Executors.newFixedThreadPool(4,
+            r -> { Thread t = new Thread(r, "rag-retrieval"); t.setDaemon(true); return t; });
 
     @Resource
     private QueryIntentAnalyzer queryIntentAnalyzer;
@@ -168,28 +170,23 @@ public class RagRetrievalService {
         List<RetrievalResult> metadataResults;
         List<RetrievalResult> graphResults;
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-        try {
-            Future<List<String>> entityFuture = executor.submit(
-                    () -> queryEntityExtractionService.extract(query, queryIntent.getKeywords()));
-            Future<List<RetrievalResult>> vectorFuture = executor.submit(
-                    () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK, queryIntent.getDayNo()));
-            Future<List<RetrievalResult>> keywordFuture = executor.submit(
-                    () -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
+        Future<List<String>> entityFuture = RETRIEVAL_EXECUTOR.submit(
+                () -> queryEntityExtractionService.extract(query, queryIntent.getKeywords()));
+        Future<List<RetrievalResult>> vectorFuture = RETRIEVAL_EXECUTOR.submit(
+                () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK, queryIntent.getDayNo()));
+        Future<List<RetrievalResult>> keywordFuture = RETRIEVAL_EXECUTOR.submit(
+                () -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
 
-            queryIntent.setEntities(getFuture(entityFuture, "query-entity"));
-            Future<List<RetrievalResult>> metadataFuture = executor.submit(
-                    () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK));
-            Future<List<RetrievalResult>> graphFuture = executor.submit(
-                    () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent.getEntities(), candidateTopK));
+        queryIntent.setEntities(getFuture(entityFuture, "query-entity"));
+        Future<List<RetrievalResult>> metadataFuture = RETRIEVAL_EXECUTOR.submit(
+                () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK));
+        Future<List<RetrievalResult>> graphFuture = RETRIEVAL_EXECUTOR.submit(
+                () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent.getEntities(), candidateTopK));
 
-            vectorResults = getFuture(vectorFuture, "vector");
-            keywordResults = getFuture(keywordFuture, "keyword");
-            metadataResults = getFuture(metadataFuture, "metadata");
-            graphResults = getFuture(graphFuture, "graph");
-        } finally {
-            executor.shutdown();
-        }
+        vectorResults = getFuture(vectorFuture, "vector");
+        keywordResults = getFuture(keywordFuture, "keyword");
+        metadataResults = getFuture(metadataFuture, "metadata");
+        graphResults = getFuture(graphFuture, "graph");
 
         if (debug) {
             debugInfo.put(phase + "QueryEntities", queryIntent.getEntities());

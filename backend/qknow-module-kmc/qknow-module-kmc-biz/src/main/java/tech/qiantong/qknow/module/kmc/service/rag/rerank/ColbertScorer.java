@@ -75,14 +75,27 @@ public class ColbertScorer {
 
     private List<String> extractNgrams(String text, int n) {
         if (text == null || text.isBlank()) return List.of();
-        String normalized = text.toLowerCase().replaceAll("[^\\w\\s]", "").replaceAll("\\s+", " ").trim();
-        String[] words = normalized.split(" ");
+        // 保留 CJK 字符 + ASCII 单词 + 空格
+        String normalized = text.toLowerCase().replaceAll("[^\\w\\s\\u4e00-\\u9fff\\u3400-\\u4dbf]", "")
+                .replaceAll("\\s+", " ").trim();
+        // 对 CJK 字符按字分割为 unigram，英文按空格分词
+        List<String> tokens = new ArrayList<>();
+        for (String part : normalized.split(" ")) {
+            boolean hasCjk = part.chars().anyMatch(c -> Character.UnicodeScript.of(c) == Character.UnicodeScript.HAN);
+            if (hasCjk && part.length() > 1) {
+                for (int i = 0; i < part.length(); i++) {
+                    tokens.add(String.valueOf(part.charAt(i)));
+                }
+            } else {
+                tokens.add(part);
+            }
+        }
         List<String> ngrams = new ArrayList<>();
-        for (int i = 0; i <= words.length - n; i++) {
+        for (int i = 0; i <= tokens.size() - n; i++) {
             StringBuilder sb = new StringBuilder();
             for (int j = 0; j < n; j++) {
                 if (j > 0) sb.append(" ");
-                sb.append(words[i + j]);
+                sb.append(tokens.get(i + j));
             }
             ngrams.add(sb.toString());
         }

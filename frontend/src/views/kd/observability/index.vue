@@ -164,6 +164,7 @@ async function refreshTraces() {
       metrics.value[0].value = String(m.totalConversations ?? 0);
       metrics.value[1].value = String(m.avgLatency ?? 0);
       metrics.value[2].value = String(m.totalTokens ?? 0);
+      metrics.value[3].value = m.avgFaithfulness != null ? Number(m.avgFaithfulness).toFixed(2) : '—';
 
       traces.value = (data.traces || []).map(t => ({
         id: t.id,
@@ -180,7 +181,7 @@ async function refreshTraces() {
       }));
     }
   } catch (e) {
-    // 忽略
+    console.error('Failed to refresh traces:', e);
   } finally {
     loading.value = false;
   }

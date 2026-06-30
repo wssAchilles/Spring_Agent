@@ -164,13 +164,36 @@ public class HermesKernel {
 
     private double jaccardSimilarity(String a, String b) {
         if (a == null || b == null) return 0.0;
-        java.util.Set<String> setA = java.util.Set.of(a.split("\\s+"));
-        java.util.Set<String> setB = java.util.Set.of(b.split("\\s+"));
+        java.util.Set<String> setA = tokenizeForJaccard(a);
+        java.util.Set<String> setB = tokenizeForJaccard(b);
         java.util.Set<String> intersection = new java.util.HashSet<>(setA);
         intersection.retainAll(setB);
         java.util.Set<String> union = new java.util.HashSet<>(setA);
         union.addAll(setB);
         return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
+    }
+
+    private java.util.Set<String> tokenizeForJaccard(String text) {
+        java.util.Set<String> tokens = new java.util.HashSet<>();
+        for (String word : text.split("\\s+")) {
+            if (word.length() <= 2) {
+                tokens.add(word);
+            } else {
+                for (int i = 0; i < word.length() - 1; i++) {
+                    char c = word.charAt(i);
+                    char next = word.charAt(i + 1);
+                    if (isCjk(c) || isCjk(next)) {
+                        tokens.add(word.substring(i, i + 2));
+                    }
+                }
+                tokens.add(word);
+            }
+        }
+        return tokens;
+    }
+
+    private boolean isCjk(char c) {
+        return Character.UnicodeScript.of(c) == Character.UnicodeScript.HAN;
     }
 
     @Data

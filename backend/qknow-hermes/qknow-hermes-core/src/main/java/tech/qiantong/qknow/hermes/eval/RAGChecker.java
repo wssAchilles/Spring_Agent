@@ -61,17 +61,24 @@ public class RAGChecker {
             return report;
         }
 
-        // 2. 对每个 claim 做蕴含判断
+        // 2. 对每个 claim 做蕴含判断（并行）
         int entailed = 0;
         int contradicted = 0;
         int notFound = 0;
 
-        for (String claim : claims) {
-            String judgment = judgeEntailment(contextStr, claim);
-            switch (judgment) {
-                case "ENTAILED" -> entailed++;
-                case "CONTRADICTED" -> contradicted++;
-                default -> notFound++;
+        var futures = claims.stream()
+                .map(claim -> java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeEntailment(contextStr, claim)))
+                .toList();
+        for (var future : futures) {
+            try {
+                String judgment = future.get();
+                switch (judgment) {
+                    case "ENTAILED" -> entailed++;
+                    case "CONTRADICTED" -> contradicted++;
+                    default -> notFound++;
+                }
+            } catch (Exception e) {
+                notFound++;
             }
         }
 
@@ -156,8 +163,8 @@ public class RAGChecker {
             String result = response.getResult().getOutput().getText();
             if (result == null) return "NOT_FOUND";
             result = result.trim().toUpperCase();
-            if (result.contains("ENTAILED")) return "ENTAILED";
-            if (result.contains("CONTRADICTED")) return "CONTRADICTED";
+            if (result.matches(".*\\bENTAILED\\b.*") && !result.contains("NOT_ENTAILED")) return "ENTAILED";
+            if (result.matches(".*\\bCONTRADICTED\\b.*")) return "CONTRADICTED";
             return "NOT_FOUND";
         } catch (Exception e) {
             log.warn("Entailment judgment failed", e);

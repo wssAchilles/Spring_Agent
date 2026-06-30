@@ -46,8 +46,13 @@ public class VectorRetriever {
         }
 
         try {
+            String providerStr = kb.getEmbeddingModelProvider();
+            if (providerStr == null || providerStr.isBlank()) {
+                log.warn("embeddingModelProvider is empty for knowledgeBaseId={}, falling back to default", knowledgeBaseId);
+                providerStr = "1";
+            }
             EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
-                    Long.valueOf(kb.getEmbeddingModelProvider()), kb.getEmbeddingModel());
+                    Long.valueOf(providerStr), kb.getEmbeddingModel());
             VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
             FilterExpressionBuilder b = new FilterExpressionBuilder();
@@ -79,7 +84,7 @@ public class VectorRetriever {
                         .qmSegmentId(String.valueOf(doc.getId()))
                         .parentSegmentId(stringValue(metadata.get("parent_segment_id")))
                         .documentId(toLong(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_ID)))
-                        .documentName(String.valueOf(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME)))
+                        .documentName(stringValue(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME)))
                         .content(doc.getText())
                         .answer(String.valueOf(metadata.getOrDefault("answer", "")))
                         .score(doc.getScore() != null ? doc.getScore() : 0.0)

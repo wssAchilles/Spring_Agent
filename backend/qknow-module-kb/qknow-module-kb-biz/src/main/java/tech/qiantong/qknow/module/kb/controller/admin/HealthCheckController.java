@@ -158,15 +158,23 @@ public class HealthCheckController {
             String auth = java.util.Base64.getEncoder()
                 .encodeToString((langfusePublicKey + ":" + langfuseSecretKey).getBytes());
 
-            // 获取最近 traces
+            // 获取最近 traces（带 429 重试）
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-            java.net.http.HttpRequest tracesReq = java.net.http.HttpRequest.newBuilder()
-                .uri(java.net.URI.create(baseUrl + "/api/public/traces?limit=20"))
-                .header("Authorization", "Basic " + auth)
-                .header("Accept", "application/json")
-                .GET()
-                .build();
-            java.net.http.HttpResponse<String> tracesResp = client.send(tracesReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+            java.net.http.HttpResponse<String> tracesResp = null;
+            for (int retry = 0; retry < 3; retry++) {
+                java.net.http.HttpRequest tracesReq = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(baseUrl + "/api/public/traces?limit=20"))
+                    .header("Authorization", "Basic " + auth)
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+                tracesResp = client.send(tracesReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+                if (tracesResp.statusCode() == 429) {
+                    Thread.sleep(1000L * (retry + 1));
+                    continue;
+                }
+                break;
+            }
 
             if (tracesResp.statusCode() == 200) {
                 com.alibaba.fastjson2.JSONObject json = com.alibaba.fastjson2.JSON.parseObject(tracesResp.body());
@@ -187,16 +195,24 @@ public class HealthCheckController {
                         int traceTokens = 0;
                         long observationLatency = 0;
 
-                        // 获取该 trace 的 observations（spans/generations）
+                        // 获取该 trace 的 observations（带 429 重试）
                         try {
-                            java.net.http.HttpRequest obsReq = java.net.http.HttpRequest.newBuilder()
-                                .uri(java.net.URI.create(baseUrl + "/api/public/observations?traceId=" + traceId))
-                                .header("Authorization", "Basic " + auth)
-                                .header("Accept", "application/json")
-                                .GET()
-                                .build();
-                            java.net.http.HttpResponse<String> obsResp = client.send(obsReq, java.net.http.HttpResponse.BodyHandlers.ofString());
-                            if (obsResp.statusCode() == 200) {
+                            java.net.http.HttpResponse<String> obsResp = null;
+                            for (int retry = 0; retry < 2; retry++) {
+                                java.net.http.HttpRequest obsReq = java.net.http.HttpRequest.newBuilder()
+                                    .uri(java.net.URI.create(baseUrl + "/api/public/observations?traceId=" + traceId))
+                                    .header("Authorization", "Basic " + auth)
+                                    .header("Accept", "application/json")
+                                    .GET()
+                                    .build();
+                                obsResp = client.send(obsReq, java.net.http.HttpResponse.BodyHandlers.ofString());
+                                if (obsResp.statusCode() == 429) {
+                                    Thread.sleep(500L * (retry + 1));
+                                    continue;
+                                }
+                                break;
+                            }
+                            if (obsResp != null && obsResp.statusCode() == 200) {
                                 com.alibaba.fastjson2.JSONObject obsJson = com.alibaba.fastjson2.JSON.parseObject(obsResp.body());
                                 com.alibaba.fastjson2.JSONArray observations = obsJson.getJSONArray("data");
                                 trace.put("observations", observations != null ? observations : new com.alibaba.fastjson2.JSONArray());

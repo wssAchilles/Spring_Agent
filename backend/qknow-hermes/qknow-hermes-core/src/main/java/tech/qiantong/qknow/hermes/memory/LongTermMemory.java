@@ -38,26 +38,26 @@ public class LongTermMemory {
      * 如果发现相似记忆（cosine > 0.85），则合并而非新增
      */
     public void store(String content, Map<String, Object> metadata) {
-        // 检查是否有相似记忆
         List<Document> similar = findSimilar(content, 3);
         for (Document existing : similar) {
-            double similarity = existing.getScore() != null ? existing.getScore() : 0.0;
+            double score = existing.getScore() != null ? existing.getScore() : 0.0;
+            // PgVector 返回 cosine distance (0=相同, 2=相反)，转换为 similarity
+            double similarity = 1.0 - Math.min(score, 2.0) / 2.0;
             if (similarity >= CONSOLIDATION_THRESHOLD) {
-                // 合并：更新现有记忆的内容和时间戳
                 log.debug("Consolidation: merging with existing memory (similarity={})", similarity);
                 Map<String, Object> updatedMetadata = new HashMap<>(existing.getMetadata());
                 updatedMetadata.putAll(metadata);
                 updatedMetadata.put("updated_at", System.currentTimeMillis());
-                updatedMetadata.put("consolidated_count",
-                        (int) updatedMetadata.getOrDefault("consolidated_count", 1) + 1);
-                // 删除旧记录，存储合并后的新记录
+                int prevCount = updatedMetadata.containsKey("consolidated_count")
+                        ? ((Number) updatedMetadata.get("consolidated_count")).intValue() : 1;
+                updatedMetadata.put("consolidated_count", prevCount + 1);
                 try {
                     vectorStore.delete(List.of(existing.getId()));
                 } catch (Exception e) {
                     log.debug("Failed to delete old memory during consolidation", e);
                 }
                 Document merged = Document.builder()
-                        .text(content)
+                        .text(existing.getText() + "\n---\n" + content)
                         .metadata(updatedMetadata)
                         .build();
                 vectorStore.add(List.of(merged));
@@ -104,7 +104,7 @@ public class LongTermMemory {
         if (scope != null && !scope.isBlank()) {
             mutable.removeIf(doc -> {
                 String docScope = String.valueOf(doc.getMetadata().getOrDefault("scope", ""));
-                return !docScope.startsWith(scope);
+                return !docScope.equals(scope) && !docScope.startsWith(scope + ":");
             });
         }
 

@@ -19,9 +19,13 @@ public class QueryIntentAnalyzer {
     private static final Pattern DAY_PATTERN = Pattern.compile(
             "(?i)day\\s*0?(\\d{1,2})|第\\s*0?(\\d{1,2})\\s*[天日]|第([一二三四五六七八九十]+)\\s*[天日]");
 
-    private static final Map<String, Integer> CHINESE_NUMBERS = Map.of(
-            "一", 1, "二", 2, "三", 3, "四", 4, "五", 5,
-            "六", 6, "七", 7, "八", 8, "九", 9, "十", 10);
+    private static final Map<String, Integer> CHINESE_NUMBERS = new java.util.HashMap<>();
+    static {
+        String[] digits = {"零","一","二","三","四","五","六","七","八","九","十",
+                "十一","十二","十三","十四","十五","十六","十七","十八","十九",
+                "二十","二十一","二十二","二十三","二十四","二十五","二十六","二十七","二十八","二十九","三十"};
+        for (int i = 0; i < digits.length; i++) CHINESE_NUMBERS.put(digits[i], i);
+    }
 
     private static final Set<String> STOP_WORDS = Set.of(
             "请", "请告诉我", "告诉我", "在", "时候", "的时候", "我", "主要",
