@@ -152,7 +152,7 @@ public class LangFuseTracingService {
         try {
             String safeName = name.replaceAll("[^a-zA-Z0-9_-]", "_");
             String body = String.format("""
-                    {"id":"%s","traceId":"%s","name":"%s","value":%s,"source":"api","dataType":"numeric"%s}
+                    {"id":"%s","traceId":"%s","name":"%s","value":%s,"source":"api"%s}
                     """, java.util.UUID.randomUUID(), traceId, safeName, value,
                     observationId != null ? ",\"observationId\":\"" + observationId + "\"" : "");
 
@@ -173,7 +173,7 @@ public class LangFuseTracingService {
                     Thread.sleep(500L * (retry + 1));
                     continue;
                 }
-                log.debug("LangFuse score recording failed: status={}", resp.statusCode());
+                log.debug("LangFuse score recording failed: status={}, body={}, request={}", resp.statusCode(), resp.body(), body);
                 break;
             }
         } catch (Exception e) {
