@@ -51,6 +51,10 @@ import java.util.stream.Collectors;
 @Component
 public class AgentOrchestrator {
 
+    private static final java.util.concurrent.ExecutorService PLAN_EXECUTOR =
+            java.util.concurrent.Executors.newFixedThreadPool(4,
+                    r -> { Thread t = new Thread(r, "plan-solve"); t.setDaemon(true); return t; });
+
     private final ChatModelFactory chatModelFactory;
     private final ToolCallbackResolver resolver;
     private final RetrievalEvaluator retrievalEvaluator;
@@ -97,10 +101,11 @@ public class AgentOrchestrator {
         final long finalStartTime = startTime;
         final String modelName = request.getModelConfig().getModelName();
         StringBuilder fullAnswer = new StringBuilder();
-        long[] tokenCounts = {0L, 0L}; // [promptTokens, completionTokens]
+        java.util.concurrent.atomic.AtomicLong promptTokens = new java.util.concurrent.atomic.AtomicLong(0);
+        java.util.concurrent.atomic.AtomicLong completionTokens = new java.util.concurrent.atomic.AtomicLong(0);
         return Flux.<ChatEvent>create(emitter -> {
             try {
-                executeAgent(request, emitter, finalTraceId, fullAnswer, tokenCounts);
+                executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens);
             } catch (Exception e) {
                 log.error("Hermes Agent 执行失败", e);
                 emitter.next(ChatEvent.newBuilder()
@@ -117,15 +122,15 @@ public class AgentOrchestrator {
             if (finalTraceId != null && langFuseService != null && langFuseService.isEnabled()) {
                 long latencyMs = System.currentTimeMillis() - finalStartTime;
                 String answer = fullAnswer.toString();
-                long promptTokens = tokenCounts[0] > 0 ? tokenCounts[0] : estimateTokenCount(request.getQuestion());
-                long completionTokens = tokenCounts[1] > 0 ? tokenCounts[1] : estimateTokenCount(answer);
+                long pt = promptTokens.get() > 0 ? promptTokens.get() : estimateTokenCount(request.getQuestion());
+                long ct = completionTokens.get() > 0 ? completionTokens.get() : estimateTokenCount(answer);
                 langFuseService.recordGeneration(
                     finalTraceId,
                     modelName,
                     request.getQuestion(),
                     answer,
-                    promptTokens,
-                    completionTokens,
+                    pt,
+                    ct,
                     latencyMs);
 
                 // RAGAS 评估 → LangFuse 评分
@@ -156,7 +161,9 @@ public class AgentOrchestrator {
     }
 
     private void executeAgent(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter,
-                              String traceId, StringBuilder fullAnswer, long[] tokenCounts) throws GraphRunnerException {
+                              String traceId, StringBuilder fullAnswer,
+                              java.util.concurrent.atomic.AtomicLong promptTokens,
+                              java.util.concurrent.atomic.AtomicLong completionTokens) throws GraphRunnerException {
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
         ChatModel chatModel;
@@ -247,8 +254,8 @@ public class AgentOrchestrator {
         String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, tools, chatModel);
         if (planAnswer != null) {
             fullAnswer.append(planAnswer);
-            tokenCounts[0] = estimateTokenCount(request.getQuestion());
-            tokenCounts[1] = estimateTokenCount(planAnswer);
+            promptTokens.set(estimateTokenCount(request.getQuestion()));
+            completionTokens.set(estimateTokenCount(planAnswer));
             emitSingleAnswer(request, emitter, planAnswer);
             return;
         }
@@ -276,7 +283,7 @@ public class AgentOrchestrator {
                                 String text = streamingOutput.message().getText();
                                 if (text != null) {
                                     fullAnswer.append(text);
-                                    tokenCounts[1]++; // 估算 completion tokens
+                                    completionTokens.incrementAndGet();
                                 }
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
@@ -414,7 +421,7 @@ public class AgentOrchestrator {
                         WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
                         String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
                         return Map.entry(task.taskId(), result);
-                    }))
+                    }, PLAN_EXECUTOR))
                     .toList();
             for (CompletableFuture<Map.Entry<String, String>> future : futures) {
                 Map.Entry<String, String> entry = future.join();
@@ -499,7 +506,12 @@ public class AgentOrchestrator {
         if (start >= 0 && end > start) {
             text = text.substring(start, end + 1);
         }
-        return JSONArray.parseArray(text);
+        try {
+            return JSONArray.parseArray(text);
+        } catch (Exception e) {
+            log.warn("JSON array parse failed, input preview: {}", text.length() > 200 ? text.substring(0, 200) : text, e);
+            return new JSONArray();
+        }
     }
 
     private boolean hasDependencyCycle(List<PlanTask> tasks) {

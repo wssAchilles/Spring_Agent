@@ -598,7 +598,7 @@ function doSendMessage(content) {
         type: 'memory_recall',
         content: receive.content,
         memoryCount: count,
-        memories: [],
+        memories: (receive.documentNameList || []).map(name => ({ content: name })),
         createTime: receive.createTime || new Date()
       });
       botMessageIndex += 1;
@@ -635,6 +635,7 @@ function doSendMessage(content) {
           }
         }
       } catch (e) {
+        console.error('SSE parse error:', e);
       }
     },
     // onerror 回调

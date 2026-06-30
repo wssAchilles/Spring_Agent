@@ -147,24 +147,29 @@ public class DagExecutor {
         Map<String, NodeRunResultBO> resultMap = new LinkedHashMap<>(restoredResults);
 
         // 从断点位置开始执行
+        boolean completedSuccessfully = true;
         for (int groupIndex = startGroupIndex; groupIndex < parallelGroups.size(); groupIndex++) {
             List<String> group = parallelGroups.get(groupIndex);
-            log.info("执行第 {} 组（断点续传），包含 {} 个节点", groupIndex + 1, group.size());
+            // 跳过已完成的节点（从 checkpoint 恢复时）
+            List<String> pending = group.stream()
+                    .filter(uuid -> !resultMap.containsKey(uuid))
+                    .toList();
+            if (pending.isEmpty()) continue;
 
-            if (group.size() == 1) {
-                NodeRunResultBO result = executeNode(group.get(0), nodeMap, flowEdges, context);
+            if (pending.size() == 1) {
+                NodeRunResultBO result = executeNode(pending.get(0), nodeMap, flowEdges, context);
                 allResults.add(result);
                 resultMap.put(group.get(0), result);
 
                 if (RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus())) {
-                    // 保存检查点后中断
                     checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
                     log.error("节点执行失败，检查点已保存，终止工作流: {}", result.getNodeName());
+                    completedSuccessfully = false;
                     break;
                 }
             } else {
                 List<CompletableFuture<NodeRunResultBO>> futures = new ArrayList<>();
-                for (String nodeUuid : group) {
+                for (String nodeUuid : pending) {
                     futures.add(CompletableFuture.supplyAsync(
                             () -> executeNode(nodeUuid, nodeMap, flowEdges, context),
                             executorService));
@@ -190,6 +195,7 @@ public class DagExecutor {
                 if (hasError) {
                     checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
                     log.error("并行执行组中存在失败节点，检查点已保存，终止工作流");
+                    completedSuccessfully = false;
                     break;
                 }
             }
@@ -198,8 +204,10 @@ public class DagExecutor {
             checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex + 1, resultMap);
         }
 
-        // 执行完成，删除检查点
-        checkpointManager.deleteCheckpoint(runtimeId);
+        // 只在全部成功时删除检查点
+        if (completedSuccessfully) {
+            checkpointManager.deleteCheckpoint(runtimeId);
+        }
         return allResults;
     }
 
@@ -225,6 +233,7 @@ public class DagExecutor {
     /**
      * 关闭执行器
      */
+    @jakarta.annotation.PreDestroy
     public void shutdown() {
         executorService.shutdown();
         try {

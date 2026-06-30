@@ -75,6 +75,11 @@ class QueryRouterTest {
         assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("帮我查一下"));
         assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("搜一下Day05"));
         assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("查一下文档"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("德育评分细则"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("智育评价如何计算"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("体育评价评分标准"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("劳育评价志愿服务加分"));
+        assertEquals(QueryRouter.QueryRoute.MEDIUM, router.classify("综合素质评价总评方案"));
     }
 
     @Test

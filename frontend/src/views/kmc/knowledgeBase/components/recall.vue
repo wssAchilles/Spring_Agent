@@ -95,19 +95,19 @@
             </div>
           </div>
           <div class="border-item-body" style="overflow-y: auto">
-            <el-card v-for="item in recallList" style="margin-bottom: 20px">
+            <el-card v-for="item in recallList" :key="item.id || item.segmentId || item.content" style="margin-bottom: 20px">
               <template #header>
                 <div class="title">
                   <img :src="getFileType(item.documentName)" />
-                  <span>{{ item.documentName }}</span>
+                  <span>{{ item.documentName || '未知文档' }}</span>
                   <el-tag size="small" style="margin-left: 10px" v-if="debugMode && item.source" type="info">{{ getSourceText(item.source) }}</el-tag>
                   <el-progress
                     :text-inside="true"
                     :stroke-width="16"
-                    :percentage="item.score >= 1 ? 100 : item.score * 100"
+                    :percentage="getScorePercent(item.score)"
                     style="width: 60px; margin-left: auto"
                   >
-                    {{ item.score.toFixed(2) }}
+                    {{ getScoreText(item.score) }}
                   </el-progress>
                 </div>
               </template>
@@ -149,19 +149,19 @@
                 <el-descriptions-item label="耗时(ms)">{{ debugInfo.elapsedMs }}</el-descriptions-item>
                 <el-descriptions-item label="检索模式">{{ debugInfo.searchMethod }}</el-descriptions-item>
                 <el-descriptions-item label="向量召回">
-                  <span :style="{ color: debugInfo.vectorResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.vectorResultCount || 0 }}</span>
+                  <span :style="{ color: getDebugCount('vectorResultCount', 'firstVectorResultCount') > 0 ? '#10b981' : '#94a3b8' }">{{ getDebugCount('vectorResultCount', 'firstVectorResultCount') }}</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="关键字召回">
-                  <span :style="{ color: debugInfo.keywordResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.keywordResultCount || 0 }}</span>
+                  <span :style="{ color: getDebugCount('keywordResultCount', 'firstKeywordResultCount') > 0 ? '#10b981' : '#94a3b8' }">{{ getDebugCount('keywordResultCount', 'firstKeywordResultCount') }}</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="元数据召回">
-                  <span :style="{ color: debugInfo.metadataResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.metadataResultCount || 0 }}</span>
+                  <span :style="{ color: getDebugCount('metadataResultCount', 'firstMetadataResultCount') > 0 ? '#10b981' : '#94a3b8' }">{{ getDebugCount('metadataResultCount', 'firstMetadataResultCount') }}</span>
                 </el-descriptions-item>
                 <el-descriptions-item label="图谱召回">
-                  <span :style="{ color: debugInfo.graphResultCount > 0 ? '#10b981' : '#94a3b8' }">{{ debugInfo.graphResultCount || 0 }}</span>
+                  <span :style="{ color: getDebugCount('graphResultCount', 'firstGraphResultCount') > 0 ? '#10b981' : '#94a3b8' }">{{ getDebugCount('graphResultCount', 'firstGraphResultCount') }}</span>
                 </el-descriptions-item>
-                <el-descriptions-item label="融合后结果">{{ debugInfo.fusedCount || 0 }}</el-descriptions-item>
-                <el-descriptions-item label="重排序结果">{{ debugInfo.rerankedCount || 0 }}</el-descriptions-item>
+                <el-descriptions-item label="融合后结果">{{ getDebugCount('fusedCount', 'firstFusedCount') }}</el-descriptions-item>
+                <el-descriptions-item label="重排序结果">{{ getDebugCount('rerankedCount', 'firstRerankedCount') }}</el-descriptions-item>
                 <el-descriptions-item label="Reranker">{{ debugInfo.rerankerProvider || 'deterministic' }}</el-descriptions-item>
               </el-descriptions>
 
@@ -781,6 +781,7 @@ import {
 } from "@/api/kmc/knowledgeBase/knowledgeBase.js";
 import { getFileFormat } from "@/utils/app/chat/chat.js";
 import { listLog } from "@/api/kmc/knowledgeBase/log.js";
+import { updateKnowledgeBase } from "@/api/kmc/knowledgeBase/knowledgeBase.js";
 import { watchEffect } from "vue";
 
 const { proxy } = getCurrentInstance();
@@ -846,6 +847,11 @@ const mixData = ref({
 const rerankingModel = ref([]); // 补充模型数据容器
 const dataList = ref({});
 const route = useRoute();
+
+function getDebugCount(legacyKey, phaseKey) {
+  const value = debugInfo.value?.[phaseKey] ?? debugInfo.value?.[legacyKey];
+  return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
 
 // 补充表单验证规则（对齐原页面）
 const rules = ref({
@@ -1031,8 +1037,24 @@ watch(
 );
 
 const getFileType = (name) => {
-  return fileImg[getFileFormat(name)];
+  if (!name) {
+    return tet;
+  }
+  return fileImg[getFileFormat(name)] || tet;
 };
+
+function getScorePercent(score) {
+  const value = Number(score);
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return value >= 1 ? 100 : Math.max(0, Math.min(100, value * 100));
+}
+
+function getScoreText(score) {
+  const value = Number(score);
+  return Number.isFinite(value) ? value.toFixed(2) : '0.00';
+}
 
 const md = new MarkdownIt({
   highlight: function (str, lang) {
@@ -1186,7 +1208,11 @@ const submitForm = () => {
       }
 
       drawer.value = false;
-      proxy.$modal.msgSuccess("设置保存成功");
+      updateKnowledgeBase(knowledgeBase.value).then(() => {
+        proxy.$modal.msgSuccess("设置保存成功");
+      }).catch(() => {
+        proxy.$modal.msgError("设置保存失败");
+      });
     }
   });
 };

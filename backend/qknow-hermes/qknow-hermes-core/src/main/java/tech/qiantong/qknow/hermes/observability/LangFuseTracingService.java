@@ -61,19 +61,26 @@ public class LangFuseTracingService {
                     {"id":"%s","name":"agent-chat","sessionId":"%s","userId":"%s","input":"%s","metadata":{"source":"qknow"}}
                     """, java.util.UUID.randomUUID(), sessionId, userId, escapeJson(query));
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/api/public/traces"))
-                    .header("Authorization", authHeader)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .timeout(Duration.ofSeconds(5))
-                    .build();
+            for (int retry = 0; retry < 3; retry++) {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(baseUrl + "/api/public/traces"))
+                        .header("Authorization", authHeader)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .timeout(Duration.ofSeconds(5))
+                        .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                return extractId(response.body());
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    return extractId(response.body());
+                }
+                if (response.statusCode() == 429) {
+                    Thread.sleep(500L * (retry + 1));
+                    continue;
+                }
+                log.debug("LangFuse trace failed: {}", response.statusCode());
+                break;
             }
-            log.debug("LangFuse trace failed: {}", response.statusCode());
         } catch (Exception e) {
             log.debug("LangFuse trace creation failed", e);
         }
@@ -101,17 +108,25 @@ public class LangFuseTracingService {
                     escapeJson(input), escapeJson(output), model,
                     pt, ct, total, pt, ct, total, latency);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/api/public/generations"))
-                    .header("Authorization", authHeader)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .timeout(Duration.ofSeconds(5))
-                    .build();
+            for (int retry = 0; retry < 3; retry++) {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(baseUrl + "/api/public/generations"))
+                        .header("Authorization", authHeader)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .timeout(Duration.ofSeconds(5))
+                        .build();
 
-            HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() != 200 && resp.statusCode() != 201) {
+                HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (resp.statusCode() == 200 || resp.statusCode() == 201) {
+                    return;
+                }
+                if (resp.statusCode() == 429) {
+                    Thread.sleep(500L * (retry + 1));
+                    continue;
+                }
                 log.warn("LangFuse generation recording failed: status={}, body={}", resp.statusCode(), resp.body());
+                break;
             }
         } catch (Exception e) {
             log.debug("LangFuse generation recording failed", e);
@@ -131,22 +146,31 @@ public class LangFuseTracingService {
     public void recordScore(String traceId, String observationId, String name, double value) {
         if (httpClient == null || traceId == null) return;
         try {
+            String safeName = name.replaceAll("[^a-zA-Z0-9_-]", "_");
             String body = String.format("""
-                    {"id":"%s","traceId":"%s","name":"%s","value":%f,"source":"api"%s}
-                    """, java.util.UUID.randomUUID(), traceId, name, value,
+                    {"id":"%s","traceId":"%s","name":"%s","value":%s,"source":"api","dataType":"numeric"%s}
+                    """, java.util.UUID.randomUUID(), traceId, safeName, value,
                     observationId != null ? ",\"observationId\":\"" + observationId + "\"" : "");
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/api/public/scores"))
-                    .header("Authorization", authHeader)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .timeout(Duration.ofSeconds(5))
-                    .build();
+            for (int retry = 0; retry < 3; retry++) {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(baseUrl + "/api/public/scores"))
+                        .header("Authorization", authHeader)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .timeout(Duration.ofSeconds(5))
+                        .build();
 
-            HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() != 200) {
+                HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (resp.statusCode() == 200 || resp.statusCode() == 201) {
+                    return;
+                }
+                if (resp.statusCode() == 429) {
+                    Thread.sleep(500L * (retry + 1));
+                    continue;
+                }
                 log.debug("LangFuse score recording failed: status={}", resp.statusCode());
+                break;
             }
         } catch (Exception e) {
             log.debug("LangFuse score recording failed", e);
@@ -216,16 +240,33 @@ public class LangFuseTracingService {
 
     private String escapeJson(String s) {
         if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"")
-                .replace("\n", "\\n").replace("\r", "\\r")
-                .replace("\t", "\\t");
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\': sb.append("\\\\"); break;
+                case '"': sb.append("\\\""); break;
+                case '\n': sb.append("\\n"); break;
+                case '\r': sb.append("\\r"); break;
+                case '\t': sb.append("\\t"); break;
+                default:
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+            }
+        }
+        return sb.toString();
     }
 
     private String extractId(String json) {
-        int idx = json.indexOf("\"id\"");
-        if (idx < 0) return null;
-        int start = json.indexOf("\"", idx + 4) + 1;
-        int end = json.indexOf("\"", start);
-        return json.substring(start, end);
+        try {
+            com.alibaba.fastjson2.JSONObject obj = com.alibaba.fastjson2.JSON.parseObject(json);
+            return obj.getString("id");
+        } catch (Exception e) {
+            log.debug("Failed to parse LangFuse response id", e);
+            return null;
+        }
     }
 }

@@ -34,9 +34,11 @@ public class CandidateFusionService {
                 continue;
             }
             double topScore = results.get(0).getScore();
-            if (topScore < WEAK_PATH_THRESHOLD) {
-                String pathName = (pathNames != null && i < pathNames.size()) ? pathNames.get(i) : "path-" + i;
-                log.info("弱检索路径排除: {} (top score={} < {})", pathName, topScore, WEAK_PATH_THRESHOLD);
+            // 归一化：图谱分数可能 >1，归一化到 [0,1] 后再比较
+            String pathName = (pathNames != null && i < pathNames.size()) ? pathNames.get(i) : "path-" + i;
+            double normalizedScore = "graph".equals(pathName) ? Math.min(topScore / 12.0, 1.0) : topScore;
+            if (normalizedScore < WEAK_PATH_THRESHOLD) {
+                log.info("弱检索路径排除: {} (normalized score={} < {})", pathName, normalizedScore, WEAK_PATH_THRESHOLD);
                 continue;
             }
             filtered.add(results);

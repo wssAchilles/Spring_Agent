@@ -95,6 +95,7 @@ const showAddEdgeDialog = ref(false);
 const colorByCommunity = ref(false);
 const detecting = ref(false);
 const communities = ref([]);
+const workspaceId = ref(1001);
 
 // 社区颜色表（10 种高对比色）
 const COMMUNITY_COLORS = [
@@ -173,7 +174,7 @@ const renderGraph = async () => {
       graphData.value.nodes.map(node => ({
         id: node.id,
         label: node.label,
-        title: `${node.label}\n类型: ${node.type}${node.properties ? '\n' + JSON.parse(node.properties).description : ''}`,
+        title: `${node.label}\n类型: ${node.type}${node.properties ? '\n' + safeGetDescription(node.properties) : ''}`,
         color: colorByCommunity.value ? getCommunityColor(node.id) : getNodeColor(node.type),
         font: { size: 14, color: '#333' },
         size: 25
@@ -231,6 +232,12 @@ const renderGraph = async () => {
   }
 };
 
+const safeGetDescription = (properties) => {
+  try {
+    return JSON.parse(properties).description || '';
+  } catch { return ''; }
+};
+
 // Get node color based on type
 const getNodeColor = (type) => {
   const colors = {
@@ -258,7 +265,7 @@ const getCommunityColor = (nodeId) => {
 const runCommunityDetection = async () => {
   detecting.value = true;
   try {
-    const res = await detectCommunities(1001);
+    const res = await detectCommunities(workspaceId.value);
     if (res.code === 200) {
       communities.value = res.data || [];
       ElMessage.success(`检测到 ${communities.value.length} 个社区`);
@@ -276,7 +283,7 @@ const runCommunityDetection = async () => {
 // 加载已有社区数据
 const loadCommunities = async () => {
   try {
-    const res = await getCommunities(1001);
+    const res = await getCommunities(workspaceId.value);
     if (res.code === 200 && res.data?.length > 0) {
       communities.value = res.data;
     }
