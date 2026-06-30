@@ -27,7 +27,7 @@ public class QueryRouter {
             Pattern.CASE_INSENSITIVE);
 
     private static final Pattern RETRIEVAL_INTENT_PATTERNS = Pattern.compile(
-            ".*(第一天|第二天|第三天|第1天|第2天|第3天|Day\\d+|日志|文档|知识库|干了什么|做了什么|干了啥|做了啥|干过什么|做过什么|内容是什么|写了什么|记录了什么|查一下|搜一下|找一下|帮我找|帮我查|召回|检索|搜索|查阅|查看).*",
+            ".*(第一天|第二天|第三天|第1天|第2天|第3天|Day\\d+|日志|文档|知识库|干了什么|做了什么|干了啥|做了啥|干过什么|做过什么|内容是什么|写了什么|记录了什么|查一下|搜一下|找一下|帮我找|帮我查|召回|检索|搜索|查阅|查看|方案|细则|标准|评价|评分|总评|综合素质|德育|智育|体育|美育|劳育|成绩|学分|加分|扣分|奖惩).*",
             Pattern.CASE_INSENSITIVE);
 
     private final IChatClientService chatClientService;
