@@ -1,3 +1,651 @@
 % !TeX root = ../thuthesis-example.tex
 
 \chapter{系统设计与方法}
+
+本章详细阐述平台的整体架构设计和核心算法原理。首先介绍系统的双核架构和模块划分，然后依次论述 RAG 检索引擎\cite{Lewis2020RAG}、Hermes 认知内核\cite{Asai2023SelfRAG}、DAG 工作流引擎\cite{Kahn1962Topological}和质量评估框架\cite{Es2023RAGAS,Ru2024RAGChecker}的设计与方法。每个算法均给出形式化定义、数学推导和关键参数分析。本章引用的核心文献涵盖检索增强生成\cite{Lewis2020RAG,Gao2023RAGSurvey}、密集向量检索\cite{Karpukhin2020DPR,Malkov2018HNSW}、排序融合\cite{Cormack2009RRF,Khattab2020ColBERT}、自反思推理\cite{Asai2023SelfRAG,Yan2024CRAG}、多智能体协作\cite{Yao2023ReAct,Wang2023PlanSolve,Wei2022CoT}、分层记忆管理\cite{Packer2023MemGPT}、图增强检索\cite{Guo2024LightRAG}以及质量评估\cite{Es2023RAGAS,Ru2024RAGChecker}等前沿研究成果。
+
+\section{系统总体架构}
+
+\subsection{双核架构设计}
+
+本平台采用"控制面（Control Plane）＋认知面（Cognitive Plane）"双核架构\cite{Lewis2020RAG}。两个面通过 gRPC 协议进行通信，实现了业务逻辑与 AI 推理的完全解耦。这种设计灵感来源于现代操作系统的用户态/内核态分离思想：控制面如同用户态，负责资源管理和业务规则；认知面如同内核态，专注于核心推理任务。与传统的单体 RAG 系统相比，双核架构的核心优势在于将检索（Retrieval）与生成（Generation）解耦到不同的运行时环境中，使得每个面可以独立扩展和优化。Lewis 等人\cite{Lewis2020RAG}在 RAG 原始论文中指出，参数化记忆（LLM 权重）和非参数化记忆（检索索引）的分离是 RAG 系统的关键设计原则，本平台的双核架构正是这一原则的工程化实现。
+
+\textbf{控制面}基于 Spring Boot 3 构建，是一个模块化单体应用，承担以下职责：
+\begin{itemize}
+    \item RBAC 权限管理：基于角色的访问控制，支持数据范围过滤
+    \item RAG 知识引擎\cite{Lewis2020RAG}：文档上传、语义切块、向量化存储与混合检索
+    \item 工具注册中心：内置工具管理与 MCP 协议适配
+    \item DAG 工作流编排\cite{Kahn1962Topological}：前端可视化画布与后端执行引擎
+    \item API 网关：统一的 RESTful API 与 SSE 流式响应
+\end{itemize}
+
+\textbf{认知面}以自研 Hermes 内核为核心，是一个独立的 Spring Boot 微服务，承担以下职责：
+\begin{itemize}
+    \item 反思循环推理\cite{Asai2023SelfRAG}：生成→评估→修正的闭环推理
+    \item ReAct 工具调用\cite{Yao2023ReAct}：基于推理-行动范式的工具编排
+    \item AI Judge 质量评分\cite{Es2023RAGAS}：三维（事实性、相关性、指令遵循度）自动评分
+    \item 多智能体协作\cite{Wang2023PlanSolve}：Supervisor-Worker 模式的任务分解与并行执行
+\end{itemize}
+
+这种设计的核心优势在于：控制面负责数据持久化和业务规则，认知面专注于 AI 推理，两者通过 Protobuf 定义清晰的接口边界。控制面在将请求发送给认知面之前，预先完成 API Key 解析、RAG 上下文检索等数据准备工作，使认知面成为无状态的纯推理引擎。
+
+\subsection{模块依赖结构}
+
+控制面采用 Maven 多模块结构，共包含 8 个业务模块和 12 个框架模块。
+
+\textbf{框架层}（qknow-framework）包含以下子模块：qknow-common（公共工具类与基础实体）、qknow-config（Web 与 AOP 配置）、qknow-mybatis（ORM 与数据源）、qknow-redis（缓存与会话）、qknow-security（安全框架）、qknow-neo4j（图数据库驱动）、qknow-ai（AI 框架层）、qknow-websocket（WebSocket 支持）、qknow-quartz（定时任务）、qknow-generator（代码生成）、qknow-thirdparty（第三方集成）和 qknow-file（文件存储）。
+
+\textbf{业务层}包含以下模块：qknow-module-system（RBAC 系统管理）、qknow-module-ai（AI 模型市场）、qknow-module-kmc（知识管理中心）、qknow-module-kb（Agent 平台核心）、qknow-module-kg（知识图谱）、qknow-module-ext（知识抽取）、qknow-module-app（应用目录）和 qknow-module-dm（数据管理）。
+
+每个业务模块遵循 API/BIZ 分离模式：\texttt{<module>-api} 包含 DTO、实体和接口定义，\texttt{<module>-biz} 包含控制器、服务和 Mapper 实现。这种模式实现了跨模块的类型共享，同时避免了实现依赖的传递。
+
+\section{RAG 检索引擎设计}
+
+RAG（Retrieval-Augmented Generation）是一种通过检索外部知识库来增强大语言模型生成能力的技术范式\cite{Lewis2020RAG}。其核心思想是：给定用户查询 $q$，首先从知识库 $\mathcal{D}$ 中检索相关文档集合 $\mathcal{R}(q) \subset \mathcal{D}$，然后将检索结果作为上下文注入 LLM 的提示词中，引导模型基于外部知识生成更准确的回答\cite{Gao2023RAGSurvey}。形式化地：
+
+\begin{equation}
+    \text{RAG}(q) = \text{LLM}(q, \mathcal{R}(q)) = \text{LLM}\left(q, \{d_1, d_2, \ldots, d_k\}\right)
+\end{equation}
+
+其中 $\mathcal{R}(q) = \{d_1, d_2, \ldots, d_k\}$ 为检索到的 top-$k$ 文档。RAG 技术有效缓解了 LLM 的幻觉问题，使模型能够基于外部知识生成更准确的回答\cite{Gao2023RAGSurvey}。Gao 等人\cite{Gao2023RAGSurvey}在 RAG 综述中指出，RAG 系统的核心挑战包括检索质量（如何找到最相关的文档）、上下文利用（如何有效利用检索结果）和生成质量（如何基于上下文生成准确的回答）三个方面。
+
+本平台的 RAG 检索引擎采用"四路并行召回＋RRF 融合＋两阶段重排＋CRAG 质量评估"的四层架构。下面依次介绍每个环节的设计原理和算法细节。
+
+\subsection{文档预处理：语义切块策略}
+
+文档切块是 RAG 系统的基础环节。Anthropic\cite{Anthropic2024ContextualRetrieval}的研究表明，在嵌入和索引之前为每个文档块添加上下文信息（Contextual Retrieval），可以将检索失败率降低 49\%--67\%。本平台借鉴了这一思想，在切块阶段保留了文档结构信息和元数据。设文档 $D$ 由字符序列 $D = (c_1, c_2, \ldots, c_N)$ 组成，切块的目标是将其划分为 $m$ 个语义完整的块 $\{s_1, s_2, \ldots, s_m\}$，使得每个块的大小在预设范围内，且语义边界处的信息损失最小化。
+
+\subsubsection{递归字符切块（RecursiveSplitter）}
+
+递归字符切块是默认的切块策略，其设计灵感来源于 LangChain 的 RecursiveCharacterTextSplitter。核心思想是按照分隔符优先级逐级尝试切分：设分隔符集合为 $\mathcal{S} = (s_1, s_2, \ldots, s_p)$，按优先级从高到低排列。算法首先使用最高优先级的分隔符 $s_1$ 切分文本；若切分后的片段长度仍超过目标块大小 $L_{\max}$，则递归使用下一级分隔符 $s_2$ 对该片段进一步切分；依此类推。
+
+分隔符优先级从高到低依次为：段落分隔符（\texttt{\textbackslash n\textbackslash n}）、换行符（\texttt{\textbackslash n}）、句号（\texttt{。}）、分号（\texttt{；}）、感叹号（\texttt{！}）、问号（\texttt{？}）、逗号（\texttt{，}）、空格（\texttt{ }）和字符级切分。这种设计遵循了中文文本的语义边界，优先在段落和句子层面进行切分，最大程度地保持了语义完整性。
+
+递归切块的形式化定义为：给定文本 $T$、分隔符序列 $\mathcal{S}$、目标块大小 $L_{\max}$ 和重叠大小 $\delta$，切块函数 $\text{Split}(T, \mathcal{S}, i)$ 定义为：
+
+\begin{equation}
+    \text{Split}(T, \mathcal{S}, i) = \begin{cases}
+        \text{HardCut}(T, L_{\max}) & \text{if } |T| \leq L_{\max} \text{ or } i > |\mathcal{S}| \\
+        \text{Merge}\left(\bigcup_{t \in \text{SplitBy}(T, \mathcal{S}_i)} \text{Split}(t, \mathcal{S}, i+1)\right) & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+其中 $\text{SplitBy}(T, s)$ 按分隔符 $s$ 切分文本，$\text{HardCut}(T, L)$ 按字符硬切分，$\text{Merge}(\cdot)$ 将过短的相邻块合并。
+
+重叠机制确保语义边界处的信息不丢失。对于相邻块 $s_i$ 和 $s_{i+1}$，重叠区域为：
+
+\begin{equation}
+    \text{overlap}(s_i, s_{i+1}) = s_i[|s_i| - \delta : |s_i|]
+\end{equation}
+
+即从前一个块的尾部取 $\delta$ 个字符拼接到当前块的头部。
+
+该算法还支持父子切块（Parent-Child Chunking）模式：首先以较大的块大小 $L_{\text{parent}}$ 将文档切分为父块，然后在每个父块内部以较小的块大小 $L_{\text{child}}$ 进一步切分为子块。设父块为 $P_j$，其子块集合为 $\{s_{j,1}, s_{j,2}, \ldots, s_{j,n_j}\}$，则每个子块通过元数据 $\text{parent\_id}(s_{j,k}) = j$ 关联到父块。检索时使用子块进行精确匹配，上下文扩展时回溯到父块获取完整语境。
+
+\subsubsection{语义切块（SemanticSplitter）}
+
+语义切块\cite{Vaswani2017Transformer}基于文本嵌入的语义相似度来确定切分边界，其核心假设是：语义主题发生转换的位置，相邻句子的嵌入向量之间的余弦相似度会显著下降。嵌入模型基于 Transformer 架构\cite{Vaswani2017Transformer}，通过自注意力机制将句子映射到 $d$ 维稠密向量空间。自注意力机制的核心计算为：
+
+\begin{equation}
+    \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+\end{equation}
+
+其中 $Q$、$K$、$V$ 分别为查询、键、值矩阵，$d_k$ 为键向量维度。通过多头注意力机制，模型能够捕获句子中不同位置的语义信息，生成高质量的句向量表示。
+
+给定句子序列 $(s_1, s_2, \ldots, s_n)$，语义切块算法的执行流程如下：
+
+\textbf{步骤一：句子分割}。按中英文句号、感叹号、问号、分号和换行符将文本切分为句子序列。
+
+\textbf{步骤二：批量嵌入计算}。以批量大小为 10 调用 EmbeddingModel 对每个句子生成 $d$ 维向量表示 $\mathbf{e}_i \in \mathbb{R}^d$。
+
+\textbf{步骤三：断点检测}。计算相邻句子对的余弦相似度：
+
+\begin{equation}
+    \text{sim}(s_i, s_{i+1}) = \cos(\mathbf{e}_i, \mathbf{e}_{i+1}) = \frac{\mathbf{e}_i \cdot \mathbf{e}_{i+1}}{\|\mathbf{e}_i\|_2 \cdot \|\mathbf{e}_{i+1}\|_2} = \frac{\sum_{j=1}^{d} e_{i,j} \cdot e_{i+1,j}}{\sqrt{\sum_{j=1}^{d} e_{i,j}^2} \cdot \sqrt{\sum_{j=1}^{d} e_{i+1,j}^2}}
+\end{equation}
+
+当相似度低于阈值 $\theta_s = 0.5$ 时，将位置 $i+1$ 标记为断点：$\mathcal{B} = \{i+1 : \text{sim}(s_i, s_{i+1}) < \theta_s\}$。
+
+\textbf{步骤四：分组}。将断点之间的句子组合为文档块。设断点序列为 $b_1 < b_2 < \cdots < b_k$，则第 $j$ 个块为 $C_j = (s_{b_{j-1}}, s_{b_{j-1}+1}, \ldots, s_{b_j - 1})$，需满足 $|C_j| \in [L_{\min}, L_{\max}]$。
+
+语义切块的优势在于能够自适应地识别语义边界，避免在主题内部强行切分。但其计算开销较高（需要对每个句子生成嵌入向量），适用于对切块质量要求较高的场景。
+
+\subsubsection{模板切块（TemplateSplitter）}
+
+模板切块根据文件类型自动选择最优的切块策略，体现了"分而治之"的设计思想。其核心是一个文件类型到切块策略的映射函数 $\tau: \mathcal{F} \rightarrow \mathcal{A}$，其中 $\mathcal{F}$ 为文件类型集合，$\mathcal{A}$ 为切块策略集合。
+
+映射规则如下：Markdown 文件使用标题级别（\texttt{\textbackslash n\#\# }、\texttt{\textbackslash n\#\#\# }）作为主要分隔符，利用文档结构语义进行切分；代码文件（Java、Python、JavaScript 等）使用函数定义（\texttt{\textbackslash ndef }、\texttt{\textbackslash nfunction }、\texttt{\textbackslash npublic }）和类定义（\texttt{\textbackslash nclass }）作为分隔符，确保代码块的完整性；PDF 文件使用默认分隔符但将最大块大小扩展至 1024 字符，适应 PDF 文档的段落较长的特点；CSV/TSV 文件按行切分，保持数据记录的原子性。
+
+\subsection{查询转换与意图分析}
+
+在检索之前，平台对用户查询进行多层次的转换和分析，以提高检索的召回率和精确率。
+
+\subsubsection{查询路由（QueryRouter）}
+
+查询路由将用户查询分为三个复杂度级别，其形式化定义为分类函数 $\phi: \mathcal{Q} \rightarrow \{\text{SIMPLE}, \text{MEDIUM}, \text{COMPLEX}\}$。
+
+分类逻辑采用三级判定策略：
+
+（1）\textbf{正则意图匹配}：若查询匹配检索意图正则模式 $\mathcal{P}_{\text{retrieval}}$（包含"第一天"、"Day$\backslash$d+"、"日志"、"文档"等关键词），直接判定为 MEDIUM。
+
+（2）\textbf{规则快速路径}：若 $|q| < 10$ 或 $q \in \mathcal{P}_{\text{simple}}$（"你好"、"谢谢"、"时间"等），判定为 SIMPLE。
+
+（3）\textbf{LLM 分类}：对不确定的查询调用 LLM 进行分类。
+
+SIMPLE 级别的查询跳过检索直接由 LLM 回答，避免了不必要的检索开销。
+
+\subsubsection{查询转换策略（QueryTransformService）}
+
+查询转换旨在弥合用户查询与文档表述之间的语义鸿沟。平台支持四种策略：
+
+\textbf{（1）查询重写}（rewrite，默认策略）。调用 LLM 将查询改写为更适合文档检索的形式。设原始查询为 $q$，重写函数为 $f_r$，则转换后的查询为 $q' = f_r(q)$。重写提示词为："Rewrite search queries to be more specific for document retrieval."
+
+\textbf{（2）假设文档嵌入}（HyDE）。HyDE 的核心思想是：先让 LLM 生成一个假设性的回答文档 $\hat{d}$，然后用 $\hat{d}$ 的嵌入向量作为查询代理进行检索。该方法的理论基础是：假设文档的表述更接近实际文档的表述，从而缩小了查询与文档之间的语义鸿沟（semantic gap）\cite{Gao2023RAGSurvey}。形式化地：
+
+\begin{equation}
+    \hat{d} = \text{LLM}(q), \quad \mathbf{q}_{\text{hyde}} = \text{Embed}(\hat{d}), \quad \mathcal{R}_{\text{hyde}}(q) = \text{TopK}_{d \in \mathcal{D}}\left(\cos(\mathbf{q}_{\text{hyde}}, \mathbf{e}_d)\right)
+\end{equation}
+
+其优势在于假设文档的表述更接近实际文档，从而提高了查询-文档的语义匹配度。对于包含数字的查询（如日期、版本号），跳过 HyDE 以避免生成不准确的假设。
+
+\textbf{（3）多查询扩展}（multi\_query）。生成 $v$ 个语义多样化的查询变体 $\{q_1, q_2, \ldots, q_v\}$（默认 $v=3$），对每个变体分别进行检索，最后合并结果：
+
+\begin{equation}
+    \mathcal{R}_{\text{multi}}(q) = \bigcup_{i=1}^{v} \mathcal{R}(q_i)
+\end{equation}
+
+多查询扩展通过增加查询的覆盖面来提高检索的召回率，尤其适用于用户查询模糊或存在多种表述方式的场景。
+
+\subsubsection{查询实体抽取（QueryEntityExtractionService）}
+
+使用 LLM 从查询中提取核心命名实体集合 $\mathcal{E}(q) = \{e_1, e_2, \ldots, e_k\}$，其中 $k \leq 8$，每个实体长度 $|e_i| \geq 2$。抽取模型使用 DeepSeek \texttt{deepseek-chat}，温度参数设为 0.0 以确保确定性输出。抽取的实体用于元数据检索和知识图谱检索。
+
+\subsection{四路并行召回}
+
+本平台实现了四条并行检索路径，每条路径针对不同类型的查询模式进行优化。四路召回的形式化定义为：
+
+\begin{equation}
+    \mathcal{R}_{\text{total}}(q) = \mathcal{R}_{\text{vector}}(q) \cup \mathcal{R}_{\text{keyword}}(q) \cup \mathcal{R}_{\text{metadata}}(q) \cup \mathcal{R}_{\text{graph}}(q)
+\end{equation}
+
+四路检索通过线程池并行执行，每条路径的超时时间为 30 秒。候选 top-K 设置为 $\max(k \times 3, 50)$，其中 $k$ 为最终返回的结果数。
+
+\subsubsection{向量检索（VectorRetriever）}
+
+向量检索\cite{Karpukhin2020DPR}基于密集向量表示实现语义匹配。Karpukhin 等人\cite{Karpukhin2020DPR}在 EMNLP 2020 中证明，密集向量检索在开放域问答任务上显著优于传统的稀疏检索方法（如 BM25），top-20 检索准确率提升了 9\%--19\%。其核心思想是将查询和文档分别编码为低维密集向量，然后通过向量相似度计算检索最相关的文档。本平台使用通义千问 Embedding 模型（1536 维）作为向量编码器，通过 Spring AI 的统一接口进行调用。
+
+文档块的嵌入向量存储在 \texttt{vector\_store} 表中，维度为 $d = 1536$（与通义千问 Embedding 模型对齐）。向量索引使用 HNSW（Hierarchical Navigable Small World）算法\cite{Malkov2018HNSW}，其核心数据结构是一个多层图 $G = (V, E)$，其中每个节点 $v \in V$ 对应一个文档向量，边集 $E$ 编码了向量之间的近邻关系。Malkov 等人\cite{Malkov2018HNSW}在 IEEE TPAMI 2018 中证明，HNSW 在近似最近邻搜索（ANN）任务上实现了 $O(\log N)$ 的查询时间复杂度，同时保持了较高的召回率。HNSW 的核心思想是构建一个层次化的导航图：底层包含所有向量节点，高层通过随机跳转实现快速导航，查询时从最高层开始逐层下降，最终在底层找到近似最近邻。
+
+HNSW 的关键参数包括：
+\begin{itemize}
+    \item $m = 16$：每个节点在非零层的最大连接数，控制图的密度
+    \item $\text{ef\_construction} = 200$：构建阶段的候选列表大小，影响索引质量
+    \item $\text{ef\_search} = 100$：查询阶段的候选列表大小，影响检索精度
+\end{itemize}
+
+查询时，将用户查询的嵌入向量 $\mathbf{q}$ 与存储的文档向量进行余弦相似度计算：
+
+\begin{equation}
+    \text{score}_{\text{vector}}(d) = \cos(\mathbf{q}, \mathbf{e}_d) = \frac{\mathbf{q} \cdot \mathbf{e}_d}{\|\mathbf{q}\|_2 \cdot \|\mathbf{e}_d\|_2}
+\end{equation}
+
+HNSW 索引的查询时间复杂度为 $O(\log N)$，远优于暴力搜索的 $O(Nd)$，其中 $N$ 为文档数量。
+
+\subsubsection{关键词检索（KeywordRetriever）}
+
+关键词检索利用 PostgreSQL 的原生全文检索能力。每个文档块在入库时自动计算 \texttt{content\_tsv}（tsvector 类型），使用 \texttt{simple} 配置（适用于中文）进行分词，并建立 GIN（Generalized Inverted Index）索引。
+
+倒排索引的核心数据结构是一个从词项到文档列表的映射 $\mathcal{I}: \mathcal{T} \rightarrow 2^{\mathcal{D}}$，其中 $\mathcal{T}$ 为词项集合。查询时使用 \texttt{plainto\_tsquery('simple', ?)} 函数将查询转换为 tsquery，然后通过索引查找包含所有查询词项的文档。
+
+关键词检索的评分函数结合了文档名称匹配和内容匹配：
+
+\begin{equation}
+    \text{score}_{\text{keyword}}(d) = \sum_{t \in \mathcal{E}(q)} \left[\alpha \cdot \mathbb{1}[t \in \text{name}(d)] + \beta \cdot \mathbb{1}[t \in \text{content}(d)]\right]
+\end{equation}
+
+其中 $\alpha = 3.0$ 为文档名称匹配权重，$\beta = 1.0$ 为内容匹配权重，$\mathbb{1}[\cdot]$ 为指示函数。
+
+\subsubsection{元数据检索（MetadataRetriever）}
+
+元数据检索利用 PostgreSQL 的 JSONB 包含操作符（\texttt{@>}）在实体元数据表中查找包含指定实体的文档块。该表（\texttt{kmc\_segment\_entity\_metadata}）存储了每个文档块的实体和关系元数据（由 LLM 在入库时抽取），使用 GIN 索引加速查询。
+
+元数据检索的查询逻辑为：给定实体集合 $\mathcal{E}(q)$，查找所有满足 $\mathcal{E}(q) \subseteq \text{entities}(d)$ 的文档块。所有匹配结果获得固定高置信度分数 10.0，因为实体匹配是一种高精度的检索信号。
+
+\subsubsection{知识图谱检索（GraphRagRetriever）}
+
+知识图谱检索\cite{Guo2024LightRAG}实现了 LightRAG 风格的双层检索策略。Guo 等人\cite{Guo2024LightRAG}提出，基于图的 RAG 系统可以通过低层（实体级）和高层（主题级）两个粒度进行检索，从而同时捕获精确的实体关系和宏观的语义关联。本平台借鉴了这一双层思想，结合 PostgreSQL 邻接表和 Neo4j 图数据库实现了灵活的图增强检索。
+
+\textbf{低层检索}（Low-level）：通过精确实体匹配查找直接相关的文档块。给定实体 $e$，检索所有在 \texttt{kmc\_segment\_entity\_metadata} 中包含 $e$ 的文档块。
+
+\textbf{高层检索}（High-level）：通过主题和概念匹配进行跨实体的语义检索。使用 ILIKE 模糊匹配查找与查询主题相关的实体，然后通过知识图谱的边关系进行多跳扩展。
+
+当 Neo4j 图数据库可用时，系统执行语义引导的图遍历查询。给定查询实体集合 $\mathcal{E}$，遍历所有距离不超过 $h_{\max} = 2$ 跳的邻居节点，每个邻居 $n$ 的权重计算为：
+
+\begin{equation}
+    w(n) = \gamma^{h(n)} \cdot b(n)
+\end{equation}
+
+其中 $h(n)$ 为节点 $n$ 到查询实体的最短跳数，$\gamma$ 为跳数衰减因子（$h=1$ 时 $\gamma^1 = 1.0$，$h=2$ 时 $\gamma^2 = 0.7$），$b(n)$ 为相关性增强因子：
+
+\begin{equation}
+    b(n) = \begin{cases}
+        2.0 & \text{if } \text{context} \subseteq \text{name}(n) \\
+        1.0 & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+此外，系统还支持时间衰减检索，对具有时间窗口（\texttt{valid\_from}、\texttt{valid\_until}）的事实信息，按以下公式计算时间衰减分数：
+
+\begin{equation}
+    \text{score}_{\text{temporal}}(d) = S_{\text{base}} \cdot \alpha_{\text{decay}}^{\frac{\Delta t}{T_{1/2}}}
+\end{equation}
+
+其中 $S_{\text{base}} = 12.0$ 为图检索基础分数，$\alpha_{\text{decay}} = 0.9$ 为衰减因子，$\Delta t$ 为事实创建至今的天数，$T_{1/2} = 30$ 为半衰期（天）。该公式采用了指数衰减模型，其物理含义是：每隔 30 天，事实的可信度衰减为原来的 0.9 倍。
+
+\subsection{候选融合：Reciprocal Rank Fusion}
+
+四路检索的结果需要融合为统一的排序列表。本平台采用 Reciprocal Rank Fusion（RRF）算法\cite{Cormack2009RRF}进行融合。RRF 是一种基于排名的融合方法，其核心优势在于：不依赖各检索路径的原始分数（不同路径的分数尺度可能差异很大），仅使用排名信息，因此具有良好的鲁棒性。Cormack 等人\cite{Cormack2009RRF}在 SIGIR 2009 中证明，RRF 在多个 TREC 数据集上一致优于 Condorcet 融合和单独的排序学习方法。
+
+在融合之前，系统执行弱路径淘汰：如果某条检索路径的 top-1 结果分数低于阈值 $\theta_w = 0.3$，则将该路径排除，以消除"短板效应"。设淘汰后的路径集合为 $R' \subseteq R$，RRF 融合公式为：
+
+\begin{equation}
+    \text{RRF}(d) = \sum_{r \in R'} \frac{1}{k + \text{rank}_r(d) + 1}
+\end{equation}
+
+其中 $R'$ 为文档 $d$ 出现的检索路径集合，$\text{rank}_r(d)$ 为文档 $d$ 在路径 $r$ 中的 0-indexed 排名，$k = 60$ 为平滑常数。
+
+RRF 的数学性质分析：平滑常数 $k$ 的作用是控制排名靠前和靠后文档的分数差异。当 $k$ 较大时，排名差异被压缩，各排名的文档获得更均匀的分数；当 $k$ 较小时，排名靠前的文档获得显著更高的分数。Cormack 等人\cite{Cormack2009RRF}通过实验确定 $k = 60$ 在多数场景下表现最优。
+
+RRF 的一个重要性质是：如果一个文档在多条检索路径中都排名靠前，其融合分数将显著高于仅在单条路径中排名靠前的文档。这体现了"多源共识"的思想——被多个检索策略同时认可的文档更可能是高质量结果。从信息论的角度，RRF 可以理解为一种基于排名的信息聚合：每条检索路径提供了一个关于文档相关性的"投票"，RRF 通过倒数排名加权将这些投票聚合为统一的相关性分数。设文档 $d$ 在 $R'$ 条路径中的排名分别为 $r_1, r_2, \ldots, r_{|R'|}$，则其 RRF 分数的上界为：
+
+\begin{equation}
+    \text{RRF}(d) \leq \frac{|R'|}{k + 1}
+\end{equation}
+
+当且仅当文档在所有路径中均排名第一时取等号。这一性质保证了多路径一致认可的文档获得最高分数。
+
+\subsection{两阶段重排序}
+
+重排序（Reranking）是 RAG 系统中提升检索质量的关键环节\cite{Khattab2020ColBERT}。本平台采用两阶段重排序策略，在效率和精度之间取得平衡。
+
+\textbf{第一阶段：ColBERT 粗排}。ColBERT\cite{Khattab2020ColBERT}提出了一种"后期交互"（Late Interaction）架构，其核心创新在于：查询和文档分别独立编码为 token 级别的向量序列，然后通过轻量级的 MaxSim 操作计算相关性分数。与传统的交叉编码器（Cross-Encoder）相比，ColBERT 的后期交互架构允许文档表示离线预计算，查询时只需计算查询向量与文档向量的相似度，将排序延迟降低了两个数量级\cite{Khattab2020ColBERT}。本平台使用基于 n-gram 的 MaxSim 近似算法实现 ColBERT 风格的粗排。
+
+设查询的 n-gram 集合为 $Q = \{q_1, q_2, \ldots, q_{|Q|}\}$，文档的 n-gram 集合为 $D = \{d_1, d_2, \ldots, d_{|D|}\}$，MaxSim 分数定义为：
+
+\begin{equation}
+    \text{MaxSim}(Q, D) = \frac{1}{|Q|} \sum_{q_n \in Q} \max_{d_n \in D} \mathbb{1}[q_n = d_n]
+\end{equation}
+
+即对于查询中的每个 n-gram，找到文档中最相似的 n-gram，然后取所有查询 n-gram 的平均最大相似度。本平台使用 3-gram（$n=3$）进行匹配。
+
+\textbf{第二阶段：精排}。优先使用 DashScope 云端重排序 API，该 API 基于深度学习模型对查询-文档对进行精细的相关性评分。当云端不可用时回退到确定性规则重排，规则重排的加分策略为：
+
+\begin{equation}
+    \text{bonus}(d) = \alpha_1 \cdot \mathbb{1}[\text{dayMatch}(d)] + \alpha_2 \cdot \mathbb{1}[\text{nameMatch}(d)] + \alpha_3 \cdot |\mathcal{E}(q) \cap \text{terms}(d)|
+\end{equation}
+
+其中 $\alpha_1 = 3.0$（Day 编号匹配）、$\alpha_2 = 2.0$（文档名称匹配）、$\alpha_3 = 1.0$（关键词匹配）。
+
+\subsection{Corrective RAG 质量评估}
+
+在检索完成后，平台使用 CRAG（Corrective Retrieval Augmented Generation）机制\cite{Yan2024CRAG}对检索结果进行质量评估。CRAG 的核心思想是：并非所有检索结果都是相关的，盲目使用不相关的检索结果反而会降低生成质量\cite{Yan2024CRAG}。Yan 等人\cite{Yan2024CRAG}在 arXiv 2024 中提出，通过轻量级的检索评估器对检索结果进行质量分类，并根据分类结果动态调整生成策略，可以显著提升 RAG 系统的鲁棒性。本平台实现了 CRAG 的三分类评估机制，并在此基础上增加了条件二次检索功能。
+
+评估器使用 DeepSeek 模型（温度参数 0.0）对检索结果进行三分类。设检索结果集合为 $\mathcal{R}$，评估函数为 $\psi: \mathcal{R} \rightarrow \{\text{CORRECT}, \text{INCORRECT}, \text{AMBIGUOUS}\}$：
+
+\begin{equation}
+    \psi(\mathcal{R}, q) = \begin{cases}
+        \text{CORRECT} & \text{if } \mathcal{R} \text{ can answer } q \\
+        \text{INCORRECT} & \text{if } \mathcal{R} \text{ cannot answer } q \\
+        \text{AMBIGUOUS} & \text{if uncertain}
+    \end{cases}
+\end{equation}
+
+当 $\psi = \text{INCORRECT}$ 时，系统丢弃所有检索结果并在系统提示词中注入警告标签 \texttt{<retrieval\_evaluation label="INCORRECT">}，指示 LLM 不要引用检索内容。同时，如果评估器提供了重写查询 $q' \neq q$，系统使用 $q'$ 重新执行一次完整的检索流程：
+
+\begin{equation}
+    \mathcal{R}_{\text{corrected}}(q) = \begin{cases}
+        \mathcal{R}(q) & \text{if } \psi(\mathcal{R}(q), q) = \text{CORRECT} \\
+        \mathcal{R}(q') & \text{if } \psi(\mathcal{R}(q), q) = \text{INCORRECT} \text{ and } q' \neq q \\
+        \emptyset & \text{if } \psi(\mathcal{R}(q), q) = \text{INCORRECT} \text{ and } q' = q \\
+        \mathcal{R}(q) \text{ (with warning)} & \text{if } \psi(\mathcal{R}(q), q) = \text{AMBIGUOUS}
+    \end{cases}
+\end{equation}
+
+这种自修正机制有效减少了因检索失败导致的幻觉回答，是本平台 RAG 引擎的核心创新之一。
+
+\section{Hermes 认知内核设计}
+
+Hermes 认知内核是平台的智能推理核心，负责将检索到的知识与用户问题相结合，生成高质量的回答。本节依次介绍反思循环推理、多智能体协作和三层记忆体系。
+
+\subsection{反思循环推理}
+
+Hermes 内核的核心创新是"生成→评估→自洽性检测→修正"的双重质量保障机制。该机制的设计灵感来源于 Self-RAG\cite{Asai2023SelfRAG}的自反思思想。Asai 等人\cite{Asai2023SelfRAG}提出，通过训练 LLM 生成特殊的"反思标记"（reflection tokens），可以自适应地决定何时需要检索、何时可以跳过检索，从而在保持 LLM 创造性的同时提升事实性。本平台在此基础上增加了自洽性检测层，形成了更严格的双重门限。自洽性检测的理论基础来源于 Chain-of-Thought\cite{Wei2022CoT}研究中发现的"采样一致性"现象：对于确定性问题，LLM 的多次独立采样应产生词汇重叠较高的回答；对于不确定性问题，采样结果的词汇差异会显著增大。
+
+\subsubsection{反思循环算法}
+
+反思循环的形式化定义为：给定系统提示词 $p$、用户查询 $q$、参考知识 $c$ 和最大重试次数 $T_{\max}$，算法迭代执行以下步骤：
+
+\textbf{步骤一：生成}。在第 $t$ 次迭代中，构建提示词 $\hat{p}_t$：
+
+\begin{equation}
+    \hat{p}_t = \begin{cases}
+        p \oplus c & \text{if } t = 0 \\
+        p \oplus c \oplus \text{Feedback}(r_{t-1}) & \text{if } t > 0
+    \end{cases}
+\end{equation}
+
+其中 $\oplus$ 表示字符串拼接，$\text{Feedback}(r_{t-1})$ 为上一轮评分反馈。然后调用 LLM 生成回答 $a_t = \text{LLM}(\hat{p}_t, q)$。
+
+\textbf{步骤二：AI Judge 三维评分}。使用独立的 LLM 调用对生成的回答进行三个维度的评分：
+
+\begin{equation}
+    S_{\text{overall}}(a_t) = \frac{S_F(a_t) + S_R(a_t) + S_I(a_t)}{3}
+\end{equation}
+
+其中 $S_F$ 为事实性评分（回答中的信息是否有知识支撑），$S_R$ 为相关性评分（回答是否切题），$S_I$ 为指令遵循度评分（回答是否遵循系统提示词要求）。各维度评分范围为 $[0, 1]$，通过阈值 $\theta_J = 0.7$ 判断是否通过。
+
+\textbf{步骤三：自洽性检测}。对同一提示词进行 $n = 3$ 次独立采样，得到采样集合 $\{a^{(1)}, a^{(2)}, a^{(3)}\}$。自洽性检测的核心思想是：如果模型对某个问题"真正理解"，那么多次独立采样的结果应该在词汇层面具有一致性；反之，如果模型在"猜测"，不同采样结果之间的差异会很大。
+
+计算采样结果的成对 Jaccard 相似度\cite{Yao2023ReAct}：
+
+\begin{equation}
+    J(A, B) = \frac{|A \cap B|}{|A \cup B|} = \frac{|\{w : w \in A \land w \in B\}|}{|\{w : w \in A \lor w \in B\}|}
+\end{equation}
+
+其中 $A$ 和 $B$ 为两次采样结果的词集合（按空白字符分词）。自洽性得分为所有 $\binom{n}{2}$ 个配对的平均 Jaccard 相似度：
+
+\begin{equation}
+    C = \frac{2}{n(n-1)} \sum_{i=1}^{n} \sum_{j=i+1}^{n} J(a^{(i)}, a^{(j)})
+\end{equation}
+
+当 $n = 3$ 时，$\binom{3}{2} = 3$，即需要计算 3 对相似度。自洽性检测的理论基础是：对于确定性问题，LLM 的多次采样应产生词汇重叠较高的回答；对于不确定性问题，采样结果的词汇差异会显著增大。从信息论角度，自洽性得分 $C$ 可以理解为采样分布的"确定性度量"：当 $C \to 1$ 时，所有采样结果高度一致，表明模型对问题有较高的确定性；当 $C \to 0$ 时，采样结果高度分散，表明模型在"猜测"。设单次采样的词分布为 $P(w)$，则 $n$ 次采样的平均词熵为：
+
+\begin{equation}
+    H(\{a^{(i)}\}_{i=1}^n) = -\frac{1}{n} \sum_{i=1}^{n} \sum_{w \in \mathcal{V}} \hat{P}_i(w) \log \hat{P}_i(w)
+\end{equation}
+
+其中 $\hat{P}_i(w)$ 为第 $i$ 次采样中词 $w$ 的相对频率，$\mathcal{V}$ 为词汇表。低熵对应高自洽性，高熵对应低自洽性。
+
+\textbf{步骤四：双重门限通过判定}。回答需同时满足两个条件才能通过：
+
+\begin{equation}
+    \text{Pass}(a_t) = \left[S_{\text{overall}}(a_t) \geq \theta_J\right] \land \left[C(a_t) \geq \theta_C\right]
+\end{equation}
+
+其中 $\theta_J = 0.7$ 为评分阈值，$\theta_C = 0.6$ 为自洽性阈值。
+
+\textbf{步骤五：反馈修正}。当回答未通过时，将评分反馈注入下一轮的提示词中。反馈向量包含：事实性评分 $S_F$、相关性评分 $S_R$、指令遵循度评分 $S_I$、综合评分 $S_{\text{overall}}$ 和 LLM 生成的改进建议 $f$。
+
+反思循环的时间复杂度分析：设单次 LLM 调用的延迟为 $\tau$，则最坏情况下的总延迟为 $T_{\max} \times (1 + n) \times \tau$（每次迭代包含 1 次生成调用和 $n$ 次自洽性采样调用）。实际中，多数回答在第 1 次迭代即可通过，平均延迟约为 $(1 + n) \times \tau = 4\tau$。
+
+\subsubsection{Prompt 重构策略}
+
+提示词重构是反思循环的关键环节。首次尝试时，提示词仅包含系统提示词和参考知识。在后续重试中，提示词附加了完整的反馈向量：
+
+\begin{equation}
+    \text{Feedback}(r) = S_F \oplus S_R \oplus S_I \oplus f
+\end{equation}
+
+其中 $S_F$、$S_R$、$S_I$ 分别为事实性、相关性和指令遵循度评分，$f$ 为改进建议。
+
+这种设计使 LLM 能够明确了解上一轮回答的具体不足之处，从而进行有针对性的修正。实验表明，反馈驱动的修正比简单的重试（不提供反馈）能显著提高回答质量。
+
+\subsection{多智能体协作}
+
+\subsubsection{Agent 层次结构}
+
+平台实现了三层智能体架构，其设计灵感来源于 Chain-of-Thought\cite{Wei2022CoT}和 ReAct\cite{Yao2023ReAct}范式。Wei 等人\cite{Wei2022CoT}在 NeurIPS 2022 中发现，通过在提示词中引导 LLM 生成中间推理步骤（思维链），可以显著提升模型在多步骤推理任务上的表现。这一发现启发了本平台的分层推理设计：WorkerAgent 通过 ReAct 循环实现细粒度的推理-行动交替，SupervisorAgent 通过 Plan-and-Solve 实现宏观的任务分解与协调。
+
+\textbf{BaseAgent}（抽象基类）定义了智能体的基本接口：名称、描述和 chat 方法。
+
+\textbf{WorkerAgent}（工人智能体）封装了 ReAct 推理循环\cite{Yao2023ReAct}。ReAct\cite{Yao2023ReAct}的核心思想是将推理（Reasoning）和行动（Acting）交替进行：在每一步中，智能体首先进行推理（生成思维链），然后执行一个动作（调用工具），最后根据动作结果继续推理。Yao 等人\cite{Yao2023ReAct}在 ICLR 2023 中证明，ReAct 范式在知识密集型任务上显著优于纯推理（Chain-of-Thought\cite{Wei2022CoT}）和纯行动方法，因为它使 LLM 能够基于外部观察修正推理轨迹，减少幻觉传播。形式化地，ReAct 的执行轨迹为：
+
+\begin{equation}
+    \tau = (t_1, a_1, o_1, t_2, a_2, o_2, \ldots, t_k, a_k, o_k)
+\end{equation}
+
+其中 $t_i$ 为第 $i$ 步的思维（Thought），$a_i$ 为第 $i$ 步的动作（Action），$o_i$ 为第 $i$ 步的观察（Observation）。每个 WorkerAgent 通过 \texttt{ModelCallLimitHook} 限制单次请求的最大 LLM 调用次数为 10 次，防止无限循环。
+
+\textbf{SupervisorAgent}（主管智能体）实现了 Supervisor-Worker 多智能体协作模式。主管智能体通过 LLM 将用户任务分解为多个子任务，分配给对应的工人智能体并行执行，最后通过 LLM 聚合各工人的结果。
+
+\subsubsection{Plan-and-Solve 策略}
+
+Plan-and-Solve\cite{Wang2023PlanSolve}是一种将复杂问题分解为多个子任务并逐步执行的策略。Wang 等人\cite{Wang2023PlanSolve}在 ACL 2023 中指出，Chain-of-Thought\cite{Wei2022CoT}在处理多步骤推理任务时容易出现"计算错误"和"跳步"问题，而 Plan-and-Solve 通过"先规划后执行"的范式，强制 LLM 在执行前制定完整的计划，从而减少了推理过程中的遗漏和错误。与 Chain-of-Thought\cite{Wei2022CoT}的"边想边做"不同，Plan-and-Solve 采用"先规划后执行"的范式，更适合需要多步骤协调的复杂任务。
+
+对于复杂问题（查询长度超过 100 字符或包含"对比"、"分析"、"总结"等关键词），平台启用 Plan-and-Solve 策略：
+
+\textbf{任务分解}：LLM 将复杂问题 $q$ 拆解为最多 $M = 5$ 个子任务 $\mathcal{T} = \{t_1, t_2, \ldots, t_M\}$，每个子任务包含 taskId、objective 和 dependencies（前置任务 ID 列表）。子任务之间的依赖关系构成一个 DAG $G_{\mathcal{T}} = (\mathcal{T}, E_{\mathcal{T}})$。
+
+\textbf{DAG 并行执行}：对子任务构建依赖图，使用 DFS 着色算法（白/灰/黑）检测依赖环。设 $\text{in}(t_i)$ 为任务 $t_i$ 的入度（前置任务数量），则执行策略为：
+
+\begin{equation}
+    \text{Ready}(t_i, \text{Done}) = \begin{cases}
+        \text{true} & \text{if } \text{dependencies}(t_i) \subseteq \text{Done} \\
+        \text{false} & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+其中 $\text{Done}$ 为已完成的任务集合。每一轮并行执行所有就绪任务，直到所有任务完成。每个任务的结果作为用户消息注入后续任务的上下文中，实现任务间的数据流传递。
+
+\textbf{结果聚合}：LLM 综合所有子任务的结果，生成最终回答。
+
+\textbf{单次反思}：使用 AI Judge 对聚合结果进行评分，未通过时最多重试 1 次。
+
+\subsection{三层记忆体系}
+
+平台的三层记忆体系设计灵感来源于 MemGPT\cite{Packer2023MemGPT}的分层记忆管理思想。Packer 等人\cite{Packer2023MemGPT}提出，LLM 的有限上下文窗口可以通过"虚拟上下文管理"技术进行扩展，其核心思想是借鉴传统操作系统中的层次化内存系统——通过在物理内存和磁盘之间进行分页，提供扩展虚拟内存的错觉。本平台将这一思想应用于对话记忆管理，结合了 CrewAI 的复合评分记忆检索机制，实现了短期记忆、长期记忆和工作记忆的三层架构。
+
+\subsubsection{短期记忆（ShortTermMemory）}
+
+短期记忆维护当前会话的对话上下文，支持内存模式和 Redis 模式。当消息数量超过阈值 $N_{\text{keep}} = 5$ 时，使用 LLM 对早期对话进行摘要压缩。设对话历史为 $H = (m_1, m_2, \ldots, m_n)$，摘要压缩函数为：
+
+\begin{equation}
+    \text{summary} = \text{LLM}\left(\texttt{"Summarize: "} \oplus \text{Join}(m_1, \ldots, m_{n-N_{\text{keep}}})\right)
+\end{equation}
+
+压缩后的记忆为 $H' = (\text{summary}, m_{n-N_{\text{keep}}+1}, \ldots, m_n)$，其中 $\text{summary}$ 为 LLM 生成的摘要。
+
+\subsubsection{长期记忆（LongTermMemory）}
+
+长期记忆基于向量存储（PgVector）实现跨会话的知识持久化。检索时采用复合评分公式，其设计参考了 CrewAI 的三维评分机制：
+
+\begin{equation}
+    \text{Score}(d) = w_s \cdot \text{sim}(d) + w_d \cdot \text{decay}(d) + w_i \cdot \text{imp}(d)
+\end{equation}
+
+其中 $w_s = 0.5$、$w_d = 0.3$、$w_i = 0.2$ 分别为语义相似度、时间衰减和重要性的权重。
+
+时间衰减函数采用指数衰减模型：
+
+\begin{equation}
+    \text{decay}(d) = \left(\frac{1}{2}\right)^{\frac{\text{age\_days}(d)}{T_{1/2}}} = e^{-\frac{\ln 2}{T_{1/2}} \cdot \text{age\_days}(d)}
+\end{equation}
+
+其中 $T_{1/2} = 30$ 天为半衰期。该公式的物理含义是：每隔 30 天，记忆的权重衰减为原来的一半。这确保了近期记忆在检索中获得更高的优先级。时间衰减模型的选择基于人类记忆的遗忘曲线理论：Ebbinghaus 遗忘曲线表明，记忆的保持率随时间呈指数衰减。本平台采用半衰期 $T_{1/2} = 30$ 天的指数衰减模型，在短期记忆敏感度和长期记忆保留之间取得了平衡。
+
+重要性分数 $\text{imp}(d) \in [0, 1]$ 由记忆存储时显式指定，默认值为 0.5。高重要性的记忆（如关键决策、核心知识）即使时间较久也能获得较高的复合分数。
+
+当新记忆与已有记忆的余弦相似度超过 $\theta_{\text{consol}} = 0.85$ 时，触发记忆合并（Consolidation）。记忆合并的理论基础是：语义高度相似的记忆条目可能描述的是同一事实或概念，合并可以减少冗余并更新过时信息。合并策略采用了"保留旧条目、更新元数据"的方式，而非创建新条目，这确保了记忆库的稳定性。
+
+\begin{equation}
+    \text{merge}(d_{\text{new}}, d_{\text{old}}) = \begin{cases}
+        \text{Update}(d_{\text{old}}, \text{metadata}_{\text{new}}) & \text{if } \cos(\mathbf{e}_{\text{new}}, \mathbf{e}_{\text{old}}) \geq \theta_{\text{consol}} \\
+        \text{Insert}(d_{\text{new}}) & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+合并时更新已有记忆的元数据（如 \texttt{updated\_at}、\texttt{consolidated\_count}），而非创建新条目，避免了记忆冗余。
+
+\subsubsection{工作记忆（WorkingMemory）}
+
+工作记忆是一个基于 \texttt{ConcurrentHashMap} 的键值存储，用于维护当前会话的临时状态（如意图、上下文变量等）。其设计类似于传统操作系统中的寄存器文件：提供快速的读写访问，但数据在会话结束后清除。
+
+\subsection{工具韧性机制}
+
+平台通过 \texttt{ToolResilienceDecorator} 为工具调用提供超时、重试和熔断器三重保护。熔断器（ToolCircuitBreaker）实现了一个三状态有限状态机，其设计来源于微服务架构中的断路器模式。断路器的核心思想是：当某个服务持续失败时，快速拒绝后续调用，避免资源浪费和延迟积累。状态转移函数定义为：
+
+\begin{equation}
+    \delta(s, \text{event}) = \begin{cases}
+        \text{OPEN} & \text{if } s = \text{CLOSED} \land \text{failures} \geq F_{th} \\
+        \text{HALF\_OPEN} & \text{if } s = \text{OPEN} \land \text{now} - t_{\text{fail}} > T_{rec} \\
+        \text{CLOSED} & \text{if } s = \text{HALF\_OPEN} \land \text{event} = \text{success} \\
+        s & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+其中 $F_{th}$ 为失败阈值，$T_{rec}$ 为恢复时间。这种设计防止了故障级联：当某个工具持续失败时，熔断器快速拒绝后续调用，避免资源浪费和延迟积累。
+
+\section{DAG 工作流引擎设计}
+
+\subsection{拓扑排序与并行分组}
+
+工作流引擎的核心算法包括拓扑排序和并行分组两个步骤。
+
+\subsubsection{Kahn 拓扑排序}
+
+算法采用经典的 Kahn 算法\cite{Kahn1962Topological}。Kahn\cite{Kahn1962Topological}在 1962 年提出的拓扑排序算法是图论中的经典算法之一，其核心思想是通过维护入度表，逐步移除入度为 0 的节点，直到所有节点被排序或检测到环。该算法的时间复杂度为 $O(|V| + |E|)$，是目前已知的最高效的拓扑排序算法之一。给定有向图 $G = (V, E)$，其中 $V$ 为节点集合，$E \subseteq V \times V$ 为有向边集合，拓扑排序的目标是找到一个线性序列 $(v_1, v_2, \ldots, v_{|V|})$，使得对于所有边 $(v_i, v_j) \in E$，都有 $i < j$。
+
+算法的执行步骤如下：
+
+\textbf{步骤一}：构建邻接表 $\text{Adj}: V \rightarrow 2^V$ 和入度表 $\text{inDeg}: V \rightarrow \mathbb{N}$。初始化 $\text{Adj}(v) = \emptyset$、$\text{inDeg}(v) = 0$ 对所有 $v \in V$。遍历所有边 $(u, v) \in E$，更新 $\text{Adj}(u) = \text{Adj}(u) \cup \{v\}$、$\text{inDeg}(v) = \text{inDeg}(v) + 1$。
+
+\textbf{步骤二}：初始化队列 $Q = \{v \in V : \text{inDeg}(v) = 0\}$。
+
+\textbf{步骤三}：循环处理队列——取出队首节点 $u$ 加入排序结果 $L$，对所有 $v \in \text{Adj}(u)$ 执行 $\text{inDeg}(v) = \text{inDeg}(v) - 1$，若 $\text{inDeg}(v) = 0$ 则将 $v$ 加入 $Q$。
+
+\textbf{步骤四}：若 $|L| < |V|$，则存在环。环中的节点集合为 $V \setminus L$。
+
+Kahn 算法的时间复杂度为 $O(|V| + |E|)$，空间复杂度为 $O(|V| + |E|)$。每个节点和边恰好被访问一次。
+
+\subsubsection{BFS 分层并行分组}
+
+并行分组算法在 Kahn 排序的基础上引入了层级快照机制。其核心思想是：在处理每一层之前，记录当前队列大小 $\text{levelSize}$，确保在层 $k$ 处理过程中发现的新节点（入度减至 0）被推迟到层 $k+1$ 处理。这种设计保证了同一层内的节点互不依赖（构成一个反链），可以安全地并行执行。分层分解的形式化定义为：
+
+\begin{equation}
+    L_0 = \{v \in V : \text{inDeg}(v) = 0\}
+\end{equation}
+
+\begin{equation}
+    L_k = \left\{v \in V \setminus \bigcup_{i=0}^{k-1} L_i : \text{inDeg}(v) - |\{(u, v) \in E : u \in \bigcup_{i=0}^{k-1} L_i\}| = 0\right\}
+\end{equation}
+
+关键性质：同一层 $L_k$ 内的节点互不依赖（$L_k$ 是一个反链），可以并行执行。这确保了并行执行的正确性：只有当层 $L_k$ 的所有节点执行完毕后，层 $L_{k+1}$ 的节点才能开始执行。
+
+\subsection{执行引擎}
+
+DAG 执行引擎按分组顺序逐层执行。设并行分组为 $\mathcal{G} = (L_0, L_1, \ldots, L_m)$，执行策略为：
+
+\begin{equation}
+    \text{Execute}(L_k) = \begin{cases}
+        \text{Sync}(v) & \text{if } |L_k| = 1 \\
+        \text{Parallel}(\{v : v \in L_k\}) & \text{if } |L_k| > 1
+    \end{cases}
+\end{equation}
+
+单节点组在调用线程上同步执行；多节点组通过异步提交到线程池并行执行，线程池大小为 $\min(C, 8)$（$C$ 为 CPU 核心数），使用屏障同步等待所有节点完成。
+
+\subsection{双层持久化检查点}
+
+平台实现了两层独立的持久化执行机制，其设计类似于数据库系统的 WAL（Write-Ahead Logging）机制。双层持久化的核心思想是：快照级持久化提供完整的执行状态恢复能力，分组级检查点提供细粒度的增量恢复能力。两层机制互为补充，确保了工作流在任何故障点都能正确恢复。
+
+\textbf{第一层：FlowStateStore}（快照级持久化）。使用 Redis 作为主存储（TTL 24 小时），内存 Map 作为降级存储。保存完整的执行快照，包括当前节点、已完成节点列表、执行结果和上下文变量。
+
+\textbf{第二层：DagCheckpointManager}（分组级检查点）。使用 PostgreSQL 的检查点表，通过 UPSERT 语义实现。每成功执行完一个分组 $L_k$ 后保存检查点（记录 $k+1$），执行失败时保存当前分组索引 $k$。恢复时从检查点的分组索引处继续执行。
+
+检查点恢复的形式化定义为：设检查点记录的分组索引为 $k^*$，则恢复后的执行从 $L_{k^*}$ 开始：
+
+\begin{equation}
+    \text{Resume}(\sigma^*) = \text{Execute}(L_{k^*}) \rightarrow \text{Execute}(L_{k^*+1}) \rightarrow \cdots \rightarrow \text{Execute}(L_m)
+\end{equation}
+
+其中已完成分组 $L_0, \ldots, L_{k^*-1}$ 的结果从检查点 $\sigma^*$ 中恢复，无需重新执行。
+
+\subsection{节点类型体系}
+
+平台定义了 8 种节点类型，均采用模板方法模式（Template Method）。每种节点类型的执行函数为：
+
+\begin{equation}
+    \text{execute}(v, \text{ctx}) = \text{processOutput}(\text{executeLogic}(\text{prepareInput}(v, \text{ctx})), \text{ctx})
+\end{equation}
+
+其中 $\text{prepareInput}$ 从上下文变量中读取输入，$\text{executeLogic}$ 执行节点特定逻辑，$\text{processOutput}$ 将输出写回上下文。
+
+\subsection{表达式引擎安全设计}
+
+条件分支节点使用 SpEL（Spring Expression Language）表达式引擎进行条件评估。SpEL 是 Spring 框架内置的表达式语言，支持在运行时动态求值。为防止代码注入攻击，引擎实现了多层安全防护，其设计原则是"最小权限"——表达式只能访问显式暴露的变量，不能执行系统调用或访问内部 API。
+
+（1）\textbf{危险关键词黑名单}：拦截 \texttt{T(Runtime)}、\texttt{T(ProcessBuilder)}、\texttt{exec(} 等 12 种危险模式。
+
+（2）\textbf{只读求值上下文}：使用 Spring 提供的只读求值上下文限制表达式的能力。
+
+（3）\textbf{变量解析}：将双花括号占位符替换为上下文中的值。
+
+（4）\textbf{字符串操作符预处理}：将 \texttt{contains} 和 \texttt{startsWith} 操作符转换为正则表达式匹配。
+
+\section{质量评估框架设计}
+
+\subsection{AI Judge 三维在线评分}
+
+AI Judge 是平台的在线质量把关机制，在每次智能体回答生成后自动触发。评分使用独立的 LLM 调用，从事实性、相关性和指令遵循度三个维度进行 $[0, 1]$ 评分，取三者等权平均作为综合分数。三维评分的设计思想是：事实性确保回答基于真实知识（而非幻觉），相关性确保回答切题（而非泛泛而谈），指令遵循度确保回答符合系统提示词的格式和风格要求。当评分服务异常时，默认拒绝（fail-safe: reject by default），避免低质量回答流入下游。
+
+\subsection{RAGAS 七维离线评估}
+
+RAGAS（Retrieval Augmented Generation Assessment）\cite{Es2023RAGAS}评估框架包含七个维度，每个维度通过独立的 LLM 调用进行评分。Es 等人\cite{Es2023RAGAS}提出，RAG 系统的评估需要同时考虑检索质量和生成质量两个正交维度，传统的单一指标（如 BLEU 或 ROUGE）无法全面反映 RAG 系统的性能。RAGAS 框架通过无参考评估（reference-free evaluation）的方式，避免了对人工标注的依赖，实现了自动化的多维度评估。
+
+\begin{enumerate}
+    \item \textbf{忠实度}（Faithfulness）：回答是否忠实于给定上下文，即 $\text{faithfulness} = \frac{|\text{claims supported by context}|}{|\text{total claims in answer}|}$
+    \item \textbf{回答相关性}（Answer Relevance）：回答是否与问题相关
+    \item \textbf{上下文精确度}（Context Precision）：上下文是否精确
+    \item \textbf{上下文召回率}（Context Recall）：上下文是否覆盖了回答所需信息
+    \item \textbf{事实正确性}（Factual Correctness）：关键事实是否正确
+    \item \textbf{噪声敏感度}（Noise Sensitivity）：是否受无关信息干扰
+    \item \textbf{拒绝回答能力}（Negative Rejection）：当上下文缺乏答案时是否正确拒绝
+\end{enumerate}
+
+通过门限判定：前四个核心维度的分数均需超过阈值 $\theta_{\text{ragas}} = 0.85$ 才算通过：
+
+\begin{equation}
+    \text{Pass}_{\text{ragas}} = \bigwedge_{m \in \{F, AR, CP, CR\}} \text{score}(m) \geq \theta_{\text{ragas}}
+\end{equation}
+
+评估完成后计算均值、P50 和 P90 统计量。百分位数使用线性插值计算：
+
+\begin{equation}
+    P_p = s_{\lfloor i \rfloor} \cdot (1 - f) + s_{\lceil i \rceil} \cdot f, \quad i = \frac{p}{100} \cdot (n - 1), \quad f = i - \lfloor i \rfloor
+\end{equation}
+
+其中 $s$ 为排序后的分数数组，$n$ 为样本数。
+
+\subsection{RAGChecker 声明级蕴含判断}
+
+RAGChecker\cite{Ru2024RAGChecker}采用两阶段流程进行细粒度评估。Ru 等人\cite{Ru2024RAGChecker}在 NeurIPS 2024 中提出，RAG 系统的评估需要深入到声明（claim）级别，因为整体分数可能掩盖局部的幻觉问题。RAGChecker 通过声明级蕴含判断，能够精确定位哪些具体事实是被上下文支持的、哪些是被矛盾的、哪些是无法验证的，为 RAG 系统的诊断和改进提供了细粒度的指导。
+
+\textbf{阶段一：声明抽取}。使用 LLM 从回答 $a$ 中提取所有事实性声明集合 $\mathcal{C}(a) = \{c_1, c_2, \ldots, c_K\}$。
+
+\textbf{阶段二：蕴含判断}。对每个声明 $c_k$，判断其与上下文 $\mathcal{R}$ 的关系：
+
+\begin{equation}
+    \text{entail}(c_k, \mathcal{R}) \in \{\text{ENTAILED}, \text{CONTRADICTED}, \text{NOT\_FOUND}\}
+\end{equation}
+
+基于判断结果计算四个指标：
+
+\begin{multline}
+    P = \frac{|\text{entailed}|}{|\mathcal{C}|}, \quad R = \min\left(1, \frac{|\text{entailed}|}{\max(1, |\mathcal{R}|)}\right), \\
+    F_1 = \frac{2PR}{P + R}, \quad H = \frac{|\text{contradicted}| + |\text{not\_found}|}{|\mathcal{C}|}
+\end{multline}
+
+其中 $P$ 为精确率，$R$ 为召回率，$F_1$ 为 F1 分数，$H$ 为幻觉率。
+
+\subsection{LangFuse 全链路追踪}
+
+平台通过 LangFuse 实现从检索到生成的全链路可观测性。LangFuse 是一个开源的 LLM 应用观测平台，支持 Trace、Generation、Span 和 Score 四个层次的追踪。全链路追踪的核心价值在于：当 RAG 系统出现问题时（如检索失败、幻觉回答、延迟过高），可以通过 Trace 快速定位问题发生在哪个环节（检索、重排、生成还是评估），从而实现精准的故障排除和性能优化。
+
+\begin{itemize}
+    \item \textbf{Trace}（会话级）：记录完整的对话追踪，包含 sessionId 和 userId
+    \item \textbf{Generation}（生成级）：记录每次 LLM 调用的模型、输入输出、Token 消耗和延迟
+    \item \textbf{Span}（步骤级）：记录检索、重排、CRAG 评估等子步骤
+    \item \textbf{Score}（评分级）：记录 RAGAS 和 AI Judge 的评估分数
+\end{itemize}
+
+进程内追踪通过 \texttt{ThreadLocal<TraceContext>} 实现线程隔离，每个 TraceContext 包含多个 TraceSpan，支持父子关系和总 Token/成本/延迟的聚合计算。

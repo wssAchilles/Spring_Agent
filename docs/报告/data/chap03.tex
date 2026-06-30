@@ -1,3 +1,210 @@
 % !TeX root = ../thuthesis-example.tex
+
 \chapter{系统具体实现}
 
+本章基于第二章的设计方案，详细介绍各核心模块的具体实现，包括技术选型、接口设计、关键代码和配置参数。
+
+\section{开发环境与技术选型}
+
+系统的开发环境和技术栈如表 3-1 所示。
+
+\begin{table}[htbp]
+    \centering
+    \caption{系统技术栈}
+    \label{tab:tech-stack}
+    \begin{tabular}{lll}
+        \toprule
+        层级 & 技术选型 & 版本 \\
+        \midrule
+        后端框架 & Spring Boot & 3.5.8 \\
+        AI 框架 & Spring AI / Spring AI Alibaba & 1.1.0 / 1.1.2.2 \\
+        ORM & MyBatis-Plus & — \\
+        前端框架 & Vue 3 / Vite / Pinia / Element Plus & 3.4.31 / 5.3.2 \\
+        DAG 画布 & VueFlow & 1.48.2 \\
+        图可视化 & vis-network & 9.1.9 \\
+        向量存储 & PostgreSQL + PgVector & — \\
+        图数据库 & Neo4j & 5.26.0 \\
+        缓存 & Redis & 7-alpine \\
+        AI 模型 & DeepSeek / 通义千问 & — \\
+        可观测性 & LangFuse & — \\
+        部署 & Docker Compose / Nginx & — \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{gRPC 通信协议实现}
+
+控制面与认知面通过 gRPC 协议进行通信，Protobuf 服务定义包含三个 RPC 方法：
+
+\texttt{Chat} 方法采用服务端流式模式，客户端发送 \texttt{ChatRequest}（包含问题、模型配置、系统提示词、知识库 ID、工具 ID、对话历史和预检索的 RAG 上下文），服务端返回 \texttt{ChatEvent} 流。\texttt{ChatEvent} 是一个 \texttt{oneof} 联合体，包含 8 种事件类型：\texttt{StreamingChunk}（增量 Token 流）、\texttt{ModelFinished}（完整回答）、\texttt{ToolInvoked}（工具调用通知）、\texttt{ErrorEvent}（错误事件）、\texttt{DoneSignal}（流终止信号）、\texttt{ReflectionStart}（反思开始）、\texttt{ReflectionScore}（评分结果）和 \texttt{ReflectionComplete}（反思完成）。
+
+\texttt{ExecuteFlow} 方法同样采用服务端流式模式，客户端发送 \texttt{FlowRequest}（包含节点列表、边列表和运行时上下文），服务端返回 \texttt{FlowEvent} 流，包含每个节点的执行结果和最终的完成事件。
+
+\texttt{HealthCheck} 方法为一元调用，返回服务状态和版本号。
+
+关键设计决策是：控制面在发送请求之前预先完成数据准备工作——解析 API Key、检索 RAG 上下文、组装对话历史——使认知面成为无状态的纯推理引擎，不直接访问数据库。
+
+\section{RAG 检索引擎实现}
+
+\subsection{文档切块实现}
+
+RecursiveSplitter 的核心实现采用递归下降算法。分隔符优先级数组定义为：
+
+\begin{verbatim}
+DEFAULT_CHINESE_SEPARATORS = ["\n\n", "\n", "。", "；", "！", "？",
+                               "!", "?", "，", ",", " ", ""]
+\end{verbatim}
+
+递归函数 \texttt{recursiveSplit} 的逻辑为：尝试使用当前分隔符切分文本；若切分后的片段仍超过 chunkSize，递归使用下一级分隔符；当所有分隔符都尝试完毕后，回退到字符级硬切分。
+
+重叠应用函数 \texttt{applyOverlap(chunks)} 在相邻块之间添加重叠：从前一个块的尾部取 \texttt{chunkOverlap} 个字符，拼接到当前块的头部。
+
+父子切块函数 \texttt{splitParentChild} 先以大块切分生成父块，再对每个父块以小块切分生成子块，子块通过 \texttt{parent\_segment\_id} 元数据关联父块。
+
+\subsection{向量存储实现}
+
+向量存储使用 Spring AI 的 \texttt{PgVectorStore}，通过 \texttt{ConcurrentHashMap} 缓存实例，键为 \texttt{embeddingModel.getClass().getName() + "@" + identityHashCode}。构建代码为：
+
+\begin{verbatim}
+PgVectorStore.builder(jdbcTemplate, embeddingModel).build()
+\end{verbatim}
+
+嵌入模型工厂 \texttt{EmbeddingServiceImpl} 支持三种平台：OpenAI（标准 API）、TongYi/DashScope（兼容模式端点 \texttt{dashscope.aliyuncs.com/compatible-mode}）和 Ollama（本地部署）。
+
+\subsection{检索服务实现}
+
+\texttt{RagRetrievalService} 是检索引擎的主入口，其 \texttt{retrieve()} 方法实现了完整的检索流程：
+
+（1）查询路由：对 SIMPLE 级别的查询跳过检索。
+
+（2）权限检查：基于 RBAC 的知识库访问控制。
+
+（3）首次检索：调用 \texttt{retrieveOnce()} 执行四路并行召回。
+
+（4）CRAG 评估：对首次检索结果进行质量分类。
+
+（5）条件二次检索：当评估结果为 INCORRECT 且提供了重写查询时，使用重写查询重新检索。
+
+\texttt{retrieveOnce()} 方法使用 4 线程池并行执行四条检索路径，每条路径的超时时间为 30 秒。候选 top-K 设置为 $\max(\text{topK} \times 3, 50)$。
+
+\subsection{上下文构建实现}
+
+\texttt{RagContextBuilder} 负责将检索结果组装为 LLM 可用的上下文文本。构建流程为：
+
+（1）父段扩展：如果子块有 \texttt{parentSegmentId}，从数据库中获取父段内容并前置。
+
+（2）相邻段扩展：如果没有父段，则获取 position-1 和 position+1 的相邻段。
+
+（3）内容去重：按 \texttt{content.hashCode()} 去重。
+
+（4）Token 估算：ASCII 单词计 1 个 Token，非 ASCII 非空白字符计 2 个 Token。
+
+（5）预算截断：当总字节数超过 12000 或 Token 数超过阈值时停止追加。
+
+输出格式为：
+\begin{verbatim}
+[来源 {index}] {docName} / segmentId={id} / parentId={parentId}
+内容：{content}
+\end{verbatim}
+
+\section{Hermes 认知内核实现}
+
+\subsection{反思循环实现}
+
+\texttt{HermesKernel.reflect()} 方法实现了完整的反思循环。关键实现细节包括：
+
+（1）提示词重构：首次尝试仅包含系统提示词和参考知识；后续尝试附加完整的评分反馈向量（事实性分数、相关性分数、指令遵循度分数、综合分数和改进建议）。
+
+（2）自洽性检查：通过 3 次独立 LLM 调用获取采样结果，使用空白字符分词后计算成对 Jaccard 相似度。空响应或纯空白响应被过滤，有效采样数不足 2 时默认返回一致性分数 1.0。
+
+（3）双重门限：通过条件为 \texttt{judgeResult.passed AND consistency >= 0.6}。
+
+\subsection{智能体编排实现}
+
+\texttt{AgentOrchestrator} 的 \texttt{executeAgent()} 方法实现了完整的编排流程。关键实现步骤：
+
+（1）CRAG 评估：调用 \texttt{RetrievalEvaluator}，当评估结果为 INCORRECT 时清空 RAG 上下文，当为 AMBIGUOUS 时保留但附加警告标签。
+
+（2）知识工具构建：为每个知识库创建 \texttt{FunctionToolCallback} 包装的搜索工具，以及一个合并的知识查询别名。
+
+（3）ReactAgent 构建：使用 Alibaba ReactAgent 构建，配置 \texttt{ModelCall\-LimitHook} 限制最大 LLM 调用次数。
+
+（4）流式推理：订阅 \texttt{agent.stream()} 返回的 Flux，按 \texttt{OutputType} 映射为 gRPC 事件。
+
+\subsection{Plan-and-Solve 实现}
+
+\texttt{planAndSolve()} 方法的实现包括：
+
+（1）复杂度判定：\texttt{isComplexQuestion()} 检查查询长度是否超过 100 字符或是否包含预定义的复杂关键词（"对比"、"比较"、"分析"、"总结"等 10 个词）。
+
+（2）任务分解：LLM 返回 JSON 数组，每个元素包含 \texttt{taskId}、\texttt{objective} 和 \texttt{dependencies}。
+
+（3）环检测：使用 DFS 着色算法（白/灰/黑模式）检测依赖环。
+
+（4）并行执行：按拓扑顺序逐层执行，无依赖任务通过 \texttt{Completable\-Future} 异步并行执行，结果通过 \texttt{LinkedHashMap} 保持顺序。
+
+\subsection{记忆系统实现}
+
+短期记忆支持双模式存储：内存模式使用 \texttt{ArrayList<Message>}，Redis 模式使用 \texttt{IRedisService} 的 List 操作（键格式 \texttt{memory:short:\{sessionId\}}）。摘要压缩使用 LLM 对早期对话生成摘要，替换为单条 \texttt{SystemMessage}。
+
+长期记忆的检索流程：先从向量存储中获取 $\max(\text{topK} \times 3, 20)$ 条结果，然后按复合评分公式重新排序。记忆合并的阈值为余弦相似度 0.85，合并时更新元数据中的 \texttt{updated\_at} 和 \texttt{consolidated\_count}。
+
+\section{DAG 工作流引擎实现}
+
+\subsection{节点执行模板}
+
+\texttt{BaseNodeBO.execute()} 实现了模板方法模式的框架：
+
+（1）\texttt{prepareInput(context)}：从节点定义的 input JSON 中读取变量名，从上下文变量中获取对应值。
+
+（2）\texttt{executeLogic(inputData, context)}：子类实现的具体执行逻辑。
+
+（3）\texttt{processOutput(result, context)}：将结果输出合并到上下文变量。
+
+（4）\texttt{findNextNodes(result, context)}：根据边列表查找后继节点。
+
+变量插值函数 \texttt{format(text, context)} 使用正则 \texttt{\{\{\textbackslash s*(.+?)\textbackslash s*\}\}} 匹配占位符，从上下文中查找替换值。
+
+\subsection{条件分支实现}
+
+\texttt{ConditionNodeBO} 实现了内置的表达式评估器（不依赖 SpEL），支持 \texttt{==}、\texttt{!=}、\texttt{>}、\texttt{<}、\texttt{>=}、\texttt{<=} 比较操作。评估顺序为：先尝试数值比较（\texttt{Double.parseDouble}），失败则回退到字符串比较（\texttt{String.compareTo}），最后尝试布尔比较。
+
+条件匹配采用"首个匹配胜出"策略：按配置顺序评估条件，第一个满足的条件决定路由分支。\texttt{default} 条件始终匹配但不中断循环（最后一个 default 生效）。
+
+\subsection{流式输出实现}
+
+\texttt{ReplyNodeBO} 实现了三种输出模式：
+
+（1）ChatFlow 模式：解析内容模板中的 \texttt{\{\{ nodeUuid.variable \}\}} 引用，将 LLM 流式段作为 \texttt{Flux<String>} 透传，非 LLM 段作为单元素 Flux 发射。
+
+（2）工作流流式模式：检查源节点类型是否为 LLM 且存在 Flux，存在则包装 JSON 元数据后透传，否则从上下文读取值。
+
+（3）阻塞模式：直接从上下文变量读取值，组装输出 Map。
+
+\subsection{人工审批实现}
+
+\texttt{ApprovalNodeExecutor} 使用静态 \texttt{ConcurrentHashMap} 管理待审批任务。执行线程通过 \texttt{CompletableFuture.get()} 阻塞等待（超时 24 小时）。REST API 的 approve/reject 端点调用 \texttt{complete()} 解除阻塞。
+
+\section{前端实现}
+
+\subsection{DAG 画布实现}
+
+前端 DAG 画布基于 VueFlow 实现，配置参数为：对齐网格 20px、默认缩放 0.2、最小缩放 0.1、最大缩放 2.0、连接线类型为贝塞尔曲线。
+
+支持 6 种自定义节点类型，每种节点包含左侧输入 Handle、右侧输出 Handle、节点添加按钮（边缘中点 "+" 按钮）和删除按钮。节点配置面板在右侧抽屉中切换显示。
+
+\subsection{流式通信实现}
+
+前端使用 \texttt{@microsoft/fetch-event-source} 库实现 SSE 流式通信。请求头包含 \texttt{Content-Type: application/json} 和 \texttt{Authorization: Bearer <token>}。事件处理支持三种类型：文本内容（增量追加到 Markdown 渲染器）、工具调用（折叠卡片显示输入输出 JSON）和记忆召回（显示召回数量和相似度分数）。
+
+\section{安全实现}
+
+\subsection{认证流程}
+
+登录流程：客户端发送用户名、密码和验证码→服务端验证 BCrypt 密码→生成 UUID 会话密钥→将 LoginUser 存入 Redis（TTL 600 分钟）→创建仅包含 UUID 的 JWT（HS512 签名）→返回给客户端。
+
+请求认证：\texttt{JwtAuthenticationTokenFilter} 从 Authorization 头提取 JWT→解析 UUID→从 Redis 查询 LoginUser→当剩余 TTL 小于 20 分钟时自动续期→设置 SecurityContext。
+
+\subsection{RBAC 授权}
+
+权限检查通过 \texttt{@PreAuthorize} 注解实现，全系统共 410+ 处注解。管理员（userId == 1）拥有通配符权限。数据范围过滤通过 \texttt{@DataScope} 切面注入 SQL WHERE 子句，支持全部、自定义、本部门、部门及下级、仅本人五种范围。
