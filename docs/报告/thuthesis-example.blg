@@ -1,0 +1,59 @@
+This is BibTeX, Version 0.99d (TeX Live 2025)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: thuthesis-example.aux
+The style file: thuthesis-numeric.bst
+A level-1 auxiliary file: bu.aux
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 150 items from 100.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: ref/refs.bib
+You've used 18 entries,
+            5428 wiz_defined-function locations,
+            1158 strings with 12183 characters,
+and the built_in function-call counts, 179576 in all, are:
+= -- 3007
+> -- 21660
+< -- 26655
++ -- 7189
+- -- 1410
+* -- 910
+:= -- 24786
+add.period$ -- 55
+call.type$ -- 18
+change.case$ -- 48
+chr.to.int$ -- 6597
+cite$ -- 18
+duplicate$ -- 399
+empty$ -- 1228
+format.name$ -- 691
+if$ -- 46788
+int.to.chr$ -- 1
+int.to.str$ -- 19
+missing$ -- 0
+newline$ -- 110
+num.names$ -- 54
+pop$ -- 9424
+preamble$ -- 1
+purify$ -- 30
+quote$ -- 0
+skip$ -- 19207
+stack$ -- 0
+substring$ -- 7962
+swap$ -- 20
+text.length$ -- 417
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 198
+warning$ -- 0
+while$ -- 433
+width$ -- 0
+write$ -- 241
