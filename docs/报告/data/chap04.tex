@@ -42,17 +42,17 @@
     \label{tab:perf}
     \begin{tabular}{lllc}
         \toprule
-        类别 & 测试项 & 阈值 & 结果 \\
+        类别    & 测试项           & 阈值            & 结果 \\
         \midrule
-        Agent & 单轮延迟 P95 & $< 100$ms & 通过 \\
-        Agent & 反思开销 P95 & $< 200$ms & 通过 \\
-        Agent & 并发吞吐 & $> 50$req/s & 通过 \\
-        Agent & Trace 开销 & $< 1$ms/trace & 通过 \\
-        Agent & 记忆写入 1000 ops & $< 10$ms & 通过 \\
-        Agent & 记忆读取 1000 ops & $< 50$ms & 通过 \\
-        RAG & 1000 文档切块 & $< 5$s & 通过 \\
-        RAG & 全文检索 P95 & $< 500$ms & 通过 \\
-        RAG & 混合检索 P95 & $< 800$ms & 通过 \\
+        Agent & 单轮延迟 P95      & $< 100$ms     & 通过 \\
+        Agent & 反思开销 P95      & $< 200$ms     & 通过 \\
+        Agent & 并发吞吐          & $> 50$req/s   & 通过 \\
+        Agent & Trace 开销      & $< 1$ms/trace & 通过 \\
+        Agent & 记忆写入 1000 ops & $< 10$ms      & 通过 \\
+        Agent & 记忆读取 1000 ops & $< 50$ms      & 通过 \\
+        RAG   & 1000 文档切块     & $< 5$s        & 通过 \\
+        RAG   & 全文检索 P95      & $< 500$ms     & 通过 \\
+        RAG   & 混合检索 P95      & $< 800$ms     & 通过 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -73,15 +73,15 @@ RAG 性能测试中，1000 文档切块测试使用固定 200 字符的块大小
     \label{tab:ragas}
     \begin{tabular}{lccc}
         \toprule
-        指标 & Mean & P50 & P90 \\
+        指标                  & Mean & P50  & P90  \\
         \midrule
-        Faithfulness & 0.88 & 0.90 & 0.95 \\
-        Answer Relevance & 0.85 & 0.87 & 0.93 \\
-        Context Precision & 0.82 & 0.84 & 0.91 \\
-        Context Recall & 0.86 & 0.88 & 0.94 \\
+        Faithfulness        & 0.88 & 0.90 & 0.95 \\
+        Answer Relevance    & 0.85 & 0.87 & 0.93 \\
+        Context Precision   & 0.82 & 0.84 & 0.91 \\
+        Context Recall      & 0.86 & 0.88 & 0.94 \\
         Factual Correctness & 0.84 & 0.86 & 0.92 \\
-        Noise Sensitivity & 0.90 & 0.92 & 0.96 \\
-        Negative Rejection & 0.91 & 0.93 & 0.97 \\
+        Noise Sensitivity   & 0.90 & 0.92 & 0.96 \\
+        Negative Rejection  & 0.91 & 0.93 & 0.97 \\
         \bottomrule
     \end{tabular}
 \end{table}
