@@ -98,15 +98,84 @@ public class WebSearchToolFunction
         @Override
         public List<Response.SearchResult> search(String query, int maxResults) {
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
-            String url = SEARCH_API.replace("{}", encodedQuery);
-            String responseStr = HttpUtil.get(url, 10000);
-
-            JSONObject json = JSONUtil.parseObj(responseStr);
             List<Response.SearchResult> results = new ArrayList<>();
 
+            // 优先尝试 Google Custom Search API
+            String googleKey = System.getenv("GOOGLE_SEARCH_API_KEY");
+            String googleCx = System.getenv("GOOGLE_SEARCH_CX");
+            if (googleKey != null && !googleKey.isBlank() && googleCx != null && !googleCx.isBlank()) {
+                try {
+                    String googleUrl = "https://www.googleapis.com/customsearch/v1?key=" + googleKey + "&cx=" + googleCx + "&q=" + encodedQuery + "&num=" + maxResults;
+                    String responseStr = cn.hutool.http.HttpUtil.get(googleUrl, 10000);
+                    JSONObject json = JSONUtil.parseObj(responseStr);
+                    JSONArray items = json.getJSONArray("items");
+                    if (items != null) {
+                        int count = Math.min(items.size(), maxResults);
+                        for (int i = 0; i < count; i++) {
+                            JSONObject item = items.getJSONObject(i);
+                            Response.SearchResult result = new Response.SearchResult();
+                            result.title = item.getStr("title", "");
+                            result.snippet = item.getStr("snippet", "");
+                            result.url = item.getStr("link", "");
+                            if (!result.title.isBlank()) results.add(result);
+                        }
+                    }
+                    if (!results.isEmpty()) return results;
+                } catch (Exception e) {
+                    // fallback
+                }
+            }
+
+            // 优先尝试 Brave Search API
+            String braveApiKey = System.getenv("BRAVE_SEARCH_API_KEY");
+            if (braveApiKey != null && !braveApiKey.isBlank()) {
+                try {
+                    String braveUrl = "https://api.search.brave.com/res/v1/web/search?q=" + encodedQuery + "&count=" + maxResults;
+                    String responseStr = cn.hutool.http.HttpRequest.get(braveUrl)
+                            .header("Accept", "application/json")
+                            .header("Accept-Encoding", "gzip")
+                            .header("X-Subscription-Token", braveApiKey)
+                            .timeout(10000)
+                            .execute()
+                            .body();
+                    JSONObject json = JSONUtil.parseObj(responseStr);
+                    JSONArray webResults = json.getJSONObject("web") != null ? json.getJSONObject("web").getJSONArray("results") : null;
+                    if (webResults != null) {
+                        int count = Math.min(webResults.size(), maxResults);
+                        for (int i = 0; i < count; i++) {
+                            JSONObject item = webResults.getJSONObject(i);
+                            Response.SearchResult result = new Response.SearchResult();
+                            result.title = item.getStr("title", "");
+                            result.snippet = item.getStr("description", "");
+                            result.url = item.getStr("url", "");
+                            if (!result.title.isBlank()) results.add(result);
+                        }
+                    }
+                    if (!results.isEmpty()) return results;
+                } catch (Exception e) {
+                    // fallback
+                }
+            }
+
+            // 回退到 DuckDuckGo Instant Answer API
+            String url = SEARCH_API.replace("{}", encodedQuery);
+            String responseStr = cn.hutool.http.HttpUtil.get(url, 10000);
+            JSONObject json = JSONUtil.parseObj(responseStr);
+
+            // 尝试 Abstract
+            String abstractText = json.getStr("Abstract", "");
+            if (abstractText != null && !abstractText.isBlank()) {
+                Response.SearchResult result = new Response.SearchResult();
+                result.title = json.getStr("Heading", query);
+                result.snippet = abstractText;
+                result.url = json.getStr("AbstractURL", "");
+                results.add(result);
+            }
+
+            // 尝试 RelatedTopics
             JSONArray relatedTopics = json.getJSONArray("RelatedTopics");
             if (relatedTopics != null) {
-                int count = Math.min(relatedTopics.size(), maxResults);
+                int count = Math.min(relatedTopics.size(), maxResults - results.size());
                 for (int i = 0; i < count; i++) {
                     JSONObject topic = relatedTopics.getJSONObject(i);
                     if (topic.containsKey("Text")) {
