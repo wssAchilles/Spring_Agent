@@ -3,12 +3,17 @@ package tech.qiantong.qknow.redis.service.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Service;
 import tech.qiantong.qknow.redis.service.IRedisService;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,6 +47,24 @@ public class RedisServiceImpl implements IRedisService {
     @Override
     public boolean delete(String key) {
         return stringRedisTemplate.delete(key);
+    }
+
+    @Override
+    public Set<String> scanKeys(String pattern, long count) {
+        ScanOptions options = ScanOptions.scanOptions()
+                .match(pattern)
+                .count(count)
+                .build();
+        Set<String> keys = new HashSet<>();
+        stringRedisTemplate.execute((RedisCallback<Void>) connection -> {
+            try (var cursor = connection.scan(options)) {
+                while (cursor.hasNext()) {
+                    keys.add(new String(cursor.next(), StandardCharsets.UTF_8));
+                }
+            }
+            return null;
+        });
+        return keys;
     }
 
     @Override

@@ -2,6 +2,7 @@ package tech.qiantong.qknow.redis.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface IRedisService {
 
@@ -25,6 +26,8 @@ public interface IRedisService {
     String get(String key);
 
     boolean delete(String key);
+
+    Set<String> scanKeys(String pattern, long count);
 
     void leftPush(String key, String value);
 
