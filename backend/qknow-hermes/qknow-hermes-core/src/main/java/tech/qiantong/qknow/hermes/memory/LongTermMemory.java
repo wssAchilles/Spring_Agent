@@ -38,6 +38,10 @@ public class LongTermMemory {
      * 如果发现相似记忆（cosine > 0.85），则合并而非新增
      */
     public void store(String content, Map<String, Object> metadata) {
+        if (vectorStore == null || content == null || content.isBlank()) {
+            log.debug("LongTermMemory skipped: vectorStore missing or content blank");
+            return;
+        }
         List<Document> similar = findSimilar(content, 3);
         for (Document existing : similar) {
             double score = existing.getScore() != null ? existing.getScore() : 0.0;
@@ -87,6 +91,9 @@ public class LongTermMemory {
      * 召回并按复合评分重排序，支持 Scope 过滤
      */
     public List<Document> recall(String query, int topK, String scope) {
+        if (vectorStore == null) {
+            return Collections.emptyList();
+        }
         int fetchSize = Math.max(topK * 3, 20);
         SearchRequest.Builder requestBuilder = SearchRequest.builder()
                 .query(query)
@@ -122,6 +129,9 @@ public class LongTermMemory {
      * 查找与给定内容相似的记忆
      */
     private List<Document> findSimilar(String content, int topK) {
+        if (vectorStore == null) {
+            return Collections.emptyList();
+        }
         SearchRequest request = SearchRequest.builder()
                 .query(content)
                 .topK(topK)

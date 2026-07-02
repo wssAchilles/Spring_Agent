@@ -70,8 +70,12 @@ public class DagExecutor {
                 allResults.add(result);
                 resultMap.put(group.get(0), result);
 
-                if (RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus())) {
+                if (isError(result)) {
                     log.error("节点执行失败，终止工作流: {}", result.getNodeName());
+                    break;
+                }
+                if (isSuspended(result)) {
+                    log.info("节点挂起，暂停工作流: {}", result.getNodeName());
                     break;
                 }
             } else {
@@ -96,7 +100,9 @@ public class DagExecutor {
                         allResults.add(result);
                         resultMap.put(result.getNodeUuid(), result);
 
-                        if (RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus())) {
+                        if (isError(result)) {
+                            hasError = true;
+                        } else if (isSuspended(result)) {
                             hasError = true;
                         }
                     } catch (Exception e) {
@@ -145,6 +151,10 @@ public class DagExecutor {
 
         List<NodeRunResultBO> allResults = new ArrayList<>(restoredResults.values());
         Map<String, NodeRunResultBO> resultMap = new LinkedHashMap<>(restoredResults);
+        if (checkpointManager.hasSuspendedResult(resultMap)) {
+            log.info("工作流仍处于挂起状态，等待人工唤醒: runtimeId={}", runtimeId);
+            return allResults;
+        }
 
         // 从断点位置开始执行
         boolean completedSuccessfully = true;
@@ -159,11 +169,17 @@ public class DagExecutor {
             if (pending.size() == 1) {
                 NodeRunResultBO result = executeNode(pending.get(0), nodeMap, flowEdges, context);
                 allResults.add(result);
-                resultMap.put(group.get(0), result);
+                resultMap.put(pending.get(0), result);
 
-                if (RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus())) {
+                if (isError(result)) {
                     checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
                     log.error("节点执行失败，检查点已保存，终止工作流: {}", result.getNodeName());
+                    completedSuccessfully = false;
+                    break;
+                }
+                if (isSuspended(result)) {
+                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex + 1, resultMap);
+                    log.info("节点挂起，检查点已保存: runtimeId={}, node={}", runtimeId, result.getNodeName());
                     completedSuccessfully = false;
                     break;
                 }
@@ -183,7 +199,9 @@ public class DagExecutor {
                         NodeRunResultBO result = future.get();
                         allResults.add(result);
                         resultMap.put(result.getNodeUuid(), result);
-                        if (RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus())) {
+                        if (isError(result)) {
+                            hasError = true;
+                        } else if (isSuspended(result)) {
                             hasError = true;
                         }
                     } catch (Exception e) {
@@ -193,7 +211,8 @@ public class DagExecutor {
                 }
 
                 if (hasError) {
-                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
+                    boolean suspended = checkpointManager.hasSuspendedResult(resultMap);
+                    checkpointManager.saveCheckpoint(runtimeId, flowId, suspended ? groupIndex + 1 : groupIndex, resultMap);
                     log.error("并行执行组中存在失败节点，检查点已保存，终止工作流");
                     completedSuccessfully = false;
                     break;
@@ -209,6 +228,10 @@ public class DagExecutor {
             checkpointManager.deleteCheckpoint(runtimeId);
         }
         return allResults;
+    }
+
+    public boolean wakeSuspended(String runtimeId, Map<String, Object> humanInput) {
+        return checkpointManager.wakeSuspended(runtimeId, humanInput);
     }
 
     /**
@@ -228,6 +251,14 @@ public class DagExecutor {
             log.error("节点执行异常: {}", nodeUuid, e);
             return NodeRunResultBO.failure(nodeUuid, nodeDefinition.getName(), e.getMessage());
         }
+    }
+
+    private boolean isError(NodeRunResultBO result) {
+        return RuntimeStatusEnums.ERROR.getCode().equals(result.getStatus());
+    }
+
+    private boolean isSuspended(NodeRunResultBO result) {
+        return RuntimeStatusEnums.SUSPENDED.getCode().equals(result.getStatus());
     }
 
     /**

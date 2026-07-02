@@ -13,10 +13,19 @@ import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Slf4j
 @Component
 public class RagasEvaluator {
+    private static final ExecutorService SAMPLE_EXECUTOR = Executors.newFixedThreadPool(
+            Math.min(Runtime.getRuntime().availableProcessors(), 8),
+            r -> { Thread t = new Thread(r, "ragas-sample"); t.setDaemon(true); return t; });
+    private static final ExecutorService METRIC_EXECUTOR = Executors.newFixedThreadPool(
+            Math.min(Runtime.getRuntime().availableProcessors(), 8),
+            r -> { Thread t = new Thread(r, "ragas-metric"); t.setDaemon(true); return t; });
 
     private final ChatModelFactory chatModelFactory;
     private final RagasEvalConfig config;
@@ -50,32 +59,12 @@ public class RagasEvaluator {
         report.setRunId(UUID.randomUUID().toString());
         report.setDatasetName(dataset.getName());
 
-        List<EvaluationReport.ItemResult> results = new ArrayList<>();
-        List<MetricScores> allScores = new ArrayList<>();
-
-        for (EvaluationDataset.EvalItem item : dataset.getItems()) {
-            // 先生成回答
-            String answer = generateAnswer(item.getQuery(), item.getGroundTruthContexts());
-
-            // 评估四项指标 (共 4 次调用)
-            MetricScores scores = evaluateSingle(item.getQuery(), answer,
-                    item.getGroundTruthContexts(), item.getExpectedAnswer());
-            allScores.add(scores);
-
-            EvaluationReport.ItemResult result = new EvaluationReport.ItemResult();
-            result.setQuery(item.getQuery());
-            result.setAnswer(answer);
-            Map<String, Double> scoreMap = new LinkedHashMap<>();
-            scoreMap.put("faithfulness", scores.getFaithfulness());
-            scoreMap.put("answer_relevance", scores.getAnswerRelevance());
-            scoreMap.put("context_precision", scores.getContextPrecision());
-            scoreMap.put("context_recall", scores.getContextRecall());
-            scoreMap.put("factual_correctness", scores.getFactualCorrectness());
-            scoreMap.put("noise_sensitivity", scores.getNoiseSensitivity());
-            scoreMap.put("negative_rejection", scores.getNegativeRejection());
-            result.setScores(scoreMap);
-            results.add(result);
-        }
+        List<ItemEvaluation> evaluated = dataset.getItems().stream()
+                .map(item -> CompletableFuture.supplyAsync(() -> evaluateItem(item), SAMPLE_EXECUTOR))
+                .map(CompletableFuture::join)
+                .toList();
+        List<EvaluationReport.ItemResult> results = evaluated.stream().map(ItemEvaluation::result).toList();
+        List<MetricScores> allScores = evaluated.stream().map(ItemEvaluation::scores).toList();
         report.setItemResults(results);
 
         // 计算汇总统计 (mean, p50, p90 对每项指标)
@@ -88,30 +77,24 @@ public class RagasEvaluator {
      */
     public MetricScores evaluateSingle(String query, String answer, List<String> contexts, String expectedAnswer) {
         MetricScores scores = new MetricScores();
+        contexts = contexts != null ? contexts : List.of();
         String contextStr = String.join("\n", contexts);
 
-        // 7 个指标并行评估
-        var faithF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("faithfulness")));
-        var relF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("answer_relevance")));
-        var precF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_precision")));
-        var recallF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("context_recall")));
-        var factF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("factual_correctness")));
-        var noiseF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("noise_sensitivity")));
-        var rejectF = java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeMetric(query, contextStr, answer, METRIC_PROMPTS.get("negative_rejection")));
-
-        try {
-            scores.setFaithfulness(faithF.get());
-            scores.setAnswerRelevance(relF.get());
-            scores.setContextPrecision(precF.get());
-            scores.setContextRecall(recallF.get());
-            scores.setFactualCorrectness(factF.get());
-            scores.setNoiseSensitivity(noiseF.get());
-            scores.setNegativeRejection(rejectF.get());
-        } catch (Exception e) {
-            log.warn("Parallel metric evaluation failed", e);
+        Map<String, String> metricPrompts = resolveMetricPrompts();
+        Map<String, CompletableFuture<Double>> futures = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : metricPrompts.entrySet()) {
+            futures.put(entry.getKey(), CompletableFuture.supplyAsync(
+                    () -> judgeMetric(query, contextStr, answer, entry.getValue()), METRIC_EXECUTOR));
+        }
+        for (Map.Entry<String, CompletableFuture<Double>> entry : futures.entrySet()) {
+            try {
+                setScore(scores, entry.getKey(), entry.getValue().join());
+            } catch (Exception e) {
+                log.warn("Metric evaluation failed: {}", entry.getKey(), e);
+            }
         }
 
-        scores.setPassed(scores.isAboveThreshold(config.getThreshold()));
+        scores.setPassed(scores.isAboveThreshold(config != null ? config.getThreshold() : MetricScores.DEFAULT_GATE_THRESHOLD));
         return scores;
     }
 
@@ -119,6 +102,7 @@ public class RagasEvaluator {
      * 调用 ChatModel 生成回答 (1 次调用)
      */
     private String generateAnswer(String query, List<String> contexts) {
+        contexts = contexts != null ? contexts : List.of();
         String contextStr = contexts.isEmpty() ? "" : String.join("\n", contexts);
         String prompt = "基于以下知识回答问题。\n\n知识:\n" + contextStr + "\n\n问题: " + query;
         ChatModel chatModel = createChatModel();
@@ -128,6 +112,38 @@ public class RagasEvaluator {
         return response.getResult().getOutput().getText();
     }
 
+    private ItemEvaluation evaluateItem(EvaluationDataset.EvalItem item) {
+        String answer = generateAnswer(item.getQuery(), item.getGroundTruthContexts());
+        MetricScores scores = evaluateSingle(item.getQuery(), answer,
+                item.getGroundTruthContexts(), item.getExpectedAnswer());
+        EvaluationReport.ItemResult result = new EvaluationReport.ItemResult();
+        result.setQuery(item.getQuery());
+        result.setAnswer(answer);
+        Map<String, Double> scoreMap = new LinkedHashMap<>();
+        scoreMap.put("faithfulness", scores.getFaithfulness());
+        scoreMap.put("answer_relevance", scores.getAnswerRelevance());
+        scoreMap.put("context_precision", scores.getContextPrecision());
+        scoreMap.put("context_recall", scores.getContextRecall());
+        scoreMap.put("factual_correctness", scores.getFactualCorrectness());
+        scoreMap.put("noise_sensitivity", scores.getNoiseSensitivity());
+        scoreMap.put("negative_rejection", scores.getNegativeRejection());
+        result.setScores(scoreMap);
+        return new ItemEvaluation(result, scores);
+    }
+
+    private void setScore(MetricScores scores, String metricName, double score) {
+        switch (metricName) {
+            case "faithfulness" -> scores.setFaithfulness(score);
+            case "answer_relevance" -> scores.setAnswerRelevance(score);
+            case "context_precision" -> scores.setContextPrecision(score);
+            case "context_recall" -> scores.setContextRecall(score);
+            case "factual_correctness" -> scores.setFactualCorrectness(score);
+            case "noise_sensitivity" -> scores.setNoiseSensitivity(score);
+            case "negative_rejection" -> scores.setNegativeRejection(score);
+            default -> log.debug("Unknown RAGAS metric: {}", metricName);
+        }
+    }
+
     /**
      * 对单个指标调用 ChatModel 评分 (1 次调用)，返回 0.0-1.0 分数
      */
@@ -135,11 +151,39 @@ public class RagasEvaluator {
         String evalPrompt = "问题: " + query + "\n上下文: " + context + "\n回答: " + answer;
         ChatModel chatModel = createChatModel();
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(metricPrompt));
+        messages.add(new SystemMessage(decoratePrompt(metricPrompt)));
         messages.add(new UserMessage(evalPrompt));
         ChatResponse response = chatModel.call(new Prompt(messages));
         String responseText = response.getResult().getOutput().getText();
         return parseScore(responseText);
+    }
+
+    private Map<String, String> resolveMetricPrompts() {
+        Map<String, String> prompts = new LinkedHashMap<>(METRIC_PROMPTS);
+        if (config != null && config.getMetricPrompts() != null && !config.getMetricPrompts().isEmpty()) {
+            for (Map.Entry<String, String> entry : config.getMetricPrompts().entrySet()) {
+                if (METRIC_PROMPTS.containsKey(entry.getKey()) && entry.getValue() != null && !entry.getValue().isBlank()) {
+                    prompts.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        return prompts;
+    }
+
+    private String decoratePrompt(String prompt) {
+        StringBuilder builder = new StringBuilder(prompt != null ? prompt : "");
+        if (config != null && config.getPromptVersion() != null && !config.getPromptVersion().isBlank()) {
+            builder.append("\n\nPrompt version: ").append(config.getPromptVersion());
+        }
+        if (config != null && config.getPromptExamples() != null && !config.getPromptExamples().isEmpty()) {
+            builder.append("\n\nCalibration examples:\n");
+            for (String example : config.getPromptExamples()) {
+                if (example != null && !example.isBlank()) {
+                    builder.append("- ").append(example.trim()).append('\n');
+                }
+            }
+        }
+        return builder.toString();
     }
 
     private ChatModel createChatModel() {
@@ -198,5 +242,8 @@ public class RagasEvaluator {
         if (lower == upper) return sorted.get(lower);
         double fraction = index - lower;
         return sorted.get(lower) * (1 - fraction) + sorted.get(upper) * fraction;
+    }
+
+    private record ItemEvaluation(EvaluationReport.ItemResult result, MetricScores scores) {
     }
 }

@@ -11,6 +11,7 @@ import tech.qiantong.qknow.redis.service.IRedisService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +43,7 @@ public class ShortTermMemory {
             return;
         }
         redisService.rightPush(redisKey(sessionId), encode(message));
+        touchSession(sessionId, null, null);
     }
 
     /**
@@ -92,8 +94,7 @@ public class ShortTermMemory {
                 .map(Message::getText)
                 .collect(Collectors.joining("\n"));
 
-        ChatResponse response = chatModel.call(new Prompt(conversationText));
-        String summary = response.getResult().getOutput().getText();
+        String summary = summarizeText(conversationText);
 
         List<Message> retained = new ArrayList<>(messages.subList(splitIndex, messages.size()));
 
@@ -117,8 +118,7 @@ public class ShortTermMemory {
                 .map(Message::getText)
                 .collect(Collectors.joining("\n"));
 
-        ChatResponse response = chatModel.call(new Prompt(conversationText));
-        String summary = response.getResult().getOutput().getText();
+        String summary = summarizeText(conversationText);
 
         String key = redisKey(sessionId);
         redisService.delete(key);
@@ -128,12 +128,90 @@ public class ShortTermMemory {
         }
     }
 
+    public void touchSession(String sessionId, String userId, String scope) {
+        if (redisService == null || sessionId == null || sessionId.isBlank()) {
+            return;
+        }
+        redisService.set(lastActivityKey(sessionId), String.valueOf(System.currentTimeMillis()));
+        if (userId != null && !userId.isBlank()) {
+            redisService.set(userKey(sessionId), userId);
+        }
+        if (scope != null && !scope.isBlank()) {
+            redisService.set(scopeKey(sessionId), scope);
+        }
+    }
+
+    public long getLastActivityAt(String sessionId) {
+        if (redisService == null || sessionId == null || sessionId.isBlank()) {
+            return 0L;
+        }
+        String value = redisService.get(lastActivityKey(sessionId));
+        if (value == null || value.isBlank()) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    public String getSessionUserId(String sessionId) {
+        return redisService == null ? null : redisService.get(userKey(sessionId));
+    }
+
+    public String getSessionScope(String sessionId) {
+        return redisService == null ? null : redisService.get(scopeKey(sessionId));
+    }
+
+    public List<String> listSessionIds(int scanCount) {
+        if (redisService == null) {
+            return List.of();
+        }
+        Set<String> keys = redisService.scanKeys("memory:short:*", scanCount);
+        if (keys == null || keys.isEmpty()) {
+            return List.of();
+        }
+        return keys.stream()
+                .map(this::sessionIdFromKey)
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    public void clearSession(String sessionId) {
+        if (redisService == null || sessionId == null || sessionId.isBlank()) {
+            return;
+        }
+        redisService.delete(redisKey(sessionId));
+        redisService.delete(lastActivityKey(sessionId));
+        redisService.delete(userKey(sessionId));
+        redisService.delete(scopeKey(sessionId));
+    }
+
     private String redisKey(String sessionId) {
         return "memory:short:" + sessionId;
     }
 
+    private String lastActivityKey(String sessionId) {
+        return "memory:short-meta:last:" + sessionId;
+    }
+
+    private String userKey(String sessionId) {
+        return "memory:short-meta:user:" + sessionId;
+    }
+
+    private String scopeKey(String sessionId) {
+        return "memory:short-meta:scope:" + sessionId;
+    }
+
+    private String sessionIdFromKey(String key) {
+        String prefix = "memory:short:";
+        return key != null && key.startsWith(prefix) ? key.substring(prefix.length()) : null;
+    }
+
     private String encode(Message message) {
-        return message.getMessageType().name() + "\t" + message.getText();
+        return message.getMessageType().name() + "\t" + String.valueOf(message.getText());
     }
 
     private Message decode(String value) {
@@ -148,5 +226,13 @@ public class ShortTermMemory {
             case "ASSISTANT" -> new AssistantMessage(text);
             default -> new SystemMessage(text);
         };
+    }
+
+    private String summarizeText(String conversationText) {
+        if (chatModel == null) {
+            return conversationText;
+        }
+        ChatResponse response = chatModel.call(new Prompt(conversationText));
+        return response.getResult().getOutput().getText();
     }
 }

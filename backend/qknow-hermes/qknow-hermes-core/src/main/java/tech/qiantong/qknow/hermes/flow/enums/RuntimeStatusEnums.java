@@ -3,7 +3,8 @@ package tech.qiantong.qknow.hermes.flow.enums;
 public enum RuntimeStatusEnums {
     RUNNING(0),
     SUCCESS(1),
-    ERROR(2);
+    ERROR(2),
+    SUSPENDED(3);
 
     private final Integer code;
 

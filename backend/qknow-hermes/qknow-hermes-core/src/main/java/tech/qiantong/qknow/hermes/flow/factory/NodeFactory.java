@@ -13,6 +13,7 @@ import tech.qiantong.qknow.hermes.flow.bo.KnowledgeNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.LLMNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.ReplyNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.StartNodeBO;
+import tech.qiantong.qknow.hermes.flow.bo.SuspendNodeBO;
 import tech.qiantong.qknow.hermes.flow.bo.KbFlowEdgeDO;
 import tech.qiantong.qknow.hermes.flow.bo.KbFlowNodeDO;
 import tech.qiantong.qknow.hermes.flow.enums.FlowNodeTypeEnums;
@@ -58,6 +59,7 @@ public class NodeFactory {
             case HTTP -> new HttpNodeBO(nodeDefinition, edgeList);
             case KNOWLEDGE -> new KnowledgeNodeBO(nodeDefinition, edgeList, ragRetrievalService);
             case AGGREGATOR -> new AggregatorNodeBO(nodeDefinition, edgeList);
+            case SUSPEND, APPROVAL -> new SuspendNodeBO(nodeDefinition, edgeList);
 
             default -> throw new ServiceException("不支持的节点类型：" + nodeType);
         };

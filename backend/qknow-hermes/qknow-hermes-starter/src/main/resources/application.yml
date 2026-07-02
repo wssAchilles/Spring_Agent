@@ -75,8 +75,12 @@ qknow:
   hermes:
     plan-solve:
       enabled: false
+      rp-react-enabled: true
       max-tasks: 5
       max-reflection-retries: 1
+      max-concurrent-plan-tasks: 4
+      max-concurrent-react-runs: 16
+      max-token-budget: 0
       complex-keywords:
         - 对比
         - 比较
@@ -91,6 +95,7 @@ qknow:
   rag:
     eval:
       threshold: 0.85
+      prompt-version: manual-v1
       platform: DeepSeek
       model-name: deepseek-chat
       base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com/v1}

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO;
+import tech.qiantong.qknow.hermes.flow.enums.RuntimeStatusEnums;
 
 import jakarta.annotation.PostConstruct;
 import java.util.*;
@@ -114,6 +115,36 @@ public class DagCheckpointManager {
             log.warn("Failed to restore completed results: {}", e.getMessage());
             return new LinkedHashMap<>();
         }
+    }
+
+    public boolean hasSuspendedResult(Map<String, NodeRunResultBO> results) {
+        return results != null && results.values().stream()
+                .anyMatch(result -> RuntimeStatusEnums.SUSPENDED.getCode().equals(result.getStatus()));
+    }
+
+    public boolean wakeSuspended(String runtimeId, Map<String, Object> humanInput) {
+        DagCheckpoint checkpoint = loadCheckpoint(runtimeId);
+        if (checkpoint == null) {
+            return false;
+        }
+        Map<String, NodeRunResultBO> results = restoreCompletedResults(checkpoint);
+        for (NodeRunResultBO result : results.values()) {
+            if (!RuntimeStatusEnums.SUSPENDED.getCode().equals(result.getStatus())) {
+                continue;
+            }
+            Map<String, Object> output = new LinkedHashMap<>();
+            if (result.getOutput() != null) {
+                output.putAll(result.getOutput());
+            }
+            output.put("wokenAt", System.currentTimeMillis());
+            output.put("humanInput", humanInput != null ? humanInput : Map.of());
+            result.setStatus(RuntimeStatusEnums.SUCCESS.getCode());
+            result.setOutput(output);
+            saveCheckpoint(runtimeId, checkpoint.getFlowId(), checkpoint.getGroupIndex(), results);
+            log.info("Suspended DAG checkpoint woken: runtimeId={}, node={}", runtimeId, result.getNodeUuid());
+            return true;
+        }
+        return false;
     }
 
     private void ensureTableExists() {

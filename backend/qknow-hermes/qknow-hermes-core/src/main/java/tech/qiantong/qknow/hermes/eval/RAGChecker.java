@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * RAGChecker 风格离线评估框架（Java 等效实现）
@@ -21,6 +24,13 @@ import java.util.*;
 @Slf4j
 @Component
 public class RAGChecker {
+    private static final ExecutorService SAMPLE_EXECUTOR = Executors.newFixedThreadPool(
+            Math.min(Runtime.getRuntime().availableProcessors(), 8),
+            r -> { Thread t = new Thread(r, "rag-checker-sample"); t.setDaemon(true); return t; });
+    private static final ExecutorService CLAIM_EXECUTOR = Executors.newFixedThreadPool(
+            Math.min(Runtime.getRuntime().availableProcessors(), 8),
+            r -> { Thread t = new Thread(r, "rag-checker-claim"); t.setDaemon(true); return t; });
+
 
     private static final String CLAIM_EXTRACTION_PROMPT =
             "Extract all factual claims from the following answer. " +
@@ -47,6 +57,7 @@ public class RAGChecker {
         RAGCheckerReport report = new RAGCheckerReport();
         report.setQuery(query);
         report.setAnswer(answer);
+        contexts = contexts != null ? contexts : List.of();
 
         String contextStr = String.join("\n", contexts);
 
@@ -67,7 +78,7 @@ public class RAGChecker {
         int notFound = 0;
 
         var futures = claims.stream()
-                .map(claim -> java.util.concurrent.CompletableFuture.supplyAsync(() -> judgeEntailment(contextStr, claim)))
+                .map(claim -> CompletableFuture.supplyAsync(() -> judgeEntailment(contextStr, claim), CLAIM_EXECUTOR))
                 .toList();
         for (var future : futures) {
             try {
@@ -103,15 +114,23 @@ public class RAGChecker {
      * 批量评估
      */
     public List<RAGCheckerReport> batchEvaluate(List<EvalSample> samples) {
-        List<RAGCheckerReport> reports = new ArrayList<>();
-        for (EvalSample sample : samples) {
-            try {
-                reports.add(evaluate(sample.query, sample.answer, sample.contexts));
-            } catch (Exception e) {
-                log.warn("RAGChecker evaluation failed for query: {}", sample.query, e);
-            }
+        if (samples == null || samples.isEmpty()) {
+            return List.of();
         }
-        return reports;
+        List<CompletableFuture<RAGCheckerReport>> futures = samples.stream()
+                .map(sample -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return evaluate(sample.query, sample.answer, sample.contexts);
+                    } catch (Exception e) {
+                        log.warn("RAGChecker evaluation failed for query: {}", sample.query, e);
+                        return null;
+                    }
+                }, SAMPLE_EXECUTOR))
+                .toList();
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     /**
@@ -135,7 +154,7 @@ public class RAGChecker {
         try {
             ChatModel chatModel = createChatModel();
             ChatResponse response = chatModel.call(new Prompt(List.of(
-                    new UserMessage(CLAIM_EXTRACTION_PROMPT + answer)
+                    new UserMessage(resolveClaimExtractionPrompt() + answer)
             )));
             String text = response.getResult().getOutput().getText();
             JSONArray arr = parseJsonArray(text);
@@ -157,8 +176,8 @@ public class RAGChecker {
         try {
             ChatModel chatModel = createChatModel();
             ChatResponse response = chatModel.call(new Prompt(List.of(
-                    new SystemMessage("You are an entailment judge. Return ONLY: ENTAILED, CONTRADICTED, or NOT_FOUND"),
-                    new UserMessage(String.format("Context: %s\nClaim: %s", context, claim))
+                    new SystemMessage(resolveEntailmentSystemPrompt()),
+                    new UserMessage(resolveEntailmentUserPrompt(context, claim))
             )));
             String result = response.getResult().getOutput().getText();
             if (result == null) return "NOT_FOUND";
@@ -175,6 +194,46 @@ public class RAGChecker {
     private ChatModel createChatModel() {
         return chatModelFactory.getChatModel(
                 config.getPlatform(), config.getBaseUrl(), config.getApiKey(), config.getModelName());
+    }
+
+    private String resolveClaimExtractionPrompt() {
+        String prompt = config != null ? config.getClaimExtractionPrompt() : null;
+        if (prompt == null || prompt.isBlank()) {
+            prompt = CLAIM_EXTRACTION_PROMPT;
+        }
+        return decoratePrompt(prompt);
+    }
+
+    private String resolveEntailmentSystemPrompt() {
+        String prompt = config != null ? config.getEntailmentSystemPrompt() : null;
+        if (prompt == null || prompt.isBlank()) {
+            prompt = "You are an entailment judge. Return ONLY: ENTAILED, CONTRADICTED, or NOT_FOUND";
+        }
+        return decoratePrompt(prompt);
+    }
+
+    private String resolveEntailmentUserPrompt(String context, String claim) {
+        String prompt = config != null ? config.getEntailmentUserPrompt() : null;
+        if (prompt == null || prompt.isBlank()) {
+            prompt = ENTAILMENT_PROMPT;
+        }
+        return String.format(prompt, context, claim);
+    }
+
+    private String decoratePrompt(String prompt) {
+        StringBuilder builder = new StringBuilder(prompt != null ? prompt : "");
+        if (config != null && config.getPromptVersion() != null && !config.getPromptVersion().isBlank()) {
+            builder.append("\n\nPrompt version: ").append(config.getPromptVersion());
+        }
+        if (config != null && config.getPromptExamples() != null && !config.getPromptExamples().isEmpty()) {
+            builder.append("\n\nCalibration examples:\n");
+            for (String example : config.getPromptExamples()) {
+                if (example != null && !example.isBlank()) {
+                    builder.append("- ").append(example.trim()).append('\n');
+                }
+            }
+        }
+        return builder.toString();
     }
 
     private JSONArray parseJsonArray(String text) {

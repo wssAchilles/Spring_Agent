@@ -27,6 +27,7 @@ import tech.qiantong.qknow.hermes.eval.MetricScores;
 import tech.qiantong.qknow.hermes.eval.RagasEvaluator;
 import tech.qiantong.qknow.hermes.judge.AiJudgeService;
 import tech.qiantong.qknow.hermes.judge.JudgeResult;
+import tech.qiantong.qknow.hermes.memory.MemoryManager;
 import tech.qiantong.qknow.hermes.proto.*;
 import tech.qiantong.qknow.hermes.tool.function.SearchKnowledgeTool;
 import tech.qiantong.qknow.hermes.tool.function.query.knowledgeQuery;
@@ -39,9 +40,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Hermes Agent 编排器
@@ -54,6 +58,8 @@ public class AgentOrchestrator {
     private static final java.util.concurrent.ExecutorService PLAN_EXECUTOR =
             java.util.concurrent.Executors.newFixedThreadPool(4,
                     r -> { Thread t = new Thread(r, "plan-solve"); t.setDaemon(true); return t; });
+    private static final AtomicInteger ACTIVE_PLAN_TASKS = new AtomicInteger();
+    private static final AtomicInteger ACTIVE_REACT_RUNS = new AtomicInteger();
 
     private final ChatModelFactory chatModelFactory;
     private final ToolCallbackResolver resolver;
@@ -63,6 +69,7 @@ public class AgentOrchestrator {
     private final tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService;
     private final RagasEvaluator ragasEvaluator;
     private final tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig;
+    private final MemoryManager memoryManager;
 
     @Autowired
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
@@ -72,6 +79,8 @@ public class AgentOrchestrator {
                              tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService,
                              @org.springframework.beans.factory.annotation.Autowired(required = false)
                              RagasEvaluator ragasEvaluator,
+                             @org.springframework.beans.factory.annotation.Autowired(required = false)
+                             MemoryManager memoryManager,
                              tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig) {
         this.chatModelFactory = chatModelFactory;
         this.resolver = resolver;
@@ -81,11 +90,12 @@ public class AgentOrchestrator {
         this.langFuseService = langFuseService;
         this.ragasEvaluator = ragasEvaluator;
         this.toolRoutingConfig = toolRoutingConfig;
+        this.memoryManager = memoryManager;
     }
 
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator) {
-        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null, null, null, null);
+        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null, null, null, null, null);
     }
 
     /**
@@ -160,6 +170,7 @@ public class AgentOrchestrator {
                 log.info("LangFuse generation recorded: traceId={}, model={}, latency={}ms, tokens={}/{}",
                     finalTraceId, modelName, latencyMs, promptTokens, completionTokens);
             }
+            recordAssistantMemory(request, fullAnswer.toString());
         });
     }
 
@@ -167,6 +178,8 @@ public class AgentOrchestrator {
                               String traceId, StringBuilder fullAnswer,
                               java.util.concurrent.atomic.AtomicLong promptTokens,
                               java.util.concurrent.atomic.AtomicLong completionTokens) throws GraphRunnerException {
+        recordUserMemory(request);
+
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
         ChatModel chatModel;
@@ -257,6 +270,10 @@ public class AgentOrchestrator {
         String systemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
         systemPrompt = appendRagContext(systemPrompt, effectiveRagContexts, retrievalEvaluation);
         systemPrompt = appendToolInstructions(systemPrompt, enabledToolNames);
+        String plannerSupervision = createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
+        if (StrUtil.isNotBlank(plannerSupervision)) {
+            systemPrompt = systemPrompt + plannerSupervision;
+        }
         log.info("Agent 系统提示词: {}", systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
         messages.add(new UserMessage(request.getQuestion()));
 
@@ -304,8 +321,21 @@ public class AgentOrchestrator {
                 .build();
 
         // 8. 执行推理并映射为 ChatEvent 流
+        if (!enterCapacity(ACTIVE_REACT_RUNS, maxConcurrentReactRuns())) {
+            throw new IllegalStateException("ReAct capacity gate is saturated");
+        }
+        AtomicBoolean releasedReactCapacity = new AtomicBoolean(false);
+        Runnable releaseReactCapacity = () -> {
+            if (releasedReactCapacity.compareAndSet(false, true)) {
+                leaveCapacity(ACTIVE_REACT_RUNS);
+            }
+        };
+
+        final String supervisedSystemPrompt = systemPrompt;
+        final ChatModel finalAgentModel = agentModel;
         Flux<NodeOutput> stream = agent.stream(messages);
-        stream.subscribe(
+        try {
+            stream.subscribe(
                 output -> {
                     try {
                         if (output instanceof StreamingOutput streamingOutput) {
@@ -348,28 +378,85 @@ public class AgentOrchestrator {
                     }
                 },
                 error -> {
+                    releaseReactCapacity.run();
                     log.error("Agent 推理错误", error);
-                    emitter.next(ChatEvent.newBuilder()
-                            .setRequestId(request.getRequestId())
-                            .setError(ErrorEvent.newBuilder()
-                                    .setCode(500)
-                                    .setMessage(error.getMessage())
-                                    .build())
-                            .build());
-                    emitter.complete();
+                    String recovered = recoverReactFailure(request.getQuestion(), supervisedSystemPrompt, error, finalAgentModel);
+                    if (StrUtil.isNotBlank(recovered)) {
+                        fullAnswer.append(recovered);
+                        emitSingleAnswer(request, emitter, recovered);
+                    } else {
+                        emitter.next(ChatEvent.newBuilder()
+                                .setRequestId(request.getRequestId())
+                                .setError(ErrorEvent.newBuilder()
+                                        .setCode(500)
+                                        .setMessage(error.getMessage())
+                                        .build())
+                                .build());
+                        emitter.complete();
+                    }
                 },
                 () -> {
+                    releaseReactCapacity.run();
                     emitter.next(ChatEvent.newBuilder()
                             .setRequestId(request.getRequestId())
                             .setDone(DoneSignal.newBuilder().build())
                             .build());
                     emitter.complete();
                 }
-        );
+            );
+        } catch (RuntimeException e) {
+            releaseReactCapacity.run();
+            throw e;
+        }
+    }
+
+    private void recordUserMemory(ChatRequest request) {
+        if (memoryManager == null || request.getQuestion() == null || request.getQuestion().isBlank()) {
+            return;
+        }
+        try {
+            String sessionId = memorySessionId(request);
+            memoryManager.getShortTerm().addMessage(sessionId, new UserMessage(request.getQuestion()));
+            memoryManager.getShortTerm().touchSession(sessionId, memoryUserId(request), memoryScope(request));
+        } catch (Exception e) {
+            log.debug("Short-term user memory write failed", e);
+        }
+    }
+
+    private void recordAssistantMemory(ChatRequest request, String answer) {
+        if (memoryManager == null || answer == null || answer.isBlank()) {
+            return;
+        }
+        try {
+            String sessionId = memorySessionId(request);
+            memoryManager.getShortTerm().addMessage(sessionId, new AssistantMessage(answer));
+            memoryManager.getShortTerm().touchSession(sessionId, memoryUserId(request), memoryScope(request));
+        } catch (Exception e) {
+            log.debug("Short-term assistant memory write failed", e);
+        }
+    }
+
+    private String memorySessionId(ChatRequest request) {
+        if (request.getRequestId() != null && !request.getRequestId().isBlank()) {
+            return request.getRequestId();
+        }
+        return request.getWorkspaceId() + ":" + request.getBotId();
+    }
+
+    private String memoryUserId(ChatRequest request) {
+        return "workspace:" + request.getWorkspaceId();
+    }
+
+    private String memoryScope(ChatRequest request) {
+        return "bot:" + request.getBotId();
     }
 
     private String planAndSolve(String question, String systemPrompt, List<ToolCallback> tools, ChatModel chatModel) {
         if (planSolveConfig == null || !planSolveConfig.isEnabled() || !isComplexQuestion(question)) {
+            return null;
+        }
+        if (exceedsTokenBudget(question, systemPrompt, tools)) {
+            log.warn("Plan-and-Solve skipped by token budget gate");
             return null;
         }
         try {
@@ -380,6 +467,12 @@ public class AgentOrchestrator {
             Map<String, String> workerResults = executePlanTasks(tasks, systemPrompt, tools, chatModel);
             if (workerResults.isEmpty()) {
                 return null;
+            }
+            if (hasFailedWorkerResult(workerResults)) {
+                String repaired = repairFailedPlan(question, systemPrompt, workerResults, chatModel);
+                if (StrUtil.isNotBlank(repaired)) {
+                    return repaired;
+                }
             }
             String answer = aggregatePlanResults(question, systemPrompt, workerResults, chatModel);
             return reflectOnce(question, systemPrompt, answer, workerResults, chatModel);
@@ -451,9 +544,16 @@ public class AgentOrchestrator {
             }
             List<CompletableFuture<Map.Entry<String, String>>> futures = ready.stream()
                     .map(task -> CompletableFuture.supplyAsync(() -> {
-                        WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
-                        String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
-                        return Map.entry(task.taskId(), result);
+                        if (!enterCapacity(ACTIVE_PLAN_TASKS, maxConcurrentPlanTasks())) {
+                            return Map.entry(task.taskId(), "执行失败: capacity gate open");
+                        }
+                        try {
+                            WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
+                            String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
+                            return Map.entry(task.taskId(), result);
+                        } finally {
+                            leaveCapacity(ACTIVE_PLAN_TASKS);
+                        }
                     }, PLAN_EXECUTOR))
                     .toList();
             for (CompletableFuture<Map.Entry<String, String>> future : futures) {
@@ -463,6 +563,122 @@ public class AgentOrchestrator {
             remaining.removeAll(ready);
         }
         return results;
+    }
+
+    private String createPlannerSupervision(String question, String systemPrompt, ChatModel chatModel) {
+        if (planSolveConfig == null || !planSolveConfig.isEnabled() || !planSolveConfig.isRpReactEnabled()
+                || !isComplexQuestion(question) || chatModel == null) {
+            return "";
+        }
+        if (exceedsTokenBudget(question, systemPrompt, List.of())) {
+            return "";
+        }
+        try {
+            List<PlanTask> tasks = createPlan(question, systemPrompt, chatModel);
+            if (tasks.isEmpty()) {
+                return "";
+            }
+            String plan = tasks.stream()
+                    .map(task -> "- " + task.taskId() + ": " + task.objective()
+                            + (task.dependencies().isEmpty() ? "" : " (depends: " + String.join(",", task.dependencies()) + ")"))
+                    .collect(Collectors.joining("\n"));
+            return "\n\n<planner_supervision mode=\"rp-react\">\n"
+                    + "Use this planner-created execution sketch to guide ReAct tool use. "
+                    + "If a step fails, recover by revising the plan before answering.\n"
+                    + plan
+                    + "\n</planner_supervision>";
+        } catch (Exception e) {
+            log.debug("Planner supervision generation failed", e);
+            return "";
+        }
+    }
+
+    private String recoverReactFailure(String question, String systemPrompt, Throwable error, ChatModel chatModel) {
+        if (planSolveConfig == null || !planSolveConfig.isEnabled() || !planSolveConfig.isRpReactEnabled()
+                || chatModel == null || !isComplexQuestion(question)) {
+            return null;
+        }
+        try {
+            String prompt = """
+                    ReAct executor failed. As the planner supervisor, produce the best final answer or a concise failure-safe answer.
+                    Do not expose stack traces. If evidence is insufficient, state the limitation.
+
+                    Question: %s
+                    Executor error: %s
+                    """.formatted(question, error != null ? error.getMessage() : "unknown");
+            ChatResponse response = chatModel.call(new Prompt(List.of(
+                    new SystemMessage(systemPrompt != null ? systemPrompt : ""),
+                    new UserMessage(prompt)
+            )));
+            return response.getResult().getOutput().getText();
+        } catch (Exception e) {
+            log.warn("Planner recovery failed", e);
+            return null;
+        }
+    }
+
+    private boolean hasFailedWorkerResult(Map<String, String> workerResults) {
+        if (workerResults == null || workerResults.isEmpty()) {
+            return false;
+        }
+        return workerResults.values().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(result -> result.startsWith("执行失败:"));
+    }
+
+    private String repairFailedPlan(String question, String systemPrompt,
+                                    Map<String, String> workerResults, ChatModel chatModel) {
+        String prompt = """
+                Some planned subtasks failed. Revise the reasoning path and answer the original question using only successful evidence.
+                If the evidence is insufficient, say so clearly.
+
+                Question: %s
+                Subtask results:
+                %s
+                """.formatted(question, formatWorkerResults(workerResults));
+        ChatResponse response = chatModel.call(new Prompt(List.of(
+                new SystemMessage(systemPrompt != null ? systemPrompt : ""),
+                new UserMessage(prompt)
+        )));
+        return response.getResult().getOutput().getText();
+    }
+
+    private boolean exceedsTokenBudget(String question, String systemPrompt, List<ToolCallback> tools) {
+        int budget = planSolveConfig != null ? planSolveConfig.getMaxTokenBudget() : 0;
+        if (budget <= 0) {
+            return false;
+        }
+        long estimate = estimateTokenCount(question) + estimateTokenCount(systemPrompt)
+                + (tools != null ? tools.size() * 128L : 0L);
+        return estimate > budget;
+    }
+
+    private int maxConcurrentPlanTasks() {
+        return planSolveConfig != null ? planSolveConfig.getMaxConcurrentPlanTasks() : 4;
+    }
+
+    private int maxConcurrentReactRuns() {
+        return planSolveConfig != null ? planSolveConfig.getMaxConcurrentReactRuns() : 16;
+    }
+
+    private boolean enterCapacity(AtomicInteger counter, int maxConcurrent) {
+        if (maxConcurrent <= 0) {
+            counter.incrementAndGet();
+            return true;
+        }
+        while (true) {
+            int current = counter.get();
+            if (current >= maxConcurrent) {
+                return false;
+            }
+            if (counter.compareAndSet(current, current + 1)) {
+                return true;
+            }
+        }
+    }
+
+    private void leaveCapacity(AtomicInteger counter) {
+        counter.updateAndGet(value -> Math.max(0, value - 1));
     }
 
     private String aggregatePlanResults(String question, String systemPrompt, Map<String, String> workerResults, ChatModel chatModel) {

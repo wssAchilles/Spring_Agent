@@ -9,6 +9,7 @@ import tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO;
 import tech.qiantong.qknow.hermes.flow.bo.RuntimeContextBO;
 import tech.qiantong.qknow.hermes.flow.dag.DagExecutor;
 import tech.qiantong.qknow.hermes.flow.enums.FlowNodeTypeEnums;
+import tech.qiantong.qknow.hermes.flow.enums.RuntimeStatusEnums;
 import tech.qiantong.qknow.hermes.proto.FlowEdge;
 import tech.qiantong.qknow.hermes.proto.FlowNode;
 import tech.qiantong.qknow.hermes.proto.FlowRequest;
@@ -75,15 +76,18 @@ public class FlowExecutor {
         }
         context.setNodeMap(nodeMap);
 
-        // 5. 委托 DagExecutor 执行
-        List<NodeRunResultBO> results = dagExecutor.execute(nodes, edges, context);
+        // 5. 委托 DagExecutor 执行；使用 checkpoint 路径支持 Suspend/HITL 断点恢复。
+        String runtimeId = flowId + ":" + requestId;
+        List<NodeRunResultBO> results = dagExecutor.executeWithCheckpoint(runtimeId, flowId, nodes, edges, context);
 
         // 6. 保存执行快照
         if (stateStore != null && snapshot != null) {
             snapshot.setResults(results);
             snapshot.setCompletedNodeIds(results.stream()
                     .map(NodeRunResultBO::getNodeUuid).toList());
-            snapshot.setStatus("COMPLETED");
+            boolean suspended = results.stream()
+                    .anyMatch(result -> RuntimeStatusEnums.SUSPENDED.getCode().equals(result.getStatus()));
+            snapshot.setStatus(suspended ? "SUSPENDED" : "COMPLETED");
             snapshot.setTimestamp(System.currentTimeMillis());
             stateStore.saveSnapshot(flowId, requestId, snapshot);
         }

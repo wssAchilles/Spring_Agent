@@ -8,7 +8,8 @@ public enum FlowNodeTypeEnums {
     HTTP(5, "http"),
     KNOWLEDGE(6, "knowledge"),
     AGGREGATOR(7, "aggregator"),
-    APPROVAL(8, "approval");
+    APPROVAL(8, "approval"),
+    SUSPEND(9, "suspend");
 
     private final Integer code;
     private final String name;
@@ -29,8 +30,11 @@ public enum FlowNodeTypeEnums {
     }
 
     public static FlowNodeTypeEnums getByName(String name) {
+        if (name == null) {
+            return null;
+        }
         for (FlowNodeTypeEnums e : values()) {
-            if (e.name.equals(name)) return e;
+            if (e.name.equalsIgnoreCase(name)) return e;
         }
         return null;
     }

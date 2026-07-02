@@ -80,4 +80,16 @@ public class NodeRunResultBO {
         result.setErrorMessage(errorMessage);
         return result;
     }
+
+    /**
+     * 创建挂起结果，等待人工唤醒后继续。
+     */
+    public static NodeRunResultBO suspended(String nodeUuid, String nodeName, Map<String, Object> data) {
+        NodeRunResultBO result = new NodeRunResultBO();
+        result.setStatus(RuntimeStatusEnums.SUSPENDED.getCode());
+        result.setNodeUuid(nodeUuid);
+        result.setNodeName(nodeName);
+        result.setOutput(data);
+        return result;
+    }
 }
