@@ -246,6 +246,7 @@ const form = reactive({
 // 从路由获取 botId（如果有）
 const route = useRoute();
 const botId = ref(route.query.id ? Number(route.query.id) : null);
+let configLoadSeq = 0;
 
 // 表单验证规则
 const formRules = {
@@ -288,6 +289,27 @@ function scrollCurrentConversation(conversationId, smooth = true) {
     if (messageListRef.value) {
       messageListRef.value.scrollToBottom(smooth);
     }
+  });
+}
+
+function normalizePersistedMessages(messages = []) {
+  return messages.map(msg => ({
+    id: msg.id,
+    type: msg.role === 'user' ? 0 : 1,
+    content: msg.content,
+    createTime: msg.createTime,
+    documentIdList: msg.documentIdList,
+    documentNameList: msg.documentNameList
+  }));
+}
+
+function refreshConversationMessages(conversationId, smooth = false) {
+  return getMessages(conversationId).then(res => {
+    const messages = normalizePersistedMessages(res.data || []);
+    updateConversationMessages(conversationId, messages);
+    syncLoading();
+    scrollCurrentConversation(conversationId, smooth);
+    return messages;
   });
 }
 
@@ -345,16 +367,7 @@ function handleConversationChange(conversationId) {
     scrollCurrentConversation(conversationId, false);
     return;
   }
-  getMessages(conversationId).then(res => {
-    const messages = (res.data || []).map(msg => ({
-      type: msg.role === 'user' ? 0 : 1,
-      content: msg.content,
-      createTime: msg.createTime
-    }));
-    updateConversationMessages(conversationId, messages);
-    syncLoading();
-    scrollCurrentConversation(conversationId, false);
-  });
+  refreshConversationMessages(conversationId, false);
 }
 
 // 删除对话
@@ -379,14 +392,26 @@ function loadAgentConfig() {
     return;
   }
 
+  const loadBotId = botId.value;
+  const loadSeq = ++configLoadSeq;
+
   // 根据 botId 获取配置
-  getConfigByBotId(botId.value).then((res) => {
+  getConfigByBotId(loadBotId).then((res) => {
+    if (loadSeq !== configLoadSeq || loadBotId !== botId.value) {
+      return;
+    }
+
     const config = res.data;
 
     // 先加载模型列表（确保选项存在）
     getModelList();
 
     if (!config) {
+      return;
+    }
+
+    if (config.botId && Number(config.botId) !== loadBotId) {
+      proxy.$modal.msgError('Agent 配置归属异常，请刷新后重试');
       return;
     }
 
@@ -432,8 +457,25 @@ function loadAgentConfig() {
     // 加载对话列表
     loadConversations();
   }).catch((err) => {
+    if (loadSeq !== configLoadSeq || loadBotId !== botId.value) {
+      return;
+    }
     getModelList();
   });
+}
+
+function resetAgentConfigForm() {
+  form.id = null;
+  form.modelId = '';
+  form.modelName = '';
+  form.prePrompt = '';
+  form.variables = [{ id: 1, name: 'input', description: '用户输入' }];
+  form.knowledges = [];
+  form.tools = [];
+  messageList.value = [];
+  conversationList.value = [];
+  currentConversationId.value = null;
+  syncLoading();
 }
 
 function getModelList() {
@@ -650,11 +692,7 @@ function doSendMessage(content) {
     () => {
       delete activeConversationStreams[conversationId];
       syncLoading();
-      // 如果最终没有内容，显示默认消息
-      if (!messages[botMessageIndex].content) {
-        messages[botMessageIndex].content = '暂无回复';
-        updateConversationMessages(conversationId, messages);
-      }
+      refreshConversationMessages(conversationId, true);
     }
   ).catch((error) => {
     delete activeConversationStreams[conversationId];
@@ -736,6 +774,19 @@ function handleSubmit() {
 
 // 只在初始化时调用一次
 loadAgentConfig();
+
+watch(
+  () => route.query.id,
+  (id) => {
+    const nextBotId = id ? Number(id) : null;
+    if (botId.value === nextBotId) {
+      return;
+    }
+    botId.value = nextBotId;
+    resetAgentConfigForm();
+    loadAgentConfig();
+  }
+);
 </script>
 
 <style scoped lang="scss">
