@@ -178,7 +178,7 @@ public class DagExecutor {
                     break;
                 }
                 if (isSuspended(result)) {
-                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex + 1, resultMap);
+                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
                     log.info("节点挂起，检查点已保存: runtimeId={}, node={}", runtimeId, result.getNodeName());
                     completedSuccessfully = false;
                     break;
@@ -211,8 +211,7 @@ public class DagExecutor {
                 }
 
                 if (hasError) {
-                    boolean suspended = checkpointManager.hasSuspendedResult(resultMap);
-                    checkpointManager.saveCheckpoint(runtimeId, flowId, suspended ? groupIndex + 1 : groupIndex, resultMap);
+                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
                     log.error("并行执行组中存在失败节点，检查点已保存，终止工作流");
                     completedSuccessfully = false;
                     break;

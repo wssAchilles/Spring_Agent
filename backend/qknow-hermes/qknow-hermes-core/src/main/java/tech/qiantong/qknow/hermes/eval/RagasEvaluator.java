@@ -59,8 +59,10 @@ public class RagasEvaluator {
         report.setRunId(UUID.randomUUID().toString());
         report.setDatasetName(dataset.getName());
 
-        List<ItemEvaluation> evaluated = dataset.getItems().stream()
+        List<CompletableFuture<ItemEvaluation>> futures = dataset.getItems().stream()
                 .map(item -> CompletableFuture.supplyAsync(() -> evaluateItem(item), SAMPLE_EXECUTOR))
+                .toList();
+        List<ItemEvaluation> evaluated = futures.stream()
                 .map(CompletableFuture::join)
                 .toList();
         List<EvaluationReport.ItemResult> results = evaluated.stream().map(ItemEvaluation::result).toList();
