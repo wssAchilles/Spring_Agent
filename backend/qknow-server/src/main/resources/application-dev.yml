@@ -178,6 +178,8 @@ hermes:
       model-name: deepseek-chat
       question-count: 3
       max-chunk-chars: 2000
+      timeout-seconds: 30
+      max-chunks-per-document: 20
     colbert:
       enabled: true
       ngram-size: 3
