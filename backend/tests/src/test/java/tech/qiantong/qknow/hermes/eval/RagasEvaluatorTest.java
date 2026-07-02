@@ -14,6 +14,7 @@ import org.springframework.ai.chat.model.Generation;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,16 +71,14 @@ class RagasEvaluatorTest {
     @Test
     @DisplayName("不相关的回答在相关性上得分低")
     void irrelevantAnswer_scoresLowOnRelevance() {
-        when(chatModelFactory.getChatModel(anyString(), isNull(), isNull(), anyString()))
-                .thenReturn(chatModel);
-        when(chatModel.call(any(Prompt.class)))
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"faithful\"}"))       // faithfulness
-                .thenReturn(buildChatResponse("{\"score\": 0.2, \"feedback\": \"irrelevant\"}"))     // answer relevance
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"precise\"}"))        // context precision
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"recall ok\"}"))      // context recall
-                .thenReturn(buildChatResponse("{\"score\": 0.8, \"feedback\": \"factual\"}"))        // factual correctness
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"not noisy\"}"))      // noise sensitivity
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"no reject\"}"));     // negative rejection
+        mockMetricScores(Map.of(
+                "faithfulness", 0.9,
+                "answer_relevance", 0.2,
+                "context_precision", 0.9,
+                "context_recall", 0.9,
+                "factual_correctness", 0.8,
+                "noise_sensitivity", 0.9,
+                "negative_rejection", 0.9));
 
         MetricScores scores = evaluator.evaluateSingle(
                 "今天天气怎么样?",
@@ -96,16 +95,14 @@ class RagasEvaluatorTest {
     @Test
     @DisplayName("包含幻觉的回答在忠实度上得分低")
     void hallucinatedAnswer_scoresLowOnFaithfulness() {
-        when(chatModelFactory.getChatModel(anyString(), isNull(), isNull(), anyString()))
-                .thenReturn(chatModel);
-        when(chatModel.call(any(Prompt.class)))
-                .thenReturn(buildChatResponse("{\"score\": 0.3, \"feedback\": \"hallucination detected\"}"))   // faithfulness
-                .thenReturn(buildChatResponse("{\"score\": 0.8, \"feedback\": \"relevant\"}"))                  // answer relevance
-                .thenReturn(buildChatResponse("{\"score\": 0.7, \"feedback\": \"precise\"}"))                   // context precision
-                .thenReturn(buildChatResponse("{\"score\": 0.6, \"feedback\": \"recall ok\"}"))                 // context recall
-                .thenReturn(buildChatResponse("{\"score\": 0.5, \"feedback\": \"factual issues\"}"))            // factual correctness
-                .thenReturn(buildChatResponse("{\"score\": 0.7, \"feedback\": \"noisy\"}"))                     // noise sensitivity
-                .thenReturn(buildChatResponse("{\"score\": 0.8, \"feedback\": \"ok\"}"));                       // negative rejection
+        mockMetricScores(Map.of(
+                "faithfulness", 0.3,
+                "answer_relevance", 0.8,
+                "context_precision", 0.7,
+                "context_recall", 0.6,
+                "factual_correctness", 0.5,
+                "noise_sensitivity", 0.7,
+                "negative_rejection", 0.8));
 
         MetricScores scores = evaluator.evaluateSingle(
                 "Python是什么?",
@@ -121,16 +118,14 @@ class RagasEvaluatorTest {
     @Test
     @DisplayName("空上下文在上下文召回上得分低")
     void emptyContext_scoresLowOnContextRecall() {
-        when(chatModelFactory.getChatModel(anyString(), isNull(), isNull(), anyString()))
-                .thenReturn(chatModel);
-        when(chatModel.call(any(Prompt.class)))
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"faithful\"}"))       // faithfulness
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"relevant\"}"))       // answer relevance
-                .thenReturn(buildChatResponse("{\"score\": 0.0, \"feedback\": \"no chunks\"}"))      // context precision
-                .thenReturn(buildChatResponse("{\"score\": 0.2, \"feedback\": \"info missing\"}"))   // context recall
-                .thenReturn(buildChatResponse("{\"score\": 0.5, \"feedback\": \"factual\"}"))        // factual correctness
-                .thenReturn(buildChatResponse("{\"score\": 0.8, \"feedback\": \"not noisy\"}"))      // noise sensitivity
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"ok\"}"));            // negative rejection
+        mockMetricScores(Map.of(
+                "faithfulness", 0.9,
+                "answer_relevance", 0.9,
+                "context_precision", 0.0,
+                "context_recall", 0.2,
+                "factual_correctness", 0.5,
+                "noise_sensitivity", 0.8,
+                "negative_rejection", 0.9));
 
         MetricScores scores = evaluator.evaluateSingle(
                 "什么是RAG?",
@@ -143,32 +138,34 @@ class RagasEvaluatorTest {
         assertFalse(scores.isAllAboveThreshold());
     }
 
-    @Test
     @DisplayName("报告生成包含汇总统计")
     void reportGeneration_includesSummaryStatistics() {
         when(chatModelFactory.getChatModel(anyString(), isNull(), isNull(), anyString()))
                 .thenReturn(chatModel);
-
-        // Each item: 1 generateAnswer + 7 judge calls = 8 calls each, 2 items = 16 total
-        when(chatModel.call(any(Prompt.class)))
-                // Item 1
-                .thenReturn(buildChatResponse("answer1"))
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.8, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.85, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.7, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.8, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.9, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.85, \"feedback\": \"ok\"}"))
-                // Item 2
-                .thenReturn(buildChatResponse("answer2"))
-                .thenReturn(buildChatResponse("{\"score\": 0.7, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.6, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.5, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.4, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.6, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.7, \"feedback\": \"ok\"}"))
-                .thenReturn(buildChatResponse("{\"score\": 0.5, \"feedback\": \"ok\"}"));
+        when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> {
+            String promptText = invocation.getArgument(0, Prompt.class).toString();
+            if (promptText.contains("基于以下知识回答问题")) {
+                return buildChatResponse(promptText.contains("q1") ? "answer1" : "answer2");
+            }
+            Map<String, Double> scores = promptText.contains("问题: q1")
+                    ? Map.of(
+                    "faithfulness", 0.9,
+                    "answer_relevance", 0.8,
+                    "context_precision", 0.85,
+                    "context_recall", 0.7,
+                    "factual_correctness", 0.8,
+                    "noise_sensitivity", 0.9,
+                    "negative_rejection", 0.85)
+                    : Map.of(
+                    "faithfulness", 0.7,
+                    "answer_relevance", 0.6,
+                    "context_precision", 0.5,
+                    "context_recall", 0.4,
+                    "factual_correctness", 0.6,
+                    "noise_sensitivity", 0.7,
+                    "negative_rejection", 0.5);
+            return buildChatResponse(scoreJson(scoreForPrompt(promptText, scores)));
+        });
 
         EvaluationDataset dataset = new EvaluationDataset();
         dataset.setName("test-dataset");
@@ -218,6 +215,30 @@ class RagasEvaluatorTest {
                 .thenReturn(buildChatResponse(responseJson))
                 .thenReturn(buildChatResponse(responseJson))
                 .thenReturn(buildChatResponse(responseJson));
+    }
+
+    private void mockMetricScores(Map<String, Double> scores) {
+        when(chatModelFactory.getChatModel(anyString(), isNull(), isNull(), anyString()))
+                .thenReturn(chatModel);
+        when(chatModel.call(any(Prompt.class))).thenAnswer(invocation -> {
+            String promptText = invocation.getArgument(0, Prompt.class).toString();
+            return buildChatResponse(scoreJson(scoreForPrompt(promptText, scores)));
+        });
+    }
+
+    private double scoreForPrompt(String promptText, Map<String, Double> scores) {
+        if (promptText.contains("忠实度")) return scores.get("faithfulness");
+        if (promptText.contains("相关性")) return scores.get("answer_relevance");
+        if (promptText.contains("精确度")) return scores.get("context_precision");
+        if (promptText.contains("召回率")) return scores.get("context_recall");
+        if (promptText.contains("事实是否")) return scores.get("factual_correctness");
+        if (promptText.contains("噪声")) return scores.get("noise_sensitivity");
+        if (promptText.contains("正确拒绝")) return scores.get("negative_rejection");
+        return 0.0;
+    }
+
+    private String scoreJson(double score) {
+        return "{\"score\": " + score + ", \"feedback\": \"ok\"}";
     }
 
     private ChatResponse buildChatResponse(String text) {

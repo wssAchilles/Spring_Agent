@@ -45,6 +45,12 @@ qknow:
   rag:
     crag:
       enabled: false  # 关闭 CRAG 检索评估，省 ~15% tokens
+    dynamic-top-k:
+      enabled: true
+      default-top-k: 10
+      min-top-k: 3
+      max-top-k: 80
+      complex-min-top-k: 12
 
 # 开发环境配置
 server:
@@ -147,6 +153,8 @@ token:
 
 hermes:
   rag:
+    router:
+      prompt-version: ${HERMES_RAG_ROUTER_PROMPT_VERSION:manual-v1}
     query-transform:
       enabled: ${HERMES_RAG_QUERY_TRANSFORM_ENABLED:true}
       strategy: ${HERMES_RAG_QUERY_TRANSFORM_STRATEGY:rewrite}

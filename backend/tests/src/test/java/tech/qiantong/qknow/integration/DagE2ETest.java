@@ -122,7 +122,7 @@ class DagE2ETest {
             NodeRunResultBO r3 = NodeRunResultBO.success("n3", "回复", Map.of("output", "最终回复"));
             r3.setDuration(20L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2, r3));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2, r3));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -147,7 +147,7 @@ class DagE2ETest {
             NodeRunResultBO r2 = NodeRunResultBO.success("n2", "LLM", Map.of());
             r2.setDuration(300L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -178,7 +178,7 @@ class DagE2ETest {
             NodeRunResultBO r4 = NodeRunResultBO.success("n4", "汇聚回复", Map.of("merged", "A+B"));
             r4.setDuration(30L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2, r3, r4));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2, r3, r4));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -243,7 +243,7 @@ class DagE2ETest {
             NodeRunResultBO r3 = NodeRunResultBO.success("n3", "高分分支", Map.of("result", "优秀"));
             r3.setDuration(20L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2, r3));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2, r3));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -285,7 +285,7 @@ class DagE2ETest {
             r1.setDuration(10L);
             NodeRunResultBO r2 = NodeRunResultBO.failure("n2", "LLM处理", "API调用超时");
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -301,7 +301,7 @@ class DagE2ETest {
             FlowNode start = protoNode("n1", "开始", "start");
             FlowRequest request = buildProtoRequest("flow-except", start);
 
-            when(dagExecutor.execute(any(), any(), any()))
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any()))
                     .thenThrow(new IllegalStateException("工作流存在环"));
 
             assertThrows(IllegalStateException.class, () -> flowExecutor.execute(request));
@@ -321,7 +321,7 @@ class DagE2ETest {
             NodeRunResultBO r3 = NodeRunResultBO.success("n3", "分支B", Map.of("ok", true));
             r3.setDuration(100L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2, r3));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2, r3));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -347,12 +347,12 @@ class DagE2ETest {
             NodeRunResultBO r2 = NodeRunResultBO.success("n2", "回复", Map.of("text", "你好"));
             r2.setDuration(5L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
             assertEquals(2, results.size());
-            verify(dagExecutor).execute(any(), any(), any());
+            verify(dagExecutor).executeWithCheckpoint(anyString(), anyString(), any(), any(), any());
         }
 
         @Test

@@ -55,7 +55,11 @@ class PlanAndSolveOrchestratorTest {
         PlanSolveConfig config = new PlanSolveConfig();
 
         assertFalse(config.isEnabled());
+        assertTrue(config.isRpReactEnabled());
         assertEquals(5, config.getMaxTasks());
         assertEquals(1, config.getMaxReflectionRetries());
+        assertEquals(4, config.getMaxConcurrentPlanTasks());
+        assertEquals(16, config.getMaxConcurrentReactRuns());
+        assertEquals(0, config.getMaxTokenBudget());
     }
 }

@@ -3,6 +3,9 @@ package tech.qiantong.qknow.module.kmc.service.rag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class QueryRouterTest {
@@ -50,6 +53,7 @@ class QueryRouterTest {
         assertTrue(config.isEnabled());
         assertEquals("DeepSeek", config.getPlatform());
         assertEquals("deepseek-chat", config.getModelName());
+        assertEquals("manual-v1", config.getPromptVersion());
     }
 
     @Test
@@ -92,5 +96,23 @@ class QueryRouterTest {
         assertEquals(QueryRouter.QueryRoute.SIMPLE, router.classify("你好"));
         assertEquals(QueryRouter.QueryRoute.SIMPLE, router.classify("hi"));
         assertEquals(QueryRouter.QueryRoute.SIMPLE, router.classify("谢谢"));
+    }
+
+    @Test
+    @DisplayName("分类Prompt支持版本和示例注入")
+    void classifyPrompt_supportsPromptProgramOverrides() throws Exception {
+        QueryRouter.QueryRouterConfig config = new QueryRouter.QueryRouterConfig();
+        config.setSystemPrompt("Return SIMPLE/MEDIUM/COMPLEX");
+        config.setPromptVersion("optimized-v2");
+        config.setFewShotExamples(List.of("Q: 对比 A 和 B => COMPLEX"));
+        QueryRouter router = new QueryRouter(null, config);
+
+        Method method = QueryRouter.class.getDeclaredMethod("resolveClassifySystemPrompt");
+        method.setAccessible(true);
+        String prompt = (String) method.invoke(router);
+
+        assertTrue(prompt.contains("Return SIMPLE/MEDIUM/COMPLEX"));
+        assertTrue(prompt.contains("optimized-v2"));
+        assertTrue(prompt.contains("对比 A 和 B"));
     }
 }

@@ -25,6 +25,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,7 +71,7 @@ class FlowExecutorTest {
 
             NodeRunResultBO successResult = NodeRunResultBO.success("node-1", "开始节点", Map.of("output", "ok"));
             successResult.setDuration(100L);
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(successResult));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(successResult));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -79,7 +80,7 @@ class FlowExecutorTest {
             assertEquals(RuntimeStatusEnums.SUCCESS.getCode(), results.get(0).getStatus());
 
             ArgumentCaptor<List<KbFlowNodeDO>> nodeCaptor = ArgumentCaptor.forClass(List.class);
-            verify(dagExecutor).execute(nodeCaptor.capture(), any(), any());
+            verify(dagExecutor).executeWithCheckpoint(anyString(), anyString(), nodeCaptor.capture(), any(), any());
             assertEquals(1, nodeCaptor.getValue().size());
             assertEquals("开始节点", nodeCaptor.getValue().get(0).getName());
         }
@@ -104,7 +105,7 @@ class FlowExecutorTest {
             NodeRunResultBO r3 = NodeRunResultBO.success("node-3", "回复", Map.of("step", 3));
             r3.setDuration(30L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2, r3));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2, r3));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -113,7 +114,7 @@ class FlowExecutorTest {
             assertEquals("node-2", results.get(1).getNodeUuid());
             assertEquals("node-3", results.get(2).getNodeUuid());
 
-            verify(dagExecutor).execute(any(), any(), any());
+            verify(dagExecutor).executeWithCheckpoint(anyString(), anyString(), any(), any(), any());
         }
     }
 
@@ -136,7 +137,7 @@ class FlowExecutorTest {
             NodeRunResultBO r3 = NodeRunResultBO.success("node-3", "分支B", Map.of("branch", "B"));
             r3.setDuration(120L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2, r3));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2, r3));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -177,7 +178,7 @@ class FlowExecutorTest {
             NodeRunResultBO r3 = NodeRunResultBO.success("node-3", "分支A", Map.of("result", "high score"));
             r3.setDuration(30L);
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2, r3));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2, r3));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -185,7 +186,7 @@ class FlowExecutorTest {
             assertEquals("node-3", results.get(2).getNodeUuid());
 
             ArgumentCaptor<RuntimeContextBO> contextCaptor = ArgumentCaptor.forClass(RuntimeContextBO.class);
-            verify(dagExecutor).execute(any(), any(), contextCaptor.capture());
+            verify(dagExecutor).executeWithCheckpoint(anyString(), anyString(), any(), any(), contextCaptor.capture());
             assertEquals(0.9, contextCaptor.getValue().getVariables().getDouble("score"));
         }
     }
@@ -205,7 +206,7 @@ class FlowExecutorTest {
             r1.setDuration(50L);
             NodeRunResultBO r2 = NodeRunResultBO.failure("node-2", "LLM处理", "API调用超时");
 
-            when(dagExecutor.execute(any(), any(), any())).thenReturn(List.of(r1, r2));
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any())).thenReturn(List.of(r1, r2));
 
             List<NodeRunResultBO> results = flowExecutor.execute(request);
 
@@ -221,7 +222,7 @@ class FlowExecutorTest {
             FlowNode node1 = buildNode("node-1", "开始", "start");
             FlowRequest request = buildRequest("flow-6", node1);
 
-            when(dagExecutor.execute(any(), any(), any()))
+            when(dagExecutor.executeWithCheckpoint(anyString(), anyString(), any(), any(), any()))
                     .thenThrow(new IllegalStateException("工作流存在环，无法执行"));
 
             assertThrows(IllegalStateException.class, () -> flowExecutor.execute(request));
