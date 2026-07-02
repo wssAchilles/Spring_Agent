@@ -60,6 +60,10 @@ public class AgentOrchestrator {
                     r -> { Thread t = new Thread(r, "plan-solve"); t.setDaemon(true); return t; });
     private static final AtomicInteger ACTIVE_PLAN_TASKS = new AtomicInteger();
     private static final AtomicInteger ACTIVE_REACT_RUNS = new AtomicInteger();
+    private static final java.util.concurrent.Semaphore LLM_CALL_SEMAPHORE =
+            new java.util.concurrent.Semaphore(
+                    Integer.parseInt(System.getProperty("hermes.capacity.max-llm-concurrent", "8")),
+                    true);
 
     private final ChatModelFactory chatModelFactory;
     private final ToolCallbackResolver resolver;
@@ -256,13 +260,28 @@ public class AgentOrchestrator {
         String[] toolNames = enabledToolNames.toArray(new String[0]);
         log.info("Agent 工具列表: {}", enabledToolNames);
 
-        // 5. 构建消息历史
+        // 5. 构建消息历史（优先从短期记忆读取，回退到关系库）
         List<Message> messages = new ArrayList<>();
-        for (ChatMessage historyMsg : request.getHistoryList()) {
-            if ("user".equals(historyMsg.getRole())) {
-                messages.add(new UserMessage(historyMsg.getContent()));
-            } else if ("assistant".equals(historyMsg.getRole())) {
-                messages.add(new AssistantMessage(historyMsg.getContent()));
+        String sessionId = memorySessionId(request);
+        if (memoryManager != null) {
+            try {
+                List<Message> shortTermMessages = memoryManager.getShortTerm().getContext(sessionId, 20);
+                if (!shortTermMessages.isEmpty()) {
+                    messages.addAll(shortTermMessages);
+                    log.debug("从短期记忆加载历史: sessionId={}, count={}", sessionId, shortTermMessages.size());
+                }
+            } catch (Exception e) {
+                log.debug("短期记忆读取失败，回退到关系库: {}", e.getMessage());
+            }
+        }
+        // Fallback: 若短期记忆为空（被打捞清理或未初始化），从关系库读取
+        if (messages.isEmpty()) {
+            for (ChatMessage historyMsg : request.getHistoryList()) {
+                if ("user".equals(historyMsg.getRole())) {
+                    messages.add(new UserMessage(historyMsg.getContent()));
+                } else if ("assistant".equals(historyMsg.getRole())) {
+                    messages.add(new AssistantMessage(historyMsg.getContent()));
+                }
             }
         }
 
@@ -548,9 +567,17 @@ public class AgentOrchestrator {
                             return Map.entry(task.taskId(), "执行失败: capacity gate open");
                         }
                         try {
-                            WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
-                            String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
-                            return Map.entry(task.taskId(), result);
+                            LLM_CALL_SEMAPHORE.acquire();
+                            try {
+                                WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
+                                String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
+                                return Map.entry(task.taskId(), result);
+                            } finally {
+                                LLM_CALL_SEMAPHORE.release();
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return Map.entry(task.taskId(), "执行失败: interrupted");
                         } finally {
                             leaveCapacity(ACTIVE_PLAN_TASKS);
                         }
@@ -599,6 +626,15 @@ public class AgentOrchestrator {
             return null;
         }
         try {
+            // Self-Healing: 尝试重新规划并执行
+            List<PlanTask> revisedTasks = createPlan(question, systemPrompt, chatModel);
+            if (!revisedTasks.isEmpty()) {
+                Map<String, String> results = executePlanTasks(revisedTasks, systemPrompt, List.of(), chatModel);
+                if (!results.isEmpty() && !hasFailedWorkerResult(results)) {
+                    return aggregatePlanResults(question, systemPrompt, results, chatModel);
+                }
+            }
+            // 回退到安全答案
             String prompt = """
                     ReAct executor failed. As the planner supervisor, produce the best final answer or a concise failure-safe answer.
                     Do not expose stack traces. If evidence is insufficient, state the limitation.

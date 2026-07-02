@@ -17,6 +17,7 @@ public class PlanSolveConfig {
     private int maxReflectionRetries = 1;
     private int maxConcurrentPlanTasks = 4;
     private int maxConcurrentReactRuns = 16;
+    private int maxLlmConcurrent = 8;
     private int maxTokenBudget = 0;
     private List<String> complexKeywords = new ArrayList<>(List.of(
             "对比", "比较", "分析", "总结", "综合", "分别", "最后", "写成", "财报", "邮件"

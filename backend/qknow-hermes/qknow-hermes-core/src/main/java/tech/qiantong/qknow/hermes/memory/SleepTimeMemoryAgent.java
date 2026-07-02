@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Slf4j
 @Component
 public class SleepTimeMemoryAgent {
@@ -25,7 +27,12 @@ public class SleepTimeMemoryAgent {
     public void consolidateIdleConversations() {
         long now = System.currentTimeMillis();
         ShortTermMemory shortTerm = memoryManager.getShortTerm();
-        for (String sessionId : shortTerm.listSessionIds(scanCount)) {
+        // 分批处理，避免 SCAN 全量加载到内存
+        int batchSize = 50;
+        int processed = 0;
+        List<String> sessionIds = shortTerm.listSessionIds(scanCount);
+        for (int i = 0; i < sessionIds.size(); i++) {
+            String sessionId = sessionIds.get(i);
             long lastActiveAt = shortTerm.getLastActivityAt(sessionId);
             if (lastActiveAt <= 0 || now - lastActiveAt < idleThresholdMs) {
                 continue;
@@ -35,9 +42,21 @@ public class SleepTimeMemoryAgent {
             try {
                 memoryManager.onConversationEnd(sessionId, userId, scope);
                 shortTerm.clearSession(sessionId);
+                processed++;
                 log.info("Sleep-time memory consolidated: sessionId={}, userId={}, scope={}", sessionId, userId, scope);
             } catch (Exception e) {
                 log.warn("Sleep-time memory consolidation failed: sessionId={}", sessionId, e);
+            }
+            // 每批处理后让出 CPU，避免长时间阻塞
+            if (processed >= batchSize) {
+                processed = 0;
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Sleep-time memory agent interrupted");
+                    return;
+                }
             }
         }
     }

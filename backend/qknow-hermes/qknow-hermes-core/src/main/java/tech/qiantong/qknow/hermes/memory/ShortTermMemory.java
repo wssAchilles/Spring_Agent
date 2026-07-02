@@ -128,17 +128,21 @@ public class ShortTermMemory {
         }
     }
 
+    private static final long SESSION_TTL_SECONDS = 86400; // 24 小时
+
     public void touchSession(String sessionId, String userId, String scope) {
         if (redisService == null || sessionId == null || sessionId.isBlank()) {
             return;
         }
-        redisService.set(lastActivityKey(sessionId), String.valueOf(System.currentTimeMillis()));
+        redisService.set(lastActivityKey(sessionId), String.valueOf(System.currentTimeMillis()), SESSION_TTL_SECONDS);
         if (userId != null && !userId.isBlank()) {
-            redisService.set(userKey(sessionId), userId);
+            redisService.set(userKey(sessionId), userId, SESSION_TTL_SECONDS);
         }
         if (scope != null && !scope.isBlank()) {
-            redisService.set(scopeKey(sessionId), scope);
+            redisService.set(scopeKey(sessionId), scope, SESSION_TTL_SECONDS);
         }
+        // 主 Key 也设置 TTL，防止僵尸数据
+        redisService.expire(redisKey(sessionId), SESSION_TTL_SECONDS);
     }
 
     public long getLastActivityAt(String sessionId) {

@@ -56,4 +56,12 @@ public interface IRedisService {
     Map<String, Object> hashGetAll(String key);
 
     List<Object> hashMultiGet(String key, List<String> hashKeys);
+
+    /**
+     * 设置 Key 过期时间
+     *
+     * @param key     键
+     * @param timeout 过期时间（秒）
+     */
+    void expire(String key, long timeout);
 }
