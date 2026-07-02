@@ -62,6 +62,7 @@ public class AgentOrchestrator {
     private final AiJudgeService aiJudgeService;
     private final tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService;
     private final RagasEvaluator ragasEvaluator;
+    private final tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig;
 
     @Autowired
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
@@ -70,7 +71,8 @@ public class AgentOrchestrator {
                              @org.springframework.beans.factory.annotation.Autowired(required = false)
                              tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService,
                              @org.springframework.beans.factory.annotation.Autowired(required = false)
-                             RagasEvaluator ragasEvaluator) {
+                             RagasEvaluator ragasEvaluator,
+                             tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig) {
         this.chatModelFactory = chatModelFactory;
         this.resolver = resolver;
         this.retrievalEvaluator = retrievalEvaluator;
@@ -78,11 +80,12 @@ public class AgentOrchestrator {
         this.aiJudgeService = aiJudgeService;
         this.langFuseService = langFuseService;
         this.ragasEvaluator = ragasEvaluator;
+        this.toolRoutingConfig = toolRoutingConfig;
     }
 
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator) {
-        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null, null, null);
+        this(chatModelFactory, resolver, retrievalEvaluator, new PlanSolveConfig(), null, null, null, null);
     }
 
     /**
@@ -228,6 +231,9 @@ public class AgentOrchestrator {
 
         // 4. 获取工具名称列表，并确保知识库工具可被调用
         List<String> enabledToolNames = new ArrayList<>(request.getToolMethodIdsList());
+        // 清理前端可能传入的 knowledgeQuery，由后端上下文严格控制是否启用
+        enabledToolNames.removeIf("knowledgeQuery"::equals);
+        
         for (RAGContext ragCtx : effectiveRagContexts) {
             enabledToolNames.add("knowledgeBase" + ragCtx.getKnowledgeId());
         }
@@ -263,23 +269,26 @@ public class AgentOrchestrator {
             return;
         }
 
-        // 7. 智能模型路由：工具调用场景切换到 GPT-4o
+        // 7. 智能模型路由：工具调用场景切换到配置的工具调用模型
         ChatModel agentModel = chatModel;
         if (!enabledToolNames.isEmpty() && needsToolCalling(request.getQuestion(), enabledToolNames)) {
-            try {
-                String openaiKey = System.getenv("OPENAI_API_KEY");
-                if (openaiKey == null || openaiKey.isBlank()) {
-                    openaiKey = System.getProperty("OPENAI_API_KEY");
+            var routingConfig = toolRoutingConfig != null ? toolRoutingConfig.getToolCallingModel() : null;
+            if (routingConfig != null && routingConfig.isEnabled()
+                    && routingConfig.getApiKey() != null && !routingConfig.getApiKey().isBlank()) {
+                try {
+                    agentModel = chatModelFactory.getChatModel(
+                            routingConfig.getPlatform(),
+                            routingConfig.getBaseUrl(),
+                            routingConfig.getApiKey(),
+                            routingConfig.getModelName());
+                    log.info("智能路由: 检测到工具调用需求，切换到 {}/{}",
+                            routingConfig.getPlatform(), routingConfig.getModelName());
+                } catch (Exception e) {
+                    log.warn("工具调用模型不可用，回退到原始模型: {}", e.getMessage());
+                    agentModel = chatModel;
                 }
-                if (openaiKey != null && !openaiKey.isBlank()) {
-                    agentModel = chatModelFactory.getChatModel("openai", "https://api.openai.com", openaiKey, "gpt-4o");
-                    log.info("智能路由: 检测到工具调用需求，切换到 GPT-4o");
-                } else {
-                    log.warn("OPENAI_API_KEY 未配置，无法切换到 GPT-4o，使用原始模型");
-                }
-            } catch (Exception e) {
-                log.warn("GPT-4o 不可用，回退到原始模型: {}", e.getMessage());
-                agentModel = chatModel;
+            } else {
+                log.debug("工具调用模型路由未配置或已禁用，使用原始模型");
             }
         }
 
