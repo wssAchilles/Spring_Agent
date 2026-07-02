@@ -18,6 +18,13 @@ spring:
       base-url: ${HERMES_OLLAMA_BASE_URL:http://localhost:11434}
 
 hermes:
+  routing:
+    tool-calling-model:
+      enabled: true
+      platform: openai
+      base-url: https://api.openai.com
+      api-key: ${OPENAI_API_KEY:}
+      model-name: gpt-4o
   judge:
     enabled: false  # 关闭反思循环，省 ~15% tokens
     min-score: 0.6
@@ -52,6 +59,8 @@ hermes:
       model-name: deepseek-chat
       question-count: 3
       max-chunk-chars: 2000
+      timeout-seconds: 30
+      max-chunks-per-document: 20
     colbert:
       enabled: true
       ngram-size: 3
