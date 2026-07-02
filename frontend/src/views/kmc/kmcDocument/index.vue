@@ -50,6 +50,18 @@
         </div>
 
         <div class="pagecont-bottom">
+          <div v-if="hasSyncingDocuments" class="sync-progress-banner">
+            <div class="sync-progress-head">
+              <div>
+                <div class="sync-progress-title">正在进行语义切分与向量化</div>
+                <div class="sync-progress-desc">
+                  {{ syncingDocuments.length }} 个文件处理中；页面每 5 秒读取一次后端状态，完成后“解析结果”会自动可用。
+                </div>
+              </div>
+              <el-tag type="warning" effect="light">后端处理中</el-tag>
+            </div>
+            <div class="sync-live-line"><span></span></div>
+          </div>
           <div class="justify-between mb15">
             <el-row :gutter="15" class="btn-style">
               <el-col :span="1.5">
@@ -174,13 +186,15 @@
               label="解析状态"
               align="center"
               prop="syncStatus"
-              width="100px"
+              width="180px"
             >
               <template #default="scope">
-                <dict-tag
-                  :options="document_sync_status"
-                  :value="scope.row.syncStatus"
-                />
+                <div v-if="isDocumentSyncing(scope.row)" class="row-sync-status">
+                  <el-tag type="warning" effect="light">{{ getSyncStatusText(scope.row) }}</el-tag>
+                  <div class="sync-live-line small"><span></span></div>
+                  <span>后端状态轮询中</span>
+                </div>
+                <dict-tag v-else :options="document_sync_status" :value="scope.row.syncStatus" />
               </template>
             </el-table-column>
             <!-- <el-table-column
@@ -315,7 +329,7 @@ import {
   getFileTypes,
 } from "@/api/kmc/kmcDocument/kmcDocument.js";
 import { getToken } from "@/utils/auth.js";
-import { ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
 import moment from "moment/moment.js";
 import { getKmcKnowledgeBaseList } from "@/api/kmc/knowledgeBase/knowledgeBase.js";
 import { filePreview } from "@/utils/kkFileView.js";
@@ -333,6 +347,9 @@ const { document_sync_status } = proxy.useDict("document_sync_status");
 
 const deptTreeRef = ref(null);
 const documentList = ref([]);
+let syncPollTimer = null;
+const syncingDocuments = computed(() => documentList.value.filter(isDocumentSyncing));
+const hasSyncingDocuments = computed(() => syncingDocuments.value.length > 0);
 
 // 文件类型图标映射
 const fileImg = {
@@ -481,14 +498,36 @@ function getKmcCategoryTree() {
   });
 }
 /** 查询知识文件列表 */
-function getList() {
-  loading.value = true;
+function getList(silent = false) {
+  if (!silent) loading.value = true;
   listDocument(queryParams.value).then((response) => {
     documentList.value = response.data.rows;
     total.value = response.data.total;
-    loading.value = false;
+    if (!silent) loading.value = false;
+    syncPolling();
   });
 }
+
+function isDocumentSyncing(row) {
+  return row?.syncStatus === 0 || row?.syncStatus === 1;
+}
+
+function getSyncStatusText(row) {
+  return row?.syncStatus === 0 ? "待切分" : "切分中";
+}
+
+function syncPolling() {
+  if (hasSyncingDocuments.value && !syncPollTimer) {
+    syncPollTimer = setInterval(() => getList(true), 5000);
+  } else if (!hasSyncingDocuments.value && syncPollTimer) {
+    clearInterval(syncPollTimer);
+    syncPollTimer = null;
+  }
+}
+
+onBeforeUnmount(() => {
+  if (syncPollTimer) clearInterval(syncPollTimer);
+});
 
 /** 递归查找选中的节点 */
 const findNodeById = (nodes, id) => {
@@ -779,6 +818,74 @@ function previewRefactoring(row) {
 
 .colorwxz {
   color: #afd1fa;
+}
+
+.sync-progress-banner {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #f6d58b;
+  border-radius: 8px;
+  background: #fff8e6;
+}
+
+.sync-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sync-progress-title {
+  color: #8a5700;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sync-progress-desc {
+  margin-top: 2px;
+  color: #946200;
+  font-size: 13px;
+}
+
+.sync-live-line {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #fdecc8;
+
+  span {
+    display: block;
+    width: 38%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #f5a623, #2f80ed);
+    animation: sync-running 1.2s ease-in-out infinite alternate;
+  }
+
+  &.small {
+    height: 6px;
+  }
+}
+
+@keyframes sync-running {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(164%);
+  }
+}
+
+.row-sync-status {
+  display: grid;
+  gap: 5px;
+  text-align: left;
+
+  span {
+    color: #946200;
+    font-size: 12px;
+  }
 }
 
 .file-name-cell {
