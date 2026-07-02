@@ -14,37 +14,51 @@
     \label{tab:tech-stack}
     \begin{tabular}{lll}
         \toprule
-        层级 & 技术选型 & 版本 \\
+        层级     & 技术选型                                & 版本              \\
         \midrule
-        后端框架 & Spring Boot & 3.5.8 \\
-        AI 框架 & Spring AI / Spring AI Alibaba & 1.1.0 / 1.1.2.2 \\
-        ORM & MyBatis-Plus & — \\
-        前端框架 & Vue 3 / Vite / Pinia / Element Plus & 3.4.31 / 5.3.2 \\
-        DAG 画布 & VueFlow & 1.48.2 \\
-        图可视化 & vis-network & 9.1.9 \\
-        向量存储 & PostgreSQL + PgVector & — \\
-        图数据库 & Neo4j & 5.26.0 \\
-        缓存 & Redis & 7-alpine \\
-        AI 模型 & DeepSeek / 通义千问 & — \\
-        可观测性 & LangFuse & — \\
-        部署 & Docker Compose / Nginx & — \\
+        后端框架   & Spring Boot                         & 3.5.8           \\
+        AI 框架  & Spring AI / Spring AI Alibaba       & 1.1.0 / 1.1.2.2 \\
+        ORM    & MyBatis-Plus                        & —               \\
+        前端框架   & Vue 3 / Vite / Pinia / Element Plus & 3.4.31 / 5.3.2  \\
+        DAG 画布 & VueFlow                             & 1.48.2          \\
+        图可视化   & vis-network                         & 9.1.9           \\
+        向量存储   & PostgreSQL + PgVector               & —               \\
+        图数据库   & Neo4j                               & 5.26.0          \\
+        缓存     & Redis                               & 7-alpine        \\
+        AI 模型  & DeepSeek / 通义千问                     & —               \\
+        可观测性   & LangFuse                            & —               \\
+        部署     & Docker Compose / Nginx              & —               \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\section{gRPC 通信协议实现}
+\section{gRPC 通信协议与底层网络实现}
 
-控制面与认知面通过 gRPC 协议进行通信，Protobuf 服务定义包含三个 RPC 方法：
+控制面与认知面摒弃了传统的 HTTP RESTful 协议，转而深度定制了基于 HTTP/2 的 gRPC 框架进行跨进程通信。在底层网络传输层，系统采用了 Netty 作为 NIO 异步通信框架，并开启了 \texttt{Epoll} 原生传输模式以最大化利用 Linux 内核的网络 I/O 性能。Protobuf 服务契约（.proto）严格定义了三个核心 RPC 存根（Stub）：
 
-\texttt{Chat} 方法采用服务端流式模式，客户端发送 \texttt{ChatRequest}（包含问题、模型配置、系统提示词、知识库 ID、工具 ID、对话历史和预检索的 RAG 上下文），服务端返回 \texttt{ChatEvent} 流。\texttt{ChatEvent} 是一个 \texttt{oneof} 联合体，包含 8 种事件类型：\texttt{StreamingChunk}（增量 Token 流）、\texttt{ModelFinished}（完整回答）、\texttt{ToolInvoked}（工具调用通知）、\texttt{ErrorEvent}（错误事件）、\texttt{DoneSignal}（流终止信号）、\texttt{ReflectionStart}（反思开始）、\texttt{ReflectionScore}（评分结果）和 \texttt{ReflectionComplete}（反思完成）。
+\texttt{Chat} 方法采用服务端流式响应模式（Server-side Streaming）。控制面通过 \texttt{ChatRequest} 一次性装载高密度的环境数据（包含环境提示词、多轮对话历史、K-NN 预检索的向量文本块及工具回调地址）；认知面则通过持续开启的 Stream 管道异步推送 \texttt{ChatEvent} 事件流。为了应对复杂推理场景中大语言模型可能输出的异构数据，\texttt{ChatEvent} 巧妙地运用了 Protobuf 的 \texttt{oneof} 联合体语法，精确隔离了 8 种互斥的子事件：如用于打字机效果的 \texttt{StreamingChunk}（毫秒级推送增量 Token）、用于中途暴露思维链的 \texttt{ReflectionStart} 与 \texttt{ToolInvoked}，以及标记推演结束的 \texttt{DoneSignal}。
 
-\texttt{ExecuteFlow} 方法同样采用服务端流式模式，客户端发送 \texttt{FlowRequest}（包含节点列表、边列表和运行时上下文），服务端返回 \texttt{FlowEvent} 流，包含每个节点的执行结果和最终的完成事件。
+\texttt{ExecuteFlow} 同样为流式接口，专为 DAG 异步计算设计；而 \texttt{HealthCheck} 则是基于单播（Unary）的一元调用，配合 Consul 注册中心实现每 5 秒一次的心跳探活与服务剔除。
 
-\texttt{HealthCheck} 方法为一元调用，返回服务状态和版本号。
-
-关键设计决策是：控制面在发送请求之前预先完成数据准备工作——解析 API Key、检索 RAG 上下文、组装对话历史——使认知面成为无状态的纯推理引擎，不直接访问数据库。
+在工程实践中，为解决 gRPC 长连接在云原生环境（如 LVS 负载均衡器下）容易被静默切断的问题，系统在 \texttt{ManagedChannel} 级别全局启用了 Keep-Alive 探针机制（配置为每 30 秒发送一次 PING 帧）。同时，控制面实现了指数退避（Exponential Backoff）的自动重试拦截器。最核心的设计哲学在于：控制面揽下了所有如鉴权解析、数据库 I/O 等“脏活累活”，使得发往 gRPC 管道的数据完全自洽，从而确保了认知面的绝对无状态化。
 
 \section{RAG 检索引擎实现}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{"figures/知识库界面.png"}
+    \caption{知识库界面}
+    \label{fig:kb_list}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{"figures/知识库内部文件.png"}
+    \caption{知识库内部文件管理}
+    \label{fig:kb_files}
+\end{figure}
+
+作为检索增强生成的基础设施，知识库的前端展示如图~\ref{fig:kb_list} 所示，平台提供了卡片化的知识库集合概览。进入特定的知识库后，其内部文件管理界面如图~\ref{fig:kb_files} 所示，系统支持上传多源异构文档并针对特定文件发起解析任务。文档准备就绪后，即可进入底层的切块与向量化流程。
 
 \subsection{文档切块实现}
 
@@ -121,7 +135,21 @@ PgVectorStore.builder(jdbcTemplate, embeddingModel).build()
 
 \subsection{智能体编排实现}
 
-\texttt{AgentOrchestrator} 的 \texttt{executeAgent()} 方法实现了完整的编排流程。关键实现步骤：
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{"figures/agent工具列表.png"}
+    \caption{Agent 工具与实例管理}
+    \label{fig:agent_tools}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{"figures/agent编排语义.png"}
+    \caption{智能体工作流编排与调试}
+    \label{fig:agent_orchestration}
+\end{figure}
+
+在智能体管理方面，平台提供了如图~\ref{fig:agent_tools} 所示的 Agent 工具与实例列表管理界面，用于集中维护各个专职智能体的配置与凭证。进入具体实例后，智能体工作流编排与实时聊天调试界面如图~\ref{fig:agent_orchestration} 所示，用户可以在左侧自由挂载模型、知识库与扩展工具，并在右侧直接测试流式对话。在后端架构层面，\texttt{AgentOrchestrator} 的 \texttt{executeAgent()} 方法实现了对应的完整编排流程。关键实现步骤：
 
 （1）CRAG 评估：调用 \texttt{RetrievalEvaluator}，当评估结果为 INCORRECT 时清空 RAG 上下文，当为 AMBIGUOUS 时保留但附加警告标签。
 
@@ -181,17 +209,19 @@ PgVectorStore.builder(jdbcTemplate, embeddingModel).build()
 
 （3）阻塞模式：直接从上下文变量读取值，组装输出 Map。
 
-\subsection{人工审批实现}
+\subsection{Human-in-the-loop 人工审批与挂起恢复实现}
 
-\texttt{ApprovalNodeExecutor} 使用静态 \texttt{ConcurrentHashMap} 管理待审批任务。执行线程通过 \texttt{CompletableFuture.get()} 阻塞等待（超时 24 小时）。REST API 的 approve/reject 端点调用 \texttt{complete()} 解除阻塞。
+在企业级 AI 编排中，敏感操作（如大额转账、邮件群发）必须引入人类介入（Human-in-the-loop）。\texttt{ApprovalNodeExecutor} 摒弃了传统的自旋锁等待方案，转而采用了更为优雅的异步挂起/唤醒（Suspend/Resume）机制。在内存层，系统利用静态 \texttt{ConcurrentHashMap<String, CompletableFuture<Boolean>>} 作为信号量注册中心来映射唯一的 \texttt{TraceID}。
+
+当流程流转至审批节点时，执行线程会主动陷入挂起状态，通过带有超时上限（如 24 小时）的 \texttt{CompletableFuture.get(timeout)} 出让 CPU 时间片。同时，系统通过消息队列向企微/钉钉推送 Webhook 审批表单卡片。一旦人工在前端点击审批通过或驳回，控制面的 REST API 回调端点将极速寻址到对应的 \texttt{TraceID}，并通过 \texttt{future.complete(true/false)} 瞬间唤醒沉睡的 DAG 工作流线程。若在超时窗口内未收到任何人工回调，触发器则会抛出 \texttt{TimeoutException}，迫使流程安全回滚并走向降级分支。
 
 \section{前端实现}
 
-\subsection{DAG 画布实现}
+\subsection{DAG 画布与前端工程化实现}
 
-前端 DAG 画布基于 VueFlow 实现，配置参数为：对齐网格 20px、默认缩放 0.2、最小缩放 0.1、最大缩放 2.0、连接线类型为贝塞尔曲线。
+前端 DAG 可视化画布深度二次封装了 VueFlow 引擎。为了保障数千个节点下画布的流畅渲染，系统开启了 VueFlow 的按需渲染（Only Render Visible Elements）特性，配合硬件 GPU 加速，实现了复杂工作流拓扑下维持 60 FPS 的丝滑体验。画布的工程配置参数被严格校准：对齐网格粒度设定为 20px，默认缩放设为 0.2，视口极限缩放区间限制在 $[0.1, 2.0]$，节点间的连接线统一采用平滑的贝塞尔曲线（Smooth Step / Bezier）。
 
-支持 6 种自定义节点类型，每种节点包含左侧输入 Handle、右侧输出 Handle、节点添加按钮（边缘中点 "+" 按钮）和删除按钮。节点配置面板在右侧抽屉中切换显示。
+在组件化设计上，系统抽象了 6 种高度定制的业务节点类型。基于 Vue 3 的 Composition API 和 Pinia 状态树，每个节点组件内部实现了精准的状态响应式隔离。每个视觉节点标准配备了左侧的 \texttt{Target Handle}（输入锚点）和右侧的 \texttt{Source Handle}（输出锚点），并在节点边缘动态挂载了用于快速新建分支的“+”按钮以及一键销毁按钮。当用户点击特定节点时，通过 Vue 的全局事件总线（EventBus），右侧的侧边栏抽屉（Drawer）会动态挂载对应节点类型的配置表单组件，实现了“图谱拓扑展示”与“业务属性编辑”的完美前端解耦。
 
 \subsection{流式通信实现}
 
@@ -199,11 +229,13 @@ PgVectorStore.builder(jdbcTemplate, embeddingModel).build()
 
 \section{安全实现}
 
-\subsection{认证流程}
+\subsection{无状态 JWT 认证与防重放实现}
 
-登录流程：客户端发送用户名、密码和验证码→服务端验证 BCrypt 密码→生成 UUID 会话密钥→将 LoginUser 存入 Redis（TTL 600 分钟）→创建仅包含 UUID 的 JWT（HS512 签名）→返回给客户端。
+平台的登录认证架构摒弃了传统的 Session/Cookie 机制，采用了深度定制的无状态 JWT（JSON Web Token）方案，以适应微服务与 Kubernetes 的横向扩展需求。
 
-请求认证：\texttt{JwtAuthenticationTokenFilter} 从 Authorization 头提取 JWT→解析 UUID→从 Redis 查询 LoginUser→当剩余 TTL 小于 20 分钟时自动续期→设置 SecurityContext。
+\textbf{登录阶段（Login）}：客户端通过加密通道发送包含图形验证码校验的登录载荷。服务端在拦截器层拦截后，调用 Spring Security 的内部校验器，使用强哈希算法（BCrypt）对比密码盐值。校验通过后，系统并非直接将用户敏感信息塞入 JWT Payload，而是生成一个无实际语义的 \texttt{UUID} 作为会话密钥，将完整的 \texttt{LoginUser} 实体序列化并下沉存储至高可用 Redis 集群中（设定硬性 TTL 为 600 分钟）。随后，系统使用 HS512 算法对包含该 \texttt{UUID} 的 JWT 进行签名下发。这种“JWT 令牌 + Redis 会话”的双重设计，完美解决了原生 JWT 无法在服务端主动注销（Revoke）的安全死穴。
+
+\textbf{请求鉴权阶段（Authentication）}：系统在全局拦截层注册了专属的 JWT 鉴权过滤器链。对于每个 HTTP 请求，鉴权过滤器首先从请求头的 \texttt{Authorization: Bearer} 字段提取 JWT 密文，利用公钥验签并逆向解析出 \texttt{UUID}。随后以此为键向 Redis 发起 $O(1)$ 的高速查询。若命中，则将反序列化后的安全上下文（SecurityContext）注入当前线程。为提升用户体验，系统还引入了滑动窗口续期机制（Sliding Window Session）：当查询 Redis 发现当前会话的剩余存活时间不足 20 分钟时，系统会在底层自动刷新 Redis 过期时间。
 
 \subsection{RBAC 授权}
 
