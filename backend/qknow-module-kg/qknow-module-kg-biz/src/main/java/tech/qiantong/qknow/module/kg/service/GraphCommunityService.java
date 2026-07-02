@@ -2,10 +2,19 @@ package tech.qiantong.qknow.module.kg.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.*;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import tech.qiantong.qknow.ai.service.IChatModelService;
 
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * 知识图谱社区检测服务
@@ -14,6 +23,10 @@ import java.util.*;
  *
  * 使用 Neo4j GDS 库的 Leiden 算法检测实体社区，
  * 为每个社区生成摘要，支持 GraphRAG 式全局问答。
+ *
+ * 当 IChatModelService 可用时，使用 LLM 进行：
+ * 1. 社区摘要生成（LLM理解社区语义）
+ * 2. 全局搜索 Map-Reduce（并发局部问答 + 合并最终答案）
  */
 @Slf4j
 @Service
@@ -21,9 +34,45 @@ import java.util.*;
 public class GraphCommunityService {
 
     private final Driver driver;
+    private final IChatModelService chatModelService;
 
-    public GraphCommunityService(org.neo4j.driver.Driver driver) {
+    private static final String COMMUNITY_SUMMARY_SYSTEM_PROMPT = """
+            你是一个图谱社区摘要专家。以下是图谱社区中的实体和标签。
+            请用一段连贯、有见地的文本总结该社区的总体概念和隐藏联系。
+            要求：不超过150字，突出核心主题和实体间的关系。
+            """;
+
+    private static final String MAP_PROMPT_TEMPLATE = """
+            你是一个知识图谱分析助手。基于以下社区摘要信息，回答用户问题。
+            如果社区信息与问题无关，请回答"无关联"。
+            如果有关，请基于社区摘要提供详细、准确的回答。
+
+            社区摘要：
+            %s
+
+            用户问题：
+            %s
+            """;
+
+    private static final String REDUCE_PROMPT_TEMPLATE = """
+            你是一个知识整合专家。以下是针对用户问题从多个知识社区收集到的局部答案。
+            请整合这些答案，生成一个全面、连贯、准确的最终回答。
+            如果所有答案都是"无关联"，请回答"未找到相关信息"。
+
+            用户问题：
+            %s
+
+            局部答案：
+            %s
+
+            请提供最终整合答案：
+            """;
+
+    public GraphCommunityService(
+            org.neo4j.driver.Driver driver,
+            @Autowired(required = false) IChatModelService chatModelService) {
         this.driver = driver;
+        this.chatModelService = chatModelService;
     }
 
     /**
@@ -128,6 +177,16 @@ public class GraphCommunityService {
         return communities;
     }
 
+    /**
+     * 全局搜索 - GraphRAG Map-Reduce 模式
+     *
+     * 当 IChatModelService 可用时：
+     * 1. 加载社区并按相关性排名
+     * 2. MAP 阶段：并发向每个社区提问
+     * 3. REDUCE 阶段：合并所有局部答案生成最终解答
+     *
+     * 当 IChatModelService 不可用时：回退到简单拼接
+     */
     public GlobalSearchResult globalSearch(String workspaceId, String query, int topK) {
         List<Community> communities = loadCommunities(workspaceId);
         if (communities.isEmpty()) {
@@ -137,11 +196,111 @@ public class GraphCommunityService {
                 .sorted((a, b) -> Double.compare(score(query, b), score(query, a)))
                 .limit(Math.max(1, topK))
                 .toList();
-        String answer = ranked.stream()
-                .map(Community::getSummary)
-                .filter(Objects::nonNull)
-                .collect(java.util.stream.Collectors.joining("\n"));
-        return new GlobalSearchResult(answer, ranked);
+
+        // 如果 LLM 服务不可用，回退到简单拼接
+        if (chatModelService == null) {
+            log.debug("IChatModelService 不可用，使用简单拼接模式");
+            String answer = ranked.stream()
+                    .map(Community::getSummary)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining("\n"));
+            return new GlobalSearchResult(answer, ranked);
+        }
+
+        // LLM Map-Reduce 模式
+        try {
+            ChatModel chatModel = chatModelService.getChatModel(
+                    "DeepSeek", null, null, "deepseek-chat");
+
+            // MAP 阶段：并发向每个社区提问
+            ExecutorService executor = Executors.newFixedThreadPool(
+                    Math.min(ranked.size(), Runtime.getRuntime().availableProcessors()));
+            List<CompletableFuture<String>> futures = ranked.stream()
+                    .map(community -> CompletableFuture.supplyAsync(
+                            () -> mapPhase(chatModel, community, query), executor))
+                    .toList();
+
+            // 收集所有结果
+            List<String> partialAnswers = futures.stream()
+                    .map(future -> {
+                        try {
+                            return future.get(30, TimeUnit.SECONDS);
+                        } catch (Exception e) {
+                            log.warn("MAP 阶段任务失败: {}", e.getMessage());
+                            return "无关联";
+                        }
+                    })
+                    .filter(answer -> !"无关联".equals(answer))
+                    .toList();
+
+            executor.shutdown();
+
+            // REDUCE 阶段：合并所有局部答案
+            if (partialAnswers.isEmpty()) {
+                return new GlobalSearchResult("未找到相关信息", ranked);
+            }
+
+            String finalAnswer = reducePhase(chatModel, query, partialAnswers);
+            return new GlobalSearchResult(finalAnswer, ranked);
+
+        } catch (Exception e) {
+            log.error("LLM Map-Reduce 搜索失败，回退到简单拼接: {}", e.getMessage());
+            String answer = ranked.stream()
+                    .map(Community::getSummary)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining("\n"));
+            return new GlobalSearchResult(answer, ranked);
+        }
+    }
+
+    /**
+     * MAP 阶段：向单个社区提问
+     */
+    private String mapPhase(ChatModel chatModel, Community community, String query) {
+        try {
+            String communityInfo = community.getSummary();
+            if (communityInfo == null || communityInfo.isBlank()) {
+                return "无关联";
+            }
+
+            String promptText = MAP_PROMPT_TEMPLATE.formatted(communityInfo, query);
+            List<org.springframework.ai.chat.messages.Message> messages = new ArrayList<>();
+            messages.add(new SystemMessage("你是一个知识图谱分析助手。"));
+            messages.add(new UserMessage(promptText));
+
+            ChatResponse response = chatModel.call(new Prompt(messages));
+            String answer = response.getResult().getOutput().getText();
+
+            if (answer == null || answer.isBlank() || answer.contains("无关联")) {
+                return "无关联";
+            }
+            return answer;
+        } catch (Exception e) {
+            log.warn("MAP 阶段处理社区 {} 失败: {}", community.getId(), e.getMessage());
+            return "无关联";
+        }
+    }
+
+    /**
+     * REDUCE 阶段：合并所有局部答案
+     */
+    private String reducePhase(ChatModel chatModel, String query, List<String> partialAnswers) {
+        try {
+            String answersText = partialAnswers.stream()
+                    .map(answer -> "- " + answer)
+                    .collect(Collectors.joining("\n"));
+
+            String promptText = REDUCE_PROMPT_TEMPLATE.formatted(query, answersText);
+            List<org.springframework.ai.chat.messages.Message> messages = new ArrayList<>();
+            messages.add(new SystemMessage("你是一个知识整合专家。"));
+            messages.add(new UserMessage(promptText));
+
+            ChatResponse response = chatModel.call(new Prompt(messages));
+            return response.getResult().getOutput().getText();
+        } catch (Exception e) {
+            log.error("REDUCE 阶段失败: {}", e.getMessage());
+            return String.join("\n\n", partialAnswers);
+        }
     }
 
     private List<Community> loadCommunities(String workspaceId) {
@@ -179,12 +338,56 @@ public class GraphCommunityService {
                 .toList();
     }
 
+    /**
+     * 构建社区摘要
+     * 优先使用 LLM 生成语义摘要，不可用时回退到规则拼接
+     */
     private String buildSummary(Community community) {
+        // 如果 LLM 服务不可用，回退到规则拼接
+        if (chatModelService == null) {
+            return buildSummaryFallback(community);
+        }
+
+        try {
+            ChatModel chatModel = chatModelService.getChatModel(
+                    "DeepSeek", null, null, "deepseek-chat");
+
+            String entities = community.getEntities() != null
+                    ? String.join("、", community.getEntities().stream().limit(20).toList())
+                    : "";
+            String labels = community.getLabels() != null
+                    ? String.join("、", community.getLabels().stream().filter(Objects::nonNull).distinct().limit(10).toList())
+                    : "";
+
+            String promptText = COMMUNITY_SUMMARY_SYSTEM_PROMPT
+                    + "\n\n实体: " + entities + "\n标签: " + labels;
+
+            List<org.springframework.ai.chat.messages.Message> messages = new ArrayList<>();
+            messages.add(new SystemMessage(COMMUNITY_SUMMARY_SYSTEM_PROMPT));
+            messages.add(new UserMessage("实体: " + entities + "\n标签: " + labels));
+
+            ChatResponse response = chatModel.call(new Prompt(messages));
+            String summary = response.getResult().getOutput().getText();
+
+            if (summary != null && !summary.isBlank()) {
+                return summary.trim();
+            }
+        } catch (Exception e) {
+            log.warn("LLM 社区摘要生成失败，回退到规则拼接: {}", e.getMessage());
+        }
+
+        return buildSummaryFallback(community);
+    }
+
+    /**
+     * 回退方法：使用规则拼接生成摘要
+     */
+    private String buildSummaryFallback(Community community) {
         List<String> entities = community.getEntities() != null ? community.getEntities() : List.of();
         List<String> labels = community.getLabels() != null ? community.getLabels() : List.of();
-        String topEntities = entities.stream().limit(12).collect(java.util.stream.Collectors.joining("、"));
+        String topEntities = entities.stream().limit(12).collect(Collectors.joining("、"));
         String topLabels = labels.stream().filter(Objects::nonNull).distinct().limit(6)
-                .collect(java.util.stream.Collectors.joining("、"));
+                .collect(Collectors.joining("、"));
         return "社区 " + community.getId() + " 包含 " + community.getSize()
                 + " 个实体；核心实体：" + topEntities
                 + (topLabels.isBlank() ? "" : "；主题标签：" + topLabels) + "。";

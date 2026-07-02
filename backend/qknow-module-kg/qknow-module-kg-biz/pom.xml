@@ -96,6 +96,14 @@
             <version>${qknow.version}</version>
         </dependency>
 
+        <!-- AI模块 (可选, 用于LLM增强功能) -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-ai</artifactId>
+            <version>${qknow.version}</version>
+            <optional>true</optional>
+        </dependency>
+
     </dependencies>
 
 </project>
