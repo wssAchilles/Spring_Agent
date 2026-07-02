@@ -10,9 +10,13 @@ import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 import tech.qiantong.qknow.ai.service.IEmbeddingService;
 import tech.qiantong.qknow.common.exception.ServiceException;
+
+import java.time.Duration;
 
 /**
  * 向量化模型服务
@@ -36,7 +40,7 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
         EmbeddingModel embeddingModel;
         switch (platForm) {
             case "OpenAI" -> embeddingModel = this.getOpenAiModel(baseUrl, apiKey, modelName);
-            case "TongYi" -> embeddingModel = this.getDashScopeModel(apiKey, modelName);
+            case "TongYi" -> embeddingModel = this.getDashScopeModel(baseUrl, apiKey, modelName);
             case "Ollama" -> embeddingModel = this.getOllamaModel(baseUrl, modelName);
             default -> throw new ServiceException("暂时不支持该平台");
 
@@ -66,17 +70,29 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
      * 通义千问 Embedding 通过 OpenAI 兼容模式接入
      * DashScope 兼容端点：https://dashscope.aliyuncs.com/compatible-mode/v1
      */
-    private OpenAiEmbeddingModel getDashScopeModel(String apiKey, String modelName) {
+    private OpenAiEmbeddingModel getDashScopeModel(String baseUrl, String apiKey, String modelName) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
             throw new ServiceException("必要字段不能为空");
         }
+        String dashScopeBaseUrl = StrUtil.blankToDefault(baseUrl, "https://dashscope.aliyuncs.com/compatible-mode");
+        if (dashScopeBaseUrl.endsWith("/v1")) {
+            dashScopeBaseUrl = dashScopeBaseUrl.substring(0, dashScopeBaseUrl.length() - 3);
+        }
         return new OpenAiEmbeddingModel(
                 OpenAiApi.builder()
-                        .baseUrl("https://dashscope.aliyuncs.com/compatible-mode")
+                        .baseUrl(dashScopeBaseUrl)
                         .apiKey(apiKey)
+                        .restClientBuilder(timeoutRestClientBuilder())
                         .build(),
                 MetadataMode.EMBED,
                 OpenAiEmbeddingOptions.builder().model(modelName).build());
+    }
+
+    private RestClient.Builder timeoutRestClientBuilder() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+        requestFactory.setReadTimeout(Duration.ofSeconds(45));
+        return RestClient.builder().requestFactory(requestFactory);
     }
 
     /**
