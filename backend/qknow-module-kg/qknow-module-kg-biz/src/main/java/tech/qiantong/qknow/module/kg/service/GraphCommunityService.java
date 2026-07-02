@@ -17,7 +17,7 @@ import java.util.*;
  */
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "spring.neo4j.uri", havingValue = "", matchIfMissing = false)
+@ConditionalOnProperty(name = "spring.neo4j.uri")
 public class GraphCommunityService {
 
     private final Driver driver;
@@ -74,6 +74,7 @@ public class GraphCommunityService {
                 community.setEntities(entry.getValue());
                 community.setLabels(communityLabels.getOrDefault(entry.getKey(), List.of()));
                 community.setSize(entry.getValue().size());
+                community.setSummary(buildSummary(community));
                 communities.add(community);
             }
 
@@ -93,6 +94,7 @@ public class GraphCommunityService {
                     SET c.size = $size,
                         c.entities = $entities,
                         c.labels = $labels,
+                        c.summary = $summary,
                         c.updated_at = datetime()
                     """,
                     Values.parameters(
@@ -100,11 +102,112 @@ public class GraphCommunityService {
                         "communityId", community.getId(),
                         "size", community.getSize(),
                         "entities", community.getEntities(),
-                        "labels", community.getLabels()
+                        "labels", community.getLabels(),
+                        "summary", community.getSummary()
                     ));
             }
             log.info("社区保存完成: workspaceId={}, count={}", workspaceId, communities.size());
         }
+    }
+
+    public List<Community> summarizeCommunities(String workspaceId) {
+        List<Community> communities = loadCommunities(workspaceId);
+        if (communities.isEmpty()) {
+            communities = detectCommunities(workspaceId);
+        }
+        for (Community community : communities) {
+            community.setSummary(buildSummary(community));
+        }
+        saveCommunities(workspaceId, communities);
+        return communities;
+    }
+
+    public GlobalSearchResult globalSearch(String workspaceId, String query, int topK) {
+        List<Community> communities = loadCommunities(workspaceId);
+        if (communities.isEmpty()) {
+            communities = summarizeCommunities(workspaceId);
+        }
+        List<Community> ranked = communities.stream()
+                .sorted((a, b) -> Double.compare(score(query, b), score(query, a)))
+                .limit(Math.max(1, topK))
+                .toList();
+        String answer = ranked.stream()
+                .map(Community::getSummary)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.joining("\n"));
+        return new GlobalSearchResult(answer, ranked);
+    }
+
+    private List<Community> loadCommunities(String workspaceId) {
+        try (Session session = driver.session()) {
+            var result = session.run("""
+                MATCH (c:Community {workspace_id: $workspaceId})
+                RETURN c.community_id AS communityId, c.size AS size, c.entities AS entities,
+                       c.labels AS labels, c.summary AS summary
+                ORDER BY c.size DESC
+                """, Values.parameters("workspaceId", workspaceId));
+            List<Community> communities = new ArrayList<>();
+            while (result.hasNext()) {
+                var record = result.next();
+                Community community = new Community();
+                community.setId(record.get("communityId").asLong());
+                community.setSize(record.get("size").asInt(0));
+                community.setEntities(toStringList(record.get("entities")));
+                community.setLabels(toStringList(record.get("labels")));
+                community.setSummary(record.get("summary").isNull() ? null : record.get("summary").asString());
+                if (community.getSummary() == null || community.getSummary().isBlank()) {
+                    community.setSummary(buildSummary(community));
+                }
+                communities.add(community);
+            }
+            return communities;
+        }
+    }
+
+    private List<String> toStringList(Value value) {
+        if (value == null || value.isNull()) {
+            return List.of();
+        }
+        return value.asList(v -> v.isNull() ? "" : v.asString()).stream()
+                .filter(text -> text != null && !text.isBlank())
+                .toList();
+    }
+
+    private String buildSummary(Community community) {
+        List<String> entities = community.getEntities() != null ? community.getEntities() : List.of();
+        List<String> labels = community.getLabels() != null ? community.getLabels() : List.of();
+        String topEntities = entities.stream().limit(12).collect(java.util.stream.Collectors.joining("、"));
+        String topLabels = labels.stream().filter(Objects::nonNull).distinct().limit(6)
+                .collect(java.util.stream.Collectors.joining("、"));
+        return "社区 " + community.getId() + " 包含 " + community.getSize()
+                + " 个实体；核心实体：" + topEntities
+                + (topLabels.isBlank() ? "" : "；主题标签：" + topLabels) + "。";
+    }
+
+    private double score(String query, Community community) {
+        if (query == null || query.isBlank()) {
+            return community.getSize();
+        }
+        String normalized = query.toLowerCase(Locale.ROOT);
+        double score = Math.log1p(community.getSize());
+        for (String entity : community.getEntities() != null ? community.getEntities() : List.<String>of()) {
+            if (entity != null && normalized.contains(entity.toLowerCase(Locale.ROOT))) {
+                score += 3.0;
+            }
+        }
+        String summary = community.getSummary();
+        if (summary != null) {
+            String summaryText = summary.toLowerCase(Locale.ROOT);
+            for (String token : normalized.split("\\s+")) {
+                if (!token.isBlank() && summaryText.contains(token)) {
+                    score += 1.0;
+                }
+            }
+        }
+        return score;
+    }
+
+    public record GlobalSearchResult(String answer, List<Community> communities) {
     }
 
     /**

@@ -155,4 +155,33 @@ public class KgGraphController {
         }
         return CommonResult.success(communities);
     }
+
+    @Operation(summary = "生成社区摘要")
+    @PostMapping("/communities/summarize")
+    public CommonResult<?> summarizeCommunities(@RequestParam(defaultValue = "1001") Long workspaceId) {
+        if (communityService == null) {
+            return CommonResult.error(501, "社区摘要需要 Neo4j 配置，请先配置 spring.neo4j.uri");
+        }
+        try {
+            return CommonResult.success(communityService.summarizeCommunities(String.valueOf(workspaceId)));
+        } catch (Exception e) {
+            return CommonResult.error(500, "社区摘要生成失败: " + e.getMessage());
+        }
+    }
+
+    @Operation(summary = "社区摘要 Global Search")
+    @GetMapping("/global-search")
+    public CommonResult<?> globalSearch(@RequestParam(defaultValue = "1001") Long workspaceId,
+                                        @RequestParam String query,
+                                        @RequestParam(defaultValue = "5") Integer topK) {
+        if (communityService == null) {
+            return CommonResult.error(501, "Global Search 需要 Neo4j 配置，请先配置 spring.neo4j.uri");
+        }
+        try {
+            return CommonResult.success(communityService.globalSearch(
+                    String.valueOf(workspaceId), query, topK != null ? topK : 5));
+        } catch (Exception e) {
+            return CommonResult.error(500, "Global Search 失败: " + e.getMessage());
+        }
+    }
 }
