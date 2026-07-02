@@ -349,6 +349,10 @@ Hermes 内核的核心创新是"生成→评估→自洽性检测→修正"的�
 
 计算采样结果的成对 Jaccard 相似度\cite{Yao2023ReAct}：
 
+\begin{equation}
+    J(A, B) = \frac{|A \cap B|}{|A \cup B|}
+\end{equation}
+
 其中 $A$ 和 $B$ 为两次采样结果的词集合（按空白字符分词）。自洽性得分为所有 $\binom{n}{2}$ 个配对的平均 Jaccard 相似度：
 
 \begin{equation}
@@ -581,10 +585,10 @@ DAG 执行引擎按分组顺序逐层执行。设并行分组为 $\mathcal{G} = 
 
 在软件工程架构上，所有节点的基类严格遵循模板方法模式（Template Method Pattern）。抽象基类 \texttt{AbstractWorkflowNode} 封锁了执行骨架，确保所有子类必须按照预设的生命周期流转。节点状态机定义为：$\text{INIT} \rightarrow \text{RUNNING} \rightarrow \text{SUCCESS} / \text{FAILED} / \text{SUSPENDED}$。核心执行函数的形式化定义扩展为：
 \begin{equation}
-\begin{aligned}
-    \text{execute}(v, \text{ctx}) = & \text{processOutput}(\text{executeLogic}(\text{prepareInput}(v, \text{ctx})), \text{ctx}) \\
-                                    & \oplus \text{emitEvent}(v, \text{state})
-\end{aligned}
+    \begin{aligned}
+        \text{execute}(v, \text{ctx}) = & \text{processOutput}(\text{executeLogic}(\text{prepareInput}(v, \text{ctx})), \text{ctx}) \\
+                                        & \oplus \text{emitEvent}(v, \text{state})
+    \end{aligned}
 \end{equation}
 其中 $\text{prepareInput}$ 阶段通过 JSONPath 从全局上下文中精准投影（Projection）出本节点所需的局部入参，避免了上下文污染；$\text{executeLogic}$ 为抽象方法，交由具体节点类实现其专属逻辑（如 LLM 调用或检索）；$\text{processOutput}$ 则将执行结果按照映射规则反向写回全局上下文；最后的 $\text{emitEvent}$ 通过内部 EventBus 触发状态变更事件，驱动 UI 界面的节点状态实时高亮刷新。
 
