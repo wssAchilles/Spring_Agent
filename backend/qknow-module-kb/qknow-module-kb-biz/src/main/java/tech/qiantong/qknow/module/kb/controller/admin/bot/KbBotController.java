@@ -13,11 +13,17 @@ import tech.qiantong.qknow.common.core.controller.BaseController;
 import tech.qiantong.qknow.common.core.domain.CommonResult;
 import tech.qiantong.qknow.common.core.page.PageResult;
 import tech.qiantong.qknow.common.core.utils.object.BeanUtils;
+import tech.qiantong.qknow.common.utils.StringUtils;
 import tech.qiantong.qknow.module.kb.controller.admin.bot.vo.KbBotPageReqVO;
 import tech.qiantong.qknow.module.kb.controller.admin.bot.vo.KbBotRespVO;
 import tech.qiantong.qknow.module.kb.controller.admin.bot.vo.KbBotSaveReqVO;
+import tech.qiantong.qknow.module.kb.dal.dataobject.agent.KbAgentConfigDO;
+import tech.qiantong.qknow.module.kb.dal.dataobject.bot.KbBotApikeyDO;
 import tech.qiantong.qknow.module.kb.dal.dataobject.bot.KbBotDO;
+import tech.qiantong.qknow.module.kb.service.agent.IKbAgentConfigService;
+import tech.qiantong.qknow.module.kb.service.bot.IKbBotApikeyService;
 import tech.qiantong.qknow.module.kb.service.bot.IKbBotService;
+import tech.qiantong.qknow.module.kb.service.flow.IKbFlowNodeService;
 
 import java.util.Arrays;
 
@@ -34,6 +40,12 @@ import java.util.Arrays;
 public class KbBotController extends BaseController {
     @Resource
     private IKbBotService kbBotService;
+    @Resource
+    private IKbAgentConfigService kbAgentConfigService;
+    @Resource
+    private IKbBotApikeyService kbBotApikeyService;
+    @Resource
+    private IKbFlowNodeService kbFlowNodeService;
 
     @Operation(summary = "查询bot 管理列表")
     @PreAuthorize("@ss.hasPermi('kb:bot:bot:list')")
@@ -42,11 +54,27 @@ public class KbBotController extends BaseController {
         PageResult<KbBotDO> page = kbBotService.getKbBotPage(kbBot);
         PageResult<KbBotRespVO> kbBotRespVOPageResult = BeanUtils.toBean(page, KbBotRespVO.class);
         kbBotRespVOPageResult.getList().forEach(item -> {
-            int builtinFlag = item.getBuiltinFlag() != null ? item.getBuiltinFlag() : 0;
-            item.setNodeNum((int) (item.getId() + builtinFlag) / 3 + 1);
-            item.setApiKeyNum(2);
+            item.setNodeNum(countRuntimeItems(item));
+            item.setApiKeyNum(kbBotApikeyService.lambdaQuery().eq(KbBotApikeyDO::getBotId, item.getId()).count().intValue());
         });
         return CommonResult.success(kbBotRespVOPageResult);
+    }
+
+    private int countRuntimeItems(KbBotRespVO bot) {
+        if (bot.getType() != null && bot.getType() == 2) {
+            KbAgentConfigDO config = kbAgentConfigService.getKbAgentConfigByBotId(bot.getId());
+            return config == null ? 0 : countCsv(config.getToolMethodIds());
+        }
+        return kbFlowNodeService.listByBotId(bot.getId()).size();
+    }
+
+    private int countCsv(String value) {
+        if (StringUtils.isBlank(value)) {
+            return 0;
+        }
+        return (int) Arrays.stream(value.split(","))
+                .filter(StringUtils::isNotBlank)
+                .count();
     }
 
     @Operation(summary = "获取bot 管理详细信息")

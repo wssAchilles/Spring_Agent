@@ -24,6 +24,7 @@ import tech.qiantong.qknow.module.kb.service.conversation.IKbConversationService
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Tag(name = "Agent 对话管理")
 @RestController
@@ -80,10 +81,12 @@ public class KbConversationController extends BaseController {
 
         // 保存用户消息
         chatMessageService.saveMessage(reqVO.getConversationId(), "user", reqVO.getQuestion());
+        KbChatMessageDO assistantMessage = chatMessageService.saveMessage(reqVO.getConversationId(), "assistant", "思考中");
 
         // 获取 Agent 配置
         KbAgentConfigDO config = agentConfigService.getKbAgentConfigByBotId(reqVO.getBotId());
         if (config == null) {
+            updateAssistantMessage(assistantMessage, "错误：Agent 配置不存在");
             throw new RuntimeException("Agent 配置不存在");
         }
 
@@ -104,6 +107,7 @@ public class KbConversationController extends BaseController {
         agentReq.setHistoryMessages(history);
 
         StringBuilder assistantContent = new StringBuilder();
+        AtomicReference<String> assistantStatus = new AtomicReference<>("思考中");
 
         // 调用 Agent (流式)
         try {
@@ -114,23 +118,41 @@ public class KbConversationController extends BaseController {
                         KbChatMessageSendRespVO.Message receive = resp.getReceive();
                         if (receive != null && receive.getContent() != null) {
                             String eventType = receive.getEventType();
-                            if (!"tool_call".equals(eventType) && !"memory_recall".equals(eventType)) {
+                            if ("memory_recall".equals(eventType)) {
+                                assistantStatus.set(receive.getContent() + "，正在生成回答");
+                                updateAssistantMessage(assistantMessage, assistantStatus.get());
+                            } else if ("tool_call".equals(eventType)) {
+                                assistantStatus.set(receive.getContent());
+                                updateAssistantMessage(assistantMessage, assistantStatus.get());
+                            } else {
                                 assistantContent.append(receive.getContent());
+                                assistantStatus.set(assistantContent.toString());
+                                updateAssistantMessage(assistantMessage, assistantStatus.get());
                             }
                         }
                         if (clientConnected.get()) {
                             sink.tryEmitNext(resp);
                         }
                     }, error -> {
+                        String errorMessage = "回答生成失败：" + (error.getMessage() != null ? error.getMessage() : "未知异常");
                         if (!assistantContent.isEmpty()) {
-                            chatMessageService.saveMessage(reqVO.getConversationId(), "assistant", assistantContent.toString());
+                            errorMessage = assistantContent + "\n\n" + errorMessage;
                         }
+                        updateAssistantMessage(assistantMessage, errorMessage);
                         if (clientConnected.get()) {
                             sink.tryEmitError(error);
                         }
                     }, () -> {
-                        if (!assistantContent.isEmpty()) {
-                            chatMessageService.saveMessage(reqVO.getConversationId(), "assistant", assistantContent.toString());
+                        if (assistantContent.isEmpty()) {
+                            String fallback = assistantStatus.get();
+                            if (fallback == null || fallback.isBlank() || "思考中".equals(fallback)) {
+                                fallback = "暂未生成文本回答，请稍后重试或检查模型调用配置。";
+                            } else if (!fallback.contains("正在生成回答")) {
+                                fallback = fallback + "，但模型未返回最终文本回答。";
+                            } else {
+                                fallback = fallback.replace("，正在生成回答", "，但模型未返回最终文本回答。");
+                            }
+                            updateAssistantMessage(assistantMessage, fallback);
                         }
                         if (clientConnected.get()) {
                             sink.tryEmitComplete();
@@ -140,5 +162,13 @@ public class KbConversationController extends BaseController {
         } catch (Exception e) {
             throw new RuntimeException("Agent 调用失败: " + e.getMessage());
         }
+    }
+
+    private void updateAssistantMessage(KbChatMessageDO assistantMessage, String content) {
+        if (assistantMessage == null || assistantMessage.getId() == null || content == null) {
+            return;
+        }
+        assistantMessage.setContent(content);
+        chatMessageService.updateById(assistantMessage);
     }
 }
