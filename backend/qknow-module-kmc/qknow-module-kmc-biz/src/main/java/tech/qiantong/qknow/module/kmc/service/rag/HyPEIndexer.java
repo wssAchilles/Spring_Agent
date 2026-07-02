@@ -13,13 +13,20 @@ import tech.qiantong.qknow.ai.service.IChatClientService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class HyPEIndexer {
 
+    private static final Pattern QUOTED_TEXT_PATTERN = Pattern.compile("\"([^\"]{6,})\"");
+
     private static final String SYSTEM_PROMPT =
             "Given a text passage, generate diverse questions that this passage could answer. " +
+            "IMPORTANT: You MUST generate the questions in the EXACT SAME LANGUAGE as the provided text passage. " +
             "Return ONLY a JSON array of strings, nothing else. " +
             "Example: [\"What is X?\", \"How does Y work?\", \"When did Z happen?\"]";
 
@@ -62,6 +69,10 @@ public class HyPEIndexer {
         return hypotheticalDocs;
     }
 
+    public int getMaxChunksPerDocument() {
+        return Math.max(0, config.getMaxChunksPerDocument());
+    }
+
     private List<String> generateQuestions(String chunkContent) {
         String truncated = chunkContent.length() > config.getMaxChunkChars()
                 ? chunkContent.substring(0, config.getMaxChunkChars())
@@ -74,11 +85,12 @@ public class HyPEIndexer {
         try {
             ChatClient chatClient = chatClientService.getChatClient(
                     config.getPlatform(), config.getBaseUrl(), config.getApiKey(), config.getModelName());
-            String result = chatClient.prompt()
-                    .system(SYSTEM_PROMPT)
-                    .user(userPrompt)
-                    .call()
-                    .content();
+            String result = CompletableFuture.supplyAsync(() -> chatClient.prompt()
+                            .system(SYSTEM_PROMPT)
+                            .user(userPrompt)
+                            .call()
+                            .content())
+                    .get(config.getTimeoutSeconds(), TimeUnit.SECONDS);
 
             return parseQuestions(result);
         } catch (Exception e) {
@@ -89,15 +101,17 @@ public class HyPEIndexer {
 
     private List<String> parseQuestions(String response) {
         if (response == null || response.isBlank()) return List.of();
+        List<String> questions = new ArrayList<>();
         try {
             String jsonStr = response;
             int start = response.indexOf("[");
             int end = response.lastIndexOf("]");
             if (start >= 0 && end > start) {
                 jsonStr = response.substring(start, end + 1);
+            } else if (start >= 0) {
+                jsonStr = response.substring(start).trim() + "]";
             }
             JSONArray arr = JSONArray.parseArray(jsonStr);
-            List<String> questions = new ArrayList<>();
             for (int i = 0; i < arr.size() && i < config.getQuestionCount(); i++) {
                 String q = arr.getString(i);
                 if (q != null && !q.isBlank()) {
@@ -106,8 +120,15 @@ public class HyPEIndexer {
             }
             return questions;
         } catch (Exception e) {
-            log.warn("Failed to parse HyPE questions: {}", response, e);
-            return List.of();
+            log.warn("Failed to parse HyPE questions as JSON, fallback to quoted text extraction: {}", e.getMessage());
+            Matcher matcher = QUOTED_TEXT_PATTERN.matcher(response);
+            while (matcher.find() && questions.size() < config.getQuestionCount()) {
+                String q = matcher.group(1);
+                if (q != null && !q.isBlank()) {
+                    questions.add(q.trim());
+                }
+            }
+            return questions;
         }
     }
 
@@ -122,5 +143,7 @@ public class HyPEIndexer {
         private String modelName = "deepseek-chat";
         private int questionCount = 3;
         private int maxChunkChars = 2000;
+        private int timeoutSeconds = 30;
+        private int maxChunksPerDocument = 20;
     }
 }

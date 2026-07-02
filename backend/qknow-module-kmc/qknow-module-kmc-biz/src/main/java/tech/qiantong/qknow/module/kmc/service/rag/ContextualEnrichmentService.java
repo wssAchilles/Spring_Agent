@@ -9,6 +9,7 @@ import tech.qiantong.qknow.ai.service.IChatClientService;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -68,11 +69,12 @@ public class ContextualEnrichmentService {
         try {
             ChatClient chatClient = chatClientService.getChatClient(
                     config.getPlatform(), config.getBaseUrl(), config.getApiKey(), config.getModelName());
-            String result = chatClient.prompt()
-                    .system(SYSTEM_PROMPT)
-                    .user(userPrompt)
-                    .call()
-                    .content();
+            String result = CompletableFuture.supplyAsync(() -> chatClient.prompt()
+                            .system(SYSTEM_PROMPT)
+                            .user(userPrompt)
+                            .call()
+                            .content())
+                    .get(config.getTimeoutSeconds(), TimeUnit.SECONDS);
             return result != null ? result.trim() : null;
         } catch (Exception e) {
             log.warn("Context generation failed for chunk (length={}): {}", chunkContent.length(), e.getMessage());
@@ -96,5 +98,6 @@ public class ContextualEnrichmentService {
         private String modelName = "deepseek-chat";
         private int maxDocChars = 8000;
         private int maxConcurrent = 3;
+        private int timeoutSeconds = 30;
     }
 }
