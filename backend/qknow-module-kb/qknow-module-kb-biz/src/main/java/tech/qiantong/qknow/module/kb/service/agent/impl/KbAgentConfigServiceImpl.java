@@ -79,6 +79,14 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
     @Override
     public Long createKbAgentConfig(KbAgentConfigSaveReqVO createReqVO) {
+        KbAgentConfigDO existingConfig = getKbAgentConfigByBotId(createReqVO.getBotId());
+        if (existingConfig != null) {
+            KbAgentConfigDO updateObj = BeanUtils.toBean(createReqVO, KbAgentConfigDO.class);
+            updateObj.setId(existingConfig.getId());
+            kbAgentConfigMapper.updateById(updateObj);
+            return existingConfig.getId();
+        }
+
         KbAgentConfigDO dictType = BeanUtils.toBean(createReqVO, KbAgentConfigDO.class);
         kbAgentConfigMapper.insert(dictType);
         return dictType.getId();
@@ -86,7 +94,16 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
     @Override
     public int updateKbAgentConfig(KbAgentConfigSaveReqVO updateReqVO) {
-        // 相关校验
+        if (updateReqVO.getId() == null) {
+            throw new ServiceException("Agent 配置 ID 不能为空");
+        }
+        KbAgentConfigDO existingConfig = kbAgentConfigMapper.selectById(updateReqVO.getId());
+        if (existingConfig == null) {
+            throw new ServiceException("Agent 配置不存在");
+        }
+        if (!Objects.equals(existingConfig.getBotId(), updateReqVO.getBotId())) {
+            throw new ServiceException("Agent 配置与 Bot 不匹配，请刷新页面后重试");
+        }
 
         // 更新agent配置
         KbAgentConfigDO updateObj = BeanUtils.toBean(updateReqVO, KbAgentConfigDO.class);

@@ -16,6 +16,7 @@ import tech.qiantong.qknow.common.utils.DateUtils;
 
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -54,10 +55,11 @@ public class HermesGrpcClient {
 
     public Flux<KbChatMessageSendRespVO> chat(ChatRequest request) {
         return Flux.create(emitter -> {
+            AtomicBoolean emittedText = new AtomicBoolean(false);
             asyncStub.chat(request, new StreamObserver<>() {
                 @Override
                 public void onNext(ChatEvent event) {
-                    KbChatMessageSendRespVO respVO = convertToRespVO(event, request.getQuestion());
+                    KbChatMessageSendRespVO respVO = convertToRespVO(event, request.getQuestion(), emittedText);
                     if (respVO != null) {
                         emitter.next(respVO);
                     }
@@ -89,7 +91,7 @@ public class HermesGrpcClient {
         }
     }
 
-    private KbChatMessageSendRespVO convertToRespVO(ChatEvent event, String question) {
+    private KbChatMessageSendRespVO convertToRespVO(ChatEvent event, String question, AtomicBoolean emittedText) {
         KbChatMessageSendRespVO sendRespVO = new KbChatMessageSendRespVO();
 
         KbChatMessageSendRespVO.Message messageUser = new KbChatMessageSendRespVO.Message();
@@ -105,6 +107,9 @@ public class HermesGrpcClient {
             message.setContent(chunk.getText());
             message.setCreateTime(DateUtils.getNowDate());
             sendRespVO.setReceive(message);
+            if (chunk.getText() != null && !chunk.getText().isBlank()) {
+                emittedText.set(true);
+            }
         } else if (event.hasToolInvoked()) {
             ToolInvoked tool = event.getToolInvoked();
             KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
@@ -113,6 +118,26 @@ public class HermesGrpcClient {
             message.setToolName(tool.getToolName());
             message.setToolStatus(tool.getStatus());
             message.setContent("工具调用: " + tool.getToolName());
+            message.setCreateTime(DateUtils.getNowDate());
+            sendRespVO.setReceive(message);
+        } else if (event.hasFinished()) {
+            String fullText = event.getFinished().getFullText();
+            if (emittedText.get() || fullText == null || fullText.isBlank()) {
+                return null;
+            }
+            KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
+            message.setType(MessageTypeEnums.ROBOT.code);
+            message.setContent(fullText);
+            message.setCreateTime(DateUtils.getNowDate());
+            sendRespVO.setReceive(message);
+            emittedText.set(true);
+        } else if (event.hasError()) {
+            ErrorEvent error = event.getError();
+            KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
+            message.setType(MessageTypeEnums.ROBOT.code);
+            message.setEventType("error");
+            message.setToolStatus("error");
+            message.setContent("错误：" + (error.getMessage() != null ? error.getMessage() : "模型调用失败"));
             message.setCreateTime(DateUtils.getNowDate());
             sendRespVO.setReceive(message);
         } else {
