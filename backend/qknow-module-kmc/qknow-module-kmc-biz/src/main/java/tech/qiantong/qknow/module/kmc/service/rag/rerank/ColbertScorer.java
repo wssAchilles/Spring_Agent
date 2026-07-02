@@ -3,8 +3,13 @@ package tech.qiantong.qknow.module.kmc.service.rag.rerank;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.ai.service.IEmbeddingService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,9 +24,11 @@ import java.util.List;
 public class ColbertScorer {
 
     private final ColbertConfig config;
+    private final IEmbeddingService embeddingService;
 
-    public ColbertScorer(ColbertConfig config) {
+    public ColbertScorer(ColbertConfig config, @Autowired(required = false) IEmbeddingService embeddingService) {
         this.config = config;
+        this.embeddingService = embeddingService;
     }
 
     /**
@@ -37,7 +44,11 @@ public class ColbertScorer {
 
         List<ScoredDocument> scored = new ArrayList<>();
         for (Document doc : documents) {
-            List<double[]> docVectors = encodeTokens(tokenize(doc.getText()));
+            List<String> docTokens = tokenize(doc.getText());
+            if (config.getMaxTokensPerDoc() > 0 && docTokens.size() > config.getMaxTokensPerDoc()) {
+                docTokens = docTokens.subList(0, config.getMaxTokensPerDoc());
+            }
+            List<double[]> docVectors = encodeTokens(docTokens);
             double maxSim = computeMaxSim(queryVectors, docVectors);
             scored.add(new ScoredDocument(doc, maxSim));
         }
@@ -97,14 +108,48 @@ public class ColbertScorer {
     }
 
     private List<double[]> encodeTokens(List<String> tokens) {
+        if (tokens.isEmpty()) {
+            return List.of();
+        }
+        if (embeddingService != null
+                && config.getEmbeddingPlatform() != null && !config.getEmbeddingPlatform().isBlank()
+                && config.getEmbeddingBaseUrl() != null && !config.getEmbeddingBaseUrl().isBlank()
+                && config.getEmbeddingApiKey() != null && !config.getEmbeddingApiKey().isBlank()
+                && config.getEmbeddingModel() != null && !config.getEmbeddingModel().isBlank()) {
+            try {
+                EmbeddingModel model = embeddingService.getEmbeddingModel(
+                        config.getEmbeddingPlatform(),
+                        config.getEmbeddingBaseUrl(),
+                        config.getEmbeddingApiKey(),
+                        config.getEmbeddingModel());
+                EmbeddingResponse response = model.call(new EmbeddingRequest(tokens, null));
+                if (response == null || response.getResults().isEmpty()) {
+                    log.warn("Embedding API returned empty response, falling back to hash-based vectors");
+                } else {
+                    List<double[]> vectors = new ArrayList<>(response.getResults().size());
+                    for (var output : response.getResults()) {
+                        float[] emb = output.getOutput();
+                        double[] vec = new double[emb.length];
+                        for (int i = 0; i < emb.length; i++) {
+                            vec[i] = emb[i];
+                        }
+                        normalize(vec);
+                        vectors.add(vec);
+                    }
+                    return vectors;
+                }
+            } catch (Exception e) {
+                log.warn("Embedding API call failed, falling back to hash-based vectors: {}", e.getMessage());
+            }
+        }
         List<double[]> vectors = new ArrayList<>();
         for (String token : tokens) {
-            vectors.add(tokenVector(token));
+            vectors.add(tokenVectorHash(token));
         }
         return vectors;
     }
 
-    private double[] tokenVector(String token) {
+    private double[] tokenVectorHash(String token) {
         int dimensions = Math.max(16, config.getDimensions());
         double[] vector = new double[dimensions];
         int hash = token.hashCode();
@@ -151,5 +196,10 @@ public class ColbertScorer {
         private boolean enabled = false;
         private int ngramSize = 3;
         private int dimensions = 64;
+        private String embeddingPlatform;
+        private String embeddingBaseUrl;
+        private String embeddingApiKey;
+        private String embeddingModel;
+        private int maxTokensPerDoc = 128;
     }
 }

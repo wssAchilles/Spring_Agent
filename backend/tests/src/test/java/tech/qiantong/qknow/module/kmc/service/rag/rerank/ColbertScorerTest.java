@@ -20,14 +20,14 @@ class ColbertScorerTest {
         config = new ColbertScorer.ColbertConfig();
         config.setEnabled(true);
         config.setNgramSize(2);
-        scorer = new ColbertScorer(config);
+        scorer = new ColbertScorer(config, null);
     }
 
     @Test
     @DisplayName("禁用时返回原始文档")
     void rerank_withDisabled_returnsOriginalDocs() {
         config.setEnabled(false);
-        ColbertScorer disabledScorer = new ColbertScorer(config);
+        ColbertScorer disabledScorer = new ColbertScorer(config, null);
 
         List<Document> docs = List.of(new Document("doc1"), new Document("doc2"));
         List<Document> result = disabledScorer.rerank("query", docs, 10);
