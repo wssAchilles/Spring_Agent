@@ -75,6 +75,19 @@ backend/**/upload/file/
 *.ear
 *.nar
 
+# === LaTeX ===
+docs/报告/*.aux
+docs/报告/*.bbl
+docs/报告/*.blg
+docs/报告/*.out
+docs/报告/*.toc
+docs/报告/*.log
+docs/报告/*.fls
+docs/报告/*.fdb_latexmk
+docs/报告/*.synctex.gz
+docs/报告/*.synctex
+docs/报告/bu.aux
+
 # === 测试覆盖率 ===
 backend/**/target/site/
 backend/**/jacoco*.exec
