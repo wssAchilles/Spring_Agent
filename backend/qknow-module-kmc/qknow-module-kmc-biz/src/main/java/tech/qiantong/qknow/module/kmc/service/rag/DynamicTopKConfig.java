@@ -8,15 +8,14 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "qknow.rag.dynamic-top-k")
 public class DynamicTopKConfig {
-
     private boolean enabled = true;
     private int defaultTopK = 10;
     private int minTopK = 3;
     private int maxTopK = 80;
     private int complexMinTopK = 12;
-    private double mediumMultiplier = 1.0D;
-    private double complexMultiplier = 1.8D;
-    private double temporalMultiplier = 1.3D;
-    private double keywordMultiplierStep = 0.08D;
-    private double maxKeywordBonus = 0.5D;
+    private double mediumMultiplier = 1.0;
+    private double complexMultiplier = 1.8;
+    private double temporalMultiplier = 1.3;
+    private double keywordMultiplierStep = 0.08;
+    private double maxKeywordBonus = 0.5;
 }

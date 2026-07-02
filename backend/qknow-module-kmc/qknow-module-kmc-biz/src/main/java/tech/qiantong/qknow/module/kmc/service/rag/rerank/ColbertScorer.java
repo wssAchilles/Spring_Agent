@@ -64,7 +64,7 @@ public class ColbertScorer {
         }
         double sum = 0.0;
         for (double[] queryVector : queryVectors) {
-            double best = 0.0;
+            double best = -Double.MAX_VALUE;
             for (double[] docVector : docVectors) {
                 double score = dot(queryVector, docVector);
                 if (score > best) {
@@ -146,7 +146,7 @@ public class ColbertScorer {
 
     @Data
     @Component
-    @ConfigurationProperties(prefix = "hermes.rag.colbert")
+    @ConfigurationProperties(prefix = "qknow.rag.colbert")
     public static class ColbertConfig {
         private boolean enabled = false;
         private int ngramSize = 3;

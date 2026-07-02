@@ -7,13 +7,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.ai.service.IChatClientService;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class QueryRouter {
 
-    private static final String CLASSIFY_SYSTEM = """
+    private static final String DEFAULT_CLASSIFY_SYSTEM = """
             You are a query complexity classifier. Given a user query, classify it into one of three levels:
             
             SIMPLE: Factual questions that can be answered directly from general knowledge (e.g., "what is X?", "when did Y happen?")
@@ -36,6 +38,33 @@ public class QueryRouter {
     public QueryRouter(IChatClientService chatClientService, QueryRouterConfig config) {
         this.chatClientService = chatClientService;
         this.config = config;
+    }
+
+    private String resolveClassifySystemPrompt() {
+        StringBuilder builder = new StringBuilder();
+
+        if (config.getSystemPrompt() != null && !config.getSystemPrompt().isBlank()) {
+            builder.append(config.getSystemPrompt());
+        } else if (config.getClassifyPrompt() != null && !config.getClassifyPrompt().isBlank()) {
+            builder.append(config.getClassifyPrompt());
+        } else {
+            builder.append(DEFAULT_CLASSIFY_SYSTEM);
+        }
+
+        if (config.getPromptVersion() != null && !config.getPromptVersion().isBlank()) {
+            builder.append("\n\nPrompt version: ").append(config.getPromptVersion());
+        }
+
+        if (config.getFewShotExamples() != null && !config.getFewShotExamples().isEmpty()) {
+            builder.append("\n\nCalibration examples:\n");
+            for (String example : config.getFewShotExamples()) {
+                if (example != null && !example.isBlank()) {
+                    builder.append("- ").append(example.trim()).append('\n');
+                }
+            }
+        }
+
+        return builder.toString();
     }
 
     public QueryRoute classify(String query) {
@@ -61,7 +90,7 @@ public class QueryRouter {
             ChatClient chatClient = chatClientService.getChatClient(
                     config.getPlatform(), config.getBaseUrl(), config.getApiKey(), config.getModelName());
             String result = chatClient.prompt()
-                    .system(CLASSIFY_SYSTEM)
+                    .system(resolveClassifySystemPrompt())
                     .user(query)
                     .call()
                     .content();
@@ -95,5 +124,9 @@ public class QueryRouter {
         private String baseUrl = "https://api.deepseek.com";
         private String apiKey;
         private String modelName = "deepseek-chat";
+        private String classifyPrompt;
+        private String systemPrompt;
+        private String promptVersion = "manual-v1";
+        private List<String> fewShotExamples = new ArrayList<>();
     }
 }

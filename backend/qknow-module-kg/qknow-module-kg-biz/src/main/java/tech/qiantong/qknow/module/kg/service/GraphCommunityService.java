@@ -31,25 +31,26 @@ public class GraphCommunityService {
      * 使用 Neo4j GDS 库的 leiden 算法
      */
     public List<Community> detectCommunities(String workspaceId) {
+        String graphName = "community-graph-" + workspaceId;
         try (Session session = driver.session()) {
             // 1. 创建投影图（仅包含有效实体和关系）
             session.run("""
                 CALL gds.graph.project.cypher(
-                    'community-graph-%s',
+                    '%s',
                     'MATCH (n:KgNode) WHERE n.workspace_id = %s AND n.del_flag = 0 RETURN id(n) AS id, labels(n) AS labels, n.name AS name',
                     'MATCH (a:KgNode)-[r:KgEdge]->(b:KgNode) WHERE a.workspace_id = %s AND b.workspace_id = %s RETURN id(a) AS source, id(b) AS target, type(r) AS type'
                 )
-                """.formatted(workspaceId, workspaceId, workspaceId, workspaceId));
+                """.formatted(graphName, workspaceId, workspaceId, workspaceId));
 
             // 2. 执行 Leiden 算法
             var result = session.run("""
-                CALL gds.leiden.stream('community-graph-%s')
+                CALL gds.leiden.stream('%s')
                 YIELD nodeId, communityId
                 RETURN gds.util.asNode(nodeId).name AS entityName,
                        gds.util.asNode(nodeId).label AS entityLabel,
                        communityId
                 ORDER BY communityId, entityName
-                """.formatted(workspaceId));
+                """.formatted(graphName));
 
             // 3. 按社区分组
             Map<Long, List<String>> communityEntities = new HashMap<>();
@@ -63,10 +64,7 @@ public class GraphCommunityService {
                 communityLabels.computeIfAbsent(communityId, k -> new ArrayList<>()).add(entityLabel);
             }
 
-            // 4. 清理投影图
-            session.run("CALL gds.graph.drop('community-graph-%s')".formatted(workspaceId));
-
-            // 5. 构建社区列表
+            // 4. 构建社区列表
             List<Community> communities = new ArrayList<>();
             for (var entry : communityEntities.entrySet()) {
                 Community community = new Community();
@@ -80,6 +78,14 @@ public class GraphCommunityService {
 
             log.info("社区检测完成: workspaceId={}, communities={}", workspaceId, communities.size());
             return communities;
+        } finally {
+            // 5. 无条件清理投影图，防止 Neo4j OOM
+            try (Session cleanupSession = driver.session()) {
+                cleanupSession.run("CALL gds.graph.drop('%s')".formatted(graphName));
+                log.debug("投影图已清理: {}", graphName);
+            } catch (Exception e) {
+                log.warn("清理投影图失败: {}", graphName, e);
+            }
         }
     }
 

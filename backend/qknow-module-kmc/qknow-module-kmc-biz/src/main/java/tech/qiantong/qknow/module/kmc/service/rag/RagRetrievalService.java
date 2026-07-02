@@ -65,6 +65,9 @@ public class RagRetrievalService {
     @Resource
     private CragWebSearchClient cragWebSearchClient;
 
+    @Resource
+    private DynamicTopKConfig dynamicTopKConfig;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         return retrieve(knowledgeBaseId, query, query, topK, debug);
     }
@@ -103,7 +106,14 @@ public class RagRetrievalService {
                     .build();
         }
 
-        RagResult first = retrieveOnce(knowledgeBaseId, originalQuery, query, topK, debug, debugInfo, "first", route);
+        // Dynamic topK: 根据查询复杂度动态调整
+        int dynamicTopK = topK;
+        if (route == QueryRouter.QueryRoute.COMPLEX) {
+            dynamicTopK = (int) Math.min(topK * 1.5, 80);
+            log.debug("Dynamic topK: COMPLEX route, topK {} -> {}", topK, dynamicTopK);
+        }
+
+        RagResult first = retrieveOnce(knowledgeBaseId, originalQuery, query, dynamicTopK, debug, debugInfo, "first", route);
         CragRetrievalEvaluation evaluation = cragRetrievalEvaluator.evaluate(query, first);
         if (debug) {
             debugInfo.put("cragLabel", evaluation.getLabel() != null ? evaluation.getLabel().name() : null);
@@ -280,5 +290,29 @@ public class RagRetrievalService {
                 .debugInfo(debugInfo != null ? debugInfo : Map.of())
                 .build();
         return result;
+    }
+
+    private int resolveTopK(int requestedTopK, QueryRouter.QueryRoute route, QueryIntent intent) {
+        if (dynamicTopKConfig == null || !dynamicTopKConfig.isEnabled()) {
+            return requestedTopK;
+        }
+        double multiplier = switch (route) {
+            case COMPLEX -> dynamicTopKConfig.getComplexMultiplier();
+            case MEDIUM -> dynamicTopKConfig.getMediumMultiplier();
+            default -> 1.0;
+        };
+        int keywordCount = intent != null && intent.getKeywords() != null ? intent.getKeywords().size() : 0;
+        double keywordBonus = Math.min(keywordCount * dynamicTopKConfig.getKeywordMultiplierStep(),
+                dynamicTopKConfig.getMaxKeywordBonus());
+        multiplier += keywordBonus;
+        if (intent != null && intent.getDayNo() != null) {
+            multiplier *= dynamicTopKConfig.getTemporalMultiplier();
+        }
+        int result = (int) Math.round(requestedTopK * multiplier);
+        if (route == QueryRouter.QueryRoute.COMPLEX) {
+            result = Math.max(result, dynamicTopKConfig.getComplexMinTopK());
+        }
+        return Math.max(dynamicTopKConfig.getMinTopK(),
+                Math.min(result, dynamicTopKConfig.getMaxTopK()));
     }
 }
