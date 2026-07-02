@@ -1,4 +1,4 @@
-\begin{thebibliography}{18}
+\begin{thebibliography}{17}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{#1}
 \expandafter\ifx\csname urlstyle\endcsname\relax\else
@@ -11,93 +11,68 @@
   \let\eprint\href
 \fi
 
-\bibitem[Gao et~al.(2023)Gao, Xiong, Gao, Jia, Pan, Bi, Dai, Sun, and
-  Wang]{Gao2023RAGSurvey}
+\bibitem[Gao et~al.(2023)Gao, Xiong, Gao, Jia, Pan, Bi, Dai, Sun, and Wang]{Gao2023RAGSurvey}
 Gao Y, Xiong Y, Gao X, et~al.
-\newblock Retrieval-augmented generation for large language models: A
-  survey\allowbreak[A].
+\newblock Retrieval-augmented generation for large language models: A survey\allowbreak[A].
 \newblock 2023.
 
-\bibitem[Lewis et~al.(2020)Lewis, Perez, Piktus, Petroni, Karpukhin, Goyal,
-  K{\"u}ttler, Lewis, tau Yih, Rockt{\"a}schel, Riedel, and
-  Kiela]{Lewis2020RAG}
+\bibitem[Lewis et~al.(2020)Lewis, Perez, Piktus, Petroni, Karpukhin, Goyal, K{\"u}ttler, Lewis, tau Yih, Rockt{\"a}schel, Riedel, and Kiela]{Lewis2020RAG}
 Lewis P, Perez E, Piktus A, et~al.
-\newblock Retrieval-augmented generation for knowledge-intensive {NLP}
-  tasks\allowbreak[J].
-\newblock Advances in Neural Information Processing Systems, 2020, 33:
-  9459-9474.
+\newblock Retrieval-augmented generation for knowledge-intensive {NLP} tasks\allowbreak[J].
+\newblock Advances in Neural Information Processing Systems, 2020, 33: 9459-9474.
 
 \bibitem[Yan et~al.(2024)Yan, Gu, Zhu, and Ling]{Yan2024CRAG}
 Yan S~Q, Gu J~C, Zhu Y, et~al.
 \newblock Corrective retrieval augmented generation\allowbreak[A].
 \newblock 2024.
 
-\bibitem[Karpukhin et~al.(2020)Karpukhin, Oguz, Min, Lewis, Wu, Edunov, Chen,
-  and tau Yih]{Karpukhin2020DPR}
+\bibitem[Karpukhin et~al.(2020)Karpukhin, Oguz, Min, Lewis, Wu, Edunov, Chen, and tau Yih]{Karpukhin2020DPR}
 Karpukhin V, Oguz B, Min S, et~al.
-\newblock Dense passage retrieval for open-domain question
-  answering\allowbreak[C]//\allowbreak
-Proceedings of the 2020 Conference on Empirical Methods in Natural Language
-  Processing.
+\newblock Dense passage retrieval for open-domain question answering\allowbreak[C]//\allowbreak
+Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing.
 \newblock 2020: 6769-6781.
 
 \bibitem[Cormack et~al.(2009)Cormack, Clarke, and Buettcher]{Cormack2009RRF}
 Cormack G~V, Clarke C~L~A, Buettcher S.
-\newblock Reciprocal rank fusion outperforms {Condorcet} and individual rank
-  learning methods\allowbreak[C]//\allowbreak
-Proceedings of the 32nd International {ACM SIGIR} Conference on Research and
-  Development in Information Retrieval.
+\newblock Reciprocal rank fusion outperforms {Condorcet} and individual rank learning methods\allowbreak[C]//\allowbreak
+Proceedings of the 32nd International {ACM SIGIR} Conference on Research and Development in Information Retrieval.
 \newblock ACM, 2009: 758-759.
 
 \bibitem[Asai et~al.(2023)Asai, Wu, Wang, Sil, and Hajishirzi]{Asai2023SelfRAG}
 Asai A, Wu Z, Wang Y, et~al.
-\newblock {Self-RAG}: Learning to retrieve, generate, and critique through
-  self-reflection\allowbreak[A].
+\newblock {Self-RAG}: Learning to retrieve, generate, and critique through self-reflection\allowbreak[A].
 \newblock 2023.
 
 \bibitem[Khattab et~al.(2020)Khattab and Zaharia]{Khattab2020ColBERT}
 Khattab O, Zaharia M.
-\newblock {ColBERT}: Efficient and effective passage search via contextualized
-  late interaction over {BERT}\allowbreak[C]//\allowbreak
-Proceedings of the 43rd International {ACM SIGIR} Conference on Research and
-  Development in Information Retrieval.
+\newblock {ColBERT}: Efficient and effective passage search via contextualized late interaction over {BERT}\allowbreak[C]//\allowbreak
+Proceedings of the 43rd International {ACM SIGIR} Conference on Research and Development in Information Retrieval.
 \newblock ACM, 2020: 39-48.
 
-\bibitem[Yao et~al.(2023)Yao, Zhao, Yu, Du, Shafran, Narasimhan, and
-  Cao]{Yao2023ReAct}
+\bibitem[Yao et~al.(2023)Yao, Zhao, Yu, Du, Shafran, Narasimhan, and Cao]{Yao2023ReAct}
 Yao S, Zhao J, Yu D, et~al.
-\newblock {ReAct}: Synergizing reasoning and acting in language
-  models\allowbreak[J].
-\newblock Proceedings of the International Conference on Learning
-  Representations, 2023.
+\newblock {ReAct}: Synergizing reasoning and acting in language models\allowbreak[J].
+\newblock Proceedings of the International Conference on Learning Representations, 2023.
 
-\bibitem[Wei et~al.(2022)Wei, Wang, Schuurmans, Bosma, Ichter, Xia, Chi, Le,
-  and Zhou]{Wei2022CoT}
+\bibitem[Wei et~al.(2022)Wei, Wang, Schuurmans, Bosma, Ichter, Xia, Chi, Le, and Zhou]{Wei2022CoT}
 Wei J, Wang X, Schuurmans D, et~al.
-\newblock Chain-of-thought prompting elicits reasoning in large language
-  models\allowbreak[J].
-\newblock Advances in Neural Information Processing Systems, 2022, 35:
-  24824-24837.
+\newblock Chain-of-thought prompting elicits reasoning in large language models\allowbreak[J].
+\newblock Advances in Neural Information Processing Systems, 2022, 35: 24824-24837.
 
-\bibitem[Wang et~al.(2023)Wang, Xu, Lan, Hu, Lan, Lee, and
-  Lim]{Wang2023PlanSolve}
+\bibitem[Wang et~al.(2023)Wang, Xu, Lan, Hu, Lan, Lee, and Lim]{Wang2023PlanSolve}
 Wang L, Xu W, Lan Y, et~al.
-\newblock Plan-and-solve prompting: Improving zero-shot chain-of-thought
-  reasoning by large language models\allowbreak[C]//\allowbreak
-Proceedings of the 61st Annual Meeting of the Association for Computational
-  Linguistics.
+\newblock Plan-and-solve prompting: Improving zero-shot chain-of-thought reasoning by large language models\allowbreak[C]//\allowbreak
+Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics.
 \newblock 2023: 2609-2634.
 
-\bibitem[Packer et~al.(2023)Packer, Wooders, Lin, Fang, Patil, Stoica, and
-  Gonzalez]{Packer2023MemGPT}
+\bibitem[Packer et~al.(2023)Packer, Wooders, Lin, Fang, Patil, Stoica, and Gonzalez]{Packer2023MemGPT}
 Packer C, Wooders S, Lin K, et~al.
 \newblock {MemGPT}: Towards {LLMs} as operating systems\allowbreak[A].
 \newblock 2023.
 
 \bibitem[Guo et~al.(2024)Guo, Xia, Yu, Ao, and Huang]{Guo2024LightRAG}
 Guo Z, Xia L, Yu Y, et~al.
-\newblock {LightRAG}: Simple and fast retrieval-augmented
-  generation\allowbreak[A].
+\newblock {LightRAG}: Simple and fast retrieval-augmented generation\allowbreak[A].
 \newblock 2024.
 
 \bibitem[Kahn(1962)]{Kahn1962Topological}
@@ -107,35 +82,23 @@ Kahn A~B.
 
 \bibitem[Es et~al.(2023)Es, James, Espinosa-Anke, and Schockaert]{Es2023RAGAS}
 Es S, James J, Espinosa-Anke L, et~al.
-\newblock {RAGAS}: Automated evaluation of retrieval augmented
-  generation\allowbreak[A].
+\newblock {RAGAS}: Automated evaluation of retrieval augmented generation\allowbreak[A].
 \newblock 2023.
 
-\bibitem[Ru et~al.(2024)Ru, Qiu, Hu, Zhang, Shi, Chang, Jiayang, Wang, Sun, Li,
-  Zhang, Wang, Jiang, He, Wang, Liu, Zhang, and Zhang]{Ru2024RAGChecker}
+\bibitem[Ru et~al.(2024)Ru, Qiu, Hu, Zhang, Shi, Chang, Jiayang, Wang, Sun, Li, Zhang, Wang, Jiang, He, Wang, Liu, Zhang, and Zhang]{Ru2024RAGChecker}
 Ru D, Qiu L, Hu X, et~al.
-\newblock {RAGChecker}: A fine-grained framework for diagnosing
-  retrieval-augmented generation\allowbreak[J].
+\newblock {RAGChecker}: A fine-grained framework for diagnosing retrieval-augmented generation\allowbreak[J].
 \newblock Advances in Neural Information Processing Systems, 2024, 37.
 
 \bibitem[Malkov et~al.(2018)Malkov and Yashunin]{Malkov2018HNSW}
 Malkov Y~A, Yashunin D~A.
-\newblock Efficient and robust approximate nearest neighbor search using
-  hierarchical navigable small world graphs\allowbreak[J].
-\newblock IEEE Transactions on Pattern Analysis and Machine Intelligence, 2018,
-  42\allowbreak (4): 824-836.
+\newblock Efficient and robust approximate nearest neighbor search using hierarchical navigable small world graphs\allowbreak[J].
+\newblock IEEE Transactions on Pattern Analysis and Machine Intelligence, 2018, 42\allowbreak (4): 824-836.
 
 \bibitem[{Anthropic}(2024)]{Anthropic2024ContextualRetrieval}
 {Anthropic}.
 \newblock Introducing contextual retrieval\allowbreak[EB/OL].
 \newblock 2024.
 \newblock \url{https://www.anthropic.com/engineering/contextual-retrieval}.
-
-\bibitem[Vaswani et~al.(2017)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez,
-  Kaiser, and Polosukhin]{Vaswani2017Transformer}
-Vaswani A, Shazeer N, Parmar N, et~al.
-\newblock Attention is all you need\allowbreak[C]//\allowbreak
-Advances in Neural Information Processing Systems: Vol.~30.
-\newblock 2017.
 
 \end{thebibliography}

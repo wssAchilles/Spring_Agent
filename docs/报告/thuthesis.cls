@@ -476,7 +476,7 @@
       \def\thu@resume@name{在学期间参加课题的研究成果}%
     \else
       \def\listequationname{公式清单}%
-      \def\thu@acknowledgements@name{致\quad 谢}%
+      \def\thu@acknowledgements@name{致\qquad 谢}%
       \ifthu@degree@graduate
         \def\contentsname{目\quad 录}%
         \def\thu@resume@name{个人简历、在学期间完成的相关学术成果}%
