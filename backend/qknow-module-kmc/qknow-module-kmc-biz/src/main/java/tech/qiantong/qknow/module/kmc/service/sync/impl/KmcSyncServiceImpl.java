@@ -68,6 +68,7 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.CompletableFuture;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -373,30 +374,9 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                             createDocumentChatModel(kmcDocumentDO));
                 }
 
-                // Contextual Retrieval: enrich chunks with context before vectorization
                 String fullDocument = documentList.stream()
                         .map(Document::getText)
                         .collect(Collectors.joining("\n\n"));
-                segmentList = segmentList.stream()
-                        .map(doc -> {
-                            String enriched = contextualEnrichmentService.enrich(fullDocument, doc.getText());
-                            if (!enriched.equals(doc.getText())) {
-                                Document enrichedDoc = new Document(enriched, doc.getMetadata());
-                                enrichedDoc.getMetadata().put("contextual_enriched", true);
-                                return enrichedDoc;
-                            }
-                            return doc;
-                        })
-                        .collect(Collectors.toList());
-
-                // HyPE: generate hypothetical questions for each chunk
-                List<Document> hypotheticalDocs = new ArrayList<>();
-                for (Document doc : segmentList) {
-                    hypotheticalDocs.addAll(hypeIndexer.generateHypotheticalDocuments(doc, fullDocument));
-                }
-                if (!hypotheticalDocs.isEmpty()) {
-                    log.info("HyPE 生成 {} 个假设问题文档", hypotheticalDocs.size());
-                }
 
                 if (Objects.equals(kmcDocumentDO.getDocForm(), DocFormEnum.QA_MODEL.getType())) {
                     ChatModel chatModel = aiModelService.getChatModel(Long.valueOf(kmcDocumentDO.getChatModelProvider()),
@@ -405,17 +385,47 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                     segmentList = questionAnswerEnricher.apply(segmentList);
                 }
 
-                this.saveSegment(knowledgeBaseDO, kmcDocumentDO, segmentList);
-
-                // Save hypothetical questions to vector store only (not SQL)
-                if (!hypotheticalDocs.isEmpty()) {
-                    saveHypotheticalToVectorStore(knowledgeBaseDO, kmcDocumentDO, hypotheticalDocs);
+                if (contextualEnrichmentService != null) {
+                    List<CompletableFuture<Document>> futures = segmentList.stream()
+                            .map(segment -> contextualEnrichmentService.enrichAsync(fullDocument, segment.getText())
+                                    .thenApply(enrichedText -> {
+                                        if (enrichedText != null && !enrichedText.equals(segment.getText())) {
+                                            Document enrichedDoc = new Document(enrichedText, segment.getMetadata());
+                                            enrichedDoc.getMetadata().put("contextual_enriched", true);
+                                            return enrichedDoc;
+                                        }
+                                        return segment;
+                                    }))
+                            .toList();
+                    segmentList = futures.stream().map(CompletableFuture::join).collect(Collectors.toList());
+                    log.info("Contextual Enrichment completed for document: {}", kmcDocumentDO.getName());
                 }
 
+                this.saveSegment(knowledgeBaseDO, kmcDocumentDO, segmentList);
                 kmcDocumentDO.setSyncStatus(DocumentSyncStatus.SUCCESS.code);
                 kmcDocumentService.updateById(kmcDocumentDO);
                 evictKnowledgeCaches(kmcDocumentDO.getKnowledgeBaseId());
-                log.info("文档同步完成：{}，切片数：{}", kmcDocumentDO.getName(), segmentList.size());
+                log.info("文档基础切分与向量化完成：{}，切片数：{}", kmcDocumentDO.getName(), segmentList.size());
+
+                // HyPE runs after the document is already searchable; failure must not block parsed results.
+                try {
+                    List<Document> hypeSourceDocs = segmentList.stream()
+                            .filter(doc -> !RecursiveSplitter.CHUNK_LEVEL_PARENT.equals(
+                                    stringValue(doc.getMetadata().get(RecursiveSplitter.METADATA_CHUNK_LEVEL))))
+                            .limit(hypeIndexer.getMaxChunksPerDocument())
+                            .collect(Collectors.toList());
+                    List<Document> hypotheticalDocs = new ArrayList<>();
+                    for (Document doc : hypeSourceDocs) {
+                        hypotheticalDocs.addAll(hypeIndexer.generateHypotheticalDocuments(doc, fullDocument));
+                    }
+                    if (!hypotheticalDocs.isEmpty()) {
+                        log.info("HyPE 生成 {} 个假设问题文档，来源切片 {}/{}",
+                                hypotheticalDocs.size(), hypeSourceDocs.size(), segmentList.size());
+                        saveHypotheticalToVectorStore(knowledgeBaseDO, kmcDocumentDO, hypotheticalDocs);
+                    }
+                } catch (Exception e) {
+                    log.warn("HyPE 后置增强失败，文档基础切分已完成：{}，原因：{}", kmcDocumentDO.getName(), e.getMessage());
+                }
             } catch (Exception e) {
                 log.error("文档同步失败：{}，原因：{}", kmcDocumentDO.getName(), e.getMessage(), e);
                 kmcDocumentDO.setSyncStatus(DocumentSyncStatus.ERROR.code);

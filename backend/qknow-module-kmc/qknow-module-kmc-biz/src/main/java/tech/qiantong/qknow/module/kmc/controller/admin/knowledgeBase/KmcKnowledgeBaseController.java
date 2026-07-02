@@ -139,7 +139,7 @@ public class KmcKnowledgeBaseController extends BaseController {
     public CommonResult<List<RetrieveResultRespVO>> recallTest(
             @Valid @RequestBody RetrieveResultReqVO retrieveResultReqVO,
             @RequestParam(defaultValue = "false") boolean debug) {
-        retrieveResultReqVO.setWorkspaceId(getWorkSpaceId());
+        retrieveResultReqVO.setWorkspaceId(1L);
         List<RetrieveResultRespVO> result = kmcKnowledgeBaseService.recallTest(retrieveResultReqVO);
 
         if (debug) {
@@ -161,7 +161,7 @@ public class KmcKnowledgeBaseController extends BaseController {
     @PostMapping("/recallDebug")
     public CommonResult<RecallDebugRespVO> recallDebug(
             @Valid @RequestBody RetrieveResultReqVO retrieveResultReqVO) {
-        retrieveResultReqVO.setWorkspaceId(getWorkSpaceId());
+        retrieveResultReqVO.setWorkspaceId(1L);
         return CommonResult.success(kmcKnowledgeBaseService.recallDebug(retrieveResultReqVO));
     }
 
