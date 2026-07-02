@@ -106,14 +106,16 @@ public class RagRetrievalService {
                     .build();
         }
 
-        // Dynamic topK: 根据查询复杂度动态调整
-        int dynamicTopK = topK;
-        if (route == QueryRouter.QueryRoute.COMPLEX) {
-            dynamicTopK = (int) Math.min(topK * 1.5, 80);
-            log.debug("Dynamic topK: COMPLEX route, topK {} -> {}", topK, dynamicTopK);
+        // Dynamic topK: 提前解析意图，通过 resolveTopK 动态调整
+        QueryIntent queryIntent = queryIntentAnalyzer.analyze(originalQuery);
+        int dynamicTopK = resolveTopK(topK, route, queryIntent);
+        if (debug) {
+            debugInfo.put("dynamicTopK", dynamicTopK);
+            debugInfo.put("dynamicTopKRoute", route.name());
         }
+        log.debug("Dynamic topK: route={}, topK {} -> {}", route, topK, dynamicTopK);
 
-        RagResult first = retrieveOnce(knowledgeBaseId, originalQuery, query, dynamicTopK, debug, debugInfo, "first", route);
+        RagResult first = retrieveOnce(knowledgeBaseId, queryIntent, query, dynamicTopK, debug, debugInfo, "first", route);
         CragRetrievalEvaluation evaluation = cragRetrievalEvaluator.evaluate(query, first);
         if (debug) {
             debugInfo.put("cragLabel", evaluation.getLabel() != null ? evaluation.getLabel().name() : null);
@@ -130,7 +132,7 @@ public class RagRetrievalService {
                 && rewrittenQuery != null
                 && !rewrittenQuery.isBlank()
                 && !rewrittenQuery.trim().equalsIgnoreCase(query.trim())) {
-            effective = retrieveOnce(knowledgeBaseId, originalQuery, rewrittenQuery, topK, debug, debugInfo, "second", route);
+            effective = retrieveOnce(knowledgeBaseId, queryIntent, rewrittenQuery, topK, debug, debugInfo, "second", route);
             rewriteApplied = true;
             secondRetrievalCount = effective.getSources().size();
         } else if (evaluation.isIncorrect()) {
@@ -160,9 +162,8 @@ public class RagRetrievalService {
         return effective;
     }
 
-    private RagResult retrieveOnce(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug,
+    private RagResult retrieveOnce(Long knowledgeBaseId, QueryIntent queryIntent, String query, int topK, boolean debug,
                                     Map<String, Object> debugInfo, String phase, QueryRouter.QueryRoute route) {
-        QueryIntent queryIntent = queryIntentAnalyzer.analyze(originalQuery);
         if (debug && "first".equals(phase)) {
             debugInfo.put("queryIntent", queryIntent);
             debugInfo.put("searchMethod", "RAG v2 混合检索 + CRAG");
