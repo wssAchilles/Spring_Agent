@@ -34,7 +34,7 @@ public class RagRerankService {
             return new ArrayList<>();
         }
 
-        // ColBERT 粗排层：在主 reranker 之前进行 n-gram 粗排
+        // ColBERT 粗排层：在主 reranker 之前进行 token-level MaxSim 粗排
         candidates = colbertCoarseRerank(query, candidates, topK * 3);
 
         RerankRequestContext context = RerankRequestContext.builder()
@@ -61,7 +61,7 @@ public class RagRerankService {
     }
 
     /**
-     * ColBERT 粗排：使用 n-gram 重叠度进行快速粗排
+     * ColBERT 粗排：使用 token-level MaxSim 进行快速粗排
      */
     private List<RetrievalResult> colbertCoarseRerank(String query, List<RetrievalResult> candidates, int limit) {
         try {

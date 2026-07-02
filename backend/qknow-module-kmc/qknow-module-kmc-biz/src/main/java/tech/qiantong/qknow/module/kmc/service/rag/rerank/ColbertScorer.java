@@ -26,19 +26,19 @@ public class ColbertScorer {
 
     /**
      * 对文档进行 ColBERT 风格粗排
-     * 使用 n-gram 重叠度作为 MaxSim 的近似
+     * 使用 token-level 向量延迟交互 MaxSim
      */
     public List<Document> rerank(String query, List<Document> documents, int topK) {
         if (!config.isEnabled() || documents == null || documents.isEmpty()) {
             return documents;
         }
 
-        List<String> queryNgrams = extractNgrams(query, config.getNgramSize());
+        List<double[]> queryVectors = encodeTokens(tokenize(query));
 
         List<ScoredDocument> scored = new ArrayList<>();
         for (Document doc : documents) {
-            List<String> docNgrams = extractNgrams(doc.getText(), config.getNgramSize());
-            double maxSim = computeMaxSim(queryNgrams, docNgrams);
+            List<double[]> docVectors = encodeTokens(tokenize(doc.getText()));
+            double maxSim = computeMaxSim(queryVectors, docVectors);
             scored.add(new ScoredDocument(doc, maxSim));
         }
 
@@ -56,24 +56,27 @@ public class ColbertScorer {
     }
 
     /**
-     * MaxSim 近似：查询 n-gram 与文档 n-gram 的最大重叠率
+     * MaxSim：每个查询 token 与所有文档 token 叉乘取最大相似度，再做平均。
      */
-    private double computeMaxSim(List<String> queryNgrams, List<String> docNgrams) {
-        if (queryNgrams.isEmpty() || docNgrams.isEmpty()) return 0.0;
-
-        int matches = 0;
-        for (String qn : queryNgrams) {
-            for (String dn : docNgrams) {
-                if (qn.equals(dn)) {
-                    matches++;
-                    break;
+    private double computeMaxSim(List<double[]> queryVectors, List<double[]> docVectors) {
+        if (queryVectors.isEmpty() || docVectors.isEmpty()) {
+            return 0.0;
+        }
+        double sum = 0.0;
+        for (double[] queryVector : queryVectors) {
+            double best = 0.0;
+            for (double[] docVector : docVectors) {
+                double score = dot(queryVector, docVector);
+                if (score > best) {
+                    best = score;
                 }
             }
+            sum += best;
         }
-        return (double) matches / queryNgrams.size();
+        return sum / queryVectors.size();
     }
 
-    private List<String> extractNgrams(String text, int n) {
+    private List<String> tokenize(String text) {
         if (text == null || text.isBlank()) return List.of();
         // 保留 CJK 字符 + ASCII 单词 + 空格
         String normalized = text.toLowerCase().replaceAll("[^\\w\\s\\u4e00-\\u9fff\\u3400-\\u4dbf]", "")
@@ -90,16 +93,49 @@ public class ColbertScorer {
                 tokens.add(part);
             }
         }
-        List<String> ngrams = new ArrayList<>();
-        for (int i = 0; i <= tokens.size() - n; i++) {
-            StringBuilder sb = new StringBuilder();
-            for (int j = 0; j < n; j++) {
-                if (j > 0) sb.append(" ");
-                sb.append(tokens.get(i + j));
-            }
-            ngrams.add(sb.toString());
+        return tokens;
+    }
+
+    private List<double[]> encodeTokens(List<String> tokens) {
+        List<double[]> vectors = new ArrayList<>();
+        for (String token : tokens) {
+            vectors.add(tokenVector(token));
         }
-        return ngrams;
+        return vectors;
+    }
+
+    private double[] tokenVector(String token) {
+        int dimensions = Math.max(16, config.getDimensions());
+        double[] vector = new double[dimensions];
+        int hash = token.hashCode();
+        for (int i = 0; i < dimensions; i++) {
+            hash = 31 * hash + i;
+            vector[i] = ((hash & 1) == 0 ? 1.0 : -1.0) * (1.0 + ((hash >>> 1) & 0x0F) / 16.0);
+        }
+        normalize(vector);
+        return vector;
+    }
+
+    private void normalize(double[] vector) {
+        double norm = 0.0;
+        for (double value : vector) {
+            norm += value * value;
+        }
+        if (norm == 0.0) {
+            return;
+        }
+        double scale = 1.0 / Math.sqrt(norm);
+        for (int i = 0; i < vector.length; i++) {
+            vector[i] *= scale;
+        }
+    }
+
+    private double dot(double[] a, double[] b) {
+        double sum = 0.0;
+        for (int i = 0; i < Math.min(a.length, b.length); i++) {
+            sum += a[i] * b[i];
+        }
+        return sum;
     }
 
     @Data
@@ -114,5 +150,6 @@ public class ColbertScorer {
     public static class ColbertConfig {
         private boolean enabled = false;
         private int ngramSize = 3;
+        private int dimensions = 64;
     }
 }

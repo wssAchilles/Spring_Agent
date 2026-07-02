@@ -62,6 +62,9 @@ public class RagRetrievalService {
     @Resource
     private QueryRouter queryRouter;
 
+    @Resource
+    private CragWebSearchClient cragWebSearchClient;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         return retrieve(knowledgeBaseId, query, query, topK, debug);
     }
@@ -100,7 +103,7 @@ public class RagRetrievalService {
                     .build();
         }
 
-        RagResult first = retrieveOnce(knowledgeBaseId, originalQuery, query, topK, debug, debugInfo, "first");
+        RagResult first = retrieveOnce(knowledgeBaseId, originalQuery, query, topK, debug, debugInfo, "first", route);
         CragRetrievalEvaluation evaluation = cragRetrievalEvaluator.evaluate(query, first);
         if (debug) {
             debugInfo.put("cragLabel", evaluation.getLabel() != null ? evaluation.getLabel().name() : null);
@@ -117,7 +120,7 @@ public class RagRetrievalService {
                 && rewrittenQuery != null
                 && !rewrittenQuery.isBlank()
                 && !rewrittenQuery.trim().equalsIgnoreCase(query.trim())) {
-            effective = retrieveOnce(knowledgeBaseId, originalQuery, rewrittenQuery, topK, debug, debugInfo, "second");
+            effective = retrieveOnce(knowledgeBaseId, originalQuery, rewrittenQuery, topK, debug, debugInfo, "second", route);
             rewriteApplied = true;
             secondRetrievalCount = effective.getSources().size();
         } else if (evaluation.isIncorrect()) {
@@ -126,6 +129,9 @@ public class RagRetrievalService {
                     .sources(Collections.emptyList())
                     .debugInfo(debugInfo != null ? debugInfo : Map.of())
                     .build();
+        }
+        if (evaluation.isIncorrect()) {
+            effective = applyWebFallback(query, rewrittenQuery, effective, topK, debug, debugInfo);
         }
 
         long elapsed = System.currentTimeMillis() - startTime;
@@ -145,7 +151,7 @@ public class RagRetrievalService {
     }
 
     private RagResult retrieveOnce(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug,
-                                    Map<String, Object> debugInfo, String phase) {
+                                    Map<String, Object> debugInfo, String phase, QueryRouter.QueryRoute route) {
         QueryIntent queryIntent = queryIntentAnalyzer.analyze(originalQuery);
         if (debug && "first".equals(phase)) {
             debugInfo.put("queryIntent", queryIntent);
@@ -181,7 +187,7 @@ public class RagRetrievalService {
         Future<List<RetrievalResult>> metadataFuture = RETRIEVAL_EXECUTOR.submit(
                 () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK));
         Future<List<RetrievalResult>> graphFuture = RETRIEVAL_EXECUTOR.submit(
-                () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent.getEntities(), candidateTopK));
+                () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent, query, route, candidateTopK));
 
         vectorResults = getFuture(vectorFuture, "vector");
         keywordResults = getFuture(keywordFuture, "keyword");
@@ -249,5 +255,30 @@ public class RagRetrievalService {
             log.warn("Future '{}' failed or timed out", name, e);
             return new ArrayList<>();
         }
+    }
+
+    private RagResult applyWebFallback(String query, String rewrittenQuery, RagResult current, int topK,
+                                       boolean debug, Map<String, Object> debugInfo) {
+        String webQuery = rewrittenQuery != null && !rewrittenQuery.isBlank() ? rewrittenQuery : query;
+        List<RetrievalResult> webResults = cragWebSearchClient.search(webQuery, Math.min(Math.max(topK, 3), 8));
+        if (debug) {
+            debugInfo.put("webFallbackApplied", !webResults.isEmpty());
+            debugInfo.put("webFallbackCount", webResults.size());
+        }
+        if (webResults.isEmpty()) {
+            return current;
+        }
+        List<RetrievalResult> merged = new ArrayList<>();
+        if (current != null && current.getSources() != null) {
+            merged.addAll(current.getSources());
+        }
+        merged.addAll(webResults);
+        String context = ragContextBuilder.buildContext(merged, true);
+        RagResult result = RagResult.builder()
+                .context(context)
+                .sources(merged)
+                .debugInfo(debugInfo != null ? debugInfo : Map.of())
+                .build();
+        return result;
     }
 }

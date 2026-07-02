@@ -9,6 +9,7 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagResult;
+import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
 import java.sql.Connection;
@@ -57,6 +58,37 @@ public class GraphRagRetriever {
                 .toList();
     }
 
+    public List<RetrievalResult> retrieve(Long knowledgeBaseId, QueryIntent queryIntent,
+                                          String query, QueryRouter.QueryRoute route, int topK) {
+        if (queryIntent == null) {
+            return List.of();
+        }
+        List<String> entities = queryIntent.getEntities() != null ? queryIntent.getEntities() : List.of();
+        List<String> topics = new ArrayList<>();
+        if (queryIntent.getKeywords() != null) {
+            topics.addAll(queryIntent.getKeywords());
+        }
+        if (StrUtil.isNotBlank(queryIntent.getCategory())) {
+            topics.add(queryIntent.getCategory());
+        }
+
+        if (route == QueryRouter.QueryRoute.COMPLEX && !entities.isEmpty()) {
+            List<RetrievalResult> semantic = semanticGuidedRetrieve(knowledgeBaseId, entities, query, topK);
+            if (queryIntent.getDayNo() != null) {
+                return mergeResults(semantic,
+                        temporalRetrieve(knowledgeBaseId, entities, System.currentTimeMillis(), topK), topK);
+            }
+            return mergeResults(semantic, dualLevelRetrieve(knowledgeBaseId, entities, topics, topK), topK);
+        }
+        if (queryIntent.getDayNo() != null && !entities.isEmpty()) {
+            return temporalRetrieve(knowledgeBaseId, entities, System.currentTimeMillis(), topK);
+        }
+        if (!topics.isEmpty()) {
+            return dualLevelRetrieve(knowledgeBaseId, entities, topics, topK);
+        }
+        return retrieve(knowledgeBaseId, entities, topK);
+    }
+
     /**
      * LightRAG 风格双层检索
      * Low-level: 精确实体匹配（已有）
@@ -68,13 +100,13 @@ public class GraphRagRetriever {
 
         // Low-level: 精确实体匹配
         if (entities != null && !entities.isEmpty()) {
-            List<RetrievalResult> entityResults = retrieve(knowledgeBaseId, entities, topK / 2);
+            List<RetrievalResult> entityResults = retrieve(knowledgeBaseId, entities, Math.max(1, topK / 2));
             results.addAll(entityResults);
         }
 
         // High-level: 主题/概念匹配
         if (topics != null && !topics.isEmpty()) {
-            List<RetrievalResult> topicResults = searchByTopics(knowledgeBaseId, topics, topK / 2);
+            List<RetrievalResult> topicResults = searchByTopics(knowledgeBaseId, topics, Math.max(1, topK / 2));
             results.addAll(topicResults);
         }
 
@@ -405,6 +437,21 @@ public class GraphRagRetriever {
             }
         }
         return null;
+    }
+
+    private List<RetrievalResult> mergeResults(List<RetrievalResult> first, List<RetrievalResult> second, int topK) {
+        Map<String, RetrievalResult> merged = new java.util.LinkedHashMap<>();
+        for (RetrievalResult result : java.util.stream.Stream.concat(first.stream(), second.stream()).toList()) {
+            String key = result.getSegmentId() != null ? "seg:" + result.getSegmentId() : "content:" + result.getContent();
+            RetrievalResult existing = merged.get(key);
+            if (existing == null || result.getScore() > existing.getScore()) {
+                merged.put(key, result);
+            }
+        }
+        return merged.values().stream()
+                .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+                .limit(topK)
+                .toList();
     }
 
     private boolean isH2() {
