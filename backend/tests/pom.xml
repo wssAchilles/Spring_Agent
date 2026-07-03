@@ -68,6 +68,12 @@
             <version>${qknow.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-module-kg-biz</artifactId>
+            <version>${qknow.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

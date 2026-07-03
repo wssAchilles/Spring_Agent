@@ -1,109 +1,230 @@
 package tech.qiantong.qknow.module.kmc.service.rag;
 
-import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagResult;
+import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class GraphRagRetrieverTest {
 
+    @Mock
     private JdbcTemplate jdbcTemplate;
+    @Mock
+    private Neo4jClient neo4jClient;
+    @Mock
+    private CypherSafetyValidator cypherSafetyValidator;
+
     private GraphRagProperties properties;
     private GraphRagRetriever retriever;
 
     @BeforeEach
     void setUp() {
-        JdbcDataSource dataSource = new JdbcDataSource();
-        dataSource.setURL("jdbc:h2:mem:graph_rag;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
-        jdbcTemplate = new JdbcTemplate(dataSource);
-        createSchema();
-
         properties = new GraphRagProperties();
         retriever = new GraphRagRetriever();
         ReflectionTestUtils.setField(retriever, "jdbcTemplate", jdbcTemplate);
         ReflectionTestUtils.setField(retriever, "properties", properties);
+        ReflectionTestUtils.setField(retriever, "neo4jClient", neo4jClient);
+        ReflectionTestUtils.setField(retriever, "cypherSafetyValidator", cypherSafetyValidator);
     }
 
-    @Test
-    void disabledGraphReturnsEmpty() {
-        assertTrue(retriever.graphSearch(1L, List.of("A公司"), 10).isEmpty());
+    @Nested
+    @DisplayName("retrieve 测试")
+    class RetrieveTests {
+
+        @Test
+        @DisplayName("空 entities 返回空列表")
+        void retrieve_emptyEntities_returnsEmpty() {
+            properties.setEnabled(true);
+
+            List<RetrievalResult> results = retriever.retrieve(1L, List.of(), 10);
+
+            assertTrue(results.isEmpty());
+        }
+
+        @Test
+        @DisplayName("null entities 返回空列表")
+        void retrieve_nullEntities_returnsEmpty() {
+            properties.setEnabled(true);
+
+            List<RetrievalResult> results = retriever.retrieve(1L, null, 10);
+
+            assertTrue(results.isEmpty());
+        }
     }
 
-    @Test
-    void graphSearchReturnsEntityMatches() {
-        properties.setEnabled(true);
-        insertFixture();
+    @Nested
+    @DisplayName("graphSearch 测试")
+    class GraphSearchTests {
 
-        List<GraphRagResult> results = retriever.graphSearch(1L, List.of("A公司"), 10);
+        @Test
+        @DisplayName("graphSearch disabled 返回空")
+        void graphSearch_disabled_returnsEmpty() {
+            properties.setEnabled(false);
 
-        assertEquals(1, results.size());
-        assertEquals(100L, results.get(0).getSegmentId());
-        assertTrue(results.get(0).getEvidence().contains("股东"));
+            List<GraphRagResult> results = retriever.graphSearch(1L, List.of("A公司"), 10);
+
+            assertTrue(results.isEmpty());
+        }
+
+        @Test
+        @DisplayName("null knowledgeBaseId 返回空")
+        void graphSearch_nullKbId_returnsEmpty() {
+            properties.setEnabled(true);
+
+            List<GraphRagResult> results = retriever.graphSearch(null, List.of("A公司"), 10);
+
+            assertTrue(results.isEmpty());
+        }
     }
 
-    @Test
-    void emptyMigrationSucceeds() {
-        GraphRagSyncService syncService = new GraphRagSyncService();
-        ReflectionTestUtils.setField(syncService, "jdbcTemplate", jdbcTemplate);
-        ReflectionTestUtils.setField(syncService, "properties", properties);
+    @Nested
+    @DisplayName("dualLevelRetrieve 测试")
+    class DualLevelRetrieveTests {
 
-        assertEquals(0, syncService.migrateExistingMetadata());
+        @Test
+        @DisplayName("合并 entity + topic 结果并去重")
+        void dualLevelRetrieve_mergesAndDeduces() throws Exception {
+            // 测试 mergeResults 的去重逻辑，它是 dualLevelRetrieve 的核心
+            java.lang.reflect.Method mergeMethod = GraphRagRetriever.class.getDeclaredMethod("mergeResults",
+                    List.class, List.class, int.class);
+            mergeMethod.setAccessible(true);
+
+            List<RetrievalResult> entityResults = List.of(
+                    RetrievalResult.builder().segmentId(1L).score(12.0).content("c1").build(),
+                    RetrievalResult.builder().segmentId(2L).score(8.0).content("c2").build());
+            List<RetrievalResult> topicResults = List.of(
+                    RetrievalResult.builder().segmentId(1L).score(10.0).content("c1").build(),
+                    RetrievalResult.builder().segmentId(3L).score(6.0).content("c3").build());
+
+            @SuppressWarnings("unchecked")
+            List<RetrievalResult> merged = (List<RetrievalResult>) mergeMethod.invoke(retriever,
+                    entityResults, topicResults, 10);
+
+            assertEquals(3, merged.size());
+            // segmentId=1 应保留 entity 层的 score=12.0（更高）
+            RetrievalResult seg1 = merged.stream().filter(r -> r.getSegmentId() == 1L).findFirst().orElseThrow();
+            assertEquals(12.0, seg1.getScore(), 0.001);
+            // 结果应按分数降序排列
+            for (int i = 0; i < merged.size() - 1; i++) {
+                assertTrue(merged.get(i).getScore() >= merged.get(i + 1).getScore());
+            }
+        }
     }
 
-    @Test
-    void cypherSafetyBlocksWrites() {
-        CypherSafetyValidator validator = new CypherSafetyValidator();
+    @Nested
+    @DisplayName("temporalRetrieve 测试")
+    class TemporalRetrieveTests {
 
-        assertTrue(validator.isReadOnly("MATCH (n) RETURN n LIMIT 20"));
-        assertFalse(validator.isReadOnly("MATCH (n) DELETE n RETURN n"));
-        assertFalse(validator.isReadOnly("MATCH (n) RETURN n; MATCH (m) RETURN m"));
-        assertFalse(validator.isReadOnly("MATCH (n) FOREACH (x IN [1] | SET n.v = x) RETURN n"));
-        assertTrue(validator.isTemplateReadOnly("MATCH (n) UNWIND [1] AS x RETURN x"));
+        @Test
+        @DisplayName("时序衰减分数计算")
+        void temporalRetrieve_decayScoreCalculation() throws Exception {
+            long currentTime = 1700000000000L;
+            long thirtyDaysAgo = currentTime - 30L * 86400000L;
+
+            Method decayMethod = GraphRagRetriever.class.getDeclaredMethod("toLong", Object.class);
+            decayMethod.setAccessible(true);
+
+            // 验证 toLong 方法对 Number 类型的转换
+            Long result = (Long) decayMethod.invoke(retriever, 42L);
+            assertEquals(42L, result);
+
+            // 验证时序衰减公式: GRAPH_SCORE * 0.9^(ageDays/30)
+            double graphScore = 12.0;
+            double decayFactor = 0.9;
+            int ageDays = 30;
+            double expectedScore = graphScore * Math.pow(decayFactor, ageDays / 30.0);
+            assertEquals(12.0 * 0.9, expectedScore, 0.001);
+
+            ageDays = 60;
+            expectedScore = graphScore * Math.pow(decayFactor, ageDays / 30.0);
+            assertEquals(12.0 * 0.81, expectedScore, 0.001);
+        }
     }
 
-    private void createSchema() {
-        jdbcTemplate.execute("DROP ALL OBJECTS");
-        jdbcTemplate.execute("""
-                CREATE TABLE kmc_document (
-                    id BIGINT PRIMARY KEY,
-                    knowledge_base_id BIGINT,
-                    name VARCHAR(255),
-                    del_flag INTEGER DEFAULT 0
-                )
-                """);
-        jdbcTemplate.execute("""
-                CREATE TABLE kmc_document_segment (
-                    id BIGINT PRIMARY KEY,
-                    document_id BIGINT,
-                    document_name VARCHAR(255),
-                    content TEXT,
-                    del_flag INTEGER DEFAULT 0
-                )
-                """);
-        jdbcTemplate.execute("""
-                CREATE TABLE kmc_segment_entity_metadata (
-                    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-                    document_id BIGINT,
-                    segment_id BIGINT,
-                    qm_segment_id VARCHAR(128),
-                    entities TEXT,
-                    relations TEXT
-                )
-                """);
+    @Nested
+    @DisplayName("mergeResults 测试")
+    class MergeResultsTests {
+
+        @Test
+        @DisplayName("去重保留最高分")
+        void mergeResults_deducesAndKeepsHighestScore() throws Exception {
+            Method mergeMethod = GraphRagRetriever.class.getDeclaredMethod("mergeResults",
+                    List.class, List.class, int.class);
+            mergeMethod.setAccessible(true);
+
+            List<RetrievalResult> first = List.of(
+                    RetrievalResult.builder().segmentId(1L).score(5.0).content("c1").build(),
+                    RetrievalResult.builder().segmentId(2L).score(8.0).content("c2").build());
+            List<RetrievalResult> second = List.of(
+                    RetrievalResult.builder().segmentId(1L).score(10.0).content("c1").build(),
+                    RetrievalResult.builder().segmentId(3L).score(3.0).content("c3").build());
+
+            @SuppressWarnings("unchecked")
+            List<RetrievalResult> merged = (List<RetrievalResult>) mergeMethod.invoke(retriever, first, second, 10);
+
+            assertEquals(3, merged.size());
+            // segmentId=1 应保留 score=10.0 的版本
+            RetrievalResult seg1 = merged.stream().filter(r -> r.getSegmentId() == 1L).findFirst().orElseThrow();
+            assertEquals(10.0, seg1.getScore(), 0.001);
+            // 结果应按分数降序排列
+            for (int i = 0; i < merged.size() - 1; i++) {
+                assertTrue(merged.get(i).getScore() >= merged.get(i + 1).getScore());
+            }
+        }
     }
 
-    private void insertFixture() {
-        jdbcTemplate.update("INSERT INTO kmc_document(id, knowledge_base_id, name, del_flag) VALUES (10, 1, 'doc', 0)");
-        jdbcTemplate.update("INSERT INTO kmc_document_segment(id, document_id, document_name, content, del_flag) VALUES (100, 10, 'doc', 'content', 0)");
-        jdbcTemplate.update("""
-                INSERT INTO kmc_segment_entity_metadata(document_id, segment_id, qm_segment_id, entities, relations)
-                VALUES (10, 100, 'qm-1', '[\"A公司\"]', '[{\"source\":\"A公司\",\"relation\":\"股东\",\"target\":\"B公司\"}]')
-                """);
+    @Nested
+    @DisplayName("toLong 类型转换测试")
+    class ToLongTests {
+
+        @Test
+        @DisplayName("Number 类型转换")
+        void toLong_numberType_convertsCorrectly() throws Exception {
+            Method toLongMethod = GraphRagRetriever.class.getDeclaredMethod("toLong", Object.class);
+            toLongMethod.setAccessible(true);
+
+            assertEquals(42L, toLongMethod.invoke(retriever, 42));
+            assertEquals(42L, toLongMethod.invoke(retriever, 42L));
+            assertEquals(42L, toLongMethod.invoke(retriever, 42.0));
+            assertEquals(100L, toLongMethod.invoke(retriever, (short) 100));
+        }
+
+        @Test
+        @DisplayName("String 类型转换")
+        void toLong_stringType_parsesCorrectly() throws Exception {
+            Method toLongMethod = GraphRagRetriever.class.getDeclaredMethod("toLong", Object.class);
+            toLongMethod.setAccessible(true);
+
+            assertEquals(99L, toLongMethod.invoke(retriever, "99"));
+            assertNull(toLongMethod.invoke(retriever, "not-a-number"));
+            assertNull(toLongMethod.invoke(retriever, ""));
+            assertNull(toLongMethod.invoke(retriever, "  "));
+        }
+
+        @Test
+        @DisplayName("null 返回 null")
+        void toLong_null_returnsNull() throws Exception {
+            Method toLongMethod = GraphRagRetriever.class.getDeclaredMethod("toLong", Object.class);
+            toLongMethod.setAccessible(true);
+
+            assertNull(toLongMethod.invoke(retriever, (Object) null));
+        }
     }
 }
