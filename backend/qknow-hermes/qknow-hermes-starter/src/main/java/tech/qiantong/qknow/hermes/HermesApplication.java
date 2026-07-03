@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * 独立于控制面（Spring Boot 单体），通过 gRPC 提供 Agent 推理能力
  */
 @Slf4j
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
+@SpringBootApplication
 @EnableScheduling
 @ComponentScan(basePackages = {"tech.qiantong.qknow.hermes", "tech.qiantong.qknow.redis"})
 public class HermesApplication {
@@ -20,5 +20,14 @@ public class HermesApplication {
     public static void main(String[] args) {
         SpringApplication.run(HermesApplication.class, args);
         log.info("========== Hermes 认知内核启动成功 ==========");
+    }
+
+    @org.springframework.context.annotation.Bean
+    public org.springframework.boot.CommandLineRunner runMemoryAgent(tech.qiantong.qknow.hermes.memory.SleepTimeMemoryAgent agent) {
+        return args -> {
+            log.info("========== 强制执行 SleepTimeMemoryAgent.consolidateIdleConversations() ==========");
+            agent.consolidateIdleConversations();
+            log.info("========== 强制执行结束 ==========");
+        };
     }
 }

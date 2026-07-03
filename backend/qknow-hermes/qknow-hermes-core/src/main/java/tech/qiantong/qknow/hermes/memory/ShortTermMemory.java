@@ -172,7 +172,7 @@ public class ShortTermMemory {
         if (redisService == null) {
             return List.of();
         }
-        Set<String> keys = redisService.scanKeys("memory:short:*", scanCount);
+        Set<String> keys = redisService.scanKeys("*memory:short:*", scanCount);
         if (keys == null || keys.isEmpty()) {
             return List.of();
         }

@@ -10,12 +10,22 @@ grpc:
 spring:
   application:
     name: qknow-hermes
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/ai_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: ${POSTGRESQL_USERNAME:achilles}
+    password: ${POSTGRESQL_PASSWORD:achilles}
+    driver-class-name: org.postgresql.Driver
   ai:
     openai:
       api-key: ${HERMES_OPENAI_API_KEY:sk-placeholder}
       base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
     ollama:
       base-url: ${HERMES_OLLAMA_BASE_URL:http://localhost:11434}
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536
 
 hermes:
   routing:
@@ -38,7 +48,7 @@ hermes:
     short-term:
       max-messages: 50
     long-term:
-      enabled: false
+      enabled: true
   rag:
     cache:
       enabled: true

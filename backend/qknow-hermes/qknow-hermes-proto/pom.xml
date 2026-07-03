@@ -66,10 +66,22 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>compile</id>
                         <goals>
                             <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <temporaryProtoFileDirectory>${project.build.directory}/protoc-dependencies-compile</temporaryProtoFileDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>compile-custom</id>
+                        <goals>
                             <goal>compile-custom</goal>
                         </goals>
+                        <configuration>
+                            <temporaryProtoFileDirectory>${project.build.directory}/protoc-dependencies-custom</temporaryProtoFileDirectory>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
