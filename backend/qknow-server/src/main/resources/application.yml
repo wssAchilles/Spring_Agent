@@ -44,7 +44,12 @@ qknow:
   captchaType: math
   rag:
     crag:
-      enabled: false  # 关闭 CRAG 检索评估，省 ~15% tokens
+      enabled: true  # 开启 CRAG 检索评估
+      web-search:
+        enabled: true
+        endpoint: https://api.bochaai.com/v1/web-search
+        api-key: ${CRAG_SEARCH_API_KEY:}
+        timeout-ms: 10000
     dynamic-top-k:
       enabled: true
       default-top-k: 10
