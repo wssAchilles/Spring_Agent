@@ -6,7 +6,7 @@
 
 \section{开发环境与技术选型}
 
-系统的开发环境和技术栈如表 3-1 所示。
+系统的开发环境和技术栈如表~\ref{tab:tech-stack} 所示。
 
 \begin{table}[htbp]
     \centering
@@ -46,16 +46,19 @@
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\linewidth]{"figures/知识库界面.png"}
-    \caption{知识库界面}
-    \label{fig:kb_list}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.85\linewidth]{"figures/知识库内部文件.png"}
-    \caption{知识库内部文件管理}
-    \label{fig:kb_files}
+    \begin{minipage}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{"figures/知识库界面.png"}
+        \caption{知识库界面}
+        \label{fig:kb_list}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{"figures/知识库内部文件.png"}
+        \caption{知识库内部文件管理}
+        \label{fig:kb_files}
+    \end{minipage}
 \end{figure}
 
 作为检索增强生成的基础设施，知识库的前端展示如图~\ref{fig:kb_list} 所示，平台提供了卡片化的知识库集合概览。进入特定的知识库后，其内部文件管理界面如图~\ref{fig:kb_files} 所示，系统支持上传多源异构文档并针对特定文件发起解析任务。文档准备就绪后，即可进入底层的切块与向量化流程。
@@ -137,16 +140,19 @@ PgVectorStore.builder(jdbcTemplate, embeddingModel).build()
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\linewidth]{"figures/agent工具列表.png"}
-    \caption{Agent 工具与实例管理}
-    \label{fig:agent_tools}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.85\linewidth]{"figures/agent编排语义.png"}
-    \caption{智能体工作流编排与调试}
-    \label{fig:agent_orchestration}
+    \begin{minipage}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{"figures/agent工具列表.png"}
+        \caption{Agent 工具与实例管理}
+        \label{fig:agent_tools}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{"figures/agent编排语义.png"}
+        \caption{智能体工作流编排与调试}
+        \label{fig:agent_orchestration}
+    \end{minipage}
 \end{figure}
 
 在智能体管理方面，平台提供了如图~\ref{fig:agent_tools} 所示的 Agent 工具与实例列表管理界面，用于集中维护各个专职智能体的配置与凭证。进入具体实例后，智能体工作流编排与实时聊天调试界面如图~\ref{fig:agent_orchestration} 所示，用户可以在左侧自由挂载模型、知识库与扩展工具，并在右侧直接测试流式对话。在后端架构层面，\texttt{AgentOrchestrator} 的 \texttt{executeAgent()} 方法实现了对应的完整编排流程。关键实现步骤：
