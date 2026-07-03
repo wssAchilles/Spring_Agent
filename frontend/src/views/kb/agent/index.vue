@@ -145,6 +145,7 @@
               size="small"
               style="width: 180px; margin-right: 8px;"
               @change="handleConversationChange"
+              :teleported="false"
               clearable
             >
               <el-option

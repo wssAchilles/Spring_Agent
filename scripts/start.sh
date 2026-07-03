@@ -48,7 +48,12 @@ release_port 80 "前端端口 80"
 release_port 8099 "后端端口 8099"
 release_port 9090 "Hermes 端口 9090"
 
-echo "[3/6] 启动本机主后端"
+echo "[3/6] 清理编译锁并编译后端代码"
+rm -rf "$PROJECT_DIR/backend/qknow-hermes/qknow-hermes-proto/target"
+echo "正在编译后端代码 (mvn clean compile)..."
+(cd "$PROJECT_DIR/backend" && mvn clean compile -DskipTests) || { echo "后端编译失败"; exit 1; }
+
+echo "[4/6] 启动本机主后端"
 start_background backend \
   "$SCRIPT_DIR/dev/watch-java.sh" \
   backend \
@@ -66,7 +71,7 @@ start_background backend \
   HERMES_GRPC_PORT=9090
 wait_for_tcp "主后端" 8099 240
 
-echo "[4/6] 启动本机 Hermes"
+echo "[5/6] 启动本机 Hermes"
 start_background hermes \
   "$SCRIPT_DIR/dev/watch-java.sh" \
   hermes \
@@ -83,7 +88,7 @@ start_background hermes \
   LANGFUSE_BASE_URL="${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}"
 wait_for_tcp "Hermes" 9090 180
 
-echo "[5/6] 启动本机 Vite"
+echo "[6/6] 启动本机 Vite"
 if [[ ! -d "$PROJECT_DIR/frontend/node_modules" ]]; then
   npm --prefix "$PROJECT_DIR/frontend" install --registry=https://registry.npmmirror.com
 fi

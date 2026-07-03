@@ -18,6 +18,7 @@ services:
     container_name: agent-neo4j
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4jpass123}
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
     ports:
       - "7474:7474"
       - "7687:7687"
