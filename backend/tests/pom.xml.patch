@@ -1,0 +1,13 @@
+--- pom.xml
++++ pom.xml
+@@ -10,6 +10,10 @@
+     </parent>
+     <artifactId>qknow-tests</artifactId>
+     <dependencies>
++        <dependency>
++            <groupId>tech.qiantong</groupId>
++            <artifactId>qknow-module-kmc-biz</artifactId>
++        </dependency>
+         <dependency>
+             <groupId>tech.qiantong</groupId>
+             <artifactId>qknow-server</artifactId>
