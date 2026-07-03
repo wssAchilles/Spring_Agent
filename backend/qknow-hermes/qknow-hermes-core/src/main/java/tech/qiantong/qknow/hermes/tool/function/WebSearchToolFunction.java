@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.function.Function;
 
 @Slf4j
-@Component("web_search")
+@Component("webSearch")
 public class WebSearchToolFunction
         implements Function<WebSearchToolFunction.Request, WebSearchToolFunction.Response> {
 
@@ -28,7 +28,12 @@ public class WebSearchToolFunction
     private final SearchProvider searchProvider;
 
     public WebSearchToolFunction() {
-        this(new DuckDuckGoSearchProvider());
+        String bochaKey = System.getenv("CRAG_SEARCH_API_KEY");
+        if (bochaKey != null && !bochaKey.isBlank()) {
+            this.searchProvider = new BochaSearchProvider(bochaKey);
+        } else {
+            this.searchProvider = new DuckDuckGoSearchProvider();
+        }
     }
 
     public WebSearchToolFunction(SearchProvider searchProvider) {
@@ -189,6 +194,65 @@ public class WebSearchToolFunction
                 }
             }
 
+            return results;
+        }
+    }
+
+    /**
+     * Bocha web search provider implementation.
+     */
+    public static class BochaSearchProvider implements SearchProvider {
+        private final String apiKey;
+
+        public BochaSearchProvider(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        @Override
+        public String getName() {
+            return "bocha";
+        }
+
+        @Override
+        public List<Response.SearchResult> search(String query, int maxResults) {
+            List<Response.SearchResult> results = new ArrayList<>();
+            try {
+                String url = "https://api.bochaai.com/v1/web-search";
+                JSONObject requestBody = new JSONObject();
+                requestBody.set("query", query);
+                requestBody.set("summary", true);
+                requestBody.set("count", maxResults);
+
+                String responseStr = cn.hutool.http.HttpRequest.post(url)
+                        .header("Content-Type", "application/json")
+                        .header("Authorization", "Bearer " + apiKey)
+                        .body(requestBody.toString())
+                        .timeout(10000)
+                        .execute()
+                        .body();
+
+                JSONObject json = JSONUtil.parseObj(responseStr);
+                JSONObject data = json.getJSONObject("data");
+                if (data != null) {
+                    JSONObject webPages = data.getJSONObject("webPages");
+                    if (webPages != null) {
+                        JSONArray values = webPages.getJSONArray("value");
+                        if (values != null) {
+                            int count = Math.min(values.size(), maxResults);
+                            for (int i = 0; i < count; i++) {
+                                JSONObject item = values.getJSONObject(i);
+                                Response.SearchResult result = new Response.SearchResult();
+                                result.title = item.getStr("name", "");
+                                result.snippet = item.getStr("snippet", "");
+                                result.url = item.getStr("url", "");
+                                if (!result.title.isBlank()) results.add(result);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Bocha search failed: {}", e.getMessage());
+            }
             return results;
         }
     }

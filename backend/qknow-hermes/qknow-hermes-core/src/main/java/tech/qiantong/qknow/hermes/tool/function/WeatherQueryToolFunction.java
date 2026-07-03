@@ -26,7 +26,7 @@ import static cn.hutool.core.date.DatePattern.NORM_DATETIME_PATTERN;
  * @author 芋道源码
  */
 @Slf4j
-@Component("weather_query")
+@Component("weatherQuery")
 public class WeatherQueryToolFunction
         implements Function<WeatherQueryToolFunction.Request, WeatherQueryToolFunction.Response> {
 

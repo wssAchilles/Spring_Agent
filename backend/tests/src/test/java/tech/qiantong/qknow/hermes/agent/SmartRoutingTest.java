@@ -21,45 +21,45 @@ class SmartRoutingTest {
 
     @Test
     void weatherQueryTriggersRouting() throws Exception {
-        assertTrue(invokeNeedsToolCalling("北京今天天气怎么样", Arrays.asList("weather_query")));
-        assertTrue(invokeNeedsToolCalling("上海气温多少度", Arrays.asList("weather_query")));
-        assertTrue(invokeNeedsToolCalling("明天会下雨吗", Arrays.asList("weather_query")));
-        assertTrue(invokeNeedsToolCalling("What's the weather in Tokyo", Arrays.asList("weather_query")));
+        assertTrue(invokeNeedsToolCalling("北京今天天气怎么样", Arrays.asList("weatherQuery")));
+        assertTrue(invokeNeedsToolCalling("上海气温多少度", Arrays.asList("weatherQuery")));
+        assertTrue(invokeNeedsToolCalling("明天会下雨吗", Arrays.asList("weatherQuery")));
+        assertTrue(invokeNeedsToolCalling("What's the weather in Tokyo", Arrays.asList("weatherQuery")));
     }
 
     @Test
     void searchQueryTriggersRouting() throws Exception {
-        assertTrue(invokeNeedsToolCalling("搜索一下2026年AI趋势", Arrays.asList("web_search")));
-        assertTrue(invokeNeedsToolCalling("搜一下最新的新闻", Arrays.asList("web_search")));
-        assertTrue(invokeNeedsToolCalling("查一下苹果公司信息", Arrays.asList("web_search")));
-        assertTrue(invokeNeedsToolCalling("百度一下Python教程", Arrays.asList("web_search")));
+        assertTrue(invokeNeedsToolCalling("搜索一下2026年AI趋势", Arrays.asList("webSearch")));
+        assertTrue(invokeNeedsToolCalling("搜一下最新的新闻", Arrays.asList("webSearch")));
+        assertTrue(invokeNeedsToolCalling("查一下苹果公司信息", Arrays.asList("webSearch")));
+        assertTrue(invokeNeedsToolCalling("百度一下Python教程", Arrays.asList("webSearch")));
     }
 
     @Test
     void httpQueryTriggersRouting() throws Exception {
-        assertTrue(invokeNeedsToolCalling("访问 https://example.com 获取内容", Arrays.asList("http_request")));
-        assertTrue(invokeNeedsToolCalling("调用api获取数据", Arrays.asList("http_request")));
-        assertTrue(invokeNeedsToolCalling("请求这个url", Arrays.asList("http_request")));
+        assertTrue(invokeNeedsToolCalling("访问 https://example.com 获取内容", Arrays.asList("httpRequest")));
+        assertTrue(invokeNeedsToolCalling("调用api获取数据", Arrays.asList("httpRequest")));
+        assertTrue(invokeNeedsToolCalling("请求这个url", Arrays.asList("httpRequest")));
     }
 
     @Test
     void textTransformTriggersRouting() throws Exception {
-        assertTrue(invokeNeedsToolCalling("把hello转成大写", Arrays.asList("text_transform")));
-        assertTrue(invokeNeedsToolCalling("uppercase this text", Arrays.asList("text_transform")));
-        assertTrue(invokeNeedsToolCalling("截取前10个字符", Arrays.asList("text_transform")));
-        assertTrue(invokeNeedsToolCalling("获取这段文本的长度", Arrays.asList("text_transform")));
+        assertTrue(invokeNeedsToolCalling("把hello转成大写", Arrays.asList("textTransform")));
+        assertTrue(invokeNeedsToolCalling("uppercase this text", Arrays.asList("textTransform")));
+        assertTrue(invokeNeedsToolCalling("截取前10个字符", Arrays.asList("textTransform")));
+        assertTrue(invokeNeedsToolCalling("获取这段文本的长度", Arrays.asList("textTransform")));
     }
 
     @Test
     void knowledgeBaseQueryDoesNotTriggerRouting() throws Exception {
-        assertFalse(invokeNeedsToolCalling("第一天我干了什么", Arrays.asList("weather_query", "web_search")));
-        assertFalse(invokeNeedsToolCalling("项目架构是什么", Arrays.asList("weather_query", "web_search")));
-        assertFalse(invokeNeedsToolCalling("Bug修复流程是什么", Arrays.asList("weather_query", "web_search")));
+        assertFalse(invokeNeedsToolCalling("第一天我干了什么", Arrays.asList("weatherQuery", "webSearch")));
+        assertFalse(invokeNeedsToolCalling("项目架构是什么", Arrays.asList("weatherQuery", "webSearch")));
+        assertFalse(invokeNeedsToolCalling("Bug修复流程是什么", Arrays.asList("weatherQuery", "webSearch")));
     }
 
     @Test
     void emptyQuestionDoesNotTrigger() throws Exception {
-        assertFalse(invokeNeedsToolCalling("", Arrays.asList("weather_query")));
+        assertFalse(invokeNeedsToolCalling("", Arrays.asList("weatherQuery")));
     }
 
     @Test
@@ -69,7 +69,7 @@ class SmartRoutingTest {
 
     @Test
     void missingToolDoesNotTrigger() throws Exception {
-        assertFalse(invokeNeedsToolCalling("北京天气怎么样", Arrays.asList("web_search")));
-        assertFalse(invokeNeedsToolCalling("搜索AI趋势", Arrays.asList("weather_query")));
+        assertFalse(invokeNeedsToolCalling("北京天气怎么样", Arrays.asList("webSearch")));
+        assertFalse(invokeNeedsToolCalling("搜索AI趋势", Arrays.asList("weatherQuery")));
     }
 }

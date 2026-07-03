@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Slf4j
-@Component("http_request")
+@Component("httpRequest")
 public class HttpRequestToolFunction
         implements Function<HttpRequestToolFunction.Request, HttpRequestToolFunction.Response> {
 

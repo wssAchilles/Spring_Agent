@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.function.Function;
 
 @Slf4j
-@Component("text_transform")
+@Component("textTransform")
 public class TextTransformToolFunction
         implements Function<TextTransformToolFunction.Request, TextTransformToolFunction.Response> {
 

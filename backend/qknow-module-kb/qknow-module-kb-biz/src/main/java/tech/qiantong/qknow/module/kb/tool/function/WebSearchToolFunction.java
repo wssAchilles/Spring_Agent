@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.function.Function;
 
 @Slf4j
-@Component("web_search")
+@Component("webSearch")
 public class WebSearchToolFunction
         implements Function<WebSearchToolFunction.Request, WebSearchToolFunction.Response> {
 

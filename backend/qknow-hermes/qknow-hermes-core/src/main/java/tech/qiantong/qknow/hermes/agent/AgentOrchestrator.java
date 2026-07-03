@@ -922,20 +922,20 @@ public class AgentOrchestrator {
         builder.append("你可以调用以下工具来辅助回答。当用户的问题涉及工具能处理的场景时，**必须主动调用对应工具**，不要拒绝或建议用户自行操作。\n\n");
 
         boolean hasTool = false;
-        if (toolNames.contains("weather_query")) {
-            builder.append("- **weather_query**: 查询指定城市的实时天气。当用户询问天气、气温、是否下雨等问题时调用。参数: city(城市名)\n");
+        if (toolNames.contains("weatherQuery")) {
+            builder.append("- **weatherQuery**: 查询指定城市的实时天气。当用户询问天气、气温、是否下雨等问题时调用。参数: city(城市名)\n");
             hasTool = true;
         }
-        if (toolNames.contains("web_search")) {
-            builder.append("- **web_search**: 搜索互联网获取最新信息。当知识库无法回答、用户询问实时资讯、新闻、公开信息时调用。参数: query(搜索关键词)\n");
+        if (toolNames.contains("webSearch")) {
+            builder.append("- **webSearch**: 搜索互联网获取最新信息。当知识库无法回答、用户询问实时资讯、新闻、公开信息时调用。参数: query(搜索关键词)\n");
             hasTool = true;
         }
-        if (toolNames.contains("http_request")) {
-            builder.append("- **http_request**: 访问指定 URL 获取内容。当需要调用 API、获取网页数据时调用。参数: url(完整URL), method(GET/POST)\n");
+        if (toolNames.contains("httpRequest")) {
+            builder.append("- **httpRequest**: 访问指定 URL 获取内容。当需要调用 API、获取网页数据时调用。参数: url(完整URL), method(GET/POST)\n");
             hasTool = true;
         }
-        if (toolNames.contains("text_transform")) {
-            builder.append("- **text_transform**: 文本处理工具。支持 uppercase(转大写)、lowercase(转小写)、trim(去空白)、substring(截取)、length(长度)。参数: text(文本), operation(操作类型)\n");
+        if (toolNames.contains("textTransform")) {
+            builder.append("- **textTransform**: 文本处理工具。支持 uppercase(转大写)、lowercase(转小写)、trim(去空白)、substring(截取)、length(长度)。参数: text(文本), operation(操作类型)\n");
             hasTool = true;
         }
         if (hasTool) {
@@ -968,14 +968,14 @@ public class AgentOrchestrator {
         String q = question.toLowerCase();
 
         // 天气查询
-        if (toolNames.contains("weather_query") &&
+        if (toolNames.contains("weatherQuery") &&
             (q.contains("天气") || q.contains("气温") || q.contains("下雨") || q.contains("weather") ||
              q.contains("温度") || q.contains("晴") || q.contains("阴") || q.contains("雨"))) {
             return true;
         }
 
         // 互联网搜索
-        if (toolNames.contains("web_search") &&
+        if (toolNames.contains("webSearch") &&
             (q.contains("搜索") || q.contains("搜一下") || q.contains("查一下") || q.contains("search") ||
              q.contains("最新") || q.contains("新闻") || q.contains("资讯") || q.contains("互联网") ||
              q.contains("百度") || q.contains("谷歌") || q.contains("google"))) {
@@ -983,14 +983,14 @@ public class AgentOrchestrator {
         }
 
         // HTTP 请求
-        if (toolNames.contains("http_request") &&
+        if (toolNames.contains("httpRequest") &&
             (q.contains("http://") || q.contains("https://") || q.contains("api") || q.contains("接口") ||
              q.contains("请求") || q.contains("url"))) {
             return true;
         }
 
         // 文本处理
-        if (toolNames.contains("text_transform") &&
+        if (toolNames.contains("textTransform") &&
             (q.contains("大写") || q.contains("小写") || q.contains("转成") || q.contains("uppercase") ||
              q.contains("lowercase") || q.contains("截取") || q.contains("长度") || q.contains("去空白"))) {
             return true;
