@@ -36,6 +36,12 @@ public class GraphCommunityService {
     private final Driver driver;
     private final IChatModelService chatModelService;
 
+    @org.springframework.beans.factory.annotation.Value("${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}")
+    private String llmBaseUrl;
+
+    @org.springframework.beans.factory.annotation.Value("${HERMES_OPENAI_API_KEY:}")
+    private String llmApiKey;
+
     private static final String COMMUNITY_SUMMARY_SYSTEM_PROMPT = """
             你是一个图谱社区摘要专家。以下是图谱社区中的实体和标签。
             请用一段连贯、有见地的文本总结该社区的总体概念和隐藏联系。
@@ -86,14 +92,25 @@ public class GraphCommunityService {
             session.run("""
                 CALL gds.graph.project.cypher(
                     '%s',
-                    'MATCH (n:KgNode) WHERE n.workspace_id = %s AND n.del_flag = 0 RETURN id(n) AS id, labels(n) AS labels, n.name AS name',
+                    'MATCH (n:KgNode) WHERE n.workspace_id = %s AND n.del_flag = 0 RETURN id(n) AS id, labels(n) AS labels',
                     'MATCH (a:KgNode)-[r:KgEdge]->(b:KgNode) WHERE a.workspace_id = %s AND b.workspace_id = %s RETURN id(a) AS source, id(b) AS target, type(r) AS type'
                 )
                 """.formatted(graphName, workspaceId, workspaceId, workspaceId));
 
             // 2. 执行 Leiden 算法
+            // 首先将有向图转为无向边，因为 Leiden 要求无向图
+            session.run("""
+                CALL gds.graph.relationships.toUndirected(
+                  '%s',
+                  {
+                    relationshipType: 'KgEdge',
+                    mutateRelationshipType: 'KgEdge_UNDIRECTED'
+                  }
+                ) YIELD relationshipsWritten
+                """.formatted(graphName));
+
             var result = session.run("""
-                CALL gds.leiden.stream('%s')
+                CALL gds.leiden.stream('%s', { relationshipTypes: ['KgEdge_UNDIRECTED'] })
                 YIELD nodeId, communityId
                 RETURN gds.util.asNode(nodeId).name AS entityName,
                        gds.util.asNode(nodeId).label AS entityLabel,
@@ -210,7 +227,7 @@ public class GraphCommunityService {
         // LLM Map-Reduce 模式
         try {
             ChatModel chatModel = chatModelService.getChatModel(
-                    "DeepSeek", null, null, "deepseek-chat");
+                    "DeepSeek", llmBaseUrl, llmApiKey, "deepseek-chat");
 
             // MAP 阶段：并发向每个社区提问
             ExecutorService executor = Executors.newFixedThreadPool(
@@ -350,7 +367,7 @@ public class GraphCommunityService {
 
         try {
             ChatModel chatModel = chatModelService.getChatModel(
-                    "DeepSeek", null, null, "deepseek-chat");
+                    "DeepSeek", llmBaseUrl, llmApiKey, "deepseek-chat");
 
             String entities = community.getEntities() != null
                     ? String.join("、", community.getEntities().stream().limit(20).toList())
