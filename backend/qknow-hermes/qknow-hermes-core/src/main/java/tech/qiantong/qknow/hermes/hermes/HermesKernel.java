@@ -13,6 +13,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import tech.qiantong.qknow.hermes.judge.AiJudgeService;
 import tech.qiantong.qknow.hermes.judge.JudgeResult;
+import tech.qiantong.qknow.hermes.memory.MemoryManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,17 +24,35 @@ import java.util.stream.IntStream;
  * Hermes 认知内核
  * 实现反思循环: 生成 → 自我评估 → 修正
  * 增强: fail-plausible 检测（self-consistency 检测流畅但不一致的回答）
+ * [溯源] 算法优化指南 §4.1: Jaccard + Cosine 双指标一致性检测
  */
 @Slf4j
 public class HermesKernel {
 
     private static final double CONSISTENCY_THRESHOLD = 0.6;
     private static final int CONSISTENCY_SAMPLES = 3;
+    private static final double JACCARD_WEIGHT = 0.4;
+    private static final double COSINE_WEIGHT = 0.6;
 
     private final AiJudgeService aiJudgeService;
+    private final org.springframework.ai.embedding.EmbeddingModel embeddingModel;
+    private final MemoryManager memoryManager;
 
     public HermesKernel(AiJudgeService aiJudgeService) {
+        this(aiJudgeService, null, null);
+    }
+
+    public HermesKernel(AiJudgeService aiJudgeService,
+                        org.springframework.ai.embedding.EmbeddingModel embeddingModel) {
+        this(aiJudgeService, embeddingModel, null);
+    }
+
+    public HermesKernel(AiJudgeService aiJudgeService,
+                        org.springframework.ai.embedding.EmbeddingModel embeddingModel,
+                        MemoryManager memoryManager) {
         this.aiJudgeService = aiJudgeService;
+        this.embeddingModel = embeddingModel;
+        this.memoryManager = memoryManager;
     }
 
     /**
@@ -82,10 +101,18 @@ public class HermesKernel {
             // 5. 检查是否通过
             if (judgeResult.isPassed() && consistency >= CONSISTENCY_THRESHOLD) {
                 log.info("Hermes 反思循环 - 第 {} 次尝试通过评分", attempt + 1);
+                // [溯源] 算法优化指南 §4.1: 反思结论持久化 — 成功经验存入短期记忆
+                if (attempt > 0 && memoryManager != null) {
+                    persistReflectionLesson(userQuery, attempt, "成功", judgeResult);
+                }
                 return new ReflectionResult(currentAnswer, attempts, true, attempt + 1);
             }
 
             log.info("Hermes 反思循环 - 第 {} 次尝试未通过评分，继续反思", attempt + 1);
+            // [溯源] 算法优化指南 §4.1: 反思结论持久化 — 失败教训存入短期记忆
+            if (memoryManager != null) {
+                persistReflectionLesson(userQuery, attempt, "失败", judgeResult);
+            }
             lastJudgeResult = judgeResult;
         }
 
@@ -146,12 +173,18 @@ public class HermesKernel {
 
             if (samples.size() < 2) return 1.0;
 
-            // 计算 pairwise similarity (简单的词级 Jaccard)
+            // 计算 pairwise similarity
             double totalSimilarity = 0;
             int pairs = 0;
             for (int i = 0; i < samples.size(); i++) {
                 for (int j = i + 1; j < samples.size(); j++) {
-                    totalSimilarity += jaccardSimilarity(samples.get(i), samples.get(j));
+                    double jaccard = jaccardSimilarity(samples.get(i), samples.get(j));
+                    if (embeddingModel != null) {
+                        double cosine = cosineSimilarity(samples.get(i), samples.get(j));
+                        totalSimilarity += JACCARD_WEIGHT * jaccard + COSINE_WEIGHT * cosine;
+                    } else {
+                        totalSimilarity += jaccard;
+                    }
                     pairs++;
                 }
             }
@@ -173,6 +206,30 @@ public class HermesKernel {
         return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
     }
 
+    /**
+     * Cosine similarity between two texts using embedding model.
+     * [溯源] 算法优化指南 §4.1: Jaccard + Cosine 双指标
+     */
+    private double cosineSimilarity(String a, String b) {
+        try {
+            var respA = embeddingModel.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of(a), null));
+            var respB = embeddingModel.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of(b), null));
+            float[] vecA = respA.getResults().get(0).getOutput();
+            float[] vecB = respB.getResults().get(0).getOutput();
+            double dot = 0, normA = 0, normB = 0;
+            for (int i = 0; i < vecA.length; i++) {
+                dot += vecA[i] * vecB[i];
+                normA += vecA[i] * vecA[i];
+                normB += vecB[i] * vecB[i];
+            }
+            double denom = Math.sqrt(normA) * Math.sqrt(normB);
+            return denom > 0 ? dot / denom : 0.0;
+        } catch (Exception e) {
+            log.debug("Cosine similarity computation failed", e);
+            return 0.0;
+        }
+    }
+
     private java.util.Set<String> tokenizeForJaccard(String text) {
         java.util.Set<String> tokens = new java.util.HashSet<>();
         for (String word : text.split("\\s+")) {
@@ -190,6 +247,22 @@ public class HermesKernel {
             }
         }
         return tokens;
+    }
+
+    /**
+     * [溯源] 算法优化指南 §4.1: 反思结论持久化
+     * 将反思教训存入短期记忆，后续同类任务可复用
+     */
+    private void persistReflectionLesson(String query, int attempt, String outcome, JudgeResult judgeResult) {
+        try {
+            String lesson = String.format("[反思教训] query=%s attempt=%d outcome=%s scores=%.2f/%.2f/%.2f",
+                    query.substring(0, Math.min(50, query.length())),
+                    attempt + 1, outcome,
+                    judgeResult.getFactualityScore(), judgeResult.getRelevanceScore(), judgeResult.getInstructionScore());
+            memoryManager.getShortTerm().addMessage(new UserMessage(lesson));
+        } catch (Exception e) {
+            log.debug("Failed to persist reflection lesson", e);
+        }
     }
 
     private boolean isCjk(char c) {

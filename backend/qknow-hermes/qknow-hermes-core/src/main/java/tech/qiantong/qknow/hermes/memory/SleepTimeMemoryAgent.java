@@ -25,6 +25,16 @@ public class SleepTimeMemoryAgent {
 
     @Scheduled(fixedDelayString = "${hermes.memory.sleep-agent.fixed-delay-ms:300000}")
     public void consolidateIdleConversations() {
+        // [溯源] 算法优化指南 §4.3: OOM 保护 — JVM 内存使用率 > 85% 时跳过本轮
+        Runtime runtime = Runtime.getRuntime();
+        long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+        long maxMemory = runtime.maxMemory();
+        double usageRatio = (double) usedMemory / maxMemory;
+        if (usageRatio > 0.85) {
+            log.warn("Sleep-time memory agent skipped: JVM memory usage {:.1f}% > 85%", usageRatio * 100);
+            return;
+        }
+
         long now = System.currentTimeMillis();
         ShortTermMemory shortTerm = memoryManager.getShortTerm();
         // 分批处理，避免 SCAN 全量加载到内存

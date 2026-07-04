@@ -27,10 +27,17 @@ public class LongTermMemory {
 
     private final VectorStore vectorStore;
     private final EmbeddingModel embeddingModel;
+    private final org.springframework.ai.chat.model.ChatModel chatModel;
 
     public LongTermMemory(VectorStore vectorStore, EmbeddingModel embeddingModel) {
+        this(vectorStore, embeddingModel, null);
+    }
+
+    public LongTermMemory(VectorStore vectorStore, EmbeddingModel embeddingModel,
+                          org.springframework.ai.chat.model.ChatModel chatModel) {
         this.vectorStore = vectorStore;
         this.embeddingModel = embeddingModel;
+        this.chatModel = chatModel;
     }
 
     /**
@@ -48,6 +55,11 @@ public class LongTermMemory {
             // PgVector 返回 cosine distance (0=相同, 2=相反)，转换为 similarity
             double similarity = 1.0 - Math.min(score, 2.0) / 2.0;
             if (similarity >= CONSOLIDATION_THRESHOLD) {
+                // [溯源] 算法优化指南 §4.3: LLM 语义等价验证，防止错误合并
+                if (chatModel != null && !isSemanticallyEquivalent(existing.getText(), content)) {
+                    log.debug("Consolidation skipped: LLM judged not equivalent (similarity={})", similarity);
+                    continue;
+                }
                 log.debug("Consolidation: merging with existing memory (similarity={})", similarity);
                 Map<String, Object> updatedMetadata = new HashMap<>(existing.getMetadata());
                 updatedMetadata.putAll(metadata);
@@ -175,6 +187,25 @@ public class LongTermMemory {
             return Double.parseDouble(imp.toString());
         } catch (NumberFormatException e) {
             return 0.5;
+        }
+    }
+
+    /**
+     * LLM 语义等价验证：判断两条记忆是否表达相同含义
+     * [溯源] 算法优化指南 §4.3: Consolidation LLM 验证
+     */
+    private boolean isSemanticallyEquivalent(String text1, String text2) {
+        try {
+            String prompt = "判断以下两段文本是否表达相同或高度相似的含义。只回答 YES 或 NO。\n\n"
+                    + "文本1: " + text1.substring(0, Math.min(200, text1.length())) + "\n\n"
+                    + "文本2: " + text2.substring(0, Math.min(200, text2.length()));
+            var response = chatModel.call(new org.springframework.ai.chat.prompt.Prompt(
+                    List.of(new org.springframework.ai.chat.messages.UserMessage(prompt))));
+            String answer = response.getResult().getOutput().getText().trim().toUpperCase();
+            return answer.startsWith("YES");
+        } catch (Exception e) {
+            log.debug("LLM equivalence check failed, assuming equivalent", e);
+            return true; // 失败时保守合并
         }
     }
 }

@@ -7,9 +7,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 线程安全的 key-value 工作记忆。
+ * [溯源] 算法优化指南 §4.3: WorkingMemory 容量限制
  */
 public class WorkingMemory {
 
+    private static final int MAX_KEYS = 200;
     private final ConcurrentHashMap<String, Object> store = new ConcurrentHashMap<>();
     private final IRedisService redisService;
 
@@ -22,6 +24,11 @@ public class WorkingMemory {
     }
 
     public void set(String key, Object value) {
+        if (store.size() >= MAX_KEYS && !store.containsKey(key)) {
+            // 容量已满，驱逐最旧的条目
+            String oldest = store.keySet().iterator().next();
+            store.remove(oldest);
+        }
         store.put(key, value);
     }
 
