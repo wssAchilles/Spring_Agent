@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
+import tech.qiantong.qknow.module.kmc.service.rag.nlp.JiebaNative;
 
 import jakarta.annotation.Resource;
 import java.util.*;
@@ -161,6 +162,10 @@ public class KeywordRetriever {
      * [溯源] 算法优化指南 §2.2: 应用层中文分词
      * 滑动窗口 2-4 字切分 + 停用词过滤
      */
+    /**
+     * [溯源] 算法优化指南 Phase 2: 应用层中文分词 + jieba-rs JNI
+     * 优先使用 jieba-rs（20-27x 快于 Java），降级到滑动窗口
+     */
     private List<String> buildSearchTerms(String queryText) {
         LinkedHashSet<String> terms = new LinkedHashSet<>();
         terms.add(queryText.trim());
@@ -175,13 +180,23 @@ public class KeywordRetriever {
             }
         }
 
-        // 中文分词：滑动窗口 2-4 字
-        String chineseOnly = queryText.replaceAll("[^\\p{IsHan}]", " ").trim();
-        for (int len = 4; len >= 2; len--) {
-            for (int i = 0; i <= chineseOnly.length() - len; i++) {
-                String token = chineseOnly.substring(i, i + len);
-                if (!STOP_WORDS.contains(token)) {
+        // [溯源] Phase 2: 优先使用 jieba-rs 中文分词
+        String[] jiebaTokens = JiebaNative.safeCut(queryText);
+        if (jiebaTokens != null && jiebaTokens.length > 0) {
+            for (String token : jiebaTokens) {
+                if (token.length() >= 2 && !STOP_WORDS.contains(token)) {
                     terms.add(token);
+                }
+            }
+        } else {
+            // 降级：滑动窗口 2-4 字
+            String chineseOnly = queryText.replaceAll("[^\\p{IsHan}]", " ").trim();
+            for (int len = 4; len >= 2; len--) {
+                for (int i = 0; i <= chineseOnly.length() - len; i++) {
+                    String token = chineseOnly.substring(i, i + len);
+                    if (!STOP_WORDS.contains(token)) {
+                        terms.add(token);
+                    }
                 }
             }
         }
