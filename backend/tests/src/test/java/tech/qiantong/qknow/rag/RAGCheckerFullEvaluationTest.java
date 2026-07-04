@@ -40,7 +40,7 @@ class RAGCheckerFullEvaluationTest {
         RagasEvalConfig config = new RagasEvalConfig();
         config.setPlatform("deepseek");
         config.setModelName("deepseek-chat");
-        config.setApiKey(System.getenv().getOrDefault("HERMES_OPENAI_API_KEY", "REDACTED"));
+        config.setApiKey(System.getenv("HERMES_OPENAI_API_KEY"));
         config.setBaseUrl(System.getenv().getOrDefault("HERMES_OPENAI_BASE_URL", "https://api.deepseek.com"));
 
         ChatModelFactory factory = new ChatModelFactory();

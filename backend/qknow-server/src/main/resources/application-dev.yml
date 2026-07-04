@@ -182,7 +182,7 @@ hermes:
       strategy: rewrite
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      api-key: ${HERMES_OPENAI_API_KEY}
       model-name: deepseek-chat
       max-chunk-chars: 2000
       timeout-seconds: 30
@@ -203,21 +203,21 @@ qknow:
       enabled: true
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      api-key: ${HERMES_OPENAI_API_KEY}
       model-name: deepseek-chat
       threshold: 0.85
     query-entity:
       enabled: true
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      api-key: ${HERMES_OPENAI_API_KEY}
       model: deepseek-chat
       temperature: 0.0
     crag:
       enabled: true
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      api-key: ${HERMES_OPENAI_API_KEY}
       model: deepseek-chat
       temperature: 0.0
     local-reranker:
