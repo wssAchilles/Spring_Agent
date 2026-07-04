@@ -16,8 +16,9 @@ import java.util.stream.Collectors;
 @Component
 public class RagContextBuilder {
 
-    @Value("${hermes.rag.context.max-bytes:12000}")
-    private int maxContextBytes = 12000;
+    // [溯源] 算法优化指南 §2.6: 上下文预算从 12KB 增加到 20KB
+    @Value("${hermes.rag.context.max-bytes:20000}")
+    private int maxContextBytes = 20000;
 
     @Value("${hermes.rag.context.max-tokens:0}")
     private int maxContextTokens = 0;

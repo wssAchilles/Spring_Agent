@@ -1,6 +1,7 @@
 package tech.qiantong.qknow.module.kmc.service.rag;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
@@ -10,8 +11,13 @@ import java.util.*;
 @Component
 public class CandidateFusionService {
 
-    private static final int RRF_K = 60;
-    private static final double WEAK_PATH_THRESHOLD = 0.3;
+    // [溯源] 算法优化指南 §2.1: RRF k 参数配置化
+    @Value("${qknow.rag.rrf.k:60}")
+    private int rrfK = 60;
+
+    // [溯源] 算法优化指南 §2.1: 弱路径阈值配置化
+    @Value("${qknow.rag.rrf.weak-path-threshold:0.3}")
+    private double weakPathThreshold = 0.3;
 
     /**
      * 融合多路检索结果，自动排除弱检索路径
@@ -37,8 +43,8 @@ public class CandidateFusionService {
             // 归一化：图谱分数可能 >1，归一化到 [0,1] 后再比较
             String pathName = (pathNames != null && i < pathNames.size()) ? pathNames.get(i) : "path-" + i;
             double normalizedScore = "graph".equals(pathName) ? Math.min(topScore / 12.0, 1.0) : topScore;
-            if (normalizedScore < WEAK_PATH_THRESHOLD) {
-                log.info("弱检索路径排除: {} (normalized score={} < {})", pathName, normalizedScore, WEAK_PATH_THRESHOLD);
+            if (normalizedScore < weakPathThreshold) {
+                log.info("弱检索路径排除: {} (normalized score={} < {})", pathName, normalizedScore, weakPathThreshold);
                 continue;
             }
             filtered.add(results);
@@ -63,7 +69,7 @@ public class CandidateFusionService {
                     continue;
                 }
 
-                double rrfIncrement = 1.0 / (RRF_K + rank + 1);
+                double rrfIncrement = 1.0 / (rrfK + rank + 1);
                 rrfScores.merge(segmentId, rrfIncrement, Double::sum);
 
                 RetrievalResult existing = bestBySegment.get(segmentId);

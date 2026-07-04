@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSON;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
  * 增强：LightRAG 风格双层检索（Low-level 实体匹配 + High-level 主题匹配）
  * 增强：语义引导图遍历（边权重 = 实体嵌入相似度 × 关系类型权重）
  * 增强：时序事实管理（validity window）
+ * [溯源] 算法优化指南 §3.3: HippoRAG PPR 个性化 PageRank
  */
 @Slf4j
 @Component
@@ -33,7 +35,9 @@ public class GraphRagRetriever {
 
     private static final double GRAPH_SCORE = 12.0;
     private static final double RELATION_WEIGHT_MULTIPLIER = 1.5;
-    private static final double TEMPORAL_DECAY_FACTOR = 0.9;
+    // [溯源] 算法优化指南 §3.6: 时序衰减因子配置化
+    @Value("${qknow.rag.graph.temporal-decay-factor:0.9}")
+    private double temporalDecayFactor = 0.9;
 
     @Resource
     private JdbcTemplate jdbcTemplate;
@@ -72,21 +76,26 @@ public class GraphRagRetriever {
             topics.add(queryIntent.getCategory());
         }
 
+        // [溯源] 算法优化指南 §3.3: PPR 作为额外检索路径
+        List<RetrievalResult> pprResults = List.of();
+        if (!entities.isEmpty() && properties.isPprEnabled()) {
+            pprResults = pprRetrieve(knowledgeBaseId, entities, topK);
+        }
+
         if (route == QueryRouter.QueryRoute.COMPLEX && !entities.isEmpty()) {
             List<RetrievalResult> semantic = semanticGuidedRetrieve(knowledgeBaseId, entities, query, topK);
-            if (queryIntent.getDayNo() != null) {
-                return mergeResults(semantic,
-                        temporalRetrieve(knowledgeBaseId, entities, System.currentTimeMillis(), topK), topK);
-            }
-            return mergeResults(semantic, dualLevelRetrieve(knowledgeBaseId, entities, topics, topK), topK);
+            List<RetrievalResult> temporal = queryIntent.getDayNo() != null
+                    ? temporalRetrieve(knowledgeBaseId, entities, System.currentTimeMillis(), topK) : List.of();
+            List<RetrievalResult> dual = dualLevelRetrieve(knowledgeBaseId, entities, topics, topK);
+            return mergeResults(mergeResults(semantic, temporal, topK), mergeResults(dual, pprResults, topK), topK);
         }
         if (queryIntent.getDayNo() != null && !entities.isEmpty()) {
-            return temporalRetrieve(knowledgeBaseId, entities, System.currentTimeMillis(), topK);
+            return mergeResults(temporalRetrieve(knowledgeBaseId, entities, System.currentTimeMillis(), topK), pprResults, topK);
         }
         if (!topics.isEmpty()) {
-            return dualLevelRetrieve(knowledgeBaseId, entities, topics, topK);
+            return mergeResults(dualLevelRetrieve(knowledgeBaseId, entities, topics, topK), pprResults, topK);
         }
-        return retrieve(knowledgeBaseId, entities, topK);
+        return mergeResults(retrieve(knowledgeBaseId, entities, topK), pprResults, topK);
     }
 
     /**
@@ -164,6 +173,159 @@ public class GraphRagRetriever {
     }
 
     /**
+     * [溯源] 算法优化指南 §3.3: HippoRAG PPR 个性化 PageRank
+     * 以查询实体为种子节点，通过迭代 PageRank 计算多跳实体的隐式关联分数
+     * 使用 PostgreSQL 邻接表实现，无需 Neo4j GDS
+     */
+    public List<RetrievalResult> pprRetrieve(Long knowledgeBaseId, List<String> seedEntities, int topK) {
+        if (seedEntities == null || seedEntities.isEmpty()) {
+            return List.of();
+        }
+
+        int maxIterations = 20;
+        double dampingFactor = 0.85;
+        double convergenceThreshold = 0.001;
+
+        try {
+            // Step 1: 找到种子节点 ID
+            String seedQuery = "SELECT id FROM kg_node WHERE " +
+                    seedEntities.stream().map(e -> "label ILIKE ?").collect(Collectors.joining(" OR "));
+            List<Object> seedParams = seedEntities.stream()
+                    .map(e -> (Object) ("%" + e + "%"))
+                    .toList();
+            List<Long> seedNodeIds = jdbcTemplate.queryForList(seedQuery, Long.class, seedParams.toArray());
+
+            if (seedNodeIds.isEmpty()) {
+                log.debug("PPR: no seed nodes found for entities: {}", seedEntities);
+                return List.of();
+            }
+
+            // Step 2: 构建邻接表
+            List<Map<String, Object>> edges = jdbcTemplate.queryForList(
+                    "SELECT source_node_id, target_node_id FROM kg_edge WHERE del_flag = 0");
+            Map<Long, List<Long>> adjacency = new java.util.HashMap<>();
+            for (Map<String, Object> edge : edges) {
+                long src = ((Number) edge.get("source_node_id")).longValue();
+                long tgt = ((Number) edge.get("target_node_id")).longValue();
+                adjacency.computeIfAbsent(src, k -> new ArrayList<>()).add(tgt);
+                adjacency.computeIfAbsent(tgt, k -> new ArrayList<>()).add(src); // 无向图
+            }
+
+            // Step 3: 迭代 PageRank
+            Map<Long, Double> scores = new java.util.HashMap<>();
+            for (long nodeId : adjacency.keySet()) {
+                scores.put(nodeId, 1.0 / adjacency.size());
+            }
+            // 种子节点初始分数更高
+            double seedBoost = 1.0 / seedNodeIds.size();
+            for (long seedId : seedNodeIds) {
+                scores.put(seedId, seedBoost);
+            }
+
+            for (int iter = 0; iter < maxIterations; iter++) {
+                Map<Long, Double> newScores = new java.util.HashMap<>();
+                double maxDiff = 0;
+
+                for (Map.Entry<Long, List<Long>> entry : adjacency.entrySet()) {
+                    long nodeId = entry.getKey();
+                    List<Long> neighbors = entry.getValue();
+
+                    double neighborSum = 0;
+                    for (long neighbor : neighbors) {
+                        int degree = adjacency.getOrDefault(neighbor, List.of()).size();
+                        if (degree > 0) {
+                            neighborSum += scores.getOrDefault(neighbor, 0.0) / degree;
+                        }
+                    }
+
+                    double personalization = seedNodeIds.contains(nodeId) ? seedBoost : 0;
+                    double newScore = (1 - dampingFactor) * personalization + dampingFactor * neighborSum;
+                    newScores.put(nodeId, newScore);
+
+                    maxDiff = Math.max(maxDiff, Math.abs(newScore - scores.getOrDefault(nodeId, 0.0)));
+                }
+
+                scores = newScores;
+                if (maxDiff < convergenceThreshold) {
+                    log.debug("PPR converged after {} iterations", iter + 1);
+                    break;
+                }
+            }
+
+            // Step 4: 按 PPR 分数排序，取 topK 节点
+            List<Long> topNodeIds = scores.entrySet().stream()
+                    .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+                    .limit(topK)
+                    .map(Map.Entry::getKey)
+                    .toList();
+
+            if (topNodeIds.isEmpty()) {
+                return List.of();
+            }
+
+            // Step 5: 查找这些节点关联的 segment
+            String placeholders = topNodeIds.stream().map(id -> "?").collect(Collectors.joining(","));
+            String segmentQuery = """
+                    SELECT s.id, s.document_id, s.document_name, s.content
+                    FROM kmc_segment_entity_metadata em
+                    JOIN kmc_document_segment s ON s.id = em.segment_id
+                    JOIN kmc_document d ON d.id = s.document_id AND d.del_flag = 0
+                    WHERE d.knowledge_base_id = ?
+                      AND em.segment_id IN (
+                          SELECT DISTINCT em2.segment_id
+                          FROM kmc_segment_entity_metadata em2
+                          WHERE em2.document_id IN (
+                              SELECT DISTINCT em3.document_id
+                              FROM kmc_segment_entity_metadata em3
+                              WHERE em3.segment_id IN (
+                                  SELECT DISTINCT segment_id FROM kg_node_segment_rel
+                                  WHERE node_id IN (%s)
+                              )
+                          )
+                      )
+                    ORDER BY s.id ASC
+                    LIMIT ?
+                    """.formatted(placeholders);
+
+            List<Object> params = new ArrayList<>();
+            params.add(knowledgeBaseId);
+            params.addAll(topNodeIds);
+            params.add(topK);
+
+            final Map<Long, Double> finalScores = scores;
+            final List<Long> finalTopNodeIds = topNodeIds;
+            List<RetrievalResult> results = jdbcTemplate.query(segmentQuery, (rs, rowNum) -> {
+                long bestNodeId = 0;
+                double bestScore = 0;
+                for (Long nodeId : finalTopNodeIds) {
+                    double score = finalScores.getOrDefault(nodeId, 0.0);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestNodeId = nodeId;
+                    }
+                }
+                return RetrievalResult.builder()
+                        .segmentId(rs.getLong("id"))
+                        .documentId(rs.getLong("document_id"))
+                        .documentName(rs.getString("document_name"))
+                        .content(rs.getString("content"))
+                        .score(bestScore * GRAPH_SCORE)
+                        .source("graph_ppr")
+                        .metadata(Map.of("ppr_iterations", maxIterations))
+                        .build();
+            }, params.toArray());
+
+            log.info("PPR retrieve: {} seed entities -> {} top nodes -> {} segments",
+                    seedEntities.size(), topNodeIds.size(), results.size());
+            return results != null ? results : List.of();
+
+        } catch (Exception e) {
+            log.warn("PPR retrieval failed, falling back to standard: {}", e.getMessage());
+            return retrieve(knowledgeBaseId, seedEntities, topK);
+        }
+    }
+
+    /**
      * 语义引导图遍历
      * 边权重 = 实体嵌入相似度 × 关系类型权重
      */
@@ -233,22 +395,17 @@ public class GraphRagRetriever {
 
     /**
      * 时序事实检索
-     * 只返回在有效期内的事实（validity window）
+     * [溯源] 算法优化指南 §3.3: 修复 SQL 缺列 — 使用 created_at 替代 valid_from/valid_until
      */
     public List<RetrievalResult> temporalRetrieve(Long knowledgeBaseId, List<String> entities,
                                                    long currentTime, int topK) {
         boolean h2 = isH2();
-        String timeCondition = h2
-                ? "(em.valid_from IS NULL OR em.valid_from <= ?) AND (em.valid_until IS NULL OR em.valid_until >= ?)"
-                : "(em.valid_from IS NULL OR em.valid_from <= ?) AND (em.valid_until IS NULL OR em.valid_until >= ?)";
 
         List<Object> params = new ArrayList<>();
         params.add(knowledgeBaseId);
         for (String entity : entities) {
             params.add(h2 ? "%" + entity + "%" : JSON.toJSONString(List.of(entity)));
         }
-        params.add(currentTime);
-        params.add(currentTime);
         params.add(topK);
 
         String entityCondition = entities.stream()
@@ -256,26 +413,25 @@ public class GraphRagRetriever {
                 .collect(Collectors.joining(" OR "));
 
         try {
+            // [溯源] 算法优化指南 §3.3: 修复 SQL 缺列 — 使用 created_at 替代 valid_from/valid_until
             String sql = """
                     SELECT s.id, s.document_id, s.document_name, s.content, em.relations,
-                           em.valid_from, em.valid_until
+                           em.created_at
                     FROM kmc_segment_entity_metadata em
                     JOIN kmc_document_segment s ON s.id = em.segment_id AND s.del_flag = 0
                     JOIN kmc_document d ON d.id = s.document_id AND d.del_flag = 0
                     WHERE d.knowledge_base_id = ?
                       AND (%s)
-                      AND %s
                     ORDER BY s.id ASC
                     LIMIT ?
-                    """.formatted(entityCondition, timeCondition);
+                    """.formatted(entityCondition);
             return jdbcTemplate.query(sql, (rs, rowNum) -> {
-                long validFrom = rs.getLong("valid_from");
-                long validUntil = rs.getLong("valid_until");
+                java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
                 // 时序衰减：越近的事实分数越高
                 double temporalScore = GRAPH_SCORE;
-                if (validFrom > 0) {
-                    long ageDays = (currentTime - validFrom) / 86400000L;
-                    temporalScore *= Math.pow(TEMPORAL_DECAY_FACTOR, ageDays / 30.0);
+                if (createdAt != null) {
+                    long ageDays = (currentTime - createdAt.getTime()) / 86400000L;
+                    temporalScore *= Math.pow(temporalDecayFactor, ageDays / 30.0);
                 }
                 return RetrievalResult.builder()
                         .segmentId(rs.getLong("id"))
@@ -285,9 +441,7 @@ public class GraphRagRetriever {
                         .score(temporalScore)
                         .source("graph_temporal")
                         .metadata(Map.of(
-                                "relations", rs.getString("relations") != null ? rs.getString("relations") : "[]",
-                                "valid_from", String.valueOf(validFrom),
-                                "valid_until", String.valueOf(validUntil)))
+                                "relations", rs.getString("relations") != null ? rs.getString("relations") : "[]"))
                         .build();
             }, params.toArray());
         } catch (Exception e) {

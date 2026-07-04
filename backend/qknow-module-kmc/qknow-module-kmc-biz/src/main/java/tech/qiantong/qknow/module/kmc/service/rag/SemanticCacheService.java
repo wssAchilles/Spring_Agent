@@ -18,12 +18,24 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
+// [溯源] 算法优化指南 §2.7 P2-4: 精确缓存层前置
+// L1: 精确字符串匹配 (hash) → L2: 语义向量匹配
 
 @Slf4j
 @Component
 public class SemanticCacheService {
 
-    private static final double DEFAULT_THRESHOLD = 0.95D;
+    // [溯源] 算法优化指南 §2.7 P2-4: 精确缓存层 (Exact Cache) — LRU 淘汰
+    private final java.util.LinkedHashMap<String, CacheHit> exactCache = new java.util.LinkedHashMap<>(1024, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(java.util.Map.Entry<String, CacheHit> eldest) {
+            return size() > 1000;
+        }
+    };
+
+    private static final double DEFAULT_THRESHOLD = 0.92D;
 
     @Resource
     private JdbcTemplate jdbcTemplate;
@@ -37,10 +49,20 @@ public class SemanticCacheService {
     }
 
     public Optional<CacheHit> findAnswer(Long workspaceId, Long botId, List<Long> knowledgeBaseIds, String knowledgeIdsHash,
-                                         String query, String modelName, EmbeddingModel embeddingModel) {
+                                          String query, String modelName, EmbeddingModel embeddingModel) {
         if (!config.isEnabled()) {
             return Optional.empty();
         }
+
+        // L1: 精确缓存层 — 零计算成本
+        String exactKey = buildExactCacheKey(workspaceId, botId, knowledgeIdsHash, modelName, query);
+        CacheHit exactHit = exactCache.get(exactKey);
+        if (exactHit != null) {
+            log.debug("Exact cache hit for query: {}", query.substring(0, Math.min(50, query.length())));
+            return Optional.of(exactHit);
+        }
+
+        // L2: 语义缓存层
         float[] embedding = embed(query, embeddingModel);
         if (embedding.length == 0) {
             return Optional.empty();
@@ -117,6 +139,15 @@ public class SemanticCacheService {
                         VALUES (?, ?)
                         ON CONFLICT DO NOTHING
                         """, rows);
+
+                // [溯源] 算法优化指南 §2.7 P2-4: 同步写入精确缓存
+                String exactKey = buildExactCacheKey(workspaceId, botId, knowledgeIdsHash, modelName, query);
+                putExactCache(exactKey, CacheHit.builder()
+                        .id(cacheId)
+                        .answer(answer)
+                        .sourcesJson(sourcesJson != null ? sourcesJson : "[]")
+                        .similarity(1.0)
+                        .build());
             }
         } catch (Exception e) {
             log.warn("Semantic cache write failed", e);
@@ -169,6 +200,16 @@ public class SemanticCacheService {
             sb.append(embedding[i]);
         }
         return sb.append(']').toString();
+    }
+
+    // [溯源] 算法优化指南 §2.7 P2-4: 精确缓存键构建
+    private String buildExactCacheKey(Long workspaceId, Long botId, String knowledgeIdsHash, String modelName, String query) {
+        String normalized = query.trim().toLowerCase().replaceAll("\\s+", " ");
+        return workspaceId + ":" + botId + ":" + knowledgeIdsHash + ":" + modelName + ":" + normalized.hashCode();
+    }
+
+    private void putExactCache(String exactKey, CacheHit hit) {
+        exactCache.put(exactKey, hit);
     }
 
     @Data

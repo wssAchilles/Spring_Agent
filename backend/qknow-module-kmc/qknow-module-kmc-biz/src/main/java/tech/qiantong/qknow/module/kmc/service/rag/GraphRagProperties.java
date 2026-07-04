@@ -11,4 +11,6 @@ public class GraphRagProperties {
     private boolean enabled = false;
     private int maxHops = 2;
     private int topK = 20;
+    // [溯源] 算法优化指南 §3.3: HippoRAG PPR 开关
+    private boolean pprEnabled = true;
 }

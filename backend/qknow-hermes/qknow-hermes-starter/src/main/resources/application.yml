@@ -26,6 +26,12 @@ spring:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
         dimensions: 1536
+        # [溯源] 算法优化指南 §5.1: HNSW 参数调优 P0
+        # m=32 提升召回率 ~4%, ef_construction=128 提升索引质量
+        index:
+          m: 32
+          ef-construction: 128
+        ef-search: 100
 
 hermes:
   routing:
