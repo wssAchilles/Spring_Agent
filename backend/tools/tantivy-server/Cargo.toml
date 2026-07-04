@@ -1,0 +1,18 @@
+[package]
+name = "tantivy_server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "tantivy-server"
+path = "src/main.rs"
+
+[dependencies]
+tantivy = "0.22"
+tonic = "0.12"
+prost = "0.13"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+
+[build-dependencies]
+tonic-build = "0.12"
