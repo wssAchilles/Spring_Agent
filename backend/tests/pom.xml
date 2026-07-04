@@ -33,6 +33,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>tech.qiantong</groupId>
             <artifactId>qknow-hermes-core</artifactId>
             <version>${qknow.version}</version>
