@@ -67,19 +67,22 @@ public class GeneralSplitter extends TextSplitter {
             sb.delete(0, maxChunkSize);
         }
         result.add(sb.toString());
-        setOverlap(result);
-        return result;
+        return setOverlap(result);
     }
 
     /**
      * 为文本设置重叠
+     * [溯源] 算法优化指南 §5.3: GeneralSplitter 不可变性修复
+     * 返回新 List，不修改传入参数。
      *
      * @param chunkList 分块列表
+     * @return 添加了重叠的新分块列表
      */
-    private void setOverlap(List<String> chunkList) {
+    private List<String> setOverlap(List<String> chunkList) {
         if (chunkOverlapSize <= 0 || CollUtil.isEmpty(chunkList) || chunkList.size() < 2) {
-            return;
+            return new ArrayList<>(chunkList);
         }
+        List<String> result = new ArrayList<>(chunkList.size());
         StringBuilder sb = new StringBuilder();
         String prev = "";
         String current = chunkList.get(0);
@@ -116,8 +119,9 @@ public class GeneralSplitter extends TextSplitter {
                 next = chunkList.get(i + 2);
             }
 
-            chunkList.set(i, sb.toString());
+            result.add(sb.toString());
         }
+        return result;
     }
 
     /**

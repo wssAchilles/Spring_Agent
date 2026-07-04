@@ -16,15 +16,19 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class RagasEvaluator {
     private static final ExecutorService SAMPLE_EXECUTOR = Executors.newFixedThreadPool(
-            Math.min(Runtime.getRuntime().availableProcessors(), 8),
+            Math.min(Runtime.getRuntime().availableProcessors(), 4),
             r -> { Thread t = new Thread(r, "ragas-sample"); t.setDaemon(true); return t; });
     private static final ExecutorService METRIC_EXECUTOR = Executors.newFixedThreadPool(
-            Math.min(Runtime.getRuntime().availableProcessors(), 8),
+            Math.min(Runtime.getRuntime().availableProcessors(), 4),
             r -> { Thread t = new Thread(r, "ragas-metric"); t.setDaemon(true); return t; });
 
     private final ChatModelFactory chatModelFactory;
@@ -59,19 +63,68 @@ public class RagasEvaluator {
         report.setRunId(UUID.randomUUID().toString());
         report.setDatasetName(dataset.getName());
 
+        int total = dataset.getItems().size();
+        int errorCount = 0;
+        long startTime = System.currentTimeMillis();
+        log.info("Starting RAGAS evaluation: {} items", total);
+
         List<CompletableFuture<ItemEvaluation>> futures = dataset.getItems().stream()
-                .map(item -> CompletableFuture.supplyAsync(() -> evaluateItem(item), SAMPLE_EXECUTOR))
+                .map(item -> CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return evaluateItem(item);
+                    } catch (Exception e) {
+                        log.error("Failed to evaluate item: {}", item.getQuery(), e);
+                        return new ItemEvaluation(createErrorResult(item.getQuery()), new MetricScores());
+                    }
+                }, SAMPLE_EXECUTOR))
                 .toList();
-        List<ItemEvaluation> evaluated = futures.stream()
-                .map(CompletableFuture::join)
-                .toList();
+
+        List<ItemEvaluation> evaluated = new ArrayList<>();
+        for (int i = 0; i < futures.size(); i++) {
+            try {
+                ItemEvaluation result = futures.get(i).join();
+                evaluated.add(result);
+                if (result.result().getAnswer().contains("[EVALUATION_ERROR]")) {
+                    errorCount++;
+                }
+                // 每条都输出进度（含耗时和预计剩余）
+                long elapsed = System.currentTimeMillis() - startTime;
+                double avgPerItem = elapsed / (double) (i + 1);
+                long eta = (long) (avgPerItem * (total - i - 1)) / 1000;
+                if ((i + 1) % 5 == 0 || i == total - 1) {
+                    log.info("Evaluation progress: {}/{} (elapsed={}s, ETA={}s, errors={})",
+                            i + 1, total, elapsed / 1000, eta, errorCount);
+                }
+            } catch (Exception e) {
+                log.error("Evaluation failed at item {}/{}", i + 1, total, e);
+                evaluated.add(new ItemEvaluation(
+                        createErrorResult(dataset.getItems().get(i).getQuery()), new MetricScores()));
+                errorCount++;
+            }
+        }
+
+        long totalTime = System.currentTimeMillis() - startTime;
         List<EvaluationReport.ItemResult> results = evaluated.stream().map(ItemEvaluation::result).toList();
         List<MetricScores> allScores = evaluated.stream().map(ItemEvaluation::scores).toList();
         report.setItemResults(results);
 
         // 计算汇总统计 (mean, p50, p90 对每项指标)
         report.setSummary(computeSummary(allScores));
+        log.info("RAGAS evaluation completed: {} items in {}s (avg={}s/item, errors={})",
+                evaluated.size(), totalTime / 1000, String.format("%.1f", totalTime / 1000.0 / evaluated.size()), errorCount);
         return report;
+    }
+
+    private EvaluationReport.ItemResult createErrorResult(String query) {
+        EvaluationReport.ItemResult result = new EvaluationReport.ItemResult();
+        result.setQuery(query);
+        result.setAnswer("[EVALUATION_ERROR]");
+        result.setScores(Map.of(
+                "faithfulness", 0.0, "answer_relevance", 0.0,
+                "context_precision", 0.0, "context_recall", 0.0,
+                "factual_correctness", 0.0, "noise_sensitivity", 0.0,
+                "negative_rejection", 0.0));
+        return result;
     }
 
     /**
@@ -90,7 +143,9 @@ public class RagasEvaluator {
         }
         for (Map.Entry<String, CompletableFuture<Double>> entry : futures.entrySet()) {
             try {
-                setScore(scores, entry.getKey(), entry.getValue().join());
+                setScore(scores, entry.getKey(), entry.getValue().get(30, TimeUnit.SECONDS));
+            } catch (TimeoutException e) {
+                log.warn("Metric timeout: {}", entry.getKey());
             } catch (Exception e) {
                 log.warn("Metric evaluation failed: {}", entry.getKey(), e);
             }
@@ -104,14 +159,19 @@ public class RagasEvaluator {
      * 调用 ChatModel 生成回答 (1 次调用)
      */
     private String generateAnswer(String query, List<String> contexts) {
-        contexts = contexts != null ? contexts : List.of();
-        String contextStr = contexts.isEmpty() ? "" : String.join("\n", contexts);
-        String prompt = "基于以下知识回答问题。\n\n知识:\n" + contextStr + "\n\n问题: " + query;
-        ChatModel chatModel = createChatModel();
-        List<Message> messages = new ArrayList<>();
-        messages.add(new UserMessage(prompt));
-        ChatResponse response = chatModel.call(new Prompt(messages));
-        return response.getResult().getOutput().getText();
+        try {
+            contexts = contexts != null ? contexts : List.of();
+            String contextStr = contexts.isEmpty() ? "" : String.join("\n", contexts);
+            String prompt = "基于以下知识回答问题。\n\n知识:\n" + contextStr + "\n\n问题: " + query;
+            ChatModel chatModel = createChatModel();
+            List<Message> messages = new ArrayList<>();
+            messages.add(new UserMessage(prompt));
+            ChatResponse response = chatModel.call(new Prompt(messages));
+            return response.getResult().getOutput().getText();
+        } catch (Exception e) {
+            log.warn("Failed to generate answer for query: {}", query, e);
+            return "[GENERATION_ERROR]";
+        }
     }
 
     private ItemEvaluation evaluateItem(EvaluationDataset.EvalItem item) {
@@ -150,14 +210,19 @@ public class RagasEvaluator {
      * 对单个指标调用 ChatModel 评分 (1 次调用)，返回 0.0-1.0 分数
      */
     private double judgeMetric(String query, String context, String answer, String metricPrompt) {
-        String evalPrompt = "问题: " + query + "\n上下文: " + context + "\n回答: " + answer;
-        ChatModel chatModel = createChatModel();
-        List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(decoratePrompt(metricPrompt)));
-        messages.add(new UserMessage(evalPrompt));
-        ChatResponse response = chatModel.call(new Prompt(messages));
-        String responseText = response.getResult().getOutput().getText();
-        return parseScore(responseText);
+        try {
+            String evalPrompt = "问题: " + query + "\n上下文: " + context + "\n回答: " + answer;
+            ChatModel chatModel = createChatModel();
+            List<Message> messages = new ArrayList<>();
+            messages.add(new SystemMessage(decoratePrompt(metricPrompt)));
+            messages.add(new UserMessage(evalPrompt));
+            ChatResponse response = chatModel.call(new Prompt(messages));
+            String responseText = response.getResult().getOutput().getText();
+            return parseScore(responseText);
+        } catch (Exception e) {
+            log.warn("LLM call failed for metric evaluation", e);
+            return 0.0;
+        }
     }
 
     private Map<String, String> resolveMetricPrompts() {
@@ -196,15 +261,23 @@ public class RagasEvaluator {
                 config.getModelName());
     }
 
+    private static final Pattern SCORE_PATTERN = Pattern.compile("\"score\"\\s*:\\s*(0\\.\\d+|1\\.0|1)");
+
     private double parseScore(String responseText) {
+        // 优先用正则提取 score — 避免 LLM feedback 中中文引号导致 JSON 解析失败
+        Matcher m = SCORE_PATTERN.matcher(responseText);
+        if (m.find()) {
+            return Double.parseDouble(m.group(1));
+        }
+        // fallback: 将中文引号替换后再用 JSON 解析
         try {
-            String jsonStr = responseText;
-            int start = responseText.indexOf("{");
-            int end = responseText.lastIndexOf("}");
+            String cleaned = responseText.replace("\u201c", "'").replace("\u201d", "'");
+            int start = cleaned.indexOf("{");
+            int end = cleaned.lastIndexOf("}");
             if (start >= 0 && end > start) {
-                jsonStr = responseText.substring(start, end + 1);
+                cleaned = cleaned.substring(start, end + 1);
             }
-            JSONObject json = JSONObject.parseObject(jsonStr);
+            JSONObject json = JSONObject.parseObject(cleaned);
             return json.getDoubleValue("score");
         } catch (Exception e) {
             log.warn("解析评分响应失败: {}", responseText, e);

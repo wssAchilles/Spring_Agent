@@ -70,6 +70,28 @@ class RagasEvaluatorMetricTest {
         }
 
         @Test
+        @DisplayName("中文全角引号不破坏 score 提取")
+        void parseScore_chineseQuotes_parsesScore() throws Exception {
+            Method method = RagasEvaluator.class.getDeclaredMethod("parseScore", String.class);
+            method.setAccessible(true);
+
+            String response = "{\"score\": 0.0, \"feedback\": \"回答引用了不存在的文档标题\u201cDay06-文件管理功能优化\u201d，与上下文完全不符\"}";
+            double score = (double) method.invoke(evaluator, response);
+            assertEquals(0.0, score, 0.001);
+        }
+
+        @Test
+        @DisplayName("feedback 含正则特殊字符不影响提取")
+        void parseScore_specialCharsInFeedback_parsesScore() throws Exception {
+            Method method = RagasEvaluator.class.getDeclaredMethod("parseScore", String.class);
+            method.setAccessible(true);
+
+            String response = "{\"score\": 0.65, \"feedback\": \"回答提到了 (a+b) [c] {d} | pipe ^ caret * star\"}";
+            double score = (double) method.invoke(evaluator, response);
+            assertEquals(0.65, score, 0.001);
+        }
+
+        @Test
         @DisplayName("缺少 score 字段返回 0.0")
         void parseScore_missingScoreField_returnsZero() throws Exception {
             Method method = RagasEvaluator.class.getDeclaredMethod("parseScore", String.class);

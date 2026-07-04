@@ -8,7 +8,7 @@ datasource:
 # Spring配置
 spring:
   neo4j:
-    uri: ""
+    uri: ${NEO4J_URI:bolt://localhost:7687}
   # redis 配置
   data:
     redis:
@@ -177,6 +177,13 @@ hermes:
       api-key: ${HERMES_OPENAI_API_KEY:}
       model-name: deepseek-chat
       question-count: 3
+    query-transform:
+      enabled: true
+      strategy: rewrite
+      platform: DeepSeek
+      base-url: https://api.deepseek.com
+      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      model-name: deepseek-chat
       max-chunk-chars: 2000
       timeout-seconds: 30
       max-chunks-per-document: 20
@@ -189,6 +196,33 @@ neo4j:
   uri: ${NEO4J_URI:}
   user: ${NEO4J_USER:}
   password: ${NEO4J_PASSWORD:}
+
+qknow:
+  rag:
+    eval:
+      enabled: true
+      platform: DeepSeek
+      base-url: https://api.deepseek.com
+      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      model-name: deepseek-chat
+      threshold: 0.85
+    query-entity:
+      enabled: true
+      platform: DeepSeek
+      base-url: https://api.deepseek.com
+      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      model: deepseek-chat
+      temperature: 0.0
+    crag:
+      enabled: true
+      platform: DeepSeek
+      base-url: https://api.deepseek.com
+      api-key: ${HERMES_OPENAI_API_KEY:REDACTED}
+      model: deepseek-chat
+      temperature: 0.0
+    local-reranker:
+      enabled: true
+      service-url: http://127.0.0.1:8765
 
 logging:
   level:
