@@ -95,6 +95,13 @@
             <artifactId>qknow-neo4j</artifactId>
             <version>${qknow.version}</version>
         </dependency>
+
+        <!-- [溯源] 算法优化指南 Phase 1: ONNX Runtime Cross-Encoder -->
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime</artifactId>
+            <version>1.20.0</version>
+        </dependency>
     </dependencies>
 
 </project>
