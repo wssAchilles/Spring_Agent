@@ -17,17 +17,24 @@ import tech.qiantong.qknow.ai.service.IEmbeddingService;
 import tech.qiantong.qknow.common.exception.ServiceException;
 
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 向量化模型服务
+ * [溯源] 算法优化指南 §5.2: "EmbeddingServiceImpl 实例缓存 — P1"
+ *
+ * 使用 ConcurrentHashMap 缓存已创建的 EmbeddingModel 实例，
+ * 避免每次调用都重新创建重量级对象。
  *
  * @author fabian
  */
 @Service
 public class EmbeddingServiceImpl implements IEmbeddingService {
 
+    private final ConcurrentHashMap<String, EmbeddingModel> cache = new ConcurrentHashMap<>();
+
     /**
-     * 获取 向量化模型
+     * 获取 向量化模型（带缓存）
      *
      * @param platForm  平台名称
      * @param baseUrl   baseUrl
@@ -37,24 +44,27 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
      */
     @Override
     public EmbeddingModel getEmbeddingModel(String platForm, String baseUrl, String apiKey, String modelName) {
-        EmbeddingModel embeddingModel;
-        switch (platForm) {
-            case "OpenAI" -> embeddingModel = this.getOpenAiModel(baseUrl, apiKey, modelName);
-            case "TongYi" -> embeddingModel = this.getDashScopeModel(baseUrl, apiKey, modelName);
-            case "Ollama" -> embeddingModel = this.getOllamaModel(baseUrl, modelName);
-            default -> throw new ServiceException("暂时不支持该平台");
+        String cacheKey = buildCacheKey(platForm, baseUrl, apiKey, modelName);
+        return cache.computeIfAbsent(cacheKey, k -> createModel(platForm, baseUrl, apiKey, modelName));
+    }
 
-        }
-        return embeddingModel;
+    private EmbeddingModel createModel(String platForm, String baseUrl, String apiKey, String modelName) {
+        return switch (platForm) {
+            case "OpenAI" -> this.getOpenAiModel(baseUrl, apiKey, modelName);
+            case "TongYi" -> this.getDashScopeModel(baseUrl, apiKey, modelName);
+            case "Ollama" -> this.getOllamaModel(baseUrl, modelName);
+            default -> throw new ServiceException("暂时不支持该平台");
+        };
+    }
+
+    private String buildCacheKey(String platForm, String baseUrl, String apiKey, String modelName) {
+        return platForm + "|" + (baseUrl != null ? baseUrl : "") + "|"
+                + (apiKey != null ? apiKey.hashCode() : "") + "|"
+                + (modelName != null ? modelName : "");
     }
 
     /**
      * 获取 OpenAi 向量化模型
-     *
-     * @param baseUrl   baseUrl（必需）
-     * @param apiKey    apiKey（必需）
-     * @param modelName modelName（必需）
-     * @return OpenAiEmbeddingModel
      */
     private OpenAiEmbeddingModel getOpenAiModel(String baseUrl, String apiKey, String modelName) {
         if (StrUtil.hasBlank(baseUrl, apiKey, modelName)) {
@@ -68,7 +78,6 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
 
     /**
      * 通义千问 Embedding 通过 OpenAI 兼容模式接入
-     * DashScope 兼容端点：https://dashscope.aliyuncs.com/compatible-mode/v1
      */
     private OpenAiEmbeddingModel getDashScopeModel(String baseUrl, String apiKey, String modelName) {
         if (StrUtil.hasBlank(apiKey, modelName)) {
@@ -97,10 +106,6 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
 
     /**
      * 获取 ollama 向量化模型
-     *
-     * @param baseUrl   baseUrl（必需）
-     * @param modelName modelName（必需）
-     * @return OllamaEmbeddingModel
      */
     private OllamaEmbeddingModel getOllamaModel(String baseUrl, String modelName) {
         if (StrUtil.hasBlank(baseUrl, modelName)) {
