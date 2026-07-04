@@ -93,9 +93,9 @@ postgresql:
   # 主库JDBC连接URL
   url: jdbc:postgresql://postgres:5432/ai_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
   # 主库用户名
-  username: postgres
+  username: ${POSTGRESQL_USERNAME:postgres}
   # 主库密码
-  password: postgres
+  password: ${POSTGRESQL_PASSWORD:changeme}
 
 # MySQL配置文件 (已迁移到PostgreSQL，保留备用)
 mysql:
@@ -104,9 +104,9 @@ mysql:
   # 主库JDBC连接URL
   url: jdbc:mysql://mysql57:3306/qknow_demo?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
   # 主库用户名
-  username: root
+  username: ${MYSQL_USERNAME:root}
   # 主库密码
-  password: lJ7gP0cA5dD2dA1hA3bJ
+  password: ${MYSQL_PASSWORD:changeme}
 
 # 达梦配置文件
 dm8:
@@ -115,9 +115,9 @@ dm8:
   # 主库JDBC连接URL
   url: jdbc:mysql://127.0.0.1:3306/qknow_demo?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
   # 主库用户名
-  username: root
+  username: ${DM8_USERNAME:root}
   # 主库密码
-  password: OAKC7dAs04BgWt
+  password: ${DM8_PASSWORD:changeme}
 
 # 人大金仓配置文件
 kingbase8:

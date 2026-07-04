@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONArray;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,6 +26,7 @@ class RAGCheckerFullEvaluationTest {
 
     @Test
     @DisplayName("加载数据库数据集并运行 RAGChecker 评估")
+    @EnabledIfEnvironmentVariable(named = "HERMES_OPENAI_API_KEY", matches = ".+")
     void loadFromDbAndEvaluate() throws Exception {
         DriverManagerDataSource ds = new DriverManagerDataSource();
         ds.setUrl("jdbc:postgresql://localhost:5432/ai_agent");

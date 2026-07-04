@@ -2,6 +2,7 @@ package tech.qiantong.qknow.server;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import tech.qiantong.qknow.hermes.eval.RagasEvaluator;
@@ -11,6 +12,7 @@ import tech.qiantong.qknow.module.kg.service.GraphCommunityService;
 
 @Slf4j
 @SpringBootTest
+@EnabledIfEnvironmentVariable(named = "RUN_SOTA_TESTS", matches = "true")
 public class SotaVerificationTest {
 
     @Autowired(required = false)

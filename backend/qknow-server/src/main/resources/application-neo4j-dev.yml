@@ -1,9 +1,9 @@
 
 
 neo4j:
-  uri: bolt://127.0.0.1:7687
-  user: neo4j
-  password: neo4jpass123
+  uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
+  user: ${NEO4J_USER:neo4j}
+  password: ${NEO4J_PASSWORD:changeme}
 # neo4j日志
 logging:
   level:

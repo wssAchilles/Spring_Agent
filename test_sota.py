@@ -1,15 +1,16 @@
 import requests
 import json
 import time
+import os
 
-BASE_URL = "http://127.0.0.1:8099"
+BASE_URL = os.getenv("SOTA_BASE_URL", "http://127.0.0.1:8099")
 ADMIN_URL = f"{BASE_URL}/admin-api"
 
 def get_token():
     try:
         response = requests.post(f"{ADMIN_URL}/system/auth/login", json={
-            "username": "admin",
-            "password": "admin123"
+            "username": os.getenv("SOTA_USERNAME", "admin"),
+            "password": os.getenv("SOTA_PASSWORD")
         })
         return response.json()['data']['token']
     except Exception as e:

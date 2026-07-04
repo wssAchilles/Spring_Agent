@@ -294,5 +294,5 @@ knife4j:
   production: false
   basic:
     enable: true
-    username: qknow
-    password: qknow12313
+    username: ${KNIFE4J_USERNAME:qknow}
+    password: ${KNIFE4J_PASSWORD:changeme}
