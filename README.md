@@ -46,56 +46,70 @@ Agent/
 │
 ├── docs/                             # 项目文档
 ├── plans/                            # 实施计划 (6 阶段)
-├── docker-compose.yml                # 一键启动
+├── docker-compose.yml                # 本地基础依赖: Redis + Neo4j
+├── .env.example                      # 本地环境变量模板
 └── README.md
 ```
 
 ## 快速开始
 
-### 方式一: Docker 一键启动 (推荐)
+### 方式一: 本地开发启动 (当前项目实际方式)
 
 ```bash
 # 克隆项目
 git clone https://github.com/wssAchilles/Spring_Agent.git
 cd Spring_Agent
 
-# 启动所有服务
+# 启动基础依赖。根目录 docker-compose.yml 只包含 Redis 与 Neo4j。
 docker-compose up -d
 
-# 访问
-# 前端: http://localhost
-# 后端 API: http://localhost:8099
-# Swagger: http://localhost:8099/swagger-ui.html
-```
+# 后端依赖本机 PostgreSQL: 127.0.0.1:5432/ai_agent
+# 数据库账号、模型 API Key、Token Secret、Neo4j 密码等从 .env 读取。
+set -a
+source .env
+set +a
 
-### 方式二: 本地开发
-
-**环境要求:**
-- JDK 17+
-- Node.js 18+
-- PostgreSQL 15+ (需安装 PgVector 扩展)
-- Redis 7+
-
-**后端:**
-```bash
-# 启动数据库
-docker-compose up -d postgres redis
-
-# 编译后端
+# 启动后端
 cd backend
-mvn clean install -DskipTests
-
-# 启动
-cd qknow-server
-mvn spring-boot:run
+mvn -pl qknow-server -am spring-boot:run
 ```
 
-**前端:**
+另开一个终端启动前端：
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+默认访问地址：
+
+- 前端开发服务：http://localhost:80
+- 后端 API：http://localhost:8099
+- Swagger：http://localhost:8099/swagger-ui.html
+- Redis：Docker `agent-redis`，`localhost:6379`
+- Neo4j：Docker `agent-neo4j`，Browser `http://localhost:7474`，Bolt `localhost:7687`
+- PostgreSQL：宿主机本地服务，`localhost:5432`
+
+### 环境要求
+
+- JDK 17+
+- Node.js 18+
+- PostgreSQL 15+，本机运行，需安装 PgVector 与 pg_trgm 扩展
+- Redis 7+
+- Docker / Docker Compose，用于本地 Redis 与 Neo4j
+
+`.env.example` 是模板；`.env` 保存本地真实配置，不要把真实密钥写入 README 或提交到公共仓库。
+
+### 生产/镜像部署说明
+
+`deploy/docker/` 下还有一套独立的 Compose 配置，用于镜像化部署：
+
+- `deploy/docker/docker-compose.yml` include `docker-compose-base.yml` 与 `docker-compose-qknow.yml`
+- base profile 包含 Redis、Neo4j、Nginx、MySQL 5.7、Weaviate
+- qknow profile 包含后端 `api` 镜像
+- 这套配置使用 `deploy/docker/.env`，不是根目录 `.env`
+- 当前根目录开发 Compose 不会启动前端、后端或 PostgreSQL
 
 ## 技术栈
 
@@ -107,8 +121,10 @@ npm run dev
 | 前端框架 | Vue 3 / Vite / Pinia / Element Plus |
 | 向量存储 | PostgreSQL + PgVector |
 | 缓存 | Redis 7 |
-| AI 模型 | DeepSeek (主力) / Gemini Flash (低延迟) |
-| 部署 | Docker / Docker Compose |
+| AI 模型 | DeepSeek / 通义千问 Embedding / OpenAI 备用，按 `.env` 配置 |
+| 本地基础依赖 | Docker Compose 启动 Redis + Neo4j |
+| 本地数据库 | 宿主机 PostgreSQL + PgVector |
+| 镜像部署 | `deploy/docker/` Compose |
 
 ## 架构设计
 
@@ -151,13 +167,21 @@ npm run dev
 - `kmc` - 知识管理 (知识库、文档、分段)
 - `ai` - AI 模型 (模型市场、API Key)
 
-## 数据库
+## 数据库与环境配置
 
-使用 PostgreSQL + PgVector 扩展，初始化脚本位于 `deploy/sql/postgresql/`:
+本地开发使用宿主机 PostgreSQL，不由根目录 `docker-compose.yml` 启动。后端 dev 配置指向：
+
+- JDBC：`jdbc:postgresql://127.0.0.1:5432/ai_agent`
+- 用户名：环境变量 `POSTGRESQL_USERNAME`
+- 密码：环境变量 `POSTGRESQL_PASSWORD`
+
+初始化脚本位于 `deploy/sql/postgresql/`:
 
 1. `00-init-extensions.sql` - 启用扩展 (vector, pg_trgm)
 2. `01-schema.sql` - 建表脚本 (50+ 表)
 3. `02-init-data.sql` - 初始数据 (admin 用户、角色、字典)
+
+Redis 与 Neo4j 在本地开发中由根目录 Compose 启动；Neo4j 连接参数来自 `NEO4J_URI`、`NEO4J_USER`、`NEO4J_PASSWORD`。
 
 ## 开发日志
 

@@ -140,7 +140,7 @@
                   弱路径排除
                 </div>
                 <div v-for="p in debugInfo.excludedPaths" :key="p.path" style="font-size: 12px; color: #92400e;">
-                  {{ p.path }} (top score {{ p.topScore?.toFixed(3) }} < {{ p.threshold }})
+                  {{ p.path }} (top score {{ p.topScore?.toFixed(3) }} 小于 {{ p.threshold }})
                 </div>
               </div>
 
@@ -163,7 +163,25 @@
                 <el-descriptions-item label="融合后结果">{{ getDebugCount('fusedCount', 'firstFusedCount') }}</el-descriptions-item>
                 <el-descriptions-item label="重排序结果">{{ getDebugCount('rerankedCount', 'firstRerankedCount') }}</el-descriptions-item>
                 <el-descriptions-item label="Reranker">{{ debugInfo.rerankerProvider || 'deterministic' }}</el-descriptions-item>
+                <el-descriptions-item label="Query Route">{{ debugInfo.queryRoute || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="Dynamic TopK">{{ debugInfo.dynamicTopK ?? '-' }}</el-descriptions-item>
+                <el-descriptions-item label="语义缓存">{{ formatSemanticCache(debugInfo.semanticCacheHit, debugInfo.semanticCache) }}</el-descriptions-item>
+                <el-descriptions-item label="Web Fallback">{{ formatFallbackCount(debugInfo.webFallbackApplied, debugInfo.webFallbackCount) }}</el-descriptions-item>
+                <el-descriptions-item label="CRAG">{{ debugInfo.cragLabel || '-' }}</el-descriptions-item>
+                <el-descriptions-item label="改写检索">{{ formatBoolean(debugInfo.rewriteApplied) }}</el-descriptions-item>
               </el-descriptions>
+
+              <div v-if="fallbackDiagnostics.length" style="margin-top: 12px;">
+                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                  降级与 JNI 诊断
+                </div>
+                <el-table :data="fallbackDiagnostics" size="small" border>
+                  <el-table-column prop="component" label="组件" width="150" />
+                  <el-table-column prop="count" label="次数" width="80" />
+                  <el-table-column prop="lastFallback" label="降级路径" width="180" />
+                  <el-table-column prop="lastReason" label="最近原因" show-overflow-tooltip />
+                </el-table>
+              </div>
 
               <!-- 上下文预算条 -->
               <div v-if="debugInfo.contextBytes" style="margin-top: 12px;">
@@ -195,7 +213,7 @@
         class="search-setting-dialog"
         draggable
       >
-        <template #header="{ close, titleId, titleClass }">
+        <template #header>
           <span role="heading" aria-level="2" class="el-dialog__title">
             检索设置
           </span>
@@ -746,9 +764,7 @@
         <template #footer>
           <div class="dialog-footer">
             <el-button size="small" @click="cancel">取 消</el-button>
-            <el-button type="primary" size="small" @click="submitForm"
-              >确 定</el-button
-            >
+            <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
           </div>
         </template>
         <!-- </div>
@@ -774,7 +790,6 @@ import { WarningFilled, Operation } from "@element-plus/icons-vue"; // 新增导
 import {
   getKnowledgeBase,
   getRerank,
-  getTextEmbedding,
   recallTest,
   recallDebug,
   clearRagCache
@@ -782,7 +797,6 @@ import {
 import { getFileFormat } from "@/utils/app/chat/chat.js";
 import { listLog } from "@/api/kmc/knowledgeBase/log.js";
 import { updateKnowledgeBase } from "@/api/kmc/knowledgeBase/knowledgeBase.js";
-import { watchEffect } from "vue";
 
 const { proxy } = getCurrentInstance();
 const userStore = useUserStore();
@@ -851,6 +865,42 @@ const route = useRoute();
 function getDebugCount(legacyKey, phaseKey) {
   const value = debugInfo.value?.[phaseKey] ?? debugInfo.value?.[legacyKey];
   return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+const fallbackDiagnostics = computed(() => {
+  const fallbacks = debugInfo.value?.fallbacks || {};
+  return Object.entries(fallbacks)
+    .map(([component, state]) => ({
+      component,
+      count: Number(state?.count || 0),
+      lastFallback: state?.lastFallback || "-",
+      lastReason: state?.lastReason || "-",
+    }))
+    .filter((item) => item.count > 0 || item.lastFallback !== "-");
+});
+
+function formatBoolean(value) {
+  if (value === true) return "是";
+  if (value === false) return "否";
+  return "-";
+}
+
+function formatSemanticCache(hit, detail) {
+  if (hit === true) return "命中";
+  if (hit === false) return "未命中";
+  if (detail?.status === "not_queried") return "未查询";
+  return "-";
+}
+
+function formatFallbackCount(applied, count) {
+  const normalizedCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+  if (applied === true || normalizedCount > 0) {
+    return `已触发 (${normalizedCount})`;
+  }
+  if (applied === false) {
+    return "未触发";
+  }
+  return "-";
 }
 
 // 补充表单验证规则（对齐原页面）
@@ -1064,7 +1114,9 @@ const md = new MarkdownIt({
         return `<pre style="position: relative;">${copyHtml}<code class="hljs">${
           hljs.highlight(lang, str, true).value
         }</code></pre>`;
-      } catch (__) {}
+      } catch {
+        return "";
+      }
     }
     return ``;
   },
@@ -1228,7 +1280,7 @@ function getRecall() {
         contextPreview.value = res.data.contextPreview || "";
         getLogList();
       })
-      .catch((err) => {
+      .catch(() => {
         loading.value = false;
       });
   } else {
@@ -1240,7 +1292,7 @@ function getRecall() {
         contextPreview.value = "";
         getLogList();
       })
-      .catch((err) => {
+      .catch(() => {
         loading.value = false;
       });
   }
@@ -1259,8 +1311,11 @@ function handleClearCache() {
       clearingCache.value = false;
       proxy.$modal.msgSuccess("清除缓存成功");
     })
-    .catch(() => {
+    .catch((err) => {
       clearingCache.value = false;
+      if (err !== "cancel" && err !== "close") {
+        proxy.$modal.msgError("清除缓存失败");
+      }
     });
 }
 
@@ -1277,7 +1332,7 @@ const getSourceText = (source) => {
 };
 
 /** 排序触发事件 */
-function handleSortChange(column, prop, order) {
+function handleSortChange(column) {
   const queryParams = {
     orderByColumn: column.prop,
     isAsc: column.order,
