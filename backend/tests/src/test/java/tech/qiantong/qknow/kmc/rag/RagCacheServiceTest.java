@@ -6,12 +6,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tech.qiantong.qknow.module.kmc.controller.admin.knowledgeBase.vo.RetrieveResultRespVO;
 import tech.qiantong.qknow.module.kmc.service.rag.RagCacheService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -89,14 +92,34 @@ class RagCacheServiceTest {
     }
 
     @Test
-    void evictByKnowledgeBaseDeletesMatchingKeys() {
+    void buildCacheKeyIncludesRetrievalDimensions() {
+        String topK3 = RagCacheService.buildCacheKey(1L, "same query", "rag_v2", Map.of(
+                "topK", 3,
+                "rerankingModelName", "model-a",
+                "scoreThreshold", "0.5"));
+        String topK8 = RagCacheService.buildCacheKey(1L, "same query", "rag_v2", Map.of(
+                "topK", 8,
+                "rerankingModelName", "model-a",
+                "scoreThreshold", "0.5"));
+
+        assertNotEquals(topK3, topK8);
+        assertTrue(topK3.startsWith("1:"));
+    }
+
+    @Test
+    void evictByKnowledgeBaseScansAndDeletesMatchingKeys() {
         String key1 = "rag:cache:1:abc:hybrid";
         String key2 = "rag:cache:1:def:semantic";
-        when(redisTemplate.keys("rag:cache:1:*")).thenReturn(Set.of(key1, key2));
+        @SuppressWarnings("unchecked")
+        Cursor<String> cursor = mock(Cursor.class);
+        when(cursor.hasNext()).thenReturn(true, true, false);
+        when(cursor.next()).thenReturn(key1, key2);
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(cursor);
 
         cacheService.evictByKnowledgeBase(1L);
 
         verify(redisTemplate).delete(Set.of(key1, key2));
+        verify(redisTemplate, never()).keys(anyString());
     }
 
     @Test

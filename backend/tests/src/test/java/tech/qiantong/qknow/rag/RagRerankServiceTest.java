@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
+import tech.qiantong.qknow.module.kmc.service.rag.rerank.ColbertScorer;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.DeterministicRerankerProvider;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.RerankRequestContext;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.RerankerProvider;
@@ -12,9 +13,60 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @DisplayName("RagRerankService 重排序测试")
 class RagRerankServiceTest {
+
+    @Test
+    @DisplayName("非空候选先经过 ColBERT 粗排")
+    void rerank_nonEmptyCandidates_callsColbertScorer() {
+        tech.qiantong.qknow.module.kmc.service.rag.RagRerankService service =
+                new tech.qiantong.qknow.module.kmc.service.rag.RagRerankService();
+        ColbertScorer colbertScorer = mock(ColbertScorer.class);
+        when(colbertScorer.rerank(anyString(), anyList(), anyInt()))
+                .thenAnswer(invocation -> invocation.getArgument(1));
+
+        try {
+            var providersField = tech.qiantong.qknow.module.kmc.service.rag.RagRerankService.class.getDeclaredField("rerankerProviders");
+            providersField.setAccessible(true);
+            providersField.set(service, List.of());
+
+            var detField = tech.qiantong.qknow.module.kmc.service.rag.RagRerankService.class.getDeclaredField("deterministicRerankerProvider");
+            detField.setAccessible(true);
+            detField.set(service, new DeterministicRerankerProvider());
+
+            var colbertField = tech.qiantong.qknow.module.kmc.service.rag.RagRerankService.class.getDeclaredField("colbertScorer");
+            colbertField.setAccessible(true);
+            colbertField.set(service, colbertScorer);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        List<RetrievalResult> candidates = List.of(
+                RetrievalResult.builder()
+                        .segmentId(1L)
+                        .qmSegmentId("vec-1")
+                        .parentSegmentId("parent-1")
+                        .documentId(100L)
+                        .documentName("knowledge.txt")
+                        .content("knowledge graph entities relationships")
+                        .answer("answer")
+                        .score(0.5)
+                        .build()
+        );
+
+        List<RetrievalResult> result = service.rerank(
+                "knowledge graph", candidates, QueryIntent.builder().build(), 2, null, null);
+
+        verify(colbertScorer).rerank(eq("knowledge graph"), anyList(), eq(6));
+        assertEquals("vec-1", result.get(0).getQmSegmentId());
+        assertEquals("parent-1", result.get(0).getParentSegmentId());
+        assertEquals(100L, result.get(0).getDocumentId());
+        assertEquals("knowledge.txt", result.get(0).getDocumentName());
+        assertEquals("answer", result.get(0).getAnswer());
+    }
 
     @Test
     @DisplayName("DashScope provider 失败时应降级到 deterministic")

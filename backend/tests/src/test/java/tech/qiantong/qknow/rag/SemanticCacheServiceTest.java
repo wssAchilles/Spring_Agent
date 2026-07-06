@@ -2,8 +2,28 @@ package tech.qiantong.qknow.rag;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.test.util.ReflectionTestUtils;
+import tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DisplayName("SemanticCacheService 语义缓存测试")
 class SemanticCacheServiceTest {
@@ -82,5 +102,96 @@ class SemanticCacheServiceTest {
         long workspace1 = 1L;
         long workspace2 = 2L;
         assertNotEquals(workspace1, workspace2, "不同工作区的缓存应隔离");
+    }
+
+    @Test
+    @DisplayName("精确缓存并发读写不应抛出异常")
+    void exactCache_concurrentAccess_shouldNotThrow() throws Exception {
+        SemanticCacheService service = new SemanticCacheService();
+        ExecutorService executor = Executors.newFixedThreadPool(8);
+        List<Callable<Void>> tasks = new ArrayList<>();
+        for (int i = 0; i < 200; i++) {
+            final int index = i;
+            tasks.add(() -> {
+                String key = "key-" + index;
+                SemanticCacheService.CacheHit hit = SemanticCacheService.CacheHit.builder()
+                        .id((long) index)
+                        .answer("answer-" + index)
+                        .sourcesJson("[]")
+                        .similarity(1.0)
+                        .build();
+                ReflectionTestUtils.invokeMethod(service, "putExactCache", key, hit);
+                Object cached = ReflectionTestUtils.invokeMethod(service, "getExactCache", key);
+                assertNotNull(cached);
+                return null;
+            });
+        }
+
+        List<Future<Void>> futures = executor.invokeAll(tasks);
+        executor.shutdown();
+
+        for (Future<Void> future : futures) {
+            future.get();
+        }
+    }
+
+    @Test
+    @DisplayName("精确缓存键使用 SHA-256 避免 hashCode 碰撞")
+    void exactCacheKey_usesSha256Digest() {
+        SemanticCacheService service = new SemanticCacheService();
+
+        String key = ReflectionTestUtils.invokeMethod(service, "buildExactCacheKey",
+                1L, 2L, "kb-hash", "model", "  Hello   RAG  ");
+
+        assertNotNull(key);
+        String[] parts = key.split(":");
+        assertEquals(5, parts.length);
+        assertEquals("1", parts[0]);
+        assertEquals("2", parts[1]);
+        assertEquals("kb-hash", parts[2]);
+        assertEquals("model", parts[3]);
+        assertTrue(parts[4].matches("[0-9a-f]{64}"));
+        assertNotEquals(String.valueOf("hello rag".hashCode()), parts[4]);
+    }
+
+    @Test
+    @DisplayName("精确缓存过期后不命中")
+    void exactCache_expiredHit_shouldMiss() {
+        SemanticCacheService service = new SemanticCacheService();
+        SemanticCacheService.CacheHit hit = SemanticCacheService.CacheHit.builder()
+                .id(1L)
+                .answer("expired")
+                .sourcesJson("[]")
+                .similarity(1.0)
+                .expiresAt(Instant.now().minusSeconds(1))
+                .build();
+
+        ReflectionTestUtils.invokeMethod(service, "putExactCache", "expired-key", hit);
+        Object cached = ReflectionTestUtils.invokeMethod(service, "getExactCache", "expired-key");
+
+        assertNull(cached);
+    }
+
+    @Test
+    @DisplayName("语义缓存查询使用配置维度向量表达式")
+    void findAnswer_usesConfiguredVectorExpression() {
+        SemanticCacheService service = new SemanticCacheService();
+        SemanticCacheService.SemanticCacheConfig config = new SemanticCacheService.SemanticCacheConfig();
+        config.setEmbeddingDimension(768);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
+        ReflectionTestUtils.setField(service, "config", config);
+        ReflectionTestUtils.setField(service, "jdbcTemplate", jdbcTemplate);
+        when(embeddingModel.call(any(EmbeddingRequest.class)))
+                .thenReturn(new EmbeddingResponse(List.of(new Embedding(new float[768], 0))));
+        when(jdbcTemplate.query(any(String.class), any(RowMapper.class), any(Object[].class)))
+                .thenReturn(List.of());
+
+        service.findAnswer(1L, 2L, 3L, "kb", "query", "model", embeddingModel);
+
+        verify(jdbcTemplate).query(org.mockito.ArgumentMatchers.argThat(sql ->
+                        sql.contains("query_embedding::vector(768) <=> ?::vector(768)")),
+                any(RowMapper.class),
+                any(Object[].class));
     }
 }

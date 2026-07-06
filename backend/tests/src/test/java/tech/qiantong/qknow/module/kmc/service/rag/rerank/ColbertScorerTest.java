@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,16 @@ class ColbertScorerTest {
         config.setEnabled(true);
         config.setNgramSize(2);
         scorer = new ColbertScorer(config, null);
+    }
+
+    @Test
+    @DisplayName("配置绑定使用运行时 hermes 前缀")
+    void config_usesHermesRuntimePrefix() {
+        ConfigurationProperties properties =
+                ColbertScorer.ColbertConfig.class.getAnnotation(ConfigurationProperties.class);
+
+        assertNotNull(properties);
+        assertEquals("hermes.rag.colbert", properties.prefix());
     }
 
     @Test

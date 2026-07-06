@@ -9,8 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.util.ReflectionTestUtils;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagResult;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
 import java.lang.reflect.Method;
@@ -36,12 +38,55 @@ class GraphRagRetrieverTest {
 
     @BeforeEach
     void setUp() {
+        RagFallbackMonitor.reset();
         properties = new GraphRagProperties();
         retriever = new GraphRagRetriever();
         ReflectionTestUtils.setField(retriever, "jdbcTemplate", jdbcTemplate);
         ReflectionTestUtils.setField(retriever, "properties", properties);
         ReflectionTestUtils.setField(retriever, "neo4jClient", neo4jClient);
         ReflectionTestUtils.setField(retriever, "cypherSafetyValidator", cypherSafetyValidator);
+    }
+
+    @Nested
+    @DisplayName("PPR 保护测试")
+    class PprRetrieveTests {
+
+        @Test
+        @DisplayName("graph disabled 时 PPR 不访问数据库")
+        void pprRetrieve_graphDisabled_doesNotQueryDatabase() {
+            properties.setEnabled(false);
+            properties.setPprEnabled(true);
+
+            List<RetrievalResult> results = retriever.pprRetrieve(1L, List.of("A公司"), 10);
+
+            assertTrue(results.isEmpty());
+            verifyNoInteractions(jdbcTemplate);
+        }
+
+        @Test
+        @DisplayName("PPR 读取 kg_edge 使用 source_id/target_id 且限制 seed 子图")
+        void pprRetrieve_usesBoundedSchemaColumns() {
+            properties.setEnabled(true);
+            properties.setPprEnabled(true);
+            properties.setPprMaxEdges(10);
+            ReflectionTestUtils.setField(retriever, "neo4jClient", null);
+
+            when(jdbcTemplate.queryForList(startsWith("SELECT id FROM kg_node"), eq(Long.class), any(Object[].class)))
+                    .thenReturn(List.of(1L));
+            when(jdbcTemplate.queryForList(contains("source_id, target_id"), any(Object[].class)))
+                    .thenReturn(List.of(Map.of("source_id", 1L, "target_id", 2L)));
+            when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                    .thenReturn(List.of());
+
+            List<RetrievalResult> results = retriever.pprRetrieve(1L, List.of("A公司"), 10);
+
+            assertTrue(results.isEmpty());
+            verify(jdbcTemplate, atLeastOnce()).queryForList(argThat(sql ->
+                    sql.contains("source_id, target_id")
+                            && sql.contains("source_id IN")
+                            && sql.contains("target_id IN")), any(Object[].class));
+            verify(jdbcTemplate, never()).queryForList(contains("source_node_id"), any(Object[].class));
+        }
     }
 
     @Nested
@@ -92,6 +137,22 @@ class GraphRagRetrieverTest {
 
             assertTrue(results.isEmpty());
         }
+
+        @Test
+        @DisplayName("Neo4j segmentIds 回读失败时记录 fallback")
+        void loadSegmentsByIds_failure_recordsFallback() {
+            when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                    .thenThrow(new RuntimeException("missing relation table"));
+
+            @SuppressWarnings("unchecked")
+            List<GraphRagResult> results = ReflectionTestUtils.invokeMethod(retriever,
+                    "loadSegmentsByIds", 1L, List.of(10L), 5);
+
+            assertNotNull(results);
+            assertTrue(results.isEmpty());
+            Map<String, Object> snapshot = RagFallbackMonitor.snapshot();
+            assertTrue(snapshot.containsKey("neo4j"));
+        }
     }
 
     @Nested
@@ -125,6 +186,19 @@ class GraphRagRetrieverTest {
             for (int i = 0; i < merged.size() - 1; i++) {
                 assertTrue(merged.get(i).getScore() >= merged.get(i + 1).getScore());
             }
+        }
+
+        @Test
+        @DisplayName("topic SQL 失败时记录 fallback")
+        void dualLevelRetrieve_topicSqlFailure_recordsFallback() {
+            when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+                    .thenThrow(new RuntimeException("topic query failed"));
+
+            List<RetrievalResult> results = retriever.dualLevelRetrieve(1L, List.of(), List.of("RAG"), 5);
+
+            assertTrue(results.isEmpty());
+            Map<String, Object> snapshot = RagFallbackMonitor.snapshot();
+            assertTrue(snapshot.containsKey("neo4j"));
         }
     }
 
