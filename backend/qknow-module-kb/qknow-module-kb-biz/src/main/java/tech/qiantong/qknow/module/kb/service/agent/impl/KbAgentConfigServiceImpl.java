@@ -42,6 +42,7 @@ import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcKnowledgeBaseResp
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheHitDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheLookupReqDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheSaveReqDTO;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
 import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
@@ -386,6 +387,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
             lookup.setModelName(modelName);
             return kmcApiService.findSemanticAnswer(lookup);
         } catch (Exception e) {
+            RagFallbackMonitor.record("semantic_cache", "normal_chat", "kb lookup failed: " + e.getMessage());
             log.warn("Semantic cache lookup failed, continuing normal chat: {}", e.getMessage());
             return Optional.empty();
         }
@@ -408,7 +410,10 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                     kmcApiService.saveSemanticAnswer(saveReq);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
-                .subscribe(null, error -> log.warn("Semantic cache async save failed", error));
+                .subscribe(null, error -> {
+                    RagFallbackMonitor.record("semantic_cache", "skip_write", "kb async save failed: " + error.getMessage());
+                    log.warn("Semantic cache async save failed", error);
+                });
     }
 
     private Flux<KbChatMessageSendRespVO> cachedAnswerFlux(String question, SemanticCacheHitDTO hit) {

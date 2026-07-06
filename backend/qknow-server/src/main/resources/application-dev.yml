@@ -9,6 +9,8 @@ datasource:
 spring:
   neo4j:
     uri: ${NEO4J_URI:bolt://localhost:7687}
+    user: ${NEO4J_USER:neo4j}
+    password: ${NEO4J_PASSWORD}
   # redis 配置
   data:
     redis:
@@ -41,7 +43,7 @@ spring:
         # 访问Druid监控页面的用户名
         loginUsername: qknow
         # 访问Druid监控页面的密码
-        loginPassword: qknow123456
+        loginPassword: ${DRUID_STAT_PASSWORD}
     dynamic:
       druid:
         # 连接池初始化时创建的连接数量
@@ -190,12 +192,6 @@ hermes:
     colbert:
       enabled: true
       ngram-size: 3
-
-# Neo4j 配置（未部署时禁用）
-neo4j:
-  uri: ${NEO4J_URI:}
-  user: ${NEO4J_USER:}
-  password: ${NEO4J_PASSWORD:}
 
 qknow:
   rag:

@@ -1,5 +1,5 @@
 weaviate:
   scheme: http
   host: weaviate:8080
-  apiKey: WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih
+  apiKey: ${WEAVIATE_API_KEY}
   className: SpringAiWeaviate # 必须是大驼峰

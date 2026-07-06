@@ -66,7 +66,7 @@ spring:
         # 访问Druid监控页面的用户名
         loginUsername: qknow
         # 访问Druid监控页面的密码
-        loginPassword: qknow123456
+        loginPassword: ${DRUID_STAT_PASSWORD}
     dynamic:
       druid:
         # 连接池初始化时创建的连接数量

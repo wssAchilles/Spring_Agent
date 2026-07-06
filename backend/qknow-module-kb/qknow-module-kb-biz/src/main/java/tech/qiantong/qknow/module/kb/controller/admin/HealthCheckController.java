@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.qiantong.qknow.common.core.domain.CommonResult;
 import tech.qiantong.qknow.module.kb.tool.mcp.McpToolAdapter;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 
 import javax.sql.DataSource;
 import java.nio.file.Files;
@@ -40,6 +41,9 @@ public class HealthCheckController {
 
         // LangFuse 状态
         checks.put("langfuse", checkLangFuse());
+
+        // RAG 降级状态
+        checks.put("rag", RagFallbackMonitor.snapshot());
 
         // 系统信息
         checks.put("system", getSystemInfo());

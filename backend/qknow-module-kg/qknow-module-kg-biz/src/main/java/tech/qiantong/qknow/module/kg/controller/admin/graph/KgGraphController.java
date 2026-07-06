@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import tech.qiantong.qknow.common.core.controller.BaseController;
 import tech.qiantong.qknow.common.core.domain.CommonResult;
 import tech.qiantong.qknow.module.kg.service.GraphCommunityService;
 
@@ -15,7 +16,7 @@ import java.util.*;
 @Tag(name = "知识图谱")
 @RestController
 @RequestMapping("/kg/graph")
-public class KgGraphController {
+public class KgGraphController extends BaseController {
 
     @Resource
     private DataSource dataSource;
@@ -72,7 +73,7 @@ public class KgGraphController {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "INSERT INTO kg_node (workspace_id, label, type, properties) VALUES (?, ?, ?, ?::jsonb) RETURNING id";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setLong(1, 1001L);
+                pstmt.setLong(1, getWorkSpaceId());
                 pstmt.setString(2, (String) nodeData.get("label"));
                 pstmt.setString(3, (String) nodeData.getOrDefault("type", "concept"));
                 pstmt.setString(4, (String) nodeData.getOrDefault("properties", "{}"));
@@ -94,7 +95,7 @@ public class KgGraphController {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "INSERT INTO kg_edge (workspace_id, source_id, target_id, label, properties) VALUES (?, ?, ?, ?, ?::jsonb) RETURNING id";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setLong(1, 1001L);
+                pstmt.setLong(1, getWorkSpaceId());
                 pstmt.setLong(2, ((Number) edgeData.get("sourceId")).longValue());
                 pstmt.setLong(3, ((Number) edgeData.get("targetId")).longValue());
                 pstmt.setString(4, (String) edgeData.getOrDefault("label", "related_to"));
@@ -113,13 +114,14 @@ public class KgGraphController {
 
     @Operation(summary = "执行社区检测")
     @PostMapping("/communities/detect")
-    public CommonResult<?> detectCommunities(@RequestParam(defaultValue = "1001") Long workspaceId) {
+    public CommonResult<?> detectCommunities(@RequestParam(required = false) Long workspaceId) {
+        Long effectiveWorkspaceId = workspaceId != null ? workspaceId : getWorkSpaceId();
         if (communityService == null) {
             return CommonResult.error(501, "社区检测需要 Neo4j 配置，请先配置 spring.neo4j.uri");
         }
         try {
-            var communities = communityService.detectCommunities(String.valueOf(workspaceId));
-            communityService.saveCommunities(String.valueOf(workspaceId), communities);
+            var communities = communityService.detectCommunities(String.valueOf(effectiveWorkspaceId));
+            communityService.saveCommunities(String.valueOf(effectiveWorkspaceId), communities);
             return CommonResult.success(communities);
         } catch (Exception e) {
             String msg = e.getMessage() != null ? e.getMessage() : "";
@@ -132,12 +134,13 @@ public class KgGraphController {
 
     @Operation(summary = "获取已检测的社区列表")
     @GetMapping("/communities")
-    public CommonResult<List<Map<String, Object>>> getCommunities(@RequestParam(defaultValue = "1001") Long workspaceId) {
+    public CommonResult<List<Map<String, Object>>> getCommunities(@RequestParam(required = false) Long workspaceId) {
+        Long effectiveWorkspaceId = workspaceId != null ? workspaceId : getWorkSpaceId();
         List<Map<String, Object>> communities = new ArrayList<>();
         try (Connection conn = dataSource.getConnection()) {
             String sql = "SELECT community_id, size, entities, labels FROM kg_community WHERE workspace_id = ? ORDER BY size DESC";
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setLong(1, workspaceId);
+                pstmt.setLong(1, effectiveWorkspaceId);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     while (rs.next()) {
                         Map<String, Object> community = new HashMap<>();
@@ -158,12 +161,13 @@ public class KgGraphController {
 
     @Operation(summary = "生成社区摘要")
     @PostMapping("/communities/summarize")
-    public CommonResult<?> summarizeCommunities(@RequestParam(defaultValue = "1001") Long workspaceId) {
+    public CommonResult<?> summarizeCommunities(@RequestParam(required = false) Long workspaceId) {
+        Long effectiveWorkspaceId = workspaceId != null ? workspaceId : getWorkSpaceId();
         if (communityService == null) {
             return CommonResult.error(501, "社区摘要需要 Neo4j 配置，请先配置 spring.neo4j.uri");
         }
         try {
-            return CommonResult.success(communityService.summarizeCommunities(String.valueOf(workspaceId)));
+            return CommonResult.success(communityService.summarizeCommunities(String.valueOf(effectiveWorkspaceId)));
         } catch (Exception e) {
             return CommonResult.error(500, "社区摘要生成失败: " + e.getMessage());
         }
@@ -171,15 +175,16 @@ public class KgGraphController {
 
     @Operation(summary = "社区摘要 Global Search")
     @GetMapping("/global-search")
-    public CommonResult<?> globalSearch(@RequestParam(defaultValue = "1001") Long workspaceId,
+    public CommonResult<?> globalSearch(@RequestParam(required = false) Long workspaceId,
                                         @RequestParam String query,
                                         @RequestParam(defaultValue = "5") Integer topK) {
+        Long effectiveWorkspaceId = workspaceId != null ? workspaceId : getWorkSpaceId();
         if (communityService == null) {
             return CommonResult.error(501, "Global Search 需要 Neo4j 配置，请先配置 spring.neo4j.uri");
         }
         try {
             return CommonResult.success(communityService.globalSearch(
-                    String.valueOf(workspaceId), query, topK != null ? topK : 5));
+                    String.valueOf(effectiveWorkspaceId), query, topK != null ? topK : 5));
         } catch (Exception e) {
             return CommonResult.error(500, "Global Search 失败: " + e.getMessage());
         }

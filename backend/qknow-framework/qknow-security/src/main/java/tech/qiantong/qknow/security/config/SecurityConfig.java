@@ -112,7 +112,7 @@ public class SecurityConfig
             .authorizeHttpRequests((requests) -> {
                 permitAllUrl.getUrls().forEach(url -> requests.requestMatchers(url).permitAll());
                 // 对于登录login 注册register 验证码captchaImage 允许匿名访问
-                requests.requestMatchers("/login", "/register", "/kmc/knowledgeBase/recallTest", "/kb/conversation/**", "/captchaImage", "/flyflow/**","/updater/getLocalVersion").permitAll()
+                requests.requestMatchers("/login", "/register", "/captchaImage", "/flyflow/**","/updater/getLocalVersion").permitAll()
                     // 静态资源，可匿名访问
                     .requestMatchers(HttpMethod.GET, "/",
                             "/*.html",
@@ -127,16 +127,15 @@ public class SecurityConfig
                             "/sso/**",
                             "/favicon.ico"
                     ).permitAll()
+                    .requestMatchers(HttpMethod.GET, "/sys/content/*").permitAll()
                     .requestMatchers("/swagger-ui.html",
                             "/swagger-resources/**",
                             "/webjars/**",
                             "/*/api-docs",
                             "/v3/api-docs/**",
-                            "/druid/**",
                             "/websocket/**",
                             "/payment/**",
                             "/syncData/**",
-                            "/sys/**",
                             "/oauth2/**",
                             "/api/app/**"
                     ).permitAll()
