@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagResult;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
@@ -16,10 +17,12 @@ import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -78,7 +81,7 @@ public class GraphRagRetriever {
 
         // [溯源] 算法优化指南 §3.3: PPR 作为额外检索路径
         List<RetrievalResult> pprResults = List.of();
-        if (!entities.isEmpty() && properties.isPprEnabled()) {
+        if (!entities.isEmpty() && properties.isEnabled() && properties.isPprEnabled()) {
             pprResults = pprRetrieve(knowledgeBaseId, entities, topK);
         }
 
@@ -167,6 +170,7 @@ public class GraphRagRetriever {
                     .metadata(Map.of())
                     .build(), params.toArray());
         } catch (Exception e) {
+            RagFallbackMonitor.record("neo4j", "standard_graph", "topic sql search failed: " + e.getMessage());
             log.warn("Graph topic search failed: {}", e.getMessage());
             return List.of();
         }
@@ -181,34 +185,62 @@ public class GraphRagRetriever {
         if (seedEntities == null || seedEntities.isEmpty()) {
             return List.of();
         }
+        if (!properties.isEnabled() || !properties.isPprEnabled()) {
+            return List.of();
+        }
 
         int maxIterations = 20;
         double dampingFactor = 0.85;
         double convergenceThreshold = 0.001;
+        int maxEdges = Math.max(1, properties.getPprMaxEdges());
+        int maxNodes = Math.max(1, properties.getPprMaxNodes());
 
         try {
             // Step 1: 找到种子节点 ID
-            String seedQuery = "SELECT id FROM kg_node WHERE " +
-                    seedEntities.stream().map(e -> "label ILIKE ?").collect(Collectors.joining(" OR "));
-            List<Object> seedParams = seedEntities.stream()
+            String seedQuery = "SELECT id FROM kg_node WHERE del_flag = 0 AND (" +
+                    seedEntities.stream().map(e -> "label ILIKE ?").collect(Collectors.joining(" OR ")) +
+                    ") LIMIT ?";
+            List<Object> seedParams = new ArrayList<>(seedEntities.stream()
                     .map(e -> (Object) ("%" + e + "%"))
-                    .toList();
+                    .toList());
+            seedParams.add(maxNodes + 1);
             List<Long> seedNodeIds = jdbcTemplate.queryForList(seedQuery, Long.class, seedParams.toArray());
 
             if (seedNodeIds.isEmpty()) {
                 log.debug("PPR: no seed nodes found for entities: {}", seedEntities);
                 return List.of();
             }
+            if (seedNodeIds.size() > maxNodes) {
+                String reason = "seed node count exceeded limit " + maxNodes;
+                RagFallbackMonitor.record("neo4j", "standard_graph", "ppr " + reason);
+                log.warn("PPR retrieval skipped: {}", reason);
+                return retrieve(knowledgeBaseId, seedEntities, topK);
+            }
+            Set<Long> seedNodeIdSet = new HashSet<>(seedNodeIds);
 
             // Step 2: 构建邻接表
-            List<Map<String, Object>> edges = jdbcTemplate.queryForList(
-                    "SELECT source_node_id, target_node_id FROM kg_edge WHERE del_flag = 0");
+            List<Map<String, Object>> edges = loadSeedSubgraphEdges(seedNodeIds, maxEdges);
+            if (edges.size() > maxEdges) {
+                String reason = "edge count exceeded limit " + maxEdges;
+                RagFallbackMonitor.record("neo4j", "standard_graph", "ppr " + reason);
+                log.warn("PPR retrieval skipped: {}", reason);
+                return retrieve(knowledgeBaseId, seedEntities, topK);
+            }
             Map<Long, List<Long>> adjacency = new java.util.HashMap<>();
             for (Map<String, Object> edge : edges) {
-                long src = ((Number) edge.get("source_node_id")).longValue();
-                long tgt = ((Number) edge.get("target_node_id")).longValue();
+                long src = ((Number) edge.get("source_id")).longValue();
+                long tgt = ((Number) edge.get("target_id")).longValue();
                 adjacency.computeIfAbsent(src, k -> new ArrayList<>()).add(tgt);
                 adjacency.computeIfAbsent(tgt, k -> new ArrayList<>()).add(src); // 无向图
+                if (adjacency.size() > maxNodes) {
+                    String reason = "node count exceeded limit " + maxNodes;
+                    RagFallbackMonitor.record("neo4j", "standard_graph", "ppr " + reason);
+                    log.warn("PPR retrieval skipped: {}", reason);
+                    return retrieve(knowledgeBaseId, seedEntities, topK);
+                }
+            }
+            if (adjacency.isEmpty()) {
+                return List.of();
             }
 
             // Step 3: 迭代 PageRank
@@ -238,7 +270,7 @@ public class GraphRagRetriever {
                         }
                     }
 
-                    double personalization = seedNodeIds.contains(nodeId) ? seedBoost : 0;
+                    double personalization = seedNodeIdSet.contains(nodeId) ? seedBoost : 0;
                     double newScore = (1 - dampingFactor) * personalization + dampingFactor * neighborSum;
                     newScores.put(nodeId, newScore);
 
@@ -320,9 +352,66 @@ public class GraphRagRetriever {
             return results != null ? results : List.of();
 
         } catch (Exception e) {
+            RagFallbackMonitor.record("neo4j", "standard_graph", "ppr failed: " + e.getMessage());
             log.warn("PPR retrieval failed, falling back to standard: {}", e.getMessage());
             return retrieve(knowledgeBaseId, seedEntities, topK);
         }
+    }
+
+    private List<Map<String, Object>> loadSeedSubgraphEdges(List<Long> seedNodeIds, int maxEdges) {
+        List<Map<String, Object>> firstHop = loadEdgesForNodes(seedNodeIds, maxEdges + 1);
+        if (firstHop.size() > maxEdges) {
+            return firstHop;
+        }
+
+        Set<Long> neighbors = new HashSet<>();
+        for (Map<String, Object> edge : firstHop) {
+            neighbors.add(((Number) edge.get("source_id")).longValue());
+            neighbors.add(((Number) edge.get("target_id")).longValue());
+        }
+        neighbors.removeAll(seedNodeIds);
+        if (neighbors.isEmpty()) {
+            return firstHop;
+        }
+
+        List<Map<String, Object>> merged = new ArrayList<>(firstHop);
+        Set<String> seen = firstHop.stream()
+                .map(this::edgeKey)
+                .collect(Collectors.toSet());
+        int remaining = maxEdges + 1 - merged.size();
+        for (Map<String, Object> edge : loadEdgesForNodes(new ArrayList<>(neighbors), remaining)) {
+            if (seen.add(edgeKey(edge))) {
+                merged.add(edge);
+            }
+            if (merged.size() > maxEdges) {
+                break;
+            }
+        }
+        return merged;
+    }
+
+    private List<Map<String, Object>> loadEdgesForNodes(List<Long> nodeIds, int limit) {
+        if (nodeIds == null || nodeIds.isEmpty() || limit <= 0) {
+            return List.of();
+        }
+        String placeholders = nodeIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = """
+                SELECT source_id, target_id
+                FROM kg_edge
+                WHERE del_flag = 0
+                  AND (source_id IN (%s) OR target_id IN (%s))
+                LIMIT ?
+                """.formatted(placeholders, placeholders);
+        List<Object> params = new ArrayList<>(nodeIds);
+        params.addAll(nodeIds);
+        params.add(limit);
+        return jdbcTemplate.queryForList(sql, params.toArray());
+    }
+
+    private String edgeKey(Map<String, Object> edge) {
+        long src = ((Number) edge.get("source_id")).longValue();
+        long tgt = ((Number) edge.get("target_id")).longValue();
+        return src < tgt ? src + ":" + tgt : tgt + ":" + src;
     }
 
     /**
@@ -332,6 +421,7 @@ public class GraphRagRetriever {
     public List<RetrievalResult> semanticGuidedRetrieve(Long knowledgeBaseId, List<String> entities,
                                                          String queryContext, int topK) {
         if (neo4jClient == null || cypherSafetyValidator == null) {
+            RagFallbackMonitor.record("neo4j", "standard_graph", "semantic traversal unavailable");
             return retrieve(knowledgeBaseId, entities, topK);
         }
 
@@ -351,6 +441,7 @@ public class GraphRagRetriever {
                 """.formatted(maxHops);
 
         if (!cypherSafetyValidator.isTemplateReadOnly(cypher)) {
+            RagFallbackMonitor.record("neo4j", "standard_graph", "semantic traversal blocked by cypher safety validator");
             return retrieve(knowledgeBaseId, entities, topK);
         }
 
@@ -387,6 +478,7 @@ public class GraphRagRetriever {
                         .toList();
             }
         } catch (Exception e) {
+            RagFallbackMonitor.record("neo4j", "standard_graph", "semantic traversal failed: " + e.getMessage());
             log.warn("Semantic guided traversal failed, fallback to standard: {}", e.getMessage());
         }
 
@@ -445,6 +537,7 @@ public class GraphRagRetriever {
                         .build();
             }, params.toArray());
         } catch (Exception e) {
+            RagFallbackMonitor.record("neo4j", "standard_graph", "temporal retrieval failed: " + e.getMessage());
             log.warn("Temporal retrieval failed, fallback to standard: {}", e.getMessage());
             return retrieve(knowledgeBaseId, entities, topK);
         }
@@ -507,6 +600,7 @@ public class GraphRagRetriever {
                     .metadata(Map.of("relations", rs.getString("relations") != null ? rs.getString("relations") : "[]"))
                     .build(), params.toArray());
         } catch (Exception e) {
+            RagFallbackMonitor.record("neo4j", "normal_rag", "metadata sql graph search failed: " + e.getMessage());
             log.warn("GraphRAG search failed, fallback to normal RAG: {}", e.getMessage());
             return List.of();
         }
@@ -514,6 +608,7 @@ public class GraphRagRetriever {
 
     private List<Long> searchNeo4jSegments(List<String> terms, Integer maxHops, int topK) {
         if (neo4jClient == null || cypherSafetyValidator == null || maxHops == null || maxHops <= 0) {
+            RagFallbackMonitor.record("neo4j", "metadata_sql", "neo4j client or safety validator unavailable");
             return List.of();
         }
         int hops = Math.min(Math.max(maxHops, 1), 2);
@@ -528,6 +623,7 @@ public class GraphRagRetriever {
                 LIMIT $topK
                 """.formatted(hops);
         if (!cypherSafetyValidator.isTemplateReadOnly(cypher)) {
+            RagFallbackMonitor.record("neo4j", "metadata_sql", "neo4j template blocked by cypher safety validator");
             log.warn("GraphRAG Neo4j template blocked by Cypher safety validator");
             return List.of();
         }
@@ -543,6 +639,7 @@ public class GraphRagRetriever {
                     .limit(topK)
                     .toList();
         } catch (Exception e) {
+            RagFallbackMonitor.record("neo4j", "metadata_sql", "neo4j traversal failed: " + e.getMessage());
             log.warn("GraphRAG Neo4j traversal failed, fallback to metadata SQL: {}", e.getMessage());
             return List.of();
         }
@@ -568,15 +665,21 @@ public class GraphRagRetriever {
                 ORDER BY s.id ASC
                 LIMIT ?
                 """.formatted(placeholders);
-        return jdbcTemplate.query(sql, (rs, rowNum) -> GraphRagResult.builder()
-                .segmentId(rs.getLong("id"))
-                .documentId(rs.getLong("document_id"))
-                .documentName(rs.getString("document_name"))
-                .content(rs.getString("content"))
-                .evidence(rs.getString("relations"))
-                .score(GRAPH_SCORE)
-                .metadata(Map.of("relations", rs.getString("relations") != null ? rs.getString("relations") : "[]"))
-                .build(), params.toArray());
+        try {
+            return jdbcTemplate.query(sql, (rs, rowNum) -> GraphRagResult.builder()
+                    .segmentId(rs.getLong("id"))
+                    .documentId(rs.getLong("document_id"))
+                    .documentName(rs.getString("document_name"))
+                    .content(rs.getString("content"))
+                    .evidence(rs.getString("relations"))
+                    .score(GRAPH_SCORE)
+                    .metadata(Map.of("relations", rs.getString("relations") != null ? rs.getString("relations") : "[]"))
+                    .build(), params.toArray());
+        } catch (Exception e) {
+            RagFallbackMonitor.record("neo4j", "metadata_sql", "load neo4j segment ids failed: " + e.getMessage());
+            log.warn("GraphRAG segment id load failed, fallback to metadata SQL: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     private Long toLong(Object value) {

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.controller.admin.knowledgeBase.vo.RetrieveResultRespVO;
@@ -12,10 +14,14 @@ import tech.qiantong.qknow.module.kmc.controller.admin.knowledgeBase.vo.Retrieve
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -72,7 +78,15 @@ public class RagCacheService {
 
     public void evictByKnowledgeBase(Long knowledgeBaseId) {
         String pattern = KEY_PREFIX + knowledgeBaseId + ":*";
-        Set<String> keys = redisTemplate.keys(pattern);
+        Set<String> keys = new LinkedHashSet<>();
+        try (Cursor<String> cursor = redisTemplate.scan(ScanOptions.scanOptions().match(pattern).count(1000).build())) {
+            while (cursor.hasNext()) {
+                keys.add(cursor.next());
+            }
+        } catch (Exception e) {
+            log.warn("RAG cache scan failed for knowledgeBase {}", knowledgeBaseId, e);
+            return;
+        }
         if (keys != null && !keys.isEmpty()) {
             redisTemplate.delete(keys);
             log.debug("Evicted {} RAG cache entries for knowledgeBase {}", keys.size(), knowledgeBaseId);
@@ -81,6 +95,21 @@ public class RagCacheService {
 
     public static String buildCacheKey(Long knowledgeBaseId, String query, String searchMethod) {
         return knowledgeBaseId + ":" + sha256(query) + ":" + searchMethod;
+    }
+
+    public static String buildCacheKey(Long knowledgeBaseId, String query, String searchMethod,
+                                       Map<String, ?> dimensions) {
+        String canonicalDimensions = canonicalizeDimensions(dimensions);
+        return knowledgeBaseId + ":" + sha256(query) + ":" + searchMethod + ":" + sha256(canonicalDimensions);
+    }
+
+    private static String canonicalizeDimensions(Map<String, ?> dimensions) {
+        if (dimensions == null || dimensions.isEmpty()) {
+            return "";
+        }
+        return new TreeMap<>(dimensions).entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + String.valueOf(entry.getValue()))
+                .collect(Collectors.joining("|"));
     }
 
     private String buildRedisKey(String cacheKey) {

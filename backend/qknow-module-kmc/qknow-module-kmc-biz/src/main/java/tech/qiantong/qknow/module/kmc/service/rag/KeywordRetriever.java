@@ -70,57 +70,24 @@ public class KeywordRetriever {
         List<String> dayTerms = extractDayTerms(query);
         List<String> expandedTerms = expandWithSynonyms(searchTerms);
 
-        StringBuilder sql = new StringBuilder(
-                "SELECT s.id, s.content, d.knowledge_base_id, s.document_id, " +
-                "s.document_name, s.answer, s.position, s.qm_segment_id, s.parent_id, " +
-                // [溯源] 算法优化指南 §2.2: pg_trgm similarity 打分
-                "GREATEST(" +
-                "  COALESCE(similarity(s.content, ?), 0), " +
-                "  COALESCE(similarity(d.name, ?), 0) " +
-                ") AS trgm_score " +
-                "FROM kmc_document_segment s " +
-                "JOIN kmc_document d ON d.id = s.document_id AND d.del_flag = 0 " +
-                "WHERE d.knowledge_base_id = ? " +
-                "AND s.del_flag = 0 ");
-
         List<Object> params = new ArrayList<>();
-        // pg_trgm similarity 参数
         String normalizedQuery = normalizeForTrgm(query);
-        params.add(normalizedQuery);
-        params.add(normalizedQuery);
-        // knowledge_base_id
-        params.add(knowledgeBaseId);
-
-        // Day 文档过滤
-        if (!dayTerms.isEmpty()) {
-            sql.append("AND (");
-            List<String> dayConditions = new ArrayList<>();
-            for (String dayTerm : dayTerms) {
-                dayConditions.add("d.name ILIKE ?");
-                params.add("%" + dayTerm + "%");
-            }
-            sql.append(String.join(" OR ", dayConditions));
-            sql.append(") ");
-        }
-
-        // 检索条件：pg_trgm similarity OR ILIKE
-        sql.append("AND (");
-        List<String> conditions = new ArrayList<>();
-        // pg_trgm trigram 匹配（threshold=0.1）
-        conditions.add("similarity(s.content, ?) > 0.1");
-        params.add(normalizedQuery);
-        // ILIKE 兜底
-        for (String term : expandedTerms) {
-            if (term.length() >= 2) {
-                conditions.add("s.content ILIKE ?");
-                params.add("%" + term + "%");
-            }
-        }
-        sql.append(String.join(" OR ", conditions));
-        sql.append(") ");
-
-        // 排序：trgm_score DESC + position
-        sql.append("ORDER BY trgm_score DESC, d.id ASC, s.position ASC NULLS LAST LIMIT ?");
+        String segmentBranch = buildKeywordBranch(knowledgeBaseId, normalizedQuery, dayTerms, expandedTerms, params, false);
+        String documentBranch = buildKeywordBranch(knowledgeBaseId, normalizedQuery, dayTerms, expandedTerms, params, true);
+        StringBuilder sql = new StringBuilder("""
+                SELECT *
+                FROM (
+                    SELECT DISTINCT ON (id) *
+                    FROM (
+                """);
+        sql.append(segmentBranch).append(" UNION ALL ").append(documentBranch);
+        sql.append("""
+                    ) candidates
+                    ORDER BY id, trgm_score DESC, ts_score DESC
+                ) deduped
+                ORDER BY trgm_score DESC, document_id ASC, position ASC NULLS LAST
+                LIMIT ?
+                """);
         params.add(Math.max(topK * 10, topK));
 
         try {
@@ -128,9 +95,10 @@ public class KeywordRetriever {
                 String documentName = rs.getString("document_name");
                 String content = rs.getString("content");
                 float trgmScore = rs.getFloat("trgm_score");
+                float tsScore = rs.getFloat("ts_score");
                 float keywordScore = calculateKeywordScore(documentName, content, expandedTerms);
                 // [溯源] 算法优化指南 §2.2: BM25 风格混合打分
-                float finalScore = trgmScore * 0.6f + keywordScore * 0.4f;
+                float finalScore = Math.max(trgmScore, tsScore) * 0.6f + keywordScore * 0.4f;
                 return RetrievalResult.builder()
                         .segmentId(rs.getLong("id"))
                         .qmSegmentId(rs.getString("qm_segment_id"))
@@ -158,15 +126,84 @@ public class KeywordRetriever {
         }
     }
 
+    private static String buildKeywordBranch(Long knowledgeBaseId, String normalizedQuery, List<String> dayTerms,
+                                             List<String> expandedTerms, List<Object> params, boolean documentNameOnly) {
+        params.add(normalizedQuery);
+        params.add(normalizedQuery);
+        params.add(normalizedQuery);
+        params.add(knowledgeBaseId);
+
+        StringBuilder branch = new StringBuilder("""
+                SELECT s.id, s.content, d.knowledge_base_id, s.document_id,
+                       s.document_name, s.answer, s.position, s.qm_segment_id, s.parent_id,
+                       GREATEST(
+                         COALESCE(similarity(s.content, ?), 0),
+                         COALESCE(similarity(d.name, ?), 0)
+                       ) AS trgm_score,
+                       COALESCE(ts_rank_cd(s.content_tsv, plainto_tsquery('simple', ?)), 0) AS ts_score
+                FROM kmc_document_segment s
+                JOIN kmc_document d ON d.id = s.document_id AND d.del_flag = 0
+                WHERE d.knowledge_base_id = ?
+                  AND s.del_flag = 0
+                """);
+
+        appendDayFilter(branch, params, dayTerms);
+
+        List<String> conditions = new ArrayList<>();
+        if (!documentNameOnly) {
+            conditions.add("s.content_tsv @@ plainto_tsquery('simple', ?)");
+            params.add(normalizedQuery);
+            if (isSelectiveTrigramTerm(normalizedQuery)) {
+                conditions.add("s.content % ?");
+                params.add(normalizedQuery);
+            }
+        } else if (isSelectiveTrigramTerm(normalizedQuery)) {
+            conditions.add("d.name % ?");
+            params.add(normalizedQuery);
+        }
+
+        for (String term : expandedTerms) {
+            if (term.length() >= 2) {
+                if (!documentNameOnly && isSelectiveTrigramTerm(term)) {
+                    conditions.add("s.content ILIKE ?");
+                    params.add("%" + term + "%");
+                }
+                if (documentNameOnly) {
+                    conditions.add("d.name ILIKE ?");
+                    params.add("%" + term + "%");
+                }
+            }
+        }
+
+        branch.append(" AND (")
+                .append(conditions.isEmpty() ? "FALSE" : String.join(" OR ", conditions))
+                .append(") ");
+        return branch.toString();
+    }
+
+    private static void appendDayFilter(StringBuilder sql, List<Object> params, List<String> dayTerms) {
+        if (dayTerms.isEmpty()) {
+            return;
+        }
+        sql.append(" AND (");
+        List<String> dayConditions = new ArrayList<>();
+        for (String dayTerm : dayTerms) {
+            dayConditions.add("d.name ILIKE ?");
+            params.add("%" + dayTerm + "%");
+        }
+        sql.append(String.join(" OR ", dayConditions));
+        sql.append(") ");
+    }
+
     /**
      * [溯源] 算法优化指南 §2.2: 应用层中文分词
      * 滑动窗口 2-4 字切分 + 停用词过滤
      */
     /**
      * [溯源] 算法优化指南 Phase 2: 应用层中文分词 + jieba-rs JNI
-     * 优先使用 jieba-rs（20-27x 快于 Java），降级到滑动窗口
+     * 优先使用 jieba-rs，JNI 不可用时降级到滑动窗口
      */
-    private List<String> buildSearchTerms(String queryText) {
+    static List<String> buildSearchTerms(String queryText) {
         LinkedHashSet<String> terms = new LinkedHashSet<>();
         terms.add(queryText.trim());
 
@@ -218,7 +255,7 @@ public class KeywordRetriever {
     /**
      * [溯源] 算法优化指南 §2.2: 同义词扩展
      */
-    private List<String> expandWithSynonyms(List<String> terms) {
+    static List<String> expandWithSynonyms(List<String> terms) {
         Set<String> expanded = new LinkedHashSet<>(terms);
         for (String term : terms) {
             List<String> synonyms = SYNONYMS.get(term);
@@ -235,7 +272,7 @@ public class KeywordRetriever {
         return new ArrayList<>(expanded);
     }
 
-    private List<String> extractDayTerms(String queryText) {
+    static List<String> extractDayTerms(String queryText) {
         LinkedHashSet<String> dayTerms = new LinkedHashSet<>();
         Matcher matcher = Pattern
                 .compile("(?i)day\\s*0?(\\d{1,2})|第\\s*0?(\\d{1,2})\\s*[天日]")
@@ -256,7 +293,7 @@ public class KeywordRetriever {
      * [溯源] 算法优化指南 §2.2: BM25 风格 TF*IDF 打分
      * 文档名命中权重 3x，内容命中使用 log(1+count) 作为 TF 近似
      */
-    private float calculateKeywordScore(String documentName, String content, List<String> searchTerms) {
+    static float calculateKeywordScore(String documentName, String content, List<String> searchTerms) {
         float score = 0F;
         String safeDocName = StrUtil.blankToDefault(documentName, "").toLowerCase();
         String safeContent = StrUtil.blankToDefault(content, "").toLowerCase();
@@ -274,7 +311,7 @@ public class KeywordRetriever {
         return score;
     }
 
-    private int countOccurrences(String text, String sub) {
+    private static int countOccurrences(String text, String sub) {
         int count = 0, idx = 0;
         while ((idx = text.indexOf(sub, idx)) != -1) {
             count++;
@@ -283,8 +320,20 @@ public class KeywordRetriever {
         return count;
     }
 
-    private String normalizeForTrgm(String query) {
+    static String normalizeForTrgm(String query) {
         if (query == null) return "";
         return query.replaceAll("\\s+", " ").trim();
+    }
+
+    static boolean isSelectiveTrigramTerm(String term) {
+        if (StrUtil.isBlank(term)) {
+            return false;
+        }
+        String compact = term.replaceAll("\\s+", "");
+        if (compact.length() < 3) {
+            return false;
+        }
+        return compact.codePoints().filter(codePoint -> Character.UnicodeScript.of(codePoint)
+                == Character.UnicodeScript.HAN).count() != compact.length() || compact.length() >= 3;
     }
 }

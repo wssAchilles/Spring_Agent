@@ -3,6 +3,7 @@ package tech.qiantong.qknow.module.kmc.service.rag.search;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
 import java.net.URI;
@@ -46,6 +47,7 @@ public class TantivyClient {
      */
     public List<RetrievalResult> search(String query, int topK, long knowledgeBaseId) {
         if (!enabled || !isServiceAlive()) {
+            RagFallbackMonitor.record("tantivy", "postgres_keyword", "service disabled or not alive");
             log.debug("Tantivy service not available, falling back to PostgreSQL");
             return null; // 返回 null 表示降级
         }
@@ -66,6 +68,7 @@ public class TantivyClient {
             HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
+                RagFallbackMonitor.record("tantivy", "postgres_keyword", "search status " + response.statusCode());
                 log.warn("Tantivy search returned status {}: {}", response.statusCode(), response.body());
                 return null;
             }
@@ -89,7 +92,13 @@ public class TantivyClient {
                     query, results.size(), 0); // TODO: 拿到实际耗时
             return results;
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            RagFallbackMonitor.record("tantivy", "postgres_keyword", "search interrupted");
+            log.warn("Tantivy search interrupted");
+            return null; // 降级
         } catch (Exception e) {
+            RagFallbackMonitor.record("tantivy", "postgres_keyword", "search failed: " + e.getMessage());
             log.warn("Tantivy search failed: {}", e.getMessage());
             return null; // 降级
         }
@@ -120,6 +129,10 @@ public class TantivyClient {
             HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
             return response.statusCode() == 200;
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Tantivy index interrupted");
+            return false;
         } catch (Exception e) {
             log.warn("Tantivy index failed: {}", e.getMessage());
             return false;
@@ -139,6 +152,9 @@ public class TantivyClient {
                     .build();
             HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
             return response.statusCode() == 200;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         } catch (Exception e) {
             return false;
         }

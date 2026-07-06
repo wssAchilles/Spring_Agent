@@ -12,13 +12,17 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 
 import jakarta.annotation.Resource;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 // [溯源] 算法优化指南 §2.7 P2-4: 精确缓存层前置
 // L1: 精确字符串匹配 (hash) → L2: 语义向量匹配
@@ -34,8 +38,10 @@ public class SemanticCacheService {
             return size() > 1000;
         }
     };
+    private final Object exactCacheLock = new Object();
 
     private static final double DEFAULT_THRESHOLD = 0.92D;
+    private static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
     @Resource
     private JdbcTemplate jdbcTemplate;
@@ -56,7 +62,7 @@ public class SemanticCacheService {
 
         // L1: 精确缓存层 — 零计算成本
         String exactKey = buildExactCacheKey(workspaceId, botId, knowledgeIdsHash, modelName, query);
-        CacheHit exactHit = exactCache.get(exactKey);
+        CacheHit exactHit = getExactCache(exactKey);
         if (exactHit != null) {
             log.debug("Exact cache hit for query: {}", query.substring(0, Math.min(50, query.length())));
             return Optional.of(exactHit);
@@ -64,22 +70,28 @@ public class SemanticCacheService {
 
         // L2: 语义缓存层
         float[] embedding = embed(query, embeddingModel);
-        if (embedding.length == 0) {
+        int embeddingDimension = embeddingDimension();
+        if (embedding.length != embeddingDimension) {
+            RagFallbackMonitor.record("semantic_cache", "bypass",
+                    "embedding dimension mismatch: expected " + embeddingDimension + ", got " + embedding.length);
+            log.debug("Semantic cache skipped due to embedding dimension mismatch: expected={}, actual={}",
+                    embeddingDimension, embedding.length);
             return Optional.empty();
         }
+        String vectorCast = "vector(" + embeddingDimension + ")";
 
         String sql = """
-                SELECT id, answer, sources_json, 1 - (query_embedding <=> ?::vector) AS similarity
+                SELECT id, answer, sources_json, 1 - (query_embedding::%1$s <=> ?::%1$s) AS similarity
                 FROM semantic_cache_store
                 WHERE workspace_id = ?
                   AND bot_id = ?
                   AND knowledge_ids_hash = ?
                   AND model_name = ?
                   AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-                  AND 1 - (query_embedding <=> ?::vector) >= ?
-                ORDER BY query_embedding <=> ?::vector
+                  AND 1 - (query_embedding::%1$s <=> ?::%1$s) >= ?
+                ORDER BY query_embedding::%1$s <=> ?::%1$s
                 LIMIT 1
-                """;
+                """.formatted(vectorCast);
         String vector = toVectorLiteral(embedding);
         try {
             List<CacheHit> hits = jdbcTemplate.query(sql, (rs, rowNum) -> CacheHit.builder()
@@ -96,6 +108,7 @@ public class SemanticCacheService {
                     hits.get(0).getId());
             return Optional.of(hits.get(0));
         } catch (Exception e) {
+            RagFallbackMonitor.record("semantic_cache", "bypass", "lookup failed: " + e.getMessage());
             log.warn("Semantic cache lookup failed, bypassing cache", e);
             return Optional.empty();
         }
@@ -114,7 +127,12 @@ public class SemanticCacheService {
             return;
         }
         float[] embedding = embed(query, embeddingModel);
-        if (embedding.length == 0) {
+        int embeddingDimension = embeddingDimension();
+        if (embedding.length != embeddingDimension) {
+            RagFallbackMonitor.record("semantic_cache", "skip_write",
+                    "embedding dimension mismatch: expected " + embeddingDimension + ", got " + embedding.length);
+            log.debug("Semantic cache write skipped due to embedding dimension mismatch: expected={}, actual={}",
+                    embeddingDimension, embedding.length);
             return;
         }
 
@@ -147,9 +165,11 @@ public class SemanticCacheService {
                         .answer(answer)
                         .sourcesJson(sourcesJson != null ? sourcesJson : "[]")
                         .similarity(1.0)
+                        .expiresAt(Instant.now().plus(ttl))
                         .build());
             }
         } catch (Exception e) {
+            RagFallbackMonitor.record("semantic_cache", "skip_write", "write failed: " + e.getMessage());
             log.warn("Semantic cache write failed", e);
         }
     }
@@ -173,6 +193,7 @@ public class SemanticCacheService {
             log.debug("Evicted {} semantic cache entries for knowledgeBase {}", deleted, knowledgeBaseId);
             return deleted + deletedRel;
         } catch (Exception e) {
+            RagFallbackMonitor.record("semantic_cache", "skip_evict", "eviction failed: " + e.getMessage());
             log.warn("Semantic cache eviction failed for knowledgeBase={}", knowledgeBaseId, e);
             return 0;
         }
@@ -186,6 +207,7 @@ public class SemanticCacheService {
             }
             return response.getResults().get(0).getOutput();
         } catch (Exception e) {
+            RagFallbackMonitor.record("semantic_cache", "bypass", "embedding failed: " + e.getMessage());
             log.warn("Semantic cache embedding failed", e);
             return new float[0];
         }
@@ -202,14 +224,46 @@ public class SemanticCacheService {
         return sb.append(']').toString();
     }
 
+    private int embeddingDimension() {
+        int dimension = config.getEmbeddingDimension();
+        return dimension > 0 ? dimension : DEFAULT_EMBEDDING_DIMENSION;
+    }
+
     // [溯源] 算法优化指南 §2.7 P2-4: 精确缓存键构建
     private String buildExactCacheKey(Long workspaceId, Long botId, String knowledgeIdsHash, String modelName, String query) {
         String normalized = query.trim().toLowerCase().replaceAll("\\s+", " ");
-        return workspaceId + ":" + botId + ":" + knowledgeIdsHash + ":" + modelName + ":" + normalized.hashCode();
+        return workspaceId + ":" + botId + ":" + knowledgeIdsHash + ":" + modelName + ":" + sha256(normalized);
     }
 
     private void putExactCache(String exactKey, CacheHit hit) {
-        exactCache.put(exactKey, hit);
+        synchronized (exactCacheLock) {
+            exactCache.put(exactKey, hit);
+        }
+    }
+
+    private CacheHit getExactCache(String exactKey) {
+        synchronized (exactCacheLock) {
+            CacheHit hit = exactCache.get(exactKey);
+            if (hit != null && hit.getExpiresAt() != null && hit.getExpiresAt().isBefore(Instant.now())) {
+                exactCache.remove(exactKey);
+                return null;
+            }
+            return hit;
+        }
+    }
+
+    private String sha256(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
     }
 
     @Data
@@ -221,6 +275,7 @@ public class SemanticCacheService {
         private String answer;
         private String sourcesJson;
         private double similarity;
+        private Instant expiresAt;
     }
 
     @Data
@@ -230,5 +285,6 @@ public class SemanticCacheService {
         private boolean enabled = true;
         private double threshold = DEFAULT_THRESHOLD;
         private Duration ttl = Duration.ofHours(24);
+        private int embeddingDimension = DEFAULT_EMBEDDING_DIMENSION;
     }
 }

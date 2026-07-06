@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -70,12 +71,19 @@ public class DashScopeRerankClient {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
+                RagFallbackMonitor.record("reranker", "dashscope_fallback", "dashscope status " + response.statusCode());
                 log.error("DashScope rerank API error: status={}, body={}", response.statusCode(), response.body());
                 return fallbackRerank(documents, topN);
             }
 
             return parseResponse(response.body(), documents, topN);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            RagFallbackMonitor.record("reranker", "dashscope_fallback", "dashscope interrupted");
+            log.error("DashScope rerank interrupted", e);
+            return fallbackRerank(documents, topN);
         } catch (Exception e) {
+            RagFallbackMonitor.record("reranker", "dashscope_fallback", "dashscope failed: " + e.getMessage());
             log.error("DashScope rerank failed", e);
             return fallbackRerank(documents, topN);
         }

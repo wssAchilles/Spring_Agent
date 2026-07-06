@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.ColbertScorer;
@@ -63,6 +64,7 @@ public class RagRerankService {
                 log.debug("Reranker provider '{}' finished in {}ms", provider.name(), System.currentTimeMillis() - start);
                 return results;
             } catch (Exception e) {
+                RagFallbackMonitor.record("reranker", "local_or_deterministic", provider.name() + " failed: " + e.getMessage());
                 log.warn("Reranker provider '{}' failed, trying local rerank fallback", provider.name(), e);
             }
         }
@@ -75,12 +77,14 @@ public class RagRerankService {
                     log.info("Local rerank fallback succeeded");
                     return results;
                 } catch (Exception e) {
+                    RagFallbackMonitor.record("reranker", "deterministic", "local rerank failed: " + e.getMessage());
                     log.warn("Local rerank fallback also failed, falling back to deterministic", e);
                 }
             }
         }
 
         // Phase 3: 规则兜底 (最后手段)
+        RagFallbackMonitor.record("reranker", "deterministic", "no remote or local reranker completed");
         return deterministicRerankerProvider.rerank(context, candidates, queryIntent, topK);
     }
 
@@ -186,6 +190,13 @@ public class RagRerankService {
      */
     private List<RetrievalResult> colbertCoarseRerank(String query, List<RetrievalResult> candidates, int limit) {
         try {
+            Map<Long, RetrievalResult> originalBySegmentId = candidates.stream()
+                    .filter(r -> r.getSegmentId() != null)
+                    .collect(Collectors.toMap(
+                            RetrievalResult::getSegmentId,
+                            r -> r,
+                            (left, right) -> left,
+                            LinkedHashMap::new));
             List<org.springframework.ai.document.Document> docs = candidates.stream()
                     .map(r -> {
                         org.springframework.ai.document.Document doc = new org.springframework.ai.document.Document(r.getContent());
@@ -199,20 +210,48 @@ public class RagRerankService {
             List<org.springframework.ai.document.Document> reranked = colbertScorer.rerank(query, docs, limit);
 
             return reranked.stream()
-                    .map(doc -> {
-                        Map<String, Object> meta = doc.getMetadata();
-                        return RetrievalResult.builder()
-                                .segmentId((Long) meta.get("segmentId"))
-                                .content(doc.getText())
-                                .score((Double) meta.getOrDefault("score", 0.0))
-                                .source((String) meta.getOrDefault("source", "colbert"))
-                                .metadata(meta)
-                                .build();
-                    })
+                    .map(doc -> toRetrievalResult(doc, originalBySegmentId))
                     .collect(Collectors.toList());
         } catch (Exception e) {
+            RagFallbackMonitor.record("jni", "java_colbert_order", "colbert coarse rerank failed: " + e.getMessage());
             log.debug("ColBERT coarse rerank failed, returning original candidates", e);
             return candidates;
         }
+    }
+
+    private RetrievalResult toRetrievalResult(org.springframework.ai.document.Document doc,
+                                              Map<Long, RetrievalResult> originalBySegmentId) {
+        Map<String, Object> meta = doc.getMetadata() != null ? new LinkedHashMap<>(doc.getMetadata()) : new LinkedHashMap<>();
+        Long segmentId = meta.get("segmentId") instanceof Long value ? value : null;
+        RetrievalResult original = segmentId != null ? originalBySegmentId.get(segmentId) : null;
+        double score = meta.get("score") instanceof Number number
+                ? number.doubleValue()
+                : original != null ? original.getScore() : 0.0D;
+        String source = meta.get("source") instanceof String value
+                ? value
+                : original != null ? original.getSource() : "colbert";
+
+        if (original == null) {
+            return RetrievalResult.builder()
+                    .segmentId(segmentId)
+                    .content(doc.getText())
+                    .score(score)
+                    .source(source)
+                    .metadata(meta)
+                    .build();
+        }
+
+        return RetrievalResult.builder()
+                .segmentId(original.getSegmentId())
+                .qmSegmentId(original.getQmSegmentId())
+                .parentSegmentId(original.getParentSegmentId())
+                .documentId(original.getDocumentId())
+                .documentName(original.getDocumentName())
+                .content(original.getContent())
+                .answer(original.getAnswer())
+                .score(score)
+                .source(source)
+                .metadata(meta)
+                .build();
     }
 }

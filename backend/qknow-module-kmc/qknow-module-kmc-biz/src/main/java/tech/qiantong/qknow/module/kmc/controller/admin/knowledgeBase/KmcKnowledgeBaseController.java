@@ -135,11 +135,12 @@ public class KmcKnowledgeBaseController extends BaseController {
     }
 
     @Operation(summary = "召回测试")
+    @PreAuthorize("@ss.hasPermi('kmc:knowledgeBase:knowledgebase:query')")
     @PostMapping("/recallTest")
     public CommonResult<List<RetrieveResultRespVO>> recallTest(
             @Valid @RequestBody RetrieveResultReqVO retrieveResultReqVO,
             @RequestParam(defaultValue = "false") boolean debug) {
-        retrieveResultReqVO.setWorkspaceId(1L);
+        retrieveResultReqVO.setWorkspaceId(getWorkSpaceId());
         List<RetrieveResultRespVO> result = kmcKnowledgeBaseService.recallTest(retrieveResultReqVO);
 
         if (debug) {
@@ -158,10 +159,11 @@ public class KmcKnowledgeBaseController extends BaseController {
     }
 
     @Operation(summary = "召回调试")
+    @PreAuthorize("@ss.hasPermi('kmc:knowledgeBase:knowledgebase:query')")
     @PostMapping("/recallDebug")
     public CommonResult<RecallDebugRespVO> recallDebug(
             @Valid @RequestBody RetrieveResultReqVO retrieveResultReqVO) {
-        retrieveResultReqVO.setWorkspaceId(1L);
+        retrieveResultReqVO.setWorkspaceId(getWorkSpaceId());
         return CommonResult.success(kmcKnowledgeBaseService.recallDebug(retrieveResultReqVO));
     }
 

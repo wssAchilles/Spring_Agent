@@ -12,5 +12,7 @@ public class GraphRagProperties {
     private int maxHops = 2;
     private int topK = 20;
     // [溯源] 算法优化指南 §3.3: HippoRAG PPR 开关
-    private boolean pprEnabled = true;
+    private boolean pprEnabled = false;
+    private int pprMaxEdges = 50000;
+    private int pprMaxNodes = 20000;
 }

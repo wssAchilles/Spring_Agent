@@ -363,7 +363,8 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         // RAG v2 主路径（带缓存，仅缓存非空结果）
         try {
             String ragV2CacheKey = RagCacheService.buildCacheKey(
-                    retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), "rag_v2");
+                    retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), "rag_v2",
+                    buildRagCacheDimensions(retrieveResultReqVO, topK, "rag_v2"));
             List<RetrieveResultRespVO> cached = ragCacheService.getOrRetrieve(ragV2CacheKey, ttl, () -> {
                 RagResult ragResult = ragRetrievalService.retrieve(
                         retrieveResultReqVO.getId(), originalQuery, retrieveResultReqVO.getQuery(), topK, false);
@@ -384,7 +385,9 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         String searchMethod = normalizeSearchMethod(retrieveResultReqVO.getSearchMethod());
         retrieveResultReqVO.setSearchMethod(searchMethod);
 
-        String cacheKey = RagCacheService.buildCacheKey(retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), searchMethod);
+        String cacheKey = RagCacheService.buildCacheKey(
+                retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), searchMethod,
+                buildRagCacheDimensions(retrieveResultReqVO, topK, searchMethod));
 
         return ragCacheService.getOrRetrieve(cacheKey, ttl, () -> {
             // 混合检索
@@ -413,6 +416,21 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
             }
             return aiDocument2vo(documentList);
         });
+    }
+
+    private Map<String, Object> buildRagCacheDimensions(RetrieveResultReqVO req, int topK, String searchMethod) {
+        Map<String, Object> dimensions = new LinkedHashMap<>();
+        dimensions.put("topK", topK);
+        dimensions.put("searchMethod", searchMethod);
+        dimensions.put("rerankingEnable", req.getRerankingEnable());
+        dimensions.put("rerankingProviderName", req.getRerankingProviderName());
+        dimensions.put("rerankingModelName", req.getRerankingModelName());
+        dimensions.put("rerankingMode", req.getRerankingMode());
+        dimensions.put("scoreThresholdEnabled", req.getScoreThresholdEnabled());
+        dimensions.put("scoreThreshold", req.getScoreThreshold());
+        dimensions.put("keywordWeight", req.getKeywordWeight());
+        dimensions.put("vectorWeight", req.getVectorWeight());
+        return dimensions;
     }
 
     @Override

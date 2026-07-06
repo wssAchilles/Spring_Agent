@@ -3,7 +3,9 @@ package tech.qiantong.qknow.module.kmc.service.rag;
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import tech.qiantong.qknow.common.core.utils.SecurityUtils;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 import tech.qiantong.qknow.module.kmc.dal.dataobject.knowledgeBase.KmcKnowledgeBaseDO;
 import tech.qiantong.qknow.module.kmc.dal.mapper.knowledgeBase.KmcKnowledgeBaseMapper;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
@@ -20,8 +22,6 @@ public class RagRetrievalService {
 
     private static final int DEFAULT_TOP_K = 50;
     private static final int CANDIDATE_MULTIPLIER = 3;
-    private static final ExecutorService RETRIEVAL_EXECUTOR = Executors.newFixedThreadPool(4,
-            r -> { Thread t = new Thread(r, "rag-retrieval"); t.setDaemon(true); return t; });
 
     @Resource
     private QueryIntentAnalyzer queryIntentAnalyzer;
@@ -68,11 +68,25 @@ public class RagRetrievalService {
     @Resource
     private DynamicTopKConfig dynamicTopKConfig;
 
+    @Resource(name = "threadPoolTaskExecutor")
+    private ThreadPoolTaskExecutor retrievalExecutor;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         return retrieve(knowledgeBaseId, query, query, topK, debug);
     }
 
     public RagResult retrieve(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug) {
+        RagFallbackMonitor.Scope fallbackScope = debug ? RagFallbackMonitor.openScope() : null;
+        try {
+            return retrieveScoped(knowledgeBaseId, originalQuery, query, topK, debug);
+        } finally {
+            if (fallbackScope != null) {
+                fallbackScope.close();
+            }
+        }
+    }
+
+    private RagResult retrieveScoped(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> debugInfo = debug ? new LinkedHashMap<>() : null;
 
@@ -82,18 +96,17 @@ public class RagRetrievalService {
             debugInfo.put("queryRoute", route.name());
         }
 
-        // Simple queries: skip retrieval, return empty context
-        if (route == QueryRouter.QueryRoute.SIMPLE) {
-            if (debug) {
-                debugInfo.put("skippedRetrieval", true);
-                debugInfo.put("reason", "SIMPLE route - no retrieval needed");
-                debugInfo.put("elapsedMs", System.currentTimeMillis() - startTime);
-            }
+        // Simple queries: skip retrieval in normal serving, but keep recallDebug on the full retrieval path.
+        if (route == QueryRouter.QueryRoute.SIMPLE && !debug) {
             return RagResult.builder()
                     .context("")
                     .sources(Collections.emptyList())
                     .debugInfo(debugInfo != null ? debugInfo : Map.of())
                     .build();
+        }
+        if (debug && route == QueryRouter.QueryRoute.SIMPLE) {
+            debugInfo.put("forcedRetrievalForDebug", true);
+            debugInfo.put("reason", "SIMPLE route - recallDebug forces retrieval");
         }
 
         // 权限检查
@@ -157,6 +170,7 @@ public class RagRetrievalService {
             queryEnhance.put("variants", List.of());
             debugInfo.put("queryEnhance", queryEnhance);
             debugInfo.put("excludedPaths", List.of());
+            debugInfo.put("fallbacks", RagFallbackMonitor.currentScopeSnapshot());
             effective.setDebugInfo(debugInfo);
         }
         return effective;
@@ -164,6 +178,7 @@ public class RagRetrievalService {
 
     private RagResult retrieveOnce(Long knowledgeBaseId, QueryIntent queryIntent, String query, int topK, boolean debug,
                                     Map<String, Object> debugInfo, String phase, QueryRouter.QueryRoute route) {
+        long phaseStart = System.currentTimeMillis();
         if (debug && "first".equals(phase)) {
             debugInfo.put("queryIntent", queryIntent);
             debugInfo.put("searchMethod", "RAG v2 混合检索 + CRAG");
@@ -186,19 +201,25 @@ public class RagRetrievalService {
         List<RetrievalResult> keywordResults;
         List<RetrievalResult> metadataResults;
         List<RetrievalResult> graphResults;
+        Map<String, Long> timings = debug ? new ConcurrentHashMap<>() : null;
 
-        Future<List<String>> entityFuture = RETRIEVAL_EXECUTOR.submit(
-                () -> queryEntityExtractionService.extract(query, queryIntent.getKeywords()));
-        Future<List<RetrievalResult>> vectorFuture = RETRIEVAL_EXECUTOR.submit(
-                () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK, queryIntent.getDayNo()));
-        Future<List<RetrievalResult>> keywordFuture = RETRIEVAL_EXECUTOR.submit(
-                () -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
+        Future<List<String>> entityFuture = submitRetrieval(
+                () -> timed(phase + "QueryEntityMs", timings,
+                        () -> queryEntityExtractionService.extract(query, queryIntent.getKeywords())));
+        Future<List<RetrievalResult>> vectorFuture = submitRetrieval(
+                () -> timed(phase + "VectorMs", timings,
+                        () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK, queryIntent.getDayNo())));
+        Future<List<RetrievalResult>> keywordFuture = submitRetrieval(
+                () -> timed(phase + "KeywordMs", timings,
+                        () -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK)));
 
         queryIntent.setEntities(getFuture(entityFuture, "query-entity"));
-        Future<List<RetrievalResult>> metadataFuture = RETRIEVAL_EXECUTOR.submit(
-                () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK));
-        Future<List<RetrievalResult>> graphFuture = RETRIEVAL_EXECUTOR.submit(
-                () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent, query, route, candidateTopK));
+        Future<List<RetrievalResult>> metadataFuture = submitRetrieval(
+                () -> timed(phase + "MetadataMs", timings,
+                        () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK)));
+        Future<List<RetrievalResult>> graphFuture = submitRetrieval(
+                () -> timed(phase + "GraphMs", timings,
+                        () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent, query, route, candidateTopK)));
 
         vectorResults = getFuture(vectorFuture, "vector");
         keywordResults = getFuture(keywordFuture, "keyword");
@@ -211,6 +232,9 @@ public class RagRetrievalService {
             debugInfo.put(phase + "KeywordResultCount", keywordResults.size());
             debugInfo.put(phase + "MetadataResultCount", metadataResults.size());
             debugInfo.put(phase + "GraphResultCount", graphResults.size());
+            putTimings(debugInfo, timings,
+                    phase + "QueryEntityMs", phase + "VectorMs", phase + "KeywordMs",
+                    phase + "MetadataMs", phase + "GraphMs");
         }
 
         List<List<RetrievalResult>> allResults = new ArrayList<>();
@@ -228,23 +252,33 @@ public class RagRetrievalService {
         }
 
         List<String> pathNames = List.of("vector", "keyword", "metadata", "graph");
+        long fusionStart = System.currentTimeMillis();
         List<RetrievalResult> fused = candidateFusionService.fuse(allResults, pathNames);
         if (debug) {
             debugInfo.put(phase + "FusedCount", fused.size());
+            debugInfo.put(phase + "FusionMs", System.currentTimeMillis() - fusionStart);
         }
 
+        long rerankStart = System.currentTimeMillis();
         List<RetrievalResult> reranked = ragRerankService.rerank(
                 query, fused, queryIntent, topK, rerankingProviderName, rerankingModelName);
         if (debug) {
             debugInfo.put(phase + "RerankedCount", reranked.size());
+            debugInfo.put(phase + "RerankMs", System.currentTimeMillis() - rerankStart);
             debugInfo.put("rerankerProvider", rerankingProviderName != null && rerankingModelName != null
                     ? "dashscope" : "deterministic");
         }
 
+        long contextStart = System.currentTimeMillis();
         String context = ragContextBuilder.buildContext(reranked, true);
 
         if (debug) {
-            debugInfo.put("semanticCacheHit", false);
+            debugInfo.put("semanticCacheHit", null);
+            debugInfo.put("semanticCache", Map.of(
+                    "status", "not_queried",
+                    "reason", "recallDebug path does not invoke semantic cache"));
+            debugInfo.put(phase + "ContextMs", System.currentTimeMillis() - contextStart);
+            debugInfo.put(phase + "TotalMs", System.currentTimeMillis() - phaseStart);
             debugInfo.put(phase + "ParentExpansionCount", reranked.stream()
                     .filter(result -> result.getParentSegmentId() != null && !result.getParentSegmentId().isBlank())
                     .count());
@@ -259,9 +293,53 @@ public class RagRetrievalService {
                 .build();
     }
 
+    private <T> T timed(String key, Map<String, Long> timings, Callable<T> callable) throws Exception {
+        long start = System.currentTimeMillis();
+        try {
+            return callable.call();
+        } finally {
+            if (timings != null) {
+                timings.put(key, System.currentTimeMillis() - start);
+            }
+        }
+    }
+
+    private <T> Future<T> submitRetrieval(Callable<T> callable) {
+        if (retrievalExecutor == null) {
+            throw new IllegalStateException("threadPoolTaskExecutor is not configured");
+        }
+        RagFallbackMonitor.Scope fallbackScope = RagFallbackMonitor.currentScope();
+        return retrievalExecutor.submit(() -> {
+            try (RagFallbackMonitor.ScopeBinding ignored = RagFallbackMonitor.bindScope(fallbackScope)) {
+                return callable.call();
+            }
+        });
+    }
+
+    private void putTimings(Map<String, Object> debugInfo, Map<String, Long> timings, String... keys) {
+        if (debugInfo == null || timings == null) {
+            return;
+        }
+        for (String key : keys) {
+            Long value = timings.get(key);
+            if (value != null) {
+                debugInfo.put(key, value);
+            }
+        }
+    }
+
     private <T> List<T> getFuture(Future<List<T>> future, String name) {
         try {
             return future.get(30, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            log.warn("Future '{}' timed out and was cancelled", name, e);
+            return new ArrayList<>();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            future.cancel(true);
+            log.warn("Future '{}' interrupted and was cancelled", name, e);
+            return new ArrayList<>();
         } catch (Exception e) {
             log.warn("Future '{}' failed or timed out", name, e);
             return new ArrayList<>();

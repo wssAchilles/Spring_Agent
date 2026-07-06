@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -25,7 +27,11 @@ public class GraphRagSyncService {
     private Neo4jClient neo4jClient;
 
     public void syncRows(List<Object[]> rows) {
-        if (!properties.isEnabled() || neo4jClient == null || rows == null || rows.isEmpty()) {
+        if (rows == null || rows.isEmpty()) {
+            return;
+        }
+        syncPostgresNodeSegmentRelations(rows);
+        if (!properties.isEnabled() || neo4jClient == null) {
             return;
         }
         try {
@@ -35,6 +41,9 @@ public class GraphRagSyncService {
                 JSONArray entities = JSON.parseArray(String.valueOf(row[3]));
                 JSONArray relations = JSON.parseArray(String.valueOf(row[4]));
                 for (Object entity : entities) {
+                    if (entity == null) {
+                        continue;
+                    }
                     upsertEntity(String.valueOf(entity), documentId, segmentId);
                 }
                 for (Object relationObject : relations) {
@@ -45,6 +54,45 @@ public class GraphRagSyncService {
             }
         } catch (Exception e) {
             log.warn("GraphRAG Neo4j sync failed, continuing document sync", e);
+        }
+    }
+
+    private void syncPostgresNodeSegmentRelations(List<Object[]> rows) {
+        try {
+            Set<Long> documentIds = rows.stream()
+                    .map(row -> ((Number) row[0]).longValue())
+                    .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+            if (!documentIds.isEmpty()) {
+                String placeholders = documentIds.stream().map(id -> "?").collect(Collectors.joining(","));
+                jdbcTemplate.update("DELETE FROM kg_node_segment_rel WHERE document_id IN (" + placeholders + ")",
+                        documentIds.toArray());
+            }
+            for (Object[] row : rows) {
+                Long documentId = ((Number) row[0]).longValue();
+                Long segmentId = ((Number) row[1]).longValue();
+                JSONArray entities = JSON.parseArray(String.valueOf(row[3]));
+                for (Object entity : entities) {
+                    if (entity == null) {
+                        continue;
+                    }
+                    String label = String.valueOf(entity);
+                    if (label == null || label.isBlank()) {
+                        continue;
+                    }
+                    jdbcTemplate.update("""
+                            INSERT INTO kg_node_segment_rel(node_id, segment_id, document_id)
+                            SELECT id, ?, ?
+                            FROM kg_node
+                            WHERE del_flag = 0
+                              AND lower(label) = lower(?)
+                            ON CONFLICT (node_id, segment_id) DO UPDATE SET
+                                document_id = EXCLUDED.document_id
+                            WHERE kg_node_segment_rel.document_id IS DISTINCT FROM EXCLUDED.document_id
+                            """, segmentId, documentId, label);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("GraphRAG Postgres node-segment sync failed, continuing document sync", e);
         }
     }
 
