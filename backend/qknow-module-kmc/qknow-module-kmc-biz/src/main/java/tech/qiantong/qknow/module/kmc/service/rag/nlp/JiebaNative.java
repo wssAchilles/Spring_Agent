@@ -1,12 +1,15 @@
 package tech.qiantong.qknow.module.kmc.service.rag.nlp;
 
 import lombok.extern.slf4j.Slf4j;
+import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
+
+import java.nio.file.Path;
 
 /**
  * jieba-rs JNI 桥接类
  * [溯源] 算法优化指南 Phase 2: 中文分词 jieba-rs 集成
  *
- * 使用 Rust jieba-rs 库进行中文分词，比 Java 实现快 20-27x
+ * 使用 Rust jieba-rs 库进行中文分词；JNI 不可用时回退到 Java 侧滑动窗口。
  * 降级策略：JNI 加载失败时回退到 Java 分词
  */
 @Slf4j
@@ -16,15 +19,30 @@ public class JiebaNative {
     private static volatile boolean attempted = false;
 
     static {
-        try {
-            System.loadLibrary("jieba_jni");
-            loaded = true;
-            log.info("jieba-rs JNI library loaded successfully");
-        } catch (UnsatisfiedLinkError e) {
-            loaded = false;
-            log.warn("jieba-rs JNI library not found, falling back to Java tokenization: {}", e.getMessage());
-        }
+        loaded = loadNativeLibrary("jieba_jni");
         attempted = true;
+    }
+
+    private static boolean loadNativeLibrary(String libraryName) {
+        String nativeLibDir = System.getProperty("qknow.native.lib.dir");
+        if (nativeLibDir != null && !nativeLibDir.isBlank()) {
+            try {
+                System.load(Path.of(nativeLibDir, System.mapLibraryName(libraryName)).toString());
+                log.info("jieba-rs JNI library loaded from qknow.native.lib.dir");
+                return true;
+            } catch (UnsatisfiedLinkError | RuntimeException e) {
+                log.debug("jieba-rs JNI library not loaded from qknow.native.lib.dir: {}", e.getMessage());
+            }
+        }
+        try {
+            System.loadLibrary(libraryName);
+            log.info("jieba-rs JNI library loaded via System.loadLibrary");
+            return true;
+        } catch (UnsatisfiedLinkError | RuntimeException e) {
+            RagFallbackMonitor.record("jni", "java_tokenization", "jieba load failed: " + e.getMessage());
+            log.warn("jieba-rs JNI library not found, falling back to Java tokenization: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -53,11 +71,17 @@ public class JiebaNative {
      */
     public static String[] safeCut(String text) {
         if (!loaded || text == null || text.isBlank()) {
+            if (!loaded) {
+                RagFallbackMonitor.record("jni", "java_tokenization", "jieba native unavailable");
+            }
             return null;
         }
         try {
-            return cut(text);
+            String[] result = cut(text);
+            log.debug("[JNI] JiebaNative.cut called, {} tokens", result != null ? result.length : 0);
+            return result;
         } catch (Exception e) {
+            RagFallbackMonitor.record("jni", "java_tokenization", "jieba cut failed: " + e.getMessage());
             log.debug("jieba-rs cut failed: {}", e.getMessage());
             return null;
         }
