@@ -137,7 +137,7 @@
       </el-aside>
       <el-main class="right-main">
         <div class="border-item-head">
-          <span class="head-title">调试与预览 </span>
+          <span class="head-title">调试与预览<span v-if="botName" style="color: #666; font-size: 14px; font-weight: normal; margin-left: 8px;">- {{ botName }}</span></span>
           <div class="conversation-actions">
             <el-select
               v-model="currentConversationId"
@@ -211,6 +211,7 @@ import methodMultipleSelection from "@/views/kb/tool/selection/method-multiple-s
 import knowledgeBaseMultiple from "@/views/kmc/knowledgeBase/selection/knowledgeBaseMultiple.vue"
 import {getChatModelDict} from "@/api/ai/myModel/myModel.js";
 import {addConfig, getConfigByBotId, updateConfig} from "@/api/kb/agent/config";
+import { getBot } from "@/api/kb/bot/bot";
 import {getConversations, createConversation, deleteConversation, getMessages, sendMessageStream} from "@/api/kb/conversation";
 import AgentMessageList from './components/MessageList.vue';
 import AgentChatInput from './components/ChatInput.vue';
@@ -248,6 +249,19 @@ const form = reactive({
 const route = useRoute();
 const botId = ref(route.query.id ? Number(route.query.id) : null);
 let configLoadSeq = 0;
+const botName = ref('');
+
+function loadBotInfo(id) {
+  if (!id) {
+    botName.value = '';
+    return;
+  }
+  getBot(id).then(res => {
+    botName.value = res.data?.name || res.data?.botName || res.data?.title || '';
+  }).catch(() => {
+    botName.value = '';
+  });
+}
 
 // 表单验证规则
 const formRules = {
@@ -775,6 +789,9 @@ function handleSubmit() {
 
 // 只在初始化时调用一次
 loadAgentConfig();
+if (botId.value) {
+  loadBotInfo(botId.value);
+}
 
 watch(
   () => route.query.id,
@@ -786,6 +803,11 @@ watch(
     botId.value = nextBotId;
     resetAgentConfigForm();
     loadAgentConfig();
+    if (nextBotId) {
+      loadBotInfo(nextBotId);
+    } else {
+      botName.value = '';
+    }
   }
 );
 </script>

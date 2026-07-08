@@ -132,6 +132,9 @@
                 <div v-if="debugInfo.queryEnhance.variants?.length" style="font-size: 12px; color: #64748b; margin-top: 4px;">
                   变体: {{ debugInfo.queryEnhance.variants.join(' / ') }}
                 </div>
+                <div v-if="debugInfo.queryEnhance.vectorVariants?.length" style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                  向量查询: {{ debugInfo.queryEnhance.vectorVariants.join(' / ') }}
+                </div>
               </div>
 
               <!-- 弱路径排除警告 -->
@@ -139,8 +142,8 @@
                 <div style="font-weight: 500; font-size: 13px; color: #92400e; margin-bottom: 4px;">
                   弱路径排除
                 </div>
-                <div v-for="p in debugInfo.excludedPaths" :key="p.path" style="font-size: 12px; color: #92400e;">
-                  {{ p.path }} (top score {{ p.topScore?.toFixed(3) }} 小于 {{ p.threshold }})
+                <div v-for="path in debugInfo.excludedPaths" :key="formatExcludedPath(path)" style="font-size: 12px; color: #92400e;">
+                  {{ formatExcludedPath(path) }}
                 </div>
               </div>
 
@@ -170,6 +173,49 @@
                 <el-descriptions-item label="CRAG">{{ debugInfo.cragLabel || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="改写检索">{{ formatBoolean(debugInfo.rewriteApplied) }}</el-descriptions-item>
               </el-descriptions>
+
+              <div v-if="pathScoreDiagnostics.length" style="margin-top: 12px;">
+                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                  路径分数
+                </div>
+                <el-table :data="pathScoreDiagnostics" size="small" border>
+                  <el-table-column prop="phase" label="阶段" width="80" />
+                  <el-table-column prop="pathName" label="路径" width="110" />
+                  <el-table-column prop="rawTopScore" label="原始分" width="100">
+                    <template #default="scope">{{ formatScore(scope.row.rawTopScore) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="normalizedTopScore" label="归一分" width="100">
+                    <template #default="scope">{{ formatScore(scope.row.normalizedTopScore) }}</template>
+                  </el-table-column>
+                  <el-table-column prop="excluded" label="排除" width="80">
+                    <template #default="scope">{{ formatBoolean(scope.row.excluded) }}</template>
+                  </el-table-column>
+                </el-table>
+              </div>
+
+              <div v-if="timingDiagnostics.length" style="margin-top: 12px;">
+                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                  路径耗时
+                </div>
+                <el-table :data="timingDiagnostics" size="small" border>
+                  <el-table-column prop="label" label="路径" />
+                  <el-table-column prop="duration" label="耗时(ms)" width="110" />
+                </el-table>
+              </div>
+
+              <div v-if="graphProvenanceRows.length" style="margin-top: 12px;">
+                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                  Graph 候选证据
+                </div>
+                <el-table :data="graphProvenanceRows" size="small" border>
+                  <el-table-column prop="source" label="来源" width="130" />
+                  <el-table-column prop="segmentId" label="Segment" width="100" />
+                  <el-table-column prop="documentName" label="文档" show-overflow-tooltip />
+                  <el-table-column prop="score" label="分数" width="90">
+                    <template #default="scope">{{ formatScore(scope.row.score) }}</template>
+                  </el-table-column>
+                </el-table>
+              </div>
 
               <div v-if="fallbackDiagnostics.length" style="margin-top: 12px;">
                 <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
@@ -879,6 +925,68 @@ const fallbackDiagnostics = computed(() => {
     .filter((item) => item.count > 0 || item.lastFallback !== "-");
 });
 
+const pathScoreDiagnostics = computed(() => {
+  return [
+    ...normalizePathScores("first", debugInfo.value?.firstPathScores),
+    ...normalizePathScores("second", debugInfo.value?.secondPathScores),
+  ];
+});
+
+const timingDiagnostics = computed(() => {
+  const info = debugInfo.value || {};
+  const keys = [
+    ["firstVectorMs", "向量"],
+    ["firstKeywordMs", "关键字"],
+    ["firstMetadataMs", "元数据"],
+    ["firstGraphMs", "图谱"],
+    ["firstFusionMs", "融合"],
+    ["firstRerankMs", "重排"],
+    ["firstContextMs", "上下文"],
+    ["secondVectorMs", "二次向量"],
+    ["secondKeywordMs", "二次关键字"],
+    ["secondMetadataMs", "二次元数据"],
+    ["secondGraphMs", "二次图谱"],
+  ];
+  return keys
+    .filter(([key]) => info[key] !== undefined && info[key] !== null)
+    .map(([key, label]) => ({
+      label,
+      duration: Number(info[key]) || 0,
+    }));
+});
+
+const graphProvenanceRows = computed(() => {
+  const info = debugInfo.value || {};
+  return [
+    ...(info.firstGraphShadowProvenance || info.firstGraphProvenance || []),
+    ...(info.secondGraphShadowProvenance || info.secondGraphProvenance || []),
+  ];
+});
+
+function normalizePathScores(phase, rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => ({
+    phase,
+    pathName: row.pathName || row.path || "-",
+    rawTopScore: row.rawTopScore ?? row.topScore,
+    normalizedTopScore: row.normalizedTopScore,
+    excluded: row.excluded,
+  }));
+}
+
+function formatScore(value) {
+  const score = Number(value);
+  return Number.isFinite(score) ? score.toFixed(3) : "-";
+}
+
+function formatExcludedPath(path) {
+  if (typeof path === "string") return path;
+  if (!path) return "-";
+  const topScore = path.topScore ?? path.rawTopScore;
+  const scoreText = Number.isFinite(Number(topScore)) ? Number(topScore).toFixed(3) : "-";
+  return `${path.path || path.pathName || "-"} (${scoreText})`;
+}
+
 function formatBoolean(value) {
   if (value === true) return "是";
   if (value === false) return "否";
@@ -1324,6 +1432,11 @@ const getSourceText = (source) => {
     'vector': '向量检索',
     'keyword': '关键字检索',
     'metadata': '元数据检索',
+    'graph': '图谱检索',
+    'graph_topic': '图谱主题',
+    'graph_temporal': '图谱时序',
+    'graph_semantic': '图谱语义',
+    'graph_ppr': '图谱PPR',
     'rerank': 'Rerank',
     'agent': 'Agent召回',
     'cache': '缓存'
