@@ -52,6 +52,9 @@ public class GraphRagRetriever {
     private CypherSafetyValidator cypherSafetyValidator;
 
     public List<RetrievalResult> retrieve(Long knowledgeBaseId, List<String> entities, int topK) {
+        if (!properties.isEnabled()) {
+            return List.of();
+        }
         return graphSearch(knowledgeBaseId, entities, topK, properties.getMaxHops()).stream()
                 .map(result -> RetrievalResult.builder()
                         .segmentId(result.getSegmentId())
@@ -67,7 +70,7 @@ public class GraphRagRetriever {
 
     public List<RetrievalResult> retrieve(Long knowledgeBaseId, QueryIntent queryIntent,
                                           String query, QueryRouter.QueryRoute route, int topK) {
-        if (queryIntent == null) {
+        if (!properties.isEnabled() || queryIntent == null) {
             return List.of();
         }
         List<String> entities = queryIntent.getEntities() != null ? queryIntent.getEntities() : List.of();
@@ -81,7 +84,7 @@ public class GraphRagRetriever {
 
         // [溯源] 算法优化指南 §3.3: PPR 作为额外检索路径
         List<RetrievalResult> pprResults = List.of();
-        if (!entities.isEmpty() && properties.isEnabled() && properties.isPprEnabled()) {
+        if (!entities.isEmpty() && properties.isPprEnabled()) {
             pprResults = pprRetrieve(knowledgeBaseId, entities, topK);
         }
 
@@ -108,6 +111,9 @@ public class GraphRagRetriever {
      */
     public List<RetrievalResult> dualLevelRetrieve(Long knowledgeBaseId, List<String> entities,
                                                     List<String> topics, int topK) {
+        if (!properties.isEnabled()) {
+            return List.of();
+        }
         List<RetrievalResult> results = new ArrayList<>();
 
         // Low-level: 精确实体匹配
@@ -295,61 +301,47 @@ public class GraphRagRetriever {
                 return List.of();
             }
 
-            // Step 5: 查找这些节点关联的 segment
+            // Step 5: 查找这些节点直接关联的 segment，保留 node -> segment 证据绑定
             String placeholders = topNodeIds.stream().map(id -> "?").collect(Collectors.joining(","));
             String segmentQuery = """
-                    SELECT s.id, s.document_id, s.document_name, s.content
-                    FROM kmc_segment_entity_metadata em
-                    JOIN kmc_document_segment s ON s.id = em.segment_id
+                    SELECT rel.node_id, s.id, s.document_id, s.document_name, s.content
+                    FROM kg_node_segment_rel rel
+                    JOIN kmc_document_segment s ON s.id = rel.segment_id
                     JOIN kmc_document d ON d.id = s.document_id AND d.del_flag = 0
                     WHERE d.knowledge_base_id = ?
-                      AND em.segment_id IN (
-                          SELECT DISTINCT em2.segment_id
-                          FROM kmc_segment_entity_metadata em2
-                          WHERE em2.document_id IN (
-                              SELECT DISTINCT em3.document_id
-                              FROM kmc_segment_entity_metadata em3
-                              WHERE em3.segment_id IN (
-                                  SELECT DISTINCT segment_id FROM kg_node_segment_rel
-                                  WHERE node_id IN (%s)
-                              )
-                          )
-                      )
-                    ORDER BY s.id ASC
+                      AND s.del_flag = 0
+                      AND rel.node_id IN (%s)
+                    ORDER BY array_position(ARRAY[%s]::bigint[], rel.node_id), s.id
                     LIMIT ?
-                    """.formatted(placeholders);
+                    """.formatted(placeholders, placeholders);
 
             List<Object> params = new ArrayList<>();
             params.add(knowledgeBaseId);
             params.addAll(topNodeIds);
+            params.addAll(topNodeIds);
             params.add(topK);
 
             final Map<Long, Double> finalScores = scores;
-            final List<Long> finalTopNodeIds = topNodeIds;
             List<RetrievalResult> results = jdbcTemplate.query(segmentQuery, (rs, rowNum) -> {
-                long bestNodeId = 0;
-                double bestScore = 0;
-                for (Long nodeId : finalTopNodeIds) {
-                    double score = finalScores.getOrDefault(nodeId, 0.0);
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestNodeId = nodeId;
-                    }
-                }
+                long nodeId = rs.getLong("node_id");
+                double nodeScore = finalScores.getOrDefault(nodeId, 0.0);
                 return RetrievalResult.builder()
                         .segmentId(rs.getLong("id"))
                         .documentId(rs.getLong("document_id"))
                         .documentName(rs.getString("document_name"))
                         .content(rs.getString("content"))
-                        .score(bestScore * GRAPH_SCORE)
+                        .score(nodeScore * GRAPH_SCORE)
                         .source("graph_ppr")
-                        .metadata(Map.of("ppr_iterations", maxIterations))
+                        .metadata(Map.of(
+                                "ppr_iterations", maxIterations,
+                                "ppr_node_id", nodeId,
+                                "ppr_node_score", nodeScore))
                         .build();
             }, params.toArray());
 
             log.info("PPR retrieve: {} seed entities -> {} top nodes -> {} segments",
                     seedEntities.size(), topNodeIds.size(), results.size());
-            return results != null ? results : List.of();
+            return mergeResults(results != null ? results : List.of(), List.of(), topK);
 
         } catch (Exception e) {
             RagFallbackMonitor.record("neo4j", "standard_graph", "ppr failed: " + e.getMessage());
@@ -420,6 +412,9 @@ public class GraphRagRetriever {
      */
     public List<RetrievalResult> semanticGuidedRetrieve(Long knowledgeBaseId, List<String> entities,
                                                          String queryContext, int topK) {
+        if (!properties.isEnabled()) {
+            return List.of();
+        }
         if (neo4jClient == null || cypherSafetyValidator == null) {
             RagFallbackMonitor.record("neo4j", "standard_graph", "semantic traversal unavailable");
             return retrieve(knowledgeBaseId, entities, topK);
@@ -491,6 +486,9 @@ public class GraphRagRetriever {
      */
     public List<RetrievalResult> temporalRetrieve(Long knowledgeBaseId, List<String> entities,
                                                    long currentTime, int topK) {
+        if (!properties.isEnabled()) {
+            return List.of();
+        }
         boolean h2 = isH2();
 
         List<Object> params = new ArrayList<>();
