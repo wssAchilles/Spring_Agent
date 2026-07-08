@@ -23,11 +23,13 @@ import java.util.List;
 public class RetrievalEvaluator {
 
     private static final String SYSTEM_PROMPT = """
-            You are a retrieval evaluator in a corrective RAG pipeline.
-            Classify whether the retrieved context can answer the user question.
-            Return only one raw JSON object. Do not return Markdown, code fences, or explanations outside JSON.
-            Schema:
-            {"label":"CORRECT|INCORRECT|AMBIGUOUS","confidence":0.0,"reason":"short reason","rewrittenQuery":"optional rewrite"}
+            你是一个纠错型RAG（Corrective RAG）流水线中的检索结果评估员。
+            你的任务是判断给定的检索上下文（Context）是否能够回答用户的问题（Question）。
+            注意：请智能识别同义词、缩写和中英文日期/时间指代（例如：“第七天”与“Day 07”或“Day07”是完全等价的，“第一天”与“Day01”等价等）。只要上下文中包含该对应时间点或相关意图的内容，就必须判定为 CORRECT。
+            
+            只能返回一个原生的JSON对象。不要返回Markdown语法（不要使用```json），也不要在JSON之外写任何解释。
+            返回格式必须严格为：
+            {"label":"CORRECT|INCORRECT|AMBIGUOUS","confidence":0.0,"reason":"简短的原因","rewrittenQuery":"可选的查询改写"}
             """;
 
     private final ChatModelFactory chatModelFactory;

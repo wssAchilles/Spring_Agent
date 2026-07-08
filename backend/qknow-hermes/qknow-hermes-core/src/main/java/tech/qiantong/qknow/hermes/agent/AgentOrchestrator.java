@@ -206,13 +206,16 @@ public class AgentOrchestrator {
             throw new IllegalArgumentException("缺少模型配置");
         }
 
-        // 2. CRAG 检索评估
+        // 2. CRAG 检索评估（仅记录，不清空预检索内容）
+        // 控制面已做过 CRAG + 重检索 + Web fallback，此处不再二次清空
         RetrievalEvaluation retrievalEvaluation = retrievalEvaluator.evaluate(
                 request.getQuestion(), request.getRagContextsList(), modelConfig,
                 request.hasModelCredentials() ? request.getModelCredentials() : null);
-        List<RAGContext> effectiveRagContexts = retrievalEvaluation.isIncorrect()
-                ? List.of()
-                : request.getRagContextsList();
+        if (retrievalEvaluation.isIncorrect()) {
+            log.warn("CRAG 判定检索质量不足(label={}, confidence={})，保留预检索内容供 Agent 使用",
+                    retrievalEvaluation.getLabel(), retrievalEvaluation.getConfidence());
+        }
+        List<RAGContext> effectiveRagContexts = request.getRagContextsList();
 
         // 3. 构建知识库工具（使用预检索的 RAG 结果）
         List<ToolCallback> tools = new ArrayList<>();

@@ -43,13 +43,13 @@ public class HermesKernel {
     }
 
     public HermesKernel(AiJudgeService aiJudgeService,
-                        org.springframework.ai.embedding.EmbeddingModel embeddingModel) {
+            org.springframework.ai.embedding.EmbeddingModel embeddingModel) {
         this(aiJudgeService, embeddingModel, null);
     }
 
     public HermesKernel(AiJudgeService aiJudgeService,
-                        org.springframework.ai.embedding.EmbeddingModel embeddingModel,
-                        MemoryManager memoryManager) {
+            org.springframework.ai.embedding.EmbeddingModel embeddingModel,
+            MemoryManager memoryManager) {
         this.aiJudgeService = aiJudgeService;
         this.embeddingModel = embeddingModel;
         this.memoryManager = memoryManager;
@@ -66,7 +66,7 @@ public class HermesKernel {
      * @return 反思循环结果
      */
     public ReflectionResult reflect(ChatModel chatModel, String systemPrompt, String userQuery,
-                                    String context, int maxRetries) {
+            String context, int maxRetries) {
         List<ReflectionAttempt> attempts = new ArrayList<>();
 
         String currentAnswer = null;
@@ -126,7 +126,7 @@ public class HermesKernel {
      * 如果是重试，会包含上次的评分反馈
      */
     private String buildPrompt(String systemPrompt, String userQuery, String context,
-                                String previousAnswer, JudgeResult lastJudgeResult) {
+            String previousAnswer, JudgeResult lastJudgeResult) {
         StringBuilder sb = new StringBuilder();
         sb.append(systemPrompt).append("\n\n");
 
@@ -161,8 +161,7 @@ public class HermesKernel {
                         try {
                             ChatResponse resp = chatModel.call(new Prompt(List.of(
                                     new SystemMessage(systemPrompt),
-                                    new UserMessage(userQuery)
-                            )));
+                                    new UserMessage(userQuery))));
                             return resp.getResult().getOutput().getText();
                         } catch (Exception e) {
                             return "";
@@ -171,7 +170,8 @@ public class HermesKernel {
                     .filter(s -> s != null && !s.isBlank())
                     .collect(Collectors.toList());
 
-            if (samples.size() < 2) return 1.0;
+            if (samples.size() < 2)
+                return 1.0;
 
             // 计算 pairwise similarity
             double totalSimilarity = 0;
@@ -196,7 +196,8 @@ public class HermesKernel {
     }
 
     private double jaccardSimilarity(String a, String b) {
-        if (a == null || b == null) return 0.0;
+        if (a == null || b == null)
+            return 0.0;
         java.util.Set<String> setA = tokenizeForJaccard(a);
         java.util.Set<String> setB = tokenizeForJaccard(b);
         java.util.Set<String> intersection = new java.util.HashSet<>(setA);
@@ -258,7 +259,8 @@ public class HermesKernel {
             String lesson = String.format("[反思教训] query=%s attempt=%d outcome=%s scores=%.2f/%.2f/%.2f",
                     query.substring(0, Math.min(50, query.length())),
                     attempt + 1, outcome,
-                    judgeResult.getFactualityScore(), judgeResult.getRelevanceScore(), judgeResult.getInstructionScore());
+                    judgeResult.getFactualityScore(), judgeResult.getRelevanceScore(),
+                    judgeResult.getInstructionScore());
             memoryManager.getShortTerm().addMessage(new UserMessage(lesson));
         } catch (Exception e) {
             log.debug("Failed to persist reflection lesson", e);

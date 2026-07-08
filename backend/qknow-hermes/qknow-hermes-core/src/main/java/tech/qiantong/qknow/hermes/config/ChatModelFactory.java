@@ -57,7 +57,7 @@ public class ChatModelFactory {
                     case TONG_YI -> getDashScopeChatModel(resolvedApiKey, modelName);
                     case OLLAMA -> getOllamaChatModel(baseUrl, modelName);
                     case DEEP_SEEK -> getDeepSeekCompatibleChatModel(baseUrl, resolvedApiKey, modelName, temperature);
-                    default -> throw new IllegalArgumentException("暂时不支持该平台: " + platform);
+                    default -> getOpenAiChatModel(baseUrl, resolvedApiKey, modelName, temperature);
                 }
         );
     }
