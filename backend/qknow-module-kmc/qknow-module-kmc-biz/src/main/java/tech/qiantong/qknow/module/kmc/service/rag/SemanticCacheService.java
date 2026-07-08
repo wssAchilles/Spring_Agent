@@ -21,6 +21,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -99,6 +100,7 @@ public class SemanticCacheService {
                     .answer(rs.getString("answer"))
                     .sourcesJson(rs.getString("sources_json"))
                     .similarity(rs.getDouble("similarity"))
+                    .knowledgeBaseIds(knowledgeBaseIds)
                     .build(), vector, workspaceId, botId, knowledgeIdsHash, modelName,
                     vector, config.getThreshold(), vector);
             if (CollUtil.isEmpty(hits)) {
@@ -166,6 +168,7 @@ public class SemanticCacheService {
                         .sourcesJson(sourcesJson != null ? sourcesJson : "[]")
                         .similarity(1.0)
                         .expiresAt(Instant.now().plus(ttl))
+                        .knowledgeBaseIds(new ArrayList<>(knowledgeBaseIds))
                         .build());
             }
         } catch (Exception e) {
@@ -178,6 +181,7 @@ public class SemanticCacheService {
         if (knowledgeBaseId == null) {
             return 0;
         }
+        int evictedExact = evictExactCacheByKnowledgeBase(knowledgeBaseId);
         try {
             List<Long> cacheIds = jdbcTemplate.queryForList("""
                     SELECT cache_id FROM semantic_cache_knowledge_rel WHERE knowledge_base_id = ?
@@ -190,7 +194,8 @@ public class SemanticCacheService {
             for (Long cacheId : cacheIds) {
                 deleted += jdbcTemplate.update("DELETE FROM semantic_cache_store WHERE id = ?", cacheId);
             }
-            log.debug("Evicted {} semantic cache entries for knowledgeBase {}", deleted, knowledgeBaseId);
+            log.debug("Evicted {} semantic cache entries and {} exact cache entries for knowledgeBase {}",
+                    deleted, evictedExact, knowledgeBaseId);
             return deleted + deletedRel;
         } catch (Exception e) {
             RagFallbackMonitor.record("semantic_cache", "skip_evict", "eviction failed: " + e.getMessage());
@@ -205,7 +210,8 @@ public class SemanticCacheService {
             if (response == null || response.getResults().isEmpty()) {
                 return new float[0];
             }
-            return response.getResults().get(0).getOutput();
+            float[] output = response.getResults().get(0).getOutput();
+            return output != null ? output : new float[0];
         } catch (Exception e) {
             RagFallbackMonitor.record("semantic_cache", "bypass", "embedding failed: " + e.getMessage());
             log.warn("Semantic cache embedding failed", e);
@@ -252,6 +258,22 @@ public class SemanticCacheService {
         }
     }
 
+    private int evictExactCacheByKnowledgeBase(Long knowledgeBaseId) {
+        synchronized (exactCacheLock) {
+            int removed = 0;
+            Iterator<java.util.Map.Entry<String, CacheHit>> iterator = exactCache.entrySet().iterator();
+            while (iterator.hasNext()) {
+                CacheHit hit = iterator.next().getValue();
+                if (hit != null && hit.getKnowledgeBaseIds() != null
+                        && hit.getKnowledgeBaseIds().contains(knowledgeBaseId)) {
+                    iterator.remove();
+                    removed++;
+                }
+            }
+            return removed;
+        }
+    }
+
     private String sha256(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -276,6 +298,7 @@ public class SemanticCacheService {
         private String sourcesJson;
         private double similarity;
         private Instant expiresAt;
+        private List<Long> knowledgeBaseIds;
     }
 
     @Data

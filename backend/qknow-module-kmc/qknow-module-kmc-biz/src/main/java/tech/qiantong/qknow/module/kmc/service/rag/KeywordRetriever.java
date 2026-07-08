@@ -55,6 +55,7 @@ public class KeywordRetriever {
         SYNONYMS.put("深度学习", List.of("DL"));
         SYNONYMS.put("自然语言处理", List.of("NLP"));
         SYNONYMS.put("计算机视觉", List.of("CV"));
+        SYNONYMS.put("第七天", List.of("Day 07", "Day07"));
     }
 
     @Resource

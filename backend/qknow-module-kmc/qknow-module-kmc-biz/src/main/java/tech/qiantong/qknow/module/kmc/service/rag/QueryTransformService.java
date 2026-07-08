@@ -11,6 +11,7 @@ import tech.qiantong.qknow.ai.service.IChatClientService;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.regex.Pattern;
 
@@ -25,6 +26,11 @@ public class QueryTransformService {
     private static final String HYDE_SYSTEM = "Given a question, write a 3-5 sentence plausible answer paragraph. Return ONLY the paragraph.";
     private static final String MULTI_QUERY_SYSTEM = "Generate semantically diverse search query reformulations. Return ONLY a JSON array of strings.";
     private static final Pattern NUMERIC_QUERY = Pattern.compile(".*(\\d+|Day\\d+|day\\d+|[A-Za-z]+-\\d+|\\d{4}-\\d{1,2}-\\d{1,2}).*");
+    private static final Pattern QUESTION_CUES = Pattern.compile(
+            ".*(什么|如何|为什么|怎么|是否|哪些|多少|[?？]|where|what|why|how|when|which|explain|describe|compare).*",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern CODE_SYMBOL_QUERY = Pattern.compile(
+            ".*([`{}()_=<>]|[A-Za-z_][A-Za-z0-9_]*\\.[A-Za-z_][A-Za-z0-9_]*|[A-Za-z_][A-Za-z0-9_]*\\(\\)).*");
 
     private final IChatClientService chatClientService;
     private final QueryTransformConfig config;
@@ -71,14 +77,11 @@ public class QueryTransformService {
             return query;
         }
 
-        String strategy = config.getStrategy();
+        String strategy = normalizedStrategy();
         if ("none".equals(strategy)) {
             return query;
         }
-        if ("hyde".equals(strategy)) {
-            return generateHypotheticalDocument(query);
-        }
-        if ("multi_query".equals(strategy)) {
+        if ("hyde".equals(strategy) || "multi_query".equals(strategy)) {
             return query;
         }
 
@@ -98,7 +101,7 @@ public class QueryTransformService {
     }
 
     public String generateHypotheticalDocument(String query) {
-        if (!config.isEnabled() || query == null || query.isBlank() || isNumericQuery(query)) {
+        if (shouldSkipHyde(query)) {
             return query;
         }
         try {
@@ -120,7 +123,7 @@ public class QueryTransformService {
             return queries;
         }
         queries.add(query);
-        if (!config.isEnabled() || count <= 0) {
+        if (!config.isEnabled() || count <= 0 || !"multi_query".equals(normalizedStrategy())) {
             return queries;
         }
 
@@ -145,8 +148,38 @@ public class QueryTransformService {
         return queries.stream().distinct().collect(Collectors.toList());
     }
 
+    public boolean isEnabled() {
+        return config.isEnabled();
+    }
+
+    public String getStrategy() {
+        return config.getStrategy();
+    }
+
+    private String normalizedStrategy() {
+        String strategy = config.getStrategy();
+        return strategy == null ? "none" : strategy.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public int getVariantCount() {
+        return config.getVariantCount();
+    }
+
+    boolean shouldSkipHyde(String query) {
+        if (!config.isEnabled() || query == null || query.isBlank() || isNumericQuery(query)
+                || isCodeSymbolQuery(query)) {
+            return true;
+        }
+        String compact = query.replaceAll("\\s+", "");
+        return compact.length() <= 16 && !QUESTION_CUES.matcher(query).matches();
+    }
+
     boolean isNumericQuery(String query) {
         return query != null && NUMERIC_QUERY.matcher(query).matches();
+    }
+
+    private boolean isCodeSymbolQuery(String query) {
+        return CODE_SYMBOL_QUERY.matcher(query).matches();
     }
 
     private ChatClient getChatClient() {

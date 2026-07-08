@@ -384,6 +384,7 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         // 兜底：原有检索逻辑
         String searchMethod = normalizeSearchMethod(retrieveResultReqVO.getSearchMethod());
         retrieveResultReqVO.setSearchMethod(searchMethod);
+        applyLegacyFallbackQuery(retrieveResultReqVO, searchMethod);
 
         String cacheKey = RagCacheService.buildCacheKey(
                 retrieveResultReqVO.getId(), retrieveResultReqVO.getQuery(), searchMethod,
@@ -504,6 +505,26 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         respVO.setDebugInfo(ragResult.getDebugInfo());
         respVO.setContextPreview(ragResult.getContext());
         return respVO;
+    }
+
+    private void applyLegacyFallbackQuery(RetrieveResultReqVO reqVO, String searchMethod) {
+        if (queryTransformService == null || !queryTransformService.isEnabled()) {
+            return;
+        }
+        String strategy = Optional.ofNullable(queryTransformService.getStrategy())
+                .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                .orElse("none");
+        if (!"hyde".equals(strategy) || !"semantic_search".equals(searchMethod) || StrUtil.isBlank(reqVO.getQuery())) {
+            return;
+        }
+        try {
+            String hypothetical = queryTransformService.generateHypotheticalDocument(reqVO.getQuery());
+            if (StrUtil.isNotBlank(hypothetical)) {
+                reqVO.setQuery(hypothetical.trim());
+            }
+        } catch (Exception e) {
+            log.warn("Legacy HyDE query transform failed, using current query", e);
+        }
     }
 
     private String normalizeSearchMethod(String searchMethod) {

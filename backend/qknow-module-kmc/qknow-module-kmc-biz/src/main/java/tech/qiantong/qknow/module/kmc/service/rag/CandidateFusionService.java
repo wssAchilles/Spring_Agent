@@ -15,36 +15,43 @@ public class CandidateFusionService {
     @Value("${qknow.rag.rrf.k:60}")
     private int rrfK = 60;
 
-    // [溯源] 算法优化指南 §2.1: 弱路径阈值配置化
-    @Value("${qknow.rag.rrf.weak-path-threshold:0.3}")
-    private double weakPathThreshold = 0.3;
+    // 0 disables score-based path filtering; RRF is rank-based, while retriever raw scores use different scales.
+    @Value("${qknow.rag.rrf.weak-path-threshold:0}")
+    private double weakPathThreshold = 0.0;
 
     /**
-     * 融合多路检索结果，自动排除弱检索路径
-     * 参考：arXiv 2026 论文 — 弱检索路径拖低整体精度（短板效应）
+     * 融合多路检索结果。
      */
     public List<RetrievalResult> fuse(List<List<RetrievalResult>> resultLists) {
-        return fuse(resultLists, null);
+        return fuseWithDiagnostics(resultLists, null).getResults();
     }
 
     public List<RetrievalResult> fuse(List<List<RetrievalResult>> resultLists, List<String> pathNames) {
+        return fuseWithDiagnostics(resultLists, pathNames).getResults();
+    }
+
+    public FusionResult fuseWithDiagnostics(List<List<RetrievalResult>> resultLists, List<String> pathNames) {
         if (resultLists == null || resultLists.isEmpty()) {
-            return new ArrayList<>();
+            return new FusionResult(new ArrayList<>(), List.of(), List.of());
         }
 
-        // 弱路径排除：top-1 score < 阈值的路径不参与融合
         List<List<RetrievalResult>> filtered = new ArrayList<>();
+        List<PathScore> pathScores = new ArrayList<>();
+        List<String> excludedPaths = new ArrayList<>();
         for (int i = 0; i < resultLists.size(); i++) {
             List<RetrievalResult> results = resultLists.get(i);
             if (results == null || results.isEmpty()) {
                 continue;
             }
             double topScore = results.get(0).getScore();
-            // 归一化：图谱分数可能 >1，归一化到 [0,1] 后再比较
             String pathName = (pathNames != null && i < pathNames.size()) ? pathNames.get(i) : "path-" + i;
-            double normalizedScore = "graph".equals(pathName) ? Math.min(topScore / 12.0, 1.0) : topScore;
-            if (normalizedScore < weakPathThreshold) {
-                log.info("弱检索路径排除: {} (normalized score={} < {})", pathName, normalizedScore, weakPathThreshold);
+            double normalizedScore = normalizePathScore(pathName, topScore);
+            boolean excluded = weakPathThreshold > 0 && normalizedScore < weakPathThreshold;
+            pathScores.add(new PathScore(pathName, topScore, normalizedScore, excluded));
+            if (excluded) {
+                excludedPaths.add(pathName);
+                log.info("弱检索路径排除: {} (normalized score={} < {})",
+                        pathName, normalizedScore, weakPathThreshold);
                 continue;
             }
             filtered.add(results);
@@ -53,6 +60,11 @@ public class CandidateFusionService {
         if (filtered.isEmpty()) {
             log.warn("所有检索路径均被排除，回退使用原始结果");
             filtered = resultLists.stream().filter(r -> r != null && !r.isEmpty()).toList();
+            excludedPaths = List.of();
+            pathScores = pathScores.stream()
+                    .map(score -> new PathScore(score.getPathName(), score.getRawTopScore(),
+                            score.getNormalizedTopScore(), false))
+                    .toList();
         }
 
         Map<Long, RetrievalResult> bestBySegment = new LinkedHashMap<>();
@@ -97,6 +109,73 @@ public class CandidateFusionService {
         }
 
         fused.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
-        return fused;
+        return new FusionResult(fused, pathScores, excludedPaths);
+    }
+
+    private double normalizePathScore(String pathName, double topScore) {
+        if (topScore <= 0) {
+            return 0;
+        }
+        return switch (pathName) {
+            case "vector" -> Math.min(topScore, 1.0);
+            case "metadata" -> Math.min(topScore / 10.0, 1.0);
+            case "graph" -> Math.min(topScore / 12.0, 1.0);
+            case "keyword" -> 1.0;
+            default -> Math.min(topScore, 1.0);
+        };
+    }
+
+    public static class FusionResult {
+        private final List<RetrievalResult> results;
+        private final List<PathScore> pathScores;
+        private final List<String> excludedPaths;
+
+        FusionResult(List<RetrievalResult> results, List<PathScore> pathScores, List<String> excludedPaths) {
+            this.results = results;
+            this.pathScores = pathScores;
+            this.excludedPaths = excludedPaths;
+        }
+
+        public List<RetrievalResult> getResults() {
+            return results;
+        }
+
+        public List<PathScore> getPathScores() {
+            return pathScores;
+        }
+
+        public List<String> getExcludedPaths() {
+            return excludedPaths;
+        }
+    }
+
+    public static class PathScore {
+        private final String pathName;
+        private final double rawTopScore;
+        private final double normalizedTopScore;
+        private final boolean excluded;
+
+        PathScore(String pathName, double rawTopScore, double normalizedTopScore, boolean excluded) {
+            this.pathName = pathName;
+            this.rawTopScore = rawTopScore;
+            this.normalizedTopScore = normalizedTopScore;
+            this.excluded = excluded;
+        }
+
+        public String getPathName() {
+            return pathName;
+        }
+
+        public double getRawTopScore() {
+            return rawTopScore;
+        }
+
+        public double getNormalizedTopScore() {
+            return normalizedTopScore;
+        }
+
+        public boolean isExcluded() {
+            return excluded;
+        }
     }
 }

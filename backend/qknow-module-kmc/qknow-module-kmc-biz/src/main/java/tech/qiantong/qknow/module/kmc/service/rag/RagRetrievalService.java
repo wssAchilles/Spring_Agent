@@ -63,6 +63,9 @@ public class RagRetrievalService {
     private QueryRouter queryRouter;
 
     @Resource
+    private QueryTransformService queryTransformService;
+
+    @Resource
     private CragWebSearchClient cragWebSearchClient;
 
     @Resource
@@ -128,7 +131,9 @@ public class RagRetrievalService {
         }
         log.debug("Dynamic topK: route={}, topK {} -> {}", route, topK, dynamicTopK);
 
-        RagResult first = retrieveOnce(knowledgeBaseId, queryIntent, query, dynamicTopK, debug, debugInfo, "first", route);
+        QueryEnhancement firstEnhancement = buildQueryEnhancement(query);
+        RagResult first = retrieveOnce(knowledgeBaseId, queryIntent, firstEnhancement, dynamicTopK,
+                debug, debugInfo, "first", route);
         CragRetrievalEvaluation evaluation = cragRetrievalEvaluator.evaluate(query, first);
         if (debug) {
             debugInfo.put("cragLabel", evaluation.getLabel() != null ? evaluation.getLabel().name() : null);
@@ -145,7 +150,9 @@ public class RagRetrievalService {
                 && rewrittenQuery != null
                 && !rewrittenQuery.isBlank()
                 && !rewrittenQuery.trim().equalsIgnoreCase(query.trim())) {
-            effective = retrieveOnce(knowledgeBaseId, queryIntent, rewrittenQuery, topK, debug, debugInfo, "second", route);
+            QueryEnhancement secondEnhancement = buildQueryEnhancement(rewrittenQuery);
+            effective = retrieveOnce(knowledgeBaseId, queryIntent, secondEnhancement, topK,
+                    debug, debugInfo, "second", route);
             rewriteApplied = true;
             secondRetrievalCount = effective.getSources().size();
         } else if (evaluation.isIncorrect()) {
@@ -164,21 +171,22 @@ public class RagRetrievalService {
             debugInfo.put("rewriteApplied", rewriteApplied);
             debugInfo.put("secondRetrievalCount", secondRetrievalCount);
             debugInfo.put("elapsedMs", elapsed);
-            Map<String, Object> queryEnhance = new java.util.LinkedHashMap<>();
-            queryEnhance.put("strategy", rewriteApplied ? "rewrite" : "none");
-            queryEnhance.put("originalQuery", query);
-            queryEnhance.put("variants", List.of());
+            Map<String, Object> queryEnhance = firstEnhancement.toDebugMap();
+            queryEnhance.put("cragRewriteApplied", rewriteApplied);
+            queryEnhance.put("cragRewrittenQuery", rewrittenQuery);
             debugInfo.put("queryEnhance", queryEnhance);
-            debugInfo.put("excludedPaths", List.of());
+            debugInfo.putIfAbsent("excludedPaths", List.of());
             debugInfo.put("fallbacks", RagFallbackMonitor.currentScopeSnapshot());
             effective.setDebugInfo(debugInfo);
         }
         return effective;
     }
 
-    private RagResult retrieveOnce(Long knowledgeBaseId, QueryIntent queryIntent, String query, int topK, boolean debug,
+    private RagResult retrieveOnce(Long knowledgeBaseId, QueryIntent queryIntent, QueryEnhancement queryEnhancement,
+                                    int topK, boolean debug,
                                     Map<String, Object> debugInfo, String phase, QueryRouter.QueryRoute route) {
         long phaseStart = System.currentTimeMillis();
+        String query = queryEnhancement.primaryQuery();
         if (debug && "first".equals(phase)) {
             debugInfo.put("queryIntent", queryIntent);
             debugInfo.put("searchMethod", "RAG v2 混合检索 + CRAG");
@@ -208,10 +216,11 @@ public class RagRetrievalService {
                         () -> queryEntityExtractionService.extract(query, queryIntent.getKeywords())));
         Future<List<RetrievalResult>> vectorFuture = submitRetrieval(
                 () -> timed(phase + "VectorMs", timings,
-                        () -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK, queryIntent.getDayNo())));
+                        () -> retrieveVectorVariants(knowledgeBaseId, queryEnhancement.vectorQueries(),
+                                candidateTopK, queryIntent.getDayNo())));
         Future<List<RetrievalResult>> keywordFuture = submitRetrieval(
                 () -> timed(phase + "KeywordMs", timings,
-                        () -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK)));
+                        () -> retrieveKeywordVariants(knowledgeBaseId, queryEnhancement.fullPathQueries(), candidateTopK)));
 
         queryIntent.setEntities(getFuture(entityFuture, "query-entity"));
         Future<List<RetrievalResult>> metadataFuture = submitRetrieval(
@@ -228,35 +237,48 @@ public class RagRetrievalService {
 
         if (debug) {
             debugInfo.put(phase + "QueryEntities", queryIntent.getEntities());
+            debugInfo.put(phase + "QueryVariants", queryEnhancement.fullPathQueries());
+            debugInfo.put(phase + "VectorQueries", queryEnhancement.vectorQueries());
             debugInfo.put(phase + "VectorResultCount", vectorResults.size());
             debugInfo.put(phase + "KeywordResultCount", keywordResults.size());
             debugInfo.put(phase + "MetadataResultCount", metadataResults.size());
             debugInfo.put(phase + "GraphResultCount", graphResults.size());
+            List<Map<String, Object>> graphProvenance = summarizeGraphProvenance(graphResults);
+            debugInfo.put(phase + "GraphProvenance", graphProvenance);
+            debugInfo.put(phase + "GraphShadowProvenance", graphProvenance);
             putTimings(debugInfo, timings,
                     phase + "QueryEntityMs", phase + "VectorMs", phase + "KeywordMs",
                     phase + "MetadataMs", phase + "GraphMs");
         }
 
         List<List<RetrievalResult>> allResults = new ArrayList<>();
+        List<String> pathNames = new ArrayList<>();
         if (CollUtil.isNotEmpty(vectorResults)) {
             allResults.add(vectorResults);
+            pathNames.add("vector");
         }
         if (CollUtil.isNotEmpty(keywordResults)) {
             allResults.add(keywordResults);
+            pathNames.add("keyword");
         }
         if (CollUtil.isNotEmpty(metadataResults)) {
             allResults.add(metadataResults);
+            pathNames.add("metadata");
         }
         if (CollUtil.isNotEmpty(graphResults)) {
             allResults.add(graphResults);
+            pathNames.add("graph");
         }
 
-        List<String> pathNames = List.of("vector", "keyword", "metadata", "graph");
         long fusionStart = System.currentTimeMillis();
-        List<RetrievalResult> fused = candidateFusionService.fuse(allResults, pathNames);
+        CandidateFusionService.FusionResult fusionResult = candidateFusionService.fuseWithDiagnostics(allResults, pathNames);
+        List<RetrievalResult> fused = fusionResult.getResults();
         if (debug) {
             debugInfo.put(phase + "FusedCount", fused.size());
             debugInfo.put(phase + "FusionMs", System.currentTimeMillis() - fusionStart);
+            debugInfo.put(phase + "PathScores", fusionResult.getPathScores());
+            debugInfo.put(phase + "ExcludedPaths", fusionResult.getExcludedPaths());
+            mergeExcludedPaths(debugInfo, fusionResult.getExcludedPaths());
         }
 
         long rerankStart = System.currentTimeMillis();
@@ -293,6 +315,136 @@ public class RagRetrievalService {
                 .build();
     }
 
+    private QueryEnhancement buildQueryEnhancement(String query) {
+        List<String> originalOnly = normalizeVariants(query, List.of(query));
+        if (queryTransformService == null || !queryTransformService.isEnabled()) {
+            return new QueryEnhancement(query, "none", originalOnly, originalOnly, false);
+        }
+
+        String strategy = Optional.ofNullable(queryTransformService.getStrategy())
+                .map(value -> value.toLowerCase(Locale.ROOT).trim())
+                .orElse("none");
+        if ("multi_query".equals(strategy)) {
+            List<String> variants;
+            try {
+                variants = queryTransformService.expandQueries(query, Math.max(0, queryTransformService.getVariantCount()));
+            } catch (Exception e) {
+                RagFallbackMonitor.record("query_transform", "original_query", "multi-query failed: " + e.getMessage());
+                log.warn("Multi-query expansion failed, using original query", e);
+                variants = originalOnly;
+            }
+            List<String> normalized = normalizeVariants(query, variants);
+            return new QueryEnhancement(query, "multi_query", normalized, normalized, false);
+        }
+
+        if ("hyde".equals(strategy)) {
+            List<String> vectorQueries = new ArrayList<>(originalOnly);
+            try {
+                String hypothetical = queryTransformService.generateHypotheticalDocument(query);
+                if (hypothetical != null
+                        && !hypothetical.isBlank()
+                        && !hypothetical.trim().equalsIgnoreCase(query != null ? query.trim() : "")) {
+                    vectorQueries.add(hypothetical.trim());
+                }
+            } catch (Exception e) {
+                RagFallbackMonitor.record("query_transform", "original_query", "hyde failed: " + e.getMessage());
+                log.warn("HyDE generation failed, using original query", e);
+            }
+            return new QueryEnhancement(query, "hyde", originalOnly,
+                    normalizeVariants(query, vectorQueries), true);
+        }
+
+        return new QueryEnhancement(query, strategy, originalOnly, originalOnly, false);
+    }
+
+    private List<String> normalizeVariants(String originalQuery, List<String> variants) {
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        if (originalQuery != null && !originalQuery.isBlank()) {
+            normalized.add(originalQuery.trim());
+        }
+        if (variants != null) {
+            for (String variant : variants) {
+                if (variant != null && !variant.isBlank()) {
+                    normalized.add(variant.trim());
+                }
+            }
+        }
+        return normalized.isEmpty() ? List.of("") : new ArrayList<>(normalized);
+    }
+
+    private List<RetrievalResult> retrieveVectorVariants(Long knowledgeBaseId, List<String> queries,
+                                                         int candidateTopK, Integer dayNo) {
+        return retrieveVariants(queries, query -> vectorRetriever.retrieve(knowledgeBaseId, query, candidateTopK, dayNo));
+    }
+
+    private List<RetrievalResult> retrieveKeywordVariants(Long knowledgeBaseId, List<String> queries, int candidateTopK) {
+        return retrieveVariants(queries, query -> keywordRetriever.retrieve(knowledgeBaseId, query, candidateTopK));
+    }
+
+    private List<RetrievalResult> retrieveVariants(List<String> queries, VariantRetriever retriever) {
+        Map<String, RetrievalResult> bestByKey = new LinkedHashMap<>();
+        List<String> effectiveQueries = queries == null || queries.isEmpty() ? List.of("") : queries;
+        for (String variant : effectiveQueries) {
+            try {
+                List<RetrievalResult> results = retriever.retrieve(variant);
+                if (results == null) {
+                    continue;
+                }
+                for (RetrievalResult result : results) {
+                    if (result == null) {
+                        continue;
+                    }
+                    String key = variantResultKey(result);
+                    RetrievalResult existing = bestByKey.get(key);
+                    if (existing == null || result.getScore() > existing.getScore()) {
+                        bestByKey.put(key, result);
+                    }
+                }
+            } catch (Exception e) {
+                RagFallbackMonitor.record("query_transform", "partial_variant_skip",
+                        "variant retrieval failed: " + e.getMessage());
+                log.warn("Variant retrieval failed for query '{}'", variant, e);
+            }
+        }
+        return bestByKey.values().stream()
+                .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+                .toList();
+    }
+
+    private String variantResultKey(RetrievalResult result) {
+        if (result == null) {
+            return "null";
+        }
+        if (result.getSegmentId() != null) {
+            return "seg:" + result.getSegmentId();
+        }
+        if (result.getDocumentId() != null && result.getContent() != null) {
+            return "doc:" + result.getDocumentId() + ":" + result.getContent().hashCode();
+        }
+        return "content:" + Objects.toString(result.getContent(), "");
+    }
+
+    @FunctionalInterface
+    private interface VariantRetriever {
+        List<RetrievalResult> retrieve(String query);
+    }
+
+    private record QueryEnhancement(String primaryQuery,
+                                    String strategy,
+                                    List<String> fullPathQueries,
+                                    List<String> vectorQueries,
+                                    boolean hydeVectorOnly) {
+        Map<String, Object> toDebugMap() {
+            Map<String, Object> debug = new LinkedHashMap<>();
+            debug.put("strategy", strategy);
+            debug.put("originalQuery", primaryQuery);
+            debug.put("variants", fullPathQueries);
+            debug.put("vectorVariants", vectorQueries);
+            debug.put("hydeVectorOnly", hydeVectorOnly);
+            return debug;
+        }
+    }
+
     private <T> T timed(String key, Map<String, Long> timings, Callable<T> callable) throws Exception {
         long start = System.currentTimeMillis();
         try {
@@ -326,6 +478,42 @@ public class RagRetrievalService {
                 debugInfo.put(key, value);
             }
         }
+    }
+
+    private void mergeExcludedPaths(Map<String, Object> debugInfo, List<String> excludedPaths) {
+        if (debugInfo == null || excludedPaths == null || excludedPaths.isEmpty()) {
+            return;
+        }
+        LinkedHashSet<String> merged = new LinkedHashSet<>();
+        Object existing = debugInfo.get("excludedPaths");
+        if (existing instanceof Collection<?> existingPaths) {
+            for (Object path : existingPaths) {
+                if (path instanceof String value) {
+                    merged.add(value);
+                }
+            }
+        }
+        merged.addAll(excludedPaths);
+        debugInfo.put("excludedPaths", new ArrayList<>(merged));
+    }
+
+    private List<Map<String, Object>> summarizeGraphProvenance(List<RetrievalResult> graphResults) {
+        if (graphResults == null || graphResults.isEmpty()) {
+            return List.of();
+        }
+        return graphResults.stream()
+                .limit(20)
+                .map(result -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("source", result.getSource());
+                    row.put("segmentId", result.getSegmentId());
+                    row.put("documentId", result.getDocumentId());
+                    row.put("documentName", result.getDocumentName());
+                    row.put("score", result.getScore());
+                    row.put("metadata", result.getMetadata() != null ? result.getMetadata() : Map.of());
+                    return row;
+                })
+                .toList();
     }
 
     private <T> List<T> getFuture(Future<List<T>> future, String name) {
