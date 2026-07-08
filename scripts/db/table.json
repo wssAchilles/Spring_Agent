@@ -1,0 +1,2604 @@
+{
+  "success": true,
+  "data": {
+    "matches": 1,
+    "results": [
+      {
+        "path": "/body/tbl[1]",
+        "type": "table",
+        "childCount": 8,
+        "format": {
+          "cols": "2",
+          "rows": "8",
+          "_gridCols": "2",
+          "style": "7",
+          "border.top": "single",
+          "border.top.sz": 4,
+          "border.top.color": "auto",
+          "border.top.space": 0,
+          "border.bottom": "single",
+          "border.bottom.sz": 4,
+          "border.bottom.color": "auto",
+          "border.bottom.space": 0,
+          "border.insideH": "single",
+          "border.insideH.sz": 4,
+          "border.insideH.color": "auto",
+          "border.insideH.space": 0,
+          "border.insideV": "single",
+          "border.insideV.sz": 4,
+          "border.insideV.color": "auto",
+          "border.insideV.space": 0,
+          "border.left": "single",
+          "border.left.sz": 4,
+          "border.left.color": "auto",
+          "border.left.space": 0,
+          "border.right": "single",
+          "border.right.sz": 4,
+          "border.right.color": "auto",
+          "border.right.space": 0,
+          "width": "auto",
+          "indent": 0,
+          "layout": "autofit",
+          "padding.top": 0,
+          "padding.bottom": 0,
+          "padding.left": 108,
+          "padding.right": 108,
+          "colWidths": "1809dxa,6713dxa"
+        },
+        "children": [
+          {
+            "path": "/body/tbl[1]/tr[1]",
+            "type": "row",
+            "childCount": 1,
+            "format": {},
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[1]/tc[1]",
+                "type": "cell",
+                "text": "一、项目设计内容",
+                "childCount": 1,
+                "format": {
+                  "width": "8522dxa",
+                  "colspan": 2,
+                  "align": "left",
+                  "size": "14pt",
+                  "bold": true
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[1]/tc[1]/p[@paraId=6970BA66]",
+                    "type": "paragraph",
+                    "text": "一、项目设计内容",
+                    "preview": "一、项目设计内容",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "6970BA66",
+                      "align": "left",
+                      "markRPr.bold": true,
+                      "markRPr.size": "14pt",
+                      "markRPr.size.cs": "14pt",
+                      "markRPr.font.asciiTheme": "majorEastAsia",
+                      "markRPr.font.hAnsiTheme": "majorEastAsia",
+                      "markRPr.font.eaTheme": "majorEastAsia",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:asciiTheme=\"majorEastAsia\" w:hAnsiTheme=\"majorEastAsia\" w:eastAsiaTheme=\"majorEastAsia\" /><w:b /><w:sz w:val=\"28\" /><w:szCs w:val=\"28\" /></w:rPr>",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[1]/tc[1]/p[@paraId=6970BA66]/r[1]",
+                        "type": "run",
+                        "text": "一、项目设计内容",
+                        "childCount": 0,
+                        "format": {
+                          "font.asciiTheme": "majorEastAsia",
+                          "font.hAnsiTheme": "majorEastAsia",
+                          "font.eaTheme": "majorEastAsia",
+                          "font.hint": "eastAsia",
+                          "size": "14pt",
+                          "bold": true,
+                          "size.cs": "14pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.ascii.src": "/styles/1",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.hAnsi.src": "/styles/1",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "/body/tbl[1]/tr[2]",
+            "type": "row",
+            "childCount": 1,
+            "format": {
+              "height": "3739dxa",
+              "height.rule": "atLeast"
+            },
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[2]/tc[1]",
+                "type": "cell",
+                "text": "本项目旨在设计并实现一个基于多智能体（Multi-Agent）与检索增强生成（RAG）技术的“智能知识资产平台（qKnow）”。系统采用前后端分离的现代化企业级应用架构，后端基于高度可靠的 Spring Boot 3 与集成阿里云生态的 Spring AI Alibaba 框架构建核心计算层和调度引擎；前端采用 Vue 3 结合 Vite 框架与 VueFlow 拓扑图组件构建沉浸式的数据操作界面与管理面板。在项目管理层面，项目严格遵循敏捷开发（Agile）原则进行迭代。从最初的可行性分析、领域驱动设计（DDD），到随后的模块划分、编码实现，再到集成测试、自动化灰度发布，每一个环节都贯彻了软件工程的方法论。通过引入 LCP 性能监控、单元测试覆盖率统计等经济且科学的度量手段，确保了项目能够在有限的时间资源和算力成本下，交付一个具备高可用性、高扩展性的企业级产品。",
+                "childCount": 2,
+                "format": {
+                  "width": "8522dxa",
+                  "colspan": 2,
+                  "font": "Times New Roman",
+                  "size": "12pt"
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[2]/tc[1]/p[@paraId=6FAE28A8]",
+                    "type": "paragraph",
+                    "text": "本项目旨在设计并实现一个基于多智能体（Multi-Agent）与检索增强生成（RAG）技术的“智能知识资产平台（qKnow）”。系统采用前后端分离的现代化企业级应用架构，后端基于高度可靠的 Spring Boot 3 与集成阿里云生态的 Spring AI Alibaba 框架构建核心计算层和调度引擎；前端采用 Vue 3 结合 Vite 框架与 VueFlow 拓扑图组件构建沉浸式的数据操作界面与管理面板。",
+                    "preview": "本项目旨在设计并实现一个基于多智能体（Multi-Agent）与检索增强生成（RAG）技术的“智能知...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "6FAE28A8",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "firstLineIndent": "24pt",
+                      "firstLineChars": 200,
+                      "markRPr.size": "12pt",
+                      "markRPr.font.latin": "Times New Roman",
+                      "markRPr.font.ea": "宋体",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.lang.latin": "en-US",
+                      "markRPr.lang.ea": "zh-CN",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:ascii=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:eastAsia=\"宋体\" /><w:sz w:val=\"24\" /><w:lang w:val=\"en-US\" w:eastAsia=\"zh-CN\" /></w:rPr>",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "font.hint": "eastAsia",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[2]/tc[1]/p[@paraId=6FAE28A8]/r[1]",
+                        "type": "run",
+                        "text": "本项目旨在设计并实现一个基于多智能体（Multi-Agent）与检索增强生成（RAG）技术的“智能知识资产平台（qKnow）”。系统采用前后端分离的现代化企业级应用架构，后端基于高度可靠的 Spring Boot 3 与集成阿里云生态的 Spring AI Alibaba 框架构建核心计算层和调度引擎；前端采用 Vue 3 结合 Vite 框架与 VueFlow 拓扑图组件构建沉浸式的数据操作界面与管理面板。",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "en-US",
+                          "lang.ea": "zh-CN",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[2]/tc[1]/p[@paraId=7C810D19]",
+                    "type": "paragraph",
+                    "text": "在项目管理层面，项目严格遵循敏捷开发（Agile）原则进行迭代。从最初的可行性分析、领域驱动设计（DDD），到随后的模块划分、编码实现，再到集成测试、自动化灰度发布，每一个环节都贯彻了软件工程的方法论。通过引入 LCP 性能监控、单元测试覆盖率统计等经济且科学的度量手段，确保了项目能够在有限的时间资源和算力成本下，交付一个具备高可用性、高扩展性的企业级产品。",
+                    "preview": "在项目管理层面，项目严格遵循敏捷开发（Agile）原则进行迭代。从最初的可行性分析、领域驱动设计（D...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D19",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "firstLineIndent": "24pt",
+                      "firstLineChars": 200,
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[2]/tc[1]/p[@paraId=7C810D19]/r[1]",
+                        "type": "run",
+                        "text": "在项目管理层面，项目严格遵循敏捷开发（Agile）原则进行迭代。从最初的可行性分析、领域驱动设计（DDD），到随后的模块划分、编码实现，再到集成测试、自动化灰度发布，每一个环节都贯彻了软件工程的方法论。通过引入 LCP 性能监控、单元测试覆盖率统计等经济且科学的度量手段，确保了项目能够在有限的时间资源和算力成本下，交付一个具备高可用性、高扩展性的企业级产品。",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "/body/tbl[1]/tr[3]",
+            "type": "row",
+            "childCount": 1,
+            "format": {},
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[3]/tc[1]",
+                "type": "cell",
+                "text": "二、设计目标",
+                "childCount": 1,
+                "format": {
+                  "width": "8522dxa",
+                  "colspan": 2,
+                  "align": "left",
+                  "size": "14pt",
+                  "bold": true
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[3]/tc[1]/p[@paraId=39FC5DC1]",
+                    "type": "paragraph",
+                    "text": "二、设计目标",
+                    "preview": "二、设计目标",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "39FC5DC1",
+                      "align": "left",
+                      "markRPr.bold": true,
+                      "markRPr.size": "14pt",
+                      "markRPr.size.cs": "14pt",
+                      "markRPr.font.asciiTheme": "majorEastAsia",
+                      "markRPr.font.hAnsiTheme": "majorEastAsia",
+                      "markRPr.font.eaTheme": "majorEastAsia",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:asciiTheme=\"majorEastAsia\" w:hAnsiTheme=\"majorEastAsia\" w:eastAsiaTheme=\"majorEastAsia\" /><w:b /><w:sz w:val=\"28\" /><w:szCs w:val=\"28\" /></w:rPr>",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[3]/tc[1]/p[@paraId=39FC5DC1]/r[1]",
+                        "type": "run",
+                        "text": "二、设计目标",
+                        "childCount": 0,
+                        "format": {
+                          "font.asciiTheme": "majorEastAsia",
+                          "font.hAnsiTheme": "majorEastAsia",
+                          "font.eaTheme": "majorEastAsia",
+                          "font.hint": "eastAsia",
+                          "size": "14pt",
+                          "bold": true,
+                          "size.cs": "14pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.ascii.src": "/styles/1",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.hAnsi.src": "/styles/1",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "/body/tbl[1]/tr[4]",
+            "type": "row",
+            "childCount": 1,
+            "format": {
+              "height": "4244dxa",
+              "height.rule": "atLeast"
+            },
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[4]/tc[1]",
+                "type": "cell",
+                "text": "本项目的设计目标与《专业方向课程设计》教学大纲中毕业要求的对应关系设计目标课程目标支撑毕业要求指标点毕业要求1创新潜能开发：在系统设计或功能模块中主动引入自主构思的优化方案或新颖特性，体现超越常规实现的创新意识。目标1：能够充分注重学生的创新潜能开发，在软件系统开发过程实践中能够体现创新精神指标点3-3：能够在软件系统设计开发环节中体现创新意识；毕业要求3 设计/开发解决方案： 能够设计针对软件工程领域复杂工程问题的解决方案，设计满足特定需求的软件系统或组件，并能够在设计开发环节中体现创新意识， 考虑社会、健康、安全、法律、文化以及环境等因素。2业务建模与方案提出：能准确提炼企事业单位核心业务流程，并基于SpringBoot/Vue技术栈提出逻辑清晰、可行合理的技术解决方案。目标2：通过调研，描述企事业单位的基本业务流程，能够理解业务模型；通过案例分析，使学生对企业项目进行分析研究，并能够提出科学的技术方案和解决方案。指标点4-2：能够根据软件工程问题对象特征，优选研究路线和开发环境，设计实验方案，并采用科学方法实现此实验系统；毕业要求4 研究： 能够基于科学原理并采用科学方法对软件领域的复杂工程问题进行研究，包括设计实验、分析与解释数据、并通过信息综合得到合理有效的结论。3项目可持续性评价：能从资源效率、系统可维护性及业务延续性等维度，分析所开发项目对环境与可持续发展的影响，并提出改进建议。目标3：通过对所开发项目的深入研究，能够结合项目与环境、可持续发展等因素进行分析，并评价其对复杂工程设计、开发及实施解决方案的影响。指标点7-2：能够从环境保护和可持续发展的角度思考软件工程实践的可持续性，评价复杂软件工程问题的工程实践对环境与可持续发展产生的影响。毕业要求7 环境和社会可持续发展：能够理解和评价复杂软件工程问题的工程实践对环境和社会可持续发展的影响。4团队协作与职责履行：在团队中明确个人分工，主动与多角色成员沟通协调，确保项目迭代有序推进并按时交付。目标4：分析项目实际需求，明确团队中个人的职责与分工，能够与多学科的团队成员有效合作和沟通，完成项目开发任务。指标点9-2：能够在多学科背景下的团队中，理解团队成员的不同角色，与其他学科的成员有效沟通，合作共事，并根据工作需要承担相应的责任。 毕业要求9 能够在软件工程项目研发与实施的项目团队中承担个体、团队成员以及负责人角色。5项目管理方法应用：能运用软件工程管理方法（如敏捷、迭代规划、版本控制等），在项目全周期中规范需求、设计、测试与交付过程。目标5：学习及掌握软件工程中项目管理的基本概念、基本方法，能够在项目开发的整个生命周期正确运用软件工程方法学中的理论和策略。指标点11-2：在多学科环境下（包括模拟环境），能够将软件工程项目管理原理与经济决策方法应用于产品开发、过程改进、系统运维等设计开发过程中。 毕业要求11 项目管理：理解并掌握软件工程项目管理原理与经济决策方法，并能在多学科环境中应用。",
+                "childCount": 3,
+                "format": {
+                  "width": "8522dxa",
+                  "colspan": 2,
+                  "font": "宋体"
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[4]/tc[1]/p[@paraId=668122C9]",
+                    "type": "paragraph",
+                    "text": "本项目的设计目标与《专业方向课程设计》教学大纲中毕业要求的对应关系",
+                    "preview": "本项目的设计目标与《专业方向课程设计》教学大纲中毕业要求的对应关系",
+                    "style": "Normal",
+                    "childCount": 2,
+                    "format": {
+                      "paraId": "668122C9",
+                      "markRPr.font.latin": "宋体",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.lang.latin": "zh-CN",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:ascii=\"宋体\" w:hAnsi=\"宋体\" /><w:lang w:val=\"zh-CN\" /></w:rPr>",
+                      "font.latin": "宋体",
+                      "effective.size": "12pt",
+                      "effective.size.src": "/styles/1",
+                      "effective.font.ascii": "宋体",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "宋体",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/p[@paraId=668122C9]/r[1]",
+                        "type": "run",
+                        "text": "本项目的设计目标与",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/p[@paraId=668122C9]/r[2]",
+                        "type": "run",
+                        "text": "《专业方向课程设计》教学大纲中毕业要求的对应关系",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]",
+                    "type": "table",
+                    "childCount": 6,
+                    "format": {
+                      "cols": "4",
+                      "rows": "6",
+                      "_gridCols": "4",
+                      "style": "7",
+                      "border.top": "single",
+                      "border.top.sz": 4,
+                      "border.top.color": "auto",
+                      "border.top.space": 0,
+                      "border.bottom": "single",
+                      "border.bottom.sz": 4,
+                      "border.bottom.color": "auto",
+                      "border.bottom.space": 0,
+                      "border.insideH": "single",
+                      "border.insideH.sz": 4,
+                      "border.insideH.color": "auto",
+                      "border.insideH.space": 0,
+                      "border.insideV": "single",
+                      "border.insideV.sz": 4,
+                      "border.insideV.color": "auto",
+                      "border.insideV.space": 0,
+                      "border.left": "single",
+                      "border.left.sz": 4,
+                      "border.left.color": "auto",
+                      "border.left.space": 0,
+                      "border.right": "single",
+                      "border.right.sz": 4,
+                      "border.right.color": "auto",
+                      "border.right.space": 0,
+                      "width": "auto",
+                      "indent": 0,
+                      "layout": "autofit",
+                      "padding.top": 0,
+                      "padding.bottom": 0,
+                      "padding.left": 108,
+                      "padding.right": 108,
+                      "colWidths": "2162dxa,2083dxa,2083dxa,1963dxa"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[1]",
+                        "type": "row",
+                        "childCount": 4,
+                        "format": {},
+                        "children": [
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[1]/tc[1]",
+                            "type": "cell",
+                            "text": "设计目标",
+                            "childCount": 1,
+                            "format": {
+                              "width": "2162dxa",
+                              "valign": "center",
+                              "align": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[1]/tc[2]",
+                            "type": "cell",
+                            "text": "课程目标",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "align": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[1]/tc[3]",
+                            "type": "cell",
+                            "text": "支撑毕业要求指标点",
+                            "childCount": 2,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "align": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[1]/tc[4]",
+                            "type": "cell",
+                            "text": "毕业要求",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "1963dxa",
+                              "valign": "center",
+                              "align": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[2]",
+                        "type": "row",
+                        "childCount": 4,
+                        "format": {
+                          "height": "3421dxa",
+                          "height.rule": "atLeast"
+                        },
+                        "children": [
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[2]/tc[1]",
+                            "type": "cell",
+                            "text": "1创新潜能开发：在系统设计或功能模块中主动引入自主构思的优化方案或新颖特性，体现超越常规实现的创新意识。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2162dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[2]/tc[2]",
+                            "type": "cell",
+                            "text": "目标1：能够充分注重学生的创新潜能开发，在软件系统开发过程实践中能够体现创新精神",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[2]/tc[3]",
+                            "type": "cell",
+                            "text": "指标点3-3：能够在软件系统设计开发环节中体现创新意识；",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[2]/tc[4]",
+                            "type": "cell",
+                            "text": "毕业要求3 设计/开发解决方案： 能够设计针对软件工程领域复杂工程问题的解决方案，设计满足特定需求的软件系统或组件，并能够在设计开发环节中体现创新意识， 考虑社会、健康、安全、法律、文化以及环境等因素。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "1963dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[3]",
+                        "type": "row",
+                        "childCount": 4,
+                        "format": {},
+                        "children": [
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[3]/tc[1]",
+                            "type": "cell",
+                            "text": "2业务建模与方案提出：能准确提炼企事业单位核心业务流程，并基于SpringBoot/Vue技术栈提出逻辑清晰、可行合理的技术解决方案。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2162dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[3]/tc[2]",
+                            "type": "cell",
+                            "text": "目标2：通过调研，描述企事业单位的基本业务流程，能够理解业务模型；通过案例分析，使学生对企业项目进行分析研究，并能够提出科学的技术方案和解决方案。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[3]/tc[3]",
+                            "type": "cell",
+                            "text": "指标点4-2：能够根据软件工程问题对象特征，优选研究路线和开发环境，设计实验方案，并采用科学方法实现此实验系统；",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[3]/tc[4]",
+                            "type": "cell",
+                            "text": "毕业要求4 研究： 能够基于科学原理并采用科学方法对软件领域的复杂工程问题进行研究，包括设计实验、分析与解释数据、并通过信息综合得到合理有效的结论。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "1963dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[4]",
+                        "type": "row",
+                        "childCount": 4,
+                        "format": {},
+                        "children": [
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[4]/tc[1]",
+                            "type": "cell",
+                            "text": "3项目可持续性评价：能从资源效率、系统可维护性及业务延续性等维度，分析所开发项目对环境与可持续发展的影响，并提出改进建议。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2162dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[4]/tc[2]",
+                            "type": "cell",
+                            "text": "目标3：通过对所开发项目的深入研究，能够结合项目与环境、可持续发展等因素进行分析，并评价其对复杂工程设计、开发及实施解决方案的影响。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[4]/tc[3]",
+                            "type": "cell",
+                            "text": "指标点7-2：能够从环境保护和可持续发展的角度思考软件工程实践的可持续性，评价复杂软件工程问题的工程实践对环境与可持续发展产生的影响。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[4]/tc[4]",
+                            "type": "cell",
+                            "text": "毕业要求7 环境和社会可持续发展：能够理解和评价复杂软件工程问题的工程实践对环境和社会可持续发展的影响。",
+                            "childCount": 2,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "1963dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[5]",
+                        "type": "row",
+                        "childCount": 4,
+                        "format": {},
+                        "children": [
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[5]/tc[1]",
+                            "type": "cell",
+                            "text": "4团队协作与职责履行：在团队中明确个人分工，主动与多角色成员沟通协调，确保项目迭代有序推进并按时交付。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2162dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[5]/tc[2]",
+                            "type": "cell",
+                            "text": "目标4：分析项目实际需求，明确团队中个人的职责与分工，能够与多学科的团队成员有效合作和沟通，完成项目开发任务。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[5]/tc[3]",
+                            "type": "cell",
+                            "text": "指标点9-2：能够在多学科背景下的团队中，理解团队成员的不同角色，与其他学科的成员有效沟通，合作共事，并根据工作需要承担相应的责任。 ",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[5]/tc[4]",
+                            "type": "cell",
+                            "text": "毕业要求9 能够在软件工程项目研发与实施的项目团队中承担个体、团队成员以及负责人角色。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "1963dxa",
+                              "valign": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[6]",
+                        "type": "row",
+                        "childCount": 4,
+                        "format": {
+                          "height": "1115dxa",
+                          "height.rule": "atLeast"
+                        },
+                        "children": [
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[6]/tc[1]",
+                            "type": "cell",
+                            "text": "5项目管理方法应用：能运用软件工程管理方法（如敏捷、迭代规划、版本控制等），在项目全周期中规范需求、设计、测试与交付过程。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2162dxa",
+                              "valign": "center",
+                              "align": "left",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[6]/tc[2]",
+                            "type": "cell",
+                            "text": "目标5：学习及掌握软件工程中项目管理的基本概念、基本方法，能够在项目开发的整个生命周期正确运用软件工程方法学中的理论和策略。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[6]/tc[3]",
+                            "type": "cell",
+                            "text": "指标点11-2：在多学科环境下（包括模拟环境），能够将软件工程项目管理原理与经济决策方法应用于产品开发、过程改进、系统运维等设计开发过程中。 ",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "2083dxa",
+                              "valign": "center",
+                              "size": "11pt"
+                            },
+                            "children": []
+                          },
+                          {
+                            "path": "/body/tbl[1]/tr[4]/tc[1]/tbl[1]/tr[6]/tc[4]",
+                            "type": "cell",
+                            "text": "毕业要求11 项目管理：理解并掌握软件工程项目管理原理与经济决策方法，并能在多学科环境中应用。",
+                            "childCount": 1,
+                            "format": {
+                              "shading.val": "clear",
+                              "shading.fill": "auto",
+                              "shading.color": "auto",
+                              "width": "1963dxa",
+                              "valign": "center",
+                              "size": "11pt",
+                              "bold": true
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[4]/tc[1]/p[@paraId=4DDF722B]",
+                    "type": "paragraph",
+                    "text": "",
+                    "preview": "",
+                    "style": "Normal",
+                    "childCount": 0,
+                    "format": {
+                      "paraId": "4DDF722B",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "/body/tbl[1]/tr[5]",
+            "type": "row",
+            "childCount": 1,
+            "format": {},
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[5]/tc[1]",
+                "type": "cell",
+                "text": "三、进度目标",
+                "childCount": 1,
+                "format": {
+                  "width": "8522dxa",
+                  "colspan": 2,
+                  "align": "left",
+                  "size": "14pt",
+                  "bold": true
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[5]/tc[1]/p[@paraId=6BA8838C]",
+                    "type": "paragraph",
+                    "text": "三、进度目标",
+                    "preview": "三、进度目标",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "6BA8838C",
+                      "align": "left",
+                      "markRPr.bold": true,
+                      "markRPr.size": "14pt",
+                      "markRPr.size.cs": "14pt",
+                      "markRPr.font.asciiTheme": "majorEastAsia",
+                      "markRPr.font.hAnsiTheme": "majorEastAsia",
+                      "markRPr.font.eaTheme": "majorEastAsia",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:asciiTheme=\"majorEastAsia\" w:hAnsiTheme=\"majorEastAsia\" w:eastAsiaTheme=\"majorEastAsia\" /><w:b /><w:sz w:val=\"28\" /><w:szCs w:val=\"28\" /></w:rPr>",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[5]/tc[1]/p[@paraId=6BA8838C]/r[1]",
+                        "type": "run",
+                        "text": "三、进度目标",
+                        "childCount": 0,
+                        "format": {
+                          "font.asciiTheme": "majorEastAsia",
+                          "font.hAnsiTheme": "majorEastAsia",
+                          "font.eaTheme": "majorEastAsia",
+                          "font.hint": "eastAsia",
+                          "size": "14pt",
+                          "bold": true,
+                          "size.cs": "14pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.ascii.src": "/styles/1",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.hAnsi.src": "/styles/1",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "/body/tbl[1]/tr[6]",
+            "type": "row",
+            "childCount": 1,
+            "format": {
+              "height": "2129dxa",
+              "height.rule": "atLeast"
+            },
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[6]/tc[1]",
+                "type": "cell",
+                "text": "1. 完成全面的领域需求调研，比对市场上现有的知识库平台（如 Dify、FastGPT 等），明确本系统“四路召回”与“DAG 编排”的差异化竞争点；2. 完成前后端技术栈的敲定与脚手架搭建。后端基于 Spring Boot 3 构建多模块工程（qknow-core, qknow-hermes, qknow-ui），前端基于 Vite+Vue 3 初始化工程并集成 Element Plus 组件库；3. 完成关键数据库表（PostgreSQL + PGVector）的 E-R 设计，包括知识库实体、文档切片实体、Agent 实例与会话日志表，并使用 Flyway 进行版本管理脚本编写；4. 部署底层的基础设施中间件，包括 Neo4j 图数据库的 Docker 化运行，以及向大模型服务商申请 API 鉴权密钥，打通“Hello World”级的模型连通测试。第二周进度目标（6月22日-6月26日）：本周进入项目的技术深水区，核心攻克 RAG（Retrieval-Augmented Generation）认知内核的开发。主要目标包括：1. 实现异步的文档预处理流水线。通过接入多种解析器，实现对 PDF 文字与表格的高保真提取，同时开发滑动窗口切块（Chunking）算法，保障上下文语意不被生硬截断；2. 搭建向量数据库检索模块，调用 Embedding 模型生成高维向量，并编写高效的余弦相似度计算过滤策略；3. 构建基于 Neo4j 的图谱抽取与查询引擎。通过 Prompt Engineering 引导大模型将纯文本抽像为“实体-关系-实体”的三元组，并在此基础上开发 Cypher 查询构造器；4. 研发四路混合召回服务模块并集成 RRF 重排序算法，最终输出一套完整的包含溯源引用的高置信度召回上下文封装结果。第三周进度目标（6月29日-7月3日）：本周的核心是将底层的认知能力通过 Agent 工作流编排引擎进行可视化呈现与灵活调度。主要目标包括：1. 在后端开发纯手写的 DAG（有向无环图）工作流执行引擎。该引擎能够动态解析前端下发的拓扑图 JSON 配置，并利用拓扑排序算法计算节点执行的先后层级；2. 实现核心的 DFS（深度优先搜索）环路检测算法。如果在编排时产生节点的循环依赖，引擎能够实现在微秒级别进行拦截并拒绝运行，确保服务器资源不会因为死循环被耗尽；3. 前端集成 VueFlow 可视化库，开发节点拖拽、连线绑定、属性侧边栏编辑等沉浸式交互功能，确保用户（非开发人员）能够零门槛编排业务逻辑；4. 开发实时对话的 Web 调试界面，支持基于 SSE（Server-Sent Events）的流式打字机效果输出，保障对话的丝滑体验。第四周进度目标（7月6日-7月10日）：本周为冲刺与验收阶段，重点放在系统的稳固、评测与交付物准备。主要目标包括：1. 对四路召回体系建立基于黄金测试用例集的集成测试，横向对比其准确率与拒答率，并根据反馈微调检索相似度阈值；2. 执行全站级的性能与代码调优，包括优化长列表的渲染性能、解决 Largest Contentful Paint (LCP) 的加载延迟痛点，优化 SQL 查询的索引命中率；3. 开始撰写并精细打磨《课程设计报告》。梳理全栈架构图与算法流程图，通过 LaTeX 对文档进行专业的版式排版与图文配比，力求达到工业级学术文档的严谨性；4. 筹备并进行课程设计答辩。准备详细的幻灯片材料（PPT），对核心业务难点与对应的解题思路进行归纳总结，展现完整的工程实践风貌与问题解决能力。",
+                "childCount": 22,
+                "format": {
+                  "width": "8522dxa",
+                  "colspan": 2,
+                  "font": "Times New Roman",
+                  "size": "12pt"
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D20]",
+                    "type": "paragraph",
+                    "text": "1. 完成全面的领域需求调研，比对市场上现有的知识库平台（如 Dify、FastGPT 等），明确本系统“四路召回”与“DAG 编排”的差异化竞争点；",
+                    "preview": "1. 完成全面的领域需求调研，比对市场上现有的知识库平台（如 Dify、FastGPT 等），明确本...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D20",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D20]/r[1]",
+                        "type": "run",
+                        "text": "1. 完成全面的领域需求调研，比对市场上现有的知识库平台（如 Dify、FastGPT 等），明确本系统“四路召回”与“DAG 编排”的差异化竞争点；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D22]",
+                    "type": "paragraph",
+                    "text": "2. 完成前后端技术栈的敲定与脚手架搭建。后端基于 Spring Boot 3 构建多模块工程（qknow-core, qknow-hermes, qknow-ui），前端基于 Vite+Vue 3 初始化工程并集成 Element Plus 组件库；",
+                    "preview": "2. 完成前后端技术栈的敲定与脚手架搭建。后端基于 Spring Boot 3 构建多模块工程（qk...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D22",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D22]/r[1]",
+                        "type": "run",
+                        "text": "2. 完成前后端技术栈的敲定与脚手架搭建。后端基于 Spring Boot 3 构建多模块工程（qknow-core, qknow-hermes, qknow-ui），前端基于 Vite+Vue 3 初始化工程并集成 Element Plus 组件库；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D24]",
+                    "type": "paragraph",
+                    "text": "3. 完成关键数据库表（PostgreSQL + PGVector）的 E-R 设计，包括知识库实体、文档切片实体、Agent 实例与会话日志表，并使用 Flyway 进行版本管理脚本编写；",
+                    "preview": "3. 完成关键数据库表（PostgreSQL + PGVector）的 E-R 设计，包括知识库实体...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D24",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D24]/r[1]",
+                        "type": "run",
+                        "text": "3. 完成关键数据库表（PostgreSQL + PGVector）的 E-R 设计，包括知识库实体、文档切片实体、Agent 实例与会话日志表，并使用 Flyway 进行版本管理脚本编写；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D26]",
+                    "type": "paragraph",
+                    "text": "4. 部署底层的基础设施中间件，包括 Neo4j 图数据库的 Docker 化运行，以及向大模型服务商申请 API 鉴权密钥，打通“Hello World”级的模型连通测试。",
+                    "preview": "4. 部署底层的基础设施中间件，包括 Neo4j 图数据库的 Docker 化运行，以及向大模型服务...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D26",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D26]/r[1]",
+                        "type": "run",
+                        "text": "4. 部署底层的基础设施中间件，包括 Neo4j 图数据库的 Docker 化运行，以及向大模型服务商申请 API 鉴权密钥，打通“Hello World”级的模型连通测试。",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D28]",
+                    "type": "paragraph",
+                    "text": "第二周进度目标（6月22日-6月26日）：",
+                    "preview": "第二周进度目标（6月22日-6月26日）：",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D28",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D28]/r[1]",
+                        "type": "run",
+                        "text": "第二周进度目标（6月22日-6月26日）：",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D2A]",
+                    "type": "paragraph",
+                    "text": "本周进入项目的技术深水区，核心攻克 RAG（Retrieval-Augmented Generation）认知内核的开发。主要目标包括：",
+                    "preview": "本周进入项目的技术深水区，核心攻克 RAG（Retrieval-Augmented Generati...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D2A",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D2A]/r[1]",
+                        "type": "run",
+                        "text": "本周进入项目的技术深水区，核心攻克 RAG（Retrieval-Augmented Generation）认知内核的开发。主要目标包括：",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D2C]",
+                    "type": "paragraph",
+                    "text": "1. 实现异步的文档预处理流水线。通过接入多种解析器，实现对 PDF 文字与表格的高保真提取，同时开发滑动窗口切块（Chunking）算法，保障上下文语意不被生硬截断；",
+                    "preview": "1. 实现异步的文档预处理流水线。通过接入多种解析器，实现对 PDF 文字与表格的高保真提取，同时开...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D2C",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D2C]/r[1]",
+                        "type": "run",
+                        "text": "1. 实现异步的文档预处理流水线。通过接入多种解析器，实现对 PDF 文字与表格的高保真提取，同时开发滑动窗口切块（Chunking）算法，保障上下文语意不被生硬截断；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D2E]",
+                    "type": "paragraph",
+                    "text": "2. 搭建向量数据库检索模块，调用 Embedding 模型生成高维向量，并编写高效的余弦相似度计算过滤策略；",
+                    "preview": "2. 搭建向量数据库检索模块，调用 Embedding 模型生成高维向量，并编写高效的余弦相似度计算...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D2E",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D2E]/r[1]",
+                        "type": "run",
+                        "text": "2. 搭建向量数据库检索模块，调用 Embedding 模型生成高维向量，并编写高效的余弦相似度计算过滤策略；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D30]",
+                    "type": "paragraph",
+                    "text": "3. 构建基于 Neo4j 的图谱抽取与查询引擎。通过 Prompt Engineering 引导大模型将纯文本抽像为“实体-关系-实体”的三元组，并在此基础上开发 Cypher 查询构造器；",
+                    "preview": "3. 构建基于 Neo4j 的图谱抽取与查询引擎。通过 Prompt Engineering 引导大...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D30",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D30]/r[1]",
+                        "type": "run",
+                        "text": "3. 构建基于 Neo4j 的图谱抽取与查询引擎。通过 Prompt Engineering 引导大模型将纯文本抽像为“实体-关系-实体”的三元组，并在此基础上开发 Cypher 查询构造器；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D32]",
+                    "type": "paragraph",
+                    "text": "4. 研发四路混合召回服务模块并集成 RRF 重排序算法，最终输出一套完整的包含溯源引用的高置信度召回上下文封装结果。",
+                    "preview": "4. 研发四路混合召回服务模块并集成 RRF 重排序算法，最终输出一套完整的包含溯源引用的高置信度召...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D32",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D32]/r[1]",
+                        "type": "run",
+                        "text": "4. 研发四路混合召回服务模块并集成 RRF 重排序算法，最终输出一套完整的包含溯源引用的高置信度召回上下文封装结果。",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D34]",
+                    "type": "paragraph",
+                    "text": "第三周进度目标（6月29日-7月3日）：",
+                    "preview": "第三周进度目标（6月29日-7月3日）：",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D34",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D34]/r[1]",
+                        "type": "run",
+                        "text": "第三周进度目标（6月29日-7月3日）：",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D36]",
+                    "type": "paragraph",
+                    "text": "本周的核心是将底层的认知能力通过 Agent 工作流编排引擎进行可视化呈现与灵活调度。主要目标包括：",
+                    "preview": "本周的核心是将底层的认知能力通过 Agent 工作流编排引擎进行可视化呈现与灵活调度。主要目标包括：",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D36",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D36]/r[1]",
+                        "type": "run",
+                        "text": "本周的核心是将底层的认知能力通过 Agent 工作流编排引擎进行可视化呈现与灵活调度。主要目标包括：",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D38]",
+                    "type": "paragraph",
+                    "text": "1. 在后端开发纯手写的 DAG（有向无环图）工作流执行引擎。该引擎能够动态解析前端下发的拓扑图 JSON 配置，并利用拓扑排序算法计算节点执行的先后层级；",
+                    "preview": "1. 在后端开发纯手写的 DAG（有向无环图）工作流执行引擎。该引擎能够动态解析前端下发的拓扑图 J...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D38",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D38]/r[1]",
+                        "type": "run",
+                        "text": "1. 在后端开发纯手写的 DAG（有向无环图）工作流执行引擎。该引擎能够动态解析前端下发的拓扑图 JSON 配置，并利用拓扑排序算法计算节点执行的先后层级；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D3A]",
+                    "type": "paragraph",
+                    "text": "2. 实现核心的 DFS（深度优先搜索）环路检测算法。如果在编排时产生节点的循环依赖，引擎能够实现在微秒级别进行拦截并拒绝运行，确保服务器资源不会因为死循环被耗尽；",
+                    "preview": "2. 实现核心的 DFS（深度优先搜索）环路检测算法。如果在编排时产生节点的循环依赖，引擎能够实现在...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D3A",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D3A]/r[1]",
+                        "type": "run",
+                        "text": "2. 实现核心的 DFS（深度优先搜索）环路检测算法。如果在编排时产生节点的循环依赖，引擎能够实现在微秒级别进行拦截并拒绝运行，确保服务器资源不会因为死循环被耗尽；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D3C]",
+                    "type": "paragraph",
+                    "text": "3. 前端集成 VueFlow 可视化库，开发节点拖拽、连线绑定、属性侧边栏编辑等沉浸式交互功能，确保用户（非开发人员）能够零门槛编排业务逻辑；",
+                    "preview": "3. 前端集成 VueFlow 可视化库，开发节点拖拽、连线绑定、属性侧边栏编辑等沉浸式交互功能，确...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D3C",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D3C]/r[1]",
+                        "type": "run",
+                        "text": "3. 前端集成 VueFlow 可视化库，开发节点拖拽、连线绑定、属性侧边栏编辑等沉浸式交互功能，确保用户（非开发人员）能够零门槛编排业务逻辑；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D3E]",
+                    "type": "paragraph",
+                    "text": "4. 开发实时对话的 Web 调试界面，支持基于 SSE（Server-Sent Events）的流式打字机效果输出，保障对话的丝滑体验。",
+                    "preview": "4. 开发实时对话的 Web 调试界面，支持基于 SSE（Server-Sent Events）的流...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D3E",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D3E]/r[1]",
+                        "type": "run",
+                        "text": "4. 开发实时对话的 Web 调试界面，支持基于 SSE（Server-Sent Events）的流式打字机效果输出，保障对话的丝滑体验。",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D40]",
+                    "type": "paragraph",
+                    "text": "第四周进度目标（7月6日-7月10日）：",
+                    "preview": "第四周进度目标（7月6日-7月10日）：",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D40",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D40]/r[1]",
+                        "type": "run",
+                        "text": "第四周进度目标（7月6日-7月10日）：",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D42]",
+                    "type": "paragraph",
+                    "text": "本周为冲刺与验收阶段，重点放在系统的稳固、评测与交付物准备。主要目标包括：",
+                    "preview": "本周为冲刺与验收阶段，重点放在系统的稳固、评测与交付物准备。主要目标包括：",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D42",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D42]/r[1]",
+                        "type": "run",
+                        "text": "本周为冲刺与验收阶段，重点放在系统的稳固、评测与交付物准备。主要目标包括：",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D44]",
+                    "type": "paragraph",
+                    "text": "1. 对四路召回体系建立基于黄金测试用例集的集成测试，横向对比其准确率与拒答率，并根据反馈微调检索相似度阈值；",
+                    "preview": "1. 对四路召回体系建立基于黄金测试用例集的集成测试，横向对比其准确率与拒答率，并根据反馈微调检索相...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D44",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D44]/r[1]",
+                        "type": "run",
+                        "text": "1. 对四路召回体系建立基于黄金测试用例集的集成测试，横向对比其准确率与拒答率，并根据反馈微调检索相似度阈值；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D46]",
+                    "type": "paragraph",
+                    "text": "2. 执行全站级的性能与代码调优，包括优化长列表的渲染性能、解决 Largest Contentful Paint (LCP) 的加载延迟痛点，优化 SQL 查询的索引命中率；",
+                    "preview": "2. 执行全站级的性能与代码调优，包括优化长列表的渲染性能、解决 Largest Contentfu...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D46",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D46]/r[1]",
+                        "type": "run",
+                        "text": "2. 执行全站级的性能与代码调优，包括优化长列表的渲染性能、解决 Largest Contentful Paint (LCP) 的加载延迟痛点，优化 SQL 查询的索引命中率；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D48]",
+                    "type": "paragraph",
+                    "text": "3. 开始撰写并精细打磨《课程设计报告》。梳理全栈架构图与算法流程图，通过 LaTeX 对文档进行专业的版式排版与图文配比，力求达到工业级学术文档的严谨性；",
+                    "preview": "3. 开始撰写并精细打磨《课程设计报告》。梳理全栈架构图与算法流程图，通过 LaTeX 对文档进行专...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D48",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D48]/r[1]",
+                        "type": "run",
+                        "text": "3. 开始撰写并精细打磨《课程设计报告》。梳理全栈架构图与算法流程图，通过 LaTeX 对文档进行专业的版式排版与图文配比，力求达到工业级学术文档的严谨性；",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D4A]",
+                    "type": "paragraph",
+                    "text": "4. 筹备并进行课程设计答辩。准备详细的幻灯片材料（PPT），对核心业务难点与对应的解题思路进行归纳总结，展现完整的工程实践风貌与问题解决能力。",
+                    "preview": "4. 筹备并进行课程设计答辩。准备详细的幻灯片材料（PPT），对核心业务难点与对应的解题思路进行归纳...",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "7C810D4A",
+                      "lineSpacing": "1.5x",
+                      "lineRule": "auto",
+                      "font.latin": "Times New Roman",
+                      "font.ea": "宋体",
+                      "size": "12pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[6]/tc[1]/p[@paraId=7C810D4A]/r[1]",
+                        "type": "run",
+                        "text": "4. 筹备并进行课程设计答辩。准备详细的幻灯片材料（PPT），对核心业务难点与对应的解题思路进行归纳总结，展现完整的工程实践风貌与问题解决能力。",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "Times New Roman",
+                          "font.ea": "宋体",
+                          "size": "12pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "/body/tbl[1]/tr[7]",
+            "type": "row",
+            "childCount": 1,
+            "format": {},
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[7]/tc[1]",
+                "type": "cell",
+                "text": "四、导师审核意见",
+                "childCount": 1,
+                "format": {
+                  "width": "8522dxa",
+                  "colspan": 2,
+                  "size": "14pt",
+                  "bold": true
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[7]/tc[1]/p[@paraId=40C44F3D]",
+                    "type": "paragraph",
+                    "text": "四、导师审核意见",
+                    "preview": "四、导师审核意见",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "40C44F3D",
+                      "markRPr.bold": true,
+                      "markRPr.size": "14pt",
+                      "markRPr.size.cs": "14pt",
+                      "markRPr.font.asciiTheme": "majorEastAsia",
+                      "markRPr.font.hAnsiTheme": "majorEastAsia",
+                      "markRPr.font.eaTheme": "majorEastAsia",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:asciiTheme=\"majorEastAsia\" w:hAnsiTheme=\"majorEastAsia\" w:eastAsiaTheme=\"majorEastAsia\" /><w:b /><w:sz w:val=\"28\" /><w:szCs w:val=\"28\" /></w:rPr>",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[7]/tc[1]/p[@paraId=40C44F3D]/r[1]",
+                        "type": "run",
+                        "text": "四、导师审核意见",
+                        "childCount": 0,
+                        "format": {
+                          "font.asciiTheme": "majorEastAsia",
+                          "font.hAnsiTheme": "majorEastAsia",
+                          "font.eaTheme": "majorEastAsia",
+                          "font.hint": "eastAsia",
+                          "size": "14pt",
+                          "bold": true,
+                          "size.cs": "14pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.ascii.src": "/styles/1",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.hAnsi.src": "/styles/1",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "path": "/body/tbl[1]/tr[8]",
+            "type": "row",
+            "childCount": 2,
+            "format": {
+              "height": "2117dxa",
+              "height.rule": "atLeast"
+            },
+            "children": [
+              {
+                "path": "/body/tbl[1]/tr[8]/tc[1]",
+                "type": "cell",
+                "text": "导师审核意见",
+                "childCount": 3,
+                "format": {
+                  "width": "1809dxa",
+                  "align": "center",
+                  "size": "14pt",
+                  "bold": true
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[1]/p[@paraId=27678B11]",
+                    "type": "paragraph",
+                    "text": "",
+                    "preview": "",
+                    "style": "Normal",
+                    "childCount": 0,
+                    "format": {
+                      "paraId": "27678B11",
+                      "align": "center",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[1]/p[@paraId=6CE5D92E]",
+                    "type": "paragraph",
+                    "text": "导师",
+                    "preview": "导师",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "6CE5D92E",
+                      "align": "center",
+                      "markRPr.bold": true,
+                      "markRPr.size": "14pt",
+                      "markRPr.size.cs": "14pt",
+                      "markRPr.font.asciiTheme": "majorEastAsia",
+                      "markRPr.font.hAnsiTheme": "majorEastAsia",
+                      "markRPr.font.eaTheme": "majorEastAsia",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:asciiTheme=\"majorEastAsia\" w:hAnsiTheme=\"majorEastAsia\" w:eastAsiaTheme=\"majorEastAsia\" /><w:b /><w:sz w:val=\"28\" /><w:szCs w:val=\"28\" /></w:rPr>",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[1]/p[@paraId=6CE5D92E]/r[1]",
+                        "type": "run",
+                        "text": "导师",
+                        "childCount": 0,
+                        "format": {
+                          "font.asciiTheme": "majorEastAsia",
+                          "font.hAnsiTheme": "majorEastAsia",
+                          "font.eaTheme": "majorEastAsia",
+                          "font.hint": "eastAsia",
+                          "size": "14pt",
+                          "bold": true,
+                          "size.cs": "14pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.ascii.src": "/styles/1",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.hAnsi.src": "/styles/1",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[1]/p[@paraId=48C9BA4A]",
+                    "type": "paragraph",
+                    "text": "审核意见",
+                    "preview": "审核意见",
+                    "style": "Normal",
+                    "childCount": 1,
+                    "format": {
+                      "paraId": "48C9BA4A",
+                      "align": "center",
+                      "markRPr.bold": true,
+                      "markRPr.size": "14pt",
+                      "markRPr.size.cs": "14pt",
+                      "markRPr.font.asciiTheme": "majorEastAsia",
+                      "markRPr.font.hAnsiTheme": "majorEastAsia",
+                      "markRPr.font.eaTheme": "majorEastAsia",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:asciiTheme=\"majorEastAsia\" w:hAnsiTheme=\"majorEastAsia\" w:eastAsiaTheme=\"majorEastAsia\" /><w:b /><w:sz w:val=\"28\" /><w:szCs w:val=\"28\" /></w:rPr>",
+                      "font.asciiTheme": "majorEastAsia",
+                      "font.hAnsiTheme": "majorEastAsia",
+                      "font.eaTheme": "majorEastAsia",
+                      "font.hint": "eastAsia",
+                      "size": "14pt",
+                      "bold": true,
+                      "size.cs": "14pt",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[1]/p[@paraId=48C9BA4A]/r[1]",
+                        "type": "run",
+                        "text": "审核意见",
+                        "childCount": 0,
+                        "format": {
+                          "font.asciiTheme": "majorEastAsia",
+                          "font.hAnsiTheme": "majorEastAsia",
+                          "font.eaTheme": "majorEastAsia",
+                          "font.hint": "eastAsia",
+                          "size": "14pt",
+                          "bold": true,
+                          "size.cs": "14pt",
+                          "effective.font.ascii": "Times New Roman",
+                          "effective.font.ascii.src": "/styles/1",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "Times New Roman",
+                          "effective.font.hAnsi.src": "/styles/1",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "path": "/body/tbl[1]/tr[8]/tc[2]",
+                "type": "cell",
+                "text": "同意！                                                   日期：2026-6-15",
+                "childCount": 5,
+                "format": {
+                  "width": "6713dxa",
+                  "align": "left",
+                  "font": "宋体"
+                },
+                "children": [
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=35EC8498]",
+                    "type": "paragraph",
+                    "text": "",
+                    "preview": "",
+                    "style": "Normal",
+                    "childCount": 0,
+                    "format": {
+                      "paraId": "35EC8498",
+                      "align": "left",
+                      "firstLineIndent": "24pt",
+                      "firstLineChars": 200,
+                      "font.latin": "宋体",
+                      "font.hint": "eastAsia",
+                      "lang.latin": "zh-CN",
+                      "effective.size": "12pt",
+                      "effective.size.src": "/styles/1",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=65B121A4]",
+                    "type": "paragraph",
+                    "text": "",
+                    "preview": "",
+                    "style": "Normal",
+                    "childCount": 0,
+                    "format": {
+                      "paraId": "65B121A4",
+                      "align": "left",
+                      "firstLineIndent": "24pt",
+                      "firstLineChars": 200,
+                      "font.latin": "宋体",
+                      "font.hint": "eastAsia",
+                      "lang.latin": "zh-CN",
+                      "effective.size": "12pt",
+                      "effective.size.src": "/styles/1",
+                      "effective.font.ascii": "Times New Roman",
+                      "effective.font.ascii.src": "/styles/1",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "Times New Roman",
+                      "effective.font.hAnsi.src": "/styles/1",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": []
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=54F3910B]",
+                    "type": "paragraph",
+                    "text": "同意！                       ",
+                    "preview": "同意！                       ",
+                    "style": "Normal",
+                    "childCount": 3,
+                    "format": {
+                      "paraId": "54F3910B",
+                      "align": "left",
+                      "firstLineIndent": "24pt",
+                      "firstLineChars": 200,
+                      "markRPr.font.latin": "宋体",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:ascii=\"宋体\" w:hAnsi=\"宋体\" /></w:rPr>",
+                      "font.latin": "宋体",
+                      "font.hint": "eastAsia",
+                      "effective.size": "12pt",
+                      "effective.size.src": "/styles/1",
+                      "effective.font.ascii": "宋体",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "宋体",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=54F3910B]/r[1]",
+                        "type": "run",
+                        "text": "同意！",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "en-US",
+                          "lang.ea": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=54F3910B]/r[2]",
+                        "type": "run",
+                        "text": "              ",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=54F3910B]/r[3]",
+                        "type": "run",
+                        "text": "         ",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=2B26B15A]",
+                    "type": "paragraph",
+                    "text": "    ",
+                    "preview": "    ",
+                    "style": "Normal",
+                    "childCount": 2,
+                    "format": {
+                      "paraId": "2B26B15A",
+                      "align": "left",
+                      "markRPr.font.latin": "宋体",
+                      "markRPr.font.hint": "eastAsia",
+                      "markRPr.lang.latin": "zh-CN",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"eastAsia\" w:ascii=\"宋体\" w:hAnsi=\"宋体\" /><w:lang w:val=\"zh-CN\" /></w:rPr>",
+                      "font.latin": "宋体",
+                      "font.hint": "eastAsia",
+                      "effective.size": "12pt",
+                      "effective.size.src": "/styles/1",
+                      "effective.font.ascii": "宋体",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "宋体",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=2B26B15A]/r[1]",
+                        "type": "run",
+                        "text": "   ",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=2B26B15A]/r[2]",
+                        "type": "run",
+                        "text": " ",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]",
+                    "type": "paragraph",
+                    "text": "                        日期：2026-6-15",
+                    "preview": "                        日期：2026-6-15",
+                    "style": "Normal",
+                    "childCount": 8,
+                    "format": {
+                      "paraId": "066E92E7",
+                      "align": "left",
+                      "markRPr.font.latin": "宋体",
+                      "markRPr.font.ea": "宋体",
+                      "markRPr.font.hint": "default",
+                      "markRPr.lang.latin": "en-US",
+                      "markRPr.lang.ea": "zh-CN",
+                      "markRPr.xml": "<w:rPr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:rFonts w:hint=\"default\" w:ascii=\"宋体\" w:hAnsi=\"宋体\" w:eastAsia=\"宋体\" /><w:lang w:val=\"en-US\" w:eastAsia=\"zh-CN\" /></w:rPr>",
+                      "font.latin": "宋体",
+                      "font.hint": "eastAsia",
+                      "effective.size": "12pt",
+                      "effective.size.src": "/styles/1",
+                      "effective.font.ascii": "宋体",
+                      "effective.font.eastAsia": "宋体",
+                      "effective.font.eastAsia.src": "/styles/1",
+                      "effective.font.hAnsi": "宋体",
+                      "effective.font.cs": "宋体",
+                      "effective.font.cs.src": "/styles/1"
+                    },
+                    "children": [
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[1]",
+                        "type": "run",
+                        "text": "      ",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[2]",
+                        "type": "run",
+                        "text": "                  ",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[3]",
+                        "type": "run",
+                        "text": "日期：202",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[4]",
+                        "type": "run",
+                        "text": "6",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "en-US",
+                          "lang.ea": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[5]",
+                        "type": "run",
+                        "text": "-",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[6]",
+                        "type": "run",
+                        "text": "6",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "en-US",
+                          "lang.ea": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[7]",
+                        "type": "run",
+                        "text": "-",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      },
+                      {
+                        "path": "/body/tbl[1]/tr[8]/tc[2]/p[@paraId=066E92E7]/r[8]",
+                        "type": "run",
+                        "text": "15",
+                        "childCount": 0,
+                        "format": {
+                          "font.latin": "宋体",
+                          "font.hint": "eastAsia",
+                          "lang.latin": "en-US",
+                          "lang.ea": "zh-CN",
+                          "effective.size": "12pt",
+                          "effective.size.src": "/styles/1",
+                          "effective.font.ascii": "宋体",
+                          "effective.font.eastAsia": "宋体",
+                          "effective.font.eastAsia.src": "/styles/1",
+                          "effective.font.hAnsi": "宋体",
+                          "effective.font.cs": "宋体",
+                          "effective.font.cs.src": "/styles/1"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
