@@ -48,7 +48,7 @@ public class ChatModelServiceImpl implements IChatModelService {
             case TONG_YI -> { return this.getDashScopeChatModel(apiKey, modelName); }
             case OLLAMA -> { return this.getOllamaChatModel(baseUrl, modelName); }
             case DEEP_SEEK -> { return this.getDeepSeekCompatibleChatModel(baseUrl, apiKey, modelName, temperature); }
-            default -> throw new ServiceException("暂时不支持该平台");
+            default -> { return this.getOpenAiChatModel(baseUrl, apiKey, modelName, temperature); }
         }
     }
 

@@ -358,19 +358,41 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         // 8. 调用 Hermes 微服务
         StringBuilder answerBuffer = new StringBuilder();
         String finalModelName = modelName;
+        java.util.concurrent.atomic.AtomicBoolean usedExternalTool = new java.util.concurrent.atomic.AtomicBoolean(false);
         Flux<KbChatMessageSendRespVO> chatFlux = sourceRefs.isEmpty()
                 ? hermesGrpcClient.chat(request)
                 : Flux.just(memoryRecallResp).concatWith(hermesGrpcClient.chat(request));
         return chatFlux
                 .doOnNext(resp -> {
-                    if (resp.getReceive() != null
-                            && resp.getReceive().getContent() != null
-                            && StringUtils.isEmpty(resp.getReceive().getEventType())) {
-                        answerBuffer.append(resp.getReceive().getContent());
+                    if (resp.getReceive() != null) {
+                        if ("tool_call".equals(resp.getReceive().getEventType())) {
+                            usedExternalTool.set(true);
+                        } else if (resp.getReceive().getContent() != null && StringUtils.isEmpty(resp.getReceive().getEventType())) {
+                            answerBuffer.append(resp.getReceive().getContent());
+                        }
                     }
                 })
-                .doOnComplete(() -> saveSemanticCacheAsync(kbAgentConfig, knowledgeBaseIds,
-                        finalModelName, answerBuffer.toString(), sourceRefs.toJSONString()));
+                .doOnComplete(() -> {
+                    String answer = answerBuffer.toString();
+                    if (!usedExternalTool.get() && !isFailedAnswer(answer)) {
+                        saveSemanticCacheAsync(kbAgentConfig, knowledgeBaseIds,
+                                finalModelName, answer, sourceRefs.toJSONString());
+                    }
+                });
+    }
+
+    private boolean isFailedAnswer(String answer) {
+        if (StringUtils.isEmpty(answer)) {
+            return true;
+        }
+        // 使用正则应对大模型回答的多样性，比如“无法从知识库确认”、“没有找到相关记录”
+        return answer.matches("(?s).*(未找到|没有找到|没找到|无法找到).*") ||
+               answer.matches("(?s).*(无法.*确认|不能确认).*") ||
+               answer.matches("(?s).*(抱歉|非常抱歉).*") ||
+               answer.matches("(?s).*(未覆盖|没有覆盖).*") ||
+               answer.matches("(?s).*(未提供|没有提供).*") ||
+               answer.matches("(?s).*(不确定|无法确定).*") ||
+               answer.matches("(?s).*(不可靠|未被评估为可靠|未通过可靠性评估).*");
     }
 
     private Optional<SemanticCacheHitDTO> findSemanticCache(KbAgentConfigReqVO req, List<Long> knowledgeBaseIds,
