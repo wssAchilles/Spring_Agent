@@ -14,10 +14,13 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_vector_store_embedding_hnsw
     ON vector_store USING hnsw (embedding vector_cosine_ops)
     WITH (m = 16, ef_construction = 200);
 
--- 3. 设置运行时参数
--- ef_search: 查询时的搜索宽度（越大召回率越高，延迟越大）
--- 默认 40，建议生产环境在数据库或连接池初始化中设为 100；这里仅影响当前迁移会话。
-SET hnsw.ef_search = 100;
+-- 3. 查询会话参数示例
+-- ef_search 是运行时会话参数，不是索引 DDL 的持久属性。不要依赖迁移会话里的
+-- SET 影响应用连接；应在应用连接池初始化、ALTER ROLE/DATABASE，或单次查询前设置。
+-- 先确认当前连接支持该参数：
+-- SELECT current_setting('hnsw.ef_search', true);
+-- SET hnsw.ef_search = 100;
+-- ALTER ROLE app_user IN DATABASE app_db SET hnsw.ef_search = 100;
 
 -- 4. 验证索引
 -- SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'vector_store';

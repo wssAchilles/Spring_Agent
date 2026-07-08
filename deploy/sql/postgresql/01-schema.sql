@@ -1401,7 +1401,9 @@ COMMENT ON TABLE workflow_run IS '工作流运行记录表';
 -- ===========================
 
 CREATE TABLE IF NOT EXISTS vector_store (
-    id        VARCHAR(255) PRIMARY KEY,
+    -- Spring AI PgVectorStore and the existing production table use UUID ids.
+    -- Existing varchar-based databases are handled by application compatibility checks.
+    id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     content   TEXT,
     metadata  JSONB,
     embedding vector(1536)

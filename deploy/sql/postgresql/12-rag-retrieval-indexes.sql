@@ -2,6 +2,8 @@
 -- Non-destructive: only CREATE IF NOT EXISTS and additive table/index changes.
 -- For online production-sized tables, prefer 13-rag-retrieval-indexes-online.sql
 -- because regular CREATE INDEX can block writes while the index is built.
+-- Run 14-backfill-kg-node-segment-rel.sql separately for node-segment relation
+-- backfill; this script intentionally does not update data rows.
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -23,18 +25,6 @@ CREATE INDEX IF NOT EXISTS idx_kg_node_segment_rel_document
 CREATE INDEX IF NOT EXISTS idx_kg_node_label_lower_active
     ON kg_node (lower(label))
     WHERE del_flag = 0;
-
-INSERT INTO kg_node_segment_rel(node_id, segment_id, document_id)
-SELECT n.id, em.segment_id, max(em.document_id) AS document_id
-FROM kmc_segment_entity_metadata em
-JOIN LATERAL jsonb_array_elements_text(em.entities) AS entity(label) ON TRUE
-JOIN kg_node n ON n.del_flag = 0 AND lower(n.label) = lower(entity.label)
-WHERE em.segment_id IS NOT NULL
-  AND entity.label <> ''
-GROUP BY n.id, em.segment_id
-ON CONFLICT (node_id, segment_id) DO UPDATE SET
-    document_id = EXCLUDED.document_id
-WHERE kg_node_segment_rel.document_id IS DISTINCT FROM EXCLUDED.document_id;
 
 CREATE INDEX IF NOT EXISTS idx_kmc_doc_kb_active
     ON kmc_document(knowledge_base_id, id)
