@@ -129,7 +129,17 @@ class QueryTransformServiceTest {
     }
 
     @Test
-    void hydeReturnsHypotheticalDocumentForTextQuery() {
+    void hydeRewriteKeepsOriginalQuery() {
+        config.setStrategy("hyde");
+
+        String result = service.rewriteQuery("Denmark capital?");
+
+        assertEquals("Denmark capital?", result);
+        verifyNoInteractions(chatClient);
+    }
+
+    @Test
+    void hydeGeneratesHypotheticalDocumentForTextQuery() {
         config.setStrategy("hyde");
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system(anyString())).thenReturn(requestSpec);
@@ -137,13 +147,24 @@ class QueryTransformServiceTest {
         when(requestSpec.call()).thenReturn(callResponseSpec);
         when(callResponseSpec.content()).thenReturn("Copenhagen is the capital and largest city of Denmark.");
 
-        String result = service.rewriteQuery("Denmark capital?");
+        String result = service.generateHypotheticalDocument("Denmark capital?");
 
         assertEquals("Copenhagen is the capital and largest city of Denmark.", result);
     }
 
     @Test
+    void hydeSkipsCodeSymbolQueries() {
+        config.setStrategy("hyde");
+
+        String result = service.generateHypotheticalDocument("VectorRetriever.retrieve()");
+
+        assertEquals("VectorRetriever.retrieve()", result);
+        verifyNoInteractions(chatClient);
+    }
+
+    @Test
     void expandQueriesIncludesOriginalAndVariants() {
+        config.setStrategy("multi_query");
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.system(anyString())).thenReturn(requestSpec);
         when(requestSpec.user(anyString())).thenReturn(requestSpec);
@@ -153,6 +174,30 @@ class QueryTransformServiceTest {
         List<String> result = service.expandQueries("Denmark capital?", 2);
 
         assertEquals(List.of("Denmark capital?", "capital of Denmark", "Denmark main city"), result);
+    }
+
+    @Test
+    void expandQueriesNormalizesStrategy() {
+        config.setStrategy(" MULTI_QUERY ");
+        when(chatClient.prompt()).thenReturn(requestSpec);
+        when(requestSpec.system(anyString())).thenReturn(requestSpec);
+        when(requestSpec.user(anyString())).thenReturn(requestSpec);
+        when(requestSpec.call()).thenReturn(callResponseSpec);
+        when(callResponseSpec.content()).thenReturn("[\"capital of Denmark\"]");
+
+        List<String> result = service.expandQueries("Denmark capital?", 1);
+
+        assertEquals(List.of("Denmark capital?", "capital of Denmark"), result);
+    }
+
+    @Test
+    void expandQueriesDoesNotExpandWhenStrategyIsRewrite() {
+        config.setStrategy("rewrite");
+
+        List<String> result = service.expandQueries("Denmark capital?", 2);
+
+        assertEquals(List.of("Denmark capital?"), result);
+        verifyNoInteractions(chatClient);
     }
 
     private void stubChatClient() {

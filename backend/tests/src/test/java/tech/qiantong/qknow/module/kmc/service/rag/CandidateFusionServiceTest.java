@@ -3,6 +3,7 @@ package tech.qiantong.qknow.module.kmc.service.rag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
 import java.util.ArrayList;
@@ -89,9 +90,8 @@ class CandidateFusionServiceTest {
     }
 
     @Test
-    @DisplayName("弱路径排除 - topScore < 0.3 的路径被过滤")
-    void fuse_weakPath_excluded() {
-        // 路径A: topScore = 0.1（弱），路径B: topScore = 0.8（强）
+    @DisplayName("默认不按不可比分数排除低分路径")
+    void fuse_defaultThresholdDisabled_keepsLowScorePath() {
         RetrievalResult weak = buildResult(1L, 0.1, "weak");
         RetrievalResult strong = buildResult(2L, 0.8, "strong");
 
@@ -99,14 +99,13 @@ class CandidateFusionServiceTest {
 
         List<RetrievalResult> fused = service.fuse(input);
 
-        // 只有路径B参与融合
-        assertEquals(1, fused.size());
-        assertEquals(2L, fused.get(0).getSegmentId());
+        assertEquals(2, fused.size());
     }
 
     @Test
-    @DisplayName("图谱分数归一化 - graph路径除以12.0")
-    void fuse_graphPath_normalizesBy12() {
+    @DisplayName("显式阈值开启后图谱分数按路径归一化")
+    void fuse_graphPath_normalizesBy12WhenThresholdEnabled() {
+        ReflectionTestUtils.setField(service, "weakPathThreshold", 0.3);
         // graph 路径 topScore = 3.6, 归一化后 3.6/12.0 = 0.3 >= 阈值，保留
         RetrievalResult graphResult = buildResult(1L, 3.6, "graph");
         List<List<RetrievalResult>> input = List.of(List.of(graphResult));
@@ -118,8 +117,9 @@ class CandidateFusionServiceTest {
     }
 
     @Test
-    @DisplayName("图谱分数归一化后低于阈值被排除")
-    void fuse_graphPath_belowThreshold_excluded() {
+    @DisplayName("显式阈值开启后图谱低分路径可被排除")
+    void fuse_graphPath_belowThreshold_excludedWhenThresholdEnabled() {
+        ReflectionTestUtils.setField(service, "weakPathThreshold", 0.3);
         // graph 路径 topScore = 1.0, 归一化后 1.0/12.0 ≈ 0.083 < 0.3，排除
         RetrievalResult graphWeak = buildResult(1L, 1.0, "graph");
         RetrievalResult normal = buildResult(2L, 0.8, "normal");
@@ -134,8 +134,9 @@ class CandidateFusionServiceTest {
     }
 
     @Test
-    @DisplayName("所有路径被弱排除时回退到原始结果")
+    @DisplayName("显式阈值开启后所有路径被弱排除时回退到原始结果")
     void fuse_allPathsWeak_fallbackToOriginal() {
+        ReflectionTestUtils.setField(service, "weakPathThreshold", 0.3);
         // 两路 topScore 都 < 0.3
         RetrievalResult weak1 = buildResult(1L, 0.1, "pathA");
         RetrievalResult weak2 = buildResult(2L, 0.2, "pathB");
@@ -146,6 +147,25 @@ class CandidateFusionServiceTest {
 
         // 回退后两路都参与融合
         assertEquals(2, fused.size());
+    }
+
+    @Test
+    @DisplayName("融合诊断包含路径分数和排除路径")
+    void fuseWithDiagnostics_returnsPathScoresAndExcludedPaths() {
+        ReflectionTestUtils.setField(service, "weakPathThreshold", 0.3);
+        RetrievalResult graphWeak = buildResult(1L, 1.0, "graph");
+        RetrievalResult keyword = buildResult(2L, 2.5, "keyword");
+
+        CandidateFusionService.FusionResult result = service.fuseWithDiagnostics(
+                List.of(List.of(graphWeak), List.of(keyword)),
+                List.of("graph", "keyword"));
+
+        assertEquals(List.of("graph"), result.getExcludedPaths());
+        assertEquals(2, result.getPathScores().size());
+        assertTrue(result.getPathScores().stream()
+                .anyMatch(score -> "keyword".equals(score.getPathName())
+                        && score.getNormalizedTopScore() == 1.0
+                        && !score.isExcluded()));
     }
 
     @Test

@@ -13,9 +13,11 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.util.ReflectionTestUtils;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.GraphRagResult;
 import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
+import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
 import java.lang.reflect.Method;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 
@@ -87,6 +89,45 @@ class GraphRagRetrieverTest {
                             && sql.contains("target_id IN")), any(Object[].class));
             verify(jdbcTemplate, never()).queryForList(contains("source_node_id"), any(Object[].class));
         }
+
+        @Test
+        @DisplayName("PPR segment 分数绑定到实际命中的 node")
+        void pprRetrieve_bindsSegmentScoreToMatchedNode() throws Exception {
+            properties.setEnabled(true);
+            properties.setPprEnabled(true);
+            properties.setPprMaxEdges(10);
+            ReflectionTestUtils.setField(retriever, "neo4jClient", null);
+
+            when(jdbcTemplate.queryForList(startsWith("SELECT id FROM kg_node"), eq(Long.class), any(Object[].class)))
+                    .thenReturn(List.of(1L));
+            when(jdbcTemplate.queryForList(contains("source_id, target_id"), any(Object[].class)))
+                    .thenReturn(List.of(Map.of("source_id", 1L, "target_id", 2L)));
+            when(jdbcTemplate.query(contains("FROM kg_node_segment_rel rel"), any(RowMapper.class), any(Object[].class)))
+                    .thenAnswer(invocation -> {
+                        @SuppressWarnings("unchecked")
+                        RowMapper<RetrievalResult> mapper = invocation.getArgument(1);
+                        ResultSet rs = mock(ResultSet.class);
+                        when(rs.getLong("node_id")).thenReturn(2L);
+                        when(rs.getLong("id")).thenReturn(200L);
+                        when(rs.getLong("document_id")).thenReturn(20L);
+                        when(rs.getString("document_name")).thenReturn("doc");
+                        when(rs.getString("content")).thenReturn("segment");
+                        return List.of(mapper.mapRow(rs, 0));
+                    });
+
+            List<RetrievalResult> results = retriever.pprRetrieve(1L, List.of("A公司"), 10);
+
+            assertEquals(1, results.size());
+            RetrievalResult result = results.get(0);
+            assertEquals(200L, result.getSegmentId());
+            assertEquals(2L, result.getMetadata().get("ppr_node_id"));
+            assertEquals((Double) result.getMetadata().get("ppr_node_score") * 12.0, result.getScore(), 0.0001);
+            verify(jdbcTemplate).query(argThat(sql ->
+                    sql.contains("FROM kg_node_segment_rel rel")
+                            && sql.contains("rel.node_id IN")
+                            && sql.contains("rel.segment_id")
+                            && sql.contains("s.del_flag = 0")), any(RowMapper.class), any(Object[].class));
+        }
     }
 
     @Nested
@@ -111,6 +152,22 @@ class GraphRagRetrieverTest {
             List<RetrievalResult> results = retriever.retrieve(1L, null, 10);
 
             assertTrue(results.isEmpty());
+        }
+
+        @Test
+        @DisplayName("graph disabled 时 QueryIntent 检索不访问数据库")
+        void retrieve_queryIntentGraphDisabled_doesNotQueryDatabase() {
+            properties.setEnabled(false);
+            QueryIntent intent = QueryIntent.builder()
+                    .entities(List.of("A公司"))
+                    .keywords(List.of("RAG"))
+                    .build();
+
+            List<RetrievalResult> results = retriever.retrieve(
+                    1L, intent, "RAG 和 A公司有什么关系", QueryRouter.QueryRoute.COMPLEX, 10);
+
+            assertTrue(results.isEmpty());
+            verifyNoInteractions(jdbcTemplate);
         }
     }
 
@@ -191,6 +248,7 @@ class GraphRagRetrieverTest {
         @Test
         @DisplayName("topic SQL 失败时记录 fallback")
         void dualLevelRetrieve_topicSqlFailure_recordsFallback() {
+            properties.setEnabled(true);
             when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
                     .thenThrow(new RuntimeException("topic query failed"));
 

@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,10 +90,26 @@ class SemanticCacheServiceTest {
     @Test
     @DisplayName("知识库变更应触发缓存失效")
     void knowledgeBaseChange_shouldEvictCache() {
-        // 验证缓存失效逻辑
-        long knowledgeBaseId = 1L;
-        boolean shouldEvict = true;
-        assertTrue(shouldEvict, "知识库变更时应触发缓存失效");
+        SemanticCacheService service = new SemanticCacheService();
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        ReflectionTestUtils.setField(service, "jdbcTemplate", jdbcTemplate);
+        when(jdbcTemplate.queryForList(any(String.class), eq(Long.class), any(Object[].class)))
+                .thenReturn(List.of());
+        when(jdbcTemplate.update(any(String.class), any(Object[].class))).thenReturn(0);
+
+        SemanticCacheService.CacheHit hit = SemanticCacheService.CacheHit.builder()
+                .id(1L)
+                .answer("cached")
+                .sourcesJson("[]")
+                .similarity(1.0)
+                .knowledgeBaseIds(List.of(1L))
+                .build();
+        ReflectionTestUtils.invokeMethod(service, "putExactCache", "kb-key", hit);
+        assertNotNull(ReflectionTestUtils.invokeMethod(service, "getExactCache", "kb-key"));
+
+        service.evictByKnowledgeBase(1L);
+
+        assertNull(ReflectionTestUtils.invokeMethod(service, "getExactCache", "kb-key"));
     }
 
     @Test

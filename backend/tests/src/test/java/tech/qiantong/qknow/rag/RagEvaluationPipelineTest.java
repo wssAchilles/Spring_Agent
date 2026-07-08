@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 class RagEvaluationPipelineTest {
 
     @Test
-    void smokeDatasetLoadsAndMockGatePasses() throws Exception {
+    void mockJudgeGate_passesHighFaithfulnessScores() throws Exception {
         List<GoldenItem> items = loadSmokeItems();
         assertEquals(10, items.size());
 
@@ -38,12 +38,32 @@ class RagEvaluationPipelineTest {
     }
 
     @Test
-    void lowScoreFailsGate() {
+    void mockJudgeGate_failsLowFaithfulnessScores() {
         LlmAsAJudgeEvaluator.Judgement judgement = mockJudge(scores(0.7))
                 .evaluate("query", "answer", List.of("context"), "expected");
 
         assertFalse(judgement.passed());
         assertTrue(judgement.scores().getFaithfulness() < judgement.threshold());
+    }
+
+    @Test
+    void retrievalMetricsPipeline_failsWhenTopKMissesExpectedSource() throws Exception {
+        GoldenItem item = loadSmokeItems().get(0);
+        List<RetrievalMetrics.RetrievedContext> retrieved = List.of(
+                new RetrievalMetrics.RetrievedContext("noise", "Day02.md", "不相关内容"),
+                new RetrievalMetrics.RetrievedContext("noise", "Day03.md", "仍然不相关")
+        );
+
+        RetrievalMetrics.Scores scores = RetrievalMetrics.evaluate(item.expectedSources(), retrieved);
+        RetrievalMetrics.GateResult gate = RetrievalMetrics.gate(
+                scores,
+                new RetrievalMetrics.Thresholds(1.0, 1.0, 1.0, 1.0, 0.20)
+        );
+
+        assertFalse(gate.passed());
+        assertEquals(0.0, scores.recallAt5());
+        assertTrue(gate.failures().contains("recallAt5"));
+        assertTrue(gate.failures().contains("ndcgAt10"));
     }
 
     private List<GoldenItem> loadSmokeItems() throws Exception {
@@ -54,7 +74,11 @@ class RagEvaluationPipelineTest {
             while ((line = reader.readLine()) != null) {
                 JSONObject json = JSON.parseObject(line);
                 if (json.getJSONArray("tags").contains("smoke")) {
-                    items.add(new GoldenItem(json.getString("id"), json.getString("query")));
+                    items.add(new GoldenItem(
+                            json.getString("id"),
+                            json.getString("query"),
+                            json.getJSONArray("expectedSources").toJavaList(String.class)
+                    ));
                 }
             }
         }
@@ -79,6 +103,6 @@ class RagEvaluationPipelineTest {
         return new LlmAsAJudgeEvaluator(ragasEvaluator, config);
     }
 
-    private record GoldenItem(String id, String query) {
+    private record GoldenItem(String id, String query, List<String> expectedSources) {
     }
 }
