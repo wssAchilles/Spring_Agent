@@ -23,8 +23,16 @@ public class SleepTimeMemoryAgent {
         this.scanCount = scanCount;
     }
 
+    @Value("${hermes.memory.sleep-agent.enabled:true}")
+    private boolean enabled;
+
     @Scheduled(fixedDelayString = "${hermes.memory.sleep-agent.fixed-delay-ms:300000}")
     public void consolidateIdleConversations() {
+        if (!enabled) {
+            log.debug("SleepTimeMemoryAgent is disabled via configuration.");
+            return;
+        }
+
         // [溯源] 算法优化指南 §4.3: OOM 保护 — JVM 内存使用率 > 85% 时跳过本轮
         Runtime runtime = Runtime.getRuntime();
         long usedMemory = runtime.totalMemory() - runtime.freeMemory();

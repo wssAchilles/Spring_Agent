@@ -154,6 +154,9 @@ flow:
 
 # Hermes 微服务 gRPC 配置
 hermes:
+  memory:
+    sleep-agent:
+      enabled: false
   grpc:
     host: ${HERMES_GRPC_HOST:localhost}
     port: ${HERMES_GRPC_PORT:9090}
