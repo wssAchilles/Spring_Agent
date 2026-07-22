@@ -320,7 +320,11 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
         // 6. 构建 gRPC ChatRequest
         ChatRequest request = ChatRequest.newBuilder()
-                .setRequestId(UUID.randomUUID().toString())
+                .setRequestId(kbAgentConfig.getRequestId() != null ? kbAgentConfig.getRequestId() : "")
+                .setWorkspaceId(kbAgentConfig.getWorkspaceId() != null ? kbAgentConfig.getWorkspaceId() : 0L)
+                .setBotId(kbAgentConfig.getBotId() != null ? kbAgentConfig.getBotId() : 0L)
+                .setUserId(kbAgentConfig.getUserId() != null ? kbAgentConfig.getUserId() : 0L)
+                .setConversationId(kbAgentConfig.getConversationId() != null ? kbAgentConfig.getConversationId() : 0L)
                 .setQuestion(kbAgentConfig.getQuestion())
                 .setSystemPrompt(systemPrompt != null ? systemPrompt : "")
                 .setInputParams(kbAgentConfig.getInput() != null ? kbAgentConfig.getInput() : "")
@@ -397,7 +401,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
     private Optional<SemanticCacheHitDTO> findSemanticCache(KbAgentConfigReqVO req, List<Long> knowledgeBaseIds,
                                                             String modelName) {
-        if (knowledgeBaseIds.isEmpty()) {
+        if (!hasCompleteIdentity(req) || knowledgeBaseIds.isEmpty()) {
             return Optional.empty();
         }
         try {
@@ -417,7 +421,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
     private void saveSemanticCacheAsync(KbAgentConfigReqVO req, List<Long> knowledgeBaseIds,
                                         String modelName, String answer, String sourcesJson) {
-        if (knowledgeBaseIds.isEmpty() || answer == null || answer.isBlank()) {
+        if (!hasCompleteIdentity(req) || knowledgeBaseIds.isEmpty() || answer == null || answer.isBlank()) {
             return;
         }
         Mono.fromRunnable(() -> {
@@ -436,6 +440,15 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                     RagFallbackMonitor.record("semantic_cache", "skip_write", "kb async save failed: " + error.getMessage());
                     log.warn("Semantic cache async save failed", error);
                 });
+    }
+
+    private boolean hasCompleteIdentity(KbAgentConfigReqVO req) {
+        return req != null
+                && req.getWorkspaceId() != null && req.getWorkspaceId() > 0
+                && req.getBotId() != null && req.getBotId() > 0
+                && req.getUserId() != null && req.getUserId() > 0
+                && req.getConversationId() != null && req.getConversationId() > 0
+                && req.getRequestId() != null && !req.getRequestId().isBlank();
     }
 
     private Flux<KbChatMessageSendRespVO> cachedAnswerFlux(String question, SemanticCacheHitDTO hit) {

@@ -1,8 +1,10 @@
 package tech.qiantong.qknow.module.kb.service.agent.impl;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Flux;
+import tech.qiantong.qknow.hermes.proto.ChatRequest;
 import tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO;
 import tech.qiantong.qknow.module.ai.api.modelMarket.IAiModelApiService;
 import tech.qiantong.qknow.module.kb.controller.admin.agent.vo.KbAgentConfigReqVO;
@@ -42,8 +44,7 @@ class KbAgentConfigServiceCacheTest {
         ReflectionTestUtils.setField(service, "aiModelService", aiModelService);
 
         KbAgentConfigReqVO req = new KbAgentConfigReqVO();
-        req.setWorkspaceId(10L);
-        req.setBotId(20L);
+        setCompleteIdentity(req, "request-cache-hit");
         req.setQuestion("问题");
         req.setKnowledgeIds("1,2");
         req.setModelConfig("{\"modelId\":\"1\",\"modelName\":\"deepseek-chat\"}");
@@ -59,7 +60,7 @@ class KbAgentConfigServiceCacheTest {
     }
 
     @Test
-    void cacheMissCallsHermes() throws Exception {
+    void cacheMissForwardsIdentityWithoutRebuildingRequestId() throws Exception {
         KbAgentConfigServiceImpl service = new KbAgentConfigServiceImpl();
         IKmcApiService kmcApiService = mock(IKmcApiService.class);
         HermesGrpcClient hermesGrpcClient = mock(HermesGrpcClient.class);
@@ -75,15 +76,78 @@ class KbAgentConfigServiceCacheTest {
         ReflectionTestUtils.setField(service, "aiModelService", aiModelService);
 
         KbAgentConfigReqVO req = new KbAgentConfigReqVO();
-        req.setWorkspaceId(10L);
-        req.setBotId(20L);
+        setCompleteIdentity(req, "request-cache-miss");
         req.setQuestion("问题");
         req.setKnowledgeIds("1");
         req.setModelConfig("{\"modelId\":\"1\",\"modelName\":\"deepseek-chat\"}");
 
         service.chatMessage(req).collectList().block();
 
-        verify(hermesGrpcClient).chat(any());
+        ArgumentCaptor<ChatRequest> requestCaptor = ArgumentCaptor.forClass(ChatRequest.class);
+        verify(hermesGrpcClient).chat(requestCaptor.capture());
+        ChatRequest request = requestCaptor.getValue();
+        assertEquals("request-cache-miss", request.getRequestId());
+        assertEquals(10L, request.getWorkspaceId());
+        assertEquals(20L, request.getBotId());
+        assertEquals(30L, request.getConversationId());
+        assertEquals(40L, request.getUserId());
+    }
+
+    @Test
+    void eachMissingIdentityFieldSkipsSemanticCacheLookupAndWrite() throws Exception {
+        KbAgentConfigServiceImpl service = new KbAgentConfigServiceImpl();
+        IKmcApiService kmcApiService = mock(IKmcApiService.class);
+        HermesGrpcClient hermesGrpcClient = mock(HermesGrpcClient.class);
+        IAiModelApiService aiModelService = mock(IAiModelApiService.class);
+        when(aiModelService.getAiModel(1L)).thenReturn(aiModel());
+        when(kmcApiService.getKnowledgeBaseByIds(any())).thenReturn(List.of());
+
+        KbChatMessageSendRespVO response = new KbChatMessageSendRespVO();
+        KbChatMessageSendRespVO.Message receive = new KbChatMessageSendRespVO.Message();
+        receive.setContent("answer");
+        response.setReceive(receive);
+        when(hermesGrpcClient.chat(any())).thenReturn(Flux.just(response));
+
+        ReflectionTestUtils.setField(service, "kmcApiService", kmcApiService);
+        ReflectionTestUtils.setField(service, "hermesGrpcClient", hermesGrpcClient);
+        ReflectionTestUtils.setField(service, "aiModelService", aiModelService);
+
+        KbAgentConfigReqVO missingWorkspace = completeRequest("missing-workspace");
+        missingWorkspace.setWorkspaceId(null);
+        KbAgentConfigReqVO missingBot = completeRequest("missing-bot");
+        missingBot.setBotId(null);
+        KbAgentConfigReqVO missingUser = completeRequest("missing-user");
+        missingUser.setUserId(null);
+        KbAgentConfigReqVO missingConversation = completeRequest("missing-conversation");
+        missingConversation.setConversationId(null);
+        KbAgentConfigReqVO missingRequest = completeRequest("missing-request");
+        missingRequest.setRequestId(null);
+
+        for (KbAgentConfigReqVO req : List.of(
+                missingWorkspace, missingBot, missingUser, missingConversation, missingRequest)) {
+            service.chatMessage(req).collectList().block();
+        }
+
+        verify(kmcApiService, never()).findSemanticAnswer(any());
+        verify(kmcApiService, after(200).never()).saveSemanticAnswer(any());
+        verify(hermesGrpcClient, times(5)).chat(any());
+    }
+
+    private void setCompleteIdentity(KbAgentConfigReqVO req, String requestId) {
+        req.setWorkspaceId(10L);
+        req.setBotId(20L);
+        req.setConversationId(30L);
+        req.setUserId(40L);
+        req.setRequestId(requestId);
+    }
+
+    private KbAgentConfigReqVO completeRequest(String requestId) {
+        KbAgentConfigReqVO req = new KbAgentConfigReqVO();
+        setCompleteIdentity(req, requestId);
+        req.setQuestion("问题");
+        req.setKnowledgeIds("1");
+        req.setModelConfig("{\"modelId\":\"1\",\"modelName\":\"deepseek-chat\"}");
+        return req;
     }
 
     private AiModelRespDTO aiModel() {
