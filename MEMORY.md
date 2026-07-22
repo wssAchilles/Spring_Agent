@@ -70,9 +70,9 @@ ReactAgent 执行（System Prompt + Tools + Messages）
 | 实例            | 地址           | 用户     | 用途     |
 | --------------- | -------------- | -------- | -------- |
 | 本地 PostgreSQL | localhost:5432 | achilles | 主数据库 |
-| Docker Redis    | localhost:6379 | -        | 缓存服务 |
+| 本地 Redis      | localhost:6379 | -        | 缓存服务 |
 
-**注意**：Docker PostgreSQL 容器已停止，统一使用本地 PostgreSQL。
+**注意**：本地开发统一使用宿主机 PostgreSQL 与 Redis；Neo4j 使用 Docker。
 
 ### 1.3 关键表结构
 
