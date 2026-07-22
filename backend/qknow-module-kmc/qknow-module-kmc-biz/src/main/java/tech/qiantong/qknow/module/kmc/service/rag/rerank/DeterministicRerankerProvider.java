@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,7 +56,9 @@ public class DeterministicRerankerProvider implements RerankerProvider {
         }
 
         return candidates.stream()
-                .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+                .sorted(Comparator.comparingDouble(RetrievalResult::getScore).reversed()
+                        .thenComparing(RetrievalResult::getSegmentId,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
                 .limit(topK)
                 .collect(Collectors.toList());
     }

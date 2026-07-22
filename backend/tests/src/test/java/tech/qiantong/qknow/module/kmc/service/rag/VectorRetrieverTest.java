@@ -13,6 +13,7 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import tech.qiantong.qknow.ai.constant.WeaviateConstant;
@@ -33,8 +34,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -97,6 +100,48 @@ class VectorRetrieverTest {
         assertEquals(0.9d, results.get(0).getScore(), 0.000001d);
         assertEquals(0.1d, (Double) results.get(0).getMetadata().get("pgvector_score"), 0.000001d);
         assertEquals(0.9d, (Double) results.get(0).getMetadata().get("vecsim_score"), 0.000001d);
+    }
+
+    @Test
+    @DisplayName("VecSim 重评分开关默认开启并绑定固定配置项")
+    void vecSimRescoreFlag_usesExpectedPropertyAndDefaultsTrue() throws Exception {
+        Field field = requiredField("vecSimRescoreEnabled");
+        Value value = field.getAnnotation(Value.class);
+
+        assertNotNull(value);
+        assertEquals("${qknow.rag.vector.vecsim-rescore-enabled:true}", value.value());
+        assertTrue(field.getBoolean(new VectorRetriever()));
+    }
+
+    @Test
+    @DisplayName("关闭 VecSim 重评分时保留 pgvector 顺序和分数")
+    void retrieve_keepsPgVectorResultsWhenVecSimRescoreDisabled() throws Exception {
+        KmcKnowledgeBaseDO kb = KmcKnowledgeBaseDO.builder()
+                .id(7L)
+                .embeddingModelProvider("1")
+                .embeddingModel("text-embedding")
+                .build();
+        when(kmcKnowledgeBaseMapper.selectById(7L)).thenReturn(kb);
+        when(aiModelService.getEmbeddingModel(eq(1L), eq("text-embedding"))).thenReturn(embeddingModel);
+        when(vectorStoreService.getVectorStore(embeddingModel)).thenReturn(vectorStore);
+        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(
+                vectorDoc("vec-11", 11L, 101L, "alpha", 0.8),
+                vectorDoc("vec-22", 22L, 102L, "beta", 0.1)
+        ));
+        setField("jdbcTemplate", jdbcTemplate);
+        requiredField("vecSimRescoreEnabled").set(retriever, false);
+
+        List<RetrievalResult> results = retriever.retrieve(7L, "query", 2);
+
+        verify(embeddingModel, never()).call(any(EmbeddingRequest.class));
+        verifyNoInteractions(jdbcTemplate);
+        assertFalse(retriever.candidateLoadCalled);
+        assertFalse(retriever.vecSimCalled);
+        assertEquals(List.of(11L, 22L), results.stream().map(RetrievalResult::getSegmentId).toList());
+        assertEquals(0.8d, results.get(0).getScore(), 0.000001d);
+        assertEquals(0.1d, results.get(1).getScore(), 0.000001d);
+        assertFalse(results.get(0).getMetadata().containsKey("pgvector_score"));
+        assertFalse(results.get(0).getMetadata().containsKey("vecsim_score"));
     }
 
     @Test
@@ -181,9 +226,20 @@ class VectorRetrieverTest {
         field.set(retriever, value);
     }
 
+    private Field requiredField(String name) {
+        Field field = Arrays.stream(VectorRetriever.class.getDeclaredFields())
+                .filter(candidate -> candidate.getName().equals(name))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(field, "VectorRetriever 缺少字段 " + name);
+        field.setAccessible(true);
+        return field;
+    }
+
     private static class TestVectorRetriever extends VectorRetriever {
         private List<VectorRetriever.CandidateVector> candidateVectors = List.of();
         private float[] nativeScores = new float[0];
+        private boolean candidateLoadCalled;
         private boolean vecSimCalled;
         private float[] lastQueryEmbedding;
         private float[] lastCorpus;
@@ -191,6 +247,7 @@ class VectorRetrieverTest {
 
         @Override
         List<VectorRetriever.CandidateVector> loadCandidateVectors(Long knowledgeBaseId, List<RetrievalResult> results) {
+            candidateLoadCalled = true;
             assertEquals(7L, knowledgeBaseId);
             assertEquals(2, results.size());
             return candidateVectors;

@@ -3,6 +3,7 @@ package tech.qiantong.qknow.module.kmc.service.rag;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
@@ -31,6 +32,9 @@ public class RagRerankService {
 
     @Resource
     private ColbertScorer colbertScorer;
+
+    @Value("${qknow.rag.rerank.identifier-consistency-enabled:false}")
+    private boolean identifierConsistencyEnabled;
 
     public List<RetrievalResult> rerank(String query, List<RetrievalResult> candidates,
                                          QueryIntent queryIntent, int topK,
@@ -85,7 +89,76 @@ public class RagRerankService {
 
         // Phase 3: 规则兜底 (最后手段)
         RagFallbackMonitor.record("reranker", "deterministic", "no remote or local reranker completed");
-        return deterministicRerankerProvider.rerank(context, candidates, queryIntent, topK);
+        return identifierConsistencyRerank(context, candidates, queryIntent, topK);
+    }
+
+    private List<RetrievalResult> identifierConsistencyRerank(
+            RerankRequestContext context,
+            List<RetrievalResult> candidates,
+            QueryIntent queryIntent,
+            int topK) {
+        if (!identifierConsistencyEnabled) {
+            return deterministicRerankerProvider.rerank(
+                    context, candidates, queryIntent, topK);
+        }
+
+        List<Pattern> identifierPatterns = KeywordRetriever
+                .extractIdentifierTerms(context.getQuery()).stream()
+                .map(identifier -> Pattern.compile(
+                        "(?<![\\p{L}\\p{N}])" + Pattern.quote(identifier)
+                                + "(?![\\p{L}\\p{N}])"))
+                .toList();
+        if (identifierPatterns.isEmpty()
+                || candidates.stream().noneMatch(
+                        candidate -> matchesIdentifier(candidate, identifierPatterns))) {
+            return deterministicRerankerProvider.rerank(
+                    context, candidates, queryIntent, topK);
+        }
+
+        List<RetrievalResult> detached = candidates.stream()
+                .map(RagRerankService::copyRetrievalResult)
+                .collect(Collectors.toCollection(ArrayList::new));
+        List<RetrievalResult> fullRanking = deterministicRerankerProvider.rerank(
+                context, detached, queryIntent, detached.size());
+        List<Double> rankScores = fullRanking.stream()
+                .map(RetrievalResult::getScore)
+                .toList();
+
+        List<RetrievalResult> reordered = new ArrayList<>(fullRanking.size());
+        fullRanking.stream()
+                .filter(candidate -> matchesIdentifier(candidate, identifierPatterns))
+                .forEach(reordered::add);
+        fullRanking.stream()
+                .filter(candidate -> !matchesIdentifier(candidate, identifierPatterns))
+                .forEach(reordered::add);
+        for (int index = 0; index < reordered.size(); index++) {
+            reordered.get(index).setScore(rankScores.get(index));
+        }
+        return reordered.stream().limit(topK).collect(Collectors.toList());
+    }
+
+    private static boolean matchesIdentifier(
+            RetrievalResult candidate, List<Pattern> identifierPatterns) {
+        return candidate != null
+                && candidate.getDocumentName() != null
+                && identifierPatterns.stream().anyMatch(
+                        pattern -> pattern.matcher(candidate.getDocumentName()).find());
+    }
+
+    private static RetrievalResult copyRetrievalResult(RetrievalResult result) {
+        return RetrievalResult.builder()
+                .segmentId(result.getSegmentId())
+                .qmSegmentId(result.getQmSegmentId())
+                .parentSegmentId(result.getParentSegmentId())
+                .documentId(result.getDocumentId())
+                .documentName(result.getDocumentName())
+                .content(result.getContent())
+                .answer(result.getAnswer())
+                .score(result.getScore())
+                .source(result.getSource())
+                .metadata(result.getMetadata() == null
+                        ? null : new LinkedHashMap<>(result.getMetadata()))
+                .build();
     }
 
     /**

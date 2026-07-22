@@ -89,4 +89,18 @@ class ColbertScorerTest {
         double lastScore = (Double) result.get(2).getMetadata().get("colbert_score");
         assertTrue(firstScore >= lastScore);
     }
+
+    @Test
+    @DisplayName("同分时按 segmentId 升序，缺失 ID 排在最后")
+    void rerank_equalScoresUsesStableSegmentIdOrder() {
+        Document highId = Document.builder().id("high").text("high").build();
+        highId.getMetadata().put("segmentId", 9L);
+        Document lowId = Document.builder().id("low").text("low").build();
+        lowId.getMetadata().put("segmentId", 2L);
+        Document missingId = Document.builder().id("missing").text("missing").build();
+
+        List<Document> result = scorer.rerank("", List.of(highId, missingId, lowId), 3);
+
+        assertEquals(List.of("low", "high", "missing"), result.stream().map(Document::getId).toList());
+    }
 }

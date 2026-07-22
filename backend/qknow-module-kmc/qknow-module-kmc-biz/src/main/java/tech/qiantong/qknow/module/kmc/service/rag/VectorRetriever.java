@@ -10,6 +10,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.ai.constant.WeaviateConstant;
@@ -49,6 +50,9 @@ public class VectorRetriever {
 
     @Resource
     private JdbcTemplate jdbcTemplate;
+
+    @Value("${qknow.rag.vector.vecsim-rescore-enabled:true}")
+    private boolean vecSimRescoreEnabled = true;
 
     private volatile Boolean vectorStoreIdUuid;
 
@@ -110,7 +114,9 @@ public class VectorRetriever {
                         .metadata(new LinkedHashMap<>(metadata))
                         .build());
             }
-            rescoreWithVecSim(knowledgeBaseId, query, embeddingModel, results);
+            if (vecSimRescoreEnabled) {
+                rescoreWithVecSim(knowledgeBaseId, query, embeddingModel, results);
+            }
             return results;
         } catch (Exception e) {
             RagFallbackMonitor.record("vector_store", "empty_results", "vector retrieval failed: " + e.getMessage());

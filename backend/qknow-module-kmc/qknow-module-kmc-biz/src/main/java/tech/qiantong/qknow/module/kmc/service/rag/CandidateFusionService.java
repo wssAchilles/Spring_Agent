@@ -108,8 +108,24 @@ public class CandidateFusionService {
             fused.add(copy);
         }
 
-        fused.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
+        fused.sort(Comparator.comparingDouble(RetrievalResult::getScore).reversed()
+                .thenComparing(CandidateFusionService::compareStableSegmentIds));
         return new FusionResult(fused, pathScores, excludedPaths);
+    }
+
+    private static int compareStableSegmentIds(RetrievalResult left, RetrievalResult right) {
+        Long leftId = left.getSegmentId();
+        Long rightId = right.getSegmentId();
+        if (leftId == null && rightId == null) {
+            return 0;
+        }
+        if (leftId == null) {
+            return 1;
+        }
+        if (rightId == null) {
+            return -1;
+        }
+        return Long.compare(leftId, rightId);
     }
 
     private double normalizePathScore(String pathName, double topScore) {
