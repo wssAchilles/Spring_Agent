@@ -38,6 +38,8 @@ message ChatRequest {
   repeated ChatMessage history = 10;
   ModelCredentials model_credentials = 11;  // Pre-resolved from control plane
   repeated RAGContext rag_contexts = 12;    // Pre-retrieved RAG results
+  int64 user_id = 13;
+  int64 conversation_id = 14;
 }
 
 message ModelConfig {
