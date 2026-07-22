@@ -2,15 +2,19 @@ package tech.qiantong.qknow.rag;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+import tech.qiantong.qknow.module.kmc.service.rag.RagRerankService;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.ColbertScorer;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.DeterministicRerankerProvider;
+import tech.qiantong.qknow.module.kmc.service.rag.rerank.LocalRerankerProvider;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.RerankRequestContext;
 import tech.qiantong.qknow.module.kmc.service.rag.rerank.RerankerProvider;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -18,6 +22,115 @@ import static org.mockito.Mockito.*;
 
 @DisplayName("RagRerankService 重排序测试")
 class RagRerankServiceTest {
+
+    @Test
+    @DisplayName("identifier consistency 默认关闭")
+    void identifierConsistency_defaultsToDisabled() {
+        RagRerankService service = new RagRerankService();
+
+        assertEquals(Boolean.FALSE,
+                ReflectionTestUtils.getField(service, "identifierConsistencyEnabled"));
+    }
+
+    @Test
+    @DisplayName("开启后按标识符稳定前置并精确保留 deterministic 分数前缀")
+    void identifierConsistency_enabled_promotesMatchesAndPreservesScoresAndDuplicates() {
+        DeterministicRerankerProvider deterministic = spy(new DeterministicRerankerProvider());
+        RagRerankService service = service(List.of(deterministic), deterministic, true);
+        List<RetrievalResult> candidates = new ArrayList<>(List.of(
+                candidate(1L, "archive-999.txt", 7.0D),
+                candidate(2L, "policy-034.txt", 6.0D),
+                candidate(3L, "文034.txt", 5.0D),
+                candidate(2L, "topic_044.txt", 4.0D),
+                candidate(4L, "topic-044.txt", 3.0D),
+                candidate(5L, "policy-34.txt", 2.0D),
+                candidate(6L, null, 1.0D)));
+
+        List<RetrievalResult> result = service.rerank(
+                "document id 034 and topic 044", candidates,
+                QueryIntent.builder().build(), 4, null, null);
+
+        assertEquals(List.of(2L, 2L, 4L, 1L),
+                result.stream().map(RetrievalResult::getSegmentId).toList());
+        assertEquals(List.of(7.0D, 6.0D, 5.0D, 4.0D),
+                result.stream().map(RetrievalResult::getScore).toList());
+        assertEquals("qm-2", result.get(0).getQmSegmentId());
+        assertEquals("parent-2", result.get(0).getParentSegmentId());
+        assertEquals(102L, result.get(0).getDocumentId());
+        assertEquals("answer-2", result.get(0).getAnswer());
+        assertEquals("keyword", result.get(0).getSource());
+        assertEquals(Map.of("segmentId", 2L, "score", 6.0D, "source", "keyword"),
+                result.get(0).getMetadata());
+        assertNotSame(candidates.get(1).getMetadata(), result.get(0).getMetadata());
+        verify(deterministic, times(1)).rerank(
+                any(RerankRequestContext.class), anyList(), any(QueryIntent.class), eq(7));
+    }
+
+    @Test
+    @DisplayName("关闭、无标识符或无匹配时保持业务 topK deterministic 路径")
+    void identifierConsistency_inactivePathsPreserveBusinessTopK() {
+        for (InactiveCase testCase : List.of(
+                new InactiveCase(false, "document id 034", "policy-034.txt"),
+                new InactiveCase(true, "2024-03-04 10% Day07", "policy-034.txt"),
+                new InactiveCase(true, "document id 034", "policy-035.txt"))) {
+            DeterministicRerankerProvider deterministic = spy(new DeterministicRerankerProvider());
+            RagRerankService service = service(
+                    List.of(deterministic), deterministic, testCase.enabled());
+
+            List<RetrievalResult> result = service.rerank(
+                    testCase.query(), new ArrayList<>(List.of(
+                            candidate(1L, testCase.documentName(), 2.0D),
+                            candidate(2L, "other.txt", 1.0D))),
+                    QueryIntent.builder().build(), 1, null, null);
+
+            assertEquals(List.of(1L),
+                    result.stream().map(RetrievalResult::getSegmentId).toList());
+            verify(deterministic, times(1)).rerank(
+                    any(RerankRequestContext.class), anyList(), any(QueryIntent.class), eq(1));
+        }
+    }
+
+    @Test
+    @DisplayName("remote 与 local 成功路径不执行 identifier consistency")
+    void identifierConsistency_remoteAndLocalSuccessBypassDeterministic() {
+        RetrievalResult remoteResult = candidate(90L, "remote.txt", 9.0D);
+        RerankerProvider remote = mock(RerankerProvider.class);
+        when(remote.supports(any())).thenReturn(true);
+        when(remote.name()).thenReturn("remote");
+        when(remote.rerank(any(), anyList(), any(), anyInt())).thenReturn(List.of(remoteResult));
+        DeterministicRerankerProvider remoteDeterministic = mock(DeterministicRerankerProvider.class);
+        RagRerankService remoteService = service(
+                List.of(remote), remoteDeterministic, true);
+
+        assertSame(remoteResult, remoteService.rerank(
+                "document id 034", List.of(candidate(1L, "policy-034.txt", 1.0D)),
+                QueryIntent.builder().build(), 1, null, null).get(0));
+        verifyNoInteractions(remoteDeterministic);
+
+        RetrievalResult localResult = candidate(91L, "local.txt", 8.0D);
+        LocalRerankerProvider local = mock(LocalRerankerProvider.class);
+        when(local.supports(any())).thenReturn(true);
+        when(local.rerank(any(), anyList(), any(), anyInt())).thenReturn(List.of(localResult));
+        DeterministicRerankerProvider localDeterministic = mock(DeterministicRerankerProvider.class);
+        RagRerankService localService = service(
+                List.of(local), localDeterministic, true);
+
+        assertSame(localResult, localService.rerank(
+                "document id 034", List.of(candidate(1L, "policy-034.txt", 1.0D)),
+                QueryIntent.builder().build(), 1, null, null).get(0));
+        verifyNoInteractions(localDeterministic);
+    }
+
+    @Test
+    @DisplayName("服务空输入保持空结果且不调用任何 reranker")
+    void identifierConsistency_emptyInputReturnsEmpty() {
+        DeterministicRerankerProvider deterministic = mock(DeterministicRerankerProvider.class);
+        RagRerankService service = service(List.of(deterministic), deterministic, true);
+
+        assertTrue(service.rerank("document id 034", List.of(),
+                QueryIntent.builder().build(), 10, null, null).isEmpty());
+        verifyNoInteractions(deterministic);
+    }
 
     @Test
     @DisplayName("非空候选先经过 ColBERT 粗排")
@@ -44,8 +157,7 @@ class RagRerankServiceTest {
             throw new RuntimeException(e);
         }
 
-        List<RetrievalResult> candidates = List.of(
-                RetrievalResult.builder()
+        RetrievalResult candidate = RetrievalResult.builder()
                         .segmentId(1L)
                         .qmSegmentId("vec-1")
                         .parentSegmentId("parent-1")
@@ -54,8 +166,8 @@ class RagRerankServiceTest {
                         .content("knowledge graph entities relationships")
                         .answer("answer")
                         .score(0.5)
-                        .build()
-        );
+                        .build();
+        List<RetrievalResult> candidates = List.of(candidate);
 
         List<RetrievalResult> result = service.rerank(
                 "knowledge graph", candidates, QueryIntent.builder().build(), 2, null, null);
@@ -181,4 +293,39 @@ class RagRerankServiceTest {
 
         assertTrue(result.isEmpty());
     }
+
+    private static RagRerankService service(
+            List<RerankerProvider> providers,
+            DeterministicRerankerProvider deterministic,
+            boolean identifierConsistencyEnabled) {
+        RagRerankService service = new RagRerankService();
+        ColbertScorer colbert = mock(ColbertScorer.class);
+        when(colbert.rerank(anyString(), anyList(), anyInt()))
+                .thenAnswer(invocation -> invocation.getArgument(1));
+        ReflectionTestUtils.setField(service, "rerankerProviders", providers);
+        ReflectionTestUtils.setField(service, "deterministicRerankerProvider", deterministic);
+        ReflectionTestUtils.setField(service, "colbertScorer", colbert);
+        ReflectionTestUtils.setField(service, "identifierConsistencyEnabled",
+                identifierConsistencyEnabled);
+        return service;
+    }
+
+    private static RetrievalResult candidate(Long segmentId, String documentName, double score) {
+        return RetrievalResult.builder()
+                .segmentId(segmentId)
+                .qmSegmentId("qm-" + segmentId)
+                .parentSegmentId("parent-" + segmentId)
+                .documentId(100L + segmentId)
+                .documentName(documentName)
+                .content("document topic content")
+                .answer("answer-" + segmentId)
+                .score(score)
+                .source("keyword")
+                .metadata(Map.of("ordinal", segmentId))
+                .build();
+    }
+
+    private record InactiveCase(boolean enabled, String query, String documentName) {
+    }
+
 }

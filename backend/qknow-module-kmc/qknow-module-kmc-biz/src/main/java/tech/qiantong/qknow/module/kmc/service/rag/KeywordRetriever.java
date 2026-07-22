@@ -2,6 +2,7 @@ package tech.qiantong.qknow.module.kmc.service.rag;
 
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
@@ -38,6 +39,20 @@ public class KeywordRetriever {
 
     // [溯源] 算法优化指南 §2.2: 同义词词典
     private static final Map<String, List<String>> SYNONYMS = new HashMap<>();
+    private static final int IDENTIFIER_CUE_WINDOW_CODE_POINTS = 12;
+    private static final Pattern IDENTIFIER_NUMBER_SPAN = Pattern.compile(
+            "(?<![\\p{L}\\p{N}])\\d+(?![\\p{L}\\p{N}])");
+    private static final Pattern IDENTIFIER_CUE = Pattern.compile(
+            "(?i)(?:主题|编号|文档|段落|\\btopic\\b|\\bid\\b|\\bdocument\\b|"
+                    + "\\bdoc\\b|\\bsegment\\b|\\bpolicy\\b)");
+    private static final List<Pattern> NON_IDENTIFIER_PATTERNS = List.of(
+            Pattern.compile("\\b\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}\\b"),
+            Pattern.compile("\\b\\d{1,2}:\\d{2}(?::\\d{2})?\\b"),
+            Pattern.compile("(?<![\\d.])\\d+\\.\\d+(?![\\d.])"),
+            Pattern.compile("\\b\\d{1,3}(?:,\\d{3})+\\b"),
+            Pattern.compile("(?i)\\bday\\s*\\d+\\b"),
+            Pattern.compile("第\\s*\\d+\\s*[天日]"),
+            Pattern.compile("\\d+(?:\\.\\d+)?\\s*(?:%|天|日|小时|分鐘|分钟|kg|公斤|元|次|个|件|米|gb|mb)"));
     static {
         SYNONYMS.put("RAG", List.of("检索增强生成", "Retrieval Augmented Generation"));
         SYNONYMS.put("大模型", List.of("LLM", "大语言模型", "Large Language Model"));
@@ -61,13 +76,16 @@ public class KeywordRetriever {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
+    @Value("${qknow.rag.keyword.identifier-aware:false}")
+    private boolean identifierAware;
+
     public List<RetrievalResult> retrieve(Long knowledgeBaseId, String query, int topK) {
         if (StrUtil.isBlank(query)) {
             return new ArrayList<>();
         }
 
         // [溯源] 算法优化指南 §2.2: 应用层中文分词 + 同义词扩展
-        List<String> searchTerms = buildSearchTerms(query);
+        List<String> searchTerms = buildSearchTerms(query, identifierAware);
         List<String> dayTerms = extractDayTerms(query);
         List<String> expandedTerms = expandWithSynonyms(searchTerms);
 
@@ -205,6 +223,10 @@ public class KeywordRetriever {
      * 优先使用 jieba-rs，JNI 不可用时降级到滑动窗口
      */
     static List<String> buildSearchTerms(String queryText) {
+        return buildSearchTerms(queryText, false);
+    }
+
+    static List<String> buildSearchTerms(String queryText, boolean identifierAware) {
         LinkedHashSet<String> terms = new LinkedHashSet<>();
         terms.add(queryText.trim());
 
@@ -239,6 +261,10 @@ public class KeywordRetriever {
             }
         }
 
+        if (identifierAware) {
+            terms.addAll(extractIdentifierTerms(queryText));
+        }
+
         // DayXX 标准化
         for (String token : new ArrayList<>(terms)) {
             if (token.matches("(?i)day0?\\d+")) {
@@ -251,6 +277,45 @@ public class KeywordRetriever {
         }
 
         return new ArrayList<>(terms);
+    }
+
+    /**
+     * 提取实体提示词附近的原始数字标识符。
+     * 数字必须是独立 span，且提示词位于其前后 12 个 Unicode code point 内。
+     */
+    static List<String> extractIdentifierTerms(String queryText) {
+        if (StrUtil.isBlank(queryText)) {
+            return List.of();
+        }
+        LinkedHashSet<String> identifiers = new LinkedHashSet<>();
+        Matcher matcher = IDENTIFIER_NUMBER_SPAN.matcher(queryText);
+        while (matcher.find()) {
+            if (isNonIdentifierNumber(queryText, matcher.start(), matcher.end())) {
+                continue;
+            }
+            int before = queryText.codePointCount(0, matcher.start());
+            int after = queryText.codePointCount(matcher.end(), queryText.length());
+            int windowStart = queryText.offsetByCodePoints(
+                    matcher.start(), -Math.min(IDENTIFIER_CUE_WINDOW_CODE_POINTS, before));
+            int windowEnd = queryText.offsetByCodePoints(
+                    matcher.end(), Math.min(IDENTIFIER_CUE_WINDOW_CODE_POINTS, after));
+            if (IDENTIFIER_CUE.matcher(queryText.substring(windowStart, windowEnd)).find()) {
+                identifiers.add(matcher.group());
+            }
+        }
+        return new ArrayList<>(identifiers);
+    }
+
+    private static boolean isNonIdentifierNumber(String queryText, int start, int end) {
+        for (Pattern pattern : NON_IDENTIFIER_PATTERNS) {
+            Matcher matcher = pattern.matcher(queryText);
+            while (matcher.find()) {
+                if (matcher.start() <= start && matcher.end() >= end) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

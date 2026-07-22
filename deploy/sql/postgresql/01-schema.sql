@@ -549,6 +549,7 @@ CREATE TABLE IF NOT EXISTS kmc_document (
     preview_count       BIGINT DEFAULT 0,
     download_count      BIGINT DEFAULT 0,
     sync_status         SMALLINT DEFAULT 0,
+    sync_version        BIGINT NOT NULL DEFAULT 0,
     mode                VARCHAR(32) DEFAULT NULL,
     parent_mode         VARCHAR(32) DEFAULT NULL,
     remove_extra_spaces BOOLEAN DEFAULT NULL,
@@ -1249,15 +1250,17 @@ CREATE TABLE IF NOT EXISTS conversation (
     user_id          BIGINT DEFAULT NULL,
     title            VARCHAR(256) DEFAULT NULL,
     status           SMALLINT DEFAULT 0,
-    valid_flag       BOOLEAN NOT NULL DEFAULT TRUE,
-    del_flag         BOOLEAN NOT NULL DEFAULT FALSE,
+    valid_flag       SMALLINT NOT NULL DEFAULT 1,
+    del_flag         SMALLINT NOT NULL DEFAULT 0,
     create_by        VARCHAR(32) DEFAULT NULL,
     creator_id       BIGINT DEFAULT NULL,
     create_time      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_by        VARCHAR(32) DEFAULT NULL,
     updater_id       BIGINT DEFAULT NULL,
     update_time      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    remark           VARCHAR(512) DEFAULT NULL
+    remark           VARCHAR(512) DEFAULT NULL,
+    CONSTRAINT ck_conversation_valid_flag_01 CHECK (valid_flag IN (0, 1)),
+    CONSTRAINT ck_conversation_del_flag_01 CHECK (del_flag IN (0, 1))
 );
 COMMENT ON TABLE conversation IS 'Agent对话表';
 
@@ -1268,15 +1271,17 @@ CREATE TABLE IF NOT EXISTS chat_message (
     content          TEXT DEFAULT NULL,
     token_count      INT DEFAULT NULL,
     metadata         JSONB DEFAULT NULL,
-    valid_flag       BOOLEAN NOT NULL DEFAULT TRUE,
-    del_flag         BOOLEAN NOT NULL DEFAULT FALSE,
+    valid_flag       SMALLINT NOT NULL DEFAULT 1,
+    del_flag         SMALLINT NOT NULL DEFAULT 0,
     create_by        VARCHAR(32) DEFAULT NULL,
     creator_id       BIGINT DEFAULT NULL,
     create_time      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_by        VARCHAR(32) DEFAULT NULL,
     updater_id       BIGINT DEFAULT NULL,
     update_time      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    remark           VARCHAR(512) DEFAULT NULL
+    remark           VARCHAR(512) DEFAULT NULL,
+    CONSTRAINT ck_chat_message_valid_flag_01 CHECK (valid_flag IN (0, 1)),
+    CONSTRAINT ck_chat_message_del_flag_01 CHECK (del_flag IN (0, 1))
 );
 COMMENT ON TABLE chat_message IS '对话消息表';
 CREATE INDEX IF NOT EXISTS idx_chat_message_conv ON chat_message(conversation_id);
@@ -1466,8 +1471,8 @@ CREATE TABLE IF NOT EXISTS dag_checkpoints (
     flow_id VARCHAR(255) NOT NULL,
     group_index INT NOT NULL,
     completed_results TEXT,
-    created_at BIGINT NOT NULL,
-    updated_at BIGINT
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT NULL
 );
 
 -- KMC temporal facts for GraphRAG/Graphiti-style validity windows

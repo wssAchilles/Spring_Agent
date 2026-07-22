@@ -16,6 +16,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
@@ -24,6 +26,7 @@ import java.util.regex.Pattern;
 @Slf4j
 @Component
 public class RagasEvaluator {
+    private static final long EVALUATION_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(30);
     private static final ExecutorService SAMPLE_EXECUTOR = Executors.newFixedThreadPool(
             Math.min(Runtime.getRuntime().availableProcessors(), 4),
             r -> { Thread t = new Thread(r, "ragas-sample"); t.setDaemon(true); return t; });
@@ -74,7 +77,7 @@ public class RagasEvaluator {
                         return evaluateItem(item);
                     } catch (Exception e) {
                         log.error("Failed to evaluate item: {}", item.getQuery(), e);
-                        return new ItemEvaluation(createErrorResult(item.getQuery()), new MetricScores());
+                        return createErrorEvaluation(item.getQuery());
                     }
                 }, SAMPLE_EXECUTOR))
                 .toList();
@@ -84,7 +87,8 @@ public class RagasEvaluator {
             try {
                 ItemEvaluation result = futures.get(i).join();
                 evaluated.add(result);
-                if (result.result().getAnswer().contains("[EVALUATION_ERROR]")) {
+                if (result.result().getAnswer().contains("[EVALUATION_ERROR]")
+                        || result.result().getAnswer().contains("[GENERATION_ERROR]")) {
                     errorCount++;
                 }
                 // 每条都输出进度（含耗时和预计剩余）
@@ -97,8 +101,7 @@ public class RagasEvaluator {
                 }
             } catch (Exception e) {
                 log.error("Evaluation failed at item {}/{}", i + 1, total, e);
-                evaluated.add(new ItemEvaluation(
-                        createErrorResult(dataset.getItems().get(i).getQuery()), new MetricScores()));
+                evaluated.add(createErrorEvaluation(dataset.getItems().get(i).getQuery()));
                 errorCount++;
             }
         }
@@ -115,16 +118,14 @@ public class RagasEvaluator {
         return report;
     }
 
-    private EvaluationReport.ItemResult createErrorResult(String query) {
+    private ItemEvaluation createErrorEvaluation(String query) {
+        MetricScores scores = new MetricScores();
+        scores.markAllInvalid(EvaluationError.ITEM_EVALUATION_FAILED);
         EvaluationReport.ItemResult result = new EvaluationReport.ItemResult();
         result.setQuery(query);
         result.setAnswer("[EVALUATION_ERROR]");
-        result.setScores(Map.of(
-                "faithfulness", 0.0, "answer_relevance", 0.0,
-                "context_precision", 0.0, "context_recall", 0.0,
-                "factual_correctness", 0.0, "noise_sensitivity", 0.0,
-                "negative_rejection", 0.0));
-        return result;
+        result.setScores(scores.toReportMetrics());
+        return new ItemEvaluation(result, scores);
     }
 
     /**
@@ -132,24 +133,17 @@ public class RagasEvaluator {
      */
     public MetricScores evaluateSingle(String query, String answer, List<String> contexts, String expectedAnswer) {
         MetricScores scores = new MetricScores();
+        long deadlineNanos = System.nanoTime() + EVALUATION_TIMEOUT_NANOS;
         contexts = contexts != null ? contexts : List.of();
         String contextStr = String.join("\n", contexts);
 
         Map<String, String> metricPrompts = resolveMetricPrompts();
-        Map<String, CompletableFuture<Double>> futures = new LinkedHashMap<>();
+        Map<String, Future<Double>> futures = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : metricPrompts.entrySet()) {
-            futures.put(entry.getKey(), CompletableFuture.supplyAsync(
-                    () -> judgeMetric(query, contextStr, answer, entry.getValue()), METRIC_EXECUTOR));
+            futures.put(entry.getKey(), METRIC_EXECUTOR.submit(
+                    () -> judgeMetric(entry.getKey(), query, contextStr, answer, expectedAnswer, entry.getValue())));
         }
-        for (Map.Entry<String, CompletableFuture<Double>> entry : futures.entrySet()) {
-            try {
-                setScore(scores, entry.getKey(), entry.getValue().get(30, TimeUnit.SECONDS));
-            } catch (TimeoutException e) {
-                log.warn("Metric timeout: {}", entry.getKey());
-            } catch (Exception e) {
-                log.warn("Metric evaluation failed: {}", entry.getKey(), e);
-            }
-        }
+        collectMetricsUntil(scores, futures, deadlineNanos);
 
         scores.setPassed(scores.isAboveThreshold(config != null ? config.getThreshold() : MetricScores.DEFAULT_GATE_THRESHOLD));
         return scores;
@@ -176,21 +170,104 @@ public class RagasEvaluator {
 
     private ItemEvaluation evaluateItem(EvaluationDataset.EvalItem item) {
         String answer = generateAnswer(item.getQuery(), item.getGroundTruthContexts());
+        if ("[GENERATION_ERROR]".equals(answer)) {
+            MetricScores scores = new MetricScores();
+            scores.markAllInvalid(EvaluationError.GENERATION_FAILED);
+            EvaluationReport.ItemResult result = new EvaluationReport.ItemResult();
+            result.setQuery(item.getQuery());
+            result.setAnswer(answer);
+            result.setScores(scores.toReportMetrics());
+            return new ItemEvaluation(result, scores);
+        }
         MetricScores scores = evaluateSingle(item.getQuery(), answer,
                 item.getGroundTruthContexts(), item.getExpectedAnswer());
         EvaluationReport.ItemResult result = new EvaluationReport.ItemResult();
         result.setQuery(item.getQuery());
         result.setAnswer(answer);
-        Map<String, Double> scoreMap = new LinkedHashMap<>();
-        scoreMap.put("faithfulness", scores.getFaithfulness());
-        scoreMap.put("answer_relevance", scores.getAnswerRelevance());
-        scoreMap.put("context_precision", scores.getContextPrecision());
-        scoreMap.put("context_recall", scores.getContextRecall());
-        scoreMap.put("factual_correctness", scores.getFactualCorrectness());
-        scoreMap.put("noise_sensitivity", scores.getNoiseSensitivity());
-        scoreMap.put("negative_rejection", scores.getNegativeRejection());
-        result.setScores(scoreMap);
+        result.setScores(scores.toReportMetrics());
         return new ItemEvaluation(result, scores);
+    }
+
+    void collectMetric(MetricScores scores, String metricName, Future<Double> future,
+                       long timeout, TimeUnit unit) {
+        Map<String, Future<Double>> futures = new LinkedHashMap<>();
+        futures.put(metricName, future);
+        collectMetrics(scores, futures, timeout, unit);
+    }
+
+    void collectMetrics(MetricScores scores, Map<String, ? extends Future<Double>> futures,
+                        long timeout, TimeUnit unit) {
+        if (timeout < 0 || unit == null) {
+            throw new IllegalArgumentException("valid timeout is required");
+        }
+        collectMetricsUntil(scores, futures, System.nanoTime() + unit.toNanos(timeout));
+    }
+
+    private void collectMetricsUntil(MetricScores scores, Map<String, ? extends Future<Double>> futures,
+                                     long deadlineNanos) {
+        for (Map.Entry<String, ? extends Future<Double>> entry : futures.entrySet()) {
+            if (scores.getStatus(entry.getKey()) != EvaluationStatus.NOT_EVALUATED) {
+                continue;
+            }
+            long remainingNanos = deadlineNanos - System.nanoTime();
+            if (remainingNanos <= 0) {
+                finishAtDeadline(scores, futures);
+                return;
+            }
+            try {
+                setScore(scores, entry.getKey(), entry.getValue().get(remainingNanos, TimeUnit.NANOSECONDS));
+            } catch (TimeoutException e) {
+                finishAtDeadline(scores, futures);
+                return;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                cancelPending(scores, futures, EvaluationError.INTERRUPTED);
+                return;
+            } catch (ExecutionException e) {
+                markMetricFailure(scores, entry.getKey(), e.getCause());
+            }
+        }
+    }
+
+    private void finishAtDeadline(MetricScores scores, Map<String, ? extends Future<Double>> futures) {
+        for (Map.Entry<String, ? extends Future<Double>> entry : futures.entrySet()) {
+            if (scores.getStatus(entry.getKey()) != EvaluationStatus.NOT_EVALUATED) {
+                continue;
+            }
+            Future<Double> future = entry.getValue();
+            if (future.isDone() && !future.isCancelled()) {
+                try {
+                    setScore(scores, entry.getKey(), future.get());
+                } catch (ExecutionException e) {
+                    markMetricFailure(scores, entry.getKey(), e.getCause());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    cancelPending(scores, futures, EvaluationError.INTERRUPTED);
+                    return;
+                }
+            } else {
+                future.cancel(true);
+                scores.markInvalid(entry.getKey(), EvaluationError.TIMEOUT);
+                log.warn("Metric evaluation timed out: {}", entry.getKey());
+            }
+        }
+    }
+
+    private void cancelPending(MetricScores scores, Map<String, ? extends Future<Double>> futures,
+                               EvaluationError error) {
+        for (Map.Entry<String, ? extends Future<Double>> entry : futures.entrySet()) {
+            if (scores.getStatus(entry.getKey()) == EvaluationStatus.NOT_EVALUATED) {
+                entry.getValue().cancel(true);
+                scores.markInvalid(entry.getKey(), error);
+            }
+        }
+    }
+
+    private void markMetricFailure(MetricScores scores, String metricName, Throwable failure) {
+        EvaluationError error = failure instanceof MetricParseException
+                ? EvaluationError.PARSE_FAILED : EvaluationError.MODEL_CALL_FAILED;
+        scores.markInvalid(metricName, error);
+        log.warn("Metric evaluation failed: {}, code={}", metricName, error.getCode());
     }
 
     private void setScore(MetricScores scores, String metricName, double score) {
@@ -209,20 +286,23 @@ public class RagasEvaluator {
     /**
      * 对单个指标调用 ChatModel 评分 (1 次调用)，返回 0.0-1.0 分数
      */
-    private double judgeMetric(String query, String context, String answer, String metricPrompt) {
-        try {
-            String evalPrompt = "问题: " + query + "\n上下文: " + context + "\n回答: " + answer;
-            ChatModel chatModel = createChatModel();
-            List<Message> messages = new ArrayList<>();
-            messages.add(new SystemMessage(decoratePrompt(metricPrompt)));
-            messages.add(new UserMessage(evalPrompt));
-            ChatResponse response = chatModel.call(new Prompt(messages));
-            String responseText = response.getResult().getOutput().getText();
-            return parseScore(responseText);
-        } catch (Exception e) {
-            log.warn("LLM call failed for metric evaluation", e);
-            return 0.0;
+    private double judgeMetric(String metricName, String query, String context, String answer,
+                               String expectedAnswer, String metricPrompt) {
+        StringBuilder evalPrompt = new StringBuilder("问题: ").append(query)
+                .append("\n上下文: ").append(context)
+                .append("\n回答: ").append(answer);
+        if (expectedAnswer != null && !expectedAnswer.isBlank()
+                && ("factual_correctness".equals(metricName)
+                || "context_recall".equals(metricName)
+                || "context_precision".equals(metricName))) {
+            evalPrompt.append("\n参考答案: ").append(expectedAnswer);
         }
+        ChatModel chatModel = createChatModel();
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage(decoratePrompt(metricPrompt)));
+        messages.add(new UserMessage(evalPrompt.toString()));
+        ChatResponse response = chatModel.call(new Prompt(messages));
+        return parseScore(response.getResult().getOutput().getText());
     }
 
     private Map<String, String> resolveMetricPrompts() {
@@ -261,13 +341,17 @@ public class RagasEvaluator {
                 config.getModelName());
     }
 
-    private static final Pattern SCORE_PATTERN = Pattern.compile("\"score\"\\s*:\\s*(0\\.\\d+|1\\.0|1)");
+    private static final Pattern SCORE_PATTERN = Pattern.compile(
+            "\"score\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)(?=\\s*[,}])");
 
     private double parseScore(String responseText) {
+        if (responseText == null) {
+            throw new MetricParseException();
+        }
         // 优先用正则提取 score — 避免 LLM feedback 中中文引号导致 JSON 解析失败
         Matcher m = SCORE_PATTERN.matcher(responseText);
         if (m.find()) {
-            return Double.parseDouble(m.group(1));
+            return validateScore(Double.parseDouble(m.group(1)));
         }
         // fallback: 将中文引号替换后再用 JSON 解析
         try {
@@ -278,11 +362,22 @@ public class RagasEvaluator {
                 cleaned = cleaned.substring(start, end + 1);
             }
             JSONObject json = JSONObject.parseObject(cleaned);
-            return json.getDoubleValue("score");
+            if (json == null || !json.containsKey("score")) {
+                throw new MetricParseException();
+            }
+            return validateScore(json.getDouble("score"));
+        } catch (MetricParseException e) {
+            throw e;
         } catch (Exception e) {
-            log.warn("解析评分响应失败: {}", responseText, e);
-            return 0.0;
+            throw new MetricParseException();
         }
+    }
+
+    private double validateScore(Double score) {
+        if (score == null || !Double.isFinite(score) || score < 0.0 || score > 1.0) {
+            throw new MetricParseException();
+        }
+        return score;
     }
 
     private EvaluationReport.ReportSummary computeSummary(List<MetricScores> allScores) {
@@ -296,13 +391,17 @@ public class RagasEvaluator {
         for (String name : metricNames) {
             List<Double> values = new ArrayList<>();
             for (MetricScores s : allScores) {
-                values.add(s.getScore(name));
+                if (s.isValid(name)) {
+                    values.add(s.getScore(name));
+                }
             }
             Collections.sort(values);
 
-            mean.put(name, values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0));
-            p50.put(name, percentile(values, 50));
-            p90.put(name, percentile(values, 90));
+            if (!values.isEmpty()) {
+                mean.put(name, values.stream().mapToDouble(Double::doubleValue).average().orElseThrow());
+                p50.put(name, percentile(values, 50));
+                p90.put(name, percentile(values, 90));
+            }
         }
 
         return new EvaluationReport.ReportSummary(mean, p50, p90);
@@ -320,5 +419,8 @@ public class RagasEvaluator {
     }
 
     private record ItemEvaluation(EvaluationReport.ItemResult result, MetricScores scores) {
+    }
+
+    private static final class MetricParseException extends IllegalArgumentException {
     }
 }

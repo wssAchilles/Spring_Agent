@@ -49,8 +49,15 @@ public class LongTermMemory {
             log.debug("LongTermMemory skipped: vectorStore missing or content blank");
             return;
         }
+        if (!hasCompleteIdentity(metadata)) {
+            log.warn("LongTermMemory skipped: incomplete identity metadata");
+            return;
+        }
         List<Document> similar = findSimilar(content, 3);
         for (Document existing : similar) {
+            if (!hasSameIdentity(existing.getMetadata(), metadata)) {
+                continue;
+            }
             double score = existing.getScore() != null ? existing.getScore() : 0.0;
             // PgVector 返回 cosine distance (0=相同, 2=相反)，转换为 similarity
             double similarity = 1.0 - Math.min(score, 2.0) / 2.0;
@@ -90,6 +97,24 @@ public class LongTermMemory {
                 .metadata(metadata)
                 .build();
         vectorStore.add(List.of(doc));
+    }
+
+    private boolean hasCompleteIdentity(Map<String, Object> metadata) {
+        return metadata != null
+                && isPositiveId(metadata.get("sessionId"))
+                && isPositiveId(metadata.get("userId"))
+                && metadata.get("scope") != null
+                && metadata.get("scope").toString().matches("workspace:[1-9]\\d*:bot:[1-9]\\d*");
+    }
+
+    private boolean hasSameIdentity(Map<String, Object> existing, Map<String, Object> incoming) {
+        return existing != null
+                && Objects.equals(existing.get("userId"), incoming.get("userId"))
+                && Objects.equals(existing.get("scope"), incoming.get("scope"));
+    }
+
+    private boolean isPositiveId(Object value) {
+        return value != null && value.toString().matches("[1-9]\\d*");
     }
 
     /**

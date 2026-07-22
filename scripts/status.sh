@@ -62,4 +62,4 @@ print_service hermes 9090
 print_postgres
 
 echo
-docker compose -f "$PROJECT_DIR/docker-compose.yml" ps redis neo4j
+docker compose -f "$PROJECT_DIR/docker-compose.yml" ps neo4j

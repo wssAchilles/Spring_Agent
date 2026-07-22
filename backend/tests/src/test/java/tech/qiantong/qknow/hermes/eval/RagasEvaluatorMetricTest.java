@@ -11,6 +11,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,13 +61,14 @@ class RagasEvaluatorMetricTest {
         }
 
         @Test
-        @DisplayName("无效 JSON 返回 0.0")
-        void parseScore_invalidJson_returnsZero() throws Exception {
+        @DisplayName("无效 JSON 标记解析失败而非返回 0.0")
+        void parseScore_invalidJson_throwsParseFailure() throws Exception {
             Method method = RagasEvaluator.class.getDeclaredMethod("parseScore", String.class);
             method.setAccessible(true);
 
-            double score = (double) method.invoke(evaluator, "this is not json");
-            assertEquals(0.0, score, 0.001);
+            InvocationTargetException error = assertThrows(InvocationTargetException.class,
+                    () -> method.invoke(evaluator, "this is not json"));
+            assertInstanceOf(IllegalArgumentException.class, error.getCause());
         }
 
         @Test
@@ -92,13 +94,26 @@ class RagasEvaluatorMetricTest {
         }
 
         @Test
-        @DisplayName("缺少 score 字段返回 0.0")
-        void parseScore_missingScoreField_returnsZero() throws Exception {
+        @DisplayName("缺少 score 字段标记解析失败")
+        void parseScore_missingScoreField_throwsParseFailure() throws Exception {
             Method method = RagasEvaluator.class.getDeclaredMethod("parseScore", String.class);
             method.setAccessible(true);
 
-            double score = (double) method.invoke(evaluator, "{\"feedback\": \"no score\"}");
-            assertEquals(0.0, score, 0.001);
+            InvocationTargetException error = assertThrows(InvocationTargetException.class,
+                    () -> method.invoke(evaluator, "{\"feedback\": \"no score\"}"));
+            assertInstanceOf(IllegalArgumentException.class, error.getCause());
+        }
+
+        @Test
+        @DisplayName("超出 0 到 1 的 score 不得被正则前缀误判为有效")
+        void parseScore_outOfRange_throwsParseFailure() throws Exception {
+            Method method = RagasEvaluator.class.getDeclaredMethod("parseScore", String.class);
+            method.setAccessible(true);
+
+            InvocationTargetException error = assertThrows(InvocationTargetException.class,
+                    () -> method.invoke(evaluator, "{\"score\": 1.5}"));
+
+            assertInstanceOf(IllegalArgumentException.class, error.getCause());
         }
     }
 
@@ -187,6 +202,27 @@ class RagasEvaluatorMetricTest {
             assertNotNull(summary.getP50());
             assertNotNull(summary.getP90());
             assertEquals(0.7, summary.getP50().get("faithfulness"), 0.001);
+        }
+
+        @Test
+        @DisplayName("汇总只纳入 VALID 指标")
+        void computeSummary_ignoresInvalidAndOmitsMissingMetrics() throws Exception {
+            Method method = RagasEvaluator.class.getDeclaredMethod("computeSummary", List.class);
+            method.setAccessible(true);
+
+            MetricScores valid = new MetricScores();
+            valid.setFaithfulness(0.8);
+            MetricScores invalid = new MetricScores();
+            invalid.setFaithfulness(0.1);
+            invalid.markInvalid("faithfulness", EvaluationError.PARSE_FAILED);
+
+            EvaluationReport.ReportSummary summary = (EvaluationReport.ReportSummary)
+                    method.invoke(evaluator, List.of(valid, invalid));
+
+            assertEquals(0.8, summary.getMean().get("faithfulness"), 0.001);
+            assertFalse(summary.getMean().containsKey("answer_relevance"));
+            assertFalse(summary.getP50().containsKey("answer_relevance"));
+            assertFalse(summary.getP90().containsKey("answer_relevance"));
         }
     }
 

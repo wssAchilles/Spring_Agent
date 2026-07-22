@@ -3,10 +3,92 @@ package tech.qiantong.qknow.hermes.eval;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.function.DoubleConsumer;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("MetricScores 测试")
 class MetricScoresTest {
+
+    @Test
+    @DisplayName("新建指标默认为未评估")
+    void newScores_areNotEvaluated() {
+        MetricScores scores = new MetricScores();
+
+        assertEquals(EvaluationStatus.NOT_EVALUATED, scores.getStatus("faithfulness"));
+        assertNull(scores.getErrorCode("faithfulness"));
+        assertNull(scores.getReason("faithfulness"));
+        assertFalse(scores.isAboveThreshold(0.0));
+    }
+
+    @Test
+    @DisplayName("通过现有 setter 设置分数后标记为有效")
+    void setter_marksMetricValid() {
+        MetricScores scores = new MetricScores();
+
+        scores.setFaithfulness(0.91);
+
+        assertEquals(0.91, scores.getFaithfulness());
+        assertEquals(EvaluationStatus.VALID, scores.getStatus("faithfulness"));
+        assertTrue(scores.isValid("faithfulness"));
+    }
+
+    @Test
+    @DisplayName("无效核心指标不得通过门禁")
+    void invalidCoreMetric_failsGateWithFixedError() {
+        MetricScores scores = createAllAbove(0.9);
+
+        scores.markInvalid("faithfulness", EvaluationError.MODEL_CALL_FAILED);
+
+        assertEquals(EvaluationStatus.INVALID, scores.getStatus("faithfulness"));
+        assertEquals("MODEL_CALL_FAILED", scores.getErrorCode("faithfulness"));
+        assertEquals("Metric model call failed", scores.getReason("faithfulness"));
+        assertEquals(0.9, scores.getFaithfulness());
+        assertFalse(scores.isAboveThreshold(0.85));
+    }
+
+    @Test
+    @DisplayName("所有指标 setter 拒绝非有限数和越界值")
+    void metricSetters_rejectNonFiniteAndOutOfRangeValues() {
+        MetricScores scores = new MetricScores();
+        List<DoubleConsumer> setters = List.of(
+                scores::setFaithfulness,
+                scores::setAnswerRelevance,
+                scores::setContextPrecision,
+                scores::setContextRecall,
+                scores::setFactualCorrectness,
+                scores::setNoiseSensitivity,
+                scores::setNegativeRejection);
+        double[] invalidValues = {Double.NaN, Double.POSITIVE_INFINITY,
+                Double.NEGATIVE_INFINITY, -0.001, 1.001};
+
+        for (DoubleConsumer setter : setters) {
+            for (double value : invalidValues) {
+                assertThrows(IllegalArgumentException.class, () -> setter.accept(value));
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("markInvalid 拒绝未知指标和空错误")
+    void markInvalid_rejectsUnknownMetricAndNullError() {
+        MetricScores scores = new MetricScores();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> scores.markInvalid("unknown_metric", EvaluationError.PARSE_FAILED));
+        assertThrows(IllegalArgumentException.class,
+                () -> scores.markInvalid("faithfulness", null));
+    }
+
+    @Test
+    @DisplayName("内部状态映射不得暴露可变 getter")
+    void internalStateMaps_areNotPubliclyExposed() {
+        assertThrows(NoSuchMethodException.class,
+                () -> MetricScores.class.getMethod("getStatuses"));
+        assertThrows(NoSuchMethodException.class,
+                () -> MetricScores.class.getMethod("getErrors"));
+    }
 
     private MetricScores createAllAbove(double value) {
         MetricScores scores = new MetricScores();

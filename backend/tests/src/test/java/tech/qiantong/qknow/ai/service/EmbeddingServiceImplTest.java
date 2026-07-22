@@ -3,6 +3,7 @@ package tech.qiantong.qknow.ai.service.impl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.embedding.EmbeddingModel;
+import tech.qiantong.qknow.common.exception.ServiceException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,7 +36,8 @@ class EmbeddingServiceImplTest {
     @DisplayName("不支持的平台抛出异常")
     void unsupportedPlatform_throwsException() {
         EmbeddingServiceImpl service = new EmbeddingServiceImpl();
-        assertThrows(Exception.class, () ->
+        ServiceException exception = assertThrowsExactly(ServiceException.class, () ->
                 service.getEmbeddingModel("Unsupported", "http://x", "key", "model"));
+        assertTrue(exception.getMessage().contains("Unsupported"));
     }
 }

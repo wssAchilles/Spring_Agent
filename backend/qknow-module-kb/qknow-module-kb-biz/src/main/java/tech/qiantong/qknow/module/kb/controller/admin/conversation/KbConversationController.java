@@ -23,6 +23,7 @@ import tech.qiantong.qknow.module.kb.service.conversation.IKbChatMessageService;
 import tech.qiantong.qknow.module.kb.service.conversation.IKbConversationService;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -92,8 +93,11 @@ public class KbConversationController extends BaseController {
 
         // 构建请求 - 包含对话历史
         KbAgentConfigReqVO agentReq = new KbAgentConfigReqVO();
+        agentReq.setRequestId(UUID.randomUUID().toString());
+        agentReq.setUserId(getUserId());
+        agentReq.setConversationId(reqVO.getConversationId());
         agentReq.setBotId(reqVO.getBotId());
-        agentReq.setWorkspaceId(reqVO.getWorkspaceId());
+        agentReq.setWorkspaceId(getWorkSpaceId());
         agentReq.setQuestion(reqVO.getQuestion());
         agentReq.setInput(reqVO.getInput());
         agentReq.setModelConfig(config.getModelConfig());

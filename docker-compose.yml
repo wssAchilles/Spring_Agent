@@ -1,18 +1,4 @@
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: agent-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   neo4j:
     image: neo4j:5.26.0
     container_name: agent-neo4j
@@ -33,6 +19,5 @@ services:
       retries: 5
 
 volumes:
-  redis_data:
   neo4j_data:
   neo4j_logs:

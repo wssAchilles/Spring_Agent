@@ -160,10 +160,7 @@ public class AgentOrchestrator {
                         if (!contexts.isEmpty()) {
                             MetricScores scores = ragasEvaluator.evaluateSingle(
                                     request.getQuestion(), answer, contexts, null);
-                            langFuseService.recordScore(finalTraceId, "faithfulness", scores.getFaithfulness());
-                            langFuseService.recordScore(finalTraceId, "answer_relevance", scores.getAnswerRelevance());
-                            langFuseService.recordScore(finalTraceId, "context_precision", scores.getContextPrecision());
-                            langFuseService.recordScore(finalTraceId, "factual_correctness", scores.getFactualCorrectness());
+                            recordValidRagasScores(langFuseService, finalTraceId, scores);
                             log.debug("RAGAS scores recorded to LangFuse: traceId={}", finalTraceId);
                         }
                     } catch (Exception e) {
@@ -178,12 +175,30 @@ public class AgentOrchestrator {
         });
     }
 
+    static void recordValidRagasScores(
+            tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService,
+            String traceId, MetricScores scores) {
+        if (langFuseService == null || scores == null) {
+            return;
+        }
+        if (scores.isValid("faithfulness")) {
+            langFuseService.recordScore(traceId, "faithfulness", scores.getFaithfulness());
+        }
+        if (scores.isValid("answer_relevance")) {
+            langFuseService.recordScore(traceId, "answer_relevance", scores.getAnswerRelevance());
+        }
+        if (scores.isValid("context_precision")) {
+            langFuseService.recordScore(traceId, "context_precision", scores.getContextPrecision());
+        }
+        if (scores.isValid("factual_correctness")) {
+            langFuseService.recordScore(traceId, "factual_correctness", scores.getFactualCorrectness());
+        }
+    }
+
     private void executeAgent(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter,
                               String traceId, StringBuilder fullAnswer,
                               java.util.concurrent.atomic.AtomicLong promptTokens,
                               java.util.concurrent.atomic.AtomicLong completionTokens) throws GraphRunnerException {
-        recordUserMemory(request);
-
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
         ChatModel chatModel;
@@ -265,9 +280,9 @@ public class AgentOrchestrator {
 
         // 5. 构建消息历史（优先从短期记忆读取，回退到关系库）
         List<Message> messages = new ArrayList<>();
-        String sessionId = memorySessionId(request);
-        if (memoryManager != null) {
+        if (memoryManager != null && hasCompleteIdentity(request)) {
             try {
+                String sessionId = memorySessionId(request);
                 List<Message> shortTermMessages = memoryManager.getShortTerm().getContext(sessionId, 20);
                 if (!shortTermMessages.isEmpty()) {
                     messages.addAll(shortTermMessages);
@@ -287,6 +302,7 @@ public class AgentOrchestrator {
                 }
             }
         }
+        recordUserMemory(request);
 
         // 6. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
@@ -433,7 +449,8 @@ public class AgentOrchestrator {
     }
 
     private void recordUserMemory(ChatRequest request) {
-        if (memoryManager == null || request.getQuestion() == null || request.getQuestion().isBlank()) {
+        if (memoryManager == null || !hasCompleteIdentity(request)
+                || request.getQuestion() == null || request.getQuestion().isBlank()) {
             return;
         }
         try {
@@ -446,7 +463,7 @@ public class AgentOrchestrator {
     }
 
     private void recordAssistantMemory(ChatRequest request, String answer) {
-        if (memoryManager == null || answer == null || answer.isBlank()) {
+        if (memoryManager == null || !hasCompleteIdentity(request) || answer == null || answer.isBlank()) {
             return;
         }
         try {
@@ -459,18 +476,24 @@ public class AgentOrchestrator {
     }
 
     private String memorySessionId(ChatRequest request) {
-        if (request.getRequestId() != null && !request.getRequestId().isBlank()) {
-            return request.getRequestId();
-        }
-        return request.getWorkspaceId() + ":" + request.getBotId();
+        return String.valueOf(request.getConversationId());
     }
 
     private String memoryUserId(ChatRequest request) {
-        return "workspace:" + request.getWorkspaceId();
+        return String.valueOf(request.getUserId());
     }
 
     private String memoryScope(ChatRequest request) {
-        return "bot:" + request.getBotId();
+        return "workspace:" + request.getWorkspaceId() + ":bot:" + request.getBotId();
+    }
+
+    private boolean hasCompleteIdentity(ChatRequest request) {
+        return request != null
+                && !request.getRequestId().isBlank()
+                && request.getWorkspaceId() > 0
+                && request.getBotId() > 0
+                && request.getUserId() > 0
+                && request.getConversationId() > 0;
     }
 
     private String planAndSolve(String question, String systemPrompt, List<ToolCallback> tools, ChatModel chatModel) {

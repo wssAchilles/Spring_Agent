@@ -7,7 +7,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,6 +69,21 @@ class CandidateFusionServiceTest {
         // segmentId=1 最高，segmentId=2 和 3 相等
         assertEquals(1L, fused.get(0).getSegmentId());
         assertTrue(fused.get(0).getScore() > fused.get(1).getScore());
+    }
+
+    @Test
+    @DisplayName("RRF同分时按segmentId升序稳定排序")
+    void fuse_equalRrfScores_sortedBySegmentId() {
+        RetrievalResult higherId = buildResult(3L, 0.8, "path-a");
+        RetrievalResult lowerId = buildResult(2L, 0.8, "path-a");
+        RetrievalResult lowerIdSecondPath = buildResult(2L, 0.8, "path-b");
+        RetrievalResult higherIdSecondPath = buildResult(3L, 0.8, "path-b");
+
+        List<RetrievalResult> fused = service.fuse(List.of(
+                List.of(higherId, lowerId), List.of(lowerIdSecondPath, higherIdSecondPath)));
+
+        assertEquals(List.of(2L, 3L), fused.stream()
+                .map(RetrievalResult::getSegmentId).toList());
     }
 
     @Test

@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * agent配置Controller
@@ -152,6 +153,8 @@ public class KbAgentConfigController extends BaseController {
     @Operation(summary = "调试agent")
     @PostMapping(value = "/testChatMessages", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<CommonResult<KbChatMessageSendRespVO>> runChatMessages(@Valid @RequestBody KbAgentConfigReqVO kbAgentConfig) {
+        kbAgentConfig.setRequestId(UUID.randomUUID().toString());
+        kbAgentConfig.setUserId(getUserId());
         kbAgentConfig.setCreatorId(getUserId());
         kbAgentConfig.setWorkspaceId(getWorkSpaceId());
         kbAgentConfig.setCreateTime(new Date());

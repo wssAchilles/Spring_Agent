@@ -5,4 +5,4 @@ PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$PROJECT_DIR"
 
 services="$(docker compose config --services)"
-test "$services" = $'postgres\nredis'
+test "$services" = 'neo4j'

@@ -26,6 +26,15 @@ public class KbAgentConfigReqVO extends BaseEntity {
     @Schema(description = "botid", example = "")
     private Long botId;
 
+    @Schema(description = "用户ID", example = "")
+    private Long userId;
+
+    @Schema(description = "对话ID", example = "")
+    private Long conversationId;
+
+    @Schema(description = "请求ID", example = "")
+    private String requestId;
+
     @Schema(description = "问题", example = "")
     private String question;
 

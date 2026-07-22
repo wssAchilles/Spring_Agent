@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.ai.service.IEmbeddingService;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -59,7 +60,8 @@ public class ColbertScorer {
             scored.add(new ScoredDocument(alignedDocs.get(i), scores[i]));
         }
 
-        scored.sort((a, b) -> Double.compare(b.score, a.score));
+        scored.sort(Comparator.comparingDouble(ScoredDocument::getScore).reversed()
+                .thenComparing(ColbertScorer::compareStableDocumentIds));
 
         List<Document> result = new ArrayList<>();
         for (int i = 0; i < Math.min(topK, scored.size()); i++) {
@@ -70,6 +72,39 @@ public class ColbertScorer {
 
         log.debug("ColBERT rerank: {} -> {} documents", documents.size(), result.size());
         return result;
+    }
+
+    private static int compareStableDocumentIds(ScoredDocument left, ScoredDocument right) {
+        Long leftSegmentId = segmentId(left.document);
+        Long rightSegmentId = segmentId(right.document);
+        if (leftSegmentId != null || rightSegmentId != null) {
+            if (leftSegmentId == null) {
+                return 1;
+            }
+            if (rightSegmentId == null) {
+                return -1;
+            }
+            int comparison = Long.compare(leftSegmentId, rightSegmentId);
+            if (comparison != 0) {
+                return comparison;
+            }
+        }
+        return String.valueOf(left.document.getId()).compareTo(String.valueOf(right.document.getId()));
+    }
+
+    private static Long segmentId(Document document) {
+        Object value = document.getMetadata() == null ? null : document.getMetadata().get("segmentId");
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value != null) {
+            try {
+                return Long.valueOf(String.valueOf(value));
+            } catch (NumberFormatException ignored) {
+                // Fall through to the stable document id.
+            }
+        }
+        return null;
     }
 
     /**

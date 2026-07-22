@@ -24,7 +24,7 @@ public class SleepTimeMemoryAgent {
     }
 
     @Value("${hermes.memory.sleep-agent.enabled:true}")
-    private boolean enabled;
+    private boolean enabled = true;
 
     @Scheduled(fixedDelayString = "${hermes.memory.sleep-agent.fixed-delay-ms:300000}")
     public void consolidateIdleConversations() {
@@ -55,8 +55,12 @@ public class SleepTimeMemoryAgent {
             if (lastActiveAt <= 0 || now - lastActiveAt < idleThresholdMs) {
                 continue;
             }
-            String userId = defaultString(shortTerm.getSessionUserId(sessionId), "unknown");
-            String scope = defaultString(shortTerm.getSessionScope(sessionId), "default");
+            String userId = shortTerm.getSessionUserId(sessionId);
+            String scope = shortTerm.getSessionScope(sessionId);
+            if (!hasCompleteIdentity(sessionId, userId, scope)) {
+                log.warn("Sleep-time memory skipped incomplete identity: sessionId={}", sessionId);
+                continue;
+            }
             try {
                 memoryManager.onConversationEnd(sessionId, userId, scope);
                 shortTerm.clearSession(sessionId);
@@ -79,7 +83,9 @@ public class SleepTimeMemoryAgent {
         }
     }
 
-    private String defaultString(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
+    private boolean hasCompleteIdentity(String sessionId, String userId, String scope) {
+        return sessionId != null && sessionId.matches("[1-9]\\d*")
+                && userId != null && userId.matches("[1-9]\\d*")
+                && scope != null && scope.matches("workspace:[1-9]\\d*:bot:[1-9]\\d*");
     }
 }
