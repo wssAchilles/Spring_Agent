@@ -118,8 +118,9 @@ class MemoryManagerTest {
     @DisplayName("store 调用 vectorStore.add 存储文档")
     void longTerm_store_callsVectorStoreAdd() {
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("sessionId", "sess-1");
-        metadata.put("userId", "user-1");
+        metadata.put("sessionId", "30");
+        metadata.put("userId", "40");
+        metadata.put("scope", "workspace:10:bot:20");
 
         longTermMemory.store("重要信息", metadata);
 
@@ -240,7 +241,7 @@ class MemoryManagerTest {
         ChatResponse chatResponse = new ChatResponse(List.of(generation));
         doReturn(chatResponse).when(chatModel).call(any(Prompt.class));
 
-        memoryManager.onConversationEnd("sess-1", "user-1");
+        memoryManager.onConversationEnd("30", "40", "workspace:10:bot:20");
 
         // 验证工作记忆已清空
         assertEquals(0, workingMemory.size());

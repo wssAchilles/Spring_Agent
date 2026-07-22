@@ -53,7 +53,7 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
             case "OpenAI" -> this.getOpenAiModel(baseUrl, apiKey, modelName);
             case "TongYi" -> this.getDashScopeModel(baseUrl, apiKey, modelName);
             case "Ollama" -> this.getOllamaModel(baseUrl, modelName);
-            default -> this.getOpenAiModel(baseUrl, apiKey, modelName);
+            default -> throw new ServiceException("不支持的平台: " + platForm);
         };
     }
 

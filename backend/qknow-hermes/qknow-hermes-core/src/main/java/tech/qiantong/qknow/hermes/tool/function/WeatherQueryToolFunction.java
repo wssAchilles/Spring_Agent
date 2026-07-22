@@ -31,6 +31,15 @@ public class WeatherQueryToolFunction
         implements Function<WeatherQueryToolFunction.Request, WeatherQueryToolFunction.Response> {
 
     private static final String WEATHER_API_URL = "http://wttr.in/{}?format=j1";
+    private final String weatherApiUrl;
+
+    public WeatherQueryToolFunction() {
+        this(WEATHER_API_URL);
+    }
+
+    WeatherQueryToolFunction(String weatherApiUrl) {
+        this.weatherApiUrl = weatherApiUrl;
+    }
 
     @Data
     @JsonClassDescription("查询指定城市的当前天气信息。返回温度（摄氏度）、天气状况、湿度百分比、风速（km/h）。只用于天气查询，不用于其他用途。")
@@ -118,7 +127,7 @@ public class WeatherQueryToolFunction
     private Response.WeatherInfo fetchWeatherFromAPI(String city) {
         try {
             // 构建 API URL
-            String url = StrUtil.format(WEATHER_API_URL, city);
+            String url = StrUtil.format(weatherApiUrl, city);
 
             // 发送 HTTP GET 请求（10秒超时）
             cn.hutool.http.HttpRequest request = cn.hutool.http.HttpRequest.get(url)

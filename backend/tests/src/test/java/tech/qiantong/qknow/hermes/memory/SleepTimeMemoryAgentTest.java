@@ -40,15 +40,15 @@ class SleepTimeMemoryAgentTest {
         long now = System.currentTimeMillis();
         long idleTimestamp = now - IDLE_THRESHOLD_MS - 1000; // 超过阈值
 
-        when(shortTermMemory.listSessionIds(SCAN_COUNT)).thenReturn(List.of("sess-1"));
-        when(shortTermMemory.getLastActivityAt("sess-1")).thenReturn(idleTimestamp);
-        when(shortTermMemory.getSessionUserId("sess-1")).thenReturn("user-1");
-        when(shortTermMemory.getSessionScope("sess-1")).thenReturn("default");
+        when(shortTermMemory.listSessionIds(SCAN_COUNT)).thenReturn(List.of("30"));
+        when(shortTermMemory.getLastActivityAt("30")).thenReturn(idleTimestamp);
+        when(shortTermMemory.getSessionUserId("30")).thenReturn("40");
+        when(shortTermMemory.getSessionScope("30")).thenReturn("workspace:10:bot:20");
 
         agent.consolidateIdleConversations();
 
-        verify(memoryManager).onConversationEnd("sess-1", "user-1", "default");
-        verify(shortTermMemory).clearSession("sess-1");
+        verify(memoryManager).onConversationEnd("30", "40", "workspace:10:bot:20");
+        verify(shortTermMemory).clearSession("30");
     }
 
     @Test
@@ -83,26 +83,26 @@ class SleepTimeMemoryAgentTest {
         long now = System.currentTimeMillis();
         long idleTimestamp = now - IDLE_THRESHOLD_MS - 1000;
 
-        when(shortTermMemory.listSessionIds(SCAN_COUNT)).thenReturn(List.of("sess-fail", "sess-ok"));
-        when(shortTermMemory.getLastActivityAt("sess-fail")).thenReturn(idleTimestamp);
-        when(shortTermMemory.getLastActivityAt("sess-ok")).thenReturn(idleTimestamp);
-        when(shortTermMemory.getSessionUserId(anyString())).thenReturn("user-1");
-        when(shortTermMemory.getSessionScope(anyString())).thenReturn("default");
+        when(shortTermMemory.listSessionIds(SCAN_COUNT)).thenReturn(List.of("31", "32"));
+        when(shortTermMemory.getLastActivityAt("31")).thenReturn(idleTimestamp);
+        when(shortTermMemory.getLastActivityAt("32")).thenReturn(idleTimestamp);
+        when(shortTermMemory.getSessionUserId(anyString())).thenReturn("40");
+        when(shortTermMemory.getSessionScope(anyString())).thenReturn("workspace:10:bot:20");
 
         // 第一个会话抛异常
         doThrow(new RuntimeException("boom"))
-                .when(memoryManager).onConversationEnd(eq("sess-fail"), anyString(), anyString());
+                .when(memoryManager).onConversationEnd(eq("31"), anyString(), anyString());
         // 第二个会话正常
-        doNothing().when(memoryManager).onConversationEnd(eq("sess-ok"), anyString(), anyString());
+        doNothing().when(memoryManager).onConversationEnd(eq("32"), anyString(), anyString());
 
         agent.consolidateIdleConversations();
 
         // 两个会话都尝试整合
-        verify(memoryManager).onConversationEnd("sess-fail", "user-1", "default");
-        verify(memoryManager).onConversationEnd("sess-ok", "user-1", "default");
+        verify(memoryManager).onConversationEnd("31", "40", "workspace:10:bot:20");
+        verify(memoryManager).onConversationEnd("32", "40", "workspace:10:bot:20");
         // 只有成功的被清理
-        verify(shortTermMemory, never()).clearSession("sess-fail");
-        verify(shortTermMemory).clearSession("sess-ok");
+        verify(shortTermMemory, never()).clearSession("31");
+        verify(shortTermMemory).clearSession("32");
     }
 
     @Test
@@ -117,8 +117,8 @@ class SleepTimeMemoryAgentTest {
     }
 
     @Test
-    @DisplayName("sessionId 为 null 的 userId/scope 降级为 unknown/default")
-    void consolidateIdleConversations_nullUserIdScope_defaultsToUnknown() {
+    @DisplayName("身份元数据缺失的会话不进入共享记忆汇总")
+    void consolidateIdleConversations_nullUserIdScope_skipsSharedMemory() {
         long now = System.currentTimeMillis();
         long idleTimestamp = now - IDLE_THRESHOLD_MS - 1000;
 
@@ -129,7 +129,7 @@ class SleepTimeMemoryAgentTest {
 
         agent.consolidateIdleConversations();
 
-        verify(memoryManager).onConversationEnd("sess-null", "unknown", "default");
-        verify(shortTermMemory).clearSession("sess-null");
+        verify(memoryManager, never()).onConversationEnd(anyString(), anyString(), anyString());
+        verify(shortTermMemory, never()).clearSession(anyString());
     }
 }

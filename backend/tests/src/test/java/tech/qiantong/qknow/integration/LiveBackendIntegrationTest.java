@@ -37,7 +37,7 @@ class LiveBackendIntegrationTest {
     }
 
     @Test
-    @DisplayName("Docker Redis: ShortTermMemory 写入、扫描、Sleep-time 打捞与清理")
+    @DisplayName("Local Redis: ShortTermMemory 写入、扫描、Sleep-time 打捞与清理")
     void redisShortTermMemoryAndSleepAgent_roundTrip() {
         requireLiveTests();
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration("127.0.0.1", 6379);

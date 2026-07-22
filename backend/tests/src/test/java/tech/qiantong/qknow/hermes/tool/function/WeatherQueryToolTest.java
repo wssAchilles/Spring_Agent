@@ -1,12 +1,46 @@
 package tech.qiantong.qknow.hermes.tool.function;
 
+import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class WeatherQueryToolTest {
 
-    private final WeatherQueryToolFunction tool = new WeatherQueryToolFunction();
+    private static HttpServer server;
+    private static WeatherQueryToolFunction tool;
+
+    @BeforeAll
+    static void startServer() throws IOException {
+        server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext("/", exchange -> {
+            byte[] body = ("{\"nearest_area\":[{}],\"current_condition\":[{"
+                    + "\"temp_C\":\"21\",\"weatherDesc\":[{\"value\":\"Clear\"}],"
+                    + "\"humidity\":\"55\",\"windspeedKmph\":\"9\"}]}")
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        server.start();
+        tool = new WeatherQueryToolFunction(
+                "http://127.0.0.1:" + server.getAddress().getPort() + "/{}?format=j1");
+    }
+
+    @AfterAll
+    static void stopServer() {
+        if (server != null) {
+            server.stop(0);
+        }
+    }
 
     @Test
     void queryBeijingWeather() {

@@ -116,7 +116,9 @@ class LongTermMemoryTest {
                 .thenReturn(Collections.emptyList());
 
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("sessionId", "sess-1");
+        metadata.put("sessionId", "30");
+        metadata.put("userId", "40");
+        metadata.put("scope", "workspace:10:bot:20");
 
         longTermMemory.store("测试内容", metadata);
 
@@ -133,6 +135,16 @@ class LongTermMemoryTest {
         verify(vectorStore, never()).add(anyList());
     }
 
+    @Test
+    @DisplayName("store 身份不完整时不写共享向量记忆")
+    void store_incompleteIdentity_skips() {
+        longTermMemory.store("测试内容", new HashMap<>(Map.of("sessionId", "30")));
+        longTermMemory.store("测试内容", new HashMap<>(Map.of(
+                "sessionId", "30", "userId", "unknown", "scope", "default")));
+
+        verifyNoInteractions(vectorStore);
+    }
+
     // ========== store consolidation ==========
 
     @Test
@@ -140,7 +152,9 @@ class LongTermMemoryTest {
     void store_similarMemory_triggersConsolidation() {
         // cosine distance = 0.1 → similarity = 1.0 - 0.1/2.0 = 0.95 > 0.85
         Map<String, Object> existingMeta = new HashMap<>();
-        existingMeta.put("sessionId", "sess-old");
+        existingMeta.put("sessionId", "29");
+        existingMeta.put("userId", "40");
+        existingMeta.put("scope", "workspace:10:bot:20");
         existingMeta.put("created_at", System.currentTimeMillis());
         Document existing = docWithScore("old content", existingMeta, 0.1);
         // 需要设置 id 用于 delete
@@ -151,7 +165,9 @@ class LongTermMemoryTest {
                 .thenReturn(List.of(existingWithId));
 
         Map<String, Object> newMeta = new HashMap<>();
-        newMeta.put("sessionId", "sess-new");
+        newMeta.put("sessionId", "30");
+        newMeta.put("userId", "40");
+        newMeta.put("scope", "workspace:10:bot:20");
 
         longTermMemory.store("new content", newMeta);
 
@@ -164,6 +180,29 @@ class LongTermMemoryTest {
         assertTrue(merged.getText().contains("old content"));
         assertTrue(merged.getText().contains("new content"));
         assertEquals(2, merged.getMetadata().get("consolidated_count"));
+    }
+
+    @Test
+    @DisplayName("store 不跨 user 或 scope 合并相似记忆")
+    void store_similarMemoryDifferentIdentity_doesNotMerge() {
+        Map<String, Object> otherScope = new HashMap<>(Map.of(
+                "sessionId", "31", "userId", "40", "scope", "workspace:10:bot:21"));
+        Map<String, Object> otherUser = new HashMap<>(Map.of(
+                "sessionId", "32", "userId", "41", "scope", "workspace:10:bot:20"));
+        Document first = Document.builder().id("other-scope").text("scope content")
+                .metadata(otherScope).score(0.1).build();
+        Document second = Document.builder().id("other-user").text("user content")
+                .metadata(otherUser).score(0.1).build();
+        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(first, second));
+
+        Map<String, Object> metadata = new HashMap<>(Map.of(
+                "sessionId", "30", "userId", "40", "scope", "workspace:10:bot:20"));
+        longTermMemory.store("new content", metadata);
+
+        verify(vectorStore, never()).delete(anyList());
+        ArgumentCaptor<List<Document>> captor = ArgumentCaptor.forClass(List.class);
+        verify(vectorStore).add(captor.capture());
+        assertEquals("new content", captor.getValue().get(0).getText());
     }
 
     // ========== recall ==========
