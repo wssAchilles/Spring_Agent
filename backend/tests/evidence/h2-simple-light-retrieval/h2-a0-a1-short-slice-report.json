@@ -6,13 +6,13 @@
 	"topK":5,
 	"A0":{
 		"hitAt5":0.0,
-		"hitAt10":0.0,
-		"avgMs":1
+		"avgMs":1,
+		"hitAt10":0.0
 	},
 	"A1":{
 		"hitAt5":0.7,
-		"hitAt10":0.7,
-		"avgMs":95
+		"avgMs":99,
+		"hitAt10":0.7
 	},
 	"deltaHitAt10":0.7,
 	"deltaHitAt5":0.7,
