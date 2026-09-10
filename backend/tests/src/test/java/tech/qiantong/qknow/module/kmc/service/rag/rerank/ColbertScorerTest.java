@@ -103,4 +103,47 @@ class ColbertScorerTest {
 
         assertEquals(List.of("low", "high", "missing"), result.stream().map(Document::getId).toList());
     }
+
+    @Test
+    @DisplayName("无 embedding 配置时 isRealEmbeddingConfigured 为 false")
+    void isRealEmbeddingConfigured_withoutService_returnsFalse() {
+        assertFalse(scorer.isRealEmbeddingConfigured());
+    }
+
+    @Test
+    @DisplayName("skip-when-no-embedding 且无配置时 identity 返回，不截断、不写 colbert_score")
+    void rerank_skipWhenNoEmbedding_returnsIdentityWithoutTruncate() {
+        config.setSkipWhenNoEmbedding(true);
+        ColbertScorer skipScorer = new ColbertScorer(config, null);
+
+        List<Document> docs = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            docs.add(new Document("doc-" + i + " content about knowledge graph"));
+        }
+
+        List<Document> result = skipScorer.rerank("knowledge graph", docs, 2);
+
+        assertEquals(10, result.size());
+        assertEquals(
+                docs.stream().map(Document::getId).toList(),
+                result.stream().map(Document::getId).toList());
+        assertTrue(result.stream().noneMatch(d -> d.getMetadata().containsKey("colbert_score")));
+    }
+
+    @Test
+    @DisplayName("skip=false 时无配置仍走 hash 粗排并截断")
+    void rerank_skipDisabledStillHashTruncates() {
+        config.setSkipWhenNoEmbedding(false);
+        ColbertScorer hashScorer = new ColbertScorer(config, null);
+
+        List<Document> docs = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            docs.add(new Document("doc-" + i + " knowledge graph"));
+        }
+
+        List<Document> result = hashScorer.rerank("knowledge graph", docs, 2);
+
+        assertEquals(2, result.size());
+        assertTrue(result.stream().allMatch(d -> d.getMetadata().containsKey("colbert_score")));
+    }
 }
