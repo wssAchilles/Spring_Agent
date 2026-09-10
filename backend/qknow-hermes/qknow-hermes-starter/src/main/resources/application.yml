@@ -110,6 +110,9 @@ qknow:
         - 财报
         - 邮件
   rag:
+    simple:
+      light-retrieval: true
+      light-top-k: 5
     eval:
       threshold: 0.85
       prompt-version: manual-v1

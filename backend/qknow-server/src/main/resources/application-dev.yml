@@ -199,6 +199,9 @@ hermes:
 
 qknow:
   rag:
+    simple:
+      light-retrieval: true
+      light-top-k: 5
     eval:
       enabled: true
       platform: DeepSeek

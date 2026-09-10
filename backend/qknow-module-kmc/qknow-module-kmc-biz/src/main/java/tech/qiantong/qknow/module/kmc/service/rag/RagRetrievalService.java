@@ -75,8 +75,8 @@ public class RagRetrievalService {
     @Resource(name = "threadPoolTaskExecutor")
     private ThreadPoolTaskExecutor retrievalExecutor;
 
-    /** H2: when true, SIMPLE route uses lightweight keyword retrieval instead of empty context. */
-    @Value("${qknow.rag.simple.light-retrieval:false}")
+    /** H2: SIMPLE route uses lightweight keyword retrieval (zero LLM). Default true after ablation PASS. */
+    @Value("${qknow.rag.simple.light-retrieval:true}")
     private boolean simpleLightRetrieval;
 
     @Value("${qknow.rag.simple.light-top-k:5}")
