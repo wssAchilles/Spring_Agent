@@ -1,0 +1,67 @@
+{
+  "n": 4,
+  "hit_ann": 1.0,
+  "hit_colbert": 1.0,
+  "vtok": 48,
+  "cases": [
+    {
+      "id": "eval-hold-001",
+      "query": "What is Mahalanobis distance gating in the update stage?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf"
+      ],
+      "colbert": [
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 1408.3
+    },
+    {
+      "id": "eval-hold-002",
+      "query": "What NIS normalization is used for innovation gating?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf",
+        "大数据.pdf",
+        "Day04-OTA固件升级开发"
+      ],
+      "colbert": [
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 67.5
+    },
+    {
+      "id": "eval-hold-003",
+      "query": "What is Kalman filtering used for in traffic flow analysis?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf"
+      ],
+      "colbert": [
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.7
+    },
+    {
+      "id": "eval-hold-004",
+      "query": "How are outermost perspective lines intersected?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf"
+      ],
+      "colbert": [
+        "人工智能.pdf",
+        "分布式.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 69.2
+    }
+  ]
+}
