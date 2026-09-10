@@ -265,8 +265,10 @@ public class RagRerankService {
         try {
             if (colbertScorer != null
                     && colbertScorer.getConfig() != null
+                    && colbertScorer.getConfig().isEnabled()
                     && colbertScorer.getConfig().isSkipWhenNoEmbedding()
                     && !colbertScorer.isRealEmbeddingConfigured()) {
+                log.info("ColBERT coarse rerank skipped: skip-when-no-embedding=true and no real token embedding configured");
                 RagFallbackMonitor.record("colbert", "skipped_no_embedding",
                         "skip-when-no-embedding=true and no real token embedding configured");
                 return candidates;

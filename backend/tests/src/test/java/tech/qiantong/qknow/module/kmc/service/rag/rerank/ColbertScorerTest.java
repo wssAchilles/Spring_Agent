@@ -4,12 +4,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import tech.qiantong.qknow.ai.service.IEmbeddingService;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ColbertScorerTest {
 
@@ -145,5 +152,57 @@ class ColbertScorerTest {
 
         assertEquals(2, result.size());
         assertTrue(result.stream().allMatch(d -> d.getMetadata().containsKey("colbert_score")));
+    }
+
+    private ColbertScorer.ColbertConfig fullyConfiguredConfig(boolean skip) {
+        ColbertScorer.ColbertConfig c = new ColbertScorer.ColbertConfig();
+        c.setEnabled(true);
+        c.setSkipWhenNoEmbedding(skip);
+        c.setEmbeddingPlatform("openai");
+        c.setEmbeddingBaseUrl("http://localhost:9");
+        c.setEmbeddingApiKey("k");
+        c.setEmbeddingModel("text-embedding");
+        return c;
+    }
+
+    @Test
+    @DisplayName("配置齐全时 isRealEmbeddingConfigured 为 true")
+    void isRealEmbeddingConfigured_withFullConfig_returnsTrue() {
+        IEmbeddingService service = mock(IEmbeddingService.class);
+        ColbertScorer configured = new ColbertScorer(fullyConfiguredConfig(true), service);
+        assertTrue(configured.isRealEmbeddingConfigured());
+    }
+
+    @Test
+    @DisplayName("skip=true 且 embedding 空响应时 fail-closed 抛错，禁止 hash 截断")
+    void rerank_skipWhenEmptyEmbeddingResponse_throwsInsteadOfHash() {
+        IEmbeddingService service = mock(IEmbeddingService.class);
+        EmbeddingModel model = mock(EmbeddingModel.class);
+        when(service.getEmbeddingModel(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(model);
+        when(model.call(any(org.springframework.ai.embedding.EmbeddingRequest.class)))
+                .thenReturn(new EmbeddingResponse(List.of()));
+
+        ColbertScorer scorer = new ColbertScorer(fullyConfiguredConfig(true), service);
+        List<Document> docs = List.of(new Document("knowledge graph"));
+
+        assertThrows(IllegalStateException.class, () -> scorer.rerank("knowledge graph", docs, 2));
+    }
+
+    @Test
+    @DisplayName("skip=false 且 embedding 空响应时仍可 hash 回落完成粗排")
+    void rerank_skipDisabledEmptyEmbeddingResponseStillHashes() {
+        IEmbeddingService service = mock(IEmbeddingService.class);
+        EmbeddingModel model = mock(EmbeddingModel.class);
+        when(service.getEmbeddingModel(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(model);
+        when(model.call(any(org.springframework.ai.embedding.EmbeddingRequest.class)))
+                .thenReturn(new EmbeddingResponse(List.of()));
+
+        ColbertScorer scorer = new ColbertScorer(fullyConfiguredConfig(false), service);
+        List<Document> result = scorer.rerank("knowledge graph", List.of(new Document("knowledge graph")), 2);
+
+        assertEquals(1, result.size());
+        assertNotNull(result.get(0).getMetadata().get("colbert_score"));
     }
 }

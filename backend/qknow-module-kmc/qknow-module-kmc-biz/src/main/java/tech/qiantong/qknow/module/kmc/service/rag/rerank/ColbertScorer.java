@@ -261,11 +261,7 @@ public class ColbertScorer {
         if (tokens.isEmpty()) {
             return List.of();
         }
-        if (embeddingService != null
-                && config.getEmbeddingPlatform() != null && !config.getEmbeddingPlatform().isBlank()
-                && config.getEmbeddingBaseUrl() != null && !config.getEmbeddingBaseUrl().isBlank()
-                && config.getEmbeddingApiKey() != null && !config.getEmbeddingApiKey().isBlank()
-                && config.getEmbeddingModel() != null && !config.getEmbeddingModel().isBlank()) {
+        if (isRealEmbeddingConfigured()) {
             try {
                 EmbeddingModel model = embeddingService.getEmbeddingModel(
                         config.getEmbeddingPlatform(),
@@ -274,6 +270,10 @@ public class ColbertScorer {
                         config.getEmbeddingModel());
                 EmbeddingResponse response = model.call(new EmbeddingRequest(tokens, null));
                 if (response == null || response.getResults().isEmpty()) {
+                    if (config.isSkipWhenNoEmbedding()) {
+                        throw new IllegalStateException(
+                                "ColBERT embedding returned empty response and skip-when-no-embedding=true");
+                    }
                     log.warn("Embedding API returned empty response, falling back to hash-based vectors");
                 } else {
                     List<double[]> vectors = new ArrayList<>(response.getResults().size());
@@ -288,6 +288,8 @@ public class ColbertScorer {
                     }
                     return vectors;
                 }
+            } catch (IllegalStateException e) {
+                throw e;
             } catch (Exception e) {
                 if (config.isSkipWhenNoEmbedding()) {
                     throw new IllegalStateException(
