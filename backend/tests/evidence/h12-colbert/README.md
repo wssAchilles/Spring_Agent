@@ -10,3 +10,7 @@ tf_ok 2026-09-10T21:08:45+08:00
 jina_dl_done 2026-09-10T21:11:40+08:00 size=2.0G
 einops_ok 2026-09-10T21:13:10+08:00
 switch_colbertv2 2026-09-10T21:13:33+08:00
+
+## L1 colbertv2 MaxSim vs ANN holdout n=12
+- Hit@10 ANN=1.0 ColBERTMaxSim=1.0
+- index 1948MB under models/colbert-l0/ (deletable)

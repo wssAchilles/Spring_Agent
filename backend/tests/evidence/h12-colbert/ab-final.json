@@ -1,0 +1,192 @@
+{
+  "n": 12,
+  "hit_ann": 1.0,
+  "hit_colbert": 1.0,
+  "vtok": 141,
+  "cases": [
+    {
+      "id": "eval-hold-001",
+      "query": "What is Mahalanobis distance gating in the update stage?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf"
+      ],
+      "colbert": [
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 1408.3
+    },
+    {
+      "id": "eval-hold-002",
+      "query": "What NIS normalization is used for innovation gating?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf",
+        "大数据.pdf",
+        "Day04-OTA固件升级开发"
+      ],
+      "colbert": [
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 67.5
+    },
+    {
+      "id": "eval-hold-003",
+      "query": "What is Kalman filtering used for in traffic flow analysis?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf"
+      ],
+      "colbert": [
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.7
+    },
+    {
+      "id": "eval-hold-004",
+      "query": "How are outermost perspective lines intersected?",
+      "expected": "人工智能.pdf",
+      "ann": [
+        "人工智能.pdf"
+      ],
+      "colbert": [
+        "人工智能.pdf",
+        "分布式.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 69.2
+    },
+    {
+      "id": "eval-hold-005",
+      "query": "What outbox aggregate statistics are collected in delivery?",
+      "expected": "分布式.pdf",
+      "ann": [
+        "分布式.pdf",
+        "Day09-多语言国际化"
+      ],
+      "colbert": [
+        "分布式.pdf",
+        "大数据.pdf",
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 69.3
+    },
+    {
+      "id": "eval-hold-006",
+      "query": "What Mongo failure categorization is used in the Go chain?",
+      "expected": "分布式.pdf",
+      "ann": [
+        "分布式.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "colbert": [
+        "分布式.pdf",
+        "Day06-文件管理功能优化",
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 66.8
+    },
+    {
+      "id": "eval-hold-007",
+      "query": "What is main delivery success rate monitoring?",
+      "expected": "分布式.pdf",
+      "ann": [
+        "Day22-23-项目总结与交接",
+        "分布式.pdf",
+        "Day08-支付模块集成"
+      ],
+      "colbert": [
+        "分布式.pdf",
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 69.6
+    },
+    {
+      "id": "eval-hold-008",
+      "query": "What revenue attribution uses dual-layer robust optimization?",
+      "expected": "大数据.pdf",
+      "ann": [
+        "大数据.pdf"
+      ],
+      "colbert": [
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.3
+    },
+    {
+      "id": "eval-hold-009",
+      "query": "What price band analysis is in e-commerce category structure?",
+      "expected": "大数据.pdf",
+      "ann": [
+        "大数据.pdf"
+      ],
+      "colbert": [
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.7
+    },
+    {
+      "id": "eval-hold-010",
+      "query": "What multi-config benchmark results are in section 6.4.1?",
+      "expected": "大数据.pdf",
+      "ann": [
+        "大数据.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "colbert": [
+        "大数据.pdf",
+        "分布式.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 71.5
+    },
+    {
+      "id": "eval-hold-011",
+      "query": "What book management modules exist in the Flutter library app?",
+      "expected": "移动应用开发.pdf",
+      "ann": [
+        "移动应用开发.pdf"
+      ],
+      "colbert": [
+        "移动应用开发.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 70.2
+    },
+    {
+      "id": "eval-hold-012",
+      "query": "What dashboard features are in the kindergarten system?",
+      "expected": "移动应用开发.pdf",
+      "ann": [
+        "移动应用开发.pdf"
+      ],
+      "colbert": [
+        "移动应用开发.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.8
+    }
+  ],
+  "wall_s": 7.8,
+  "note": "colbertv2 BertModel last_hidden (768d) MaxSim; official 128d linear projection not applied"
+}
