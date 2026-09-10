@@ -191,7 +191,8 @@ public class QueryTransformService {
     @Component
     @ConfigurationProperties(prefix = "hermes.rag.query-transform")
     public static class QueryTransformConfig {
-        private boolean enabled = true;
+        /** H8: default false — skip per-query LLM rewrite/HyDE unless explicitly enabled. */
+        private boolean enabled = false;
         private String strategy = "rewrite";
         private String platform = "OpenAI";
         private String baseUrl = "https://api.openai.com";
