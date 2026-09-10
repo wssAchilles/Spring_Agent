@@ -307,7 +307,7 @@ qknow.rag.crag.sample-rate: 0.10
 | H5 | 中文关键词 | Planned | — | — | |
 | H6 | 切块 A/B | Planned | — | — | |
 | H7 | 融合过滤 | Planned | — | — | |
-| H8 | rewrite/embed 减负 | Planned | — | — | |
+| H8 | rewrite/embed 减负 | **Delivered** | UNIT | query-transform 默认关 | 38256ad/9a6478d |
 | H9 | gRPC 取消 | Planned | — | — | 工程项 |
 | H10 | GraphRAG | Planned | — | — | |
 | H11 | 长期记忆读 | Planned | — | — | |
