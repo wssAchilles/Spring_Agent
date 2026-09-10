@@ -305,13 +305,13 @@ qknow.rag.crag.sample-rate: 0.10
 | H4a | context 接线 | **Delivered** | UNIT | 有 ragContext 时优先 | 38a5d68/aad75df |
 | H4b | 多轮 history | **Delivered** | UNIT | 已接线；压缩需开 transform | 219439d |
 | H5 | 中文关键词 | **Delivered** | UNIT + LIVE_KEYWORD | websearch+bigram | fca26c9；短切片仍 0.70 |
-| H6 | 切块 A/B | Planned | — | — | |
-| H7 | 融合过滤 | Planned | — | — | |
+| H6 | 切块 A/B | Deferred | — | — | 需重嵌/embedding 额度；另批 |
+| H7 | 融合过滤 | **Delivered** | UNIT | post-fusion-filter 默认 false | 0d375d6/1a81541 |
 | H8 | rewrite/embed 减负 | **Delivered** | UNIT | query-transform 默认关 | 38256ad/9a6478d |
-| H9 | gRPC 取消 | Planned | — | — | 工程项 |
-| H10 | GraphRAG | Planned | — | — | |
-| H11 | 长期记忆读 | Planned | — | — | |
-| H12 | 真 ColBERT | Planned | — | — | 依赖 H0+H1 |
+| H9 | gRPC 取消 | **Delivered** | UNIT | deadline 120s + onDispose cancel | 0d375d6 |
+| H10 | GraphRAG | Deferred | — | 默认 false | 无 golden 增量证据前不启用 |
+| H11 | 长期记忆读 | Deferred | — | — | 需跨会话专项评测集 |
+| H12 | 真 ColBERT | Deferred | — | — | 依赖 H0 holdout live + 模型/索引预算 |
 
 ---
 
