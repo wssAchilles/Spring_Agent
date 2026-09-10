@@ -1,0 +1,103 @@
+{
+  "ts": 1789043174.2722208,
+  "cases": [
+    {
+      "id": "eval-hold-001",
+      "query": "What is Mahalanobis distance gating in the update stage?",
+      "expected": "人工智能.pdf",
+      "vector": [
+        "人工智能.pdf"
+      ],
+      "graph_terms": [
+        "mathematical modeling",
+        "auto-calibration",
+        "traffic flow analysis",
+        "speed estimation",
+        "homography calibration",
+        "detection tracking"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": true,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-002",
+      "query": "What NIS normalization is used for innovation gating?",
+      "expected": "人工智能.pdf",
+      "vector": [
+        "人工智能.pdf",
+        "大数据.pdf",
+        "Day04-OTA固件升级开发",
+        "关于印发《常州工学院学生综合素质评价办法（修订）》的通知.pdf",
+        "Day08-支付模块集成"
+      ],
+      "graph_terms": [
+        "homography-based coordinate transformation",
+        "人工智能",
+        "ground contact point",
+        "speed estimation pipeline",
+        "ByteTrack",
+        "velocity estimation"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": true,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-003",
+      "query": "What is Kalman filtering used for in traffic flow analysis?",
+      "expected": "人工智能.pdf",
+      "vector": [
+        "人工智能.pdf"
+      ],
+      "graph_terms": [
+        "traffic flow analysis",
+        "traffic video analysis system",
+        "Greenshields traffic flow model",
+        "traffic video analysis",
+        "traffic video perception system",
+        "Kalman filtering"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": true,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-004",
+      "query": "How are outermost perspective lines intersected?",
+      "expected": "人工智能.pdf",
+      "vector": [
+        "人工智能.pdf"
+      ],
+      "graph_terms": [
+        "far-field perspective accuracy",
+        "least squares regression",
+        "homography-based techniques",
+        "calibration automation",
+        "monocular depth estimation",
+        "frame-differencing"
+      ],
+      "graph_docs": [
+        "分布式.pdf",
+        "大数据.pdf",
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": true,
+      "hit_union": true
+    }
+  ],
+  "model_embed": "text-embedding-v4",
+  "n": 4,
+  "hit_vector": 1.0,
+  "hit_graph_kw": 1.0
+}

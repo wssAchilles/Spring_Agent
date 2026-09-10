@@ -1,0 +1,10 @@
+{
+  "ts": 1789043125.1575449,
+  "model": "qwen-plus",
+  "llm_tokens": 5306,
+  "nodes_created_est": 141,
+  "edges_created_est": 346,
+  "errors": 0,
+  "neo_kg_nodes": 111,
+  "neo_kg_edges": 333
+}
