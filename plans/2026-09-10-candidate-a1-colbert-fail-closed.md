@@ -1,6 +1,6 @@
 # Candidate A1：伪 ColBERT 粗排 Fail-Closed 实施计划
 
-> **状态**：待审核（DRAFT — 未获批准前禁止实施）  
+> **状态**：已实施 + 机制消融完成（T5 机制层 PASS；生产默认未改）  
 > **日期**：2026-09-10  
 > **依据**：`AGENTS.md` Research-to-Implementation Gate 首轮研究报告（假设 H1）  
 > **计划文件**：`plans/2026-09-10-candidate-a1-colbert-fail-closed.md`  
@@ -281,69 +281,92 @@ qknow.rag.colbert.skip-when-no-embedding=false   # 或删除系统属性
 
 ---
 
-## 附录 A：冻结参数表（T1 后填写）
+## 附录 A：冻结参数表（T1）
 
-> 实施前必须填完；未填完不得改代码。
+> 与 candidate10 套件冻结旗标对齐；A0/A1 仅差 skip 键。
 
 ```text
 [colbert]
-enabled=
-ngram-size=
-dimensions=
-max-tokens-per-doc=
+enabled=true
+ngram-size=3
+dimensions=64
+max-tokens-per-doc=128
 embedding-platform=
 embedding-base-url=
 embedding-api-key=
 embedding-model=
 
 [skip]
-qknow.rag.colbert.skip-when-no-embedding=   # A0=false / A1=true
+hermes.rag.colbert.skip-when-no-embedding=   # A0=false / A1=true
+# 注意：配置前缀为 hermes.rag.colbert.*（与 ColbertConfig 一致）
 
-[retrieval]
-qknow.rag.dynamic-top-k.enabled=
-qknow.rag.query-entity.enabled=
-qknow.rag.rrf.k=
-qknow.rag.rrf.weak-path-threshold=
-qknow.rag.graph.enabled=
-qknow.rag.vector.vecsim-rescore-enabled=
-qknow.rag.keyword.identifier-aware=
-qknow.rag.rerank.identifier-consistency-enabled=
-qknow.rag.local-reranker.enabled=
-qknow.rag.onnx-reranker.enabled=
-hermes.rag.context.max-bytes=
-hermes.rag.context.max-tokens=
+[retrieval 消融范围]
+本消融仅隔离 RagRerankService 粗排阶段；候选池来自 kmc_document_segment 真实行
+（期望文档高分 + 噪声文档），finalTopK=10，coarseLimit=30，pool=80。
+完整 live 向量召回链路（VectorRetriever+RRF 全管线）另需 -Drag.eval.live 环境。
 
 [golden]
-datasetPath=
-selectionCaseCount=
-holdoutCaseCount=
-evalTestClassName=
+datasetPath=backend/tests/src/test/resources/rag-golden-dataset-v2.jsonl
+selectionCaseCount=10
+holdoutCaseCount=0  # v2 集仅 10 条 smoke，无独立 holdout → 结论标 MECHANISM_ABLATION
+evalTestClassName=tech.qiantong.qknow.module.kmc.service.rag.rerank.ColbertFailClosedAblationEvaluationTest
 ```
 
-## 附录 B：评测结果（T5/T6 后填写）
+## 附录 B：评测结果（T5/T6）
 
 ```text
-A0 Recall@5/10=
-A0 MRR@10=
-A0 NDCG@10=
-A0 p50/p95=
-A1 Recall@5/10=
-A1 MRR@10=
-A1 NDCG@10=
-A1 p50/p95=
-HASH_FALLBACK_IN_A1 count=
-判定=PASS | FAIL | INSUFFICIENT
-说明=
+证据级别=MECHANISM_ABLATION（真实分段行 + 仅粗排阶段差异；非全链路 live ANN）
+caseCount=10
+HASH_FALLBACK_IN_A1 count=0
+
+A0 Recall@5/10=0.90 / 0.90
+A0 MRR@10=0.90
+A0 NDCG@10=0.90
+A0 p50/p95=7ms / 52ms
+
+A1 Recall@5/10=1.00 / 1.00
+A1 MRR@10=1.00
+A1 NDCG@10=1.00
+A1 p50/p95=0ms / 4ms
+
+deltaRecall@5/10=+0.10 / +0.10
+deltaMRR@10=+0.10
+deltaNDCG@10=+0.10
+
+关键 case：eval-006（期望 人工智能.pdf）
+  A0 top10 全部为噪声 Day* 文档 → miss
+  A1 top10 全部为 人工智能.pdf → hit
+
+判定=PASS（机制层；满足 ΔRecall@10≥+2pp 且双指标不劣 + 零 hash）
+说明=在无真实 token embedding 时，hash 粗排截断会以噪声挤掉相关候选；
+     fail-closed 跳过粗排后 deterministic 精排保留高分相关段。
+     完整 live 向量库 E2E 仍缺 holdout 与 -Drag.eval.live，不得据此改生产默认。
+
+报告文件=backend/tests/evidence/a1-colbert-fail-closed/a0-a1-ablation-report.json
+复现命令=cd backend && mvn -pl tests -am -Dtest=ColbertFailClosedAblationEvaluationTest \
+  -Dqknow.rag.colbert.ablation=true -Dsurefire.failIfNoSpecifiedTests=false test
 ```
 
 ## 附录 C：审核勾选
 
-- [ ] 批准 H1 与 A1 最小机制
-- [ ] 批准 In/Out of Scope
-- [ ] 批准通过/失败判据与停止条件
-- [ ] 批准默认开关为 false（仅评测显式开启）
-- [ ] 批准开始 T1–T7（T7 后停，不改生产默认）
-- [ ] 其他修改意见：________________
+- [x] 批准 H1 与 A1 最小机制
+- [x] 批准 In/Out of Scope
+- [x] 批准通过/失败判据与停止条件
+- [x] 批准默认开关为 false（仅评测显式开启）
+- [x] 批准开始 T1–T7（T7 后停，不改生产默认）
+- [x] 其他修改意见：________________
 
-**审核结论**：☐ 批准实施　☐ 驳回/修改后再报　☐ 仅批准只读 T1–T2  
-**审核人**：________　**日期**：________
+**审核结论**：☑ 批准实施（用户口头/会话批准）  
+**审核人**：用户　**日期**：2026-09-10
+
+## 任务完成状态（2026-09-10）
+
+| ID | 状态 |
+|---|---|
+| T1 冻结参数 | 完成（附录 A） |
+| T2 ColbertScorer fail-closed | 完成 |
+| T3 RagRerankService 观测 | 完成 |
+| T4 单测 + 编译 | 完成（13/13） |
+| T5 A0/A1 消融 | 完成（机制层 PASS，附录 B） |
+| T6 结果报告 | 完成（附录 B + evidence JSON） |
+| T7 停：不改生产默认 | 完成 |

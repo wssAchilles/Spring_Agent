@@ -12,12 +12,14 @@ commits: 5c84bb0..1a3c3d8
 
 **What was built** — 为 ColBERT 粗排增加 `hermes.rag.colbert.skip-when-no-embedding`（默认 `false`，A0 行为不变）。开启后：无真实 token embedding 配置时 identity 跳过粗排；配置齐全但编码异常或空响应时 fail-closed 抛错，禁止 `tokenVectorHash` 伪向量回落；`RagRerankService` 在 `enabled && skip && !configured` 时写入 `RagFallbackMonitor` 与 info 日志。未改 topK/RRF/CRAG/Router/golden/生产 yml 默认。
 
-**Verification** — `mvn -pl tests -am -Dtest=ColbertScorerTest -Dsurefire.failIfNoSpecifiedTests=false test` → PASS，Tests run: 13, Failures: 0, Errors: 0。独立 review 首轮发现空响应 hash 旁路（critical），已修复并复审 PASS。Live golden A0/A1 指标对比：**INSUFFICIENT**（本 worktree 未具备完整 live 评测环境/DB 与冻结套件旗标全集；按契约禁止改生产默认）。
+**Verification** — `mvn -pl tests -am -Dtest=ColbertScorerTest -Dsurefire.failIfNoSpecifiedTests=false test` → PASS，Tests run: 13, Failures: 0, Errors: 0。独立 review 首轮发现空响应 hash 旁路（critical），已修复并复审 PASS。机制消融 `ColbertFailClosedAblationEvaluationTest`（`-Dqknow.rag.colbert.ablation=true`）→ PASS：n=10，HASH_FALLBACK_IN_A1=0，A0 R@10/MRR=0.90 vs A1=1.00（Δ+0.10），A1 p95 4ms vs A0 52ms；关键 case `eval-006` A0 全 miss / A1 全 hit。证据级别 **MECHANISM_ABLATION**（非全链路 live ANN），**未改生产默认**。报告：`backend/tests/evidence/a1-colbert-fail-closed/a0-a1-ablation-report.json`。
 
 **Journey log**
 1. 首版只堵了「未配置」与「异常」路径，review 发现「空 embedding 响应」仍 hash —— fail-closed 必须覆盖所有编码失败入口。
 2. `EmbeddingResponse.from` 在当前 Spring AI 版本不存在，应用 `new EmbeddingResponse(List)`。
 3. Service 层短路会绕过 scorer 内日志，观测需在 service 补齐；monitor 仅在 `enabled=true` 时记录以避免噪声。
+4. Surefire 工作目录是模块 `backend/tests`，证据路径需按 cwd 叶子名解析，否则写到嵌套 `backend/tests/backend/...`。
+5. 机制消融证明「无 embedding 时 hash 截断会挤掉相关候选」；完整 live ANN E2E 仍缺 holdout，不得据此改生产默认。
 4. Live A0/A1 消融需完整冻结旗标与 DB，单测通过不能替代 H1 运行证据。
 
 ## [S1] Problem
@@ -51,4 +53,4 @@ commits: 5c84bb0..1a3c3d8
 - [x] T2: 实现 ColbertScorer skip-when-no-embedding — acceptance: 单测覆盖 skip=true 无配置→identity、skip=false→hash、配置齐全→真编码路径不触发 skip (covers: S2)
 - [x] T3: RagRerankService 观测记录 — acceptance: skip 路径写入 RagFallbackMonitor (covers: S2)
 - [x] T4: 模块编译 + 相关单测通过 — acceptance: mvn test 绿 (covers: S2)
-- [ ] T5: A0/A1 指标对比（若环境允许）— acceptance: 附录 B 有结果或 INSUFFICIENT 并说明 (covers: S2)
+- [x] T5: A0/A1 指标对比（若环境允许）— acceptance: 附录 B 有结果或 INSUFFICIENT 并说明 (covers: S2)
