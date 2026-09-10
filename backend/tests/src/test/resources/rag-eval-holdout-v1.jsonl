@@ -1,0 +1,42 @@
+{"id":"eval-sel-001","query":"What is the main purpose of the traffic video perception system?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-002","query":"What language and framework are used for the backend?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-003","query":"What metrics are mentioned in the Go message delivery chain design?","expectedSources":["分布式.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-004","query":"What is the dual-layer robust operational optimization module for?","expectedSources":["大数据.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-005","query":"What are the main components of the Kindergarten Library Management System?","expectedSources":["移动应用开发.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-006","query":"What modeling techniques are covered in Chapter 2?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-007","query":"What is time-decay weighting used for?","expectedSources":["大数据.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-008","query":"What does Section 3.1 of system implementation cover?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-009","query":"What evaluation options exist for comprehensive quality evaluation?","expectedSources":["关于印发《常州工学院学生综合素质评价办法（修订）》的通知.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-010","query":"What technology is the traffic video perception system based on?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-011","query":"What is Session Length Guard used for?","expectedSources":["大数据.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-012","query":"How does the system adapt Flutter to HarmonyOS?","expectedSources":["移动应用开发.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-013","query":"What is RFM lifecycle segmentation in the business module?","expectedSources":["大数据.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-014","query":"What does HHI concentration measure in category structure health?","expectedSources":["大数据.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-015","query":"What is Catalyst optimizer in Spark SQL context?","expectedSources":["大数据.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-016","query":"What is homography calibration used for in the perception pipeline?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-017","query":"What is ByteTrack tracking in the video perception system?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-018","query":"What crowd density estimation methods are described?","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-019","query":"What is the recommendation pipeline filtering step?","expectedSources":["分布式.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-sel-020","query":"What project testing coverage is described in the distributed report?","expectedSources":["分布式.pdf"],"split":"selection","stratum":"medium","kbId":8,"tags":["smoke"]}
+{"id":"eval-hold-001","query":"What is Mahalanobis distance gating in the update stage?","expectedSources":["人工智能.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-002","query":"What NIS normalization is used for innovation gating?","expectedSources":["人工智能.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-003","query":"What is Kalman filtering used for in traffic flow analysis?","expectedSources":["人工智能.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-004","query":"How are outermost perspective lines intersected?","expectedSources":["人工智能.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-005","query":"What outbox aggregate statistics are collected in delivery?","expectedSources":["分布式.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-006","query":"What Mongo failure categorization is used in the Go chain?","expectedSources":["分布式.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-007","query":"What is main delivery success rate monitoring?","expectedSources":["分布式.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-008","query":"What revenue attribution uses dual-layer robust optimization?","expectedSources":["大数据.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-009","query":"What price band analysis is in e-commerce category structure?","expectedSources":["大数据.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-010","query":"What multi-config benchmark results are in section 6.4.1?","expectedSources":["大数据.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-011","query":"What book management modules exist in the Flutter library app?","expectedSources":["移动应用开发.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"eval-hold-012","query":"What dashboard features are in the kindergarten system?","expectedSources":["移动应用开发.pdf"],"split":"holdout","stratum":"medium","kbId":8,"tags":["holdout"]}
+{"id":"short-sel-001","query":"人工智能","expectedSources":["人工智能.pdf"],"split":"selection","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-sel-002","query":"分布式","expectedSources":["分布式.pdf"],"split":"selection","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-sel-003","query":"大数据","expectedSources":["大数据.pdf"],"split":"selection","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-sel-004","query":"幼儿园","expectedSources":["移动应用开发.pdf"],"split":"selection","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-sel-005","query":"Catalyst","expectedSources":["大数据.pdf"],"split":"selection","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-hold-001","query":"会话长度","expectedSources":["大数据.pdf"],"split":"holdout","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-hold-002","query":"RFM","expectedSources":["大数据.pdf"],"split":"holdout","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-hold-003","query":"库管理","expectedSources":["移动应用开发.pdf"],"split":"holdout","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-hold-004","query":"哈希分桶","expectedSources":["分布式.pdf"],"split":"holdout","stratum":"short","kbId":8,"tags":["short"]}
+{"id":"short-hold-005","query":"门控","expectedSources":["人工智能.pdf"],"split":"holdout","stratum":"short","kbId":8,"tags":["short"]}

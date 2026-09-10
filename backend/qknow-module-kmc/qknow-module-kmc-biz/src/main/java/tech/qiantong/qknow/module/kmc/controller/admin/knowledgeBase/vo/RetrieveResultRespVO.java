@@ -88,4 +88,10 @@ public class RetrieveResultRespVO {
     /** 调试信息 */
     private java.util.Map<String, Object> debugInfo;
 
+    /**
+     * Budgeted RAG context from RagContextBuilder (H4a).
+     * Set on the first result only to avoid cache bloat.
+     */
+    private String ragContext;
+
 }
