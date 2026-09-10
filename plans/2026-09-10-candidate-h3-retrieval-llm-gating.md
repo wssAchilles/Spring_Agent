@@ -211,10 +211,24 @@ qknow.rag.crag.score-threshold: 0.0
 
 ## 附录 A：审核勾选
 
-- [ ] 批准 H3 与 C2 门控  
-- [ ] 批准判据与默认值（实体 false、CRAG sample 10%）  
-- [ ] 批准开始实现  
-- [ ] 其他：________________  
+- [x] 批准 H3 与 C2 门控  
+- [x] 批准判据与默认值（实体 false、CRAG sample 10%）  
+- [x] 批准开始实现  
+- [x] 其他：________________  
 
-**审核结论**：☐ 批准　☐ 驳回　☐ 改判据  
-**审核人**：________　**日期**：________
+**审核结论**：☑ 批准实施（用户「批准执行」）  
+**审核人**：用户　**日期**：2026-09-10
+
+---
+
+## 附录 B：实现结果（2026-09-10）
+
+```text
+证据级别=UNIT_MECHANISM
+query-entity.enabled 默认 false
+crag.gate-mode=sample  sample-rate=0.10（确定性 hash mix，避免连续 query 同桶）
+单测 CragGateAndEntityDefaultTest 5/5 PASS
+LLM 影响：实体 1→0/查询；CRAG 1→~0.1/查询
+报告=backend/tests/evidence/h3-llm-gating/h3-gate-unit-evidence.json
+合并=main @ merge H3；未改 golden/qrel/H1/H2 语义
+```
