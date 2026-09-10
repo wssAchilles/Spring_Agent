@@ -195,6 +195,7 @@ hermes:
     colbert:
       enabled: true
       ngram-size: 3
+      skip-when-no-embedding: true
 
 qknow:
   rag:

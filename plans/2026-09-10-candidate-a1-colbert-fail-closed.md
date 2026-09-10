@@ -369,4 +369,10 @@ deltaNDCG@10=+0.10
 | T4 单测 + 编译 | 完成（13/13） |
 | T5 A0/A1 消融 | 完成（机制层 PASS，附录 B） |
 | T6 结果报告 | 完成（附录 B + evidence JSON） |
-| T7 停：不改生产默认 | 完成 |
+| T7 停：不改生产默认 | 完成（后经用户单独授权改为 true） |
+
+## 后续授权执行记录（2026-09-10）
+
+- **Live ANN E2E**：`ENV_QUALIFICATION_FAILED` — 见 `backend/tests/evidence/a1-colbert-fail-closed/live-ann-environment.md`（pgvector 恢复过程中 CASCADE 清空 embedding 列数据）。
+- **生产默认**：已授权并生效 — `skip-when-no-embedding: true` 写入 `application-dev.yml` 与 hermes `application.yml`。
+- **push origin**：见 git 历史。

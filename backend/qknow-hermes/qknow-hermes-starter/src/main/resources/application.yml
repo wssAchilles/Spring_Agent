@@ -80,6 +80,7 @@ hermes:
     colbert:
       enabled: true
       ngram-size: 3
+      skip-when-no-embedding: true
   observability:
     langfuse:
       enabled: ${LANGFUSE_ENABLED:false}
