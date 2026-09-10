@@ -100,3 +100,5 @@ upload
 test_openai.py
 MEMORY.md
 backend/.venv/models/
+/models/
+models/
