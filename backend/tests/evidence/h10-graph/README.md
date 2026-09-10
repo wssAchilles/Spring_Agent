@@ -16,3 +16,8 @@
 3. 与 vector-only 对比 Hit@10  
 
 本日志边跑边写，避免额度/会话中断丢结果。
+
+## Graph A/B (holdout n=12)
+- model qwen-plus entities (~5.3k tokens) + text-embedding-v4 queries (141)
+- Hit@10 vector-only=1.000 graph+keyword=0.417
+- raw: h10-graph-ab-final.json
