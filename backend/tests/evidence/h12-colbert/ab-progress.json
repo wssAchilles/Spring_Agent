@@ -1,8 +1,8 @@
 {
-  "n": 8,
+  "n": 12,
   "hit_ann": 1.0,
   "hit_colbert": 1.0,
-  "vtok": 91,
+  "vtok": 141,
   "cases": [
     {
       "id": "eval-hold-001",
@@ -127,6 +127,64 @@
       "hit_ann": true,
       "hit_colbert": true,
       "maxsim_ms": 68.3
+    },
+    {
+      "id": "eval-hold-009",
+      "query": "What price band analysis is in e-commerce category structure?",
+      "expected": "大数据.pdf",
+      "ann": [
+        "大数据.pdf"
+      ],
+      "colbert": [
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.7
+    },
+    {
+      "id": "eval-hold-010",
+      "query": "What multi-config benchmark results are in section 6.4.1?",
+      "expected": "大数据.pdf",
+      "ann": [
+        "大数据.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "colbert": [
+        "大数据.pdf",
+        "分布式.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 71.5
+    },
+    {
+      "id": "eval-hold-011",
+      "query": "What book management modules exist in the Flutter library app?",
+      "expected": "移动应用开发.pdf",
+      "ann": [
+        "移动应用开发.pdf"
+      ],
+      "colbert": [
+        "移动应用开发.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 70.2
+    },
+    {
+      "id": "eval-hold-012",
+      "query": "What dashboard features are in the kindergarten system?",
+      "expected": "移动应用开发.pdf",
+      "ann": [
+        "移动应用开发.pdf"
+      ],
+      "colbert": [
+        "移动应用开发.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.8
     }
   ]
 }
