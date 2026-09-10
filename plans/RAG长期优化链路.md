@@ -301,8 +301,8 @@ qknow.rag.crag.sample-rate: 0.10
 | H1 | ColBERT fail-closed | **Delivered** | MECHANISM + LIVE_ANN | true | f6c0d31 等 |
 | H2 | SIMPLE 轻检索 | **Delivered** | LIVE_KEYWORD | true | 125f788… |
 | H3 | 实体关 + CRAG 抽样 | **Delivered** | UNIT_MECHANISM | 已改默认 | f4be4b5… |
-| H0 | 评估基建 | Planned | — | — | 优先 |
-| H4a | context 接线 | Planned | — | — | 缺陷倾向 |
+| H0 | 评估基建 | **Delivered** | UNIT | — | holdout jsonl + LiveRetrievalMetrics |
+| H4a | context 接线 | **Delivered** | UNIT | 有 ragContext 时优先 | 38a5d68/aad75df |
 | H4b | 多轮 history | Planned | — | — | |
 | H5 | 中文关键词 | Planned | — | — | |
 | H6 | 切块 A/B | Planned | — | — | |
