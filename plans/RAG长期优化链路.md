@@ -309,7 +309,7 @@ qknow.rag.crag.sample-rate: 0.10
 | H7 | 融合过滤 | **Delivered** | UNIT | post-fusion-filter 默认 false | 0d375d6/1a81541 |
 | H8 | rewrite/embed 减负 | **Delivered** | UNIT | query-transform 默认关 | 38256ad/9a6478d |
 | H9 | gRPC 取消 | **Delivered** | UNIT | deadline 120s + onDispose cancel | 0d375d6 |
-| H10 | GraphRAG | **Probe Done** | ENV | enabled=false | Neo4j 空图 7 节点；需抽实体后再验 |
+| H10 | GraphRAG | **A/B Done — Keep Off** | LIVE | enabled=**false** | 12 holdout: vector Hit@10=1.00 vs graph+kw=0.42；证据 h10-graph/ |
 | H11 | 长期记忆读 | **Delivered** | UNIT | recall-on-empty=true topK=3 | 582fa2c |
 | H12 | 真 ColBERT | Deferred | — | H1 fail-closed 已挡伪向量 | 真 checkpoint/索引另批 |
 
