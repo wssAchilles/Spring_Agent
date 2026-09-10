@@ -180,10 +180,102 @@
       "hit_vector": true,
       "hit_graph_kw": false,
       "hit_union": true
+    },
+    {
+      "id": "eval-hold-009",
+      "query": "What price band analysis is in e-commerce category structure?",
+      "expected": "大数据.pdf",
+      "vector": [
+        "大数据.pdf"
+      ],
+      "graph_terms": [
+        "traffic flow analysis",
+        "traffic video analysis system",
+        "traffic video analysis",
+        "LLM-powered intelligent analysis report",
+        "Kalman filtering",
+        "YOLO"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": false,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-010",
+      "query": "What multi-config benchmark results are in section 6.4.1?",
+      "expected": "大数据.pdf",
+      "vector": [
+        "大数据.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "graph_terms": [
+        "Section 3.2",
+        "intersection 23",
+        "least squares regression",
+        "artificial intelligence.pdf",
+        "Video Processing Pipeline",
+        "YOLO"
+      ],
+      "graph_docs": [
+        "分布式.pdf",
+        "移动应用开发.pdf",
+        "大数据.pdf",
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": true,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-011",
+      "query": "What book management modules exist in the Flutter library app?",
+      "expected": "移动应用开发.pdf",
+      "vector": [
+        "移动应用开发.pdf"
+      ],
+      "graph_terms": [
+        "supervision library",
+        "fusion approach",
+        "mathematical modeling",
+        "track_and_count()",
+        "SupervisionRuntimeAdapter",
+        "YOLO"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": false,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-012",
+      "query": "What dashboard features are in the kindergarten system?",
+      "expected": "移动应用开发.pdf",
+      "vector": [
+        "移动应用开发.pdf"
+      ],
+      "graph_terms": [
+        "Multi-Object Perception and Motion State Estimation System Based on Supervision",
+        "traffic video analysis system",
+        "traffic video perception system",
+        "Multi-Object Perception and Motion State Estimation System",
+        "multi-object perception system",
+        "least squares regression"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": false,
+      "hit_union": true
     }
   ],
   "model_embed": "text-embedding-v4",
-  "n": 8,
+  "n": 12,
   "hit_vector": 1.0,
-  "hit_graph_kw": 0.5
+  "hit_graph_kw": 0.4166666666666667
 }
