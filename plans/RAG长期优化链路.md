@@ -311,7 +311,7 @@ qknow.rag.crag.sample-rate: 0.10
 | H9 | gRPC 取消 | **Delivered** | UNIT | deadline 120s + onDispose cancel | 0d375d6 |
 | H10 | GraphRAG | **A/B Done — Keep Off** | LIVE | enabled=**false** | 12 holdout: vector Hit@10=1.00 vs graph+kw=0.42；证据 h10-graph/ |
 | H11 | 长期记忆读 | **Delivered** | UNIT | recall-on-empty=true topK=3 | 582fa2c |
-| H12 | 真 ColBERT | Deferred | — | H1 fail-closed 已挡伪向量 | 真 checkpoint/索引另批 |
+| H12 | 真 ColBERT | **L1 A/B Done** | LIVE local MaxSim | 未替换 ANN | colbertv2 索引 5k；holdout Hit@10 ANN=1.0=MaxSim；models/可删；evidence h12-colbert |
 
 ---
 
