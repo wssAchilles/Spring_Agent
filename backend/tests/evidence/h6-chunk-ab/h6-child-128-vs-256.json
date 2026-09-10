@@ -1,0 +1,52 @@
+{
+  "model": "qwen3.7-text-embedding",
+  "c128_tokens": 40552,
+  "c256_tokens": 50926,
+  "n128": 800,
+  "n256": 600,
+  "cases": [
+    {
+      "q": "This is the title page and abstract of a",
+      "hit128": false,
+      "hit256": false
+    },
+    {
+      "q": "This chunk is from the table of contents",
+      "hit128": true,
+      "hit256": false
+    },
+    {
+      "q": "This section appears in Chapter 3 (Syste",
+      "hit128": true,
+      "hit256": false
+    },
+    {
+      "q": "This chunk appears to be from the Table ",
+      "hit128": true,
+      "hit256": true
+    },
+    {
+      "q": "The document describes a multi-object pe",
+      "hit128": true,
+      "hit256": true
+    },
+    {
+      "q": "The chunk is from Section 2.5.1 of a tec",
+      "hit128": true,
+      "hit256": true
+    },
+    {
+      "q": "The document describes a multi-object pe",
+      "hit128": true,
+      "hit256": true
+    },
+    {
+      "q": "This chunk is from Chapter 3, Section 3.",
+      "hit128": true,
+      "hit256": false
+    }
+  ],
+  "hit10_128": 0.875,
+  "hit10_256": 0.5,
+  "delta_hit10": -0.375
+}
