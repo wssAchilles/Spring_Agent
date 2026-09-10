@@ -11,6 +11,10 @@ import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,12 +22,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -36,16 +40,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * A0: hash pseudo-vector coarse rank + topK*3 truncate.
  * A1: skip coarse rank when no real embedding is configured.
  *
- * Enable with -Dqknow.rag.colbert.ablation=true and optional
- * -Dqknow.rag.colbert.ablation.jdbc.url/user/password.
+ * Mechanism mode: -Dqknow.rag.colbert.ablation=true
+ * Live ANN mode:  -Dqknow.rag.colbert.ablation.live=true
+ *                 (+ -Dqknow.rag.colbert.ablation.api.key / model optional)
  */
-@EnabledIfSystemProperty(named = "qknow.rag.colbert.ablation", matches = "true")
 class ColbertFailClosedAblationEvaluationTest {
 
     private static final int FINAL_TOP_K = 10;
     private static final int CANDIDATE_POOL = 80;
+    private static final int LIVE_TOP_K = 40;
 
     @Test
+    @EnabledIfSystemProperty(named = "qknow.rag.colbert.ablation", matches = "true")
     void ablatesHashCoarseTruncationVersusFailClosedSkip() throws Exception {
         List<GoldenCase> cases = loadGoldenCases();
         assertFalse(cases.isEmpty());
@@ -117,6 +123,188 @@ class ColbertFailClosedAblationEvaluationTest {
 
         assertEquals(0, hashFallbackInA1, "HASH_FALLBACK_IN_A1");
         assertTrue(Files.isRegularFile(outFile));
+    }
+
+    /**
+     * Live ANN A0/A1: query embedding (text-embedding-v4) + pgvector HNSW recall,
+     * then only ColBERT coarse stage differs. Does NOT re-embed documents.
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "qknow.rag.colbert.ablation.live", matches = "true")
+    void liveAnnAblationHashCoarseVersusFailClosedSkip() throws Exception {
+        List<GoldenCase> cases = loadGoldenCases();
+        assertFalse(cases.isEmpty());
+
+        String jdbcUrl = System.getProperty("qknow.rag.colbert.ablation.jdbc.url",
+                "jdbc:postgresql://127.0.0.1:5432/ai_agent");
+        String user = System.getProperty("qknow.rag.colbert.ablation.jdbc.user", "achilles");
+        String password = System.getProperty("qknow.rag.colbert.ablation.jdbc.password",
+                System.getenv().getOrDefault("POSTGRESQL_PASSWORD", ""));
+        String apiKey = System.getProperty("qknow.rag.colbert.ablation.api.key", "");
+        if (apiKey.isBlank()) {
+            try (Connection c = DriverManager.getConnection(jdbcUrl, user, password);
+                 PreparedStatement ps = c.prepareStatement(
+                         "SELECT api_key FROM ai_api_key WHERE id = 103 AND del_flag = 0")) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        apiKey = rs.getString(1);
+                    }
+                }
+            }
+        }
+        assertFalse(apiKey == null || apiKey.isBlank(), "missing embedding api key");
+
+        String model = System.getProperty("qknow.rag.colbert.ablation.api.model", "text-embedding-v4");
+        String baseUrl = System.getProperty("qknow.rag.colbert.ablation.api.base-url",
+                "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings");
+
+        List<Map<String, Object>> rows = new ArrayList<>();
+        Metrics aggA0 = new Metrics();
+        Metrics aggA1 = new Metrics();
+        int hashFallbackInA1 = 0;
+        int emptyPools = 0;
+        long queryEmbedMs = 0;
+
+        HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, user, password)) {
+            for (GoldenCase item : cases) {
+                long t0 = System.currentTimeMillis();
+                float[] qvec = embedQuery(http, baseUrl, apiKey, model, item.query());
+                queryEmbedMs += System.currentTimeMillis() - t0;
+
+                List<RetrievalResult> pool = annRetrieve(connection, qvec, LIVE_TOP_K);
+                if (pool.size() < FINAL_TOP_K) {
+                    emptyPools++;
+                }
+                if (pool.isEmpty()) {
+                    continue;
+                }
+
+                ArmResult a0 = runArm(pool, false, item);
+                ArmResult a1 = runArm(pool, true, item);
+                if (a1.hashInvolved()) {
+                    hashFallbackInA1++;
+                }
+                aggA0.add(item, a0.ranking(), a0.elapsedMs());
+                aggA1.add(item, a1.ranking(), a1.elapsedMs());
+
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("id", item.id());
+                row.put("query", item.query());
+                row.put("expectedSources", item.expectedSources());
+                row.put("annPoolSize", pool.size());
+                row.put("annTopSources", pool.stream().map(RetrievalResult::getDocumentName).distinct().limit(5).toList());
+                row.put("a0RetainedSources", a0.ranking());
+                row.put("a1RetainedSources", a1.ranking());
+                row.put("a0HitAt10", hitAt(item.expectedSources(), a0.ranking(), 10));
+                row.put("a1HitAt10", hitAt(item.expectedSources(), a1.ranking(), 10));
+                row.put("a1HashInvolved", a1.hashInvolved());
+                rows.add(row);
+            }
+        }
+
+        Map<String, Object> report = new LinkedHashMap<>();
+        report.put("hypothesis", "H1");
+        report.put("evidenceLevel", "LIVE_ANN_ABLATION");
+        report.put("queryEmbeddingModel", model);
+        report.put("annTopK", LIVE_TOP_K);
+        report.put("finalTopK", FINAL_TOP_K);
+        report.put("coarseLimit", FINAL_TOP_K * 3);
+        report.put("caseCount", cases.size());
+        report.put("evaluatedCases", rows.size());
+        report.put("emptyOrSmallPools", emptyPools);
+        report.put("hashFallbackInA1", hashFallbackInA1);
+        report.put("totalQueryEmbedMs", queryEmbedMs);
+        report.put("A0", aggA0.summary());
+        report.put("A1", aggA1.summary());
+        report.put("deltaRecallAt5", round(aggA1.recallAt5() - aggA0.recallAt5()));
+        report.put("deltaRecallAt10", round(aggA1.recallAt10() - aggA0.recallAt10()));
+        report.put("deltaMrrAt10", round(aggA1.mrrAt10() - aggA0.mrrAt10()));
+        report.put("deltaNdcgAt10", round(aggA1.ndcgAt10() - aggA0.ndcgAt10()));
+        report.put("cases", rows);
+        report.put("notes", List.of(
+                "Candidates come from live pgvector HNSW ANN on restored vector_store embeddings (text-embedding-v4, 1024d).",
+                "Documents were NOT re-embedded in this experiment.",
+                "Only ColBERT coarse stage differs between A0 and A1; final deterministic rerank is identical."));
+
+        Path outDir = resolveEvidenceDirectory();
+        Files.createDirectories(outDir);
+        Path outFile = outDir.resolve("a0-a1-live-ann-report.json");
+        Files.writeString(outFile,
+                JSON.toJSONString(report, JSONWriter.Feature.PrettyFormat),
+                StandardCharsets.UTF_8);
+
+        assertEquals(0, hashFallbackInA1, "HASH_FALLBACK_IN_A1");
+        assertTrue(Files.isRegularFile(outFile));
+        assertTrue(rows.size() >= 5, "live ANN produced too few evaluated cases");
+    }
+
+    private static float[] embedQuery(HttpClient http, String baseUrl, String apiKey,
+                                      String model, String query) throws Exception {
+        String body = JSON.toJSONString(Map.of("model", model, "input", List.of(query)));
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl))
+                .timeout(Duration.ofSeconds(60))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build();
+        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IllegalStateException("embed HTTP " + response.statusCode() + ": "
+                    + response.body().substring(0, Math.min(200, response.body().length())));
+        }
+        var json = JSON.parseObject(response.body());
+        var emb = json.getJSONArray("data").getJSONObject(0).getJSONArray("embedding");
+        float[] vec = new float[emb.size()];
+        for (int i = 0; i < emb.size(); i++) {
+            vec[i] = emb.getFloatValue(i);
+        }
+        return vec;
+    }
+
+    private static List<RetrievalResult> annRetrieve(Connection connection, float[] queryVec, int topK)
+            throws Exception {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < queryVec.length; i++) {
+            if (i > 0) {
+                sb.append(',');
+            }
+            sb.append(String.format(java.util.Locale.ROOT, "%.6f", queryVec[i]));
+        }
+        sb.append(']');
+        String sql = """
+                SELECT content,
+                       coalesce(metadata->>'kmc_document_name', '') AS doc_name,
+                       1 - (embedding <=> ?::vector) AS score
+                FROM vector_store
+                WHERE embedding IS NOT NULL
+                ORDER BY embedding <=> ?::vector
+                LIMIT ?
+                """;
+        List<RetrievalResult> results = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            String lit = sb.toString();
+            ps.setString(1, lit);
+            ps.setString(2, lit);
+            ps.setInt(3, topK);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String content = rs.getString("content");
+                    if (content != null && content.length() > 800) {
+                        content = content.substring(0, 800);
+                    }
+                    results.add(RetrievalResult.builder()
+                            .segmentId((long) results.size())
+                            .documentName(rs.getString("doc_name"))
+                            .content(content)
+                            .score(rs.getDouble("score"))
+                            .source("ann")
+                            .build());
+                }
+            }
+        }
+        return results;
     }
 
     private static Path resolveEvidenceDirectory() {

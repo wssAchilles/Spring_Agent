@@ -376,3 +376,27 @@ deltaNDCG@10=+0.10
 - **Live ANN E2E**：`ENV_QUALIFICATION_FAILED` — 见 `backend/tests/evidence/a1-colbert-fail-closed/live-ann-environment.md`（pgvector 恢复过程中 CASCADE 清空 embedding 列数据）。
 - **生产默认**：已授权并生效 — `skip-when-no-embedding: true` 写入 `application-dev.yml` 与 hermes `application.yml`。
 - **push origin**：见 git 历史。
+
+## Live ANN 消融（2026-09-10，向量恢复后）
+
+```text
+证据级别=LIVE_ANN_ABLATION
+queryEmbeddingModel=text-embedding-v4 (1024d)
+annTopK=40  finalTopK=10
+evaluatedCases=10  emptyPools=0
+HASH_FALLBACK_IN_A1=0
+
+A0 Recall@5/10=1.00/1.00  MRR@10=0.8333  NDCG@10=0.8762  p50/p95=4ms/30ms
+A1 Recall@5/10=1.00/1.00  MRR@10=0.8333  NDCG@10=0.8762  p50/p95=0ms/1ms
+
+deltaRecall@10=0  deltaMRR=0  deltaNDCG=0  (质量持平)
+latency: A1 显著更快 (p95 30ms → 1ms)
+
+判定=QUALITY_PARITY + LATENCY_WIN
+说明=在真实 HNSW ANN 一阶段已较准的条件下，hash 粗排未进一步损害本 golden 集质量；
+     A1 仍消除噪声阶段并降低延迟。机制层消融（人工噪声池）曾显示 A1 质量占优。
+报告=backend/tests/evidence/a1-colbert-fail-closed/a0-a1-live-ann-report.json
+复现=cd backend && mvn -pl tests -am \
+  -Dtest=ColbertFailClosedAblationEvaluationTest#liveAnnAblationHashCoarseVersusFailClosedSkip \
+  -Dqknow.rag.colbert.ablation.live=true -Dsurefire.failIfNoSpecifiedTests=false test
+```
