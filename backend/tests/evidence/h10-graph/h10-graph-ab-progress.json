@@ -94,10 +94,96 @@
       "hit_vector": true,
       "hit_graph_kw": true,
       "hit_union": true
+    },
+    {
+      "id": "eval-hold-005",
+      "query": "What outbox aggregate statistics are collected in delivery?",
+      "expected": "分布式.pdf",
+      "vector": [
+        "分布式.pdf",
+        "Day09-多语言国际化"
+      ],
+      "graph_terms": [
+        "least squares regression",
+        "standard deviation",
+        "mean absolute error",
+        "Kalman filtering",
+        "median filtering",
+        "fusion approach"
+      ],
+      "graph_docs": [
+        "大数据.pdf",
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": false,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-006",
+      "query": "What Mongo failure categorization is used in the Go chain?",
+      "expected": "分布式.pdf",
+      "vector": [
+        "分布式.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "graph_terms": [
+        "mathematical modeling",
+        "auto-calibration",
+        "traffic flow analysis",
+        "speed estimation",
+        "homography calibration",
+        "detection tracking"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": false,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-007",
+      "query": "What is main delivery success rate monitoring?",
+      "expected": "分布式.pdf",
+      "vector": [
+        "Day22-23-项目总结与交接",
+        "分布式.pdf",
+        "Day08-支付模块集成",
+        "Day09-多语言国际化",
+        "Day07-AI对话功能开发"
+      ],
+      "graph_terms": [
+        "real-time monitoring dashboard",
+        "LLM-powered intelligent analysis report",
+        "occupancy",
+        "intersection 23",
+        "zone entry/exit counts",
+        "traffic flow density"
+      ],
+      "graph_docs": [
+        "人工智能.pdf"
+      ],
+      "hit_vector": true,
+      "hit_graph_kw": false,
+      "hit_union": true
+    },
+    {
+      "id": "eval-hold-008",
+      "query": "What revenue attribution uses dual-layer robust optimization?",
+      "expected": "大数据.pdf",
+      "vector": [
+        "大数据.pdf"
+      ],
+      "graph_terms": [],
+      "graph_docs": [],
+      "hit_vector": true,
+      "hit_graph_kw": false,
+      "hit_union": true
     }
   ],
   "model_embed": "text-embedding-v4",
-  "n": 4,
+  "n": 8,
   "hit_vector": 1.0,
-  "hit_graph_kw": 1.0
+  "hit_graph_kw": 0.5
 }
