@@ -1,0 +1,11 @@
+{
+  "n": 4955,
+  "flat_shape": [
+    634240,
+    768
+  ],
+  "encode_s": 80.15,
+  "model": "colbertv2.0",
+  "maxlen": 128,
+  "index_mb": 1948.4
+}
