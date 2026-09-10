@@ -99,4 +99,4 @@ frontend/bundle-analyzer-report.html
 upload
 test_openai.py
 MEMORY.md
-backend/.venv
+backend/.venv/models/

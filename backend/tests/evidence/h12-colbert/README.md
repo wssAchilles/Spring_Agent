@@ -1,0 +1,5 @@
+# H12 ColBERT L1
+started: 2026-09-10T20:39:28+08:00
+scope: vector_store ~5k segs
+weights dir: models/colbert-l0/
+evidence: backend/tests/evidence/h12-colbert/
