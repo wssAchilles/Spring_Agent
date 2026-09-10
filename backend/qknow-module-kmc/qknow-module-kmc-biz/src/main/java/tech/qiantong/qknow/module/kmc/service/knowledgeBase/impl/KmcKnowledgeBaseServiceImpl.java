@@ -631,10 +631,19 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
      */
     @Override
     public List<RetrieveResultRespVO> search(Long knowledgeBaseId, String query) {
+        return search(knowledgeBaseId, query, null);
+    }
+
+    @Override
+    public List<RetrieveResultRespVO> search(Long knowledgeBaseId, String query,
+                                             List<RetrieveResultReqVO.ChatMessage> history) {
         KmcKnowledgeBaseDO knowledgeBaseDO = baseMapper.selectById(knowledgeBaseId);
         RetrieveResultReqVO reqVO = new RetrieveResultReqVO();
         reqVO.setId(knowledgeBaseId);
         reqVO.setQuery(query);
+        if (history != null && !history.isEmpty()) {
+            reqVO.setHistory(history);
+        }
         reqVO.setSearchMethod(knowledgeBaseDO.getSearchMethod());
         reqVO.setEmbeddingModel(knowledgeBaseDO.getEmbeddingModel());
         reqVO.setEmbeddingModelProvider(knowledgeBaseDO.getEmbeddingModelProvider());

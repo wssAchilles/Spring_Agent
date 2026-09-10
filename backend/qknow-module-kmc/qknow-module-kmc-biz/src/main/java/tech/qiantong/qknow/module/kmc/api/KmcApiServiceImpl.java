@@ -17,6 +17,7 @@ import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheHitDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheLookupReqDTO;
 import tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.SemanticCacheSaveReqDTO;
 import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
+import tech.qiantong.qknow.module.kmc.controller.admin.knowledgeBase.vo.RetrieveResultReqVO;
 import tech.qiantong.qknow.module.kmc.controller.admin.knowledgeBase.vo.RetrieveResultRespVO;
 import tech.qiantong.qknow.module.kmc.dal.dataobject.document.KmcDocumentDO;
 import tech.qiantong.qknow.module.kmc.dal.dataobject.kmcCategory.KmcCategoryDO;
@@ -124,8 +125,24 @@ public class KmcApiServiceImpl implements IKmcApiService {
 
     @Override
     public List<RetrieveResult> recallTest(Long knowledgeId, String query) {
+        return recallTest(knowledgeId, query, null);
+    }
 
-        List<RetrieveResultRespVO> resultRespVOList =  iKmcKnowledgeBaseService.search(knowledgeId,query);
+    @Override
+    public List<RetrieveResult> recallTest(Long knowledgeId, String query,
+                                           List<tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO> history) {
+        List<RetrieveResultReqVO.ChatMessage> historyMessages = null;
+        if (history != null && !history.isEmpty()) {
+            historyMessages = new ArrayList<>();
+            for (tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO turn : history) {
+                RetrieveResultReqVO.ChatMessage m = new RetrieveResultReqVO.ChatMessage();
+                m.setRole(turn.getRole());
+                m.setContent(turn.getContent());
+                historyMessages.add(m);
+            }
+        }
+        List<RetrieveResultRespVO> resultRespVOList =
+                iKmcKnowledgeBaseService.search(knowledgeId, query, historyMessages);
         List<RetrieveResult> retrieveResults = new ArrayList<>();
         for (RetrieveResultRespVO vo : resultRespVOList) {
             RetrieveResult result = new RetrieveResult();

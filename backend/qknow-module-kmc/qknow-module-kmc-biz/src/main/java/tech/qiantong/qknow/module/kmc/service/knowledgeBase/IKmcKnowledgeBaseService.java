@@ -159,4 +159,15 @@ public interface IKmcKnowledgeBaseService extends IService<KmcKnowledgeBaseDO> {
      */
     List<RetrieveResultRespVO> search(Long knowledgeBaseId, String query);
 
+    /**
+     * 知识库内容检索（H4b：多轮 history 参与 query 压缩）
+     *
+     * @param knowledgeBaseId 知识库id
+     * @param query           查询内容
+     * @param history         多轮历史（可空）
+     * @return 知识库检索结果列表
+     */
+    List<RetrieveResultRespVO> search(Long knowledgeBaseId, String query,
+                                      List<RetrieveResultReqVO.ChatMessage> history);
+
 }
