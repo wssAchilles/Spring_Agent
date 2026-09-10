@@ -1,0 +1,32 @@
+{
+  "hypothesis": "H3",
+  "evidenceLevel": "UNIT_MECHANISM",
+  "changes": {
+    "queryEntityDefault": false,
+    "cragGateModeDefault": "sample",
+    "cragSampleRateDefault": 0.10,
+    "cragHashMix": true
+  },
+  "unitTests": {
+    "class": "CragGateAndEntityDefaultTest",
+    "passed": 5,
+    "failed": 0,
+    "cases": [
+      "crag always invokes LLM",
+      "crag sample rate=0 skips LLM",
+      "crag sample 10% band on 200 sequential queries",
+      "entity default off uses fallback without LLM",
+      "entity enabled invokes LLM"
+    ]
+  },
+  "llmCallImpact": {
+    "entityPerQuery": "always -> 0 when disabled (default)",
+    "cragPerQuery": "always -> ~0.10 when sample (default)",
+    "expectedReductionVsAlwaysBoth": ">=50% on MEDIUM path when both were on"
+  },
+  "notes": [
+    "Quality Recall@10 first-pass is independent of CRAG (CRAG only triggers second retrieval).",
+    "Entity extraction off falls back to rule keywords; identifier path unchanged.",
+    "Production defaults flipped in Java + application-dev.yml; hermes uses qknow.rag.crag if wired."
+  ]
+}

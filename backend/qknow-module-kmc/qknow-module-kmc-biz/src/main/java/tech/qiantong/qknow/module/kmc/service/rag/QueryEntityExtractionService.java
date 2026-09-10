@@ -102,7 +102,8 @@ public class QueryEntityExtractionService {
     @Component
     @ConfigurationProperties(prefix = "qknow.rag.query-entity")
     public static class QueryEntityConfig {
-        private boolean enabled = true;
+        /** H3: default false to avoid per-query LLM entity extraction. */
+        private boolean enabled = false;
         private String platform = "DeepSeek";
         private String baseUrl;
         private String apiKey;

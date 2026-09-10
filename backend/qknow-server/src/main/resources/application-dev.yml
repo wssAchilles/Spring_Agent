@@ -210,7 +210,7 @@ qknow:
       model-name: deepseek-chat
       threshold: 0.85
     query-entity:
-      enabled: true
+      enabled: false
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY}
@@ -218,6 +218,8 @@ qknow:
       temperature: 0.0
     crag:
       enabled: true
+      gate-mode: sample
+      sample-rate: 0.10
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY}

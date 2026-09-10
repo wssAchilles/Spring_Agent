@@ -42,6 +42,9 @@ public class CragRetrievalEvaluator {
         if (!config.isEnabled()) {
             return correct("CRAG disabled", query);
         }
+        if (!shouldEvaluate(query)) {
+            return correct("CRAG gated (skip LLM)", query);
+        }
         if (ragResult == null || StrUtil.isBlank(ragResult.getContext())) {
             return CragRetrievalEvaluation.builder()
                     .label(CragRetrievalEvaluation.Label.INCORRECT)
@@ -69,6 +72,43 @@ public class CragRetrievalEvaluator {
                     .rewrittenQuery(query)
                     .build();
         }
+    }
+
+    /**
+     * H3: sample/never gate skips most CRAG LLM calls.
+     * Deterministic per query hash so A/B arms are reproducible.
+     */
+    boolean shouldEvaluate(String query) {
+        String mode = config.getGateMode() == null ? "sample" : config.getGateMode().trim().toLowerCase();
+        if ("always".equals(mode)) {
+            return true;
+        }
+        if ("never".equals(mode)) {
+            return false;
+        }
+        double rate = config.getSampleRate();
+        if (rate <= 0.0D) {
+            return false;
+        }
+        if (rate >= 1.0D) {
+            return true;
+        }
+        if (StrUtil.isBlank(query)) {
+            return false;
+        }
+        int h = mix(query.hashCode());
+        double bucket = (h & 0x7fffffff) / (double) Integer.MAX_VALUE;
+        return bucket < rate;
+    }
+
+    /** Avalanche mix so near-identical sequential queries do not share one bucket. */
+    private static int mix(int h) {
+        h ^= (h >>> 16);
+        h *= 0x7feb352d;
+        h ^= (h >>> 15);
+        h *= 0x846ca68b;
+        h ^= (h >>> 16);
+        return h;
     }
 
     CragRetrievalEvaluation parse(String responseText, String fallbackQuery) {
@@ -131,6 +171,10 @@ public class CragRetrievalEvaluator {
     @ConfigurationProperties(prefix = "qknow.rag.crag")
     public static class CragConfig {
         private boolean enabled = true;
+        /** always | sample | never — H3 default sample */
+        private String gateMode = "sample";
+        /** Fraction of queries that invoke the LLM evaluator when gateMode=sample */
+        private double sampleRate = 0.10D;
         private String platform = "DeepSeek";
         private String baseUrl;
         private String apiKey;
