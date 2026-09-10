@@ -82,6 +82,11 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> implements IKmcSyncService {
+
+    /** H6: parent-child child token size; 128 preserves historical default. */
+    @org.springframework.beans.factory.annotation.Value("${qknow.rag.chunk.child-tokens:128}")
+    private int childChunkTokens = 128;
+
     @Resource
     private IKmcDocumentService kmcDocumentService;
     @Resource
@@ -367,7 +372,8 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 List<Document> segmentList = splitter.split(documentList);
                 if (SplitterFactory.MODE_RECURSIVE.equals(mode) && splitter instanceof RecursiveSplitter recursiveSplitter) {
                     int parentChunkSize = Math.max(maxTokens, 1024);
-                    int childChunkSize = Math.min(maxTokens, 128);
+                    // H6: child chunk size configurable; default 128 preserves historical behavior.
+                    int childChunkSize = Math.min(maxTokens, childChunkTokens);
                     segmentList = recursiveSplitter.splitParentChild(documentList, parentChunkSize, childChunkSize,
                             chunkOverlap, Math.min(chunkOverlap, 32));
                     segmentList = entityExtractionService.enrichParentChildMetadata(segmentList,

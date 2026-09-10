@@ -75,6 +75,13 @@ public class AgentOrchestrator {
     private final tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig;
     private final MemoryManager memoryManager;
 
+    /** H11: when short-term and DB history are empty, recall long-term summaries. */
+    @org.springframework.beans.factory.annotation.Value("${hermes.memory.long-term.recall-on-empty:true}")
+    private boolean longTermRecallOnEmpty = true;
+
+    @org.springframework.beans.factory.annotation.Value("${hermes.memory.long-term.recall-top-k:3}")
+    private int longTermRecallTopK = 3;
+
     @Autowired
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator, PlanSolveConfig planSolveConfig,
@@ -300,6 +307,34 @@ public class AgentOrchestrator {
                 } else if ("assistant".equals(historyMsg.getRole())) {
                     messages.add(new AssistantMessage(historyMsg.getContent()));
                 }
+            }
+        }
+        // H11: 短期与关系库皆空时，召回长期记忆摘要
+        if (messages.isEmpty() && longTermRecallOnEmpty && memoryManager != null
+                && hasCompleteIdentity(request)) {
+            try {
+                List<org.springframework.ai.document.Document> longTermDocs =
+                        memoryManager.recallByScope(request.getQuestion(), memoryScope(request), longTermRecallTopK);
+                if (longTermDocs != null && !longTermDocs.isEmpty()) {
+                    StringBuilder sb = new StringBuilder("相关历史记忆摘要：\n");
+                    int n = 0;
+                    for (org.springframework.ai.document.Document doc : longTermDocs) {
+                        String text = doc.getText();
+                        if (text == null || text.isBlank()) {
+                            continue;
+                        }
+                        sb.append("- ").append(text).append('\n');
+                        if (++n >= longTermRecallTopK) {
+                            break;
+                        }
+                    }
+                    if (n > 0) {
+                        messages.add(new UserMessage(sb.toString()));
+                        log.debug("长期记忆召回注入: scope={}, docs={}", memoryScope(request), n);
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("长期记忆召回失败: {}", e.getMessage());
             }
         }
         recordUserMemory(request);
