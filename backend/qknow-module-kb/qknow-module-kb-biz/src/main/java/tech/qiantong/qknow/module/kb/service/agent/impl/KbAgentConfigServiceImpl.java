@@ -260,7 +260,15 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
             knowledgeBaseList.forEach(kb -> {
                 String recalled = "";
                 try {
-                    var results = kmcApiService.recallTest(kb.getId(), kbAgentConfig.getQuestion());
+                    List<tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO> turns = null;
+                    if (kbAgentConfig.getHistoryMessages() != null && !kbAgentConfig.getHistoryMessages().isEmpty()) {
+                        turns = new ArrayList<>();
+                        for (var historyMsg : kbAgentConfig.getHistoryMessages()) {
+                            turns.add(new tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO(
+                                    historyMsg.getRole(), historyMsg.getContent()));
+                        }
+                    }
+                    var results = kmcApiService.recallTest(kb.getId(), kbAgentConfig.getQuestion(), turns);
                     if (results != null && !results.isEmpty()) {
                         // H4a: prefer budgeted RagContextBuilder output when present.
                         String budgeted = results.get(0).getRagContext();
