@@ -183,7 +183,7 @@ hermes:
       model-name: deepseek-chat
       question-count: 3
     query-transform:
-      enabled: true
+      enabled: false
       strategy: rewrite
       platform: DeepSeek
       base-url: https://api.deepseek.com
