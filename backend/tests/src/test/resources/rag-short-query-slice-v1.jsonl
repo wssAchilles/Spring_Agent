@@ -1,0 +1,10 @@
+{"id":"short-001","query":"人工智能","route":"SIMPLE","expectedSources":["人工智能.pdf"],"tags":["short","zh"],"notes":"length=4 < 10"}
+{"id":"short-002","query":"分布式","route":"SIMPLE","expectedSources":["分布式.pdf"],"tags":["short","zh"],"notes":"length=3 < 10"}
+{"id":"short-003","query":"大数据","route":"SIMPLE","expectedSources":["大数据.pdf"],"tags":["short","zh"],"notes":"length=3 < 10"}
+{"id":"short-004","query":"幼儿园","route":"SIMPLE","expectedSources":["移动应用开发.pdf"],"tags":["short","zh"],"notes":"kindergarten library topic"}
+{"id":"short-005","query":"会话长度","route":"SIMPLE","expectedSources":["大数据.pdf"],"tags":["short","zh"],"notes":"session length guard phrase"}
+{"id":"short-006","query":"Catalyst","route":"SIMPLE","expectedSources":["大数据.pdf"],"tags":["short","en"],"notes":"Spark Catalyst optimizer"}
+{"id":"short-007","query":"RFM","route":"SIMPLE","expectedSources":["大数据.pdf"],"tags":["short","en"],"notes":"RFM segmentation"}
+{"id":"short-008","query":"库管理","route":"SIMPLE","expectedSources":["移动应用开发.pdf"],"tags":["short","zh"],"notes":"library management"}
+{"id":"short-009","query":"哈希分桶","route":"SIMPLE","expectedSources":["分布式.pdf"],"tags":["short","zh"],"notes":"hash bucketing"}
+{"id":"short-010","query":"门控","route":"SIMPLE","expectedSources":["人工智能.pdf"],"tags":["short","zh"],"notes":"NIS gating phrase"}

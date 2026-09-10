@@ -2,6 +2,7 @@ package tech.qiantong.qknow.module.kmc.service.rag;
 
 import cn.hutool.core.collection.CollUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import tech.qiantong.qknow.common.core.utils.SecurityUtils;
@@ -74,6 +75,13 @@ public class RagRetrievalService {
     @Resource(name = "threadPoolTaskExecutor")
     private ThreadPoolTaskExecutor retrievalExecutor;
 
+    /** H2: when true, SIMPLE route uses lightweight keyword retrieval instead of empty context. */
+    @Value("${qknow.rag.simple.light-retrieval:false}")
+    private boolean simpleLightRetrieval;
+
+    @Value("${qknow.rag.simple.light-top-k:5}")
+    private int simpleLightTopK;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         return retrieve(knowledgeBaseId, query, query, topK, debug);
     }
@@ -89,6 +97,60 @@ public class RagRetrievalService {
         }
     }
 
+    /**
+     * H2 SIMPLE lightweight retrieval: keyword only, no rewrite/CRAG/entity/rerank LLM.
+     */
+    private RagResult retrieveSimpleLight(Long knowledgeBaseId, String query, boolean debug,
+                                          long startTime, Map<String, Object> debugInfo) {
+        Map<String, Object> info = debugInfo != null ? debugInfo : new LinkedHashMap<>();
+        info.put("simpleLightRetrieval", true);
+        info.put("simpleLightTopK", simpleLightTopK);
+
+        List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
+        if (accessibleKbIds != null && !accessibleKbIds.contains(knowledgeBaseId)) {
+            if (info != null) {
+                info.put("simpleLightDenied", true);
+            }
+            return RagResult.builder()
+                    .context("")
+                    .sources(Collections.emptyList())
+                    .debugInfo(info != null ? info : Map.of())
+                    .build();
+        }
+
+        List<RetrievalResult> hits;
+        try {
+            hits = keywordRetriever.retrieve(knowledgeBaseId, query, simpleLightTopK);
+        } catch (Exception e) {
+            log.warn("SIMPLE light keyword retrieval failed: kbId={}, query={}", knowledgeBaseId, query, e);
+            if (info != null) {
+                info.put("simpleLightError", e.getMessage());
+            }
+            return RagResult.builder()
+                    .context("")
+                    .sources(Collections.emptyList())
+                    .debugInfo(info != null ? info : Map.of())
+                    .build();
+        }
+        if (hits == null) {
+            hits = Collections.emptyList();
+        }
+        if (hits.size() > simpleLightTopK) {
+            hits = hits.subList(0, simpleLightTopK);
+        }
+        String context = ragContextBuilder.buildContext(hits, true);
+        if (info != null) {
+            info.put("simpleLightHitCount", hits.size());
+            info.put("elapsedMs", System.currentTimeMillis() - startTime);
+        }
+        log.debug("SIMPLE light retrieval: kbId={}, hits={}", knowledgeBaseId, hits.size());
+        return RagResult.builder()
+                .context(context)
+                .sources(hits)
+                .debugInfo(info != null ? info : Map.of())
+                .build();
+    }
+
     private RagResult retrieveScoped(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug) {
         long startTime = System.currentTimeMillis();
         Map<String, Object> debugInfo = debug ? new LinkedHashMap<>() : null;
@@ -97,6 +159,11 @@ public class RagRetrievalService {
         QueryRouter.QueryRoute route = queryRouter.classify(query);
         if (debug) {
             debugInfo.put("queryRoute", route.name());
+        }
+
+        // H2: SIMPLE lightweight keyword retrieval — zero LLM, skip CRAG/rewrite/entity.
+        if (route == QueryRouter.QueryRoute.SIMPLE && simpleLightRetrieval) {
+            return retrieveSimpleLight(knowledgeBaseId, query, debug, startTime, debugInfo);
         }
 
         // Simple queries: skip retrieval in normal serving, but keep recallDebug on the full retrieval path.
