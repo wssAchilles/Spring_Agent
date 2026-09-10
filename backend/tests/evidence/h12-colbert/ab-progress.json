@@ -1,8 +1,8 @@
 {
-  "n": 4,
+  "n": 8,
   "hit_ann": 1.0,
   "hit_colbert": 1.0,
-  "vtok": 48,
+  "vtok": 91,
   "cases": [
     {
       "id": "eval-hold-001",
@@ -62,6 +62,71 @@
       "hit_ann": true,
       "hit_colbert": true,
       "maxsim_ms": 69.2
+    },
+    {
+      "id": "eval-hold-005",
+      "query": "What outbox aggregate statistics are collected in delivery?",
+      "expected": "分布式.pdf",
+      "ann": [
+        "分布式.pdf",
+        "Day09-多语言国际化"
+      ],
+      "colbert": [
+        "分布式.pdf",
+        "大数据.pdf",
+        "人工智能.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 69.3
+    },
+    {
+      "id": "eval-hold-006",
+      "query": "What Mongo failure categorization is used in the Go chain?",
+      "expected": "分布式.pdf",
+      "ann": [
+        "分布式.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "colbert": [
+        "分布式.pdf",
+        "Day06-文件管理功能优化",
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 66.8
+    },
+    {
+      "id": "eval-hold-007",
+      "query": "What is main delivery success rate monitoring?",
+      "expected": "分布式.pdf",
+      "ann": [
+        "Day22-23-项目总结与交接",
+        "分布式.pdf",
+        "Day08-支付模块集成"
+      ],
+      "colbert": [
+        "分布式.pdf",
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 69.6
+    },
+    {
+      "id": "eval-hold-008",
+      "query": "What revenue attribution uses dual-layer robust optimization?",
+      "expected": "大数据.pdf",
+      "ann": [
+        "大数据.pdf"
+      ],
+      "colbert": [
+        "大数据.pdf"
+      ],
+      "hit_ann": true,
+      "hit_colbert": true,
+      "maxsim_ms": 68.3
     }
   ]
 }
