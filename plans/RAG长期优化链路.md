@@ -305,11 +305,11 @@ qknow.rag.crag.sample-rate: 0.10
 | H4a | context 接线 | **Delivered** | UNIT | 有 ragContext 时优先 | 38a5d68/aad75df |
 | H4b | 多轮 history | **Delivered** | UNIT | 已接线；压缩需开 transform | 219439d |
 | H5 | 中文关键词 | **Delivered** | UNIT + LIVE_KEYWORD | websearch+bigram | fca26c9；短切片仍 0.70 |
-| H6 | 切块 A/B | **Config Delivered** | UNIT | child-tokens 默认 128 | 582fa2c；全量 A/B 仍需重嵌 |
+| H6 | 切块 A/B | **Subset A/B Done** | LIVE embed | child-tokens 保持 128 | 子集 Hit@10: 128=0.875 vs 256=0.50 |
 | H7 | 融合过滤 | **Delivered** | UNIT | post-fusion-filter 默认 false | 0d375d6/1a81541 |
 | H8 | rewrite/embed 减负 | **Delivered** | UNIT | query-transform 默认关 | 38256ad/9a6478d |
 | H9 | gRPC 取消 | **Delivered** | UNIT | deadline 120s + onDispose cancel | 0d375d6 |
-| H10 | GraphRAG | **Default Locked Off** | UNIT | enabled=false | 582fa2c；开图需 golden 增量 |
+| H10 | GraphRAG | **Probe Done** | ENV | enabled=false | Neo4j 空图 7 节点；需抽实体后再验 |
 | H11 | 长期记忆读 | **Delivered** | UNIT | recall-on-empty=true topK=3 | 582fa2c |
 | H12 | 真 ColBERT | Deferred | — | H1 fail-closed 已挡伪向量 | 真 checkpoint/索引另批 |
 
