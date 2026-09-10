@@ -25,6 +25,9 @@ public class RetrieveResult {
     /** 匹配的文档内容 */
     private String content;
 
+    /** Budgeted RAG context from RagContextBuilder; typically only on the first item. */
+    private String ragContext;
+
     /** */
     private String answer;
 

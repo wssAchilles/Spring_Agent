@@ -372,7 +372,13 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
                 if (CollUtil.isEmpty(sources)) {
                     return Collections.emptyList();
                 }
-                return sources.stream().map(this::retrievalResult2vo).collect(Collectors.toList());
+                List<RetrieveResultRespVO> vos =
+                        sources.stream().map(this::retrievalResult2vo).collect(Collectors.toList());
+                // H4a: attach budgeted context once (first item) for Agent injection.
+                if (!vos.isEmpty() && ragResult.getContext() != null) {
+                    vos.get(0).setRagContext(ragResult.getContext());
+                }
+                return vos;
             });
             if (CollUtil.isNotEmpty(cached)) {
                 return cached;

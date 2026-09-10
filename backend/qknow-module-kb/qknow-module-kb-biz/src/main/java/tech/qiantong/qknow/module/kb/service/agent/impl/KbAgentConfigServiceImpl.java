@@ -262,6 +262,11 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 try {
                     var results = kmcApiService.recallTest(kb.getId(), kbAgentConfig.getQuestion());
                     if (results != null && !results.isEmpty()) {
+                        // H4a: prefer budgeted RagContextBuilder output when present.
+                        String budgeted = results.get(0).getRagContext();
+                        if (budgeted != null && !budgeted.isBlank()) {
+                            recalled = budgeted;
+                        }
                         StringBuilder contentBuilder = new StringBuilder();
                         for (int i = 0; i < results.size(); i++) {
                             RetrieveResult r = results.get(i);
@@ -280,7 +285,9 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                             source.put("knowledgeName", kb.getName());
                             sourceRefs.add(source);
                         }
-                        recalled = contentBuilder.toString();
+                        if (recalled == null || recalled.isBlank()) {
+                            recalled = contentBuilder.toString();
+                        }
                     }
                 } catch (Exception e) {
                     log.warn("RAG 预检索失败: knowledgeId={}", kb.getId(), e);

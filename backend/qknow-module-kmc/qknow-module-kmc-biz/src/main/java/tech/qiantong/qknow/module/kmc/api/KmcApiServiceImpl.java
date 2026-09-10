@@ -153,6 +153,7 @@ public class KmcApiServiceImpl implements IKmcApiService {
             result.setStoppedAt(vo.getStoppedAt());
             result.setDocumentName(vo.getDocumentName());
             result.setScore(vo.getScore());
+            result.setRagContext(vo.getRagContext());
 
             retrieveResults.add(result);
         }
