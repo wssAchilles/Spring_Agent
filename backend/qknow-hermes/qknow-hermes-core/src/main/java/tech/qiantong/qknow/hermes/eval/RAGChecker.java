@@ -8,6 +8,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 
@@ -51,6 +52,7 @@ public class RAGChecker {
     private final RagasEvalConfig config;
     private final long evaluationTimeoutNanos;
 
+    @Autowired
     public RAGChecker(ChatModelFactory chatModelFactory, RagasEvalConfig config) {
         this(chatModelFactory, config, DEFAULT_EVALUATION_TIMEOUT_NANOS, TimeUnit.NANOSECONDS);
     }

@@ -1,0 +1,5 @@
+740e7da82e26658ff74d163fddeb910633c355768c2a5d5733e519bae8aa2ae1  ./failure.json
+25586c5853e9f320c03bc0a0ec135d9741f197bd0c8bced9755fa0ce9912b237  ./reports/TEST-tech.qiantong.qknow.rag.eval.RagCandidate102AEvidenceBaselineV2Test-candidate102a-evidence-baseline-v2-contracts-attempt-001.xml
+4a4bb2c12c0cb8b42545bbff8a0b2308dce80c44dab286feb93502d3e4c4617b  ./reports/tech.qiantong.qknow.rag.eval.RagCandidate102AEvidenceBaselineV2Test-candidate102a-evidence-baseline-v2-contracts-attempt-001.txt
+ae840d58b73bf2984cc1581dc2a6caef60409e1d261e1e24b38b63bd5dbaafc3  ./source/RagCandidate102AEvidenceBaselineV2Test.java
+94f56c9e44ec3b257208258532fb8eda88eda08ff60f420371cb019fe52d693e  ./worktree/candidate102a-evidence-baseline-v2-attempt-001-before.json
