@@ -36,6 +36,10 @@ public class RagRerankService {
     @Value("${qknow.rag.rerank.identifier-consistency-enabled:false}")
     private boolean identifierConsistencyEnabled;
 
+    /** H7: post-fusion score filter treats RRF ranks as vector scores — default off. */
+    @Value("${qknow.rag.rerank.post-fusion-filter-enabled:false}")
+    private boolean postFusionFilterEnabled;
+
     public List<RetrievalResult> rerank(String query, List<RetrievalResult> candidates,
                                          QueryIntent queryIntent, int topK,
                                          Long rerankingProviderName, String rerankingModelName) {
@@ -169,6 +173,9 @@ public class RagRerankService {
      * 保留策略：命中 ≥1 个关键词 OR 分数 ≥ 阈值 → 保留
      */
     private List<RetrievalResult> filterIrrelevant(String query, List<RetrievalResult> candidates, QueryIntent queryIntent) {
+        if (!postFusionFilterEnabled) {
+            return candidates;
+        }
         List<String> keywords = extractKeywords(query, queryIntent);
         if (keywords.isEmpty()) {
             return candidates;

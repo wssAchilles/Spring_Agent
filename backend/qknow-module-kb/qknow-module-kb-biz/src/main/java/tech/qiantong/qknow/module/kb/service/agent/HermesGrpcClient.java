@@ -1,7 +1,11 @@
 package tech.qiantong.qknow.module.kb.service.agent;
 
+import io.grpc.CallOptions;
+import io.grpc.ClientCall;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -27,6 +31,9 @@ public class HermesGrpcClient {
 
     @Value("${hermes.grpc.port:9090}")
     private int hermesPort;
+
+    @Value("${hermes.grpc.chat-deadline-seconds:120}")
+    private long chatDeadlineSeconds;
 
     private ManagedChannel channel;
     private HermesServiceGrpc.HermesServiceStub asyncStub;
@@ -56,9 +63,13 @@ public class HermesGrpcClient {
     public Flux<KbChatMessageSendRespVO> chat(ChatRequest request) {
         return Flux.create(emitter -> {
             AtomicBoolean emittedText = new AtomicBoolean(false);
-            asyncStub.chat(request, new StreamObserver<>() {
+            CallOptions options = CallOptions.DEFAULT
+                    .withDeadlineAfter(chatDeadlineSeconds, TimeUnit.SECONDS);
+            ClientCall<ChatRequest, ChatEvent> call =
+                    channel.newCall(HermesServiceGrpc.getChatMethod(), options);
+            ClientCall.Listener<ChatEvent> listener = new ClientCall.Listener<>() {
                 @Override
-                public void onNext(ChatEvent event) {
+                public void onMessage(ChatEvent event) {
                     KbChatMessageSendRespVO respVO = convertToRespVO(event, request.getQuestion(), emittedText);
                     if (respVO != null) {
                         emitter.next(respVO);
@@ -66,14 +77,24 @@ public class HermesGrpcClient {
                 }
 
                 @Override
-                public void onError(Throwable t) {
-                    log.error("Hermes gRPC 调用失败", t);
-                    emitter.error(t);
+                public void onClose(Status status, Metadata trailers) {
+                    if (status.isOk() || status.getCode() == Status.Code.CANCELLED) {
+                        emitter.complete();
+                    } else {
+                        log.error("Hermes gRPC 调用失败: {}", status);
+                        emitter.error(status.asRuntimeException());
+                    }
                 }
-
-                @Override
-                public void onCompleted() {
-                    emitter.complete();
+            };
+            call.start(listener, new Metadata());
+            call.request(Integer.MAX_VALUE);
+            call.sendMessage(request);
+            call.halfClose();
+            emitter.onDispose(() -> {
+                try {
+                    call.cancel("client disposed", null);
+                } catch (Exception e) {
+                    log.debug("Hermes chat cancel failed: {}", e.getMessage());
                 }
             });
         });
