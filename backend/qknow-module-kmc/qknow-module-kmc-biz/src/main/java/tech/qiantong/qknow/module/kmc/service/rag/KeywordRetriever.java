@@ -159,7 +159,7 @@ public class KeywordRetriever {
                          COALESCE(similarity(s.content, ?), 0),
                          COALESCE(similarity(d.name, ?), 0)
                        ) AS trgm_score,
-                       COALESCE(ts_rank_cd(s.content_tsv, plainto_tsquery('simple', ?)), 0) AS ts_score
+                       COALESCE(ts_rank_cd(s.content_tsv, websearch_to_tsquery('simple', ?)), 0) AS ts_score
                 FROM kmc_document_segment s
                 JOIN kmc_document d ON d.id = s.document_id AND d.del_flag = 0
                 WHERE d.knowledge_base_id = ?
@@ -170,7 +170,8 @@ public class KeywordRetriever {
 
         List<String> conditions = new ArrayList<>();
         if (!documentNameOnly) {
-            conditions.add("s.content_tsv @@ plainto_tsquery('simple', ?)");
+            // H5: websearch_to_tsquery tokenizes user queries better than plainto for CJK phrases.
+            conditions.add("s.content_tsv @@ websearch_to_tsquery('simple', ?)");
             params.add(normalizedQuery);
             if (isSelectiveTrigramTerm(normalizedQuery)) {
                 conditions.add("s.content % ?");
@@ -248,15 +249,15 @@ public class KeywordRetriever {
                     terms.add(token);
                 }
             }
-        } else {
-            // 降级：滑动窗口 2-4 字
-            String chineseOnly = queryText.replaceAll("[^\\p{IsHan}]", " ").trim();
-            for (int len = 4; len >= 2; len--) {
-                for (int i = 0; i <= chineseOnly.length() - len; i++) {
-                    String token = chineseOnly.substring(i, i + len);
-                    if (!STOP_WORDS.contains(token)) {
-                        terms.add(token);
-                    }
+        }
+        // H5: always add CJK 2-3 gram sliding terms so short phrases (库管理/哈希分桶)
+        // still hit ILIKE/tsvector even when jieba segments differently.
+        String chineseOnly = queryText.replaceAll("[^\\p{IsHan}]", " ").trim();
+        for (int len = 3; len >= 2; len--) {
+            for (int i = 0; i <= chineseOnly.length() - len; i++) {
+                String token = chineseOnly.substring(i, i + len);
+                if (!STOP_WORDS.contains(token)) {
+                    terms.add(token);
                 }
             }
         }
