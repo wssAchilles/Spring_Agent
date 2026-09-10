@@ -304,7 +304,7 @@ qknow.rag.crag.sample-rate: 0.10
 | H0 | 评估基建 | **Delivered** | UNIT | — | holdout jsonl + LiveRetrievalMetrics |
 | H4a | context 接线 | **Delivered** | UNIT | 有 ragContext 时优先 | 38a5d68/aad75df |
 | H4b | 多轮 history | **Delivered** | UNIT | 已接线；压缩需开 transform | 219439d |
-| H5 | 中文关键词 | Planned | — | — | |
+| H5 | 中文关键词 | **Delivered** | UNIT + LIVE_KEYWORD | websearch+bigram | fca26c9；短切片仍 0.70 |
 | H6 | 切块 A/B | Planned | — | — | |
 | H7 | 融合过滤 | Planned | — | — | |
 | H8 | rewrite/embed 减负 | **Delivered** | UNIT | query-transform 默认关 | 38256ad/9a6478d |
