@@ -32,12 +32,33 @@ public class ColbertScorer {
         this.embeddingService = embeddingService;
     }
 
+    public ColbertConfig getConfig() {
+        return config;
+    }
+
+    /**
+     * Whether a real token-embedding backend is fully configured.
+     * Hash pseudo-vectors are not considered a valid late-interaction backend.
+     */
+    public boolean isRealEmbeddingConfigured() {
+        return embeddingService != null
+                && config.getEmbeddingPlatform() != null && !config.getEmbeddingPlatform().isBlank()
+                && config.getEmbeddingBaseUrl() != null && !config.getEmbeddingBaseUrl().isBlank()
+                && config.getEmbeddingApiKey() != null && !config.getEmbeddingApiKey().isBlank()
+                && config.getEmbeddingModel() != null && !config.getEmbeddingModel().isBlank();
+    }
+
     /**
      * 对文档进行 ColBERT 风格粗排
      * 使用 token-level 向量延迟交互 MaxSim
      */
     public List<Document> rerank(String query, List<Document> documents, int topK) {
         if (!config.isEnabled() || documents == null || documents.isEmpty()) {
+            return documents;
+        }
+
+        if (config.isSkipWhenNoEmbedding() && !isRealEmbeddingConfigured()) {
+            log.info("ColBERT coarse rerank skipped: skip-when-no-embedding=true and no real token embedding configured");
             return documents;
         }
 
@@ -268,8 +289,15 @@ public class ColbertScorer {
                     return vectors;
                 }
             } catch (Exception e) {
+                if (config.isSkipWhenNoEmbedding()) {
+                    throw new IllegalStateException(
+                            "ColBERT embedding unavailable and skip-when-no-embedding=true: " + e.getMessage(), e);
+                }
                 log.warn("Embedding API call failed, falling back to hash-based vectors: {}", e.getMessage());
             }
+        } else if (config.isSkipWhenNoEmbedding()) {
+            throw new IllegalStateException(
+                    "ColBERT embedding not configured and skip-when-no-embedding=true");
         }
         List<double[]> vectors = new ArrayList<>();
         for (String token : tokens) {
@@ -333,5 +361,7 @@ public class ColbertScorer {
         private String embeddingApiKey;
         private String embeddingModel;
         private int maxTokensPerDoc = 128;
+        /** When true, never fall back to hash pseudo-vectors; skip or fail closed instead. */
+        private boolean skipWhenNoEmbedding = false;
     }
 }

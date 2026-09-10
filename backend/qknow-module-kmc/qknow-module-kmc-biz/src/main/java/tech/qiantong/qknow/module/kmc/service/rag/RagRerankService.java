@@ -263,6 +263,14 @@ public class RagRerankService {
      */
     private List<RetrievalResult> colbertCoarseRerank(String query, List<RetrievalResult> candidates, int limit) {
         try {
+            if (colbertScorer != null
+                    && colbertScorer.getConfig() != null
+                    && colbertScorer.getConfig().isSkipWhenNoEmbedding()
+                    && !colbertScorer.isRealEmbeddingConfigured()) {
+                RagFallbackMonitor.record("colbert", "skipped_no_embedding",
+                        "skip-when-no-embedding=true and no real token embedding configured");
+                return candidates;
+            }
             Map<Long, RetrievalResult> originalBySegmentId = candidates.stream()
                     .filter(r -> r.getSegmentId() != null)
                     .collect(Collectors.toMap(
