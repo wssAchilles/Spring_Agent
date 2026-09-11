@@ -1,6 +1,6 @@
 # Phase 03 — 安全 Hardening（P2）
 
-> **状态**：Designed → 实施中  
+> **状态**：**Delivered**  
 > **日期**：2026-09-11  
 > **总计划**：`plans/RAG长期优化链路-v2.md` P2  
 > **性质**：纯工程安全修复，**不改检索算法**
@@ -17,11 +17,11 @@
 
 ## Tasks
 
-- [ ] T1 `UrlSafetyValidator`（common/security）+ 双 HttpRequestToolFunction 接入  
-- [ ] T2 SecurityConfig：删 ASYNC permitAll；`/syncData` 收紧  
-- [ ] T3 恢复 API Key 脱敏  
-- [ ] T4 前端 `sanitizeMarkdown` util + 关键 v-html 消毒（不强制全站扫）  
-- [ ] T5 单测  
+- [x] T1 `UrlSafetyValidator`（common/security）+ 双 HttpRequestToolFunction 接入  
+- [x] T2 SecurityConfig：删 ASYNC permitAll；`/syncData` 收紧  
+- [x] T3 恢复 API Key 脱敏  
+- [x] T4 前端 `sanitizeMarkdown` util + 关键 v-html 消毒（不强制全站扫）  
+- [x] T5 单测  
 
 ## 验收
 
@@ -32,3 +32,7 @@
 ## 不采用
 
 WAF、Vault 全家桶、重写 ToolFunction 为微服务。
+
+## 附录：交付摘要（2026-09-11）
+
+合入 main；详见 git log merge commit。

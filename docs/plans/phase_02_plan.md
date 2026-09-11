@@ -1,6 +1,6 @@
 # Phase 02 — 可观测性与 CI（P0+P1）
 
-> **状态**：Designed → 实施中  
+> **状态**：**Delivered**  
 > **日期**：2026-09-11  
 > **总计划**：`plans/RAG长期优化链路-v2.md` P0+P1  
 > **依赖**：Phase 01（指标语义已定义）  
@@ -23,11 +23,11 @@
 
 ## Tasks
 
-- [ ] T1 pom + yml + SecurityConfig actuator  
-- [ ] T2 RagRetrievalService Timer  
-- [ ] T3 HermesGrpcClient Timer  
-- [ ] T4 `.github/workflows/ci.yml`  
-- [ ] T5 单测/编译验证  
+- [x] T1 pom + yml + SecurityConfig actuator  
+- [x] T2 RagRetrievalService Timer  
+- [x] T3 HermesGrpcClient Timer  
+- [x] T4 `.github/workflows/ci.yml`  
+- [x] T5 单测/编译验证  
 
 ## 验收
 
@@ -38,3 +38,7 @@
 ## 不采用
 
 OTel 全链路、Grafana as-code、JDK21 矩阵、live Neo4j CI。
+
+## 附录：交付摘要（2026-09-11）
+
+合入 main；详见 git log merge commit。
