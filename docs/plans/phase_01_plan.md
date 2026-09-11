@@ -1,6 +1,6 @@
 # Phase 01 — 评估地基（Q0 + Q1 + 指标 Runner）
 
-> **状态**：Designed（**未编码**，待批准后 TDD 落地）  
+> **状态**：**Delivered**（2026-09-11）  
 > **日期**：2026-09-10  
 > **总计划**：`plans/RAG长期优化链路-v2.md`（阶段 E：Q0/Q1）  
 > **流程**：双路研读完成 → 本方案 → 批准 → 先测后码 → 全绿 → 更新总索引  
@@ -195,3 +195,18 @@ public final class RetrievalEvalRunner {
 
 **审核结论**：☐ 批准编码　☐ 驳回/修改　☐ 仅批准先做 T7 导出  
 **审核人**：________　**日期**：________
+
+## 附录 B：实现结果（2026-09-11）
+
+```text
+v2 数据：88 条（selection 41 / holdout 47）；holdout negative=8；zh≈59%
+单元测试：RetrievalEvalRunnerTest 6/6、RagEvalV2LoaderTest 6/6、EvalDatasetSplitTest 3/3 PASS
+ANN baseline（text-embedding-v4，holdout answerable n=39）：
+  overall Hit@5/10=0.9231、MRR@10=0.8291
+  short Hit@10=0.7692；medium/rewrite/multihop=1.00
+  macro Hit@10=0.9423；negative FP=1.00（无 answerable 门控）
+H-P01：**支持** — 至少 short 层可追踪失败；overall <0.95
+证据：backend/tests/evidence/phase01-eval/baseline-ann-v2.json
+T7 导出脚本：未做（可选）
+分支：feat/phase01-eval-foundation
+```
