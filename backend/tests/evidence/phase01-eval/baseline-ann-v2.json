@@ -1,0 +1,632 @@
+{
+  "phase": "01",
+  "model": "text-embedding-v4",
+  "holdout_n": 47,
+  "answerable_n": 39,
+  "negative_n": 8,
+  "negative_fp_rate": 1.0,
+  "overall_answerable": {
+    "n": 39,
+    "h5": 0.9231,
+    "h10": 0.9231,
+    "mrr": 0.8291
+  },
+  "macro_hit10": 0.9423,
+  "by_stratum": {
+    "medium": {
+      "n": 20,
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.975
+    },
+    "short": {
+      "n": 13,
+      "h5": 0.7692,
+      "h10": 0.7692,
+      "mrr": 0.6154
+    },
+    "rewrite": {
+      "n": 4,
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.8333
+    },
+    "multihop": {
+      "n": 2,
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.75
+    }
+  },
+  "embed_tokens": 339,
+  "wall_s": 18.0,
+  "cases": [
+    {
+      "id": "eval-hold-001",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-002",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf",
+        "大数据.pdf",
+        "Day04-OTA固件升级开发"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-003",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-004",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-005",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "分布式.pdf",
+        "Day09-多语言国际化"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-006",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "分布式.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-007",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.5,
+      "top": [
+        "Day22-23-项目总结与交接",
+        "分布式.pdf",
+        "Day08-支付模块集成"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-008",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "大数据.pdf"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-009",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "大数据.pdf"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-010",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "大数据.pdf",
+        "Day19-20-系统集成测试"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-011",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "移动应用开发.pdf"
+      ],
+      "expected": [
+        "移动应用开发.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-012",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "移动应用开发.pdf"
+      ],
+      "expected": [
+        "移动应用开发.pdf"
+      ]
+    },
+    {
+      "id": "short-hold-001",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.5,
+      "top": [
+        "Day04-OTA固件升级开发",
+        "大数据.pdf",
+        "Day22-23-项目总结与交接"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "short-hold-002",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "大数据.pdf"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "short-hold-003",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "移动应用开发.pdf"
+      ],
+      "expected": [
+        "移动应用开发.pdf"
+      ]
+    },
+    {
+      "id": "short-hold-004",
+      "stratum": "short",
+      "h5": 0.0,
+      "h10": 0.0,
+      "mrr": 0.0,
+      "top": [
+        "大数据.pdf"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "short-hold-005",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf",
+        "大数据.pdf",
+        "分布式.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s01",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.25,
+      "top": [
+        "Day04-OTA固件升级开发",
+        "Day22-23-项目总结与交接",
+        "Day07-AI对话功能开发"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s02",
+      "stratum": "short",
+      "h5": 0.0,
+      "h10": 0.0,
+      "mrr": 0.0,
+      "top": [
+        "Day19-20-系统集成测试",
+        "分布式.pdf",
+        "Day10-性能优化与监控"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s03",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s04",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.25,
+      "top": [
+        "Day22-23-项目总结与交接",
+        "Day04-OTA固件升级开发",
+        "Day11-单元测试编写"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s05",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "分布式.pdf",
+        "大数据.pdf"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s06",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "移动应用开发.pdf"
+      ],
+      "expected": [
+        "移动应用开发.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s07",
+      "stratum": "short",
+      "h5": 0.0,
+      "h10": 0.0,
+      "mrr": 0.0,
+      "top": [
+        "大数据.pdf"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-s08",
+      "stratum": "short",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf",
+        "大数据.pdf",
+        "分布式.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m01",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "分布式.pdf"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m02",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m03",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "大数据.pdf"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m04",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "移动应用开发.pdf"
+      ],
+      "expected": [
+        "移动应用开发.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m05",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "关于印发《常州工学院学生综合素质评价办法（修订）》的通知.pdf"
+      ],
+      "expected": [
+        "关于印发《常州工学院学生综合素质评价办法（修订）》的通知.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m06",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m07",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "大数据.pdf",
+        "Day13-14-知识图谱集成",
+        "Day22-23-项目总结与交接"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-zh-m08",
+      "stratum": "medium",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "分布式.pdf"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-rw-01",
+      "stratum": "rewrite",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.3333333333333333,
+      "top": [
+        "Day13-14-知识图谱集成",
+        "Day04-OTA固件升级开发",
+        "大数据.pdf"
+      ],
+      "expected": [
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-rw-02",
+      "stratum": "rewrite",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-rw-03",
+      "stratum": "rewrite",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "移动应用开发.pdf"
+      ],
+      "expected": [
+        "移动应用开发.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-rw-04",
+      "stratum": "rewrite",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "分布式.pdf",
+        "大数据.pdf",
+        "移动应用开发.pdf"
+      ],
+      "expected": [
+        "分布式.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-mh-01",
+      "stratum": "multihop",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 1.0,
+      "top": [
+        "大数据.pdf",
+        "分布式.pdf",
+        "人工智能.pdf"
+      ],
+      "expected": [
+        "人工智能.pdf",
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-mh-02",
+      "stratum": "multihop",
+      "h5": 1.0,
+      "h10": 1.0,
+      "mrr": 0.5,
+      "top": [
+        "Day19-20-系统集成测试",
+        "大数据.pdf",
+        "分布式.pdf"
+      ],
+      "expected": [
+        "分布式.pdf",
+        "大数据.pdf"
+      ]
+    },
+    {
+      "id": "eval-hold-neg-01",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    },
+    {
+      "id": "eval-hold-neg-02",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    },
+    {
+      "id": "eval-hold-neg-03",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    },
+    {
+      "id": "eval-hold-neg-04",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    },
+    {
+      "id": "eval-hold-neg-05",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    },
+    {
+      "id": "eval-hold-neg-06",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    },
+    {
+      "id": "eval-hold-neg-07",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    },
+    {
+      "id": "eval-hold-neg-08",
+      "stratum": "negative",
+      "answerable": false,
+      "fp": true
+    }
+  ]
+}
