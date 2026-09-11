@@ -135,12 +135,13 @@ public class SecurityConfig
                             "/v3/api-docs/**",
                             "/websocket/**",
                             "/payment/**",
-                            "/syncData/**",
                             "/oauth2/**",
                             "/api/app/**"
                     ).permitAll()
-                    // WebFlux 异步请求，无需认证，目的：SSE 场景
-                    .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                    // Phase 03: ASYNC must be authenticated (was permitAll bypass)
+                    .dispatcherTypeMatchers(DispatcherType.ASYNC).authenticated()
+                    // Phase 02: actuator health for probes; other endpoints stay authenticated
+                    .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     // 除上面外的所有请求全部需要鉴权认证
                     .anyRequest().authenticated();
             })

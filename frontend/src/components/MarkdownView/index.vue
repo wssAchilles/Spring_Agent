@@ -1,9 +1,9 @@
 <template>
   <div ref="contentRef" class="markdown-view markdown-body" >
     <!-- 深度思考   -->
-    <div v-html="deepThinking" v-if="deepThinking !== ''" style="background-color: #ddd;padding: 5px; border-radius: 5px"></div>
+    <div v-html="sanitizeHtml(deepThinking)" v-if="deepThinking !== ''" style="background-color: #ddd;padding: 5px; border-radius: 5px"></div>
     <!-- 对话输出 -->
-    <div v-html="renderedMarkdown"></div>
+    <div v-html="sanitizeHtml(renderedMarkdown)"></div>
     <!-- 文章引用 -->
     <div class="quote" v-if="documentIdList != null && documentIdList.length > 0">
       <el-divider content-position="left">引用</el-divider>
@@ -37,6 +37,7 @@
 <script setup>
 import { useClipboard } from '@vueuse/core'
 import MarkdownIt from 'markdown-it'
+import { sanitizeHtml } from '@/utils/markdownSanitize'
 import 'highlight.js/styles/xcode.min.css'
 import "@/assets/app/style/dify_table.css"
 import hljs from 'highlight.js'

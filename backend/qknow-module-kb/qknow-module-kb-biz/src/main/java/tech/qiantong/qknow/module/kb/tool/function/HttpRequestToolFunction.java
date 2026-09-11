@@ -62,9 +62,12 @@ public class HttpRequestToolFunction
     @Override
     public Response apply(Request request) {
         try {
+            // Phase 03 SSRF: reject private/metadata/non-http before any socket open
+            tech.qiantong.qknow.common.utils.UrlSafetyValidator.validateOrThrow(request.getUrl());
             Method httpMethod = "POST".equalsIgnoreCase(request.getMethod()) ? Method.POST : Method.GET;
             HttpRequest httpRequest = new HttpRequest(request.getUrl())
                     .method(httpMethod)
+                    .setFollowRedirects(false)
                     .timeout(10000);
 
             if (request.getHeaders() != null && !request.getHeaders().isEmpty()) {

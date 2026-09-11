@@ -134,7 +134,8 @@ public class AiApiKeyServiceImpl extends ServiceImpl<AiApiKeyMapper, AiApiKeyDO>
     @Override
     public AiApiKeyDO getAiApiKeyById(Long id) {
         AiApiKeyDO aiApiKeyDO = aiApiKeyMapper.selectById(id);
-//        this.apiKeyEncrypt(aiApiKeyDO);
+        // Phase 03: mask key in API responses (update path already skips masked values)
+        this.apiKeyEncrypt(aiApiKeyDO);
         return aiApiKeyDO;
     }
 
@@ -162,7 +163,8 @@ public class AiApiKeyServiceImpl extends ServiceImpl<AiApiKeyMapper, AiApiKeyDO>
         LambdaQueryWrapper<AiApiKeyDO> queryWrapper = Wrappers.<AiApiKeyDO>lambdaQuery()
                 .eq(AiApiKeyDO::getPlatform, platform);
         List<AiApiKeyDO> list = super.list(queryWrapper);
-//        list.forEach(this::apiKeyEncrypt);
+        // Phase 03: mask keys in list responses
+        list.forEach(this::apiKeyEncrypt);
         return list;
     }
 

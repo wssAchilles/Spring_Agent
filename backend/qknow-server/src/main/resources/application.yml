@@ -296,3 +296,19 @@ knife4j:
     enable: true
     username: ${KNIFE4J_USERNAME:qknow}
     password: ${KNIFE4J_PASSWORD:changeme}
+
+# Phase 02: observability (health for probes; prometheus for metrics)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus,metrics"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: qknow-server

@@ -75,24 +75,37 @@ public class RagRetrievalService {
     @Resource(name = "threadPoolTaskExecutor")
     private ThreadPoolTaskExecutor retrievalExecutor;
 
-    /** H2: SIMPLE route uses lightweight keyword retrieval (zero LLM). Default true after ablation PASS. */
+    /** H2 SIMPLE lightweight retrieval: keyword only, no rewrite/CRAG/entity/rerank LLM. */
     @Value("${qknow.rag.simple.light-retrieval:true}")
     private boolean simpleLightRetrieval;
 
     @Value("${qknow.rag.simple.light-top-k:5}")
     private int simpleLightTopK;
 
+    /** Phase 02: optional Micrometer; null when actuator not on classpath. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private io.micrometer.core.instrument.MeterRegistry meterRegistry;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         return retrieve(knowledgeBaseId, query, query, topK, debug);
     }
 
     public RagResult retrieve(Long knowledgeBaseId, String originalQuery, String query, int topK, boolean debug) {
+        long startNs = System.nanoTime();
+        String outcome = "ok";
         RagFallbackMonitor.Scope fallbackScope = debug ? RagFallbackMonitor.openScope() : null;
         try {
             return retrieveScoped(knowledgeBaseId, originalQuery, query, topK, debug);
+        } catch (RuntimeException e) {
+            outcome = "error";
+            throw e;
         } finally {
             if (fallbackScope != null) {
                 fallbackScope.close();
+            }
+            if (meterRegistry != null) {
+                meterRegistry.timer("rag.retrieve.duration", "outcome", outcome)
+                        .record(System.nanoTime() - startNs, java.util.concurrent.TimeUnit.NANOSECONDS);
             }
         }
     }
