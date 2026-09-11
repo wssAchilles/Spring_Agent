@@ -169,8 +169,10 @@ class SimpleLightRetrievalGateTest {
     }
 
     private static boolean hit(List<String> ranking, List<String> expected, int k) {
+        // Phase 01: unified with LiveRetrievalMetrics (prefix match Day01↔Day01.md)
         List<String> top = ranking.subList(0, Math.min(k, ranking.size()));
-        return top.stream().anyMatch(expected::contains);
+        var s = tech.qiantong.qknow.rag.LiveRetrievalMetrics.score(expected, top);
+        return k <= 5 ? s.hitAt5() > 0 : s.hitAt10() > 0;
     }
 
     private static List<ShortCase> loadCases() throws Exception {

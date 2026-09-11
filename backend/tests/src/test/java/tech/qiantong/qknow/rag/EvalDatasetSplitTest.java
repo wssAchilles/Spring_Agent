@@ -39,6 +39,21 @@ class EvalDatasetSplitTest {
     }
 
     @Test
+    @DisplayName("rag-eval-v2：holdout≥40、negative≥8、zh≥50%")
+    void evalV2MeetsPhase01Gates() throws Exception {
+        var cases = tech.qiantong.qknow.rag.eval.RagEvalV2Loader.loadFromClasspath();
+        assertFalse(cases.isEmpty(), "rag-eval-v2.jsonl missing");
+        long holdout = cases.stream().filter(c -> "holdout".equals(c.split())).count();
+        long negHoldout = cases.stream()
+                .filter(c -> "holdout".equals(c.split()) && "negative".equals(c.stratum()))
+                .count();
+        long zh = cases.stream().filter(c -> "zh".equals(c.lang())).count();
+        assertTrue(holdout >= 40, "holdout too small: " + holdout);
+        assertTrue(negHoldout >= 8, "holdout negative too small: " + negHoldout);
+        assertTrue(zh * 2 >= cases.size(), "zh ratio < 50%: " + zh + "/" + cases.size());
+    }
+
+    @Test
     @DisplayName("LiveRetrievalMetrics 计算 Hit/MRR/NDCG 与人工期望一致")
     void metricsHelperMatchesManualScores() {
         LiveRetrievalMetrics.CaseScores perfect = LiveRetrievalMetrics.score(
