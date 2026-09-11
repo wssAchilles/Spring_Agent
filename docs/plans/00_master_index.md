@@ -9,7 +9,7 @@
 
 | Phase | 标题 | 范围（总计划 v2） | 依赖 | 状态 | 方案文档 |
 |---|---|---|---|---|---|
-| **01** | 评估地基 | Q0+Q1+指标脚本 | — | **Designed（待批编码）** | `phase_01_plan.md` |
+| **01** | 评估地基 | Q0+Q1+指标脚本 | — | **Delivered** | `phase_01_plan.md` |
 | 02 | 生产可观测与 CI | P0+P1 | 01（指标语义） | Planned | |
 | 03 | 安全 Hardening | P2 | —（可与 02 并行） | Planned | |
 | 04 | Agent 运行时治理 | R2+R0（cancel/工具预算） | 01（成本对比） | Planned | |
@@ -32,3 +32,4 @@
 |---|---|
 | 2026-09-10 | 总索引建立；Phase 01 启动双路研读 |
 | 2026-09-10 | Phase 01 双路研读完成；`phase_01_plan.md` Designed；**未编码** |
+| 2026-09-11 | **Phase 01 Delivered**：Runner/Loader/v2(88)、ANN baseline short@10=0.77 overall@10=0.92 |
