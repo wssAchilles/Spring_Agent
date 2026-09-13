@@ -29,8 +29,12 @@ public class RagContextBuilder {
     private JdbcTemplate jdbcTemplate;
 
     public String buildContext(List<RetrievalResult> results, boolean expandAdjacent) {
+        return buildContextWithEmitted(results, expandAdjacent).getContext();
+    }
+
+    public ContextBuildResult buildContextWithEmitted(List<RetrievalResult> results, boolean expandAdjacent) {
         if (results == null || results.isEmpty()) {
-            return "";
+            return new ContextBuildResult("", Collections.emptyList());
         }
 
         List<RetrievalResult> expanded = results;
@@ -44,22 +48,45 @@ public class RagContextBuilder {
         expanded = deduplicateByContent(expanded);
 
         StringBuilder sb = new StringBuilder();
+        List<RetrievalResult> emittedResults = new ArrayList<>();
+        int usedBytes = 0;
         int usedTokens = 0;
         int index = 1;
         for (RetrievalResult result : expanded) {
             String entry = formatEntry(index, result);
+            int entryBytes = entry.getBytes(StandardCharsets.UTF_8).length;
             int entryTokens = estimateTokens(entry);
-            if (sb.length() + entry.getBytes(StandardCharsets.UTF_8).length > maxContextBytes) {
+            if (usedBytes + entryBytes > maxContextBytes) {
                 break;
             }
             if (maxContextTokens > 0 && usedTokens + entryTokens > maxContextTokens) {
                 break;
             }
             sb.append(entry);
+            emittedResults.add(result);
+            usedBytes += entryBytes;
             usedTokens += entryTokens;
             index++;
         }
-        return sb.toString();
+        return new ContextBuildResult(sb.toString(), Collections.unmodifiableList(emittedResults));
+    }
+
+    public static class ContextBuildResult {
+        private final String context;
+        private final List<RetrievalResult> emittedResults;
+
+        public ContextBuildResult(String context, List<RetrievalResult> emittedResults) {
+            this.context = context;
+            this.emittedResults = emittedResults != null ? emittedResults : Collections.emptyList();
+        }
+
+        public String getContext() {
+            return context;
+        }
+
+        public List<RetrievalResult> getEmittedResults() {
+            return emittedResults;
+        }
     }
 
     private List<RetrievalResult> expandWithAdjacentSegments(List<RetrievalResult> results) {

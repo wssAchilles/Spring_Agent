@@ -155,15 +155,18 @@ public class RagRetrievalService {
         if (hits.size() > simpleLightTopK) {
             hits = hits.subList(0, simpleLightTopK);
         }
-        String context = ragContextBuilder.buildContext(hits, true);
+        RagContextBuilder.ContextBuildResult buildResult = ragContextBuilder.buildContextWithEmitted(hits, true);
+        String context = buildResult.getContext();
+        List<RetrievalResult> emittedSources = buildResult.getEmittedResults();
         if (info != null) {
             info.put("simpleLightHitCount", hits.size());
+            info.put("emittedSourceCount", emittedSources.size());
             info.put("elapsedMs", System.currentTimeMillis() - startTime);
         }
-        log.debug("SIMPLE light retrieval: kbId={}, hits={}", knowledgeBaseId, hits.size());
+        log.debug("SIMPLE light retrieval: kbId={}, hits={}, emitted={}", knowledgeBaseId, hits.size(), emittedSources.size());
         return RagResult.builder()
                 .context(context)
-                .sources(hits)
+                .sources(emittedSources)
                 .debugInfo(info != null ? info : Map.of())
                 .build();
     }
@@ -403,7 +406,9 @@ public class RagRetrievalService {
         }
 
         long contextStart = System.currentTimeMillis();
-        String context = ragContextBuilder.buildContext(reranked, true);
+        RagContextBuilder.ContextBuildResult buildResult = ragContextBuilder.buildContextWithEmitted(reranked, true);
+        String context = buildResult.getContext();
+        List<RetrievalResult> emittedSources = buildResult.getEmittedResults();
 
         if (debug) {
             debugInfo.put("semanticCacheHit", null);
@@ -412,16 +417,17 @@ public class RagRetrievalService {
                     "reason", "recallDebug path does not invoke semantic cache"));
             debugInfo.put(phase + "ContextMs", System.currentTimeMillis() - contextStart);
             debugInfo.put(phase + "TotalMs", System.currentTimeMillis() - phaseStart);
-            debugInfo.put(phase + "ParentExpansionCount", reranked.stream()
+            debugInfo.put(phase + "ParentExpansionCount", emittedSources.stream()
                     .filter(result -> result.getParentSegmentId() != null && !result.getParentSegmentId().isBlank())
                     .count());
             debugInfo.put("contextBytes", context.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
             debugInfo.put("maxContextBytes", ragContextBuilder.getMaxContextBytes());
+            debugInfo.put("emittedSourceCount", emittedSources.size());
         }
 
         return RagResult.builder()
                 .context(context)
-                .sources(reranked)
+                .sources(emittedSources)
                 .debugInfo(debugInfo != null ? debugInfo : Map.of())
                 .build();
     }
@@ -661,10 +667,10 @@ public class RagRetrievalService {
             merged.addAll(current.getSources());
         }
         merged.addAll(webResults);
-        String context = ragContextBuilder.buildContext(merged, true);
+        RagContextBuilder.ContextBuildResult buildResult = ragContextBuilder.buildContextWithEmitted(merged, true);
         RagResult result = RagResult.builder()
-                .context(context)
-                .sources(merged)
+                .context(buildResult.getContext())
+                .sources(buildResult.getEmittedResults())
                 .debugInfo(debugInfo != null ? debugInfo : Map.of())
                 .build();
         return result;
@@ -692,10 +698,10 @@ public class RagRetrievalService {
                 }
             }
         }
-        String context = ragContextBuilder.buildContext(mergedSources, true);
+        RagContextBuilder.ContextBuildResult buildResult = ragContextBuilder.buildContextWithEmitted(mergedSources, true);
         return RagResult.builder()
-                .context(context)
-                .sources(mergedSources)
+                .context(buildResult.getContext())
+                .sources(buildResult.getEmittedResults())
                 .ambiguous(true)
                 .clarificationOptions(first != null ? first.getClarificationOptions() : Collections.emptyList())
                 .debugInfo(first != null && first.getDebugInfo() != null ? new HashMap<>(first.getDebugInfo()) : new HashMap<>())

@@ -18,7 +18,7 @@
 | **05** | CRAG AMBIGUOUS 与自我反思回路 | T2+T1 | **01 必须** | **Delivered** | `phase_05_plan.md` |
 | **06** | **中文 IR 与检索底座原生加速** | N0–N2 | 01 | **Delivered** | `phase_06_plan.md` |
 | **07** | **重排门控 + RRF 消融** | C 门控 | **01 必须** | **Delivered** | `phase_07_plan.md` |
-| 08 | 生成侧评估与引用 | Q2+R1 | 01+04 | Planned | |
+| **08** | **生成侧评估与精准溯源 (Citation)** | Q2+R1 | 01+04 | **Delivered** | `phase_08_plan.md` |
 
 ## 每阶段标准工作流
 
@@ -40,3 +40,4 @@
 | 2026-09-13 | **Phase 05 Delivered**：CRAG AMBIGUOUS 双路合并与反思澄清回路，单测 3/3 全绿 |
 | 2026-09-13 | **Phase 06 Delivered**：中文 IR 领域词库增强与受控同义词扩展，单测 4/4 全绿 |
 | 2026-09-13 | **Phase 07 Delivered**：RRF 消融与重排自适应动态门控 (Reranking Gate)，单测 4/4 全绿，回归 75/75 全绿 |
+| 2026-09-13 | **Phase 08 Delivered**：生成侧评估与精准溯源 (Citation)，严格上下文对齐杜绝幽灵引用，单测 4/4 全绿，全量 79/79 全绿 |
