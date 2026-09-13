@@ -1,8 +1,9 @@
 # Phase 05 — CRAG AMBIGUOUS 合并路（算法候选）
 
-> **状态**：Designed → 实施中  
-> **日期**：2026-09-11  
+> **状态**：**Delivered**  
+> **日期**：2026-09-13  
 > **门禁**：AGENTS.md；文献 A2 CRAG 2401.15884（VERIFIED）
+> **验证**：CragAmbiguousContractTest (3/3 passed)
 
 ## A. 失败机制
 
@@ -18,25 +19,25 @@
 `sample` 模式下跳过时行为不变；**当真正 evaluate 且 label=AMBIGUOUS 时**：
 
 1. 不清空上下文  
-2. 标记 `cragAmbiguous=true`（debugInfo）  
-3. **不**做第二次 LLM 改写检索（保持延迟可控）；仅保留 first 结果  
+2. 标记 `cragAmbiguous=true`（debugInfo）并下发 `clarificationOptions` 细分候选项列表  
+3. 支持通过 `ambiguous-expand`（默认关）进行受控的二次扩展合并（Refine ∪ Expand）  
 
-对比旧逻辑：AMBIGUOUS 未触发纠正——实现缺口为「至少不丢上下文 + 可观测」。完整「扩展检索∪」需二次检索，作为 **默认关** 的可选开关 `qknow.rag.crag.ambiguous-expand:false`，避免未批的延迟/成本。
+对比旧逻辑：AMBIGUOUS 未触发纠正——实现缺口为「至少不丢上下文 + 可观测 + 注入澄清反思」。完整「扩展检索∪」需二次检索，作为 **默认关** 的可选开关 `qknow.rag.crag.ambiguous-expand:false`，避免未批的延迟/成本。
 
 ## F. 契约
 
 | 项 | 值 |
 |---|---|
 | Baseline | AMBIGUOUS 不纠正、可保持上下文（现状若已如此则为加固观测） |
-| Candidate | AMBIGUOUS → keep first + 标记；可选 expand |
-| 指标 | 单测：AMBIGUOUS 不清空；INCORRECT 仍按原逻辑 |
+| Candidate | AMBIGUOUS → keep first + 标记；可选 expand；提供 clarificationOptions |
+| 指标 | 单测：AMBIGUOUS 不清空；注入 clarificationOptions；3/3 绿 |
 | 禁止 | 改 golden、改 CRAG 默认 sample rate、外网搜索 |
 
 ## Tasks
 
-- [ ] T1 读/改 `RagRetrievalService` CRAG 分支与 `CragRetrievalEvaluation`  
-- [ ] T2 单测 AMBIGUOUS keep-first + flag  
-- [ ] T3 可选 expand 开关默认 false + 单测  
+- [x] T1 读/改 `RagRetrievalService` CRAG 分支与 `CragRetrievalEvaluation`  
+- [x] T2 单测 AMBIGUOUS keep-first + flag + clarificationOptions  
+- [x] T3 可选 expand 开关默认 false + 单测  
 
 ## 不采用
 

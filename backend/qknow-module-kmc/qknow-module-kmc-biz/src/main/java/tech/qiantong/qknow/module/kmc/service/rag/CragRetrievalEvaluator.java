@@ -27,7 +27,7 @@ public class CragRetrievalEvaluator {
             Classify whether the retrieved context can answer the user question.
             Return only one raw JSON object. Do not return Markdown, code fences, or explanations outside JSON.
             Schema:
-            {"label":"CORRECT|INCORRECT|AMBIGUOUS","confidence":0.0,"reason":"short reason","rewrittenQuery":"optional rewrite"}
+            {"label":"CORRECT|INCORRECT|AMBIGUOUS","confidence":0.0,"reason":"short reason","rewrittenQuery":"optional rewrite","clarificationOptions":["opt1","opt2"]}
             """;
 
     private final IChatModelService chatModelService;
@@ -111,18 +111,26 @@ public class CragRetrievalEvaluator {
         return h;
     }
 
-    CragRetrievalEvaluation parse(String responseText, String fallbackQuery) {
+    public CragRetrievalEvaluation parse(String responseText, String fallbackQuery) {
         try {
             String jsonText = extractJsonObject(stripMarkdownFence(responseText));
             JSONObject json = JSONObject.parseObject(jsonText);
             String labelText = StrUtil.blankToDefault(json.getString("label"), "AMBIGUOUS");
             CragRetrievalEvaluation.Label label =
                     CragRetrievalEvaluation.Label.valueOf(labelText.trim().toUpperCase());
+            List<String> options = null;
+            if (json.containsKey("clarificationOptions") && json.getJSONArray("clarificationOptions") != null) {
+                options = json.getJSONArray("clarificationOptions").toJavaList(String.class);
+            }
+            if ((options == null || options.isEmpty()) && label == CragRetrievalEvaluation.Label.AMBIGUOUS) {
+                options = List.of("请提供更详细的问题背景", "请明确具体的业务或技术模块");
+            }
             return CragRetrievalEvaluation.builder()
                     .label(label)
                     .confidence(json.getDoubleValue("confidence"))
                     .reason(json.getString("reason"))
                     .rewrittenQuery(StrUtil.blankToDefault(json.getString("rewrittenQuery"), fallbackQuery))
+                    .clarificationOptions(options != null ? options : List.of())
                     .build();
         } catch (Exception e) {
             log.warn("Failed to parse CRAG evaluation response: {}", responseText);
@@ -131,6 +139,7 @@ public class CragRetrievalEvaluator {
                     .confidence(0.0D)
                     .reason("Evaluator JSON parse failed")
                     .rewrittenQuery(fallbackQuery)
+                    .clarificationOptions(List.of("请提供更详细的问题背景", "请明确具体的业务或技术模块"))
                     .build();
         }
     }
@@ -141,6 +150,7 @@ public class CragRetrievalEvaluator {
                 .confidence(1.0D)
                 .reason(reason)
                 .rewrittenQuery(query)
+                .clarificationOptions(List.of())
                 .build();
     }
 

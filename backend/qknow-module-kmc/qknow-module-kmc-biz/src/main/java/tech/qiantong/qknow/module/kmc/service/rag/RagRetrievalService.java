@@ -82,6 +82,10 @@ public class RagRetrievalService {
     @Value("${qknow.rag.simple.light-top-k:5}")
     private int simpleLightTopK;
 
+    // CRAG AMBIGUOUS: 歧义时是否触发二次扩展检索（默认关闭以保障低延迟）
+    @Value("${qknow.rag.crag.ambiguous-expand:false}")
+    private boolean ambiguousExpandEnabled;
+
     /** Phase 02: optional Micrometer; null when actuator not on classpath. */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private io.micrometer.core.instrument.MeterRegistry meterRegistry;
@@ -226,7 +230,27 @@ public class RagRetrievalService {
         boolean rewriteApplied = false;
         int secondRetrievalCount = 0;
         String rewrittenQuery = evaluation.getRewrittenQuery();
-        if (evaluation.isIncorrect()
+
+        if (evaluation.isAmbiguous()) {
+            // CRAG AMBIGUOUS: 保留第一路结果（不丢弃上下文），标记歧义并注入澄清候选项
+            effective.setAmbiguous(true);
+            effective.setClarificationOptions(evaluation.getClarificationOptions());
+            debugInfo.put("cragAmbiguous", true);
+            debugInfo.put("clarificationOptions", evaluation.getClarificationOptions());
+
+            // 若开启二次内部扩展检索 (默认关闭以保持低延迟)
+            if (ambiguousExpandEnabled
+                    && rewrittenQuery != null
+                    && !rewrittenQuery.isBlank()
+                    && !rewrittenQuery.trim().equalsIgnoreCase(query.trim())) {
+                QueryEnhancement secondEnhancement = buildQueryEnhancement(rewrittenQuery);
+                RagResult second = retrieveOnce(knowledgeBaseId, queryIntent, secondEnhancement, topK,
+                        debug, debugInfo, "second", route);
+                effective = mergeAmbiguousResults(first, second);
+                rewriteApplied = true;
+                secondRetrievalCount = second.getSources().size();
+            }
+        } else if (evaluation.isIncorrect()
                 && rewrittenQuery != null
                 && !rewrittenQuery.isBlank()
                 && !rewrittenQuery.trim().equalsIgnoreCase(query.trim())) {
@@ -637,6 +661,38 @@ public class RagRetrievalService {
                 .debugInfo(debugInfo != null ? debugInfo : Map.of())
                 .build();
         return result;
+    }
+
+    // CRAG AMBIGUOUS: 双路合并逻辑（Refine ∪ Expand），保留第一路与第二路有效片段并去重
+    private RagResult mergeAmbiguousResults(RagResult first, RagResult second) {
+        List<RetrievalResult> mergedSources = new ArrayList<>();
+        Set<Long> seenIds = new HashSet<>();
+        if (first != null && first.getSources() != null) {
+            for (RetrievalResult r : first.getSources()) {
+                if (r.getSegmentId() != null && seenIds.add(r.getSegmentId())) {
+                    mergedSources.add(r);
+                } else if (r.getSegmentId() == null) {
+                    mergedSources.add(r);
+                }
+            }
+        }
+        if (second != null && second.getSources() != null) {
+            for (RetrievalResult r : second.getSources()) {
+                if (r.getSegmentId() != null && seenIds.add(r.getSegmentId())) {
+                    mergedSources.add(r);
+                } else if (r.getSegmentId() == null) {
+                    mergedSources.add(r);
+                }
+            }
+        }
+        String context = ragContextBuilder.buildContext(mergedSources, true);
+        return RagResult.builder()
+                .context(context)
+                .sources(mergedSources)
+                .ambiguous(true)
+                .clarificationOptions(first != null ? first.getClarificationOptions() : Collections.emptyList())
+                .debugInfo(first != null && first.getDebugInfo() != null ? new HashMap<>(first.getDebugInfo()) : new HashMap<>())
+                .build();
     }
 
     private int resolveTopK(int requestedTopK, QueryRouter.QueryRoute route, QueryIntent intent) {

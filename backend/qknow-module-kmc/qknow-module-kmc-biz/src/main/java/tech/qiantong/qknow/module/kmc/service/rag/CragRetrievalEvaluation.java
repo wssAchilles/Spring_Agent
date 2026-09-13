@@ -25,7 +25,17 @@ public class CragRetrievalEvaluation {
 
     private String rewrittenQuery;
 
+    private java.util.List<String> clarificationOptions;
+
     public boolean isIncorrect() {
         return label == Label.INCORRECT;
+    }
+
+    public boolean isAmbiguous() {
+        return label == Label.AMBIGUOUS;
+    }
+
+    public boolean isCorrect() {
+        return label == Label.CORRECT;
     }
 }

@@ -23,4 +23,12 @@ public class RagResult {
 
     @Builder.Default
     private Map<String, Object> debugInfo = new HashMap<>();
+
+    // CRAG AMBIGUOUS: 标记检索结果是否属于歧义状态
+    @Builder.Default
+    private Boolean ambiguous = false;
+
+    // CRAG AMBIGUOUS: 提供的细分澄清选项列表
+    @Builder.Default
+    private List<String> clarificationOptions = new ArrayList<>();
 }
