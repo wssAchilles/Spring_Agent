@@ -393,6 +393,13 @@ public class RagRetrievalService {
             debugInfo.put(phase + "RerankMs", System.currentTimeMillis() - rerankStart);
             debugInfo.put("rerankerProvider", rerankingProviderName != null && rerankingModelName != null
                     ? "dashscope" : "deterministic");
+            boolean gateSkipped = CollUtil.isNotEmpty(reranked)
+                    && reranked.get(0).getMetadata() != null
+                    && Boolean.TRUE.equals(reranked.get(0).getMetadata().get("rerankGateSkipped"));
+            debugInfo.put("rerankGateSkipped", gateSkipped);
+            if (gateSkipped) {
+                debugInfo.put("rerankGateReason", reranked.get(0).getMetadata().get("rerankGateReason"));
+            }
         }
 
         long contextStart = System.currentTimeMillis();

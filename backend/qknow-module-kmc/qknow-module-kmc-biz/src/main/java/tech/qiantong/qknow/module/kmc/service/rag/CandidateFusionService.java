@@ -103,14 +103,63 @@ public class CandidateFusionService {
                     .answer(entry.getValue().getAnswer())
                     .score(rrfScores.getOrDefault(entry.getKey(), 0.0))
                     .source(entry.getValue().getSource())
-                    .metadata(entry.getValue().getMetadata())
+                    .metadata(entry.getValue().getMetadata() != null ? new LinkedHashMap<>(entry.getValue().getMetadata()) : new LinkedHashMap<>())
                     .build();
             fused.add(copy);
         }
 
         fused.sort(Comparator.comparingDouble(RetrievalResult::getScore).reversed()
                 .thenComparing(CandidateFusionService::compareStableSegmentIds));
-        return new FusionResult(fused, pathScores, excludedPaths);
+
+        // 计算多路 Rank 1 共识 (Top Consensus)
+        Map<Long, Integer> topRankHits = new HashMap<>();
+        for (List<RetrievalResult> results : filtered) {
+            if (results != null && !results.isEmpty()) {
+                RetrievalResult first = results.get(0);
+                if (first.getSegmentId() != null) {
+                    topRankHits.merge(first.getSegmentId(), 1, Integer::sum);
+                }
+            }
+        }
+
+        boolean topConsensus = false;
+        double topMargin = 0.0;
+        double maxNormalizedScore = pathScores.stream()
+                .filter(ps -> !ps.isExcluded())
+                .mapToDouble(PathScore::getNormalizedTopScore)
+                .max()
+                .orElse(0.0);
+
+        if (!fused.isEmpty()) {
+            Long topSegmentId = fused.get(0).getSegmentId();
+            topConsensus = topSegmentId != null && topRankHits.getOrDefault(topSegmentId, 0) >= 2;
+            if (fused.size() >= 2) {
+                topMargin = fused.get(0).getScore() - fused.get(1).getScore();
+            } else {
+                topMargin = fused.get(0).getScore();
+            }
+
+            // 将门控元数据注入到 Top-1 结果中，便于下游 Rerank 门控自适应裁决
+            RetrievalResult topCandidate = fused.get(0);
+            Map<String, Object> meta = topCandidate.getMetadata();
+            if (meta == null) {
+                meta = new LinkedHashMap<>();
+                topCandidate.setMetadata(meta);
+            }
+            meta.put("topConsensus", topConsensus);
+            meta.put("topMargin", topMargin);
+            meta.put("maxNormalizedScore", maxNormalizedScore);
+        }
+
+        return new FusionResult(fused, pathScores, excludedPaths, topConsensus, topMargin, maxNormalizedScore);
+    }
+
+    public int getRrfK() {
+        return rrfK;
+    }
+
+    public void setRrfK(int rrfK) {
+        this.rrfK = rrfK;
     }
 
     private static int compareStableSegmentIds(RetrievalResult left, RetrievalResult right) {
@@ -145,11 +194,22 @@ public class CandidateFusionService {
         private final List<RetrievalResult> results;
         private final List<PathScore> pathScores;
         private final List<String> excludedPaths;
+        private final boolean topConsensus;
+        private final double topMargin;
+        private final double maxNormalizedScore;
 
-        FusionResult(List<RetrievalResult> results, List<PathScore> pathScores, List<String> excludedPaths) {
+        public FusionResult(List<RetrievalResult> results, List<PathScore> pathScores, List<String> excludedPaths) {
+            this(results, pathScores, excludedPaths, false, 0.0, 0.0);
+        }
+
+        public FusionResult(List<RetrievalResult> results, List<PathScore> pathScores, List<String> excludedPaths,
+                            boolean topConsensus, double topMargin, double maxNormalizedScore) {
             this.results = results;
             this.pathScores = pathScores;
             this.excludedPaths = excludedPaths;
+            this.topConsensus = topConsensus;
+            this.topMargin = topMargin;
+            this.maxNormalizedScore = maxNormalizedScore;
         }
 
         public List<RetrievalResult> getResults() {
@@ -162,6 +222,18 @@ public class CandidateFusionService {
 
         public List<String> getExcludedPaths() {
             return excludedPaths;
+        }
+
+        public boolean isTopConsensus() {
+            return topConsensus;
+        }
+
+        public double getTopMargin() {
+            return topMargin;
+        }
+
+        public double getMaxNormalizedScore() {
+            return maxNormalizedScore;
         }
     }
 

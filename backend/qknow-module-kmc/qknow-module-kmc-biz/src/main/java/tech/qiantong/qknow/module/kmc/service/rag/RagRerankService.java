@@ -40,11 +40,41 @@ public class RagRerankService {
     @Value("${qknow.rag.rerank.post-fusion-filter-enabled:false}")
     private boolean postFusionFilterEnabled;
 
+    /** 重排自适应动态门控 (Reranking Gate) 配置 */
+    @Value("${qknow.rag.rerank.gate.enabled:true}")
+    private boolean rerankGateEnabled = true;
+
+    @Value("${qknow.rag.rerank.gate.confidence-threshold:0.88}")
+    private double gateConfidenceThreshold = 0.88;
+
+    @Value("${qknow.rag.rerank.gate.margin-threshold:0.15}")
+    private double gateMarginThreshold = 0.15;
+
     public List<RetrievalResult> rerank(String query, List<RetrievalResult> candidates,
                                          QueryIntent queryIntent, int topK,
                                          Long rerankingProviderName, String rerankingModelName) {
         if (CollUtil.isEmpty(candidates)) {
             return new ArrayList<>();
+        }
+
+        // 门控检查 (Reranking Gate) — 高置信度/多路首位共识直接短路旁路，降低网络时延与 API Token 成本
+        GateDecision gateDecision = evaluateGate(candidates);
+        if (gateDecision.shouldSkip()) {
+            log.info("重排动态门控触发，跳过模型精排: reason={}, candidates={}, topK={}",
+                    gateDecision.getReason(), candidates.size(), topK);
+            List<RetrievalResult> gatedResults = candidates.stream()
+                    .limit(topK)
+                    .map(RagRerankService::copyRetrievalResult)
+                    .collect(Collectors.toList());
+            for (RetrievalResult r : gatedResults) {
+                Map<String, Object> meta = r.getMetadata() != null
+                        ? new LinkedHashMap<>(r.getMetadata())
+                        : new LinkedHashMap<>();
+                meta.put("rerankGateSkipped", true);
+                meta.put("rerankGateReason", gateDecision.getReason());
+                r.setMetadata(meta);
+            }
+            return gatedResults;
         }
 
         // [溯源] 算法优化指南 §2.2: 轻量级相关性过滤 — 剔除零关键词命中的 chunk
@@ -343,5 +373,93 @@ public class RagRerankService {
                 .source(source)
                 .metadata(meta)
                 .build();
+    }
+
+    /**
+     * 重排门控判定逻辑
+     */
+    public GateDecision evaluateGate(List<RetrievalResult> candidates) {
+        if (!rerankGateEnabled) {
+            return new GateDecision(false, "gate_disabled");
+        }
+        if (CollUtil.isEmpty(candidates)) {
+            return new GateDecision(false, "empty_candidates");
+        }
+
+        RetrievalResult top1 = candidates.get(0);
+        Map<String, Object> meta = top1.getMetadata();
+
+        // 1. 检查多路首位共识 (Top Consensus)
+        if (meta != null && Boolean.TRUE.equals(meta.get("topConsensus"))) {
+            return new GateDecision(true, "top_consensus");
+        }
+
+        // 2. 检查由 Fusion 传递的归一化最高分与首位分差
+        if (meta != null) {
+            Object normObj = meta.get("maxNormalizedScore");
+            Object marginObj = meta.get("topMargin");
+            if (normObj instanceof Number normScore && marginObj instanceof Number margin) {
+                if (normScore.doubleValue() >= gateConfidenceThreshold
+                        && margin.doubleValue() >= gateMarginThreshold) {
+                    return new GateDecision(true, "high_confidence_margin");
+                }
+            }
+        }
+
+        // 3. 兼容单路归一化输入（候选本身的分数在 [0.0, 1.0] 区间）
+        if (candidates.size() >= 2) {
+            double top1Score = top1.getScore();
+            if (top1Score >= gateConfidenceThreshold && top1Score <= 1.0) {
+                RetrievalResult top2 = candidates.get(1);
+                double margin = top1Score - top2.getScore();
+                if (margin >= gateMarginThreshold) {
+                    return new GateDecision(true, "high_confidence_margin");
+                }
+            }
+        }
+
+        return new GateDecision(false, "rerank_required");
+    }
+
+    public boolean isRerankGateEnabled() {
+        return rerankGateEnabled;
+    }
+
+    public void setRerankGateEnabled(boolean rerankGateEnabled) {
+        this.rerankGateEnabled = rerankGateEnabled;
+    }
+
+    public double getGateConfidenceThreshold() {
+        return gateConfidenceThreshold;
+    }
+
+    public void setGateConfidenceThreshold(double gateConfidenceThreshold) {
+        this.gateConfidenceThreshold = gateConfidenceThreshold;
+    }
+
+    public double getGateMarginThreshold() {
+        return gateMarginThreshold;
+    }
+
+    public void setGateMarginThreshold(double gateMarginThreshold) {
+        this.gateMarginThreshold = gateMarginThreshold;
+    }
+
+    public static class GateDecision {
+        private final boolean skip;
+        private final String reason;
+
+        public GateDecision(boolean skip, String reason) {
+            this.skip = skip;
+            this.reason = reason;
+        }
+
+        public boolean shouldSkip() {
+            return skip;
+        }
+
+        public String getReason() {
+            return reason;
+        }
     }
 }
