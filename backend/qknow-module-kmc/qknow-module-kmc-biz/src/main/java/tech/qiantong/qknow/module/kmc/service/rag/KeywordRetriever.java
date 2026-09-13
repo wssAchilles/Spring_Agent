@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
+import tech.qiantong.qknow.module.kmc.service.rag.nlp.ChineseDictionaryService;
 import tech.qiantong.qknow.module.kmc.service.rag.nlp.JiebaNative;
 
 import jakarta.annotation.Resource;
@@ -76,6 +77,9 @@ public class KeywordRetriever {
     @Resource
     private JdbcTemplate jdbcTemplate;
 
+    @Resource
+    private ChineseDictionaryService chineseDictionaryService;
+
     @Value("${qknow.rag.keyword.identifier-aware:false}")
     private boolean identifierAware;
 
@@ -84,10 +88,10 @@ public class KeywordRetriever {
             return new ArrayList<>();
         }
 
-        // [溯源] 算法优化指南 §2.2: 应用层中文分词 + 同义词扩展
-        List<String> searchTerms = buildSearchTerms(query, identifierAware);
+        // [溯源] 算法优化指南 §2.2: 领域中文分词 + 受控同义词扩展
+        List<String> searchTerms = buildSearchTerms(query, identifierAware, chineseDictionaryService);
         List<String> dayTerms = extractDayTerms(query);
-        List<String> expandedTerms = expandWithSynonyms(searchTerms);
+        List<String> expandedTerms = expandWithSynonyms(searchTerms, chineseDictionaryService);
 
         List<Object> params = new ArrayList<>();
         String normalizedQuery = normalizeForTrgm(query);
@@ -223,20 +227,30 @@ public class KeywordRetriever {
      * [溯源] 算法优化指南 Phase 2: 应用层中文分词 + jieba-rs JNI
      * 优先使用 jieba-rs，JNI 不可用时降级到滑动窗口
      */
-    static List<String> buildSearchTerms(String queryText) {
-        return buildSearchTerms(queryText, false);
+    public static List<String> buildSearchTerms(String queryText) {
+        return buildSearchTerms(queryText, false, null);
     }
 
-    static List<String> buildSearchTerms(String queryText, boolean identifierAware) {
+    public static List<String> buildSearchTerms(String queryText, boolean identifierAware) {
+        return buildSearchTerms(queryText, identifierAware, null);
+    }
+
+    public static List<String> buildSearchTerms(String queryText, boolean identifierAware, ChineseDictionaryService dictService) {
         LinkedHashSet<String> terms = new LinkedHashSet<>();
         terms.add(queryText.trim());
+
+        // 优先提取受保护的领域专有词（防止被机械切碎）
+        if (dictService != null) {
+            terms.addAll(dictService.extractDomainTerms(queryText));
+        }
 
         // 提取英文词
         Pattern enPattern = Pattern.compile("[A-Za-z][A-Za-z0-9_-]{2,}");
         Matcher enMatcher = enPattern.matcher(queryText);
         while (enMatcher.find()) {
             String word = enMatcher.group().toLowerCase();
-            if (!STOP_WORDS.contains(word)) {
+            boolean isStop = dictService != null ? dictService.isStopWord(word) : STOP_WORDS.contains(word);
+            if (!isStop) {
                 terms.add(word);
             }
         }
@@ -245,7 +259,8 @@ public class KeywordRetriever {
         String[] jiebaTokens = JiebaNative.safeCut(queryText);
         if (jiebaTokens != null && jiebaTokens.length > 0) {
             for (String token : jiebaTokens) {
-                if (token.length() >= 2 && !STOP_WORDS.contains(token)) {
+                boolean isStop = dictService != null ? dictService.isStopWord(token) : STOP_WORDS.contains(token);
+                if (token.length() >= 2 && !isStop) {
                     terms.add(token);
                 }
             }
@@ -256,7 +271,8 @@ public class KeywordRetriever {
         for (int len = 3; len >= 2; len--) {
             for (int i = 0; i <= chineseOnly.length() - len; i++) {
                 String token = chineseOnly.substring(i, i + len);
-                if (!STOP_WORDS.contains(token)) {
+                boolean isStop = dictService != null ? dictService.isStopWord(token) : STOP_WORDS.contains(token);
+                if (!isStop) {
                     terms.add(token);
                 }
             }
@@ -320,19 +336,36 @@ public class KeywordRetriever {
     }
 
     /**
-     * [溯源] 算法优化指南 §2.2: 同义词扩展
+     * [溯源] 算法优化指南 §2.2: 同义词扩展（支持受控数量截断保护）
      */
-    static List<String> expandWithSynonyms(List<String> terms) {
+    public static List<String> expandWithSynonyms(List<String> terms) {
+        return expandWithSynonyms(terms, null);
+    }
+
+    public static List<String> expandWithSynonyms(List<String> terms, ChineseDictionaryService dictService) {
+        if (dictService != null) {
+            return dictService.expandSynonyms(terms, 3, 15);
+        }
         Set<String> expanded = new LinkedHashSet<>(terms);
         for (String term : terms) {
+            if (expanded.size() >= 15) {
+                break;
+            }
             List<String> synonyms = SYNONYMS.get(term);
             if (synonyms != null) {
-                expanded.addAll(synonyms);
+                for (String syn : synonyms) {
+                    if (expanded.size() >= 15) break;
+                    expanded.add(syn);
+                }
             }
             // 大小写不敏感匹配
             for (Map.Entry<String, List<String>> entry : SYNONYMS.entrySet()) {
+                if (expanded.size() >= 15) break;
                 if (entry.getKey().equalsIgnoreCase(term)) {
-                    expanded.addAll(entry.getValue());
+                    for (String syn : entry.getValue()) {
+                        if (expanded.size() >= 15) break;
+                        expanded.add(syn);
+                    }
                 }
             }
         }

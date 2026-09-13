@@ -16,7 +16,7 @@
 | **04-B** | 运筹优化智能体 (OptiAgent) | Gurobi WLS 集成 | 04 | **Delivered** | `phase_04_b_optiagent_plan.md` |
 | **04-E2E** | 全链路测试验证 | E2E QA 测试白皮书 | 04 | **Delivered** | `phase_04_e2e_test_plan.md` |
 | **05** | CRAG AMBIGUOUS 与自我反思回路 | T2+T1 | **01 必须** | **Delivered** | `phase_05_plan.md` |
-| 06 | 中文 IR / 原生加速 | N0–N2 | 01 | Planned | |
+| **06** | 中文 IR 与检索底座原生加速 | N0–N2 | 01 | **Delivered** | `phase_06_plan.md` |
 | 07 | 重排门控 + RRF 消融 | C 门控 | **01 必须** | Planned | |
 | 08 | 生成侧评估与引用 | Q2+R1 | 01+04 | Planned | |
 
@@ -38,3 +38,4 @@
 | 2026-09-11 | **Phase 02+03 Delivered**：Actuator/CI、SSRF/Security/APIKey/XSS |
 | 2026-09-13 | **Phase 04/04-B/04-E2E Delivered**：CascadeRouter、StateGraphExecutor、Gurobi OptiAgent |
 | 2026-09-13 | **Phase 05 Delivered**：CRAG AMBIGUOUS 双路合并与反思澄清回路，单测 3/3 全绿 |
+| 2026-09-13 | **Phase 06 Delivered**：中文 IR 领域词库增强与受控同义词扩展，单测 4/4 全绿 |
