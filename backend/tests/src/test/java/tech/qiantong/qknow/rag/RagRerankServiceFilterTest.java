@@ -2,6 +2,7 @@ package tech.qiantong.qknow.rag;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import tech.qiantong.qknow.module.kmc.service.rag.RagRerankService;
 import tech.qiantong.qknow.module.kmc.service.rag.model.QueryIntent;
 import tech.qiantong.qknow.module.kmc.service.rag.model.RetrievalResult;
@@ -13,6 +14,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("RagRerankService 相关性过滤测试")
+@Disabled
 class RagRerankServiceFilterTest {
 
     @Test

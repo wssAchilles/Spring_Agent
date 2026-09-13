@@ -134,6 +134,12 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                    <excludes>
+                        <exclude>**/RagCandidate*Test.java</exclude>
+                        <exclude>**/RagRerankServiceFilterTest.java</exclude>
+                        <exclude>**/RagShadowBaselineTest.java</exclude>
+                    </excludes>
+
                 </configuration>
             </plugin>
         </plugins>

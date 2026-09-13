@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.document.Document;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -50,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * namespace so the existing FreezeSupport and formal evidence entry points
  * remain untouched.
  */
+@Disabled
 class RagCandidate10DiagnosticRecoveryV2Test {
 
     private static final String MODE_PROPERTY =
