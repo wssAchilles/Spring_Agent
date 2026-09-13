@@ -12,7 +12,9 @@
 | **01** | 评估地基 | Q0+Q1+指标脚本 | — | **Delivered** | `phase_01_plan.md` |
 | **02** | 生产可观测与 CI | P0+P1 | 01 | **Delivered** | `phase_02_plan.md` |
 | **03** | 安全 Hardening | P2 | — | **Delivered** | `phase_03_plan.md` |
-| 04 | Agent 运行时治理 | R2+R0（cancel/工具预算） | 01（成本对比） | Planned | |
+| **04** | Agent 运行时治理与自适应路由 | T1+T2+R2 | 01 | **Designed** | `phase_04_plan.md` |
+| **04-B** | 运筹优化智能体 (OptiAgent) | Gurobi WLS 集成 | 04 | **Designed** | `phase_04_b_optiagent_plan.md` |
+| **04-E2E** | 全链路测试验证 | E2E QA 测试白皮书 | 04 | **Designed** | `phase_04_e2e_test_plan.md` |
 | 05 | CRAG AMBIGUOUS + 自适应路由 | T2+T1 | **01 必须** | Planned | |
 | 06 | 中文 IR / 原生加速 | N0–N2 | 01 | Planned | |
 | 07 | 重排门控 + RRF 消融 | C 门控 | **01 必须** | Planned | |

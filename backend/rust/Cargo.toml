@@ -1,0 +1,11 @@
+[package]
+name = "colbert_native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "colbert_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+rayon = "1.8"

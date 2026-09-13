@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="#技术栈"><img src="https://img.shields.io/badge/Java-17-E76F00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 17" /></a>
+  <a href="#技术栈"><img src="https://img.shields.io/badge/Java-21-E76F00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 21" /></a>
   <a href="#技术栈"><img src="https://img.shields.io/badge/Spring_Boot-3.5.8-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot 3.5.8" /></a>
   <a href="#技术栈"><img src="https://img.shields.io/badge/Vue-3.4.31-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3.4.31" /></a>
   <a href="#技术栈"><img src="https://img.shields.io/badge/PostgreSQL-PgVector-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL with PgVector" /></a>
@@ -37,6 +37,11 @@ Knowledge Hub 是一个面向组织知识资产的 AI 应用编排平台。Sprin
 | DAG 工作流 | 拓扑执行、条件分支、并行节点、状态快照与恢复 |
 | Hermes 内核 | 规划与 ReAct、短期与分层记忆、工具调用、可选反思与 AI Judge |
 
+> 🔒 **架构模型基线纠正 (Architecture Model Baseline Corrected):**
+> 本系统的所有生成侧（Chat/Generation/RAG 检索对话）**唯一**使用的是 **DeepSeek API**。
+> 本系统的所有向量化侧（Embedding）**唯一**使用的是 **阿里千问 (Qwen) Embedding**。
+> **绝无任何本地部署的大语言模型，且已彻底弃用 OpenAI/GPT API。**
+
 ## 系统架构
 
 ```mermaid
@@ -47,7 +52,7 @@ flowchart TB
     PostgreSQL[("PostgreSQL<br/>PgVector · pg_trgm")]
     Redis[("Redis")]
     Neo4j[("Neo4j")]
-    Models["模型 Provider<br/>DeepSeek · 通义 · OpenAI-compatible"]
+    Models["模型 Provider<br/>仅允许 DeepSeek (对话) / Qwen (Embedding)"]
 
     Web -->|"HTTP / SSE"| Control
     Control -->|"gRPC"| Hermes
@@ -65,13 +70,13 @@ flowchart TB
 
 ### 环境要求
 
-- JDK 17、Maven 3.9+
+- 本地使用 **SDKMAN** 管理的 **Java 21**（而非全局覆盖），Maven 3.9+
 - Node.js 18+、npm
-- PostgreSQL 15+，需启用 PgVector 与 pg_trgm
-- Redis 7+
+- **Mac 原生（Bare Metal）部署的 PostgreSQL 15+**，需启用 PgVector 与 pg_trgm（绝对不是 Docker 容器）
+- **Mac 原生（Bare Metal）部署的 Redis 7+**（绝对不是 Docker 容器）
 - Docker 与 Docker Compose v2，仅用于本地 Neo4j
 
-本地开发默认使用宿主机 PostgreSQL 与 Redis；根目录 `docker-compose.yml` 只启动 Neo4j。
+**警告**：本地开发环境使用的是 Mac 原生部署的 PostgreSQL 与 Redis，严禁使用 Docker 启动这些核心数据库；根目录 `docker-compose.yml` 只允许启动 Neo4j。
 
 ### 1. 准备配置
 
@@ -193,11 +198,11 @@ bash scripts/status.sh
 
 | 层级 | 技术选型 |
 | --- | --- |
-| 控制面 | Java 17、Spring Boot 3.5.8、Spring AI 1.1、MyBatis-Plus、Reactor/SSE |
+| 控制面 | Java 21、Spring Boot 3.5.8、Spring AI 1.1、MyBatis-Plus、Reactor/SSE |
 | 认知面 | Hermes、gRPC、规划/ReAct、记忆、Tool Calling |
 | 前端 | Vue 3.4.31、Vite 5.3.2、Pinia 2.1.7、Element Plus 2.7.6 |
 | 检索与存储 | PostgreSQL、PgVector、pg_trgm、Redis 7、Neo4j 5.26 |
-| 模型接入 | DeepSeek、通义 Embedding、OpenAI-compatible Provider，按 `.env` 配置 |
+| 模型接入 | 严格使用 DeepSeek (Chat/生成) 与 阿里千问 (Embedding)。彻底弃用 OpenAI/本地小模型 |
 | 可观测性 | Langfuse，可选启用 |
 
 ## 目录与模块
@@ -223,7 +228,7 @@ bash scripts/status.sh
 - Neo4j 由根目录 Compose 启动，连接参数来自 Neo4j 相关配置。
 - PostgreSQL 初始化与后续数据修正脚本位于 `deploy/sql/postgresql/`；`00`、`01`、`02` 仅用于全新空库，其余脚本应按文件头说明单独评估后执行。
 
-`deploy/docker/` 是独立的镜像部署配置，仍包含 Redis、Neo4j、Nginx、MySQL 5.7 与 Weaviate 等上游组件。它使用自己的 `.env`，不等同于根目录的 PostgreSQL/PgVector 本地开发拓扑，也未覆盖完整的 Hermes 与前端编排。
+`deploy/docker/` 目录下的编排文件**仅供生产环境或历史遗留参考**，本地开发**严禁**依赖它们启动数据库。它仍包含上游遗留组件，但绝不应在本地开发流程中使用。
 
 ## API 文档
 

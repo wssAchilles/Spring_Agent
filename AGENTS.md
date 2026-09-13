@@ -186,3 +186,11 @@ limitations
 - 已明确最小修改范围、复现命令和后续授权边界。
 
 任一条件不满足时输出 `RESEARCH_GATE_BLOCKED`，不得进入实现。
+
+## 七、架构模型基线 (Architecture Model Baseline)
+
+任何 Agent 在阅读本项目或制定技术方案时，必须严格遵守以下模型与生态基线假设，绝不允许凭借行业惯例进行主观臆断：
+
+1. **唯一生成模型**：本系统的所有生成侧（Chat / Generation / RAG 检索对话 / Tool Calling）**唯一**使用的是 **DeepSeek API**。
+2. **唯一向量模型**：本系统的所有向量化侧（Embedding）**唯一**使用的是 **阿里千问 (Qwen) Embedding**。
+3. **彻底弃用声明**：项目中绝无任何本地部署的大语言模型（如 Llama, Qwen-Chat 等），且已彻底弃用 OpenAI/GPT API，原因在于网络延迟与成本考量。所有关于“昂贵大模型与廉价本地小模型之间路由”的假设在本系统均不成立。

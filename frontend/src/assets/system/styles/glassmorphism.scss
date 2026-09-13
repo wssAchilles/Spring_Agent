@@ -1,0 +1,91 @@
+/* 
+  Phase 05: UI/UX Pro Max - Monochrome & Glassmorphism Tokens
+*/
+
+:root {
+  --monochrome-bg: #F5F5F7;
+  --monochrome-text-primary: #1D1D1F;
+  --monochrome-text-secondary: #86868B;
+  --monochrome-border: rgba(0, 0, 0, 0.05);
+  
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+  --glass-blur: blur(24px) saturate(180%);
+}
+
+body {
+  background-color: var(--monochrome-bg) !important;
+  color: var(--monochrome-text-primary) !important;
+}
+
+/* Glass Card */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 16px;
+  padding: 24px;
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
+}
+
+/* Glass Button */
+.glass-btn {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  color: var(--monochrome-text-primary);
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.glass-btn:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.glass-btn:active {
+  transform: scale(0.96);
+}
+
+/* Typography Overrides for Monochrome */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--monochrome-text-primary) !important;
+}
+
+p, span, div {
+  color: inherit;
+}
+
+.text-secondary {
+  color: var(--monochrome-text-secondary) !important;
+}
+
+/* Overriding Element Plus Colors for Monochrome */
+:root {
+  --el-color-primary: #1D1D1F;
+  --el-color-primary-light-3: #434345;
+  --el-color-primary-light-5: #68686B;
+  --el-color-primary-light-7: #8E8E91;
+  --el-color-primary-light-9: #DCDCDD;
+  --el-color-primary-dark-2: #000000;
+}
+
+/* Dynamic Ripple Effect Keyframes */
+@keyframes glass-ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}

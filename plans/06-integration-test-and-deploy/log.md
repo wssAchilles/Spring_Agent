@@ -30,7 +30,7 @@
 
 ## 部署说明
 
-### Docker 一键启动
+### 本地开发请确保原生数据库已启动
 ```bash
 docker-compose up -d
 ```

@@ -331,19 +331,19 @@ v2 仍用门禁编号 **P / Q / R…**，避免与 Hn 混淆。
 | ID | 标题 | 状态 |
 |---|---|---|
 | Q0 | 真实 query 回放集 | Planned |
-| Q1 | Holdout 扩容 | Planned |
-| Q2 | 生成侧评估 | Planned |
+| Q1 | Holdout 扩容 | **Completed** (Hard Negatives Framework) |
+| Q2 | 生成侧评估 | **Completed** (Claim Evaluator) |
 | P0 | Actuator 指标 | Planned |
-| P1 | CI 门禁 | Planned |
-| P2 | 安全 hardening | Planned |
+| P1 | CI 门禁 | **Completed** (Eval Gate) |
+| P2 | 安全 hardening | **Completed** (AST, SSRF, XSS) |
 | P3 | 备份恢复 | Planned |
-| R0 | 工具治理 | Planned |
+| R0 | 工具治理 | **Completed** (Defensive Executor) |
 | R1 | 引用完整性 | Planned |
 | R2 | 成本仪表 | Planned |
 | S0 | Embedding 漂移检测 | Planned |
 | S1 | 索引健康重建 | Planned |
 | S2 | 冷启动行为 | Planned |
-| N0 | JNI 基线基准 | Planned |
+| N0 | JNI 基线基准 | **Completed** (FFM & Rust SIMD) |
 | N1 | Rust MaxSim/批量核 | Planned |
 | N2 | Tantivy 中文 BM25 | Planned |
 | N3 | C++/ONNX 可选 | Planned（默认可拒） |

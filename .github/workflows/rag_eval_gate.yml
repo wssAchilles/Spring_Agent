@@ -1,0 +1,54 @@
+name: RAG Evaluation Quality Gate
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  rag-evaluation:
+    name: RAG Faithfulness & Citation Evaluation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Evaluation Tools
+        run: |
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+          if [ -f "scripts/requirements-eval.txt" ]; then pip install -r scripts/requirements-eval.txt; fi
+
+      - name: Run RAG Evaluation Pipeline
+        run: |
+          echo "Starting RAG Evaluation on Golden Dataset..."
+          
+          # 模拟触发评估脚本
+          chmod +x ./scripts/get_eval.sh || true
+          if [ -f "./scripts/get_eval.sh" ]; then
+            ./scripts/get_eval.sh > eval_output.json
+          else
+            # 桩数据(Mock data)用于测试
+            echo '{"faithfulness": 0.82, "citation_accuracy": 0.90}' > eval_output.json
+            echo "Warning: ./scripts/get_eval.sh not found. Using mock evaluation data."
+          fi
+
+      - name: Enforce Metric Thresholds
+        run: |
+          echo "Checking Evaluation Metrics against baselines..."
+          
+          FAITHFULNESS=$(grep -oP '"faithfulness":\s*\K[0-9.]+' eval_output.json || echo "0")
+          echo "Faithfulness score: $FAITHFULNESS"
+          
+          # 判断 Faithfulness 是否低于 0.85
+          IS_DEGRADED=$(awk -v score="$FAITHFULNESS" -v threshold="0.85" 'BEGIN {if (score < threshold) print 1; else print 0}')
+          
+          if [ "$IS_DEGRADED" -eq 1 ]; then
+            echo "::error::Quality Gate Failed! Faithfulness ($FAITHFULNESS) is below the threshold of 0.85."
+            exit 1
+          else
+            echo "Quality Gate Passed! Faithfulness ($FAITHFULNESS) meets the criteria."
+          fi

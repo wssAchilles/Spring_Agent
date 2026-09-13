@@ -1,3 +1,4 @@
+# [WARNING] 本地开发请勿使用此文件启动数据库！本地开发依赖 macOS 原生 PostgreSQL/Redis...
 services:
   neo4j:
     image: neo4j:5.26.0
