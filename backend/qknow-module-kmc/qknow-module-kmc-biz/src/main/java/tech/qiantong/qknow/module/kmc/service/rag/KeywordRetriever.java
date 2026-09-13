@@ -80,12 +80,40 @@ public class KeywordRetriever {
     @Resource
     private ChineseDictionaryService chineseDictionaryService;
 
+    @Resource
+    private tech.qiantong.qknow.module.kmc.service.rag.search.TantivyClient tantivyClient;
+
     @Value("${qknow.rag.keyword.identifier-aware:false}")
     private boolean identifierAware;
 
     public List<RetrievalResult> retrieve(Long knowledgeBaseId, String query, int topK) {
         if (StrUtil.isBlank(query)) {
             return new ArrayList<>();
+        }
+
+        // [Phase 18 原生加速] 优先尝试 Tantivy 原生 BM25 检索引擎
+        if (tantivyClient != null && tantivyClient.isEnabled()) {
+            try {
+                List<RetrievalResult> tantivyResults = tantivyClient.search(
+                        query, topK, knowledgeBaseId != null ? knowledgeBaseId : 0L);
+                if (tantivyResults != null && !tantivyResults.isEmpty()) {
+                    log.debug("KeywordRetriever: Tantivy BM25 hit {} records for kb={}", tantivyResults.size(), knowledgeBaseId);
+                    return tantivyResults.stream()
+                            .sorted((a, b) -> {
+                                int cmp = Double.compare(b.getScore(), a.getScore());
+                                if (cmp != 0) {
+                                    return cmp;
+                                }
+                                Long idA = a.getSegmentId() != null ? a.getSegmentId() : 0L;
+                                Long idB = b.getSegmentId() != null ? b.getSegmentId() : 0L;
+                                return Long.compare(idA, idB);
+                            })
+                            .limit(topK)
+                            .toList();
+                }
+            } catch (Exception e) {
+                log.warn("KeywordRetriever: Tantivy search failed, falling back to PostgreSQL pg_trgm: {}", e.getMessage());
+            }
         }
 
         // [溯源] 算法优化指南 §2.2: 领域中文分词 + 受控同义词扩展
@@ -140,7 +168,15 @@ public class KeywordRetriever {
             }
 
             return results.stream()
-                    .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+                    .sorted((a, b) -> {
+                        int cmp = Double.compare(b.getScore(), a.getScore());
+                        if (cmp != 0) {
+                            return cmp;
+                        }
+                        Long idA = a.getSegmentId() != null ? a.getSegmentId() : 0L;
+                        Long idB = b.getSegmentId() != null ? b.getSegmentId() : 0L;
+                        return Long.compare(idA, idB);
+                    })
                     .limit(topK)
                     .toList();
         } catch (Exception e) {

@@ -185,7 +185,8 @@ public class VectorRetriever {
                 metadata.put("vecsim_score", (double) scores[i]);
                 result.setScore(scores[i]);
             }
-            results.sort(Comparator.comparingDouble(RetrievalResult::getScore).reversed());
+            results.sort(Comparator.comparingDouble(RetrievalResult::getScore).reversed()
+                    .thenComparing(r -> r.getSegmentId() != null ? r.getSegmentId() : 0L));
         } catch (Exception e) {
             RagFallbackMonitor.record("jni", "pgvector_score", "vecsim rescore failed: " + e.getMessage());
             log.debug("VecSim rescore skipped for knowledgeBaseId={}: {}", knowledgeBaseId, e.getMessage());

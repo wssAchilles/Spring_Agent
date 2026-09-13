@@ -6,7 +6,7 @@
 > **工程报告**：`docs/plans/phase_18_industrial_report.md` (Faiss/Qdrant/Milvus SIMD 实践、Tantivy gRPC + JiebaTokenizer + IndexWriterActor 节流提交、Java Netty gRPC 客户端 250ms 软超时 Fail-Open 降级、三大生产级灾难避坑指南)  
 > **方案文档**：`docs/plans/phase_18_plan.md`  
 > **唯一模型基线**：唯一生成模型为 **DeepSeek API**（`deepseek-chat` 即 V3 / `deepseek-reasoner` 即 R1），唯一向量模型为 **阿里千问 (Qwen) Embedding (1536维)**，绝无本地大模型，彻底弃用 OpenAI/GPT API。  
-> **当前状态**：**DESIGNED / PENDING_USER_APPROVAL**（第一回合只读检查与方案设计完成，待用户明确批准后进入 TDD 实施）
+> **当前状态**：**DELIVERED**（Rust SIMD 向量核与 Tantivy 中文 BM25 检索引擎双轨容灾完成，5项契约测试与 741 项全量回归 100% 绿灯通过）
 
 ---
 
