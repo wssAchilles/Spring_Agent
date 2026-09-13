@@ -94,7 +94,15 @@
               ></right-toolbar>
             </div>
           </div>
-          <el-table class="glass-card"
+          <!-- 表格骨架屏平滑过渡 -->
+          <div v-if="loading && (!documentList || documentList.length === 0)" class="table-skeleton-wrap mb15">
+            <GlassSkeleton type="table" :count="6" :columns="7" />
+          </div>
+
+          <el-table
+            v-else
+            ref="documentTableRef"
+            class="glass-card"
             stripe
             v-loading="loading"
             :data="documentList"
@@ -194,18 +202,6 @@
                 <dict-tag v-else :options="document_sync_status" :value="scope.row.syncStatus" />
               </template>
             </el-table-column>
-            <!-- <el-table-column
-              v-if="getColumnVisibility(6)"
-              label="备注"
-              width="200"
-              align="left"
-              prop="remark"
-              :show-overflow-tooltip="{ effect: 'light' }"
-            >
-              <template #default="scope">
-                {{ scope.row.remark || "-" }}
-              </template>
-            </el-table-column> -->
             <el-table-column
               v-if="getColumnVisibility(7)"
               label="创建人"
@@ -291,10 +287,11 @@
             </el-table-column>
 
             <template #empty>
-              <div class="emptyBg">
-                <img src="@/assets/system/images/no_data/noData.png" alt="" />
-                <p>暂无记录</p>
-              </div>
+              <GlassEmpty
+                title="暂无文档记录"
+                description="当前分类下暂无文档，您可以点击上方新增按钮上传并切分新文档"
+                icon="folder"
+              />
             </template>
           </el-table>
 
@@ -305,6 +302,21 @@
             v-model:limit="queryParams.pageSize"
             @pagination="getList"
           />
+
+          <!-- 底部悬浮操作栏 (Floating Action Bar) -->
+          <FloatingActionBar :count="ids.length" @clear="clearSelection">
+            <template #actions>
+              <el-button
+                type="danger"
+                size="small"
+                @click="handleDelete"
+                icon="Delete"
+                v-hasPermi="['kmcDocument:kmcDocument:document:remove']"
+              >
+                批量删除 ({{ ids.length }})
+              </el-button>
+            </template>
+          </FloatingActionBar>
         </div>
       </el-main>
     </el-container>
@@ -625,11 +637,23 @@ function resetQuery() {
   handleQuery();
 }
 
+const documentTableRef = ref(null);
+
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map((item) => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
+}
+
+// 清空当前勾选项
+function clearSelection() {
+  if (documentTableRef.value) {
+    documentTableRef.value.clearSelection();
+  }
+  ids.value = [];
+  single.value = true;
+  multiple.value = true;
 }
 
 /** 排序触发事件 */

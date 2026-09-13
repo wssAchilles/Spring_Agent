@@ -57,12 +57,37 @@
         </el-form-item>
       </el-form>
     </div>
-    <Card
-      :data="knowledgeBaseList"
-      @handleDataScope="handleDataScope"
-      @handleDelete="handleDelete"
-      @handleValidChange="handleValidChange"
-    />
+
+    <!-- 内容展示区域：骨架屏 -> 空状态 -> 卡片列表平滑过渡 -->
+    <div class="content-display-area">
+      <transition name="fade" mode="out-in">
+        <div v-if="loading" key="skeleton">
+          <GlassSkeleton type="card" :count="6" min-item-width="500px" />
+        </div>
+        <div v-else-if="!knowledgeBaseList || knowledgeBaseList.length === 0" key="empty">
+          <GlassEmpty
+            title="暂无知识库"
+            description="您可以点击右上方的“新增知识库”按钮开始创建您的第一个知识库"
+            icon="folder"
+          >
+            <template #action>
+              <el-button class="glass-btn" @click="handleAdd">
+                <i class="iconfont-mini icon-xinzeng mr5"></i>新增知识库
+              </el-button>
+            </template>
+          </GlassEmpty>
+        </div>
+        <div v-else key="content">
+          <Card
+            :data="knowledgeBaseList"
+            @handleDataScope="handleDataScope"
+            @handleDelete="handleDelete"
+            @handleValidChange="handleValidChange"
+          />
+        </div>
+      </transition>
+    </div>
+
     <div class="pagecont-bottom">
       <pagination
         v-show="total > 0"
@@ -628,27 +653,37 @@ proxy.$tab.closeAllPage();
 
 <style scoped lang="scss">
 .app-container {
+  min-height: 100%;
+  padding-bottom: 70px;
 }
+
+.content-display-area {
+  min-height: 360px;
+  position: relative;
+}
+
 .pagecont-bottom {
-  //display: flex;
-  //position: absolute;
-  //bottom: 8px;
-  //width: calc(100% - 30px);
   position: fixed;
   bottom: 0;
   width: 100%;
   left: 0;
-  height: 60px;
-  background: #F5F5F7;
-  border-radius: 2px 2px 2px 2px;
-  line-height: 60px;
+  height: 56px;
+  background: var(--glass-card-bg, rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+  line-height: 56px;
   margin: 0;
-  padding: 0 18px 0 0;
-  flex: none;
+  padding: 0 24px;
+  z-index: 100;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.03);
+
   .pagination-container {
     margin-top: 0;
+    background: transparent !important;
   }
 }
+
 // 基础样式
 ::v-deep .el-tag {
   margin-right: 7px;
@@ -660,20 +695,8 @@ proxy.$tab.closeAllPage();
 
 // 基础下划线样式
 .underline-base {
-  border-bottom: 2px solid #f4f4f4;
+  border-bottom: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.06));
   margin-bottom: 13px;
-}
-
-// 新增场景样式
-.underline-add {
-  border-bottom: 2px solid #f4f4f4;
-  margin-top: 210px;
-}
-
-// 修改场景样式
-.underline-edit {
-  border-bottom: 2px solid #f4f4f4;
-  margin-top: 166px;
 }
 
 // 索引方式样式
@@ -682,39 +705,44 @@ proxy.$tab.closeAllPage();
   gap: 15px;
   width: 100%;
 }
+
 .indexing-item {
   flex: 1;
   padding: 15px;
-  border-radius: 4px;
-  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #F5F5F7;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--glass-card-bg, rgba(255, 255, 255, 0.5));
 
   &.act {
-    background: #F5F5F7;
-    border-color: #1D1D1F;
+    background: var(--glass-card-bg, rgba(255, 255, 255, 0.9));
+    border-color: var(--glass-text-primary, #18181b);
+    box-shadow: 0 0 0 1px var(--glass-text-primary, #18181b);
+
     .indexing-title {
-      color: #1D1D1F;
-      font-weight: 500;
+      color: var(--glass-text-primary, #18181b);
+      font-weight: 600;
     }
   }
+
   &.disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }
+
 .indexing-title {
   display: flex;
   align-items: center;
   margin-bottom: 8px;
-  color: #1D1D1F;
+  color: var(--glass-text-primary, #18181b);
   font-size: 14px;
 
   .icon {
     margin-right: 8px;
     font-size: 18px;
-    color: #1D1D1F;
+    color: var(--glass-text-primary, #18181b);
   }
   img {
     width: 18px;
@@ -722,12 +750,14 @@ proxy.$tab.closeAllPage();
     margin-right: 8px;
   }
 }
+
 .indexing-desc {
   margin: 0;
   font-size: 12px;
-  color: #1D1D1F;
+  color: var(--glass-text-secondary, #71717a);
   line-height: 1.5;
 }
+
 .recommend-tag {
   margin-left: auto;
   height: 20px;
@@ -736,15 +766,9 @@ proxy.$tab.closeAllPage();
   font-size: 12px;
 }
 
-:deep(.tag-form-item .el-form-item__label) {
-  color: #1D1D1F;
-  font-size: 14px;
-  font-family: PingFangSC-Regular-;
-}
-
+:deep(.tag-form-item .el-form-item__label),
 :deep(.index-form-item .el-form-item__label) {
-  color: #1D1D1F;
+  color: var(--glass-text-primary, #18181b);
   font-size: 14px;
-  font-family: PingFangSC-Regular-;
 }
 </style>

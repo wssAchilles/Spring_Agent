@@ -174,11 +174,13 @@ const handleReturn = () => {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  padding: 2px;
-  background-color: #2666fb;
-  color: #fff;
-  aspect-ratio: 1 / 1;
-  width: 20px;
+  padding: 2px 6px;
+  background-color: var(--glass-text-primary, #18181b);
+  color: #fafafa;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 22px;
   height: 20px;
 }
 .fhbtn {
@@ -188,10 +190,33 @@ const handleReturn = () => {
     vertical-align: middle;
     margin-top: -3px;
   }
-  &:hover {
-    .svg-icon {
-      filter: brightness(0) invert(1) !important;
-    }
+}
+
+.infotop {
+  background: var(--glass-card-bg, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.infotop-row {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+
+  .infotop-row-lable {
+    color: var(--glass-text-secondary, #71717a);
+    font-size: 13px;
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .infotop-row-value {
+    color: var(--glass-text-primary, #18181b);
+    font-size: 13px;
+    font-weight: 500;
   }
 }
 </style>

@@ -73,10 +73,18 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table class="glass-card"
+
+      <!-- 表格骨架屏平滑过渡 -->
+      <div v-if="loading && (!knowledgeSegmentList || knowledgeSegmentList.length === 0)" class="table-skeleton-wrap mb15">
+        <GlassSkeleton type="table" :count="6" :columns="6" />
+      </div>
+
+      <el-table
+        v-else-if="model === 'text_model' || model === 'qa_model'"
+        ref="segmentTableRef"
+        class="glass-card"
         stripe
         v-loading="loading"
-        v-if="model === 'text_model' || model === 'qa_model'"
         :data="knowledgeSegmentList"
         @selection-change="handleSelectionChange"
         :default-sort="defaultSort"
@@ -198,10 +206,10 @@
         </el-table-column>
 
         <template #empty>
-          <div class="emptyBg">
-            <img src="@/assets/system/images/no_data/noData.png" alt="" />
-            <p>暂无记录</p>
-          </div>
+          <GlassEmpty
+            title="暂无分段记录"
+            description="当前文档尚未切分或未检索到分段，您可以点击上方新增按钮添加分段"
+          />
         </template>
       </el-table>
       <el-table class="glass-card"
@@ -303,10 +311,10 @@
         </el-table-column>
 
         <template #empty>
-          <div class="emptyBg">
-            <img src="@/assets/system/images/no_data/noData.png" alt="" />
-            <p>暂无记录</p>
-          </div>
+          <GlassEmpty
+            title="暂无分段记录"
+            description="当前文档尚未切分或未检索到分段，您可以点击上方新增按钮添加分段"
+          />
         </template>
       </el-table>
 
@@ -317,6 +325,21 @@
         v-model:limit="queryParams.pageSize"
         @pagination="getList"
       />
+
+      <!-- 底部悬浮操作栏 (Floating Action Bar) -->
+      <FloatingActionBar :count="ids.length" @clear="clearSelection">
+        <template #actions>
+          <el-button
+            type="danger"
+            size="small"
+            @click="handleDelete"
+            icon="Delete"
+            v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:remove']"
+          >
+            批量删除 ({{ ids.length }})
+          </el-button>
+        </template>
+      </FloatingActionBar>
     </div>
 
     <!-- 添加或修改文件分段对话框 -->
@@ -747,11 +770,23 @@ function resetQuery() {
   handleQuery();
 }
 
+const segmentTableRef = ref(null);
+
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map((item) => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
+}
+
+// 清空当前勾选项
+function clearSelection() {
+  if (segmentTableRef.value) {
+    segmentTableRef.value.clearSelection();
+  }
+  ids.value = [];
+  single.value = true;
+  multiple.value = true;
 }
 
 /** 排序触发事件 */

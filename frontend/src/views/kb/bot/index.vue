@@ -82,13 +82,21 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table class="glass-card"
-          stripe
-          v-loading="loading"
-          :data="botList"
-          :default-sort="defaultSort"
-          @sort-change="handleSortChange"
-          @selection-change="handleSelectionChange"
+      <!-- 表格骨架屏平滑过渡 -->
+      <div v-if="loading && (!botList || botList.length === 0)" class="table-skeleton-wrap mb15">
+        <GlassSkeleton type="table" :count="6" :columns="7" />
+      </div>
+
+      <el-table
+        v-else
+        ref="botTableRef"
+        class="glass-card"
+        stripe
+        v-loading="loading"
+        :data="botList"
+        :default-sort="defaultSort"
+        @sort-change="handleSortChange"
+        @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column
@@ -185,7 +193,6 @@
             label="创建人"
             align="center"
             prop="createBy"
-            width="80"
         >
           <template #default="scope">
             {{ scope.row.createBy || "-" }}
@@ -196,29 +203,29 @@
             label="创建时间"
             align="center"
             prop="createTime"
-            width="150"
+            width="160"
             sortable="custom"
             :sort-orders="['descending', 'ascending']"
         >
           <template #default="scope">
-            <span>{{
-                parseTime(scope.row.createTime, "{y}-{m}-{d} {h}:{i}")
-              }}</span>
+              <span>{{
+                  parseTime(scope.row.createTime, "{y}-{m}-{d} {h}:{i}")
+                }}</span>
           </template>
         </el-table-column>
         <el-table-column
             v-if="getColumnVisibility(7)"
-            label="最后更新时间"
+            label="修改时间"
             align="center"
             prop="updateTime"
-            width="150"
+            width="160"
             sortable="custom"
             :sort-orders="['descending', 'ascending']"
         >
           <template #default="scope">
-            <span>{{
-                parseTime(scope.row.updateTime, "{y}-{m}-{d} {h}:{i}")
-              }}</span>
+              <span>{{
+                  parseTime(scope.row.updateTime, "{y}-{m}-{d} {h}:{i}")
+                }}</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -273,10 +280,10 @@
         </el-table-column>
 
         <template #empty>
-          <div class="emptyBg">
-            <img src="@/assets/system/images/no_data/noData.png" alt=""/>
-            <p>暂无记录</p>
-          </div>
+          <GlassEmpty
+            title="暂无智能体 Bot"
+            description="当前分类下暂无记录，您可以点击上方新增按钮创建全新的智能体 Bot"
+          />
         </template>
       </el-table>
 
@@ -287,6 +294,21 @@
           v-model:limit="queryParams.pageSize"
           @pagination="getList"
       />
+
+      <!-- 底部悬浮操作栏 (Floating Action Bar) -->
+      <FloatingActionBar :count="ids.length" @clear="clearSelection">
+        <template #actions>
+          <el-button
+            type="danger"
+            size="small"
+            @click="handleDelete"
+            icon="Delete"
+            v-hasPermi="['kb:bot:bot:remove']"
+          >
+            批量删除 ({{ ids.length }})
+          </el-button>
+        </template>
+      </FloatingActionBar>
     </div>
 
     <!-- 添加或修改bot 管理对话框 -->
@@ -554,11 +576,23 @@ function resetQuery() {
   handleQuery();
 }
 
+const botTableRef = ref(null);
+
 // 多选框选中数据
 function handleSelectionChange(selection) {
   ids.value = selection.map((item) => item.id);
   single.value = selection.length != 1;
   multiple.value = !selection.length;
+}
+
+// 清空当前勾选项
+function clearSelection() {
+  if (botTableRef.value) {
+    botTableRef.value.clearSelection();
+  }
+  ids.value = [];
+  single.value = true;
+  multiple.value = true;
 }
 
 /** 排序触发事件 */

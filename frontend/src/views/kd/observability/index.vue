@@ -113,6 +113,13 @@ LANGFUSE_SECRET_KEY=sk-lf-...</pre>
               <span class="muted">{{ row.time }}</span>
             </template>
           </el-table-column>
+          <template #empty>
+            <GlassEmpty
+              title="暂无追踪数据"
+              description="发起一次 Agent 对话后即可在此查看链路耗时与 Token 消耗"
+              icon="search"
+            />
+          </template>
         </el-table>
       </el-card>
     </template>
@@ -254,13 +261,14 @@ onMounted(() => {
   }
   .page-title {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0;
-    color: #1D1D1F;
+    color: var(--glass-text-primary, #18181b);
+    letter-spacing: -0.01em;
   }
   .page-desc {
     font-size: 13px;
-    color: rgba(29, 29, 31, 0.5);
+    color: var(--glass-text-secondary, #71717a);
     margin: 4px 0 0;
   }
   .status-right {
@@ -274,17 +282,18 @@ onMounted(() => {
 .setup-card {
   margin-bottom: 16px;
   flex-shrink: 0;
+  border-radius: 12px;
 }
 
 .config-block {
-  background: #F5F5F7;
-  border: 1px solid #e4e7ed;
-  border-radius: 6px;
-  padding: 10px 14px;
+  background: var(--glass-input-bg, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--glass-input-border, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  padding: 12px 16px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: #409eff;
-  margin-top: 6px;
+  color: var(--glass-text-primary, #18181b);
+  margin-top: 8px;
   white-space: pre;
 }
 
@@ -294,31 +303,41 @@ onMounted(() => {
 }
 
 .metric-card {
-  border-radius: 6px;
+  border-radius: 12px;
   min-height: 120px;
+  background: var(--glass-card-bg, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.08);
+  }
+
   .metric-label {
     font-size: 12px;
-    color: rgba(29, 29, 31, 0.5);
+    color: var(--glass-text-secondary, #71717a);
     text-transform: uppercase;
-    letter-spacing: 0;
+    font-weight: 500;
     margin-bottom: 8px;
   }
   .metric-value {
     font-size: 28px;
     font-weight: 700;
-    color: #1D1D1F;
-    letter-spacing: 0;
+    color: var(--glass-text-primary, #18181b);
     line-height: 1.2;
   }
   .metric-unit {
     font-size: 14px;
     font-weight: 400;
-    color: rgba(29, 29, 31, 0.5);
+    color: var(--glass-text-secondary, #71717a);
     margin-left: 2px;
   }
   .metric-desc {
     font-size: 12px;
-    color: rgba(29, 29, 31, 0.5);
+    color: var(--glass-text-secondary, #71717a);
     margin-top: 8px;
     line-height: 18px;
   }
@@ -326,6 +345,8 @@ onMounted(() => {
 
 .trace-card {
   flex-shrink: 0;
+  border-radius: 12px;
+
   .trace-header {
     display: flex;
     justify-content: space-between;
@@ -334,24 +355,26 @@ onMounted(() => {
   }
   .trace-title {
     font-weight: 600;
-    color: #1D1D1F;
+    font-size: 15px;
+    color: var(--glass-text-primary, #18181b);
   }
   .trace-subtitle {
     margin-top: 4px;
     font-size: 12px;
-    color: rgba(29, 29, 31, 0.5);
+    color: var(--glass-text-secondary, #71717a);
   }
 }
 
 .query-cell {
-  color: #1D1D1F;
+  color: var(--glass-text-primary, #18181b);
   line-height: 20px;
+  font-weight: 500;
 }
 
 .trace-id {
   margin-top: 2px;
-  color: rgba(29, 29, 31, 0.3);
-  font-size: 12px;
+  color: var(--glass-text-muted, rgba(0, 0, 0, 0.35));
+  font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
 }
 
@@ -366,12 +389,26 @@ onMounted(() => {
 
 .span-duration {
   margin-left: 4px;
-  color: rgba(29, 29, 31, 0.7);
+  color: var(--glass-text-secondary, #71717a);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .muted {
-  color: rgba(29, 29, 31, 0.5);
+  color: var(--glass-text-secondary, #71717a);
+}
+
+// 深色模式指标卡 Hover 提亮
+@media (prefers-color-scheme: dark) {
+  .metric-card:hover {
+    box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+  }
+}
+
+:global(html.dark) .metric-card:hover,
+:global(html[data-theme='dark']) .metric-card:hover {
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 @media (max-width: 768px) {

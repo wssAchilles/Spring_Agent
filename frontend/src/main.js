@@ -94,6 +94,10 @@ import DictTag from '@/components/DictTag'
 import QtFormItem from '@/components/QtFormItem';
 //标签组件
 import Tag from '@/components/Tag';
+// 单色毛玻璃微交互与骨架屏组件基建
+import GlassSkeleton from '@/components/GlassSkeleton/index.vue'
+import FloatingActionBar from '@/components/FloatingActionBar/index.vue'
+import GlassEmpty from '@/components/GlassEmpty/index.vue'
 
 const app = createApp(App);
 app.use(AniviaComponents);
@@ -123,6 +127,9 @@ app.component('RightToolbar2', RightToolbar2)
 app.component('Editor', Editor);
 app.component('GuideTip', GuideTip);
 app.component('QtFormItem', QtFormItem);
+app.component('GlassSkeleton', GlassSkeleton)
+app.component('FloatingActionBar', FloatingActionBar)
+app.component('GlassEmpty', GlassEmpty)
 app.use(router)
 app.use(store)
 app.use(plugins)

@@ -1,36 +1,59 @@
 /* 
-  Phase 12: UI/UX Pro Max - Monochromatic Glassmorphism Design System
-  严格遵从 .shared/ui-ux-pro-max 规范与 W3C CSS Containment 标准
+  Phase 19: UI/UX Pro Max - Monochromatic Glassmorphism Industrial Design System
+  严格遵从 .shared/ui-ux-pro-max 规范 (Variance=5, Motion=6, Density=7)
+  双通道闭环支持: 系统 prefers-color-scheme 与 html.dark / [data-theme='dark']
 */
 
 :root {
-  /* 基础纯色阶 (Titanium & Neutral Scale) */
-  --monochrome-bg: #F5F5F7;
-  --monochrome-surface: #FFFFFF;
-  --monochrome-text-primary: #1D1D1F;
-  --monochrome-text-secondary: #86868B;
-  --monochrome-border: rgba(0, 0, 0, 0.08);
+  /* [Design Dial] Density=7: 统一高密企业级看板间距尺度 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  
+  /* [Design Dial] Motion=6: 物理标准缓动曲线与时延标尺 */
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
 
-  /* Level 0: 视口背景底衬 (No Blur) */
+  /* 浅色模式 - 钛金单色灰阶基础令牌 (Light Titanium Palette) */
+  --mono-bg: #F5F5F7;
+  --mono-surface: #FFFFFF;
+  --mono-surface-hover: rgba(0, 0, 0, 0.03);
+  --mono-text-primary: #1D1D1F;
+  --mono-text-secondary: #6E6E73;
+  --mono-text-muted: #86868B;
+  --mono-border: rgba(0, 0, 0, 0.08);
+  --mono-border-subtle: rgba(0, 0, 0, 0.04);
+  --mono-border-strong: rgba(0, 0, 0, 0.16);
+  --mono-input-bg: rgba(0, 0, 0, 0.02);
+  --mono-focus-ring: rgba(29, 29, 31, 0.12);
+  --mono-glow-color: rgba(0, 0, 0, 0.05);
+
+  /* 基础纯色阶 (Titanium & Neutral Scale) - 向后兼容 */
+  --monochrome-bg: var(--mono-bg);
+  --monochrome-surface: var(--mono-surface);
+  --monochrome-text-primary: var(--mono-text-primary);
+  --monochrome-text-secondary: var(--mono-text-secondary);
+  --monochrome-border: var(--mono-border);
+
+  /* 四级毛玻璃材质规范 - 浅色 */
   --glass-l0-bg: #F5F5F7;
-
-  /* Level 1: 侧边栏与主体容器 (Subtle Glass) */
   --glass-l1-bg: rgba(255, 255, 255, 0.65);
-  --glass-l1-border: rgba(0, 0, 0, 0.06);
   --glass-l1-blur: 16px;
+  --glass-l1-border: rgba(0, 0, 0, 0.06);
   --glass-l1-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
 
-  /* Level 2: 会话气泡、思考卡片与高亮板块 (Elevated Glass) */
   --glass-l2-bg: rgba(255, 255, 255, 0.82);
-  --glass-l2-border: rgba(255, 255, 255, 0.8);
   --glass-l2-blur: 12px;
-  --glass-l2-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --glass-l2-border: rgba(255, 255, 255, 0.85);
+  --glass-l2-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.04);
 
-  /* Level 3: 顶层模态框、操作浮标与 Popover (Modal Glass) */
   --glass-l3-bg: rgba(255, 255, 255, 0.94);
-  --glass-l3-border: rgba(0, 0, 0, 0.08);
   --glass-l3-blur: 8px;
-  --glass-l3-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.12);
+  --glass-l3-border: rgba(0, 0, 0, 0.08);
+  --glass-l3-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.12);
 
   /* 兼容旧变量 */
   --glass-bg: var(--glass-l2-bg);
@@ -38,126 +61,147 @@
   --glass-shadow: var(--glass-l2-shadow);
   --glass-blur: blur(var(--glass-l2-blur));
 
-  /* Element Plus 单色调映射 */
+  /* Element Plus 变量强力穿透映射 - 浅色 */
   --el-color-primary: #1D1D1F;
   --el-color-primary-light-3: #434345;
   --el-color-primary-light-5: #68686B;
   --el-color-primary-light-7: #8E8E91;
   --el-color-primary-light-9: #DCDCDD;
   --el-color-primary-dark-2: #000000;
+  --el-text-color-primary: var(--mono-text-primary);
+  --el-text-color-regular: var(--mono-text-secondary);
+  --el-border-color: var(--mono-border);
+  --el-bg-color: var(--mono-surface);
+  --el-fill-color-blank: transparent;
 }
 
-/* 深色模式适配 */
+/* 深色模式令牌定义 (深色闭环映射) */
+@mixin dark-theme-tokens {
+  --mono-bg: #0A0A0C;
+  --mono-surface: #161618;
+  --mono-surface-hover: rgba(255, 255, 255, 0.04);
+  --mono-text-primary: #EDEDEF;
+  --mono-text-secondary: #9BA1A6;
+  --mono-text-muted: #687076;
+  --mono-border: rgba(255, 255, 255, 0.10);
+  --mono-border-subtle: rgba(255, 255, 255, 0.05);
+  --mono-border-strong: rgba(255, 255, 255, 0.20);
+  --mono-input-bg: rgba(255, 255, 255, 0.04);
+  --mono-focus-ring: rgba(237, 237, 239, 0.18);
+  --mono-glow-color: rgba(255, 255, 255, 0.06);
+
+  --monochrome-bg: var(--mono-bg);
+  --monochrome-surface: var(--mono-surface);
+  --monochrome-text-primary: var(--mono-text-primary);
+  --monochrome-text-secondary: var(--mono-text-secondary);
+  --monochrome-border: var(--mono-border);
+
+  /* 四级毛玻璃材质规范 - 深色 */
+  --glass-l0-bg: #0A0A0C;
+  --glass-l1-bg: rgba(22, 22, 24, 0.60);
+  --glass-l1-blur: 16px;
+  --glass-l1-border: rgba(255, 255, 255, 0.06);
+  --glass-l1-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
+
+  --glass-l2-bg: rgba(30, 30, 34, 0.75);
+  --glass-l2-blur: 12px;
+  --glass-l2-border: rgba(255, 255, 255, 0.12);
+  --glass-l2-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --glass-l3-bg: rgba(36, 36, 42, 0.92);
+  --glass-l3-blur: 8px;
+  --glass-l3-border: rgba(255, 255, 255, 0.15);
+  --glass-l3-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.85);
+
+  /* Element Plus 变量强力穿透映射 - 深色 */
+  --el-color-primary: #EDEDEF;
+  --el-color-primary-light-3: #DCDCDD;
+  --el-color-primary-light-5: #B5B5B8;
+  --el-color-primary-light-7: #8E8E91;
+  --el-color-primary-light-9: #434345;
+  --el-color-primary-dark-2: #FFFFFF;
+  --el-text-color-primary: var(--mono-text-primary);
+  --el-text-color-regular: var(--mono-text-secondary);
+  --el-border-color: var(--mono-border);
+  --el-bg-color: var(--mono-surface);
+  --el-fill-color-blank: transparent;
+}
+
+/* 双通道匹配绑定 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --monochrome-bg: #0A0A0C;
-    --monochrome-surface: #161618;
-    --monochrome-text-primary: #EDEDEF;
-    --monochrome-text-secondary: #8A8F98;
-    --monochrome-border: rgba(255, 255, 255, 0.08);
-
-    --glass-l0-bg: #0A0A0C;
-    --glass-l1-bg: rgba(22, 22, 24, 0.60);
-    --glass-l1-border: rgba(255, 255, 255, 0.06);
-    --glass-l1-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
-
-    --glass-l2-bg: rgba(30, 30, 34, 0.75);
-    --glass-l2-border: rgba(255, 255, 255, 0.12);
-    --glass-l2-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
-
-    --glass-l3-bg: rgba(36, 36, 42, 0.92);
-    --glass-l3-border: rgba(255, 255, 255, 0.15);
-    --glass-l3-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.8);
+  :root:not([data-theme='light']) {
+    @include dark-theme-tokens;
   }
 }
 
-body {
-  background-color: var(--monochrome-bg) !important;
-  color: var(--monochrome-text-primary) !important;
+html.dark,
+html[data-theme='dark'] {
+  @include dark-theme-tokens;
 }
 
-/* GPU 硬件加速与包含隔离类 */
+/* 全局基底生效 */
+body {
+  background-color: var(--glass-l0-bg) !important;
+  color: var(--mono-text-primary) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 硬件加速与渲染隔离通用类 */
 .glass-accelerated {
   transform: translateZ(0);
-  will-change: transform;
+  backface-visibility: hidden;
   contain: layout style;
 }
 
-/* Level 1 容器 */
+/* Level 1 结构容器 (Sidebar, Header) */
 .glass-container-l1 {
-  background: var(--glass-l1-bg);
+  background: var(--glass-l1-bg) !important;
   backdrop-filter: blur(var(--glass-l1-blur));
   -webkit-backdrop-filter: blur(var(--glass-l1-blur));
   border: 1px solid var(--glass-l1-border);
   box-shadow: var(--glass-l1-shadow);
 }
 
-/* Level 2 卡片 (Glass Card) */
+/* Level 2 业务卡片 (Cards) */
 .glass-card {
-  background: var(--glass-l2-bg);
+  background: var(--glass-l2-bg) !important;
   backdrop-filter: blur(var(--glass-l2-blur));
   -webkit-backdrop-filter: blur(var(--glass-l2-blur));
   border: 1px solid var(--glass-l2-border);
   box-shadow: var(--glass-l2-shadow);
-  border-radius: 14px;
-  padding: 16px 20px;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 12px;
+  transition: transform var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
   transform: translateZ(0);
+  position: relative;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.08), 0 0 16px 0 var(--mono-glow-color);
+  }
 }
 
-.glass-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 40px -4px rgba(0, 0, 0, 0.10);
+/* Level 3 模态层与浮标 (Modals & Floating Elements) */
+.glass-modal-l3 {
+  background: var(--glass-l3-bg) !important;
+  backdrop-filter: blur(var(--glass-l3-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-l3-blur)) !important;
+  border: 1px solid var(--glass-l3-border) !important;
+  box-shadow: var(--glass-l3-shadow) !important;
 }
 
-/* Level 3 浮标按钮与操作条 */
-.glass-floating-btn {
-  background: var(--glass-l3-bg);
-  backdrop-filter: blur(var(--glass-l3-blur));
-  -webkit-backdrop-filter: blur(var(--glass-l3-blur));
-  border: 1px solid var(--glass-l3-border);
-  box-shadow: var(--glass-l3-shadow);
-  color: var(--monochrome-text-primary);
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-  user-select: none;
+/* Element Plus 核心组件单色玻璃化深度覆写 */
+.el-dialog {
+  @extend .glass-modal-l3;
+  border-radius: 16px !important;
+  .el-dialog__title {
+    color: var(--mono-text-primary) !important;
+    font-weight: 600;
+  }
 }
 
-.glass-floating-btn:hover {
-  transform: translateY(-1px);
-  background: var(--monochrome-surface);
-}
-
-/* 按钮通用 */
-.glass-btn {
-  background: var(--glass-l2-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--glass-l2-border);
-  border-radius: 8px;
-  color: var(--monochrome-text-primary);
-  font-weight: 500;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.glass-btn:hover {
-  background: var(--monochrome-surface);
-}
-
-.glass-btn:active {
-  transform: scale(0.97);
-}
-
-/* Element Plus 穿透覆写 */
 .el-popover.el-popper,
 .el-dropdown__popper.el-popper {
   background: var(--glass-l3-bg) !important;
@@ -166,26 +210,112 @@ body {
   border: 1px solid var(--glass-l3-border) !important;
   border-radius: 12px !important;
   box-shadow: var(--glass-l3-shadow) !important;
-  color: var(--monochrome-text-primary) !important;
+  color: var(--mono-text-primary) !important;
 }
 
-.el-dialog {
-  background: var(--glass-l3-bg) !important;
-  backdrop-filter: blur(var(--glass-l3-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-l3-blur)) !important;
-  border: 1px solid var(--glass-l3-border) !important;
-  border-radius: 16px !important;
-  box-shadow: var(--glass-l3-shadow) !important;
-}
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  background-color: var(--mono-input-bg) !important;
+  border: 1px solid var(--mono-border) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  color: var(--mono-text-primary) !important;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
 
-/* 性能降级规则 (针对低配与减少动效模式) */
-@media (prefers-reduced-motion: reduce) {
-  .glass-card,
-  .glass-container-l1,
-  .glass-floating-btn,
-  .glass-btn {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: var(--monochrome-surface) !important;
+  &.is-focus,
+  &:focus {
+    border-color: var(--el-color-primary) !important;
+    box-shadow: 0 0 0 3px var(--mono-focus-ring) !important;
   }
 }
+
+/* 表格安全规则: 严禁在单元格上添加 blur，外壳使用 L2 容器 */
+.el-table {
+  background-color: transparent !important;
+  color: var(--mono-text-primary) !important;
+  --el-table-border-color: var(--mono-border-subtle);
+  --el-table-header-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+
+  th.el-table__cell {
+    background-color: transparent !important;
+    color: var(--mono-text-secondary) !important;
+    font-weight: 600;
+    border-bottom: 1px solid var(--mono-border) !important;
+  }
+
+  td.el-table__cell {
+    border-bottom: 1px solid var(--mono-border-subtle) !important;
+  }
+
+  &.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+    background: var(--mono-surface-hover) !important;
+  }
+
+  .el-table__body tr:hover > td.el-table__cell {
+    background-color: var(--mono-surface-hover) !important;
+  }
+}
+
+/* 单色微交互按钮规范 */
+.glass-btn {
+  background: var(--glass-l2-bg);
+  border: 1px solid var(--mono-border);
+  color: var(--mono-text-primary);
+  border-radius: 8px;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all var(--duration-fast) var(--ease-standard);
+  user-select: none;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mono-surface);
+    border-color: var(--mono-border-strong);
+    color: var(--mono-text-primary);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.glass-floating-btn {
+  @extend .glass-btn;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 快速交叉淡入动效 (配合骨架屏切换) */
+.fade-quick-enter-active,
+.fade-quick-leave-active {
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+.fade-quick-enter-from,
+.fade-quick-leave-to {
+  opacity: 0;
+}
+
+/* 系统框架顶栏与侧边栏 L1 单色毛玻璃绑定 */
+.navbar {
+  background: var(--glass-l1-bg) !important;
+  backdrop-filter: blur(var(--glass-l1-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-l1-blur)) !important;
+  border-bottom: 1px solid var(--glass-l1-border) !important;
+  box-shadow: var(--glass-l1-shadow) !important;
+}
+
+.sidebar-container {
+  background: var(--glass-l1-bg) !important;
+  backdrop-filter: blur(var(--glass-l1-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-l1-blur)) !important;
+  border-right: 1px solid var(--glass-l1-border) !important;
+}
+
+

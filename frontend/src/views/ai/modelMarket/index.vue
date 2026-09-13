@@ -37,9 +37,25 @@
       </el-form>
     </div>
 
-    <Card :data="keyList" @handleUpdate="handleUpdate" @routeTo="routeTo" />
+    <div class="content-display-area">
+      <transition name="fade" mode="out-in">
+        <div v-if="loading" key="skeleton">
+          <GlassSkeleton type="card" :count="4" min-item-width="440px" />
+        </div>
+        <div v-else-if="!keyList || keyList.length === 0" key="empty">
+          <GlassEmpty
+            title="暂无模型市场配置"
+            description="未检索到相关平台模型配置"
+            icon="search"
+          />
+        </div>
+        <div v-else key="content">
+          <Card :data="keyList" @handleUpdate="handleUpdate" @routeTo="routeTo" />
+        </div>
+      </transition>
+    </div>
 
-    <div class="pagecont-bottom glass-card">
+    <div class="pagecont-bottom">
       <pagination
         v-show="total > 0"
         :total="total"

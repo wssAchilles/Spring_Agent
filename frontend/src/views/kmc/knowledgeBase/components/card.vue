@@ -181,8 +181,8 @@ function handleDetail(row) {
   padding: 16px 0px;
   box-sizing: border-box;
   width: 100%;
-  // 平滑过渡效果
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
   @media (min-width: 555px) {
     grid-template-columns: repeat(1, minmax(555px, 1fr));
   }
@@ -194,15 +194,28 @@ function handleDetail(row) {
   }
 
   .card {
-    background: #F5F5F7;
+    background: var(--glass-card-bg, rgba(255, 255, 255, 0.72));
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
     width: 100%;
     min-width: 555px;
     min-height: 240px;
     display: flex;
     flex-direction: column;
-    border-radius: 2px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    contain: layout style;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
+      border-color: rgba(0, 0, 0, 0.18);
+    }
 
     .card-top {
       display: flex;
@@ -217,29 +230,29 @@ function handleDetail(row) {
 
         .card-title-text {
           height: 28px;
-          font-family: PingFang SC;
-          font-weight: 800;
-          font-size: 20px;
-          color: #1D1D1F;
+          font-weight: 700;
+          font-size: 18px;
+          color: var(--glass-text-primary, #18181b);
           line-height: 28px;
           text-align: left;
           display: flex;
           align-items: center;
-          min-width: 0; // 允许文本收缩
+          min-width: 0;
 
           .icon {
-            width: 25px;
-            height: 25px;
-            background: #F5F5F7;
-            border-radius: 4px;
-            margin-right: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 6px;
+            margin-right: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.06));
 
             img {
-              width: 16px;
-              height: 16px;
+              width: 18px;
+              height: 18px;
             }
           }
         }
@@ -247,9 +260,7 @@ function handleDetail(row) {
         .card-title-status {
           ::v-deep .el-tag {
             border-radius: 12px !important;
-            font-family: PingFang SC;
-            font-weight: bold;
-            text-align: left;
+            font-weight: 600;
           }
         }
       }
@@ -266,9 +277,11 @@ function handleDetail(row) {
             width: 100%;
             max-width: 205px;
             height: 149px;
-            background: #F5F5F7;
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
             border-radius: 8px;
             object-fit: cover;
+            transition: transform 0.3s ease;
 
             @media (max-width: 767px) {
               max-width: 160px;
@@ -277,12 +290,16 @@ function handleDetail(row) {
           }
         }
 
+        &:hover .card-bottom-left img {
+          transform: scale(1.02);
+        }
+
         .card-bottom-right {
           display: flex;
           flex-direction: column;
           flex: 1;
           margin-right: 16px;
-          min-width: 0; // 允许收缩
+          min-width: 0;
 
           @media (max-width: 767px) {
             margin-right: 12px;
@@ -291,23 +308,22 @@ function handleDetail(row) {
           .card-description {
             width: 100%;
             flex: 1;
-            min-height: 42px; /* 2行高度 */
-            font-family: PingFang SC;
-            font-weight: bold;
-            font-size: 14px;
-            color: rgba(0, 0, 0, 0.85);
-            line-height: 21px;
+            min-height: 42px;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--glass-text-secondary, #52525b);
+            line-height: 20px;
             text-align: left;
             display: -webkit-box;
-            -webkit-line-clamp: 2; /* 固定显示2行 */
+            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
             word-break: break-all;
 
             @media (min-width: 768px) {
-              min-height: 64px; /* 桌面端3行高度 */
-              -webkit-line-clamp: 3; /* 桌面端显示3行 */
+              min-height: 60px;
+              -webkit-line-clamp: 3;
             }
           }
 
@@ -323,26 +339,28 @@ function handleDetail(row) {
             .card-bottom-text {
               flex: 1;
               min-width: 140px;
-              height: 24px;
-              background: #F5F5F7;
-              padding: 2px 13px;
+              height: 26px;
+              background: rgba(0, 0, 0, 0.03);
+              border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.04));
+              padding: 2px 10px;
               display: flex;
               align-items: center;
-              border-radius: 4px;
+              border-radius: 6px;
+
               img {
-                width: 17px;
-                height: 17px;
+                width: 15px;
+                height: 15px;
                 flex-shrink: 0;
+                opacity: 0.75;
               }
 
               .card-bottom-text-name {
                 flex: 1;
-                padding: 0 7px;
-                font-family: PingFang SC;
-                font-weight: bold;
-                font-size: 14px;
-                color: rgba(0, 0, 0, 0.85);
-                line-height: 26px;
+                padding: 0 6px;
+                font-weight: 500;
+                font-size: 13px;
+                color: var(--glass-text-primary, #27272a);
+                line-height: 24px;
                 text-align: left;
                 display: -webkit-box;
                 -webkit-line-clamp: 1;
@@ -352,7 +370,7 @@ function handleDetail(row) {
                 word-break: break-all;
 
                 @media (max-width: 767px) {
-                  font-size: 13px;
+                  font-size: 12px;
                 }
               }
             }
@@ -363,17 +381,17 @@ function handleDetail(row) {
             margin-top: 7px;
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
             overflow: hidden;
             min-height: 24px;
+
             .card-tag {
               flex-shrink: 0;
-              background: #F5F5F7 !important;
-              font-family: PingFang SC;
-              font-weight: bold;
+              background: rgba(0, 0, 0, 0.03) !important;
+              border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.06)) !important;
               font-size: 12px;
-              color: #1D1D1F;
-              text-align: left;
+              color: var(--glass-text-secondary, #52525b) !important;
+              border-radius: 6px;
               max-width: 120px;
 
               @media (max-width: 767px) {
@@ -386,5 +404,19 @@ function handleDetail(row) {
       }
     }
   }
+}
+
+// 深色模式 Hover Glow 与高对比度边框
+@media (prefers-color-scheme: dark) {
+  .card:hover {
+    box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5), 0 0 16px rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.24) !important;
+  }
+}
+
+:global(html.dark) .card:hover,
+:global(html[data-theme='dark']) .card:hover {
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5), 0 0 16px rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
 }
 </style>

@@ -56,7 +56,7 @@
           <!-- 具名插槽 #content 替代 content 属性，这里写tooltip的弹窗内容 -->
           <template #content>
             <div
-              style="width: 450px; font-size: 14px; color: #1D1D1F; padding: 7px; background: transparent"
+              style="width: 450px; font-size: 14px; color: var(--glass-text-primary, #18181b); padding: 7px; background: transparent"
             >
               {{ item.description }}
             </div>
@@ -217,15 +217,28 @@ function routeTo(link, row) {
     flex-direction: column;
     min-width: 448px;
     min-height: 200px;
-    padding: 18px 28px 21px 28px;
-    background-color: transparent; /* Use glass-card style */
-    border-radius: 2px;
+    padding: 20px 26px 20px 26px;
+    background: var(--glass-card-bg, rgba(255, 255, 255, 0.72));
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+    border-radius: 12px;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    contain: layout style;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 32px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
+      border-color: rgba(0, 0, 0, 0.16);
+    }
 
     .card-divider {
       margin: 0px 0px 12px 0px;
-      border-color: #eeeeee;
+      border-color: var(--glass-card-border, rgba(0, 0, 0, 0.06));
     }
 
     .card-top {
@@ -236,7 +249,7 @@ function routeTo(link, row) {
 
       .card-top-left {
         display: flex;
-        min-width: 0; // 允许收缩
+        min-width: 0;
       }
 
       .card-img {
@@ -254,20 +267,20 @@ function routeTo(link, row) {
         flex-direction: column;
         margin-top: 3px;
         flex: 1;
-        min-width: 0; // 允许收缩
+        min-width: 0;
 
         .card-title {
           margin-bottom: 5px;
-          font-family: PingFang SC-Heavy;
-          font-size: 20px;
-          color: #1D1D1F;
-          line-height: 28px;
+          font-weight: 700;
+          font-size: 18px;
+          color: var(--glass-text-primary, #18181b);
+          line-height: 26px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
 
           @media (max-width: 767px) {
-            font-size: 18px;
+            font-size: 17px;
           }
         }
 
@@ -275,12 +288,16 @@ function routeTo(link, row) {
           width: 100%;
           min-width: 0;
           white-space: nowrap;
-          overflow: hidden; /* 超出部分隐藏 */
-          text-overflow: ellipsis; /* 文本溢出时显示省略号 */
+          overflow: hidden;
+          text-overflow: ellipsis;
           word-break: break-all;
 
           .card-tag {
             margin-right: 6px;
+            background: rgba(0, 0, 0, 0.03) !important;
+            border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.06)) !important;
+            color: var(--glass-text-secondary, #52525b) !important;
+            border-radius: 4px;
 
             @media (max-width: 767px) {
               font-size: 11px;
@@ -293,8 +310,8 @@ function routeTo(link, row) {
 
     .card-status {
       position: absolute;
-      top: 24px;
-      right: 30px;
+      top: 22px;
+      right: 26px;
 
       @media (max-width: 767px) {
         top: 18px;
@@ -308,21 +325,14 @@ function routeTo(link, row) {
     flex-direction: column;
     flex: 1;
 
-    .desc-tooltip {
-    }
-
     .card-bottom-desc {
       width: 100%;
       flex: 1;
       min-height: 38px;
-      font-family: PingFang SC, PingFang SC;
-      font-size: 14px;
-      color: #1D1D1F;
-      line-height: 18px;
+      font-size: 13px;
+      color: var(--glass-text-secondary, #52525b);
+      line-height: 19px;
       text-align: left;
-      font-style: normal;
-      text-transform: none;
-      white-space: normal;
       word-break: break-all;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -331,8 +341,8 @@ function routeTo(link, row) {
       -webkit-box-orient: vertical;
 
       @media (min-width: 768px) {
-        min-height: 57px; /* 桌面端3行高度 */
-        -webkit-line-clamp: 3; /* 桌面端显示3行 */
+        min-height: 57px;
+        -webkit-line-clamp: 3;
       }
     }
 
@@ -340,12 +350,12 @@ function routeTo(link, row) {
       display: flex;
       flex-direction: row;
       gap: 12px;
-      margin-top: 8px;
+      margin-top: 10px;
 
       .card-bottom-operation {
         flex: 1;
         min-width: 0;
-        height: 28px;
+        height: 30px;
         padding: 0 12px;
 
         .card-bottom-icon {
@@ -354,10 +364,9 @@ function routeTo(link, row) {
 
         .card-bottom-name {
           margin-left: 8px;
-          font-family: PingFang SC, PingFang SC;
-          font-weight: 400;
+          font-weight: 500;
           font-size: 12px;
-          color: #1D1D1F;
+          color: var(--glass-text-primary, #18181b);
           line-height: 18px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -366,6 +375,20 @@ function routeTo(link, row) {
       }
     }
   }
+}
+
+// 深色模式适配
+@media (prefers-color-scheme: dark) {
+  .card:hover {
+    box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 0 14px rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.22) !important;
+  }
+}
+
+:global(html.dark) .card:hover,
+:global(html[data-theme='dark']) .card:hover {
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 0 14px rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
 }
 
 :deep(.el-tag.el-tag--primary.diy) {

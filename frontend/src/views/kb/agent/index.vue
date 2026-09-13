@@ -137,7 +137,7 @@
       </el-aside>
       <el-main class="right-main">
         <div class="border-item-head">
-          <span class="head-title">调试与预览<span v-if="botName" style="color: #1D1D1F; font-size: 14px; font-weight: normal; margin-left: 8px;">- {{ botName }}</span></span>
+          <span class="head-title">调试与预览<span v-if="botName" class="bot-subtitle">- {{ botName }}</span></span>
           <div class="conversation-actions">
             <el-select
               v-model="currentConversationId"
@@ -843,65 +843,100 @@ watch(
 
 <style scoped lang="scss">
 .border-item-head {
-  height: 50px;
+  height: 52px;
   padding: 0 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+  background: rgba(0, 0, 0, 0.015);
+
   .head-title {
-    font-size: 16px;
-    color: rgba(0, 0, 0, 0.85);
+    font-size: 15px;
+    color: var(--glass-text-primary, #18181b);
     display: flex;
     align-items: center;
-    font-family: PingFang SC;
-    font-weight: 500;
+    font-weight: 600;
 
     &::before {
       display: inline-block;
       content: "";
-      width: 6px;
+      width: 4px;
       height: 16px;
-      border-radius: 3px;
-      background: var(--el-color-primary);
-      margin-right: 8px;
+      border-radius: 2px;
+      background: var(--glass-text-primary, #18181b);
+      margin-right: 10px;
+    }
+
+    .bot-subtitle {
+      color: var(--glass-text-secondary, #71717a);
+      font-size: 13px;
+      font-weight: normal;
+      margin-left: 8px;
     }
   }
+
   .conversation-actions {
     display: flex;
     align-items: center;
   }
 }
+
 .left-aside {
   margin-bottom: 0px;
-  margin-right: 15px;
+  margin-right: 16px;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background: var(--glass-card-bg, rgba(255, 255, 255, 0.75));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
   height: calc(100vh - 124px);
   padding: 0;
   min-width: 500px;
   overflow: hidden;
+
   .agent-form {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 24px;
-  }
-  .dialog-footer {
-    flex-shrink: 0; // 防止底部被压缩
-    margin-left: auto;
     padding: 16px 24px;
-    border-top: 1px solid #e8e8e8;
+
+    :deep(.el-textarea__inner) {
+      background: var(--glass-input-bg, rgba(0, 0, 0, 0.02));
+      border: 1px solid var(--glass-input-border, rgba(0, 0, 0, 0.1));
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:focus {
+        border-color: var(--glass-text-primary, #18181b);
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+      }
+    }
+  }
+
+  .dialog-footer {
+    flex-shrink: 0;
+    margin-left: auto;
+    padding: 14px 24px;
+    border-top: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
     width: 100%;
     text-align: right;
+    background: rgba(0, 0, 0, 0.01);
+
     button {
-      width: 80px;
+      min-width: 80px;
     }
   }
 }
+
 .right-main {
   height: calc(100vh - 124px);
-  background-color: #ffffff;
+  background: var(--glass-card-bg, rgba(255, 255, 255, 0.75));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -925,8 +960,7 @@ watch(
 
 .svg-icon {
   font-size: 12px;
-  margin-right: 3px;
+  margin-right: 4px;
   vertical-align: middle;
-  margin-top: -3px;
 }
 </style>

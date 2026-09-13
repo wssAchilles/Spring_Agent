@@ -1,72 +1,63 @@
-# [WARNING] 本地开发请勿使用此文件启动数据库！本地开发依赖 macOS 原生 PostgreSQL/Redis...
-# Copyright © 2026 Qiantong Technology Co., Ltd.
-# qKnow Knowledge Platform
-#  *
-# License:
-# Released under the Apache License, Version 2.0.
-# You may use, modify, and distribute this software for commercial purposes
-# under the terms of the License.
-#  *
-# Special Notice:
-# All derivative versions are strictly prohibited from modifying or removing
-# the default system logo and copyright information.
-# For brand customization, please apply for brand customization authorization via official channels.
-#  *
-# More information: https://qknow.qiantong.tech/business.html
-#  *
 # ============================================================================
-#  *
-# 版权所有 © 2026 江苏千桐科技有限公司
-# qKnow 知识平台（开源版）
-#  *
-# 许可协议：
-# 本项目基于 Apache License 2.0 开源协议发布，
-# 允许在遵守协议的前提下进行商用、修改和分发。
-#  *
-# 特别说明：
-# 所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
-# 如需定制品牌，请通过官方渠道申请品牌定制授权。
-#  *
-# 更多信息请访问：https://qknow.qiantong.tech/business.html
-
-version: "2.2.1"
+# Phase 20: 业务核心应用编排 (Spring Boot 3 / Java 21 运行时)
+# 涵盖: cgroups 容器内存感知、service_healthy 级联健康探针、四大异构数据底座接入
+# ============================================================================
+version: "3.8"
 
 services:
-  api:
-    privileged: true
-    image: ${QKNOW_HUB}/qknow-server-ce:${QKNOW_TAG}
+  backend:
+    image: ${QKNOW_HUB:-agent}/qknow-server-ce:${QKNOW_TAG:-latest}
+    container_name: agent-backend
     restart: always
-    profiles: [ "qknow", "base" ]
-    env_file: .env
     environment:
-      - TZ=Asia/Shanghai
-      - SPRING_CONFIG_LOCATION=file:/usr/app/jar/
-      - SPRING_CONFIG_NAME=application,application-file,application-ext,application-kmc,application-neo4j,application-thirdparty,application-ai
-    # 如需覆盖端口也可加：
-    #    ports:
-    #      - "8080:8080"
-    mac_address: 28-C5-D2-B7-FC-F7
+      TZ: Asia/Shanghai
+      JAVA_OPTS: >
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:InitialRAMPercentage=50.0
+        -XX:+UseG1GC
+        -XX:+ExitOnOutOfMemoryError
+        -Djava.security.egd=file:/dev/./urandom
+      SPRING_PROFILES_ACTIVE: prod
+      # 数据源配置映射 (PostgreSQL 16 + pgvector)
+      DATASOURCE_TYPE: postgresql
+      POSTGRESQL_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ai_agent}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      POSTGRESQL_USERNAME: ${POSTGRES_USER:-postgres}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # Redis 配置
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+      # Neo4j 图数据库配置
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4jpass123}
+      # Tantivy 中文倒排检索引擎地址
+      TANTIVY_SERVER_URL: http://tantivy:50051
+      # 模型生态基线参数 (唯一生成模型: DeepSeek API, 唯一向量模型: 阿里千问)
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DEEPSEEK_BASE_URL: https://api.deepseek.com
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+    ports:
+      - "${EXPOSE_BACKEND_PORT:-8099}:8099"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./qknow-server/logs:/usr/app/jar/logs
       - ./qknow-server/upload:/usr/app/jar/upload
-      - ./qknow-server/application-prod.yml:/usr/app/jar/application-prod.yml
-      - ./qknow-server/application-ext-prod.yml:/usr/app/jar/application-ext-prod.yml
-      - ./qknow-server/application-file-prod.yml:/usr/app/jar/application-file-prod.yml
-      - ./qknow-server/application-ai-prod.yml:/usr/app/jar/application-ai-prod.yml
-      - ./qknow-server/application-neo4j-prod.yml:/usr/app/jar/application-neo4j-prod.yml
-      - ./qknow-server/application-kmc-prod.yml:/usr/app/jar/application-kmc-prod.yml
-      - ./qknow-server/application-thirdparty-prod.yml:/usr/app/jar/application-thirdparty-prod.yml
-      - ./qknow-server/application.yml:/usr/app/jar/application.yml
-#      - ./qknow-server/qKnow.key:/usr/app/jar/qKnow.key
     depends_on:
-      redis:
+      postgres:
         condition: service_healthy
-      mysql57:
+      redis:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      tantivy:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8099/actuator/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
       - qknownet
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
