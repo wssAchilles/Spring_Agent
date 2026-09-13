@@ -6,7 +6,7 @@
 > **工程报告**：`docs/plans/phase_17_industrial_report.md` (LlamaIndex MultiIndexRetriever, LangChain EnsembleRetriever, Dify 多库编排模式、Milvus/Qdrant 多租户隔离实践、`MultiKbRetrievalCoordinator` 仓壁隔离与 Fail-Open 超时降级、`CrossKbScoreCalibrator` 全局 RRF 精排与 20KB 预算硬截断、`PermissionFilter` 彻底消除管理员返回 `null` 漏洞与语义缓存权限加盐哈希、三大生产级灾难避坑指南)  
 > **方案文档**：`docs/plans/phase_17_plan.md`  
 > **唯一模型基线**：唯一生成模型为 **DeepSeek API**（`deepseek-chat` 即 V3 / `deepseek-reasoner` 即 R1），唯一向量模型为 **阿里千问 (Qwen) Embedding (1536维)**，绝无本地大模型，彻底弃用 OpenAI/GPT API。  
-> **当前状态**：**DESIGNED / PENDING_USER_APPROVAL**（第一回合只读检查与方案设计完成，待用户明确批准后进入 TDD 实施）
+> **当前状态**：**DELIVERED / COMPLETED**（TDD 闭环实现完成，专属契约测试 5/5 全绿，全库全量回归 736/736 100% 绿灯零退化交付）
 
 ---
 
@@ -108,3 +108,16 @@
    ```bash
    bash run-with-java21.sh ./mvnw test -pl backend/tests
    ```
+
+---
+
+## 交付与验证证据 (Delivery & Verification Evidence)
+
+- **门禁契约验证** (`Phase17MultiKbRetrievalAndTenantGateTest`)：**5/5 通过，100% 绿灯**（耗时 1.182s）：
+  1. `test1_MultiKbConcurrentRetrieval_SpeedupAndTimeoutFallback`：多库并发加速比达标，单库 3000ms 延迟在 2500ms 触发软降级，健康库正常聚合；
+  2. `test2_CrossKbScoreCalibrationAndRrfFusion`：跨库 RRF 融合成功消除大库偏置，低分噪点（<0.40）被置信度底线门禁有效过滤；
+  3. `test3_GlobalContextBudget20KbTruncation`：模拟超长多库段落召回，总上下文严格受限于 20,000 字节以内，高分内容完整保留；
+  4. `test4_FailClosedMultiTenantIsolation_AndNoNullBypass`：三元交集过滤拦截越权知识库，空权限构建不可命中表达式并立即短路，杜绝管理员越权；
+  5. `test5_SemanticCachePermissionFingerprint_PreventsSideChannel`：不同权限用户的相同 Query 计算出不同权限哈希，缓存物理隔离防侧信道探测。
+- **全工程全量回归测试** (`tests` 模块)：**736/736 全部通过，0 失败，0 错误**（耗时 33.674s）。
+- **交付状态**：**圆满收官交付 (DELIVERED)**。
