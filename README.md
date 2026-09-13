@@ -66,6 +66,15 @@ flowchart TB
 
 真实执行路径为：前端发起 HTTP/SSE 请求，控制面完成身份校验、会话持久化、模型与工具解析及 RAG 预检索，再通过 gRPC 调用 Hermes，最终把流式结果返回前端。
 
+### 深度架构与算法设计文档 (PDF)
+
+- [qKnow 知识平台架构全景图](./docs/报告/figures/qKnow%20知识平台架构全景图.pdf)
+- [qknow-hermes 认知与推理算法](./docs/报告/figures/qknow-hermes%20认知与推理算法.pdf)
+- [并发混合检索策略](./docs/报告/figures/并发混合检索.pdf)
+- [有向无环图 (DAG) 工作流图计算与路由算法](./docs/报告/figures/有向无环图%20(DAG)%20工作流图计算与路由算法.pdf)
+- [语义分块与图谱双路抽取策略流程图](./docs/报告/figures/语义分块与图谱双路抽取策略流程图.pdf)
+
+
 ## 快速开始
 
 ### 环境要求
