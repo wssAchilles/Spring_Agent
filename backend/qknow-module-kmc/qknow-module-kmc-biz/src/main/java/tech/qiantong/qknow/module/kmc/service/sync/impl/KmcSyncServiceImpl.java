@@ -32,6 +32,7 @@ import tech.qiantong.qknow.ai.transformer.RemoveUrlAndEmailEnricher;
 import tech.qiantong.qknow.ai.transformer.RecursiveSplitter;
 import tech.qiantong.qknow.ai.transformer.SemanticSplitter;
 import tech.qiantong.qknow.ai.transformer.SplitterFactory;
+import tech.qiantong.qknow.ai.transformer.StructureAwareMarkdownSplitter;
 import tech.qiantong.qknow.common.exception.ServiceException;
 import tech.qiantong.qknow.common.utils.FileReader;
 import tech.qiantong.qknow.common.utils.StringUtils;
@@ -369,7 +370,14 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 }
 
                 List<Document> segmentList = splitter.split(documentList);
-                if (SplitterFactory.MODE_RECURSIVE.equals(mode) && splitter instanceof RecursiveSplitter recursiveSplitter) {
+                if (splitter instanceof StructureAwareMarkdownSplitter structureSplitter) {
+                    int parentChunkSize = Math.max(maxTokens, 1024);
+                    int childChunkSize = Math.min(maxTokens, childChunkTokens);
+                    segmentList = structureSplitter.splitParentChild(documentList, parentChunkSize, childChunkSize,
+                            chunkOverlap, Math.min(chunkOverlap, 32));
+                    segmentList = entityExtractionService.enrichParentChildMetadata(segmentList,
+                            createDocumentChatModel(kmcDocumentDO));
+                } else if (SplitterFactory.MODE_RECURSIVE.equals(mode) && splitter instanceof RecursiveSplitter recursiveSplitter) {
                     int parentChunkSize = Math.max(maxTokens, 1024);
                     // H6: child chunk size configurable; default 128 preserves historical behavior.
                     int childChunkSize = Math.min(maxTokens, childChunkTokens);

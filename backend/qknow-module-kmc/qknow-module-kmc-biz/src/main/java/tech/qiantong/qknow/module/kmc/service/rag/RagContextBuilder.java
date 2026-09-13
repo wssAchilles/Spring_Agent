@@ -12,6 +12,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * 上下文组装器 (Phase 14 升级重构)
+ * <p>
+ * 核心特性：
+ * 1. Parent-Child Small-to-Big 展开与 Max-Pooling 得分继承 (彻底消除 score=0.0)
+ * 2. 严格遵循精排次序保序装配与去重
+ * 3. 20KB 上下文预算自适应优雅降级回 Child (避免大 Parent 挤出后续高置信度切片)
+ * </p>
+ *
+ * @author qknow
+ */
 @Slf4j
 @Component
 public class RagContextBuilder {
@@ -37,37 +48,63 @@ public class RagContextBuilder {
             return new ContextBuildResult("", Collections.emptyList());
         }
 
-        List<RetrievalResult> expanded = results;
-        if (expandAdjacent) {
-            expanded = expandWithParentSegments(results);
-            if (expanded == results) {
-                expanded = expandWithAdjacentSegments(results);
+        // 1. 回溯 Parent 并实施 Max-Pooling 分数继承与保序
+        List<CandidateUnit> candidates = expandAndPoolScores(results);
+
+        // 2. 若没有 Parent 且开启了 expandAdjacent，尝试相邻块扩展
+        if (expandAdjacent && candidates.stream().noneMatch(u -> "parent".equals(u.parentResult.getSource()))) {
+            List<RetrievalResult> adjacentResults = expandWithAdjacentSegments(results);
+            if (adjacentResults != results) {
+                candidates = adjacentResults.stream().map(r -> new CandidateUnit(r, r)).collect(Collectors.toList());
             }
         }
 
-        expanded = deduplicateByContent(expanded);
+        // 3. 内容去重
+        candidates = deduplicateCandidates(candidates);
 
+        // 4. 严格在 20KB 预算内自适应装配与优雅降级
         StringBuilder sb = new StringBuilder();
         List<RetrievalResult> emittedResults = new ArrayList<>();
         int usedBytes = 0;
         int usedTokens = 0;
         int index = 1;
-        for (RetrievalResult result : expanded) {
-            String entry = formatEntry(index, result);
+
+        for (CandidateUnit unit : candidates) {
+            RetrievalResult targetToEmit = unit.parentResult;
+            String entry = formatEntry(index, targetToEmit);
             int entryBytes = entry.getBytes(StandardCharsets.UTF_8).length;
-            int entryTokens = estimateTokens(entry);
+
+            // 优雅降级：若 Parent 超出剩余预算，但其最佳 Child 未超出预算，降级为 Child 原文
+            if (usedBytes + entryBytes > maxContextBytes
+                    && unit.bestChildResult != null
+                    && unit.bestChildResult != unit.parentResult) {
+                String childEntry = formatEntry(index, unit.bestChildResult);
+                int childBytes = childEntry.getBytes(StandardCharsets.UTF_8).length;
+                if (usedBytes + childBytes <= maxContextBytes) {
+                    log.info("Parent 段落 (id={}) 超出剩余预算 ({} > {} 字节)，触发优雅降级装配高分 Child (id={})",
+                            targetToEmit.getSegmentId(), entryBytes, maxContextBytes - usedBytes, unit.bestChildResult.getSegmentId());
+                    targetToEmit = unit.bestChildResult;
+                    entry = childEntry;
+                    entryBytes = childBytes;
+                }
+            }
+
+            // 最终硬预算校验
             if (usedBytes + entryBytes > maxContextBytes) {
                 break;
             }
+            int entryTokens = estimateTokens(entry);
             if (maxContextTokens > 0 && usedTokens + entryTokens > maxContextTokens) {
                 break;
             }
+
             sb.append(entry);
-            emittedResults.add(result);
+            emittedResults.add(targetToEmit);
             usedBytes += entryBytes;
             usedTokens += entryTokens;
             index++;
         }
+
         return new ContextBuildResult(sb.toString(), Collections.unmodifiableList(emittedResults));
     }
 
@@ -89,6 +126,99 @@ public class RagContextBuilder {
         }
     }
 
+    private static class CandidateUnit {
+        RetrievalResult parentResult;
+        RetrievalResult bestChildResult;
+
+        CandidateUnit(RetrievalResult parentResult, RetrievalResult bestChildResult) {
+            this.parentResult = parentResult;
+            this.bestChildResult = bestChildResult;
+        }
+    }
+
+    /**
+     * 回溯 Parent 并执行 Max-Pooling 得分继承与保序
+     */
+    private List<CandidateUnit> expandAndPoolScores(List<RetrievalResult> results) {
+        List<String> parentIds = results.stream()
+                .map(RetrievalResult::getParentSegmentId)
+                .filter(StrUtil::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<String, RetrievalResult> parentMap = new HashMap<>();
+        if (!parentIds.isEmpty() && jdbcTemplate != null) {
+            String placeholders = parentIds.stream().map(id -> "?").collect(Collectors.joining(","));
+            String sql = "SELECT s.id, s.qm_segment_id, s.content, s.document_id, s.document_name, s.answer, s.position " +
+                    "FROM kmc_document_segment s " +
+                    "WHERE s.del_flag = 0 AND s.qm_segment_id IN (" + placeholders + ") " +
+                    "ORDER BY s.document_id ASC, s.position ASC NULLS LAST, s.id ASC";
+
+            try {
+                List<RetrievalResult> list = jdbcTemplate.query(sql, (rs, rowNum) -> RetrievalResult.builder()
+                        .segmentId(rs.getLong("id"))
+                        .qmSegmentId(rs.getString("qm_segment_id"))
+                        .documentId(rs.getLong("document_id"))
+                        .documentName(rs.getString("document_name"))
+                        .content(rs.getString("content"))
+                        .answer(rs.getString("answer"))
+                        .score(0.0)
+                        .source("parent")
+                        .build(), parentIds.toArray());
+
+                if (list != null) {
+                    for (RetrievalResult p : list) {
+                        if (p != null && StrUtil.isNotBlank(p.getQmSegmentId())) {
+                            parentMap.put(p.getQmSegmentId(), p);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to query parent segments", e);
+            }
+        }
+
+        Map<String, CandidateUnit> parentGroup = new LinkedHashMap<>();
+        List<CandidateUnit> candidates = new ArrayList<>();
+
+        for (RetrievalResult hit : results) {
+            String parentId = hit.getParentSegmentId();
+            if (StrUtil.isNotBlank(parentId) && parentMap.containsKey(parentId)) {
+                CandidateUnit existingUnit = parentGroup.get(parentId);
+                if (existingUnit == null) {
+                    RetrievalResult parent = parentMap.get(parentId);
+                    // 深度克隆一份 Parent，避免污染
+                    RetrievalResult clonedParent = RetrievalResult.builder()
+                            .segmentId(parent.getSegmentId())
+                            .qmSegmentId(parent.getQmSegmentId())
+                            .documentId(parent.getDocumentId())
+                            .documentName(parent.getDocumentName())
+                            .content(parent.getContent())
+                            .answer(parent.getAnswer())
+                            .source("parent")
+                            .score(hit.getScore()) // Max-Pooling 初值赋为该命中 Child 的得分
+                            .build();
+
+                    CandidateUnit unit = new CandidateUnit(clonedParent, hit);
+                    parentGroup.put(parentId, unit);
+                    candidates.add(unit);
+                } else {
+                    // 同一 Parent 被多次命中，执行 Max-Pooling 聚合最高分
+                    double currentMax = existingUnit.parentResult.getScore();
+                    double hitScore = hit.getScore();
+                    if (hitScore > currentMax) {
+                        existingUnit.parentResult.setScore(hitScore);
+                        existingUnit.bestChildResult = hit;
+                    }
+                }
+            } else {
+                candidates.add(new CandidateUnit(hit, hit));
+            }
+        }
+
+        return candidates;
+    }
+
     private List<RetrievalResult> expandWithAdjacentSegments(List<RetrievalResult> results) {
         Set<Long> existingIds = results.stream()
                 .map(RetrievalResult::getSegmentId)
@@ -100,7 +230,7 @@ public class RagContextBuilder {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        if (segmentIds.isEmpty()) {
+        if (segmentIds.isEmpty() || jdbcTemplate == null) {
             return results;
         }
 
@@ -150,61 +280,16 @@ public class RagContextBuilder {
         }
     }
 
-    private List<RetrievalResult> expandWithParentSegments(List<RetrievalResult> results) {
-        List<String> parentIds = results.stream()
-                .map(RetrievalResult::getParentSegmentId)
-                .filter(StrUtil::isNotBlank)
-                .distinct()
-                .collect(Collectors.toList());
-        if (parentIds.isEmpty()) {
-            return results;
-        }
-
-        String placeholders = parentIds.stream().map(id -> "?").collect(Collectors.joining(","));
-        String sql = "SELECT s.id, s.qm_segment_id, s.content, s.document_id, s.document_name, s.answer, s.position " +
-                "FROM kmc_document_segment s " +
-                "WHERE s.del_flag = 0 AND s.qm_segment_id IN (" + placeholders + ") " +
-                "ORDER BY s.document_id ASC, s.position ASC NULLS LAST, s.id ASC";
-
-        try {
-            List<RetrievalResult> parents = jdbcTemplate.query(sql, (rs, rowNum) -> RetrievalResult.builder()
-                    .segmentId(rs.getLong("id"))
-                    .qmSegmentId(rs.getString("qm_segment_id"))
-                    .documentId(rs.getLong("document_id"))
-                    .documentName(rs.getString("document_name"))
-                    .content(rs.getString("content"))
-                    .answer(rs.getString("answer"))
-                    .score(0.0)
-                    .source("parent")
-                    .build(), parentIds.toArray());
-
-            if (parents == null || parents.isEmpty()) {
-                return results;
-            }
-
-            List<RetrievalResult> merged = new ArrayList<>(parents);
-            for (RetrievalResult result : results) {
-                if (StrUtil.isBlank(result.getParentSegmentId())) {
-                    merged.add(result);
-                }
-            }
-            return merged;
-        } catch (Exception e) {
-            log.warn("Failed to expand parent segments, returning original results", e);
-            return results;
-        }
-    }
-
-    private List<RetrievalResult> deduplicateByContent(List<RetrievalResult> results) {
+    private List<CandidateUnit> deduplicateCandidates(List<CandidateUnit> list) {
         Set<String> seen = new LinkedHashSet<>();
-        List<RetrievalResult> deduplicated = new ArrayList<>(results.size());
-        for (RetrievalResult result : results) {
-            String hash = contentHash(result.getContent());
+        List<CandidateUnit> deduped = new ArrayList<>(list.size());
+        for (CandidateUnit unit : list) {
+            String hash = contentHash(unit.parentResult.getContent());
             if (seen.add(hash)) {
-                deduplicated.add(result);
+                deduped.add(unit);
             }
         }
-        return deduplicated;
+        return deduped;
     }
 
     private String contentHash(String content) {
@@ -248,6 +333,9 @@ public class RagContextBuilder {
         StringBuilder sb = new StringBuilder();
         sb.append("[来源 ").append(index).append("] ").append(docName)
                 .append(" / segmentId=").append(segmentId);
+        if (result.getScore() > 0.0) {
+            sb.append(String.format(Locale.ROOT, " / score=%.4f", result.getScore()));
+        }
         if (StrUtil.isNotBlank(result.getParentSegmentId())) {
             sb.append(" / parentId=").append(result.getParentSegmentId());
         }

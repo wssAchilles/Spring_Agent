@@ -14,11 +14,12 @@ public class SplitterFactory {
     public static final String MODE_RECURSIVE_LEGACY = "RecursiveSplitter";
     public static final String MODE_SEMANTIC = "semantic";
     public static final String MODE_TEMPLATE = "template";
+    public static final String MODE_STRUCTURE_AWARE = "structure_aware";
 
     /**
      * 创建分块器
      *
-     * @param mode           分块模式：custom / recursive / RecursiveSplitter / semantic / template
+     * @param mode           分块模式：custom / recursive / RecursiveSplitter / semantic / template / structure_aware
      * @param separator      分隔符（custom 模式使用）
      * @param maxChunkSize   最大切片长度
      * @param chunkOverlap   重叠长度
@@ -29,6 +30,8 @@ public class SplitterFactory {
             mode = MODE_RECURSIVE;
         }
         switch (mode) {
+            case MODE_STRUCTURE_AWARE:
+                return new StructureAwareMarkdownSplitter(maxChunkSize, chunkOverlap);
             case MODE_RECURSIVE:
             case MODE_RECURSIVE_LEGACY:
                 return new RecursiveSplitter(maxChunkSize, chunkOverlap);
@@ -55,7 +58,7 @@ public class SplitterFactory {
         }
         String lower = fileName.toLowerCase();
         if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
-            return new RecursiveSplitter(maxChunkSize, chunkOverlap, new String[]{"\n## ", "\n### ", "\n\n", "\n", "。", ". "});
+            return new StructureAwareMarkdownSplitter(maxChunkSize, chunkOverlap);
         }
         if (lower.endsWith(".java") || lower.endsWith(".py") || lower.endsWith(".js") || lower.endsWith(".ts")) {
             return new RecursiveSplitter(maxChunkSize, chunkOverlap, new String[]{"\n\n", "\ndef ", "\nfunction ", "\npublic ", "\nprivate ", "\nclass ", "\n", " "});
