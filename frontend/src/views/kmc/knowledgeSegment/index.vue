@@ -82,8 +82,8 @@
         :default-sort="defaultSort"
         @sort-change="handleSortChange"
       >
-        <el-table class="glass-card"-column type="selection" width="55" align="center" />
-        <el-table class="glass-card"-column
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column
           v-if="getColumnVisibility(1) && model !== 'qa_model'"
           label="编号"
           align="center"
@@ -91,7 +91,7 @@
           width="80"
           sortable="custom"
         />
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(2) && model !== 'qa_model'"
           label="分段内容"
           align="left"
@@ -104,7 +104,7 @@
           </template>
         </el-table-column>
 
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(3) && model === 'qa_model'"
           label="问题"
           align="left"
@@ -116,7 +116,7 @@
           </template>
         </el-table-column>
 
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(4) && model === 'qa_model'"
           label="答案"
           align="left"
@@ -127,7 +127,7 @@
             {{ scope.row.answer || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(5)"
           label="备注"
           width="200"
@@ -139,7 +139,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(6)"
           label="创建人"
           align="center"
@@ -149,7 +149,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(7)"
           label="创建时间"
           align="center"
@@ -164,7 +164,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           label="操作"
           align="center"
           class-name="small-padding fixed-width"
@@ -212,7 +212,7 @@
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
         :default-expand-all="isExpandAll"
       >
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(1)"
           label="编号"
           align="center"
@@ -220,7 +220,7 @@
           width="80"
           sortable="custom"
         />
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(2) && model !== 'qa_model'"
           label="分段内容"
           align="left"
@@ -232,7 +232,7 @@
             {{ scope.row.content || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(5)"
           label="备注"
           width="200"
@@ -244,7 +244,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(6)"
           label="创建人"
           align="center"
@@ -254,7 +254,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(7)"
           label="创建时间"
           align="center"
@@ -269,7 +269,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           label="操作"
           align="left"
           class-name="small-padding fixed-width"

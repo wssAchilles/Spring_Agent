@@ -1,9 +1,22 @@
 <template>
   <div ref="contentRef" class="markdown-view markdown-body" >
-    <!-- 深度思考   -->
-    <div v-html="sanitizeHtml(deepThinking)" v-if="deepThinking !== ''" style="background-color: #ddd;padding: 5px; border-radius: 5px"></div>
+    <!-- DeepSeek 深度思考卡片 -->
+    <div v-if="streamResult.thinking" class="deep-thinking-card">
+      <div class="thinking-header" @click="isThinkingExpanded = !isThinkingExpanded">
+        <div class="thinking-status">
+          <span class="pulse-indicator" v-if="!streamResult.isThinkingComplete"></span>
+          <span class="status-dot" v-else></span>
+          <span class="status-text">{{ streamResult.isThinkingComplete ? '已深度思考' : '正在思考中...' }}</span>
+        </div>
+        <span class="toggle-action">{{ isThinkingExpanded ? '收起' : '展开' }}</span>
+      </div>
+      <div v-show="isThinkingExpanded || !streamResult.isThinkingComplete" class="thinking-body">
+        <div class="thinking-content">{{ streamResult.thinking }}</div>
+      </div>
+    </div>
+
     <!-- 对话输出 -->
-    <div v-html="sanitizeHtml(renderedMarkdown)"></div>
+    <div v-html="streamResult.html" class="markdown-output"></div>
     <!-- 文章引用 -->
     <div class="quote" v-if="documentIdList != null && documentIdList.length > 0">
       <el-divider content-position="left">引用</el-divider>
@@ -38,6 +51,7 @@
 import { useClipboard } from '@vueuse/core'
 import MarkdownIt from 'markdown-it'
 import { sanitizeHtml } from '@/utils/markdownSanitize'
+import { defaultStreamingEngine } from '@/utils/streaming-markdown-engine'
 import 'highlight.js/styles/xcode.min.css'
 import "@/assets/app/style/dify_table.css"
 import hljs from 'highlight.js'
@@ -123,33 +137,11 @@ const getFileType = (name) => {
   return fileImg[getFileFormat(name)]
 }
 
-const deepThinking = computed(() => {
-  const content = props.content;
-  const startTag = '<think';
-  const endTag = '</think>';
-  const startIndex = content.indexOf(startTag);
+const isThinkingExpanded = ref(false)
 
-  if (startIndex === -1) {
-    return "";
-  }
-
-  const afterStart = content.substring(startIndex, content.length);
-  const endIndex = afterStart.indexOf(endTag);
-  let remainingContent = '';
-
-  if (endIndex !== -1) {
-    remainingContent = afterStart.substring(0, endIndex);
-  } else {
-    remainingContent = afterStart;
-  }
-  return '<span style="font-size: 12px;">思考中……</br></span>' + remainingContent;
-})
-
-/** 渲染 markdown */
-const renderedMarkdown = computed(() => {
-  const content = props.content;
-  let remainingContent = renderContent(content);
-  return md.render(remainingContent)
+/** 流式增量防闪烁与思考流统一渲染 **/
+const streamResult = computed(() => {
+  return defaultStreamingEngine.renderStream(props.content || '', false)
 })
 
 /** 初始化 **/
@@ -176,6 +168,90 @@ onMounted(async () => {
   text-align: left;
   color: #F0F0F6;
   max-width: 100%;
+  contain: layout style;
+  transform: translateZ(0);
+
+  /* DeepSeek 深度思考折叠卡片 */
+  .deep-thinking-card {
+    margin-bottom: 14px;
+    background: var(--glass-l1-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--glass-l1-border, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13px;
+    color: var(--monochrome-text-secondary, #8A8F98);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+
+    .thinking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      cursor: pointer;
+      user-select: none;
+      background: rgba(255, 255, 255, 0.02);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .thinking-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .pulse-indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #8E8E93;
+          box-shadow: 0 0 8px rgba(142, 142, 147, 0.7);
+          animation: thinking-pulse 1.4s infinite ease-in-out;
+        }
+
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: #8E8E93;
+          opacity: 0.7;
+        }
+
+        .status-text {
+          font-weight: 500;
+        }
+      }
+
+      .toggle-action {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+    }
+
+    .thinking-body {
+      padding: 10px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      white-space: pre-wrap;
+      line-height: 1.55;
+      max-height: 320px;
+      overflow-y: auto;
+      color: #A1A1A6;
+      font-family: inherit;
+    }
+  }
+
+  @keyframes thinking-pulse {
+    0%, 100% {
+      opacity: 0.35;
+      transform: scale(0.88);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
 
   pre {
     position: relative;

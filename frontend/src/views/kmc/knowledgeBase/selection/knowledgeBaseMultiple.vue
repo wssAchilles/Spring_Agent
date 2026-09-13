@@ -50,34 +50,34 @@
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
     >
-      <el-table class="glass-card"-column type="selection" width="55" align="center" />
-      <el-table class="glass-card"-column label="编码" align="center" prop="id" />
-      <el-table class="glass-card"-column label="名称" align="center" prop="name">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="编码" align="center" prop="id" />
+      <el-table-column label="名称" align="center" prop="name">
         <template #default="scope">
           {{ scope.row.name || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="描述" align="center" prop="description" min-width="250">
+      <el-table-column label="描述" align="center" prop="description" min-width="250">
         <template #default="scope">
           {{ scope.row.description || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="索引方式" align="center" prop="indexingTechnique">
+      <el-table-column label="索引方式" align="center" prop="indexingTechnique">
         <template #default="scope">
           <dict-tag :options="kmc_know_index" :value="scope.row.indexingTechnique" />
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="备注" align="center" prop="remark">
+      <el-table-column label="备注" align="center" prop="remark">
         <template #default="scope">
           {{ scope.row.remark || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="创建人" align="center" prop="createBy">
+      <el-table-column label="创建人" align="center" prop="createBy">
         <template #default="scope">
           {{ scope.row.createBy || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>

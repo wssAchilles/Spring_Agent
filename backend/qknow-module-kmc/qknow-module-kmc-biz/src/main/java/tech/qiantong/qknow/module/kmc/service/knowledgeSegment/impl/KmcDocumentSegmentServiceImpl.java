@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@Transactional(rollbackFor = Exception.class)
 public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmentMapper, KmcDocumentSegmentDO> implements IKmcDocumentSegmentService {
     @Resource
     private KmcDocumentSegmentMapper kmcDocumentSegmentMapper;

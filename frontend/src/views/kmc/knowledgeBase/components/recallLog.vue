@@ -52,7 +52,7 @@
         :default-sort="defaultSort"
         @sort-change="handleSortChange"
       >
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(1)"
           label="编号"
           align="center"
@@ -60,7 +60,7 @@
           width="80"
           sortable="custom"
         />
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(2)"
           label="问题"
           align="left"
@@ -72,7 +72,7 @@
             {{ scope.row.query || "-" }}
           </template>
         </el-table-column>
-        <!-- <el-table class="glass-card"-column
+        <!-- <el-table-column
           v-if="getColumnVisibility(3)"
           label="备注"
           align="left"
@@ -82,7 +82,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column> -->
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(4)"
           label="创建人"
           align="center"
@@ -92,7 +92,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(5)"
           label="创建时间"
           align="center"
@@ -107,7 +107,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(6)"
           label="更新人"
           align="center"
@@ -117,7 +117,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(7)"
           label="更新时间"
           align="center"

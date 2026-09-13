@@ -51,22 +51,22 @@
               :default-sort="defaultSort"
               @sort-change="handleSortChange"
             >
-              <el-table class="glass-card"-column
+              <el-table-column
                 label="编号"
                 align="center"
                 prop="id"
                 sortable="custom"
                 width="80"
               />
-              <el-table class="glass-card"-column
+              <el-table-column
                 label="文本"
                 align="left"
                 prop="query"
                 width="300"
                 :show-overflow-tooltip="{ effect: 'light' }"
               />
-              <el-table class="glass-card"-column label="创建人" align="center" prop="createBy" />
-              <el-table class="glass-card"-column
+              <el-table-column label="创建人" align="center" prop="createBy" />
+              <el-table-column
                 label="创建时间"
                 align="center"
                 prop="createTime"
@@ -178,15 +178,15 @@
                   路径分数
                 </div>
                 <el-table class="glass-card" :data="pathScoreDiagnostics" size="small" border>
-                  <el-table class="glass-card"-column prop="phase" label="阶段" width="80" />
-                  <el-table class="glass-card"-column prop="pathName" label="路径" width="110" />
-                  <el-table class="glass-card"-column prop="rawTopScore" label="原始分" width="100">
+                  <el-table-column prop="phase" label="阶段" width="80" />
+                  <el-table-column prop="pathName" label="路径" width="110" />
+                  <el-table-column prop="rawTopScore" label="原始分" width="100">
                     <template #default="scope">{{ formatScore(scope.row.rawTopScore) }}</template>
                   </el-table-column>
-                  <el-table class="glass-card"-column prop="normalizedTopScore" label="归一分" width="100">
+                  <el-table-column prop="normalizedTopScore" label="归一分" width="100">
                     <template #default="scope">{{ formatScore(scope.row.normalizedTopScore) }}</template>
                   </el-table-column>
-                  <el-table class="glass-card"-column prop="excluded" label="排除" width="80">
+                  <el-table-column prop="excluded" label="排除" width="80">
                     <template #default="scope">{{ formatBoolean(scope.row.excluded) }}</template>
                   </el-table-column>
                 </el-table>
@@ -197,8 +197,8 @@
                   路径耗时
                 </div>
                 <el-table class="glass-card" :data="timingDiagnostics" size="small" border>
-                  <el-table class="glass-card"-column prop="label" label="路径" />
-                  <el-table class="glass-card"-column prop="duration" label="耗时(ms)" width="110" />
+                  <el-table-column prop="label" label="路径" />
+                  <el-table-column prop="duration" label="耗时(ms)" width="110" />
                 </el-table>
               </div>
 
@@ -207,10 +207,10 @@
                   Graph 候选证据
                 </div>
                 <el-table class="glass-card" :data="graphProvenanceRows" size="small" border>
-                  <el-table class="glass-card"-column prop="source" label="来源" width="130" />
-                  <el-table class="glass-card"-column prop="segmentId" label="Segment" width="100" />
-                  <el-table class="glass-card"-column prop="documentName" label="文档" show-overflow-tooltip />
-                  <el-table class="glass-card"-column prop="score" label="分数" width="90">
+                  <el-table-column prop="source" label="来源" width="130" />
+                  <el-table-column prop="segmentId" label="Segment" width="100" />
+                  <el-table-column prop="documentName" label="文档" show-overflow-tooltip />
+                  <el-table-column prop="score" label="分数" width="90">
                     <template #default="scope">{{ formatScore(scope.row.score) }}</template>
                   </el-table-column>
                 </el-table>
@@ -221,10 +221,10 @@
                   降级与 JNI 诊断
                 </div>
                 <el-table class="glass-card" :data="fallbackDiagnostics" size="small" border>
-                  <el-table class="glass-card"-column prop="component" label="组件" width="150" />
-                  <el-table class="glass-card"-column prop="count" label="次数" width="80" />
-                  <el-table class="glass-card"-column prop="lastFallback" label="降级路径" width="180" />
-                  <el-table class="glass-card"-column prop="lastReason" label="最近原因" show-overflow-tooltip />
+                  <el-table-column prop="component" label="组件" width="150" />
+                  <el-table-column prop="count" label="次数" width="80" />
+                  <el-table-column prop="lastFallback" label="降级路径" width="180" />
+                  <el-table-column prop="lastReason" label="最近原因" show-overflow-tooltip />
                 </el-table>
               </div>
 

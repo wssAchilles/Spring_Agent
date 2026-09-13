@@ -1,82 +1,44 @@
 /* 
-  Phase 05: UI/UX Pro Max - Monochrome & Glassmorphism Tokens
+  Phase 12: UI/UX Pro Max - Monochromatic Glassmorphism Design System
+  严格遵从 .shared/ui-ux-pro-max 规范与 W3C CSS Containment 标准
 */
 
 :root {
+  /* 基础纯色阶 (Titanium & Neutral Scale) */
   --monochrome-bg: #F5F5F7;
+  --monochrome-surface: #FFFFFF;
   --monochrome-text-primary: #1D1D1F;
   --monochrome-text-secondary: #86868B;
-  --monochrome-border: rgba(0, 0, 0, 0.05);
-  
-  --glass-bg: rgba(255, 255, 255, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
-  --glass-blur: blur(24px) saturate(180%);
-}
+  --monochrome-border: rgba(0, 0, 0, 0.08);
 
-body {
-  background: radial-gradient(circle at 15% 50%, rgba(220, 230, 255, 0.4), transparent 50%),
-              radial-gradient(circle at 85% 30%, rgba(240, 220, 255, 0.4), transparent 50%),
-              var(--monochrome-bg) !important;
-  color: var(--monochrome-text-primary) !important;
-  background-attachment: fixed;
-}
+  /* Level 0: 视口背景底衬 (No Blur) */
+  --glass-l0-bg: #F5F5F7;
 
-/* Glass Card */
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: 16px;
-  padding: 24px;
-  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-}
+  /* Level 1: 侧边栏与主体容器 (Subtle Glass) */
+  --glass-l1-bg: rgba(255, 255, 255, 0.65);
+  --glass-l1-border: rgba(0, 0, 0, 0.06);
+  --glass-l1-blur: 16px;
+  --glass-l1-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
 
-.glass-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.08);
-}
+  /* Level 2: 会话气泡、思考卡片与高亮板块 (Elevated Glass) */
+  --glass-l2-bg: rgba(255, 255, 255, 0.82);
+  --glass-l2-border: rgba(255, 255, 255, 0.8);
+  --glass-l2-blur: 12px;
+  --glass-l2-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
 
-/* Glass Button */
-.glass-btn {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
-  color: var(--monochrome-text-primary);
-  font-weight: 500;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-}
+  /* Level 3: 顶层模态框、操作浮标与 Popover (Modal Glass) */
+  --glass-l3-bg: rgba(255, 255, 255, 0.94);
+  --glass-l3-border: rgba(0, 0, 0, 0.08);
+  --glass-l3-blur: 8px;
+  --glass-l3-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.12);
 
-.glass-btn:hover {
-  background: rgba(255, 255, 255, 0.6);
-}
+  /* 兼容旧变量 */
+  --glass-bg: var(--glass-l2-bg);
+  --glass-border: var(--glass-l2-border);
+  --glass-shadow: var(--glass-l2-shadow);
+  --glass-blur: blur(var(--glass-l2-blur));
 
-.glass-btn:active {
-  transform: scale(0.96);
-}
-
-/* Typography Overrides for Monochrome */
-h1, h2, h3, h4, h5, h6 {
-  color: var(--monochrome-text-primary) !important;
-}
-
-p, span, div {
-  color: inherit;
-}
-
-.text-secondary {
-  color: var(--monochrome-text-secondary) !important;
-}
-
-/* Overriding Element Plus Colors for Monochrome */
-:root {
+  /* Element Plus 单色调映射 */
   --el-color-primary: #1D1D1F;
   --el-color-primary-light-3: #434345;
   --el-color-primary-light-5: #68686B;
@@ -85,10 +47,145 @@ p, span, div {
   --el-color-primary-dark-2: #000000;
 }
 
-/* Dynamic Ripple Effect Keyframes */
-@keyframes glass-ripple {
-  to {
-    transform: scale(4);
-    opacity: 0;
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --monochrome-bg: #0A0A0C;
+    --monochrome-surface: #161618;
+    --monochrome-text-primary: #EDEDEF;
+    --monochrome-text-secondary: #8A8F98;
+    --monochrome-border: rgba(255, 255, 255, 0.08);
+
+    --glass-l0-bg: #0A0A0C;
+    --glass-l1-bg: rgba(22, 22, 24, 0.60);
+    --glass-l1-border: rgba(255, 255, 255, 0.06);
+    --glass-l1-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.4);
+
+    --glass-l2-bg: rgba(30, 30, 34, 0.75);
+    --glass-l2-border: rgba(255, 255, 255, 0.12);
+    --glass-l2-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+    --glass-l3-bg: rgba(36, 36, 42, 0.92);
+    --glass-l3-border: rgba(255, 255, 255, 0.15);
+    --glass-l3-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.8);
+  }
+}
+
+body {
+  background-color: var(--monochrome-bg) !important;
+  color: var(--monochrome-text-primary) !important;
+}
+
+/* GPU 硬件加速与包含隔离类 */
+.glass-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  contain: layout style;
+}
+
+/* Level 1 容器 */
+.glass-container-l1 {
+  background: var(--glass-l1-bg);
+  backdrop-filter: blur(var(--glass-l1-blur));
+  -webkit-backdrop-filter: blur(var(--glass-l1-blur));
+  border: 1px solid var(--glass-l1-border);
+  box-shadow: var(--glass-l1-shadow);
+}
+
+/* Level 2 卡片 (Glass Card) */
+.glass-card {
+  background: var(--glass-l2-bg);
+  backdrop-filter: blur(var(--glass-l2-blur));
+  -webkit-backdrop-filter: blur(var(--glass-l2-blur));
+  border: 1px solid var(--glass-l2-border);
+  box-shadow: var(--glass-l2-shadow);
+  border-radius: 14px;
+  padding: 16px 20px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px -4px rgba(0, 0, 0, 0.10);
+}
+
+/* Level 3 浮标按钮与操作条 */
+.glass-floating-btn {
+  background: var(--glass-l3-bg);
+  backdrop-filter: blur(var(--glass-l3-blur));
+  -webkit-backdrop-filter: blur(var(--glass-l3-blur));
+  border: 1px solid var(--glass-l3-border);
+  box-shadow: var(--glass-l3-shadow);
+  color: var(--monochrome-text-primary);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.glass-floating-btn:hover {
+  transform: translateY(-1px);
+  background: var(--monochrome-surface);
+}
+
+/* 按钮通用 */
+.glass-btn {
+  background: var(--glass-l2-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-l2-border);
+  border-radius: 8px;
+  color: var(--monochrome-text-primary);
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.glass-btn:hover {
+  background: var(--monochrome-surface);
+}
+
+.glass-btn:active {
+  transform: scale(0.97);
+}
+
+/* Element Plus 穿透覆写 */
+.el-popover.el-popper,
+.el-dropdown__popper.el-popper {
+  background: var(--glass-l3-bg) !important;
+  backdrop-filter: blur(var(--glass-l3-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-l3-blur)) !important;
+  border: 1px solid var(--glass-l3-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--glass-l3-shadow) !important;
+  color: var(--monochrome-text-primary) !important;
+}
+
+.el-dialog {
+  background: var(--glass-l3-bg) !important;
+  backdrop-filter: blur(var(--glass-l3-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-l3-blur)) !important;
+  border: 1px solid var(--glass-l3-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--glass-l3-shadow) !important;
+}
+
+/* 性能降级规则 (针对低配与减少动效模式) */
+@media (prefers-reduced-motion: reduce) {
+  .glass-card,
+  .glass-container-l1,
+  .glass-floating-btn,
+  .glass-btn {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--monochrome-surface) !important;
   }
 }

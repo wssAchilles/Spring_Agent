@@ -80,7 +80,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@Transactional(rollbackFor = Exception.class)
 public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> implements IKmcSyncService {
 
     /** H6: parent-child child token size; 128 preserves historical default. */

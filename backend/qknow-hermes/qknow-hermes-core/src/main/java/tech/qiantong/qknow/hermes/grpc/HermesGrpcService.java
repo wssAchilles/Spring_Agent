@@ -9,6 +9,7 @@ import tech.qiantong.qknow.hermes.agent.AgentOrchestrator;
 import tech.qiantong.qknow.hermes.flow.FlowExecutor;
 import tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO;
 import tech.qiantong.qknow.hermes.proto.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -33,32 +34,26 @@ public class HermesGrpcService extends HermesServiceGrpc.HermesServiceImplBase {
                 request.getRequestId(), request.getBotId(), request.getQuestion());
 
         try {
-            agentOrchestrator.chat(request).subscribe(
-                    event -> {
-                        responseObserver.onNext(event);
-                    },
-                    error -> {
+            Flux<ChatEvent> eventFlux = agentOrchestrator.chat(request)
+                    .onErrorResume(error -> {
                         log.error("Chat 流处理错误", error);
-                        responseObserver.onNext(ChatEvent.newBuilder()
+                        return Flux.just(ChatEvent.newBuilder()
                                 .setRequestId(request.getRequestId())
                                 .setError(ErrorEvent.newBuilder()
                                         .setCode(500)
-                                        .setMessage(error.getMessage())
+                                        .setMessage(error.getMessage() != null ? error.getMessage() : "Unknown error")
                                         .build())
                                 .build());
-                        responseObserver.onCompleted();
-                    },
-                    () -> {
-                        responseObserver.onCompleted();
-                    }
-            );
+                    });
+
+            GrpcReactorBridge.bindStream(eventFlux, responseObserver, request.getRequestId());
         } catch (Exception e) {
             log.error("Chat 请求处理失败", e);
             responseObserver.onNext(ChatEvent.newBuilder()
                     .setRequestId(request.getRequestId())
                     .setError(ErrorEvent.newBuilder()
                             .setCode(500)
-                            .setMessage(e.getMessage())
+                            .setMessage(e.getMessage() != null ? e.getMessage() : "Internal error")
                             .build())
                     .build());
             responseObserver.onCompleted();

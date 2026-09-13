@@ -111,7 +111,11 @@ public class WebSearchToolFunction
             if (googleKey != null && !googleKey.isBlank() && googleCx != null && !googleCx.isBlank()) {
                 try {
                     String googleUrl = "https://www.googleapis.com/customsearch/v1?key=" + googleKey + "&cx=" + googleCx + "&q=" + encodedQuery + "&num=" + maxResults;
-                    String responseStr = cn.hutool.http.HttpUtil.get(googleUrl, 10000);
+                    okhttp3.Request okGoogleRequest = new okhttp3.Request.Builder().url(googleUrl).build();
+                    String responseStr;
+                    try (okhttp3.Response okGoogleResponse = tech.qiantong.qknow.common.security.ssrf.SafeOkHttpClientBuilder.getSafeClient().newCall(okGoogleRequest).execute()) {
+                        responseStr = (okGoogleResponse.isSuccessful() && okGoogleResponse.body() != null) ? okGoogleResponse.body().string() : "{}";
+                    }
                     JSONObject json = JSONUtil.parseObj(responseStr);
                     JSONArray items = json.getJSONArray("items");
                     if (items != null) {
@@ -164,7 +168,15 @@ public class WebSearchToolFunction
 
             // 回退到 DuckDuckGo Instant Answer API
             String url = SEARCH_API.replace("{}", encodedQuery);
-            String responseStr = cn.hutool.http.HttpUtil.get(url, 10000);
+            okhttp3.Request okDdgRequest = new okhttp3.Request.Builder().url(url).build();
+            String responseStr = "{}";
+            try (okhttp3.Response okDdgResponse = tech.qiantong.qknow.common.security.ssrf.SafeOkHttpClientBuilder.getSafeClient().newCall(okDdgRequest).execute()) {
+                if (okDdgResponse.isSuccessful() && okDdgResponse.body() != null) {
+                    responseStr = okDdgResponse.body().string();
+                }
+            } catch (Exception e) {
+                log.warn("DuckDuckGo 搜索请求异常: {}", e.getMessage());
+            }
             JSONObject json = JSONUtil.parseObj(responseStr);
 
             // 尝试 Abstract

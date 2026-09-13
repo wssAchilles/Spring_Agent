@@ -38,6 +38,7 @@ import { tansParams, blobValidate } from '@/utils/anivia.js'
 import cache from '@/plugins/cache'
 import { saveAs } from 'file-saver'
 import useUserStore from '@/store/system/user'
+import cancelManager from '@/utils/cancel-manager'
 
 let downloadLoadingInstance;
 // 是否显示重新登录
@@ -51,8 +52,6 @@ const service = axios.create({
   // 超时
   timeout: 30000
 })
-
-let cancelTokens = [];
 
 // request拦截器
 service.interceptors.request.use(config => {
@@ -110,10 +109,8 @@ service.interceptors.request.use(config => {
     }
   }
 
-  // 创建取消令牌并添加到请求配置中
-  const source = axios.CancelToken.source();
-  config.cancelToken = source.token;
-  cancelTokens.push(source);
+  // 添加请求到挂起池并绑定 AbortController
+  cancelManager.addPending(config)
   return config
 }, error => {
     console.log(error)
@@ -122,6 +119,9 @@ service.interceptors.request.use(config => {
 
 // 响应拦截器
 service.interceptors.response.use(res => {
+    // 请求完成，成对从挂起池中移除并解除引用，杜绝内存泄漏
+    cancelManager.removePending(res.config)
+
     // 未设置状态码则默认成功状态
     const code = res.data.code || 200;
     // 获取错误信息
@@ -159,6 +159,14 @@ service.interceptors.response.use(res => {
     }
   },
   error => {
+    // 请求失败或被取消，成对从挂起池中移除并解除引用
+    cancelManager.removePending(error.config)
+
+    // 若是主动取消的请求（路由切换或重复提交打断），静默吞掉，不弹出错误提示
+    if (axios.isCancel(error) || error?.name === 'CanceledError' || error?.message?.includes('Request canceled') || error?.message?.includes('canceled')) {
+      return Promise.reject(error)
+    }
+
     console.log('err' + error)
     let { message } = error;
     if (message == "Network Error") {
@@ -172,8 +180,6 @@ service.interceptors.response.use(res => {
       } else {
         message = "系统接口" + statusCode + "异常"
       }
-    } else if (message.includes("Route change: Request canceled")) {
-      return null;
     }
     ElMessage({ message: message, type: 'error', duration: 5 * 1000 })
     return Promise.reject(error)
@@ -209,8 +215,7 @@ export function download(url, params, filename, config) {
 
 export default service
 
-// 导出取消请求的函数
+// 导出取消请求的函数（兼容历史路由守卫调用，内部委托给 CancelManager）
 export function clearCancelTokens() {
-  cancelTokens.forEach(source => source.cancel('Route change: Request canceled'));
-  cancelTokens = [];
+  cancelManager.clearAllPending()
 }

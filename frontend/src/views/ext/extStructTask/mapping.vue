@@ -1,6 +1,6 @@
 <template>
   <!-- 结构化抽取任务 数据映射 -->
-  <el-dialog class="glass-card"
+  <el-dialog class="glass-card custom-dialog"
     :title="title"
     v-model="visible"
     width="1300px"
@@ -9,7 +9,6 @@
     draggable
     destroy-on-close
     @close="handleClose"
-    class="custom-dialog"
   >
     <div class="pagecont-top">
       <el-form

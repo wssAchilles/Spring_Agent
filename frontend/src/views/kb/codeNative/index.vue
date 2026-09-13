@@ -92,7 +92,7 @@
               :class="{
                     'is-active': chatflowDebugSectionsVisible,
                     'is-inactive': !chatflowDebugSectionsVisible,
-                  } glass-btn"
+                  }"
               @click="toggleChatflowDebugSections"
           >
             <el-icon><Operation /></el-icon>

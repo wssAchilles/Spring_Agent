@@ -125,7 +125,7 @@
           </div>
           <div class="data-table-wrapper">
             <el-table class="glass-card" stripe :data="relatedData">
-              <el-table class="glass-card"-column label="数据类型" min-width="160">
+              <el-table-column label="数据类型" min-width="160">
                 <template #default="{ row }">
                   <div class="type-cell">
                     <span class="type-icon" :class="row.type">
@@ -135,14 +135,14 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table class="glass-card"-column label="数量" prop="count" width="140" />
-              <el-table class="glass-card"-column
+              <el-table-column label="数量" prop="count" width="140" />
+              <el-table-column
                 label="最近更新时间"
                 prop="updatedAt"
                 min-width="180"
                 align="center"
               />
-              <el-table class="glass-card"-column label="删除影响" prop="impact" min-width="280" />
+              <el-table-column label="删除影响" prop="impact" min-width="280" />
             </el-table>
             <pagination :total="relatedData.length" />
           </div>

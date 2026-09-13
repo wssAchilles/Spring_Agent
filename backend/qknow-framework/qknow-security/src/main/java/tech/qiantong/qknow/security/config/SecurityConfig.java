@@ -21,6 +21,7 @@ import tech.qiantong.qknow.security.config.properties.PermitAllUrlProperties;
 import tech.qiantong.qknow.security.filter.JwtAuthenticationTokenFilter;
 import tech.qiantong.qknow.security.handle.AuthenticationEntryPointImpl;
 import tech.qiantong.qknow.security.handle.LogoutSuccessHandlerImpl;
+import tech.qiantong.qknow.security.filter.FlyFlowHmacAuthenticationFilter;
 
 /**
  * spring security配置
@@ -67,6 +68,9 @@ public class SecurityConfig
     @Autowired
     private PermitAllUrlProperties permitAllUrl;
 
+    @Autowired(required = false)
+    private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
     /**
      * 身份验证实现
      */
@@ -112,7 +116,7 @@ public class SecurityConfig
             .authorizeHttpRequests((requests) -> {
                 permitAllUrl.getUrls().forEach(url -> requests.requestMatchers(url).permitAll());
                 // 对于登录login 注册register 验证码captchaImage 允许匿名访问
-                requests.requestMatchers("/login", "/register", "/captchaImage", "/flyflow/**","/updater/getLocalVersion").permitAll()
+                requests.requestMatchers("/login", "/register", "/captchaImage", "/updater/getLocalVersion").permitAll()
                     // 静态资源，可匿名访问
                     .requestMatchers(HttpMethod.GET, "/",
                             "/*.html",
@@ -147,6 +151,8 @@ public class SecurityConfig
             })
             // 添加Logout filter
             .logout(logout -> logout.logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler))
+            // 添加FlyFlow内部接口HMAC鉴权filter
+            .addFilterBefore(new FlyFlowHmacAuthenticationFilter("flyflow-internal", "qknow-flyflow-secret-key-2026", redisTemplate), UsernamePasswordAuthenticationFilter.class)
             // 添加JWT filter
             .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
             // 添加CORS filter

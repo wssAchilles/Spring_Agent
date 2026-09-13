@@ -65,32 +65,32 @@
       row-key="id"
       @current-change="handleCurrentChange"
     >
-      <el-table class="glass-card"-column label="文件名称" align="center" prop="name">
+      <el-table-column label="文件名称" align="center" prop="name">
         <template #default="scope">
           {{ scope.row.name || "-" }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="文件描述" align="center" prop="description">
+      <el-table-column label="文件描述" align="center" prop="description">
         <template #default="scope">
           {{ scope.row.description || "-" }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="知识分类" align="center" prop="categoryName">
+      <el-table-column label="知识分类" align="center" prop="categoryName">
         <template #default="scope">
           {{ scope.row.categoryName || "-" }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="备注" align="center" prop="remark">
+      <el-table-column label="备注" align="center" prop="remark">
         <template #default="scope">
           {{ scope.row.remark || "-" }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="创建人" align="center" prop="createBy">
+      <el-table-column label="创建人" align="center" prop="createBy">
         <template #default="scope">
           {{ scope.row.createBy || "-" }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column
+      <el-table-column
         label="创建时间"
         align="center"
         prop="createTime"

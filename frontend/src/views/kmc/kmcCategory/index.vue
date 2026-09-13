@@ -77,7 +77,7 @@
         :default-expand-all="isExpandAll"
         @sort-change="handleSortChange"
       >
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(1)"
           label="分类名称"
           prop="name"
@@ -89,7 +89,7 @@
             {{ scope.row.name || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(2)"
           label="显示顺序"
           align="center"
@@ -100,7 +100,7 @@
             {{ scope.row.orderNum !== null ? scope.row.orderNum : "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(3)"
           label="备注"
           align="left"
@@ -112,7 +112,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(4)"
           label="创建人"
           align="center"
@@ -122,7 +122,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(5)"
           label="创建时间"
           align="center"
@@ -135,7 +135,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table class="glass-card"-column
+        <el-table-column
           v-if="getColumnVisibility(6)"
           label="操作"
           align="center"

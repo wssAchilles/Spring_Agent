@@ -67,7 +67,14 @@ public class WebSearchToolFunction
         try {
             String encodedQuery = URLEncoder.encode(request.getQuery(), StandardCharsets.UTF_8);
             String url = SEARCH_API.replace("{}", encodedQuery);
-            String responseStr = HttpUtil.get(url, 10000);
+            okhttp3.Request okRequest = new okhttp3.Request.Builder().url(url).build();
+            String responseStr;
+            try (okhttp3.Response okResponse = tech.qiantong.qknow.common.security.ssrf.SafeOkHttpClientBuilder.getSafeClient().newCall(okRequest).execute()) {
+                if (!okResponse.isSuccessful() || okResponse.body() == null) {
+                    return Response.error("搜索请求失败，状态码: " + okResponse.code());
+                }
+                responseStr = okResponse.body().string();
+            }
 
             JSONObject json = JSONUtil.parseObj(responseStr);
 

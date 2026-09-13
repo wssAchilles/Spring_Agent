@@ -11,9 +11,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.GenericApplicationContext;
 
+import tech.qiantong.qknow.hermes.tool.resilience.ToolCircuitBreaker;
+import tech.qiantong.qknow.hermes.tool.resilience.ToolResilienceDecorator;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -21,6 +25,8 @@ import java.util.function.Supplier;
 @Slf4j
 @Configuration
 public class ToolCallbackResolverConfig {
+
+    private final ConcurrentHashMap<String, ToolCircuitBreaker> circuitBreakers = new ConcurrentHashMap<>();
 
     @Bean
     public ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext) {
@@ -30,29 +36,38 @@ public class ToolCallbackResolverConfig {
             }
             Object bean = applicationContext.getBean(name);
 
-            // 1. 已经是 ToolCallback，直接返回
+            // 1. 已经是 ToolCallback，进行弹性包装后返回
             if (bean instanceof ToolCallback toolCallback) {
-                return toolCallback;
+                return decorate(name, toolCallback);
             }
 
-            // 2. Function bean → 自动包装为 FunctionToolCallback
+            // 2. Function bean → 自动包装为 FunctionToolCallback 并挂载弹性防护
             if (bean instanceof Function<?, ?> function) {
-                return wrapFunction(name, function);
+                return decorate(name, wrapFunction(name, function));
             }
 
-            // 3. BiFunction bean → 自动包装为 FunctionToolCallback
+            // 3. BiFunction bean → 自动包装为 FunctionToolCallback 并挂载弹性防护
             if (bean instanceof BiFunction<?, ?, ?> biFunction) {
-                return wrapBiFunction(name, biFunction);
+                return decorate(name, wrapBiFunction(name, biFunction));
             }
 
-            // 4. Supplier bean → 自动包装为 FunctionToolCallback
+            // 4. Supplier bean → 自动包装为 FunctionToolCallback 并挂载弹性防护
             if (bean instanceof Supplier<?> supplier) {
-                return wrapSupplier(name, supplier);
+                return decorate(name, wrapSupplier(name, supplier));
             }
 
             log.warn("Tool '{}' 存在但类型不支持: {}", name, bean.getClass().getSimpleName());
             return null;
         };
+    }
+
+    private ToolCallback decorate(String name, ToolCallback callback) {
+        if (callback == null || callback instanceof ToolResilienceDecorator) {
+            return callback;
+        }
+        ToolCircuitBreaker cb = circuitBreakers.computeIfAbsent(name, n -> new ToolCircuitBreaker(5, 60000));
+        // 超时 10,000ms (10秒)，最大输出 16,000 字符，单次重试
+        return new ToolResilienceDecorator(callback, 10000, 16000, 1, cb);
     }
 
     @SuppressWarnings("unchecked")

@@ -39,6 +39,8 @@ public class ReflectiveAgent {
             int totalRounds = 0;
             boolean passed = false;
 
+            ChatRequest currentRequest = request;
+
             for (int round = 1; round <= maxRetries + 1; round++) {
                 totalRounds = round;
 
@@ -55,7 +57,7 @@ public class ReflectiveAgent {
                 AtomicReference<String> fullText = new AtomicReference<>("");
                 AtomicReference<Boolean> hasError = new AtomicReference<>(false);
 
-                orchestrator.chat(request).toIterable().forEach(event -> {
+                orchestrator.chat(currentRequest).toIterable().forEach(event -> {
                     // 收集完整文本
                     if (event.hasFinished()) {
                         fullText.set(event.getFinished().getFullText());
@@ -76,8 +78,8 @@ public class ReflectiveAgent {
                 }
 
                 // 3. AI Judge 评分
-                String systemPrompt = request.getSystemPrompt();
-                String question = request.getQuestion();
+                String systemPrompt = currentRequest.getSystemPrompt();
+                String question = currentRequest.getQuestion();
                 String answer = fullText.get();
 
                 JudgeResult judgeResult = judgeService.judge(systemPrompt, question, answer);
@@ -101,13 +103,22 @@ public class ReflectiveAgent {
                     break;
                 }
 
-                // 6. 未通过但还有重试次数 -> 继续下一轮
+                // 6. 未通过但还有重试次数 -> 回填反馈并重试
                 if (round > maxRetries) {
                     break;
                 }
 
-                log.info("反思循环第 {} 轮未通过评分 (score={}), 重试中...",
+                log.info("反思循环第 {} 轮未通过评分 (score={}), 注入反思意见并重试...",
                         round, judgeResult.getOverallScore());
+
+                // 结构化回填上一轮的评审意见与改进建议
+                String feedback = judgeResult.getFeedback() != null ? judgeResult.getFeedback() : "";
+                String critiqueNotice = "\n\n[reflection_critique: 上一轮回答未通过评估。评审意见与改进建议: " + feedback + "。请在本次回答中针对性修正该问题。]";
+                String enhancedSystemPrompt = (request.getSystemPrompt() != null ? request.getSystemPrompt() : "") + critiqueNotice;
+
+                currentRequest = request.toBuilder()
+                        .setSystemPrompt(enhancedSystemPrompt)
+                        .build();
             }
 
             // 发射 ReflectionComplete

@@ -136,13 +136,12 @@
         </div>
 
         <el-dialog
-          class="glass-card"
+            class="glass-card msg-dialog"
             title="消息详情"
             v-model="openView"
             width="800px"
             draggable
             destroy-on-close
-            class="msg-dialog"
         >
             <el-form label-width="100px">
                 <el-row :gutter="20">

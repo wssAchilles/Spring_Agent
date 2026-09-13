@@ -49,12 +49,13 @@
                     <el-button v-ripple
                       link
                       @click.stop
+                      class="glass-btn"
                       :class="[
                         'custom-more-button',
                         {
                           'custom-more-button--plain': props.source === 'myApp',
                         },
-                      ] glass-btn"
+                      ]"
                     >
                       <el-icon class="more-icon"><More /></el-icon>
                     </el-button>

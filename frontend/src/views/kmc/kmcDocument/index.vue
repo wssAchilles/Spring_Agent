@@ -102,8 +102,8 @@
             :default-sort="defaultSort"
             @sort-change="handleSortChange"
           >
-            <el-table class="glass-card"-column type="selection" width="55" align="center" />
-            <el-table class="glass-card"-column
+            <el-table-column type="selection" width="55" align="center" />
+            <el-table-column
               v-if="getColumnVisibility(1)"
               label="编号"
               align="center"
@@ -111,7 +111,7 @@
               width="80"
               sortable="custom"
             />
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(2)"
               label="文件名称"
               prop="name"
@@ -132,7 +132,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(3)"
               label="文件描述"
               align="left"
@@ -144,7 +144,7 @@
                 {{ scope.row.description || "-" }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(4)"
               label="分类"
               align="left"
@@ -156,7 +156,7 @@
                 {{ scope.row.categoryName || "-" }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(10)"
               label="文件大小"
               align="center"
@@ -167,7 +167,7 @@
                 {{ (Math.random() * 3 + 0).toFixed(2) }} MB
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(11)"
               label="文件分段数量"
               align="center"
@@ -178,7 +178,7 @@
                 {{ Math.floor(Math.random() * 10 + 1) }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(5)"
               label="解析状态"
               align="center"
@@ -194,7 +194,7 @@
                 <dict-tag v-else :options="document_sync_status" :value="scope.row.syncStatus" />
               </template>
             </el-table-column>
-            <!-- <el-table class="glass-card"-column
+            <!-- <el-table-column
               v-if="getColumnVisibility(6)"
               label="备注"
               width="200"
@@ -206,7 +206,7 @@
                 {{ scope.row.remark || "-" }}
               </template>
             </el-table-column> -->
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(7)"
               label="创建人"
               align="center"
@@ -216,7 +216,7 @@
                 {{ scope.row.createBy || "-" }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(8)"
               label="创建时间"
               align="center"
@@ -231,7 +231,7 @@
                 }}</span>
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column
+            <el-table-column
               v-if="getColumnVisibility(9)"
               label="操作"
               align="center"

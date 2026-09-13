@@ -2,12 +2,12 @@
   <div class="justify-between mb15">
     <el-row :gutter="15" class="btn-style">
       <el-col :span="1.5">
-        <el-button v-ripple class="glass-btn"
+        <el-button v-ripple
+            class="glass-btn custom-btn-padding"
             plain
             @click="genApiKey"
             icon="Plus"
             @mousedown="(e) => e.preventDefault()"
-            class="custom-btn-padding"
         >
           创建密钥
         </el-button>

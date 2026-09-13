@@ -21,7 +21,7 @@ import java.util.List;
  * @author qknow
  */
 @Component
-@ServerEndpoint("/websocket/message/{userId}")
+@ServerEndpoint(value = "/websocket/message/{userId}", configurator = tech.qiantong.qknow.security.websocket.JwtServerEndpointConfigurator.class)
 public class WebSocketMessageServer {
     // 日志记录
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketMessageServer.class);
@@ -31,8 +31,12 @@ public class WebSocketMessageServer {
      */
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userId) throws Exception {
-        String key = userId + '_' + session.getId();
-        LOGGER.info("连接成功 - 用户ID: {}", key);
+        // 优先使用握手阶段通过 JWT Token 解析出的真实受信任用户 ID
+        String authenticatedUserId = (String) session.getUserProperties().get(tech.qiantong.qknow.security.websocket.JwtServerEndpointConfigurator.AUTHENTICATED_USER_ID);
+        String finalUserId = (authenticatedUserId != null && !authenticatedUserId.isBlank()) ? authenticatedUserId : userId;
+        String key = finalUserId + '_' + session.getId();
+        session.getUserProperties().put("SESSION_USER_ID", finalUserId);
+        LOGGER.info("连接成功 - 用户ID: {} (Token认证: {})", key, authenticatedUserId != null);
         // 保存连接的 session 对象
         // 一个客户可能会开启多个窗口,不同窗口session不一样, 存储key格式: userId_sessionId
         WebSocketMessage.put(key, session);
@@ -43,7 +47,8 @@ public class WebSocketMessageServer {
      */
     @OnClose
     public void onClose(Session session, @PathParam("userId") String userId) {
-        String key = userId + '_' + session.getId();
+        String finalUserId = (String) session.getUserProperties().getOrDefault("SESSION_USER_ID", userId);
+        String key = finalUserId + '_' + session.getId();
         LOGGER.info("连接关闭 - 用户ID: {}", key);
         // 移除用户连接
         //一个客户可能会开启多个窗口,不同窗口session不一样, 存储key格式: userId_sessionId

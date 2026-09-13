@@ -115,11 +115,20 @@
         </div>
       </div>
     </div>
+
+    <!-- 智能滚动锁定与单色毛玻璃回到底部浮标 -->
+    <transition name="fade">
+      <div
+        v-if="hasNewMessageBelow"
+        class="floating-scroll-bottom glass-floating-btn"
+        @click="scrollToBottomSmooth"
+      >
+        <el-icon><Bottom /></el-icon>
+        <span>有新回答</span>
+        <span class="unread-badge" v-if="unreadCount > 1">{{ unreadCount }}</span>
+      </div>
+    </transition>
   </div>
-  <!-- 回到底部 -->
-<!--  <div v-if="isScrolling" class="to-bottom" @click="handleGoBottom">-->
-<!--    <el-button v-ripple class="glass-btn" icon="ArrowDownBold" circle />-->
-<!--  </div>-->
 </template>
 <script setup>
 import MarkdownView from "@/components/MarkdownView/index.vue";
@@ -128,7 +137,8 @@ import useUserStore from "@/store/system/user";
 import userAvatarDefaultImg from "@/assets/system/images/index/icon (1).png";
 import roleAvatarDefaultImg from "@/assets/app/gpt-new.svg";
 import { useClipboard } from "@vueuse/core";
-import { Connection, Tools, ArrowDown, Memo } from "@element-plus/icons-vue";
+import { Connection, Tools, ArrowDown, Memo, Bottom } from "@element-plus/icons-vue";
+import { useChatScrollController } from "@/utils/chat-scroll-controller";
 
 const { proxy } = getCurrentInstance();
 const message = proxy.$modal; // 消息弹窗
@@ -137,8 +147,15 @@ const { copy } = useClipboard(); // 初始化 copy 到粘贴板
 
 // 判断“消息列表”滚动的位置(用于判断是否需要滚动到消息最下方)
 const messageContainer = ref(null);
-const isScrolling = ref(false); //用于判断用户是否在滚动
 const markdownViewRef = ref(null);
+
+const {
+  isLocked,
+  hasNewMessageBelow,
+  unreadCount,
+  scrollOnUpdate,
+  scrollToBottomSmooth
+} = useChatScrollController(messageContainer, { lockThreshold: 80, resumeThreshold: 20 });
 
 const userAvatar = computed(() => userStore.avatar || userAvatarDefaultImg);
 const roleAvatar = computed(
@@ -177,40 +194,28 @@ function formatJson(obj) {
 
 // ============ 处理对话滚动 ==============
 
-/** 滚动到底部 */
-const scrollToBottom = async (isIgnore) => {
-  // 注意要使用 nextTick 以免获取不到 dom
-  await nextTick();
-  if (isIgnore || !isScrolling.value) {
-    messageContainer.value.scrollTop =
-        messageContainer.value.scrollHeight - messageContainer.value.offsetHeight;
+/** 滚动到底部 (支持强制贴底与增量调度) */
+const scrollToBottom = async (force = false) => {
+  if (force) {
+    await nextTick();
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+    }
+  } else {
+    await scrollOnUpdate();
   }
 };
 
-function handleScroll() {
-  const scrollContainer = messageContainer.value;
-  const scrollTop = scrollContainer.scrollTop;
-  const scrollHeight = scrollContainer.scrollHeight;
-  const offsetHeight = scrollContainer.offsetHeight;
-  if (scrollTop + offsetHeight < scrollHeight - 100) {
-    // 用户开始滚动并在最底部之上，取消保持在最底部的效果
-    isScrolling.value = true;
-  } else {
-    // 用户停止滚动并滚动到最底部，开启保持到最底部的效果
-    isScrolling.value = false;
-  }
-}
-
-/** 回到底部 */
+/** 平滑回到底部 */
 const handleGoBottom = () => {
-  const scrollContainer = messageContainer.value;
-  scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  scrollToBottomSmooth();
 };
 
 /** 回到顶部 */
 const handlerGoTop = () => {
-  const scrollContainer = messageContainer.value;
-  scrollContainer.scrollTop = 0;
+  if (messageContainer.value) {
+    messageContainer.value.scrollTop = 0;
+  }
 };
 
 defineExpose({ scrollToBottom, handlerGoTop, handleGoBottom }); // 提供方法给 parent 调用
@@ -236,7 +241,9 @@ const copyContent = (index) => {
       count++;
     }
   }
-  markdownViewRef.value[count].copyContent();
+  if (markdownViewRef.value && markdownViewRef.value[count]) {
+    markdownViewRef.value[count].copyContent();
+  }
 };
 
 /** 删除 */
@@ -262,11 +269,6 @@ const onEdit = (message) => {
 const handlerSuggested = (item) => {
   emits("onPrompt", item);
 };
-
-/** 初始化 */
-onMounted(() => {
-  messageContainer.value.addEventListener("scroll", handleScroll);
-});
 </script>
 
 <style scoped lang="scss">
@@ -517,5 +519,58 @@ onMounted(() => {
       white-space: nowrap;
     }
   }
+}
+
+// 单色毛玻璃回到底部浮动按钮 (规范化 Monochromatic Glassmorphism)
+.floating-scroll-bottom {
+  position: sticky;
+  bottom: 24px;
+  left: 50%;
+  margin: 0 auto;
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  border-radius: 20px;
+  color: #1d1d1f;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 100;
+  user-select: none;
+  transform: translateZ(0);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.92);
+    transform: translateY(-2px) translateZ(0);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .unread-badge {
+    background: #0071e3;
+    color: #ffffff;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px) translateZ(0);
 }
 </style>

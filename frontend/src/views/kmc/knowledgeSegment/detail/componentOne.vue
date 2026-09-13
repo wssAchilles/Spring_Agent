@@ -19,44 +19,44 @@
     </div>
   </div>
   <el-table class="glass-card" stripe height="374px" v-loading="loading" :data="knowledgeSegmentList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
-    <el-table class="glass-card"-column type="selection" width="55" align="center" />
-            <el-table class="glass-card"-column v-if="columns[0].visible" label="ID" align="center" prop="id" />
-            <el-table class="glass-card"-column v-if="columns[7].visible" label="分段内容文本" align="center" prop="content">
+    <el-table-column type="selection" width="55" align="center" />
+            <el-table-column v-if="columns[0].visible" label="ID" align="center" prop="id" />
+            <el-table-column v-if="columns[7].visible" label="分段内容文本" align="center" prop="content">
               <template #default="scope">
                 {{ scope.row.content || '-' }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column v-if="columns[9].visible" label="答案内容(如果有)" align="center" prop="answer">
+            <el-table-column v-if="columns[9].visible" label="答案内容(如果有)" align="center" prop="answer">
               <template #default="scope">
                 {{ scope.row.answer || '-' }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column v-if="columns[10].visible" label="内容长度" align="center" prop="wordCount">
+            <el-table-column v-if="columns[10].visible" label="内容长度" align="center" prop="wordCount">
               <template #default="scope">
                 {{ scope.row.wordCount || '-' }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column v-if="columns[12].visible" label="关键词" align="center" prop="keywords">
+            <el-table-column v-if="columns[12].visible" label="关键词" align="center" prop="keywords">
               <template #default="scope">
                 {{ scope.row.keywords || '-' }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column v-if="columns[15].visible" label="访问次数" align="center" prop="hitCount">
+            <el-table-column v-if="columns[15].visible" label="访问次数" align="center" prop="hitCount">
               <template #default="scope">
                 {{ scope.row.hitCount || '-' }}
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column v-if="columns[21].visible" label="分段添加dify状态" align="center" prop="syncStatus">
+            <el-table-column v-if="columns[21].visible" label="分段添加dify状态" align="center" prop="syncStatus">
               <template #default="scope">
                     <dict-tag :options="sync_status" :value="scope.row.syncStatus"/>
               </template>
             </el-table-column>
-            <el-table class="glass-card"-column v-if="columns[28].visible" label="创建时间" align="center" prop="createTime" width="180" sortable="custom" :sort-orders="['descending', 'ascending']">
+            <el-table-column v-if="columns[28].visible" label="创建时间" align="center" prop="createTime" width="180" sortable="custom" :sort-orders="['descending', 'ascending']">
               <template #default="scope">
                 <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
               </template>
             </el-table-column>
-    <el-table class="glass-card"-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
+    <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
       <template #default="scope">
         <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)"
                    v-hasPermi="['knowledgeSegment:knowledgeSegment:edit']">修改</el-button>

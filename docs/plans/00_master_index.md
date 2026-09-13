@@ -22,7 +22,7 @@
 | **09** | **系统安全防线与长事务稳定性加固** | P0 致命级安全与防雪崩 | 03+04 | **Delivered** | `phase_09_plan.md` |
 | **10** | **智能体运行时反思熔断、工具截断与状态图自愈** | ReAct 循环韧性与防死循环熔断 | 04+05 | **Delivered** | `phase_10_plan.md` |
 | **11** | **RAG 混合检索与语义缓存深层治理** | 混合向量图谱性能、Semantic Cache 淘汰防护与评测集扩容 | 01+06+07 | **Delivered** | `phase_11_plan.md` |
-| **12** | **前端高保真单色毛玻璃与流式渲染平滑体验** | 流式 Markdown/KaTeX 渲染性能、平滑打字机与视觉一致性 | — | **Planned** | `phase_12_plan.md` |
+| **12** | **前端高保真单色毛玻璃与流式渲染平滑体验** | 流式 Markdown/KaTeX 渲染性能、平滑打字机与视觉一致性 | — | **Delivered** | `phase_12_plan.md` |
 
 ## 每阶段标准工作流
 
@@ -48,3 +48,4 @@
 | 2026-09-13 | **Phase 09 Delivered**：传输层 SSRF 防御、切片长事务解耦、gRPC 反应式双向取消、FlyFlow/WebSocket 零信任鉴权、前端 Axios AbortController 成对清理，契约测试 18/18 全绿，全量回归 686/686 全绿，前端打包 0 错误通过 |
 | 2026-09-13 | **Phase 10 Delivered**：ReAct 循环连续重复短路与 6 步滑动窗口熔断（ReActCycleGuard）、工具 10s 异步超时与 Head-Tail 16KB 智能截断（ToolResilienceDecorator）、Reflexion 反思重试反馈回填闭环（ReflectiveAgent）、彻底对齐 DeepSeek API 唯一模型基线，契约测试 8/8 全绿，全量回归 694/694 全绿！ |
 | 2026-09-13 | **Phase 11 Delivered**：EnhancedSemanticCacheService（无锁 L1 缓存、极性翻转两级门禁、空结果哨兵防穿透、Jitter 随机防雪崩）、ResilientHybridRetrievalCoordinator（CompletableFuture 响应式编排、Neo4j 独立仓壁隔离线程池、250ms 软超时 Fail-Open 降级与 RRF 融合）、RagRetrievalService 伪并发与超时治理、EvalRegressionGate 自动化防退化门禁，契约测试 10/10 全绿，全量回归 704/704 全绿！ |
+| 2026-09-13 | **Phase 12 Delivered**：StreamingMarkdownEngine（未闭合代码/公式/标签虚拟补全、DeepSeek `<think>` 思考流解耦脉冲卡片、DJB2 代码高亮缓存）、useChatScrollController（Scroll Lock 防强制拽回、单色毛玻璃回到底部浮标、未读统计）、Monochromatic Glassmorphism 单色毛玻璃分层规范体系（L0~L3）全面落地、SSE RAF 16.6ms 帧预算微批合并调度消除主线程微任务饿死，契约测试 4/4 全绿，前端生产构建 0 错误通过，全量回归 708/708 全绿！ |

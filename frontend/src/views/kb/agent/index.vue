@@ -628,9 +628,29 @@ function doSendMessage(content) {
   abortController.value = new AbortController();
 
   let botContent = "";
+  let rafId = null;
+  let hasPendingUpdate = false;
 
-  const scrollMessageListToBottom = () => {
-    scrollCurrentConversation(conversationId, true);
+  const flushBotUpdate = () => {
+    if (!hasPendingUpdate) return;
+    messages[botMessageIndex].content = botContent;
+    updateConversationMessages(conversationId, messages);
+    scrollCurrentConversation(conversationId, false); // 流式中平滑/根据锁定状态滚动
+    hasPendingUpdate = false;
+  };
+
+  const scheduleBotUpdate = () => {
+    hasPendingUpdate = true;
+    if (!rafId) {
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        flushBotUpdate();
+      });
+    }
+  };
+
+  const scrollMessageListToBottom = (force = false) => {
+    scrollCurrentConversation(conversationId, force);
   };
 
   const appendStructuredMessage = (receive) => {
@@ -645,7 +665,7 @@ function doSendMessage(content) {
       });
       botMessageIndex += 1;
       updateConversationMessages(conversationId, messages);
-      scrollMessageListToBottom();
+      scrollMessageListToBottom(false);
       return true;
     }
     if (eventType === 'memory_recall') {
@@ -659,7 +679,7 @@ function doSendMessage(content) {
       });
       botMessageIndex += 1;
       updateConversationMessages(conversationId, messages);
-      scrollMessageListToBottom();
+      scrollMessageListToBottom(false);
       return true;
     }
     return false;
@@ -682,12 +702,7 @@ function doSendMessage(content) {
           const messageContent = receive.content || '';
           if (messageContent) {
             botContent += messageContent;
-            // 更新机器人消息
-            messages[botMessageIndex].content = botContent;
-            updateConversationMessages(conversationId, messages);
-
-            // 每次更新内容后滚动到底部
-            scrollMessageListToBottom();
+            scheduleBotUpdate();
           }
         }
       } catch (e) {
@@ -696,6 +711,11 @@ function doSendMessage(content) {
     },
     // onerror 回调
     (error) => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      flushBotUpdate();
       messages[botMessageIndex].content = `错误：${error.message || '请求失败'}`;
       updateConversationMessages(conversationId, messages);
       delete activeConversationStreams[conversationId];
@@ -704,11 +724,21 @@ function doSendMessage(content) {
     },
     // onclose 回调
     () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      flushBotUpdate();
       delete activeConversationStreams[conversationId];
       syncLoading();
       refreshConversationMessages(conversationId, true);
     }
   ).catch((error) => {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    flushBotUpdate();
     delete activeConversationStreams[conversationId];
     syncLoading();
     if (!messages[botMessageIndex].content.includes('错误')) {

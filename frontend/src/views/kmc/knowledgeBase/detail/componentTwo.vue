@@ -26,33 +26,33 @@
       :default-expand-all="isExpandAll"
       :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
   >
-    <el-table class="glass-card"-column label="ID" align="center" prop="parentId" >
+    <el-table-column label="ID" align="center" prop="parentId" >
       <template #default="scope">
         {{ scope.row.id || '-' }}
       </template>
     </el-table-column>
-    <el-table class="glass-card"-column label="标题" prop="title" />
-    <el-table class="glass-card"-column label="内容" align="center" prop="content" >
+    <el-table-column label="标题" prop="title" />
+    <el-table-column label="内容" align="center" prop="content" >
       <template #default="scope">
         {{ scope.row.content || '-' }}
       </template>
     </el-table-column>
-    <el-table class="glass-card"-column label="创建人" align="center" prop="createBy" >
+    <el-table-column label="创建人" align="center" prop="createBy" >
       <template #default="scope">
         {{ scope.row.createBy || '-' }}
       </template>
     </el-table-column>
-    <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="180">
+    <el-table-column label="创建时间" align="center" prop="createTime" width="180">
       <template #default="scope">
         <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
       </template>
     </el-table-column>
-    <el-table class="glass-card"-column label="备注" align="center" prop="remark" >
+    <el-table-column label="备注" align="center" prop="remark" >
       <template #default="scope">
         {{ scope.row.remark || '-' }}
       </template>
     </el-table-column>
-    <el-table class="glass-card"-column label="操作" align="center" class-name="small-padding fixed-width">
+    <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
       <template #default="scope">
         <el-button v-ripple class="glass-btn" link icon="Edit"  >修改</el-button>
         <el-button v-ripple class="glass-btn" link icon="Plus"  >新增</el-button>

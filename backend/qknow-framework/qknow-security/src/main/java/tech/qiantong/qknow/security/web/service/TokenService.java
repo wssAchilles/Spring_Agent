@@ -64,6 +64,17 @@ public class TokenService
     {
         // 获取请求携带的令牌
         String token = getToken(request);
+        return getLoginUser(token);
+    }
+
+    /**
+     * 根据 token 字符串获取登录用户信息
+     *
+     * @param token 令牌
+     * @return 用户信息
+     */
+    public LoginUser getLoginUser(String token)
+    {
         if (StringUtils.isNotEmpty(token))
         {
             try

@@ -21,6 +21,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.hermes.agent.guard.ReActCycleGuard;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -359,7 +360,7 @@ public class AgentOrchestrator {
             return;
         }
 
-        // 7. 智能模型路由：工具调用场景切换到配置的工具调用模型
+        // 7. 模型路由：若存在启用工具且匹配工具调用意图，并在显式配置了工具专用模型端点时动态获取
         ChatModel agentModel = chatModel;
         if (!enabledToolNames.isEmpty() && needsToolCalling(request.getQuestion(), enabledToolNames)) {
             var routingConfig = toolRoutingConfig != null ? toolRoutingConfig.getToolCallingModel() : null;
@@ -371,26 +372,33 @@ public class AgentOrchestrator {
                             routingConfig.getBaseUrl(),
                             routingConfig.getApiKey(),
                             routingConfig.getModelName());
-                    log.info("智能路由: 检测到工具调用需求，切换到 {}/{}",
-                            routingConfig.getPlatform(), routingConfig.getModelName());
+                    log.info("工具调用模型切换: {}/{}", routingConfig.getPlatform(), routingConfig.getModelName());
                 } catch (Exception e) {
-                    log.warn("工具调用模型不可用，回退到原始模型: {}", e.getMessage());
+                    log.warn("工具调用模型不可用，回退到主模型: {}", e.getMessage());
                     agentModel = chatModel;
                 }
-            } else {
-                log.debug("工具调用模型路由未配置或已禁用，使用原始模型");
             }
         }
 
-        // 8. 构建 ReactAgent
+        // 8. 挂载 ReActCycleGuard 防死循环与振荡熔断守卫
+        final ReActCycleGuard cycleGuard = new ReActCycleGuard(10, 3);
+        List<ToolCallback> guardedTools = tools.stream()
+                .map(t -> wrapWithCycleGuard(t, cycleGuard))
+                .collect(Collectors.toList());
+        ToolCallbackResolver guardedResolver = name -> {
+            ToolCallback cb = resolver != null ? resolver.resolve(name) : null;
+            return wrapWithCycleGuard(cb, cycleGuard);
+        };
+
+        // 9. 构建 ReactAgent
         ReactAgent agent = ReactAgent.builder()
                 .name("hermes_agent")
                 .model(agentModel)
                 .hooks(ModelCallLimitHook.builder().runLimit(10).build())
                 .systemPrompt(systemPrompt)
                 .toolNames(toolNames)
-                .tools(tools)
-                .resolver(resolver)
+                .tools(guardedTools)
+                .resolver(guardedResolver)
                 .build();
 
         // 8. 执行推理并映射为 ChatEvent 流
@@ -1047,12 +1055,37 @@ public class AgentOrchestrator {
     }
 
     /**
-     * 智能模型路由：判断查询是否需要工具调用
-     * 天气/搜索/HTTP/文本处理 → true（用 GPT-4o）
-     * 知识库相关问题 → false（用 DeepSeek）
+     * 包装带有死循环熔断防护的 ToolCallback
+     */
+    private ToolCallback wrapWithCycleGuard(ToolCallback original, ReActCycleGuard guard) {
+        if (original == null) {
+            return null;
+        }
+        return new ToolCallback() {
+            @Override
+            public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() {
+                return original.getToolDefinition();
+            }
+
+            @Override
+            public String call(String toolInput) {
+                String toolName = getToolDefinition() != null ? getToolDefinition().name() : "tool";
+                var check = guard.inspectToolCall(toolName, toolInput);
+                if (check.tripped()) {
+                    return check.injectionMessage();
+                }
+                return original.call(toolInput);
+            }
+        };
+    }
+
+    /**
+     * 智能工具意图检测：判断问题是否需要调用对应外部工具
      */
     private boolean needsToolCalling(String question, List<String> toolNames) {
-        if (question == null || question.isBlank()) return false;
+        if (question == null || question.isBlank() || toolNames == null || toolNames.isEmpty()) {
+            return false;
+        }
         String q = question.toLowerCase();
 
         // 天气查询

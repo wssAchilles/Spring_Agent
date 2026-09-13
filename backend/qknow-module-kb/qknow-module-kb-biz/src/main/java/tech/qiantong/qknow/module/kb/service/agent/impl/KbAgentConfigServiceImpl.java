@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@Transactional(rollbackFor = Exception.class)
 public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,KbAgentConfigDO> implements IKbAgentConfigService {
     @Resource
     private KbAgentConfigMapper kbAgentConfigMapper;
@@ -79,6 +78,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long createKbAgentConfig(KbAgentConfigSaveReqVO createReqVO) {
         KbAgentConfigDO existingConfig = getKbAgentConfigByBotId(createReqVO.getBotId());
         if (existingConfig != null) {
@@ -94,6 +94,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int updateKbAgentConfig(KbAgentConfigSaveReqVO updateReqVO) {
         if (updateReqVO.getId() == null) {
             throw new ServiceException("Agent 配置 ID 不能为空");
@@ -111,6 +112,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         return kbAgentConfigMapper.updateById(updateObj);
     }
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int removeKbAgentConfig(Collection<Long> idList) {
         // 批量删除agent配置
         return kbAgentConfigMapper.deleteBatchIds(idList);

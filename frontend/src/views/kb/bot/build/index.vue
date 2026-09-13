@@ -20,12 +20,12 @@
         </span>
       </div>
       <div class="toolbar-actions">
-        <el-button v-ripple class="glass-btn"
+        <el-button v-ripple
+          class="glass-btn custom-btn-padding"
           plain
           @click="showCopyDialog()"
           icon="CopyDocument"
           @mousedown="(e) => e.preventDefault()"
-          class="custom-btn-padding"
         >
           复制
         </el-button>
@@ -865,7 +865,7 @@
                   :class="{
                     'is-active': chatflowDebugSectionsVisible,
                     'is-inactive': !chatflowDebugSectionsVisible,
-                  } glass-btn"
+                  }"
                   @click="toggleChatflowDebugSections"
                 >
                   <el-icon><Operation /></el-icon>

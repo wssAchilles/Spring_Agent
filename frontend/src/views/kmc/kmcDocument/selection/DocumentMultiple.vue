@@ -59,33 +59,33 @@
                 @selection-change="handleSelectionChange"
                 @row-click="handleRowClick"
         >
-            <el-table class="glass-card"-column type="selection" width="55" align="center" />
-            <el-table class="glass-card"-column label="知识分类名称" align="center" prop="categoryName">
+            <el-table-column type="selection" width="55" align="center" />
+            <el-table-column label="知识分类名称" align="center" prop="categoryName">
                 <template #default="scope">
                     {{ scope.row.categoryName || '-' }}
                 </template>
             </el-table-column>
-            <el-table class="glass-card"-column label="文件名称" align="center" width="300" prop="name">
+            <el-table-column label="文件名称" align="center" width="300" prop="name">
                 <template #default="scope">
                     {{ scope.row.name || '-' }}
                 </template>
             </el-table-column>
-            <el-table class="glass-card"-column label="文件描述" align="center" prop="description">
+            <el-table-column label="文件描述" align="center" prop="description">
                 <template #default="scope">
                     {{ scope.row.description || '-' }}
                 </template>
             </el-table-column>
-            <el-table class="glass-card"-column label="创建人" align="center" prop="createBy" width="120">
+            <el-table-column label="创建人" align="center" prop="createBy" width="120">
                 <template #default="scope">
                     {{ scope.row.createBy || '-' }}
                 </template>
             </el-table-column>
-            <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="120">
+            <el-table-column label="创建时间" align="center" prop="createTime" width="120">
                 <template #default="scope">
                     <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
                 </template>
             </el-table-column>
-            <el-table class="glass-card"-column label="备注" align="center" prop="remark">
+            <el-table-column label="备注" align="center" prop="remark">
                 <template #default="scope">
                     {{ scope.row.remark || '-' }}
                 </template>

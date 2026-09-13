@@ -672,22 +672,22 @@
       <!--            :data="roleList"-->
       <!--            @selection-change="handleSelectionChange"-->
       <!--        >-->
-      <!--          <el-table class="glass-card"-column type="selection" width="55" align="center" />-->
-      <!--          <el-table class="glass-card"-column label="角色编号" prop="roleId" align="center" />-->
-      <!--          <el-table class="glass-card"-column-->
+      <!--          <el-table-column type="selection" width="55" align="center" />-->
+      <!--          <el-table-column label="角色编号" prop="roleId" align="center" />-->
+      <!--          <el-table-column-->
       <!--              label="角色名称"-->
       <!--              prop="roleName"-->
       <!--              align="center"-->
       <!--              :show-overflow-tooltip="true"-->
       <!--          />-->
-      <!--          <el-table class="glass-card"-column-->
+      <!--          <el-table-column-->
       <!--              label="权限字符"-->
       <!--              prop="roleKey"-->
       <!--              align="center"-->
       <!--              :show-overflow-tooltip="true"-->
       <!--          />-->
-      <!--          <el-table class="glass-card"-column label="显示顺序" prop="roleSort" align="center" />-->
-      <!--          <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="160">-->
+      <!--          <el-table-column label="显示顺序" prop="roleSort" align="center" />-->
+      <!--          <el-table-column label="创建时间" align="center" prop="createTime" width="160">-->
       <!--          </el-table-column>-->
       <!--        </el-table>-->
       <!--      </div>-->

@@ -191,13 +191,12 @@
     </div>
 
     <el-dialog
-      class="glass-card resource-manager-dialog"
+      class="glass-card resource-manager-dialog resource-manager-dialog"
       :title="resourceDialogTitle"
       v-model="resourceDialogOpen"
       width="1100px"
       append-to-body
       destroy-on-close
-      class="resource-manager-dialog"
       @closed="handleResourceDialogClosed"
     >
       <Kmc

@@ -51,39 +51,39 @@
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
     >
-      <el-table class="glass-card"-column type="selection" width="55" align="center" />
-      <el-table class="glass-card"-column label="ID" align="center" prop="id" />
-      <el-table class="glass-card"-column label="分段内容文本" align="center" prop="content">
+      <el-table-column type="selection" width="55" align="center" />
+      <el-table-column label="ID" align="center" prop="id" />
+      <el-table-column label="分段内容文本" align="center" prop="content">
         <template #default="scope">
           {{ scope.row.content || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="答案内容(如果有)" align="center" prop="answer">
+      <el-table-column label="答案内容(如果有)" align="center" prop="answer">
         <template #default="scope">
           {{ scope.row.answer || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="内容长度" align="center" prop="wordCount">
+      <el-table-column label="内容长度" align="center" prop="wordCount">
         <template #default="scope">
           {{ scope.row.wordCount || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="关键词" align="center" prop="keywords">
+      <el-table-column label="关键词" align="center" prop="keywords">
         <template #default="scope">
           {{ scope.row.keywords || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="访问次数" align="center" prop="hitCount">
+      <el-table-column label="访问次数" align="center" prop="hitCount">
         <template #default="scope">
           {{ scope.row.hitCount || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="分段添加dify状态" align="center" prop="syncStatus">
+      <el-table-column label="分段添加dify状态" align="center" prop="syncStatus">
         <template #default="scope">
               <dict-tag :options="sync_status" :value="scope.row.syncStatus"/>
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>

@@ -161,7 +161,7 @@
       />
     </div>
     <!-- 预览界面 -->
-    <el-dialog class="glass-card" :title="preview.title" v-model="preview.open" width="80%" top="5vh" append-to="body" class="scrollbar" draggable destroy-on-close>
+    <el-dialog class="glass-card scrollbar" :title="preview.title" v-model="preview.open" width="80%" top="5vh" append-to="body" draggable destroy-on-close>
       <el-tabs v-model="preview.activeName">
         <el-tab-pane
           v-for="(value, key) in preview.data"

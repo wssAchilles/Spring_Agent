@@ -184,93 +184,93 @@
         row-key="id"
         @current-change="handleCurrentChange"
     >
-      <el-table class="glass-card"-column label="ID" align="center" prop="id" />
-      <el-table class="glass-card"-column label="工作区id" align="center" prop="workspaceId">
+      <el-table-column label="ID" align="center" prop="id" />
+      <el-table-column label="工作区id" align="center" prop="workspaceId">
         <template #default="scope">
           {{ scope.row.workspaceId || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="灵桐知识库id" align="center" prop="qmDatasetId">
+      <el-table-column label="灵桐知识库id" align="center" prop="qmDatasetId">
         <template #default="scope">
           {{ scope.row.qmDatasetId || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="名称" align="center" prop="name">
+      <el-table-column label="名称" align="center" prop="name">
         <template #default="scope">
           {{ scope.row.name || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="描述" align="center" prop="description">
+      <el-table-column label="描述" align="center" prop="description">
         <template #default="scope">
           {{ scope.row.description || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="索引方式" align="center" prop="indexingTechnique">
+      <el-table-column label="索引方式" align="center" prop="indexingTechnique">
         <template #default="scope">
           {{ scope.row.indexingTechnique || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="权限" align="center" prop="permission">
+      <el-table-column label="权限" align="center" prop="permission">
         <template #default="scope">
           {{ scope.row.permission || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="Embedding 模型名称" align="center" prop="embeddingModel">
+      <el-table-column label="Embedding 模型名称" align="center" prop="embeddingModel">
         <template #default="scope">
           {{ scope.row.embeddingModel || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="Embedding 模型供应商" align="center" prop="embeddingModelProvider">
+      <el-table-column label="Embedding 模型供应商" align="center" prop="embeddingModelProvider">
         <template #default="scope">
           {{ scope.row.embeddingModelProvider || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="检索方法" align="center" prop="searchMethod">
+      <el-table-column label="检索方法" align="center" prop="searchMethod">
         <template #default="scope">
           {{ scope.row.searchMethod || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="是否开启 rerank" align="center" prop="rerankingEnable">
+      <el-table-column label="是否开启 rerank" align="center" prop="rerankingEnable">
         <template #default="scope">
           {{ scope.row.rerankingEnable || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="Rerank 模型的提供商" align="center" prop="rerankingProviderName">
+      <el-table-column label="Rerank 模型的提供商" align="center" prop="rerankingProviderName">
         <template #default="scope">
           {{ scope.row.rerankingProviderName || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="Rerank 模型的名称" align="center" prop="rerankingModelName">
+      <el-table-column label="Rerank 模型的名称" align="center" prop="rerankingModelName">
         <template #default="scope">
           {{ scope.row.rerankingModelName || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="召回条数" align="center" prop="topK">
+      <el-table-column label="召回条数" align="center" prop="topK">
         <template #default="scope">
           {{ scope.row.topK || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="是否开启召回分数限制" align="center" prop="scoreThresholdEnabled">
+      <el-table-column label="是否开启召回分数限制" align="center" prop="scoreThresholdEnabled">
         <template #default="scope">
           {{ scope.row.scoreThresholdEnabled || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="召回分数限制" align="center" prop="scoreThreshold">
+      <el-table-column label="召回分数限制" align="center" prop="scoreThreshold">
         <template #default="scope">
           {{ scope.row.scoreThreshold || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="创建人" align="center" prop="createBy">
+      <el-table-column label="创建人" align="center" prop="createBy">
         <template #default="scope">
           {{ scope.row.createBy || '-' }}
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table class="glass-card"-column label="备注" align="center" prop="remark">
+      <el-table-column label="备注" align="center" prop="remark">
         <template #default="scope">
           {{ scope.row.remark || '-' }}
         </template>
