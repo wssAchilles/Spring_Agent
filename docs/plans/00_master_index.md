@@ -19,6 +19,10 @@
 | **06** | **中文 IR 与检索底座原生加速** | N0–N2 | 01 | **Delivered** | `phase_06_plan.md` |
 | **07** | **重排门控 + RRF 消融** | C 门控 | **01 必须** | **Delivered** | `phase_07_plan.md` |
 | **08** | **生成侧评估与精准溯源 (Citation)** | Q2+R1 | 01+04 | **Delivered** | `phase_08_plan.md` |
+| **09** | **系统安全防线与长事务稳定性加固** | P0 致命级安全与防雪崩 | 03+04 | **Delivered** | `phase_09_plan.md` |
+| **10** | **智能体运行时反思熔断、工具截断与状态图自愈** | ReAct 循环韧性与防死循环熔断 | 04+05 | **Delivered** | `phase_10_plan.md` |
+| **11** | **RAG 混合检索与语义缓存深层治理** | 混合向量图谱性能、Semantic Cache 淘汰防护与评测集扩容 | 01+06+07 | **Delivered** | `phase_11_plan.md` |
+| **12** | **前端高保真单色毛玻璃与流式渲染平滑体验** | 流式 Markdown/KaTeX 渲染性能、平滑打字机与视觉一致性 | — | **Planned** | `phase_12_plan.md` |
 
 ## 每阶段标准工作流
 
@@ -41,3 +45,6 @@
 | 2026-09-13 | **Phase 06 Delivered**：中文 IR 领域词库增强与受控同义词扩展，单测 4/4 全绿 |
 | 2026-09-13 | **Phase 07 Delivered**：RRF 消融与重排自适应动态门控 (Reranking Gate)，单测 4/4 全绿，回归 75/75 全绿 |
 | 2026-09-13 | **Phase 08 Delivered**：生成侧评估与精准溯源 (Citation)，严格上下文对齐杜绝幽灵引用，单测 4/4 全绿，全量 79/79 全绿 |
+| 2026-09-13 | **Phase 09 Delivered**：传输层 SSRF 防御、切片长事务解耦、gRPC 反应式双向取消、FlyFlow/WebSocket 零信任鉴权、前端 Axios AbortController 成对清理，契约测试 18/18 全绿，全量回归 686/686 全绿，前端打包 0 错误通过 |
+| 2026-09-13 | **Phase 10 Delivered**：ReAct 循环连续重复短路与 6 步滑动窗口熔断（ReActCycleGuard）、工具 10s 异步超时与 Head-Tail 16KB 智能截断（ToolResilienceDecorator）、Reflexion 反思重试反馈回填闭环（ReflectiveAgent）、彻底对齐 DeepSeek API 唯一模型基线，契约测试 8/8 全绿，全量回归 694/694 全绿！ |
+| 2026-09-13 | **Phase 11 Delivered**：EnhancedSemanticCacheService（无锁 L1 缓存、极性翻转两级门禁、空结果哨兵防穿透、Jitter 随机防雪崩）、ResilientHybridRetrievalCoordinator（CompletableFuture 响应式编排、Neo4j 独立仓壁隔离线程池、250ms 软超时 Fail-Open 降级与 RRF 融合）、RagRetrievalService 伪并发与超时治理、EvalRegressionGate 自动化防退化门禁，契约测试 10/10 全绿，全量回归 704/704 全绿！ |

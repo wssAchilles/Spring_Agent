@@ -14,6 +14,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 
+import tech.qiantong.qknow.module.kmc.service.rag.cache.EnhancedSemanticCacheService;
+
 import jakarta.annotation.Resource;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -25,21 +27,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-// [溯源] 算法优化指南 §2.7 P2-4: 精确缓存层前置
-// L1: 精确字符串匹配 (hash) → L2: 语义向量匹配
+// [溯源] 算法优化指南 §2.7 P2-4: 精确缓存层前置 + Phase 11 增强语义漂移防护与无锁高并发
 
 @Slf4j
 @Component
 public class SemanticCacheService {
-
-    // [溯源] 算法优化指南 §2.7 P2-4: 精确缓存层 (Exact Cache) — LRU 淘汰
-    private final java.util.LinkedHashMap<String, CacheHit> exactCache = new java.util.LinkedHashMap<>(1024, 0.75f, true) {
-        @Override
-        protected boolean removeEldestEntry(java.util.Map.Entry<String, CacheHit> eldest) {
-            return size() > 1000;
-        }
-    };
-    private final Object exactCacheLock = new Object();
 
     private static final double DEFAULT_THRESHOLD = 0.92D;
     private static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
@@ -49,6 +41,12 @@ public class SemanticCacheService {
 
     @Resource
     private SemanticCacheConfig config;
+
+    @Resource
+    private EnhancedSemanticCacheService enhancedCacheService;
+
+    // L1 本地无锁精确缓存（使用 ConcurrentHashMap，彻底消除全局互斥排队锁）
+    private final java.util.concurrent.ConcurrentHashMap<String, CacheHit> exactCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     public Optional<CacheHit> findAnswer(Long workspaceId, Long botId, Long knowledgeBaseId, String knowledgeIdsHash,
                                          String query, String modelName, EmbeddingModel embeddingModel) {
@@ -61,15 +59,30 @@ public class SemanticCacheService {
             return Optional.empty();
         }
 
-        // L1: 精确缓存层 — 零计算成本
-        String exactKey = buildExactCacheKey(workspaceId, botId, knowledgeIdsHash, modelName, query);
-        CacheHit exactHit = getExactCache(exactKey);
-        if (exactHit != null) {
-            log.debug("Exact cache hit for query: {}", query.substring(0, Math.min(50, query.length())));
-            return Optional.of(exactHit);
+        // 防穿透检查：是否已被空结果哨兵短期拦截
+        if (enhancedCacheService != null && enhancedCacheService.isBlockedBySentinel(workspaceId, botId, knowledgeBaseIds, modelName, query)) {
+            log.debug("Semantic cache blocked by empty sentinel for query: {}", query);
+            return Optional.empty();
         }
 
-        // L2: 语义缓存层
+        // L1: 精确缓存层 — 无锁高并发检索
+        if (enhancedCacheService != null) {
+            var exactOpt = enhancedCacheService.findExact(workspaceId, botId, knowledgeBaseIds, modelName, query);
+            if (exactOpt.isPresent()) {
+                var e = exactOpt.get();
+                log.debug("Exact cache hit for query: {}", query.substring(0, Math.min(50, query.length())));
+                return Optional.of(CacheHit.builder()
+                        .id(e.getId())
+                        .answer(e.getAnswer())
+                        .sourcesJson(e.getSourcesJson())
+                        .similarity(e.getSimilarity())
+                        .knowledgeBaseIds(knowledgeBaseIds)
+                        .query(e.getOriginalQuery())
+                        .build());
+            }
+        }
+
+        // L2: 语义缓存层 (PGVector)
         float[] embedding = embed(query, embeddingModel);
         int embeddingDimension = embeddingDimension();
         if (embedding.length != embeddingDimension) {
@@ -82,7 +95,7 @@ public class SemanticCacheService {
         String vectorCast = "vector(" + embeddingDimension + ")";
 
         String sql = """
-                SELECT id, answer, sources_json, 1 - (query_embedding::%1$s <=> ?::%1$s) AS similarity
+                SELECT id, query, answer, sources_json, 1 - (query_embedding::%1$s <=> ?::%1$s) AS similarity
                 FROM semantic_cache_store
                 WHERE workspace_id = ?
                   AND bot_id = ?
@@ -97,6 +110,7 @@ public class SemanticCacheService {
         try {
             List<CacheHit> hits = jdbcTemplate.query(sql, (rs, rowNum) -> CacheHit.builder()
                     .id(rs.getLong("id"))
+                    .query(rs.getString("query"))
                     .answer(rs.getString("answer"))
                     .sourcesJson(rs.getString("sources_json"))
                     .similarity(rs.getDouble("similarity"))
@@ -106,9 +120,25 @@ public class SemanticCacheService {
             if (CollUtil.isEmpty(hits)) {
                 return Optional.empty();
             }
+
+            CacheHit hit = hits.get(0);
+            // Phase 11 核心：语义漂移防御门禁校验（否定词与核心词元）
+            if (enhancedCacheService != null && !enhancedCacheService.passSemanticGating(query, hit.getQuery())) {
+                log.warn("[SemanticCache] 命中条目未通过语义漂移防御门禁，拦截反向/实体漂移误命中: query='{}', hitQuery='{}'",
+                        query, hit.getQuery());
+                return Optional.empty();
+            }
+
             jdbcTemplate.update("UPDATE semantic_cache_store SET hit_count = hit_count + 1, last_hit_at = CURRENT_TIMESTAMP WHERE id = ?",
-                    hits.get(0).getId());
-            return Optional.of(hits.get(0));
+                    hit.getId());
+
+            // 门禁通过后回填 L1 增强缓存
+            if (enhancedCacheService != null) {
+                enhancedCacheService.putExactCache(workspaceId, botId, knowledgeBaseIds, modelName, query,
+                        hit.getAnswer(), hit.getSourcesJson(), config.getTtl());
+            }
+
+            return Optional.of(hit);
         } catch (Exception e) {
             RagFallbackMonitor.record("semantic_cache", "bypass", "lookup failed: " + e.getMessage());
             log.warn("Semantic cache lookup failed, bypassing cache", e);
@@ -160,16 +190,11 @@ public class SemanticCacheService {
                         ON CONFLICT DO NOTHING
                         """, rows);
 
-                // [溯源] 算法优化指南 §2.7 P2-4: 同步写入精确缓存
-                String exactKey = buildExactCacheKey(workspaceId, botId, knowledgeIdsHash, modelName, query);
-                putExactCache(exactKey, CacheHit.builder()
-                        .id(cacheId)
-                        .answer(answer)
-                        .sourcesJson(sourcesJson != null ? sourcesJson : "[]")
-                        .similarity(1.0)
-                        .expiresAt(Instant.now().plus(ttl))
-                        .knowledgeBaseIds(new ArrayList<>(knowledgeBaseIds))
-                        .build());
+                // Phase 11: 委托写入无锁高性能增强精确缓存（自带 Jitter 防雪崩）
+                if (enhancedCacheService != null) {
+                    enhancedCacheService.putExactCache(workspaceId, botId, knowledgeBaseIds, modelName,
+                            query, answer, sourcesJson != null ? sourcesJson : "[]", ttl);
+                }
             }
         } catch (Exception e) {
             RagFallbackMonitor.record("semantic_cache", "skip_write", "write failed: " + e.getMessage());
@@ -181,7 +206,8 @@ public class SemanticCacheService {
         if (knowledgeBaseId == null) {
             return 0;
         }
-        int evictedExact = evictExactCacheByKnowledgeBase(knowledgeBaseId);
+        int evictedExact = enhancedCacheService != null ? enhancedCacheService.evictExactCacheByKnowledgeBase(knowledgeBaseId) : 0;
+        evictedExact += evictExactCacheByKnowledgeBase(knowledgeBaseId);
         try {
             List<Long> cacheIds = jdbcTemplate.queryForList("""
                     SELECT cache_id FROM semantic_cache_knowledge_rel WHERE knowledge_base_id = ?
@@ -235,43 +261,44 @@ public class SemanticCacheService {
         return dimension > 0 ? dimension : DEFAULT_EMBEDDING_DIMENSION;
     }
 
-    // [溯源] 算法优化指南 §2.7 P2-4: 精确缓存键构建
     private String buildExactCacheKey(Long workspaceId, Long botId, String knowledgeIdsHash, String modelName, String query) {
         String normalized = query.trim().toLowerCase().replaceAll("\\s+", " ");
         return workspaceId + ":" + botId + ":" + knowledgeIdsHash + ":" + modelName + ":" + sha256(normalized);
     }
 
     private void putExactCache(String exactKey, CacheHit hit) {
-        synchronized (exactCacheLock) {
+        if (exactKey != null && hit != null) {
             exactCache.put(exactKey, hit);
         }
     }
 
     private CacheHit getExactCache(String exactKey) {
-        synchronized (exactCacheLock) {
-            CacheHit hit = exactCache.get(exactKey);
-            if (hit != null && hit.getExpiresAt() != null && hit.getExpiresAt().isBefore(Instant.now())) {
-                exactCache.remove(exactKey);
-                return null;
-            }
-            return hit;
+        if (exactKey == null) {
+            return null;
         }
+        CacheHit hit = exactCache.get(exactKey);
+        if (hit != null && hit.getExpiresAt() != null && hit.getExpiresAt().isBefore(Instant.now())) {
+            exactCache.remove(exactKey);
+            return null;
+        }
+        return hit;
     }
 
     private int evictExactCacheByKnowledgeBase(Long knowledgeBaseId) {
-        synchronized (exactCacheLock) {
-            int removed = 0;
-            Iterator<java.util.Map.Entry<String, CacheHit>> iterator = exactCache.entrySet().iterator();
-            while (iterator.hasNext()) {
-                CacheHit hit = iterator.next().getValue();
-                if (hit != null && hit.getKnowledgeBaseIds() != null
-                        && hit.getKnowledgeBaseIds().contains(knowledgeBaseId)) {
-                    iterator.remove();
-                    removed++;
-                }
-            }
-            return removed;
+        if (knowledgeBaseId == null) {
+            return 0;
         }
+        int removed = 0;
+        Iterator<java.util.Map.Entry<String, CacheHit>> iterator = exactCache.entrySet().iterator();
+        while (iterator.hasNext()) {
+            CacheHit hit = iterator.next().getValue();
+            if (hit != null && hit.getKnowledgeBaseIds() != null
+                    && hit.getKnowledgeBaseIds().contains(knowledgeBaseId)) {
+                iterator.remove();
+                removed++;
+            }
+        }
+        return removed;
     }
 
     private String sha256(String input) {
@@ -294,6 +321,7 @@ public class SemanticCacheService {
     @AllArgsConstructor
     public static class CacheHit {
         private Long id;
+        private String query;
         private String answer;
         private String sourcesJson;
         private double similarity;

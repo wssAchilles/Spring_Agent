@@ -348,7 +348,7 @@ public class RagRetrievalService {
                 () -> timed(phase + "KeywordMs", timings,
                         () -> retrieveKeywordVariants(knowledgeBaseId, queryEnhancement.fullPathQueries(), candidateTopK)));
 
-        queryIntent.setEntities(getFuture(entityFuture, "query-entity"));
+        queryIntent.setEntities(getFuture(entityFuture, "query-entity", 2000, TimeUnit.MILLISECONDS));
         Future<List<RetrievalResult>> metadataFuture = submitRetrieval(
                 () -> timed(phase + "MetadataMs", timings,
                         () -> metadataRetriever.retrieve(knowledgeBaseId, queryIntent, candidateTopK)));
@@ -653,11 +653,15 @@ public class RagRetrievalService {
     }
 
     private <T> List<T> getFuture(Future<List<T>> future, String name) {
+        return getFuture(future, name, 5000, TimeUnit.MILLISECONDS);
+    }
+
+    private <T> List<T> getFuture(Future<List<T>> future, String name, long timeout, TimeUnit unit) {
         try {
-            return future.get(30, TimeUnit.SECONDS);
+            return future.get(timeout, unit);
         } catch (TimeoutException e) {
             future.cancel(true);
-            log.warn("Future '{}' timed out and was cancelled", name, e);
+            log.warn("Future '{}' timed out after {} {} and was cancelled", name, timeout, unit, e);
             return new ArrayList<>();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
