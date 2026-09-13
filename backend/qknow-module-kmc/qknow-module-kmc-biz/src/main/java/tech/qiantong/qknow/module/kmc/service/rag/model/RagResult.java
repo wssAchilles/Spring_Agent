@@ -31,4 +31,10 @@ public class RagResult {
     // CRAG AMBIGUOUS: 提供的细分澄清选项列表
     @Builder.Default
     private List<String> clarificationOptions = new ArrayList<>();
+
+    // Phase 13: 结构化冷启动与零命中状态契约
+    @Builder.Default
+    private RagZeroState zeroState = RagZeroState.NORMAL;
+
+    private String zeroStateMessage;
 }

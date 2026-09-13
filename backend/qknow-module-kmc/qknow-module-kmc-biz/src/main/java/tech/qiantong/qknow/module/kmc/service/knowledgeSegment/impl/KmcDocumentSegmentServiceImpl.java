@@ -385,12 +385,20 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
         if (!Objects.equals(knowledgeBaseDO.getIndexingTechnique(), "high_quality")) {
             return;
         }
-        FilterExpressionBuilder b = new FilterExpressionBuilder();
-        KmcDocumentSegmentDO segmentDO = segmentDOList.get(0);
-        Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, segmentDO.getId())
-                .build();
         VectorStore vectorStore = this.getVectorStore(knowledgeBaseDO);
-        vectorStore.delete(expression);
+        for (KmcDocumentSegmentDO segmentDO : segmentDOList) {
+            if (segmentDO == null || segmentDO.getId() == null) {
+                continue;
+            }
+            try {
+                FilterExpressionBuilder b = new FilterExpressionBuilder();
+                Filter.Expression expression = b.eq(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, segmentDO.getId())
+                        .build();
+                vectorStore.delete(expression);
+            } catch (Exception e) {
+                log.warn("从向量数据库删除切片 {} 异常: {}", segmentDO.getId(), e.getMessage());
+            }
+        }
     }
 
     /**

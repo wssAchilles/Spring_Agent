@@ -305,6 +305,10 @@ public class RagRetrievalService {
             debugInfo.put("fallbacks", RagFallbackMonitor.currentScopeSnapshot());
             effective.setDebugInfo(debugInfo);
         }
+        if (effective.getSources() == null || effective.getSources().isEmpty()) {
+            effective.setZeroState(tech.qiantong.qknow.module.kmc.service.rag.model.RagZeroState.ZERO_SIMILARITY_HIT);
+            effective.setZeroStateMessage(tech.qiantong.qknow.module.kmc.service.rag.model.RagZeroState.ZERO_SIMILARITY_HIT.getDescription());
+        }
         return effective;
     }
 

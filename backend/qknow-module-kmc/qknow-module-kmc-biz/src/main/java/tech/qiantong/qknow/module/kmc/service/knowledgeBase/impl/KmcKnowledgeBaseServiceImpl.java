@@ -171,7 +171,26 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
      */
     @Override
     public int removeKmcKnowledgeBase(Collection<Long> idList) {
+        if (idList != null && !idList.isEmpty()) {
+            cascadeDeleteVectorStore(idList);
+        }
         return kmcKnowledgeBaseMapper.deleteByIds(idList);
+    }
+
+    private void cascadeDeleteVectorStore(Collection<Long> kbIds) {
+        if (jdbcTemplate == null || kbIds == null || kbIds.isEmpty()) {
+            return;
+        }
+        for (Long kbId : kbIds) {
+            try {
+                String sql = String.format("DELETE FROM vector_store WHERE metadata->>'%s' = ?",
+                        WeaviateConstant.METADATA_FIELD_KNOWLEDGE_BASE_ID);
+                int deleted = jdbcTemplate.update(sql, String.valueOf(kbId));
+                log.info("级联清理知识库 ID={} 的向量数据，物理清除 {} 条", kbId, deleted);
+            } catch (Exception e) {
+                log.warn("级联清理知识库 ID={} 向量数据异常: {}", kbId, e.getMessage());
+            }
+        }
     }
 
     @Override
