@@ -25,6 +25,10 @@
 | **12** | **前端高保真单色毛玻璃与流式渲染平滑体验** | 流式 Markdown/KaTeX 渲染性能、平滑打字机与视觉一致性 | — | **Delivered** | `phase_12_plan.md` |
 | **13** | **数据运维底座、Embedding 维度漂移防御与索引健康自愈体系** | 维度与模型签名防御门禁、双向反熵对齐自愈、冷启动结构化短路与批量删除孤儿治理 | 01+02+03 | **Delivered** | `phase_13_plan.md` |
 | **14** | **长文本层次化 Chunking 策略、Markdown 结构感知分块与 Parent-Child Small-to-Big 检索闭环** | 标题栈面包屑注入、表格行级表头复制传播、代码块/版本号保护、Parent Max-Pooling 检索得分继承与 20KB 预算优雅降级 | 01+06+07+11 | **Delivered** | `phase_14_plan.md` |
+| **15** | **生产级可观测性、Prometheus 核心埋点与大模型调用成本/延迟治理体系** | RAG 7阶段微观Timer与门控Counter、DeepSeek纳元定点无锁成本累加器、Agent ReAct轮次与熔断监控、LangFuse异步非阻塞批处理 | 01+02+04 | **Delivered** | `phase_15_plan.md` |
+| **16** | **生产级灾备容灾、异构数据一致性备份恢复与线上真实 Query 难例自动挖掘体系** | PostgreSQL/PGVector/Neo4j 异构备份与自愈恢复、recall_log 月度范围分区与冷热归档、线上真实 Query 难例挖掘与无感结构保留脱敏流水线、不可变基准与 EvalRegressionGate 双轨门禁 | 01+02+13+15 | **Delivered** | `phase_16_plan.md` |
+| **17** | **多知识库联合检索并发编排、跨库得分校准重排、多租户 RBAC 零泄露隔离与统一全局上下文预算熔断治理** | 跨多库 CompletableFuture 响应式编排、单库 2500ms 软超时 Fail-Open 降级与独立仓壁隔离、跨库 RRF (k=60) 分数校准精排与全局 20KB 预算硬截断、PermissionFilter 彻底根治管理员返回 null 漏洞与语义缓存权限哈希防侧信道 | 01+06+07+11+14 | **Designed** | `phase_17_plan.md` |
+
 
 ## 每阶段标准工作流
 
@@ -53,3 +57,7 @@
 | 2026-09-13 | **Phase 12 Delivered**：StreamingMarkdownEngine（未闭合代码/公式/标签虚拟补全、DeepSeek `<think>` 思考流解耦脉冲卡片、DJB2 代码高亮缓存）、useChatScrollController（Scroll Lock 防强制拽回、单色毛玻璃回到底部浮标、未读统计）、Monochromatic Glassmorphism 单色毛玻璃分层规范体系（L0~L3）全面落地、SSE RAF 16.6ms 帧预算微批合并调度消除主线程微任务饿死，契约测试 4/4 全绿，前端生产构建 0 错误通过，全量回归 708/708 全绿！ |
 | 2026-09-13 | **Phase 13 Delivered**：EmbeddingDimensionGuard 严格校验 1536 维基线与不可变模型指纹防漂移、VectorReconciliationEngine 双向反熵自愈管道（Keyset 游标补漏 + 孤儿向量物理清理）、彻底修复 KmcDocumentSegmentServiceImpl 批量删除仅删单条的重大孤儿遗留 Bug、KmcKnowledgeBaseServiceImpl 级联物理清理 vector_store、RagZeroState 冷启动与零召回短路契约（杜绝透传 "null" 脏上下文与幻觉推理），契约测试 4/4 全绿，全量回归 712/712 全绿！ |
 | 2026-09-13 | **Phase 14 Delivered**：StructureAwareMarkdownSplitter 结构感知分块器（标题栈多级面包屑注入、表格完整性与超长行级表头跨块复制传播、代码块围栏与版本号防误切）、Parent-Child Small-to-Big 检索装配闭环（Parent 继承最高子块得分 Max-Pooling、严格保序去重、20KB 预算超限自适应优雅降级回 Child 原文），分块器单测 6/6 全绿，门禁测试 4/4 全绿，既有上下文单测 6/6 全绿，全量回归 722/722 全绿！ |
+| 2026-09-13 | **Phase 15 Delivered**：RagMetricsService（8阶段微观耗时 Timer、缓存与重排门控 Counter、有界基数 ≤40 Meters 杜绝 TSDB 爆炸）、DeepSeekCostGovernor（金融级纳元定点整数、LongAdder 无锁分段累加、消除浮点累加漂移、并发请求 Gauge 与官方 V3/R1 费率实时记账）、AgentMetricsService（ReAct 步数分布、单轮耗时、工具执行状态与死循环熔断拦截统计）、LangFuseTracingService（有界阻塞队列 2048 缓冲 + 后台守护 Worker 线程消除主线程 HTTP 阻塞与 Thread.sleep 吞吐暴跌），契约测试 4/4 全绿，全量回归 726/726 全绿！ |
+| 2026-09-13 | **Phase 16 Delivered**：跨异构存储（PostgreSQL + PGVector + Neo4j）一致性灾备恢复工程、HNSW 三阶段解耦构建（恢复吞吐提升4~8倍并杜绝OOM）、`kmc_knowledge_recall_log` 范围分区 DDL 与冷热归档模板、线上真实 Query 四维漏斗难例挖掘服务（RealQueryMiningService）与无感结构保留加盐脱敏流水线（QuerySanitizer，柯西-施瓦茨扰动保真界限）、不可变基准回放集（rag-real-queries-v1.jsonl）与 EvalRegressionGate 双轨绝对红线门禁，专属契约测试 5/5 全绿，全量回归 731/731 全绿！ |
+| 2026-09-13 | **Phase 17 Designed**：双路深度学术与工业调研完成（`phase_17_academic_report.md`、`phase_17_industrial_report.md`）；沉淀实施契约 `phase_17_plan.md`，锁定唯一可证伪假设 H-Phase17，等待用户明确授权进入实施阶段 |
+

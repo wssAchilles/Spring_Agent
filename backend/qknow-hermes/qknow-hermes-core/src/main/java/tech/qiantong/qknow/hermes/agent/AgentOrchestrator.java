@@ -76,6 +76,20 @@ public class AgentOrchestrator {
     private final tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig;
     private final MemoryManager memoryManager;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.hermes.cost.DeepSeekCostGovernor deepSeekCostGovernor;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.hermes.agent.metrics.AgentMetricsService agentMetricsService;
+
+    public void setDeepSeekCostGovernor(tech.qiantong.qknow.hermes.cost.DeepSeekCostGovernor deepSeekCostGovernor) {
+        this.deepSeekCostGovernor = deepSeekCostGovernor;
+    }
+
+    public void setAgentMetricsService(tech.qiantong.qknow.hermes.agent.metrics.AgentMetricsService agentMetricsService) {
+        this.agentMetricsService = agentMetricsService;
+    }
+
     /** H11: when short-term and DB history are empty, recall long-term summaries. */
     @org.springframework.beans.factory.annotation.Value("${hermes.memory.long-term.recall-on-empty:true}")
     private boolean longTermRecallOnEmpty = true;
@@ -117,6 +131,12 @@ public class AgentOrchestrator {
         // LangFuse: 创建对话追踪
         String traceId = null;
         long startTime = System.currentTimeMillis();
+        long startNs = System.nanoTime();
+
+        if (deepSeekCostGovernor != null) {
+            deepSeekCostGovernor.markRequestStart();
+        }
+
         if (langFuseService != null && langFuseService.isEnabled()) {
             traceId = langFuseService.trace(
                 request.getRequestId(), String.valueOf(request.getBotId()), request.getQuestion());
@@ -124,6 +144,7 @@ public class AgentOrchestrator {
 
         final String finalTraceId = traceId;
         final long finalStartTime = startTime;
+        final long finalStartNs = startNs;
         final String modelName = request.getModelConfig().getModelName();
         StringBuilder fullAnswer = new StringBuilder();
         java.util.concurrent.atomic.AtomicLong promptTokens = new java.util.concurrent.atomic.AtomicLong(0);
@@ -142,13 +163,30 @@ public class AgentOrchestrator {
                         .build());
                 emitter.complete();
             }
+        }).doFinally(signalType -> {
+            if (deepSeekCostGovernor != null) {
+                deepSeekCostGovernor.markRequestEnd();
+            }
         }).doOnComplete(() -> {
+            long latencyMs = System.currentTimeMillis() - finalStartTime;
+            long totalNs = System.nanoTime() - finalStartNs;
+            String answer = fullAnswer.toString();
+            long pt = promptTokens.get() > 0 ? promptTokens.get() : estimateTokenCount(request.getQuestion());
+            long ct = completionTokens.get() > 0 ? completionTokens.get() : estimateTokenCount(answer);
+
+            // Phase 15: 记录成本治理与 Token 消耗
+            if (deepSeekCostGovernor != null) {
+                deepSeekCostGovernor.recordUsage(modelName, 0, pt, ct, 0);
+            }
+
+            // Phase 15: 记录 Agent 单轮耗时与步数分布
+            if (agentMetricsService != null) {
+                agentMetricsService.recordTurnDuration("hermes_agent", 1, totalNs);
+                agentMetricsService.recordReactSteps(1);
+            }
+
             // LangFuse: 记录 LLM 生成
             if (finalTraceId != null && langFuseService != null && langFuseService.isEnabled()) {
-                long latencyMs = System.currentTimeMillis() - finalStartTime;
-                String answer = fullAnswer.toString();
-                long pt = promptTokens.get() > 0 ? promptTokens.get() : estimateTokenCount(request.getQuestion());
-                long ct = completionTokens.get() > 0 ? completionTokens.get() : estimateTokenCount(answer);
                 langFuseService.recordGeneration(
                     finalTraceId,
                     modelName,
@@ -426,7 +464,6 @@ public class AgentOrchestrator {
                                 String text = streamingOutput.message().getText();
                                 if (text != null) {
                                     fullAnswer.append(text);
-                                    completionTokens.incrementAndGet();
                                 }
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
@@ -1074,11 +1111,31 @@ public class AgentOrchestrator {
             @Override
             public String call(String toolInput) {
                 String toolName = getToolDefinition() != null ? getToolDefinition().name() : "tool";
+                if (!guard.checkStepLimit()) {
+                    if (agentMetricsService != null) {
+                        agentMetricsService.recordCallLimitExceeded();
+                    }
+                    return "【系统熔断提示】：Agent 循环执行步数已达上限，已强制熔断。请直接输出最终答案。";
+                }
                 var check = guard.inspectToolCall(toolName, toolInput);
                 if (check.tripped()) {
+                    if (agentMetricsService != null) {
+                        agentMetricsService.recordCycleBreakerTriggered();
+                    }
                     return check.injectionMessage();
                 }
-                return original.call(toolInput);
+                long toolStartNs = System.nanoTime();
+                boolean toolSuccess = true;
+                try {
+                    return original.call(toolInput);
+                } catch (Exception e) {
+                    toolSuccess = false;
+                    throw e;
+                } finally {
+                    if (agentMetricsService != null) {
+                        agentMetricsService.recordToolExecution(toolName, toolSuccess, System.nanoTime() - toolStartNs);
+                    }
+                }
             }
         };
     }

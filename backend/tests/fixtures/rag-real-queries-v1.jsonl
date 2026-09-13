@@ -1,0 +1,20 @@
+{"id":"real-q01","query":"你们支持微信小程序分包加载的独立分包吗？我的手机号是138****0001","category":"ambiguous_intent","expected_kb_id":1,"expected_contexts":["kb_doc_101"],"split":"real-holdout"}
+{"id":"real-q02","query":"身份证11010119900307****用户怎么在控制台重置租户级API调用配额？","category":"long_tail_entity","expected_kb_id":1,"expected_contexts":["kb_doc_102"],"split":"real-holdout"}
+{"id":"real-q03","query":"pgvector在高并发下HNSW索引创建失败提示内存不足，如何配置maintenance_work_mem？","category":"technical_detail","expected_kb_id":2,"expected_contexts":["kb_doc_201"],"split":"real-holdout"}
+{"id":"real-q04","query":"为什么在Neo4j中执行APOC子图导出时会抛出权限拒绝异常？","category":"technical_detail","expected_kb_id":2,"expected_contexts":["kb_doc_202"],"split":"real-holdout"}
+{"id":"real-q05","query":"查一下用户user_masked_01绑定的银行卡622202******1234为何退款未到账","category":"financial_inquiry","expected_kb_id":3,"expected_contexts":["kb_doc_301"],"split":"real-holdout"}
+{"id":"real-q06","query":"如果DeepSeek API提示429请求过多，智能体是否有自适应重试与退避机制？","category":"agent_governance","expected_kb_id":4,"expected_contexts":["kb_doc_401"],"split":"real-holdout"}
+{"id":"real-q07","query":"系统如何在没有两阶段提交2PC的情况下保证MySQL和向量库的数据一致性？","category":"architecture","expected_kb_id":2,"expected_contexts":["kb_doc_203"],"split":"real-holdout"}
+{"id":"real-q08","query":"昨天服务器IP 192.168.1.*** 报的内存泄漏问题修复了吗？","category":"ops_incident","expected_kb_id":5,"expected_contexts":["kb_doc_501"],"split":"real-holdout"}
+{"id":"real-q09","query":"请问什么是Reciprocal Rank Fusion (RRF) 算法，k参数设置多少合适？","category":"algorithm","expected_kb_id":6,"expected_contexts":["kb_doc_601"],"split":"real-holdout"}
+{"id":"real-q10","query":"知识库中上传PDF文件后分块总是将表格第一行表头和数据截断怎么办？","category":"chunking_issue","expected_kb_id":1,"expected_contexts":["kb_doc_103"],"split":"real-holdout"}
+{"id":"real-q11","query":"客服邮箱support@example.*** 为什么收不到预警邮件？","category":"ops_incident","expected_kb_id":5,"expected_contexts":["kb_doc_502"],"split":"real-holdout"}
+{"id":"real-q12","query":"CRAG在检测到检索结果置信度处于AMBIGUOUS时会进行网络二次扩展检索吗？","category":"crag_ambiguity","expected_kb_id":6,"expected_contexts":["kb_doc_602"],"split":"real-holdout"}
+{"id":"real-q13","query":"什么是Semantic Cache？它的极性翻转防御和空结果哨兵机制是怎么工作的？","category":"cache_governance","expected_kb_id":6,"expected_contexts":["kb_doc_603"],"split":"real-holdout"}
+{"id":"real-q14","query":"为什么Prometheus里的Timer标签不能放用户的query或者UUID？","category":"observability","expected_kb_id":5,"expected_contexts":["kb_doc_503"],"split":"real-holdout"}
+{"id":"real-q15","query":"在ReAct循环中如果LLM一直重复输出同一个Action，系统怎么中断它？","category":"agent_governance","expected_kb_id":4,"expected_contexts":["kb_doc_402"],"split":"real-holdout"}
+{"id":"real-q16","query":"千问Embedding模型生成的1536维向量是如何在单位超球面上做余弦相似度计算的？","category":"algorithm","expected_kb_id":6,"expected_contexts":["kb_doc_604"],"split":"real-holdout"}
+{"id":"real-q17","query":"如何使用pg_dump并行目录格式导出海量切片数据？","category":"disaster_recovery","expected_kb_id":2,"expected_contexts":["kb_doc_204"],"split":"real-holdout"}
+{"id":"real-q18","query":"召回日志表kmc_knowledge_recall_log按月范围分区的DDL语法是怎样的？","category":"database_ops","expected_kb_id":2,"expected_contexts":["kb_doc_205"],"split":"real-holdout"}
+{"id":"real-q19","query":"如果检索返回零命中，系统是返回空还是把null传给大模型做幻觉推理？","category":"zero_state_fallback","expected_kb_id":6,"expected_contexts":["kb_doc_605"],"split":"real-holdout"}
+{"id":"real-q20","query":"为什么说用原型标记替换PII敏感词可以保证向量检索的排序单调性？","category":"privacy_theory","expected_kb_id":6,"expected_contexts":["kb_doc_606"],"split":"real-holdout"}

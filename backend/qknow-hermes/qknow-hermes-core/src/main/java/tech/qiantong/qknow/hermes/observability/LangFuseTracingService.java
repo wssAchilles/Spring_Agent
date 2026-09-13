@@ -13,10 +13,15 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Map;
+import jakarta.annotation.PreDestroy;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * LangFuse 可观测性服务（基于 HTTP API）
+ * 采用后台守护线程 + 有界阻塞队列异步发射，保障主业务线程零阻塞与 Fail-Open
  * 参考：LangFuse MIT 开源、Spring AI 集成文档
  * 文档：https://langfuse.com/docs/api-reference
  */
@@ -24,6 +29,8 @@ import java.util.Map;
 @Component
 @ConditionalOnProperty(name = "hermes.observability.langfuse.enabled", havingValue = "true")
 public class LangFuseTracingService {
+
+    private static final int QUEUE_CAPACITY = 2048;
 
     @Value("${hermes.observability.langfuse.public-key:}")
     private String publicKey;
@@ -37,6 +44,9 @@ public class LangFuseTracingService {
     private HttpClient httpClient;
     private String authHeader;
 
+    private final BlockingQueue<Runnable> asyncTaskQueue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
+    private ExecutorService asyncWorker;
+
     @PostConstruct
     public void init() {
         if (publicKey.isBlank() || secretKey.isBlank()) {
@@ -48,7 +58,44 @@ public class LangFuseTracingService {
                 .build();
         authHeader = "Basic " + Base64.getEncoder()
                 .encodeToString((publicKey + ":" + secretKey).getBytes());
-        log.info("LangFuse tracing initialized: {}", baseUrl);
+
+        asyncWorker = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "langfuse-async-worker");
+            t.setDaemon(true);
+            return t;
+        });
+        asyncWorker.submit(this::processQueue);
+        log.info("LangFuse tracing initialized with async worker: {}", baseUrl);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (asyncWorker != null) {
+            asyncWorker.shutdownNow();
+        }
+    }
+
+    private void processQueue() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                Runnable task = asyncTaskQueue.take();
+                task.run();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.debug("LangFuse 后台异步任务执行异常", e);
+            }
+        }
+    }
+
+    private void enqueue(Runnable task) {
+        if (httpClient == null) {
+            return;
+        }
+        if (!asyncTaskQueue.offer(task)) {
+            log.debug("LangFuse 队列已满（容量 {}），丢弃事件以保证主线程零阻塞", QUEUE_CAPACITY);
+        }
     }
 
     /**
@@ -88,49 +135,51 @@ public class LangFuseTracingService {
     }
 
     /**
-     * 记录 LLM 生成
+     * 记录 LLM 生成（异步无阻塞发射）
      */
     public void recordGeneration(String traceId, String model, String input,
                                   String output, Long promptTokens, Long completionTokens,
                                   Long latencyMs) {
         if (httpClient == null || traceId == null) return;
-        try {
-            long pt = promptTokens != null ? promptTokens : 0;
-            long ct = completionTokens != null ? completionTokens : 0;
-            long total = pt + ct;
-            long latency = latencyMs != null ? latencyMs : 0;
-            Instant endTime = Instant.now();
-            Instant startTime = endTime.minusMillis(latency);
-            String body = String.format("""
-                    {"id":"%s","traceId":"%s","name":"%s","startTime":"%s","endTime":"%s","input":"%s","output":"%s","model":"%s","usageDetails":{"input":%d,"output":%d,"total":%d},"usage":{"input":%d,"output":%d,"total":%d},"metadata":{"latencyMs":%d}}
-                    """, java.util.UUID.randomUUID(), traceId, model,
-                    startTime, endTime,
-                    escapeJson(input), escapeJson(output), model,
-                    pt, ct, total, pt, ct, total, latency);
+        enqueue(() -> {
+            try {
+                long pt = promptTokens != null ? promptTokens : 0;
+                long ct = completionTokens != null ? completionTokens : 0;
+                long total = pt + ct;
+                long latency = latencyMs != null ? latencyMs : 0;
+                Instant endTime = Instant.now();
+                Instant startTime = endTime.minusMillis(latency);
+                String body = String.format("""
+                        {"id":"%s","traceId":"%s","name":"%s","startTime":"%s","endTime":"%s","input":"%s","output":"%s","model":"%s","usageDetails":{"input":%d,"output":%d,"total":%d},"usage":{"input":%d,"output":%d,"total":%d},"metadata":{"latencyMs":%d}}
+                        """, java.util.UUID.randomUUID(), traceId, model,
+                        startTime, endTime,
+                        escapeJson(input), escapeJson(output), model,
+                        pt, ct, total, pt, ct, total, latency);
 
-            for (int retry = 0; retry < 3; retry++) {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(baseUrl + "/api/public/generations"))
-                        .header("Authorization", authHeader)
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(body))
-                        .timeout(Duration.ofSeconds(5))
-                        .build();
+                for (int retry = 0; retry < 3; retry++) {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(baseUrl + "/api/public/generations"))
+                            .header("Authorization", authHeader)
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(body))
+                            .timeout(Duration.ofSeconds(5))
+                            .build();
 
-                HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                if (resp.statusCode() == 200 || resp.statusCode() == 201) {
-                    return;
+                    HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                    if (resp.statusCode() == 200 || resp.statusCode() == 201) {
+                        return;
+                    }
+                    if (resp.statusCode() == 429) {
+                        Thread.sleep(500L * (retry + 1));
+                        continue;
+                    }
+                    log.warn("LangFuse generation recording failed: status={}, body={}", resp.statusCode(), resp.body());
+                    break;
                 }
-                if (resp.statusCode() == 429) {
-                    Thread.sleep(500L * (retry + 1));
-                    continue;
-                }
-                log.warn("LangFuse generation recording failed: status={}, body={}", resp.statusCode(), resp.body());
-                break;
+            } catch (Exception e) {
+                log.debug("LangFuse generation recording failed", e);
             }
-        } catch (Exception e) {
-            log.debug("LangFuse generation recording failed", e);
-        }
+        });
     }
 
     /**
@@ -141,7 +190,7 @@ public class LangFuseTracingService {
     }
 
     /**
-     * 记录评估分数到 Observation
+     * 记录评估分数到 Observation（异步无阻塞发射）
      */
     public void recordScore(String traceId, String observationId, String name, double value) {
         if (httpClient == null || traceId == null) return;
@@ -149,63 +198,67 @@ public class LangFuseTracingService {
             log.debug("Skipping LangFuse score with invalid value: {}={}", name, value);
             return;
         }
-        try {
-            String safeName = name.replaceAll("[^a-zA-Z0-9_-]", "_");
-            String body = String.format("""
-                    {"id":"%s","traceId":"%s","name":"%s","value":%s,"source":"API"%s}
-                    """, java.util.UUID.randomUUID(), traceId, safeName, value,
-                    observationId != null ? ",\"observationId\":\"" + observationId + "\"" : "");
+        enqueue(() -> {
+            try {
+                String safeName = name.replaceAll("[^a-zA-Z0-9_-]", "_");
+                String body = String.format("""
+                        {"id":"%s","traceId":"%s","name":"%s","value":%s,"source":"API"%s}
+                        """, java.util.UUID.randomUUID(), traceId, safeName, value,
+                        observationId != null ? ",\"observationId\":\"" + observationId + "\"" : "");
 
-            for (int retry = 0; retry < 3; retry++) {
+                for (int retry = 0; retry < 3; retry++) {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(baseUrl + "/api/public/scores"))
+                            .header("Authorization", authHeader)
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(body))
+                            .timeout(Duration.ofSeconds(5))
+                            .build();
+
+                    HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                    if (resp.statusCode() == 200 || resp.statusCode() == 201) {
+                        return;
+                    }
+                    if (resp.statusCode() == 429) {
+                        Thread.sleep(500L * (retry + 1));
+                        continue;
+                    }
+                    log.debug("LangFuse score recording failed: status={}, body={}, request={}", resp.statusCode(), resp.body(), body);
+                    break;
+                }
+            } catch (Exception e) {
+                log.debug("LangFuse score recording failed", e);
+            }
+        });
+    }
+
+    /**
+     * 记录 RAG 检索（异步无阻塞发射）
+     */
+    public void recordRetrieval(String traceId, String query, int resultCount,
+                                 long latencyMs) {
+        if (httpClient == null || traceId == null) return;
+        enqueue(() -> {
+            try {
+                String body = String.format("""
+                        {"id":"%s","traceId":"%s","name":"rag-retrieval","startTime":"%s","endTime":"%s","input":"%s","output":"Retrieved %d segments","metadata":{"latencyMs":%d}}
+                        """, java.util.UUID.randomUUID(), traceId,
+                        Instant.now().minusMillis(latencyMs), Instant.now(),
+                        escapeJson(query), resultCount, latencyMs);
+
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(baseUrl + "/api/public/scores"))
+                        .uri(URI.create(baseUrl + "/api/public/spans"))
                         .header("Authorization", authHeader)
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .timeout(Duration.ofSeconds(5))
                         .build();
 
-                HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                if (resp.statusCode() == 200 || resp.statusCode() == 201) {
-                    return;
-                }
-                if (resp.statusCode() == 429) {
-                    Thread.sleep(500L * (retry + 1));
-                    continue;
-                }
-                log.debug("LangFuse score recording failed: status={}, body={}, request={}", resp.statusCode(), resp.body(), body);
-                break;
+                httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (Exception e) {
+                log.debug("LangFuse retrieval recording failed", e);
             }
-        } catch (Exception e) {
-            log.debug("LangFuse score recording failed", e);
-        }
-    }
-
-    /**
-     * 记录 RAG 检索
-     */
-    public void recordRetrieval(String traceId, String query, int resultCount,
-                                 long latencyMs) {
-        if (httpClient == null || traceId == null) return;
-        try {
-            String body = String.format("""
-                    {"id":"%s","traceId":"%s","name":"rag-retrieval","startTime":"%s","endTime":"%s","input":"%s","output":"Retrieved %d segments","metadata":{"latencyMs":%d}}
-                    """, java.util.UUID.randomUUID(), traceId,
-                    Instant.now().minusMillis(latencyMs), Instant.now(),
-                    escapeJson(query), resultCount, latencyMs);
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/api/public/spans"))
-                    .header("Authorization", authHeader)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .timeout(Duration.ofSeconds(5))
-                    .build();
-
-            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception e) {
-            log.debug("LangFuse retrieval recording failed", e);
-        }
+        });
     }
 
     public boolean isEnabled() {

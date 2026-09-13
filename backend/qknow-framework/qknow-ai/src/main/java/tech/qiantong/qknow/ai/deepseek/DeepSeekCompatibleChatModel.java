@@ -22,6 +22,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -111,10 +112,17 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                     "content", message.getText() == null ? "" : message.getText()
             ));
         }
-        if (temperature == null) {
-            return Map.of("model", modelName, "messages", messages, "stream", stream);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", modelName);
+        body.put("messages", messages);
+        body.put("stream", stream);
+        if (temperature != null) {
+            body.put("temperature", temperature);
         }
-        return Map.of("model", modelName, "messages", messages, "stream", stream, "temperature", temperature);
+        if (stream) {
+            body.put("stream_options", Map.of("include_usage", true));
+        }
+        return body;
     }
 
     private ChatResponse parseResponse(String responseBody) throws IOException {
@@ -166,7 +174,10 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         JsonNode choice = root.path("choices").path(0);
         String content = choice.path("delta").path("content").asText("");
         String finishReason = choice.path("finish_reason").asText("");
-        if (content.isEmpty() && finishReason.isEmpty()) {
+        JsonNode usageNode = root.path("usage");
+        boolean hasUsage = !usageNode.isMissingNode();
+
+        if (content.isEmpty() && finishReason.isEmpty() && !hasUsage) {
             return null;
         }
 
@@ -174,9 +185,18 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                 .finishReason(finishReason)
                 .build();
         Generation generation = new Generation(new AssistantMessage(content), generationMetadata);
+
+        DefaultUsage usage = hasUsage ? new DefaultUsage(
+                usageNode.path("prompt_tokens").isMissingNode() ? null : usageNode.path("prompt_tokens").asInt(),
+                usageNode.path("completion_tokens").isMissingNode() ? null : usageNode.path("completion_tokens").asInt(),
+                usageNode.path("total_tokens").isMissingNode() ? null : usageNode.path("total_tokens").asInt(),
+                usageNode
+        ) : null;
+
         ChatResponseMetadata metadata = ChatResponseMetadata.builder()
                 .id(root.path("id").asText(""))
                 .model(root.path("model").asText(modelName))
+                .usage(usage)
                 .build();
         return new ChatResponse(List.of(generation), metadata);
     }

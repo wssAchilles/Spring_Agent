@@ -72,6 +72,12 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
     @Resource
     private HermesGrpcClient hermesGrpcClient;
 
+    @Resource
+    private tech.qiantong.qknow.module.kb.service.agent.retrieval.MultiKbRetrievalCoordinator multiKbCoordinator;
+
+    @Resource
+    private tech.qiantong.qknow.module.kb.service.agent.retrieval.CrossKbScoreCalibrator crossKbCalibrator;
+
     @Override
     public PageResult<KbAgentConfigDO> getKbAgentConfigPage(KbAgentConfigPageReqVO pageReqVO) {
         return kbAgentConfigMapper.selectPage(pageReqVO);
@@ -259,55 +265,103 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         JSONArray sourceRefs = new JSONArray();
         if (!knowledgeBaseIds.isEmpty()) {
             List<KmcKnowledgeBaseRespDTO> knowledgeBaseList = kmcApiService.getKnowledgeBaseByIds(knowledgeBaseIds);
-            knowledgeBaseList.forEach(kb -> {
-                String recalled = "";
-                try {
-                    List<tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO> turns = null;
-                    if (kbAgentConfig.getHistoryMessages() != null && !kbAgentConfig.getHistoryMessages().isEmpty()) {
-                        turns = new ArrayList<>();
-                        for (var historyMsg : kbAgentConfig.getHistoryMessages()) {
-                            turns.add(new tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO(
-                                    historyMsg.getRole(), historyMsg.getContent()));
-                        }
+            if (multiKbCoordinator != null && crossKbCalibrator != null) {
+                // Phase 17: 异步非阻塞并发召回 + 跨库 RRF 精排与全局 20KB 预算硬截断
+                List<tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO> turns = null;
+                if (kbAgentConfig.getHistoryMessages() != null && !kbAgentConfig.getHistoryMessages().isEmpty()) {
+                    turns = new ArrayList<>();
+                    for (var historyMsg : kbAgentConfig.getHistoryMessages()) {
+                        turns.add(new tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO(
+                                historyMsg.getRole(), historyMsg.getContent()));
                     }
-                    var results = kmcApiService.recallTest(kb.getId(), kbAgentConfig.getQuestion(), turns);
-                    if (results != null && !results.isEmpty()) {
-                        // H4a: prefer budgeted RagContextBuilder output when present.
-                        String budgeted = results.get(0).getRagContext();
-                        if (budgeted != null && !budgeted.isBlank()) {
-                            recalled = budgeted;
-                        }
-                        StringBuilder contentBuilder = new StringBuilder();
-                        for (int i = 0; i < results.size(); i++) {
-                            RetrieveResult r = results.get(i);
-                            contentBuilder.append("[来源 ").append(i + 1).append("] ")
-                                    .append(r.getDocumentName())
-                                    .append(" / segmentId=").append(r.getId())
-                                    .append("\n")
-                                    .append("内容：")
-                                    .append(r.getContent() != null ? r.getContent() : "")
-                                    .append("\n\n");
-                            JSONObject source = new JSONObject();
-                            source.put("documentId", r.getDocumentId());
-                            source.put("documentName", r.getDocumentName());
-                            source.put("segmentId", r.getId());
-                            source.put("knowledgeId", kb.getId());
-                            source.put("knowledgeName", kb.getName());
-                            sourceRefs.add(source);
-                        }
-                        if (recalled == null || recalled.isBlank()) {
-                            recalled = contentBuilder.toString();
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("RAG 预检索失败: knowledgeId={}", kb.getId(), e);
                 }
-                ragContexts.add(RAGContext.newBuilder()
-                        .setKnowledgeId(String.valueOf(kb.getId()))
-                        .setKnowledgeName(kb.getName())
-                        .setPreRetrievedContent(recalled)
-                        .build());
-            });
+                var recallResults = multiKbCoordinator.coordinateRetrieval(knowledgeBaseList, kbAgentConfig.getQuestion(), turns);
+                var merged = crossKbCalibrator.calibrateAndAssemble(recallResults);
+
+                // 按知识库分组归集最终受限装配的切片正文
+                Map<Long, List<tech.qiantong.qknow.module.kb.service.agent.retrieval.CrossKbScoreCalibrator.CalibratedSegment>> segmentsByKb = new LinkedHashMap<>();
+                for (var seg : merged.getEmittedSegments()) {
+                    segmentsByKb.computeIfAbsent(seg.getKnowledgeId(), k -> new ArrayList<>()).add(seg);
+                    JSONObject source = new JSONObject();
+                    source.put("documentId", seg.getDocumentId());
+                    source.put("documentName", seg.getDocumentName());
+                    source.put("segmentId", seg.getSegmentId());
+                    source.put("knowledgeId", seg.getKnowledgeId());
+                    source.put("knowledgeName", seg.getKnowledgeName());
+                    sourceRefs.add(source);
+                }
+
+                for (var kb : knowledgeBaseList) {
+                    List<tech.qiantong.qknow.module.kb.service.agent.retrieval.CrossKbScoreCalibrator.CalibratedSegment> kbSegments =
+                            segmentsByKb.getOrDefault(kb.getId(), Collections.emptyList());
+                    StringBuilder kbContentBuilder = new StringBuilder();
+                    for (int i = 0; i < kbSegments.size(); i++) {
+                        var seg = kbSegments.get(i);
+                        kbContentBuilder.append("[来源 ").append(i + 1).append("] ")
+                                .append(seg.getDocumentName())
+                                .append(" / segmentId=").append(seg.getSegmentId())
+                                .append("\n")
+                                .append("内容：")
+                                .append(seg.getContent() != null ? seg.getContent() : "")
+                                .append("\n\n");
+                    }
+                    ragContexts.add(RAGContext.newBuilder()
+                            .setKnowledgeId(String.valueOf(kb.getId()))
+                            .setKnowledgeName(kb.getName())
+                            .setPreRetrievedContent(kbContentBuilder.toString())
+                            .build());
+                }
+            } else {
+                knowledgeBaseList.forEach(kb -> {
+                    String recalled = "";
+                    try {
+                        List<tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO> turns = null;
+                        if (kbAgentConfig.getHistoryMessages() != null && !kbAgentConfig.getHistoryMessages().isEmpty()) {
+                            turns = new ArrayList<>();
+                            for (var historyMsg : kbAgentConfig.getHistoryMessages()) {
+                                turns.add(new tech.qiantong.qknow.module.kmc.api.knowledgeBase.dto.KmcChatTurnDTO(
+                                        historyMsg.getRole(), historyMsg.getContent()));
+                            }
+                        }
+                        var results = kmcApiService.recallTest(kb.getId(), kbAgentConfig.getQuestion(), turns);
+                        if (results != null && !results.isEmpty()) {
+                            // H4a: prefer budgeted RagContextBuilder output when present.
+                            String budgeted = results.get(0).getRagContext();
+                            if (budgeted != null && !budgeted.isBlank()) {
+                                recalled = budgeted;
+                            }
+                            StringBuilder contentBuilder = new StringBuilder();
+                            for (int i = 0; i < results.size(); i++) {
+                                RetrieveResult r = results.get(i);
+                                contentBuilder.append("[来源 ").append(i + 1).append("] ")
+                                        .append(r.getDocumentName())
+                                        .append(" / segmentId=").append(r.getId())
+                                        .append("\n")
+                                        .append("内容：")
+                                        .append(r.getContent() != null ? r.getContent() : "")
+                                        .append("\n\n");
+                                JSONObject source = new JSONObject();
+                                source.put("documentId", r.getDocumentId());
+                                source.put("documentName", r.getDocumentName());
+                                source.put("segmentId", r.getId());
+                                source.put("knowledgeId", kb.getId());
+                                source.put("knowledgeName", kb.getName());
+                                sourceRefs.add(source);
+                            }
+                            if (recalled == null || recalled.isBlank()) {
+                                recalled = contentBuilder.toString();
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("RAG 预检索失败: knowledgeId={}", kb.getId(), e);
+                    }
+                    ragContexts.add(RAGContext.newBuilder()
+                            .setKnowledgeId(String.valueOf(kb.getId()))
+                            .setKnowledgeName(kb.getName())
+                            .setPreRetrievedContent(recalled)
+                            .build());
+                });
+            }
         }
 
         // 3. 获取工具方法 ID 列表

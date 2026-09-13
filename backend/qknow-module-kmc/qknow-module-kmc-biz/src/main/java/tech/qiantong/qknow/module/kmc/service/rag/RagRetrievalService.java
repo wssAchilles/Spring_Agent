@@ -90,6 +90,10 @@ public class RagRetrievalService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private io.micrometer.core.instrument.MeterRegistry meterRegistry;
 
+    /** Phase 15: 生产级微观阶段耗时与门控指标服务 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService ragMetricsService;
+
     public RagResult retrieve(Long knowledgeBaseId, String query, int topK, boolean debug) {
         return retrieve(knowledgeBaseId, query, query, topK, debug);
     }
@@ -221,6 +225,9 @@ public class RagRetrievalService {
         // 权限检查
         List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
         if (accessibleKbIds != null && !accessibleKbIds.contains(knowledgeBaseId)) {
+            if (ragMetricsService != null) {
+                ragMetricsService.recordZeroHit(true);
+            }
             return RagResult.builder()
                     .context("")
                     .sources(Collections.emptyList())
@@ -360,10 +367,32 @@ public class RagRetrievalService {
                 () -> timed(phase + "GraphMs", timings,
                         () -> graphRagRetriever.retrieve(knowledgeBaseId, queryIntent, query, route, candidateTopK)));
 
+        long vStart = System.nanoTime();
         vectorResults = getFuture(vectorFuture, "vector");
+        long vNs = System.nanoTime() - vStart;
+
+        long kStart = System.nanoTime();
         keywordResults = getFuture(keywordFuture, "keyword");
+        long kNs = System.nanoTime() - kStart;
+
+        long mStart = System.nanoTime();
         metadataResults = getFuture(metadataFuture, "metadata");
+        long mNs = System.nanoTime() - mStart;
+
+        long gStart = System.nanoTime();
         graphResults = getFuture(graphFuture, "graph");
+        long gNs = System.nanoTime() - gStart;
+
+        if (ragMetricsService != null) {
+            ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.VECTOR,
+                    vectorResults != null ? tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK : tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.ERROR, vNs);
+            ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.KEYWORD,
+                    keywordResults != null ? tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK : tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.ERROR, kNs);
+            ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.METADATA,
+                    metadataResults != null ? tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK : tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.ERROR, mNs);
+            ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.GRAPH,
+                    graphResults != null ? tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK : tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.ERROR, gNs);
+        }
 
         if (debug) {
             debugInfo.put(phase + "QueryEntities", queryIntent.getEntities());
@@ -401,7 +430,13 @@ public class RagRetrievalService {
         }
 
         long fusionStart = System.currentTimeMillis();
+        long fusionStartNs = System.nanoTime();
         CandidateFusionService.FusionResult fusionResult = candidateFusionService.fuseWithDiagnostics(allResults, pathNames);
+        long fusionNs = System.nanoTime() - fusionStartNs;
+        if (ragMetricsService != null) {
+            ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.RRF,
+                    tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK, fusionNs);
+        }
         List<RetrievalResult> fused = fusionResult.getResults();
         if (debug) {
             debugInfo.put(phase + "FusedCount", fused.size());
@@ -412,16 +447,24 @@ public class RagRetrievalService {
         }
 
         long rerankStart = System.currentTimeMillis();
+        long rerankStartNs = System.nanoTime();
         List<RetrievalResult> reranked = ragRerankService.rerank(
                 query, fused, queryIntent, topK, rerankingProviderName, rerankingModelName);
+        long rerankNs = System.nanoTime() - rerankStartNs;
+        boolean gateSkipped = CollUtil.isNotEmpty(reranked)
+                && reranked.get(0).getMetadata() != null
+                && Boolean.TRUE.equals(reranked.get(0).getMetadata().get("rerankGateSkipped"));
+        if (ragMetricsService != null) {
+            ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.RERANK,
+                    gateSkipped ? tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.BYPASS : tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK,
+                    rerankNs);
+            ragMetricsService.recordRerankGate(gateSkipped);
+        }
         if (debug) {
             debugInfo.put(phase + "RerankedCount", reranked.size());
             debugInfo.put(phase + "RerankMs", System.currentTimeMillis() - rerankStart);
             debugInfo.put("rerankerProvider", rerankingProviderName != null && rerankingModelName != null
                     ? "dashscope" : "deterministic");
-            boolean gateSkipped = CollUtil.isNotEmpty(reranked)
-                    && reranked.get(0).getMetadata() != null
-                    && Boolean.TRUE.equals(reranked.get(0).getMetadata().get("rerankGateSkipped"));
             debugInfo.put("rerankGateSkipped", gateSkipped);
             if (gateSkipped) {
                 debugInfo.put("rerankGateReason", reranked.get(0).getMetadata().get("rerankGateReason"));
@@ -429,9 +472,19 @@ public class RagRetrievalService {
         }
 
         long contextStart = System.currentTimeMillis();
+        long contextStartNs = System.nanoTime();
         RagContextBuilder.ContextBuildResult buildResult = safeBuildContext(reranked, true);
+        long contextNs = System.nanoTime() - contextStartNs;
         String context = buildResult.getContext();
         List<RetrievalResult> emittedSources = buildResult.getEmittedResults();
+
+        if (ragMetricsService != null) {
+            ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.PARENT_CHILD,
+                    tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK, contextNs);
+            if (emittedSources == null || emittedSources.isEmpty()) {
+                ragMetricsService.recordZeroHit(false);
+            }
+        }
 
         if (debug) {
             debugInfo.put("semanticCacheHit", null);

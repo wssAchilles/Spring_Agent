@@ -16,11 +16,18 @@ import java.util.*;
 @Service
 public class EvalRegressionGate {
 
-    // 评测指标绝对红线
+    // 评测指标绝对红线 (越大越好)
     private static final Map<String, Double> ABSOLUTE_THRESHOLDS = Map.of(
             "faithfulness", 0.85,
             "answer_relevance", 0.80,
-            "context_recall", 0.80
+            "context_recall", 0.80,
+            "real_context_recall", 0.75,
+            "real_mrr", 0.70
+    );
+
+    // 反向指标绝对红线 (越小越好，上限阈值)
+    private static final Map<String, Double> MAX_ABSOLUTE_THRESHOLDS = Map.of(
+            "zero_recall_rate", 0.05
     );
 
     // 允许的最大退化阈值 (2%)
@@ -57,7 +64,7 @@ public class EvalRegressionGate {
         List<String> violations = new ArrayList<>();
         Map<String, Object> details = new HashMap<>();
 
-        // 1. 绝对红线判定
+        // 1. 正向指标绝对红线判定 (不得低于阈值)
         for (Map.Entry<String, Double> entry : ABSOLUTE_THRESHOLDS.entrySet()) {
             String metricKey = entry.getKey();
             double threshold = entry.getValue();
@@ -73,21 +80,47 @@ public class EvalRegressionGate {
             }
         }
 
-        // 2. 相对基线退化判定
+        // 2. 反向指标绝对红线判定 (不得高于阈值，例如零召回率)
+        for (Map.Entry<String, Double> entry : MAX_ABSOLUTE_THRESHOLDS.entrySet()) {
+            String metricKey = entry.getKey();
+            double maxThreshold = entry.getValue();
+            Double currentValue = currentMetrics.get(metricKey);
+
+            if (currentValue != null) {
+                details.put(metricKey + "_current", currentValue);
+                details.put(metricKey + "_max_threshold", maxThreshold);
+                if (currentValue > maxThreshold) {
+                    String displayName = capitalize(metricKey);
+                    violations.add(String.format("指标 %s 当前数值 %.4f 超过绝对红线 %.2f", displayName, currentValue, maxThreshold));
+                }
+            }
+        }
+
+        // 3. 相对基线退化判定
         if (baselineMetrics != null && !baselineMetrics.isEmpty()) {
             for (Map.Entry<String, Double> entry : currentMetrics.entrySet()) {
                 String metricKey = entry.getKey();
                 Double currentVal = entry.getValue();
                 Double baselineVal = baselineMetrics.get(metricKey);
 
-                if (currentVal != null && baselineVal != null && baselineVal > 0) {
-                    double drop = baselineVal - currentVal;
-                    double dropPercent = drop / baselineVal;
-                    // 无论绝对跌落超过 0.02 还是相对跌落超过 2%，均触发退化警告与阻断
-                    if (drop > MAX_REGRESSION_TOLERANCE || dropPercent > MAX_REGRESSION_TOLERANCE) {
-                        String displayName = capitalize(metricKey);
-                        violations.add(String.format("指标 %s 相比 Baseline 退化超过 2%% (基准: %.4f, 当前: %.4f, 跌落: %.2f%%)",
-                                displayName, baselineVal, currentVal, dropPercent * 100));
+                if (currentVal != null && baselineVal != null) {
+                    String displayName = capitalize(metricKey);
+                    if (MAX_ABSOLUTE_THRESHOLDS.containsKey(metricKey)) {
+                        // 反向指标：当前值大于基线值表示退化
+                        double rise = currentVal - baselineVal;
+                        double risePercent = baselineVal > 0 ? rise / baselineVal : (rise > 0 ? 1.0 : 0.0);
+                        if (rise > MAX_REGRESSION_TOLERANCE || risePercent > MAX_REGRESSION_TOLERANCE) {
+                            violations.add(String.format("指标 %s 相比 Baseline 退化超过 2%% (基准: %.4f, 当前: %.4f, 上升: %.2f%%)",
+                                    displayName, baselineVal, currentVal, risePercent * 100));
+                        }
+                    } else if (baselineVal > 0) {
+                        // 正向指标：当前值小于基线值表示退化
+                        double drop = baselineVal - currentVal;
+                        double dropPercent = drop / baselineVal;
+                        if (drop > MAX_REGRESSION_TOLERANCE || dropPercent > MAX_REGRESSION_TOLERANCE) {
+                            violations.add(String.format("指标 %s 相比 Baseline 退化超过 2%% (基准: %.4f, 当前: %.4f, 跌落: %.2f%%)",
+                                    displayName, baselineVal, currentVal, dropPercent * 100));
+                        }
                     }
                 }
             }

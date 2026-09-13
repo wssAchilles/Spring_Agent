@@ -44,6 +44,10 @@ public class EnhancedSemanticCacheService {
 
     private final JdbcTemplate jdbcTemplate;
 
+    public EnhancedSemanticCacheService() {
+        this(null);
+    }
+
     public EnhancedSemanticCacheService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -225,8 +229,24 @@ public class EnhancedSemanticCacheService {
     }
 
     public String buildExactKey(Long workspaceId, Long botId, String knowledgeIdsHash, String modelName, String query) {
+        return buildExactKey(workspaceId, "default", botId, knowledgeIdsHash, modelName, query);
+    }
+
+    public String buildExactKey(Long workspaceId, String permHash, Long botId, String knowledgeIdsHash, String modelName, String query) {
         String normalized = query != null ? query.trim().toLowerCase().replaceAll("\\s+", " ") : "";
-        return workspaceId + ":" + botId + ":" + knowledgeIdsHash + ":" + modelName + ":" + sha256(normalized);
+        String pHash = (permHash != null && !permHash.isBlank()) ? permHash : "default";
+        return workspaceId + ":" + pHash + ":" + botId + ":" + knowledgeIdsHash + ":" + modelName + ":" + sha256(normalized);
+    }
+
+    public String calculatePermissionHash(Long userId, List<Long> roleIds, List<Long> accessibleKbIds) {
+        if (userId == null) {
+            return "anonymous";
+        }
+        List<Long> sortedRoles = roleIds != null ? new ArrayList<>(roleIds) : new ArrayList<>();
+        Collections.sort(sortedRoles);
+        List<Long> sortedKbs = accessibleKbIds != null ? new ArrayList<>(accessibleKbIds) : new ArrayList<>();
+        Collections.sort(sortedKbs);
+        return sha256("u:" + userId + "|r:" + sortedRoles + "|k:" + sortedKbs);
     }
 
     public String hashKnowledgeBaseIds(List<Long> kbIds) {

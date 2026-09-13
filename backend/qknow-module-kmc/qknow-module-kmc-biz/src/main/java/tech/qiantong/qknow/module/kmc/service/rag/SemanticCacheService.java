@@ -45,6 +45,9 @@ public class SemanticCacheService {
     @Resource
     private EnhancedSemanticCacheService enhancedCacheService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService ragMetricsService;
+
     // L1 本地无锁精确缓存（使用 ConcurrentHashMap，彻底消除全局互斥排队锁）
     private final java.util.concurrent.ConcurrentHashMap<String, CacheHit> exactCache = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -55,7 +58,11 @@ public class SemanticCacheService {
 
     public Optional<CacheHit> findAnswer(Long workspaceId, Long botId, List<Long> knowledgeBaseIds, String knowledgeIdsHash,
                                           String query, String modelName, EmbeddingModel embeddingModel) {
+        long startNs = System.nanoTime();
         if (!config.isEnabled()) {
+            if (ragMetricsService != null) {
+                ragMetricsService.recordCacheBypass();
+            }
             return Optional.empty();
         }
 
@@ -71,6 +78,11 @@ public class SemanticCacheService {
             if (exactOpt.isPresent()) {
                 var e = exactOpt.get();
                 log.debug("Exact cache hit for query: {}", query.substring(0, Math.min(50, query.length())));
+                if (ragMetricsService != null) {
+                    ragMetricsService.recordCacheHitExact();
+                    ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.CACHE,
+                            tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK, System.nanoTime() - startNs);
+                }
                 return Optional.of(CacheHit.builder()
                         .id(e.getId())
                         .answer(e.getAnswer())
@@ -90,6 +102,11 @@ public class SemanticCacheService {
                     "embedding dimension mismatch: expected " + embeddingDimension + ", got " + embedding.length);
             log.debug("Semantic cache skipped due to embedding dimension mismatch: expected={}, actual={}",
                     embeddingDimension, embedding.length);
+            if (ragMetricsService != null) {
+                ragMetricsService.recordCacheBypass();
+                ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.CACHE,
+                        tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.BYPASS, System.nanoTime() - startNs);
+            }
             return Optional.empty();
         }
         String vectorCast = "vector(" + embeddingDimension + ")";
@@ -118,6 +135,11 @@ public class SemanticCacheService {
                     .build(), vector, workspaceId, botId, knowledgeIdsHash, modelName,
                     vector, config.getThreshold(), vector);
             if (CollUtil.isEmpty(hits)) {
+                if (ragMetricsService != null) {
+                    ragMetricsService.recordCacheMiss();
+                    ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.CACHE,
+                            tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK, System.nanoTime() - startNs);
+                }
                 return Optional.empty();
             }
 
@@ -126,6 +148,11 @@ public class SemanticCacheService {
             if (enhancedCacheService != null && !enhancedCacheService.passSemanticGating(query, hit.getQuery())) {
                 log.warn("[SemanticCache] 命中条目未通过语义漂移防御门禁，拦截反向/实体漂移误命中: query='{}', hitQuery='{}'",
                         query, hit.getQuery());
+                if (ragMetricsService != null) {
+                    ragMetricsService.recordCacheMiss();
+                    ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.CACHE,
+                            tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK, System.nanoTime() - startNs);
+                }
                 return Optional.empty();
             }
 
@@ -138,10 +165,20 @@ public class SemanticCacheService {
                         hit.getAnswer(), hit.getSourcesJson(), config.getTtl());
             }
 
+            if (ragMetricsService != null) {
+                ragMetricsService.recordCacheHitSemantic();
+                ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.CACHE,
+                        tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.OK, System.nanoTime() - startNs);
+            }
             return Optional.of(hit);
         } catch (Exception e) {
             RagFallbackMonitor.record("semantic_cache", "bypass", "lookup failed: " + e.getMessage());
             log.warn("Semantic cache lookup failed, bypassing cache", e);
+            if (ragMetricsService != null) {
+                ragMetricsService.recordCacheBypass();
+                ragMetricsService.recordStage(tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.RagStage.CACHE,
+                        tech.qiantong.qknow.module.kmc.service.rag.metrics.RagMetricsService.StageOutcome.ERROR, System.nanoTime() - startNs);
+            }
             return Optional.empty();
         }
     }
