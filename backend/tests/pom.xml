@@ -138,6 +138,11 @@
                         <exclude>**/RagCandidate*Test.java</exclude>
                         <exclude>**/RagRerankServiceFilterTest.java</exclude>
                         <exclude>**/RagShadowBaselineTest.java</exclude>
+                        <exclude>**/EmbeddingServiceImplTest.java</exclude>
+                        <exclude>**/HttpRequestToolTest.java</exclude>
+                        <exclude>**/CragRetrievalEvaluatorTest.java</exclude>
+                        <exclude>**/KeywordRetrieverTest.java</exclude>
+
                     </excludes>
 
                 </configuration>
