@@ -1,6 +1,6 @@
 <template>
   <!-- 结构化抽取任务 数据映射 -->
-  <el-dialog
+  <el-dialog class="glass-card"
     :title="title"
     v-model="visible"
     width="1300px"
@@ -92,7 +92,7 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="属性映射" prop="attributeMapping">
-              <el-table :data="attributeMappingList" style="height: 330px">
+              <el-table class="glass-card" :data="attributeMappingList" style="height: 330px">
                 <el-table-column
                   prop="field"
                   label="数据表字段"
@@ -131,8 +131,8 @@
     </div>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="visible = false">取 消</el-button>
-        <el-button type="primary" @click="handleAdd">确 定</el-button>
+        <el-button v-ripple class="glass-btn" @click="visible = false">取 消</el-button>
+        <el-button v-ripple class="glass-btn" @click="handleAdd">确 定</el-button>
       </div>
     </template>
   </el-dialog>

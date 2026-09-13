@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" label-width="75px"
                v-show="showSearch" @submit.prevent>
@@ -37,10 +37,10 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button plain type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" plain @click="handleQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -51,8 +51,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="btn-style">
           <el-col :span="1.5">
-            <el-button
-              type="danger"
+            <el-button v-ripple class="glass-btn"
               plain
               :disabled="multiple"
               @click="handleDelete"
@@ -67,7 +66,7 @@
           <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
         </div>
       </div>
-      <el-table stripe v-loading="loading" :data="taskLogList"
+      <el-table class="glass-card" stripe v-loading="loading" :data="taskLogList"
                 @selection-change="handleSelectionChange"
                 :default-sort="defaultSort" @sort-change="handleSortChange"
                 :tooltip-options="tooltipOptions"
@@ -126,13 +125,13 @@
         </el-table-column>
         <el-table-column v-if="getColumnVisibility(9)" label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="200">
           <template #default="scope">
-            <!-- <el-button link type="primary" icon="view"
+            <!-- <el-button v-ripple class="glass-btn" link icon="view"
                        @click="handleDetail(scope.row)"
                        v-if="scope.row.errorMsg"
             >查看错误日志
             </el-button> -->
 
-            <el-button link type="primary"
+            <el-button v-ripple class="glass-btn" link
                        icon="view"
                        @click="showLogDetail(scope.row)"
             >查看步骤
@@ -158,14 +157,14 @@
     </div>
 
     <!-- 查看具体步骤 -->
-    <el-dialog v-model="open" width="800px" append-to="body" draggable>
+    <el-dialog class="glass-card" v-model="open" width="800px" append-to="body" draggable>
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           抽取步骤
         </span>
       </template>
 
-      <el-table stripe height="48vh"
+      <el-table class="glass-card" stripe height="48vh"
                 v-loading="detailPageLoading"
                 :data="taskLogDetailList"
                 @sort-change="handleLogDetailSortChange"
@@ -203,13 +202,13 @@
       />
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">关 闭</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
         </div>
       </template>
     </el-dialog>
 
     <!-- 查看错误消息 -->
-    <el-dialog
+    <el-dialog class="glass-card"
         v-model="centerDialogVisible"
         width="800px"
         destroy-on-close
@@ -224,7 +223,7 @@
       </div>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="centerDialogVisible=false">关 闭</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="centerDialogVisible=false">关 闭</el-button>
         </div>
       </template>
     </el-dialog>

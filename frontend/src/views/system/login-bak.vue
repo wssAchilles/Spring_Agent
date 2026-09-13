@@ -1,6 +1,6 @@
 <template>
   <!-- 上次登录用户登录页面登录页面样式二 -->
-  <div class="app-container login-two sysInfo sysInfo-wrap"  ref="app-container">
+  <div class="app-container login-two sysInfo sysInfo-wrap glass-card"  ref="app-container">
     <div class="left-content">
       <div class="swiper leftSwiper">
         <div class="swiper-wrapper">
@@ -82,9 +82,8 @@
             </el-form-item>
 
             <el-form-item style="width: 100%">
-              <el-button
+              <el-button v-ripple class="glass-btn"
                   :loading="loading"
-                  type="primary"
                   style="width: 100%"
                   @click.native.prevent="handleLogin"
               >
@@ -95,7 +94,7 @@
 
             <div class="form-actions">
               <el-checkbox v-model="loginForm.rememberMe">记住密码</el-checkbox>
-              <el-text type="primary" @click="dialogVisible = true">忘记密码</el-text>
+              <el-text @click="dialogVisible = true">忘记密码</el-text>
             </div>
           </el-form>
         </div>
@@ -132,8 +131,8 @@
               margin-left: 10px;
             "
           >为保证最佳浏览效果，请使用</span>
-          <span style="color: #ee2223; font-size: 12px; line-height: 0">Chrome</span>
-          <span style="color: #888; font-size: 12px; line-height: 0">浏览器，点击下载安装</span>
+          <span style="color: #1D1D1F; font-size: 12px; line-height: 0">Chrome</span>
+          <span style="color: #1D1D1F; font-size: 12px; line-height: 0">浏览器，点击下载安装</span>
           <a
               href="https://www.google.cn/chrome/"
               target="_blank"
@@ -201,9 +200,9 @@
   </div>
 
   <el-dialog
+    class="glass-card fp-form-dialog"
       v-model="dialogVisible"
       title="忘记密码"
-      class="fp-form-dialog"
       width="650px"
       append-to="body"
       draggable
@@ -220,7 +219,7 @@
             <el-form-item label="验证码">
               <div class="wrapper">
                 <el-input v-model="fpForm.code" placeholder="请输入验证码" />
-                <el-button type="primary" :disabled="codeFlag" style="margin-left: 10px;" @click="handleFPCodeClick">{{codeFlag?`${codeTime}s`:'获取验证码'}}</el-button>
+                <el-button v-ripple class="glass-btn" :disabled="codeFlag" style="margin-left: 10px;" @click="handleFPCodeClick">{{codeFlag?`${codeTime}s`:'获取验证码'}}</el-button>
               </div>
             </el-form-item>
           </el-col>
@@ -238,7 +237,7 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button type="primary" @click="dialogVisible = false">
+        <el-button v-ripple class="glass-btn" @click="dialogVisible = false">
           重置密码
         </el-button>
       </div>

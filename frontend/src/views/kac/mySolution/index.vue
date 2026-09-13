@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
@@ -20,23 +20,21 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
         <el-form-item style="float: right; margin-right: auto">
           <el-row :gutter="15" class="btn-style">
             <el-col :span="1.5">
-              <el-button
-                type="primary"
+              <el-button v-ripple class="glass-btn"
                 plain
                 @click="handleAdd"
                 v-hasPermi="['kac:solution:solution:add']"
@@ -72,6 +70,7 @@
 
     <!-- 添加或修改解决方案对话框 -->
     <el-dialog
+      class="glass-card"
       :title="title"
       v-model="open"
       width="800px"
@@ -101,10 +100,9 @@
           <el-col :span="24">
             <el-form-item label="关联应用" prop="myAppIds">
               <div>
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   :disabled="form.status && form.status != 0"
                   v-on:click="selectApp"
-                  type="primary"
                   plain
                 >
                   <i class="iconfont icon-upload-cloud-line mr5"></i
@@ -135,9 +133,8 @@
                   class-name="small-padding fixed-width"
                 >
                   <template #default="scope">
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       link
-                      type="danger"
                       icon="Delete"
                       :disabled="form.status && form.status != 0"
                       @click="removeSelectApp(scope.row)"
@@ -199,9 +196,9 @@
                   @keyup.enter="handleInputConfirm"
                   @blur="handleInputConfirm"
                 />
-                <el-button
+                <el-button v-ripple
                   v-else
-                  class="button-new-tag"
+                  class="button-new-tag glass-btn"
                   size="small"
                   @click="showInput"
                 >
@@ -238,8 +235,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>

@@ -2,18 +2,18 @@
   <el-drawer v-model="visible" title="知识库召回预览" size="600px" @close="handleClose">
     <div style="padding: 0 20px; height: 100%; display: flex; flex-direction: column;">
       <el-input v-model="query" placeholder="请输入测试问题..." type="textarea" :rows="4" />
-      <el-button type="primary" style="margin-top: 15px; align-self: flex-start;" @click="handleTest" :loading="loading" :disabled="!query">测试召回</el-button>
+      <el-button v-ripple class="glass-btn" style="margin-top: 15px; align-self: flex-start;" @click="handleTest" :loading="loading" :disabled="!query">测试召回</el-button>
       
       <div v-if="hasTested" style="margin-top: 20px; flex: 1; overflow-y: auto;">
         <el-tabs v-model="activeTab" v-if="results.length > 0">
           <el-tab-pane v-for="res in results" :key="res.kbId" :label="res.kbName" :name="res.kbId.toString()">
-            <el-card v-for="item in res.list" :key="item.id" style="margin-bottom: 15px;">
+            <el-card class="glass-card" v-for="item in res.list" :key="item.id" style="margin-bottom: 15px;">
               <template #header>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-weight: 500; font-size: 14px;">{{ item.documentName }}</span>
                   <div>
-                    <el-tag size="small" v-if="item.source" type="info" style="margin-right: 10px;">{{ getSourceText(item.source) }}</el-tag>
-                    <el-tag size="small" type="success">得分: {{ item.score.toFixed(2) }}</el-tag>
+                    <el-tag size="small" v-if="item.source" style="margin-right: 10px;">{{ getSourceText(item.source) }}</el-tag>
+                    <el-tag size="small">得分: {{ item.score.toFixed(2) }}</el-tag>
                   </div>
                 </div>
               </template>
@@ -22,7 +22,7 @@
             <el-empty v-if="res.list.length === 0" description="该知识库未召回内容" />
             
             <div v-if="res.debugInfo" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
-              <h4 style="margin-top: 0; color: #606266; font-size: 13px;">调试信息</h4>
+              <h4 style="margin-top: 0; color: #1D1D1F; font-size: 13px;">调试信息</h4>
               <el-descriptions :column="2" border size="small">
                 <el-descriptions-item label="耗时">{{ res.debugInfo.elapsedMs }}ms</el-descriptions-item>
                 <el-descriptions-item label="检索模式">{{ res.debugInfo.searchMethod }}</el-descriptions-item>
@@ -33,7 +33,7 @@
                 <el-descriptions-item label="重排序结果">{{ res.debugInfo.rerankedCount || 0 }}</el-descriptions-item>
               </el-descriptions>
               <div v-if="res.contextPreview" style="margin-top: 15px;">
-                <h4 style="color: #606266; font-size: 13px; margin-bottom: 10px;">最终注入上下文预览</h4>
+                <h4 style="color: #1D1D1F; font-size: 13px; margin-bottom: 10px;">最终注入上下文预览</h4>
                 <el-input type="textarea" :rows="6" readonly v-model="res.contextPreview" />
               </div>
             </div>

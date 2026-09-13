@@ -1,5 +1,5 @@
 <template>
-   <div class="app-container" ref="app-container">
+   <div class="app-container glass-card" ref="app-container">
       <div class="pagecont-top">
          <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" label-width="68px">
             <el-form-item label="登录地址" prop="ipaddr">
@@ -21,10 +21,10 @@
                />
             </el-form-item>
             <el-form-item>
-               <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                   <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
                </el-button>
-               <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                   <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
                </el-button>
             </el-form-item>
@@ -57,7 +57,7 @@
             </el-table-column>
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
                <template #default="scope">
-                  <el-button link type="danger" @click="handleForceLogout(scope.row)" v-hasPermi="['monitor:online:forceLogout']">
+                  <el-button v-ripple class="glass-btn" link @click="handleForceLogout(scope.row)" v-hasPermi="['monitor:online:forceLogout']">
                     <i class="iconfont-mini icon-a-shanchuxianxing"></i>
                     强退</el-button>
                </template>

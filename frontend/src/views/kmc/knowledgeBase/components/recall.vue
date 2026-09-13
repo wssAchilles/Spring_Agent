@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container recall-glass-app">
+  <div class="app-container recall-glass-app glass-card">
     <GuideTip tip-id="kmc/recall" />
     <div class="container">
       <div class="left-container">
@@ -10,7 +10,7 @@
           <div class="border-item-body">
             <div class="title">
               <span>源文本</span>
-              <el-button @click="drawer = true" style="margin-left: auto">
+              <el-button v-ripple class="glass-btn" @click="drawer = true" style="margin-left: auto">
                 {{ getSearchName() }}
                 <el-icon class="el-icon--right">
                   <Operation />
@@ -26,11 +26,10 @@
                 rows="8"
                 :resize="'none'"
               ></el-input>
-              <el-button
-                class="input-btn"
+              <el-button v-ripple
+                class="input-btn glass-btn"
                 @click="getRecall"
                 :disabled="knowledgeBase.query === ''"
-                type="primary"
                 :loading="loading"
                 >测试
               </el-button>
@@ -40,34 +39,34 @@
         <div class="border-item module-2">
           <div class="border-item-head">
             <span class="head-title">记录 </span>
-            <el-link type="primary" :underline="false" @click="goRecallLog">
+            <el-link :underline="false" @click="goRecallLog">
               查看更多
             </el-link>
           </div>
           <div class="border-item-body">
-            <el-table
+            <el-table class="glass-card"
               stripe
               :data="recallLogList"
               max-height="100%"
               :default-sort="defaultSort"
               @sort-change="handleSortChange"
             >
-              <el-table-column
+              <el-table class="glass-card"-column
                 label="编号"
                 align="center"
                 prop="id"
                 sortable="custom"
                 width="80"
               />
-              <el-table-column
+              <el-table class="glass-card"-column
                 label="文本"
                 align="left"
                 prop="query"
                 width="300"
                 :show-overflow-tooltip="{ effect: 'light' }"
               />
-              <el-table-column label="创建人" align="center" prop="createBy" />
-              <el-table-column
+              <el-table class="glass-card"-column label="创建人" align="center" prop="createBy" />
+              <el-table class="glass-card"-column
                 label="创建时间"
                 align="center"
                 prop="createTime"
@@ -91,16 +90,16 @@
             <span class="head-title">召回段落 </span>
             <div style="display: flex; align-items: center; gap: 15px;">
               <el-switch v-model="debugMode" active-text="显示调试信息" inactive-text="普通模式" />
-              <el-button type="danger" size="small" plain @click="handleClearCache" :loading="clearingCache">清除 RAG 缓存</el-button>
+              <el-button v-ripple class="glass-btn" size="small" plain @click="handleClearCache" :loading="clearingCache">清除 RAG 缓存</el-button>
             </div>
           </div>
           <div class="border-item-body" style="overflow-y: auto">
-            <el-card v-for="item in recallList" :key="item.id || item.segmentId || item.content" style="margin-bottom: 20px">
+            <el-card class="glass-card" v-for="item in recallList" :key="item.id || item.segmentId || item.content" style="margin-bottom: 20px">
               <template #header>
                 <div class="title">
                   <img :src="getFileType(item.documentName)" />
                   <span>{{ item.documentName || '未知文档' }}</span>
-                  <el-tag size="small" style="margin-left: 10px" v-if="debugMode && item.source" type="info">{{ getSourceText(item.source) }}</el-tag>
+                  <el-tag size="small" style="margin-left: 10px" v-if="debugMode && item.source">{{ getSourceText(item.source) }}</el-tag>
                   <el-progress
                     :text-inside="true"
                     :stroke-width="16"
@@ -119,30 +118,30 @@
             <el-empty v-if="recallList.length <= 0"></el-empty>
 
             <div v-if="debugMode && debugInfo" style="margin-top: 20px; border-top: 1px solid #e8e8e8; padding-top: 15px;">
-              <h4 style="margin-top: 0; margin-bottom: 15px; color: #303133;">调试面板</h4>
+              <h4 style="margin-top: 0; margin-bottom: 15px; color: #1D1D1F;">调试面板</h4>
 
               <!-- 查询增强信息 -->
-              <div v-if="debugInfo.queryEnhance" style="margin-bottom: 12px; padding: 10px; background: #f0f9ff; border-radius: 6px; border-left: 3px solid #3b82f6;">
-                <div style="font-weight: 500; font-size: 13px; color: #1e40af; margin-bottom: 6px;">
+              <div v-if="debugInfo.queryEnhance" style="margin-bottom: 12px; padding: 10px; background: #F5F5F7; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                <div style="font-weight: 500; font-size: 13px; color: #1D1D1F; margin-bottom: 6px;">
                   查询增强: {{ debugInfo.queryEnhance.strategy || '无' }}
                 </div>
-                <div v-if="debugInfo.queryEnhance.originalQuery" style="font-size: 12px; color: #64748b;">
+                <div v-if="debugInfo.queryEnhance.originalQuery" style="font-size: 12px; color: #1D1D1F;">
                   原始: {{ debugInfo.queryEnhance.originalQuery }}
                 </div>
-                <div v-if="debugInfo.queryEnhance.variants?.length" style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                <div v-if="debugInfo.queryEnhance.variants?.length" style="font-size: 12px; color: #1D1D1F; margin-top: 4px;">
                   变体: {{ debugInfo.queryEnhance.variants.join(' / ') }}
                 </div>
-                <div v-if="debugInfo.queryEnhance.vectorVariants?.length" style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                <div v-if="debugInfo.queryEnhance.vectorVariants?.length" style="font-size: 12px; color: #1D1D1F; margin-top: 4px;">
                   向量查询: {{ debugInfo.queryEnhance.vectorVariants.join(' / ') }}
                 </div>
               </div>
 
               <!-- 弱路径排除警告 -->
-              <div v-if="debugInfo.excludedPaths?.length" style="margin-bottom: 12px; padding: 10px; background: #fffbeb; border-radius: 6px; border-left: 3px solid #f59e0b;">
-                <div style="font-weight: 500; font-size: 13px; color: #92400e; margin-bottom: 4px;">
+              <div v-if="debugInfo.excludedPaths?.length" style="margin-bottom: 12px; padding: 10px; background: #F5F5F7; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                <div style="font-weight: 500; font-size: 13px; color: #1D1D1F; margin-bottom: 4px;">
                   弱路径排除
                 </div>
-                <div v-for="path in debugInfo.excludedPaths" :key="formatExcludedPath(path)" style="font-size: 12px; color: #92400e;">
+                <div v-for="path in debugInfo.excludedPaths" :key="formatExcludedPath(path)" style="font-size: 12px; color: #1D1D1F;">
                   {{ formatExcludedPath(path) }}
                 </div>
               </div>
@@ -175,63 +174,63 @@
               </el-descriptions>
 
               <div v-if="pathScoreDiagnostics.length" style="margin-top: 12px;">
-                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                <div style="font-weight: 500; font-size: 13px; color: #1D1D1F; margin-bottom: 6px;">
                   路径分数
                 </div>
-                <el-table :data="pathScoreDiagnostics" size="small" border>
-                  <el-table-column prop="phase" label="阶段" width="80" />
-                  <el-table-column prop="pathName" label="路径" width="110" />
-                  <el-table-column prop="rawTopScore" label="原始分" width="100">
+                <el-table class="glass-card" :data="pathScoreDiagnostics" size="small" border>
+                  <el-table class="glass-card"-column prop="phase" label="阶段" width="80" />
+                  <el-table class="glass-card"-column prop="pathName" label="路径" width="110" />
+                  <el-table class="glass-card"-column prop="rawTopScore" label="原始分" width="100">
                     <template #default="scope">{{ formatScore(scope.row.rawTopScore) }}</template>
                   </el-table-column>
-                  <el-table-column prop="normalizedTopScore" label="归一分" width="100">
+                  <el-table class="glass-card"-column prop="normalizedTopScore" label="归一分" width="100">
                     <template #default="scope">{{ formatScore(scope.row.normalizedTopScore) }}</template>
                   </el-table-column>
-                  <el-table-column prop="excluded" label="排除" width="80">
+                  <el-table class="glass-card"-column prop="excluded" label="排除" width="80">
                     <template #default="scope">{{ formatBoolean(scope.row.excluded) }}</template>
                   </el-table-column>
                 </el-table>
               </div>
 
               <div v-if="timingDiagnostics.length" style="margin-top: 12px;">
-                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                <div style="font-weight: 500; font-size: 13px; color: #1D1D1F; margin-bottom: 6px;">
                   路径耗时
                 </div>
-                <el-table :data="timingDiagnostics" size="small" border>
-                  <el-table-column prop="label" label="路径" />
-                  <el-table-column prop="duration" label="耗时(ms)" width="110" />
+                <el-table class="glass-card" :data="timingDiagnostics" size="small" border>
+                  <el-table class="glass-card"-column prop="label" label="路径" />
+                  <el-table class="glass-card"-column prop="duration" label="耗时(ms)" width="110" />
                 </el-table>
               </div>
 
               <div v-if="graphProvenanceRows.length" style="margin-top: 12px;">
-                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                <div style="font-weight: 500; font-size: 13px; color: #1D1D1F; margin-bottom: 6px;">
                   Graph 候选证据
                 </div>
-                <el-table :data="graphProvenanceRows" size="small" border>
-                  <el-table-column prop="source" label="来源" width="130" />
-                  <el-table-column prop="segmentId" label="Segment" width="100" />
-                  <el-table-column prop="documentName" label="文档" show-overflow-tooltip />
-                  <el-table-column prop="score" label="分数" width="90">
+                <el-table class="glass-card" :data="graphProvenanceRows" size="small" border>
+                  <el-table class="glass-card"-column prop="source" label="来源" width="130" />
+                  <el-table class="glass-card"-column prop="segmentId" label="Segment" width="100" />
+                  <el-table class="glass-card"-column prop="documentName" label="文档" show-overflow-tooltip />
+                  <el-table class="glass-card"-column prop="score" label="分数" width="90">
                     <template #default="scope">{{ formatScore(scope.row.score) }}</template>
                   </el-table-column>
                 </el-table>
               </div>
 
               <div v-if="fallbackDiagnostics.length" style="margin-top: 12px;">
-                <div style="font-weight: 500; font-size: 13px; color: #303133; margin-bottom: 6px;">
+                <div style="font-weight: 500; font-size: 13px; color: #1D1D1F; margin-bottom: 6px;">
                   降级与 JNI 诊断
                 </div>
-                <el-table :data="fallbackDiagnostics" size="small" border>
-                  <el-table-column prop="component" label="组件" width="150" />
-                  <el-table-column prop="count" label="次数" width="80" />
-                  <el-table-column prop="lastFallback" label="降级路径" width="180" />
-                  <el-table-column prop="lastReason" label="最近原因" show-overflow-tooltip />
+                <el-table class="glass-card" :data="fallbackDiagnostics" size="small" border>
+                  <el-table class="glass-card"-column prop="component" label="组件" width="150" />
+                  <el-table class="glass-card"-column prop="count" label="次数" width="80" />
+                  <el-table class="glass-card"-column prop="lastFallback" label="降级路径" width="180" />
+                  <el-table class="glass-card"-column prop="lastReason" label="最近原因" show-overflow-tooltip />
                 </el-table>
               </div>
 
               <!-- 上下文预算条 -->
               <div v-if="debugInfo.contextBytes" style="margin-top: 12px;">
-                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 4px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #1D1D1F; margin-bottom: 4px;">
                   <span>上下文预算</span>
                   <span>{{ (debugInfo.contextBytes / 1024).toFixed(1) }}KB / {{ (debugInfo.maxContextBytes / 1024).toFixed(0) }}KB</span>
                 </div>
@@ -243,7 +242,7 @@
               </div>
 
               <div v-if="contextPreview" style="margin-top: 15px;">
-                <h4 style="color: #303133; margin-bottom: 10px;">最终注入上下文预览</h4>
+                <h4 style="color: #1D1D1F; margin-bottom: 10px;">最终注入上下文预览</h4>
                 <el-input type="textarea" :rows="10" readonly v-model="contextPreview" />
               </div>
             </div>
@@ -256,7 +255,7 @@
         v-model="drawer"
         width="55%"
         :before-close="handleClose"
-        class="search-setting-dialog"
+        class="search-setting-dialog glass-card"
         draggable
       >
         <template #header>
@@ -264,7 +263,7 @@
             检索设置
           </span>
         </template>
-        <!-- <div class="app-container">
+        <!-- <div class="app-container glass-card">
           <div class="pagecont-top" v-if="!loading"> -->
         <el-form
           ref="knowledgeBaseRef"
@@ -347,7 +346,7 @@
                   <div class="search-title">
                     <div class="search-recommend">
                       <span>混合检索</span>
-                      <!--                          <el-tag size="small" type="primary" class="recommend-tag">推荐</el-tag>-->
+                      <!--                          <el-tag size="small" class="recommend-tag">推荐</el-tag>-->
                     </div>
                   </div>
                 </div>
@@ -809,8 +808,8 @@
         </el-form>
         <template #footer>
           <div class="dialog-footer">
-            <el-button size="small" @click="cancel">取 消</el-button>
-            <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+            <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+            <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
           </div>
         </template>
         <!-- </div>
@@ -1218,7 +1217,7 @@ const md = new MarkdownIt({
   highlight: function (str, lang) {
     if (lang && hljs.getLanguage(lang)) {
       try {
-        const copyHtml = `<div id="copy" data-copy='${str}' style="position: absolute; right: 10px; top: 5px; color: #fff;cursor: pointer;">复制</div>`;
+        const copyHtml = `<div id="copy" data-copy='${str}' style="position: absolute; right: 10px; top: 5px; color: #1D1D1F;cursor: pointer;">复制</div>`;
         return `<pre style="position: relative;">${copyHtml}<code class="hljs">${
           hljs.highlight(lang, str, true).value
         }</code></pre>`;
@@ -1531,16 +1530,16 @@ init();
 .app-container {
   .pagecont-top {
     padding: 0px;
-    //background-color: #f0f2f5;
+    //background: #F5F5F7;
   }
 
   // 区块样式
   .section-block {
-    background-color: #ffffff;
+    background: #F5F5F7;
     padding: 0px 0px 0px 20px;
 
     .blue-bar {
-      background-color: #2666fb;
+      background: #F5F5F7;
       width: 6px;
       height: 16px;
       margin-right: 10px;
@@ -1553,13 +1552,13 @@ init();
       margin: 10px 0px 0px 0px;
       font-weight: 500;
       font-size: 14px;
-      color: #333;
+      color: #1D1D1F;
     }
 
     .header-left {
       display: flex;
       align-items: center;
-      color: #666666;
+      color: #1D1D1F;
       font-size: 16px;
       line-height: 24px;
       font-family: PingFangSC-Medium-;
@@ -1614,9 +1613,9 @@ init();
     //width: 532px;
     //height: 32px;
     //padding: 6px 0px 6px 18px;
-    //background-color: #FFFDF0;
+    //background: #F5F5F7;
     //border: 1px solid #FFE58F;
-    color: #888;
+    color: #1D1D1F;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -1624,7 +1623,7 @@ init();
 
     .desc-icon {
       margin-right: 3px;
-      //color: #EFBD47;
+      //color: #1D1D1F;
     }
   }
 }
@@ -1650,7 +1649,7 @@ init();
         font-size: 14px;
         font-family: PingFangSC-Regular-;
         line-height: 22px;
-        color: #333333;
+        color: #1D1D1F;
       }
 
       .score-margin {
@@ -1698,7 +1697,7 @@ init();
         font-family: PingFangSC-Regular-;
         font-size: 14px;
         line-height: 22px;
-        color: #333333;
+        color: #1D1D1F;
       }
     }
   }
@@ -1736,13 +1735,13 @@ init();
         height: 32px;
         margin-left: 52px;
         padding: 6px 0px 6px 0px;
-        //background-color: #FFFDF0;
+        //background: #F5F5F7;
         //border: 1px solid #FFE58F;
-        color: #888;
+        color: #1D1D1F;
 
         .desc-icon {
           margin-right: 3px;
-          //color: #EFBD47;
+          //color: #1D1D1F;
         }
       }
 
@@ -1785,14 +1784,14 @@ init();
         //width: 552px;
         //height: 32px;
         padding: 6px 0px 6px 0px;
-        //background-color: #fffdf1;
+        //background: #F5F5F7;
         //border: 1px solid #f5ecbe;
-        color: #888;
+        color: #1D1D1F;
         margin-left: 17px;
 
         .desc-icon {
           margin-right: 3px;
-          //color: #ebbd4d;
+          //color: #1D1D1F;
         }
       }
     }
@@ -1968,7 +1967,7 @@ init();
 
 .border-item .border-item-head .head-title {
   font-size: 18px;
-  color: #1e293b;
+  color: #1D1D1F;
   display: flex;
   align-items: center;
   font-family: PingFang SC, sans-serif;
@@ -2006,7 +2005,7 @@ init();
 
       span {
         font-size: 15px;
-        color: #475569;
+        color: #1D1D1F;
         font-weight: 500;
       }
     }
@@ -2015,7 +2014,7 @@ init();
       display: flex;
       flex-direction: column;
       padding-bottom: 15px;
-      background-color: #f1f5f9;
+      background: #F5F5F7;
 
       .input-text {
         height: 220px;
@@ -2029,7 +2028,7 @@ init();
           resize: none;
           padding: 0;
           font-size: 14px;
-          color: #334155;
+          color: #1D1D1F;
           
           &:focus {
             box-shadow: none;

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form class="btn-style" :model="queryParams" ref="queryForm" :inline="true" label-width="68px">
         <el-form-item label="主体名称" prop="name">
@@ -12,10 +12,10 @@
           />
         </el-form-item>
         <el-form-item>
-              <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+              <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                 <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
               </el-button>
-              <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+              <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                 <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
               </el-button>
         </el-form-item>
@@ -26,8 +26,7 @@
       <div class="justify-between mb15">
       <el-row :gutter="10" class="btn-style">
         <el-col :span="1.5">
-          <el-button
-            type="primary"
+          <el-button v-ripple class="glass-btn"
             plain
             @click="handleAdd"
             v-hasPermi="['ca:subject:add']"
@@ -51,25 +50,23 @@
   <!--      <el-table-column label="备注" align="center" prop="remark" />-->
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width"  fixed="right" width="240">
           <template #default="scope">
-            <el-button
+            <el-button v-ripple class="glass-btn"
                 link
-                type="primary"
                 @click="downloadFiles(scope.row)"
                 v-hasPermi="['ca:subject:remove']"
             >
               <i class="iconfont-mini icon-daoru"></i>
               下载</el-button>
-  <!--          <el-button-->
+  <!--          <el-button v-ripple class="glass-btn"-->
   <!--            size="small"-->
   <!--            type="text"-->
   <!--            icon="el-icon-edit"-->
   <!--            @click="handleUpdate(scope.row)"-->
   <!--            v-hasPermi="['ca:subject:edit']"-->
   <!--          >修改</el-button>-->
-            <el-button
+            <el-button v-ripple class="glass-btn"
                 link
-                type="primary"
-                style="color: red"
+                style="color: #1D1D1F"
                 @click="handleDelete(scope.row)"
                 v-hasPermi="['ca:subject:remove']"
             >
@@ -89,7 +86,7 @@
     </div>
 
     <!-- 添加或修改主体管理对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" append-to="body"   draggable destroy-on-close>
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body"   draggable destroy-on-close>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -131,8 +128,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="cancel">取 消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button v-ripple class="glass-btn" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" @click="submitForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>

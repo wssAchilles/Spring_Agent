@@ -2,13 +2,13 @@
   <div class="justify-between mb15">
     <el-row :gutter="15" class="btn-style">
       <el-col :span="1.5">
-        <el-button type="primary" plain @click="handleAdd" v-hasPermi="['knowledgeSegment:knowledgeSegment:add']"
+        <el-button v-ripple class="glass-btn" plain @click="handleAdd" v-hasPermi="['knowledgeSegment:knowledgeSegment:add']"
                    @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-xinzeng mr5"></i>新增
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain @click="handleExport" v-hasPermi="['knowledgeSegment:knowledgeSegment:export']"
+        <el-button v-ripple class="glass-btn" plain @click="handleExport" v-hasPermi="['knowledgeSegment:knowledgeSegment:export']"
                    @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-download-line mr5"></i>导出
         </el-button>
@@ -18,51 +18,51 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </div>
   </div>
-  <el-table stripe height="374px" v-loading="loading" :data="knowledgeSegmentList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
-    <el-table-column type="selection" width="55" align="center" />
-            <el-table-column v-if="columns[0].visible" label="ID" align="center" prop="id" />
-            <el-table-column v-if="columns[7].visible" label="分段内容文本" align="center" prop="content">
+  <el-table class="glass-card" stripe height="374px" v-loading="loading" :data="knowledgeSegmentList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+    <el-table class="glass-card"-column type="selection" width="55" align="center" />
+            <el-table class="glass-card"-column v-if="columns[0].visible" label="ID" align="center" prop="id" />
+            <el-table class="glass-card"-column v-if="columns[7].visible" label="分段内容文本" align="center" prop="content">
               <template #default="scope">
                 {{ scope.row.content || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[9].visible" label="答案内容(如果有)" align="center" prop="answer">
+            <el-table class="glass-card"-column v-if="columns[9].visible" label="答案内容(如果有)" align="center" prop="answer">
               <template #default="scope">
                 {{ scope.row.answer || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[10].visible" label="内容长度" align="center" prop="wordCount">
+            <el-table class="glass-card"-column v-if="columns[10].visible" label="内容长度" align="center" prop="wordCount">
               <template #default="scope">
                 {{ scope.row.wordCount || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[12].visible" label="关键词" align="center" prop="keywords">
+            <el-table class="glass-card"-column v-if="columns[12].visible" label="关键词" align="center" prop="keywords">
               <template #default="scope">
                 {{ scope.row.keywords || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[15].visible" label="访问次数" align="center" prop="hitCount">
+            <el-table class="glass-card"-column v-if="columns[15].visible" label="访问次数" align="center" prop="hitCount">
               <template #default="scope">
                 {{ scope.row.hitCount || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[21].visible" label="分段添加dify状态" align="center" prop="syncStatus">
+            <el-table class="glass-card"-column v-if="columns[21].visible" label="分段添加dify状态" align="center" prop="syncStatus">
               <template #default="scope">
                     <dict-tag :options="sync_status" :value="scope.row.syncStatus"/>
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[28].visible" label="创建时间" align="center" prop="createTime" width="180" sortable="custom" :sort-orders="['descending', 'ascending']">
+            <el-table class="glass-card"-column v-if="columns[28].visible" label="创建时间" align="center" prop="createTime" width="180" sortable="custom" :sort-orders="['descending', 'ascending']">
               <template #default="scope">
                 <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
               </template>
             </el-table-column>
-    <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
+    <el-table class="glass-card"-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
       <template #default="scope">
-        <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)"
                    v-hasPermi="['knowledgeSegment:knowledgeSegment:edit']">修改</el-button>
-        <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)"
                    v-hasPermi="['knowledgeSegment:knowledgeSegment:remove']">删除</el-button>
-        <el-button link type="primary" icon="view" @click="handleDetail(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="view" @click="handleDetail(scope.row)"
                    v-hasPermi="['knowledgeSegment:knowledgeSegment:edit']">详情</el-button>
       </template>
     </el-table-column>
@@ -84,11 +84,11 @@
   />
 
   <!-- 添加或修改文件分段对话框 -->
-  <el-dialog :title="title" v-model="open" width="800px" append-to="body" draggable>
+  <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body" draggable>
     <template #header="{ close, titleId, titleClass }">
           <span role="heading" aria-level="2" class="el-dialog__title">
             {{ title }}
-            <el-icon size="20" style="color: #909399; font-size: 16px">
+            <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
               <InfoFilled />
             </el-icon>
           </span>
@@ -128,18 +128,18 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
       </div>
     </template>
   </el-dialog>
 
   <!-- 文件分段详情对话框 -->
-  <el-dialog :title="title" v-model="openDetail" width="800px" append-to="body" draggable>
+  <el-dialog class="glass-card" :title="title" v-model="openDetail" width="800px" append-to="body" draggable>
     <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           {{ title }}
-          <el-icon size="20" style="color: #909399; font-size: 16px">
+          <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
             <InfoFilled />
           </el-icon>
         </span>
@@ -185,7 +185,7 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">关 闭</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
       </div>
     </template>
   </el-dialog>

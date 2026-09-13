@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top">
       <h4 class="form-header h4">基本信息</h4>
       <el-form class="btn-style" :model="form" label-width="80px">
@@ -21,6 +21,7 @@
     <div class="pagecont-bottom">
       <h4 class="form-header h4">角色信息</h4>
       <el-table
+        class="glass-card"
         stripe
         height="500px"
         v-loading="loading"
@@ -49,8 +50,8 @@
 
       <el-form label-width="100px">
         <div style="text-align: center; margin-left: -120px; margin-top: 30px">
-          <el-button type="primary" @click="submitForm()">提交</el-button>
-          <el-button @click="close()">返回</el-button>
+          <el-button v-ripple class="glass-btn" @click="submitForm()">提交</el-button>
+          <el-button v-ripple class="glass-btn" @click="close()">返回</el-button>
         </div>
       </el-form>
     </div>

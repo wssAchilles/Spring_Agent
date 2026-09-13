@@ -4,7 +4,7 @@
       <div class="workflow-debug-run-panel__title">
         <span class="blue-bar"></span>输入参数
       </div>
-      <el-button type="primary" :loading="running" @click="handleRun">
+      <el-button v-ripple class="glass-btn" :loading="running" @click="handleRun">
         执行
       </el-button>
     </div>
@@ -64,7 +64,7 @@ const md = new MarkdownIt({
   highlight: function (str, lang) {
     if (lang && hljs.getLanguage(lang)) {
       try {
-        const copyHtml = `<div id="copy" data-copy='${str}' style="position: absolute; right: 10px; top: 5px; color: #fff;cursor: pointer;">复制</div>`;
+        const copyHtml = `<div id="copy" data-copy='${str}' style="position: absolute; right: 10px; top: 5px; color: #1D1D1F;cursor: pointer;">复制</div>`;
         return `<pre style="position: relative;">${copyHtml}<code class="hljs">${
           hljs.highlight(lang, str, true).value
         }</code></pre>`;

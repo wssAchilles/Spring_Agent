@@ -1,5 +1,5 @@
 <template>
-    <el-dialog :title="title" v-model="open" width="1200px" top="5vh" append-to="body" draggable>
+    <el-dialog class="glass-card" :title="title" v-model="open" width="1200px" top="5vh" append-to="body" draggable>
         <template #header="{ close, titleId, titleClass }">
                 <span role="heading" aria-level="2" class="el-dialog__title">
                   {{ title }}
@@ -27,16 +27,16 @@
                     </el-col>
                     <el-col :span="2">
                         <div>
-                            <el-button type="primary" plain @click="testConnection">测试连接</el-button>
+                            <el-button v-ripple class="glass-btn" plain @click="testConnection">测试连接</el-button>
                             <!-- 条件渲染绿色圆形对号图标 -->
                             <div v-if="connectionSuccess" class="success-icon">
-                                <el-icon style="color: white;">
+                                <el-icon style="color: #1D1D1F;">
                                     <check/>
                                 </el-icon>
                             </div>
                             <!-- 条件渲染红色圆形 X 图标 -->
                             <div v-if="connectionError" class="error-icon">
-                                <el-icon style="color: white;">
+                                <el-icon style="color: #1D1D1F;">
                                     <close/>
                                 </el-icon>
                             </div>
@@ -55,14 +55,14 @@
                         <div class="module-header">
                             <span class="module-title">数据映射</span>
                             <div class="header-actions">
-                                <el-button type="primary" plain :disabled="structTaskStatus && structTaskStatus != 0" @click="openImportTable">导入表</el-button>
+                                <el-button v-ripple class="glass-btn" plain :disabled="structTaskStatus && structTaskStatus != 0" @click="openImportTable">导入表</el-button>
                                 <el-icon class="tip-icon" size="20" style="">
                                     <InfoFilled/>
                                 </el-icon>
                                 <span class="tip-text">注：导入表之前需确保数据库连接信息正确</span>
                             </div>
                         </div>
-                        <el-table :data="tableData" max-height="410" >
+                        <el-table class="glass-card" :data="tableData" max-height="410" >
                             <el-table-column
                                     prop="tableName"
                                     label="表名">
@@ -99,11 +99,11 @@
                                     width="180">
                                 <template #default="scope">
                                     <div>
-                                        <el-button link type="primary" icon="Edit"
+                                        <el-button v-ripple class="glass-btn" link icon="Edit"
                                                    :disabled="structTaskStatus && structTaskStatus != 0"
                                                    @click="mappingClick(scope.row)">映射
                                         </el-button>
-                                        <el-button link type="danger" icon="Delete"
+                                        <el-button v-ripple class="glass-btn" link icon="Delete"
                                                    :disabled="structTaskStatus && structTaskStatus != 0"
                                                    @click="tableDataDeleteClick(scope.row)">
                                             删除
@@ -121,8 +121,8 @@
         </el-form>
         <template #footer>
             <div class="dialog-footer">
-                <el-button size="small" @click="open = false">取 消</el-button>
-                <el-button type="primary" size="small" @click="submitFileForm">确 定</el-button>
+                <el-button v-ripple class="glass-btn" size="small" @click="open = false">取 消</el-button>
+                <el-button v-ripple class="glass-btn" size="small" @click="submitFileForm">确 定</el-button>
             </div>
         </template>
     </el-dialog>
@@ -484,7 +484,7 @@
     /*.module-block {*/
     /*    border: 1px solid #ebeef5;*/
     /*    border-radius: 4px;*/
-    /*    background: #fff;*/
+    /*    background: #F5F5F7;*/
     /*    padding: 10px 20px;*/
     /*    margin-bottom: 20px;*/
     /*    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);*/

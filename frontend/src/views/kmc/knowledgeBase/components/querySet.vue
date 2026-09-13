@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
       <el-form
         ref="knowledgeBaseRef"
         :model="form"
@@ -95,7 +95,7 @@
                 <div class="search-title">
                   <div class="search-recommend">
                     <span>混合检索</span>
-                    <!--                    <el-tag size="small" type="primary" class="recommend-tag">推荐</el-tag>-->
+                    <!--                    <el-tag size="small" class="recommend-tag">推荐</el-tag>-->
                   </div>
                 </div>
               </div>
@@ -610,10 +610,10 @@
           <div class="underline"></div>
           <!-- 底部操作按钮 -->
           <div class="dialog-footer">
-            <el-button type="default" size="small" plain @click="back">
+            <el-button v-ripple class="glass-btn" type="default" size="small" plain @click="back">
               取消
             </el-button>
-            <el-button type="primary" @click="submitForm"> 保存 </el-button>
+            <el-button v-ripple class="glass-btn" @click="submitForm"> 保存 </el-button>
           </div>
         </div>
 
@@ -650,10 +650,10 @@
           <div class="underline"></div>
           <!-- 底部操作按钮 -->
           <div class="dialog-footer">
-            <el-button type="default" size="small" plain @click="back">
+            <el-button v-ripple class="glass-btn" type="default" size="small" plain @click="back">
               取消
             </el-button>
-            <el-button type="primary" @click="submitForm"> 保存 </el-button>
+            <el-button v-ripple class="glass-btn" @click="submitForm"> 保存 </el-button>
           </div>
         </div>
       </el-form>
@@ -1288,28 +1288,28 @@ init();
 
 <style scoped lang="scss">
 // 基础通用样式
-$primary-color: #2666fb;
+$primary-color: #1D1D1F;
 $tip-bg: #fffdf0;
 $tip-border: #ffe58f;
-$tip-icon-color: #efbd47;
+$tip-icon-color: #1D1D1F;
 $text-color-main: #333333;
 $text-color-tip: #888888;
-$border-color: #e6e6e6;
-$underline-color: #f4f4f4;
+$border-color: #1D1D1F;
+$underline-color: #1D1D1F;
 
 // 全局容器样式
 .app-container {
   .pagecont-top {
     height: 100%;
     padding: 0;
-    background-color: #f0f2f5;
+    background: #F5F5F7;
   }
 }
 
 // 区块通用样式
 .section-block {
   margin-bottom: 10px;
-  background-color: #ffffff;
+  background: #F5F5F7;
   padding: 20px;
   &:last-child {
     margin-bottom: 0;
@@ -1326,7 +1326,7 @@ $underline-color: #f4f4f4;
     .header-left {
       display: flex;
       align-items: center;
-      color: #666666;
+      color: #1D1D1F;
       font-size: 16px;
       line-height: 24px;
       font-family: PingFangSC-Medium;
@@ -1551,8 +1551,8 @@ $underline-color: #f4f4f4;
       .mix-desc {
         @extend .base-tip-style;
         //width: 552px;
-        //background-color: #fffdf1;
-        //border-color: #f5ecbe;
+        //background: #F5F5F7;
+        //border-color: #1D1D1F;
         //margin: 8px 0 16px 0;
       }
 

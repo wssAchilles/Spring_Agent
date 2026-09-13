@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
     <div class="page-wrapper">
       <!-- 页面标题区域 -->
       <div class="page-header">
@@ -330,8 +330,8 @@
 
       <!-- 操作按钮 -->
       <div class="action-bar">
-        <el-button class="btn-cancel" @click="cancel">取消</el-button>
-        <el-button type="primary" class="btn-submit" @click="submitForm">
+        <el-button v-ripple class="btn-cancel glass-btn" @click="cancel">取消</el-button>
+        <el-button v-ripple class="btn-submit glass-btn" @click="submitForm">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           确定
         </el-button>
@@ -683,7 +683,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
+    color: #1D1D1F;
     flex-shrink: 0;
     box-shadow: 0 4px 12px rgba(75, 126, 237, 0.3);
   }
@@ -845,7 +845,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
     .mode-card-icon {
       background: linear-gradient(135deg, $primary, $primary-light);
-      color: #fff;
+      color: #1D1D1F;
     }
   }
 
@@ -879,7 +879,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 8px;
     }
     &.inactive {
-      background: #f1f5f9;
+      background: #F5F5F7;
       color: $text-muted;
     }
   }
@@ -908,7 +908,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 11px;
   font-weight: 600;
   background: linear-gradient(135deg, $primary, $primary-light);
-  color: #fff;
+  color: #1D1D1F;
   letter-spacing: 0.02em;
 }
 
@@ -990,7 +990,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 /* --- 预处理规则 --- */
 .preprocess-section {
   padding: 16px 18px;
-  background: #F8FAFC;
+  background: #F5F5F7;
   border-radius: $radius-input;
   border: 1px solid $border-light;
 
@@ -1063,7 +1063,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     &:hover {
       border-color: $border-hover;
       color: $text-primary;
-      background: #F8FAFC;
+      background: #F5F5F7;
     }
   }
 
@@ -1074,7 +1074,7 @@ $transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 600;
     background: linear-gradient(135deg, $primary, $primary-light);
     border: none;
-    color: #fff;
+    color: #1D1D1F;
     transition: $transition;
     cursor: pointer;
     display: inline-flex;

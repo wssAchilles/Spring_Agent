@@ -2,7 +2,7 @@
   <div class="stagingIndex">
     <div class="dashboard-layout">
       <main class="dashboard-main">
-        <section class="welcome-panel">
+        <section class="welcome-panel glass-card">
           <div class="welcome-copy">
             <el-avatar :size="58" class="avatar">
               {{ userStore.nickName?.slice(0, 1) || "用" }}
@@ -18,12 +18,12 @@
             </div>
           </div>
           <div class="welcome-actions">
-            <el-button type="primary" @click="goprofile">个人中心</el-button>
-            <el-button @click="logout">退出登录</el-button>
+            <el-button v-ripple class="glass-btn" @click="goprofile">个人中心</el-button>
+            <el-button v-ripple class="glass-btn" @click="logout">退出登录</el-button>
           </div>
         </section>
 
-        <section class="metrics-grid" aria-label="知识资产核心指标">
+        <section class="metrics-grid glass-card" aria-label="知识资产核心指标">
           <article v-for="item in module1" :key="item.name" class="metric-item">
             <div class="metric-heading">
               <div>
@@ -42,7 +42,7 @@
         </section>
 
         <div class="analysis-grid">
-          <section class="dashboard-panel chart-panel">
+          <section class="dashboard-panel chart-panel glass-card">
             <header class="panel-header">
               <div>
                 <h2>文件类型统计</h2>
@@ -52,7 +52,7 @@
             <div ref="module4ChartRef" class="chart-container"></div>
           </section>
 
-          <section class="dashboard-panel chart-panel">
+          <section class="dashboard-panel chart-panel glass-card">
             <header class="panel-header">
               <div>
                 <h2>近 7 日抽取数量</h2>
@@ -63,7 +63,7 @@
           </section>
         </div>
 
-        <section class="dashboard-panel asset-overview">
+        <section class="dashboard-panel asset-overview glass-card">
           <header class="panel-header">
             <div>
               <h2>知识资产概览</h2>
@@ -73,7 +73,7 @@
           <el-table :data="categoryStats" class="asset-table">
             <el-table-column prop="category" label="类别" min-width="150">
               <template #default="scope">
-                <el-link type="primary" :underline="false">{{ scope.row.category }}</el-link>
+                <el-link :underline="false">{{ scope.row.category }}</el-link>
               </template>
             </el-table-column>
             <el-table-column prop="entities" label="实体数" align="right" />
@@ -85,7 +85,7 @@
           </el-table>
         </section>
 
-        <section class="dashboard-panel trend-panel">
+        <section class="dashboard-panel trend-panel glass-card">
           <header class="panel-header">
             <div>
               <h2>近半年实体新增趋势</h2>
@@ -97,14 +97,14 @@
       </main>
 
       <aside class="dashboard-aside">
-        <section class="dashboard-panel weather-panel">
+        <section class="dashboard-panel weather-panel glass-card">
           <Weather />
         </section>
 
-        <section class="dashboard-panel aside-panel">
+        <section class="dashboard-panel aside-panel glass-card">
           <header class="panel-header compact">
             <h2>公告</h2>
-            <el-link type="primary" :underline="false" @click="goxinwen">查看更多</el-link>
+            <el-link :underline="false" @click="goxinwen">查看更多</el-link>
           </header>
           <div class="notice-list">
             <button
@@ -121,7 +121,7 @@
           </div>
         </section>
 
-        <section class="dashboard-panel aside-panel">
+        <section class="dashboard-panel aside-panel glass-card">
           <header class="panel-header compact">
             <h2>最近任务</h2>
             <span class="panel-count">{{ module9.length }} 项</span>
@@ -137,7 +137,7 @@
           </div>
         </section>
 
-        <section class="dashboard-panel aside-panel quick-panel">
+        <section class="dashboard-panel aside-panel quick-panel glass-card">
           <header class="panel-header compact">
             <h2>快捷功能</h2>
           </header>
@@ -510,7 +510,7 @@ function initModule4() {
           // '{c|' + item.value + '}'
         ];
         return arr.join("  ");
-        // return `${name}: <span style="color: red;">${percent}</span> (<span style="color: blue;">${percent}</span>)`;
+        // return `${name}: <span style="color: #1D1D1F;">${percent}</span> (<span style="color: #1D1D1F;">${percent}</span>)`;
       },
       textStyle: {
         lineHeight: 25, // 设置行高，以确保文本垂直居中

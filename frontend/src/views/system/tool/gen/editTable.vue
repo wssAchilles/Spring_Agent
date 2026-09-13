@@ -1,12 +1,12 @@
 <template>
   <div class="dataBody">
-    <el-card class="app-container">
+    <el-card class="app-container glass-card">
       <el-tabs v-model="activeName">
         <el-tab-pane label="基本信息" name="basic">
           <basic-info-form ref="basicInfo" :info="info" />
         </el-tab-pane>
         <el-tab-pane label="字段信息" name="columnInfo">
-          <el-table stripe ref="dragTable" height="650px" width="1450px" :data="columns" row-key="columnId" :max-height="tableHeight">
+          <el-table class="glass-card" stripe ref="dragTable" height="650px" width="1450px" :data="columns" row-key="columnId" :max-height="tableHeight">
             <el-table-column label="序号" type="index" width="60"/>
             <el-table-column
                     label="字段列名"
@@ -108,7 +108,7 @@
                           :label="dict.dictName"
                           :value="dict.dictType">
                     <span style="float: left">{{ dict.dictName }}</span>
-                    <span style="float: right; color: #8492a6; font-size: 13px">{{ dict.dictType }}</span>
+                    <span style="float: right; color: #1D1D1F; font-size: 13px">{{ dict.dictType }}</span>
                   </el-option>
                 </el-select>
               </template>
@@ -121,8 +121,8 @@
       </el-tabs>
       <el-form label-width="100px">
         <div style="text-align: center;margin-left:-100px;margin-top:10px;">
-          <el-button @click="close()">返回</el-button>
-          <el-button type="primary" @click="submitForm()">提交</el-button>
+          <el-button v-ripple class="glass-btn" @click="close()">返回</el-button>
+          <el-button v-ripple class="glass-btn" @click="submitForm()">提交</el-button>
         </div>
       </el-form>
     </el-card>

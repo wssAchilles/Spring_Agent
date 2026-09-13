@@ -12,10 +12,9 @@
         resize="none"
       />
       <div class="prompt-btns">
-        <el-button
-          type="primary"
+        <el-button v-ripple
           size="default"
-          class="send-btn"
+          class="send-btn glass-btn"
           @click="handleSend"
           :loading="loading"
         >

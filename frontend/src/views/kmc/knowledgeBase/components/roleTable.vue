@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-bottom">
       <div class="justify-between mb15">
         <div class="header-left">
@@ -15,14 +15,14 @@
         </div>
       </div>
       <!-- 表格数据 -->
-      <el-table
+      <el-table class="glass-card"
         stripe
         v-loading="loading"
         :data="roleList"
         :default-sort="defaultSort"
       >
-        <!--        <el-table-column type="selection" width="55" align="center" />-->
-        <el-table-column
+        <!--        <el-table class="glass-card"-column type="selection" width="55" align="center" />-->
+        <el-table class="glass-card"-column
           label="编号"
           prop="roleId"
           align="center"
@@ -30,7 +30,7 @@
           width="80"
           v-if="getColumnVisibility(1)"
         />
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(2)"
           label="角色名称"
           prop="roleName"
@@ -38,21 +38,21 @@
           width="200"
           :show-overflow-tooltip="{ effect: 'light' }"
         />
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(3)"
           label="权限字符"
           prop="roleKey"
           align="center"
           :show-overflow-tooltip="{ effect: 'light' }"
         />
-        <el-table-column
+        <el-table class="glass-card"-column
           label="显示顺序"
           prop="roleSort"
           align="center"
           sortable="custom"
           v-if="getColumnVisibility(4)"
         />
-        <el-table-column
+        <el-table class="glass-card"-column
           label="状态"
           align="center"
           v-if="getColumnVisibility(5)"
@@ -69,7 +69,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(6)"
           label="创建人"
           align="center"
@@ -79,7 +79,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           label="创建时间"
           align="center"
           prop="createTime"
@@ -194,7 +194,7 @@ getList();
       display: flex;
       align-items: center;
       .blue-bar {
-        background-color: #2666fb;
+        background: #F5F5F7;
         width: 6px;
         height: 16px;
         margin-right: 10px;

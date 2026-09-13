@@ -1,10 +1,10 @@
 <!-- index.vue -->
 <template>
   <div
-    class="app-container"
+    class="app-container glass-card"
     ref="app-container"
     v-loading="loadingInstance"
-    style="background-color: #f0f2f5"
+    style="background-color: #F5F5F7;"
   >
     <div class="custom-card">
       <div class="steps-inner">
@@ -89,25 +89,24 @@
           </div>
         </div>
         <div class="button-style">
-          <el-button type="primary" @click="handleSuccess">返回列表</el-button>
-          <el-button v-if="activeReult != 0" @click="handleLastStep"
+          <el-button v-ripple class="glass-btn" @click="handleSuccess">返回列表</el-button>
+          <el-button v-ripple class="glass-btn" v-if="activeReult != 0" @click="handleLastStep"
             >上一步</el-button
           >
-          <el-button
-            type="primary"
+          <el-button v-ripple class="glass-btn"
             v-if="activeReult === 2 && !route.query.info"
             @click="submitForm"
             :loading="loadingOptions.loading"
           >
             确定并退出
           </el-button>
-          <el-button v-if="activeReult !== 2" @click="handleNextStep"
+          <el-button v-ripple class="glass-btn" v-if="activeReult !== 2" @click="handleNextStep"
             >下一步</el-button
           >
         </div>
       </div>
     </div>
-    <el-dialog
+    <el-dialog class="glass-card"
       title="Cron表达式生成器"
       v-model="openCron"
       append-to="body"
@@ -1154,14 +1153,14 @@ function sleep(ms) {
   right: 0;
   bottom: 0;
   padding: 0px 35px 25px 0px;
-  background: #fff;
+  background: #F5F5F7;
   text-align: right;
   z-index: 10;
 }
 
 .main {
   flex: 1;
-  background-color: white;
+  background-color: #1D1D1F;
   padding: 0px 25px 0;
 }
 
@@ -1169,7 +1168,7 @@ function sleep(ms) {
   width: 100%;
   height: 100px;
   padding: 34px 177px 26px 189px;
-  background: #fff;
+  background: #F5F5F7;
   box-sizing: border-box;
   margin-bottom: 15px;
 
@@ -1237,7 +1236,7 @@ function sleep(ms) {
             top: 0;
             width: 20px;
             height: 100%;
-            background: #fff;
+            background: #F5F5F7;
             clip-path: polygon(0 0, 100% 50%, 0 100%);
             z-index: 2;
           }
@@ -1255,7 +1254,7 @@ function sleep(ms) {
             top: 0;
             width: 20px;
             height: 100%;
-            background: #fff;
+            background: #F5F5F7;
             clip-path: polygon(0 0, 100% 50%, 0 100%);
             z-index: 2;
           }
@@ -1298,7 +1297,7 @@ function sleep(ms) {
 
       &.active {
         background: #2666fb;
-        color: #fff;
+        color: #1D1D1F;
         border: 1px solid #fff;
       }
 

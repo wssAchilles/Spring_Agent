@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <GuideTip tip-id="kg/knowledge/category.list" />
     <div class="pagecont-top" v-show="showSearch">
       <el-form
@@ -20,15 +20,14 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -39,8 +38,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="btn-style">
           <el-col :span="1.5">
-            <el-button
-              type="primary"
+            <el-button v-ripple class="glass-btn"
               plain
               @click="handleAdd"
               v-hasPermi="['kg:knowledge:category:add']"
@@ -50,8 +48,7 @@
             </el-button>
           </el-col>
           <!-- <el-col :span="1.5">
-            <el-button
-              type="danger"
+            <el-button v-ripple class="glass-btn"
               plain
               :disabled="multiple"
               @click="handleDelete"
@@ -63,9 +60,8 @@
             </el-button>
           </el-col> -->
           <el-col :span="1.5">
-            <el-button
-              class="toggle-expand-all"
-              type="primary"
+            <el-button v-ripple
+              class="toggle-expand-all glass-btn"
               plain
               @click="toggleExpandAll"
             >
@@ -160,25 +156,22 @@
           width="240"
         >
           <template #default="scope">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Plus"
               @click="handleAdd(scope.row)"
               v-hasPermi="['kg:knowledge:category:add']"
               >新增</el-button
             >
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['kg:knowledge:category:edit']"
               >修改</el-button
             >
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="danger"
               icon="Delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['kg:knowledge:category:remove']"
@@ -211,6 +204,7 @@
       width="800px"
       append-to="body"
       draggable
+      class="glass-card"
     >
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
@@ -275,8 +269,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>

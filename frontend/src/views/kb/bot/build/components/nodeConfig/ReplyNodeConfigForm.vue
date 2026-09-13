@@ -5,7 +5,7 @@
         <div class="reply-config-section-title node-config-section-title">
           <span class="blue-bar"></span> 输出
         </div>
-        <el-button type="primary" plain @click="emit('addOutput')">
+        <el-button v-ripple class="glass-btn" plain @click="emit('addOutput')">
           <i class="iconfont-mini icon-xinzeng mr5"></i>新增
         </el-button>
       </div>
@@ -90,9 +90,8 @@
 
         <el-table-column label="操作" width="88" align="center">
           <template #default="{ row }">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="danger"
               @click.stop="handleRemoveOutput(row.id)"
             >
               删除

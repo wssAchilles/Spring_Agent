@@ -194,7 +194,7 @@ function handleDetail(row) {
   }
 
   .card {
-    background-color: #fff;
+    background: #F5F5F7;
     width: 100%;
     min-width: 555px;
     min-height: 240px;
@@ -220,7 +220,7 @@ function handleDetail(row) {
           font-family: PingFang SC;
           font-weight: 800;
           font-size: 20px;
-          color: #333333;
+          color: #1D1D1F;
           line-height: 28px;
           text-align: left;
           display: flex;
@@ -230,7 +230,7 @@ function handleDetail(row) {
           .icon {
             width: 25px;
             height: 25px;
-            background: #e6f0fd;
+            background: #F5F5F7;
             border-radius: 4px;
             margin-right: 8px;
             display: flex;
@@ -266,7 +266,7 @@ function handleDetail(row) {
             width: 100%;
             max-width: 205px;
             height: 149px;
-            background: #ffffff;
+            background: #F5F5F7;
             border-radius: 8px;
             object-fit: cover;
 
@@ -324,7 +324,7 @@ function handleDetail(row) {
               flex: 1;
               min-width: 140px;
               height: 24px;
-              background: #f5f7fa;
+              background: #F5F5F7;
               padding: 2px 13px;
               display: flex;
               align-items: center;
@@ -368,11 +368,11 @@ function handleDetail(row) {
             min-height: 24px;
             .card-tag {
               flex-shrink: 0;
-              background: #e6f7ff !important;
+              background: #F5F5F7 !important;
               font-family: PingFang SC;
               font-weight: bold;
               font-size: 12px;
-              color: #2b70f4;
+              color: #1D1D1F;
               text-align: left;
               max-width: 120px;
 

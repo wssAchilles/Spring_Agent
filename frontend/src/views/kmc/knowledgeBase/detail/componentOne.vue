@@ -2,13 +2,13 @@
   <div class="justify-between mb15">
     <el-row :gutter="15" class="btn-style">
       <el-col :span="1.5">
-        <el-button type="primary" plain @click="handleAdd" v-hasPermi="['knowledgeBase:knowledgeBase:add']"
+        <el-button v-ripple class="glass-btn" plain @click="handleAdd" v-hasPermi="['knowledgeBase:knowledgeBase:add']"
                    @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-xinzeng mr5"></i>新增
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain @click="handleExport" v-hasPermi="['knowledgeBase:knowledgeBase:export']"
+        <el-button v-ripple class="glass-btn" plain @click="handleExport" v-hasPermi="['knowledgeBase:knowledgeBase:export']"
                    @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-download-line mr5"></i>导出
         </el-button>
@@ -18,106 +18,106 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </div>
   </div>
-  <el-table stripe height="374px" v-loading="loading" :data="knowledgeBaseList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
-    <el-table-column type="selection" width="55" align="center" />
-            <el-table-column v-if="columns[0].visible" label="ID" align="center" prop="id" />
-            <el-table-column v-if="columns[1].visible" label="工作区id" align="center" prop="workspaceId">
+  <el-table class="glass-card" stripe height="374px" v-loading="loading" :data="knowledgeBaseList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+    <el-table class="glass-card"-column type="selection" width="55" align="center" />
+            <el-table class="glass-card"-column v-if="columns[0].visible" label="ID" align="center" prop="id" />
+            <el-table class="glass-card"-column v-if="columns[1].visible" label="工作区id" align="center" prop="workspaceId">
               <template #default="scope">
                 {{ scope.row.workspaceId || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[2].visible" label="灵桐知识库id" align="center" prop="qmDatasetId">
+            <el-table class="glass-card"-column v-if="columns[2].visible" label="灵桐知识库id" align="center" prop="qmDatasetId">
               <template #default="scope">
                 {{ scope.row.qmDatasetId || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[3].visible" label="名称" align="center" prop="name">
+            <el-table class="glass-card"-column v-if="columns[3].visible" label="名称" align="center" prop="name">
               <template #default="scope">
                 {{ scope.row.name || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[4].visible" label="描述" align="center" prop="description">
+            <el-table class="glass-card"-column v-if="columns[4].visible" label="描述" align="center" prop="description">
               <template #default="scope">
                 {{ scope.row.description || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[5].visible" label="索引方式" align="center" prop="indexingTechnique">
+            <el-table class="glass-card"-column v-if="columns[5].visible" label="索引方式" align="center" prop="indexingTechnique">
               <template #default="scope">
                 {{ scope.row.indexingTechnique || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[6].visible" label="权限" align="center" prop="permission">
+            <el-table class="glass-card"-column v-if="columns[6].visible" label="权限" align="center" prop="permission">
               <template #default="scope">
                 {{ scope.row.permission || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[7].visible" label="Embedding 模型名称" align="center" prop="embeddingModel">
+            <el-table class="glass-card"-column v-if="columns[7].visible" label="Embedding 模型名称" align="center" prop="embeddingModel">
               <template #default="scope">
                 {{ scope.row.embeddingModel || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[8].visible" label="Embedding 模型供应商" align="center" prop="embeddingModelProvider">
+            <el-table class="glass-card"-column v-if="columns[8].visible" label="Embedding 模型供应商" align="center" prop="embeddingModelProvider">
               <template #default="scope">
                 {{ scope.row.embeddingModelProvider || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[9].visible" label="检索方法" align="center" prop="searchMethod">
+            <el-table class="glass-card"-column v-if="columns[9].visible" label="检索方法" align="center" prop="searchMethod">
               <template #default="scope">
                 {{ scope.row.searchMethod || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[10].visible" label="是否开启 rerank" align="center" prop="rerankingEnable">
+            <el-table class="glass-card"-column v-if="columns[10].visible" label="是否开启 rerank" align="center" prop="rerankingEnable">
               <template #default="scope">
                 {{ scope.row.rerankingEnable || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[11].visible" label="Rerank 模型的提供商" align="center" prop="rerankingProviderName">
+            <el-table class="glass-card"-column v-if="columns[11].visible" label="Rerank 模型的提供商" align="center" prop="rerankingProviderName">
               <template #default="scope">
                 {{ scope.row.rerankingProviderName || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[12].visible" label="Rerank 模型的名称" align="center" prop="rerankingModelName">
+            <el-table class="glass-card"-column v-if="columns[12].visible" label="Rerank 模型的名称" align="center" prop="rerankingModelName">
               <template #default="scope">
                 {{ scope.row.rerankingModelName || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[13].visible" label="召回条数" align="center" prop="topK">
+            <el-table class="glass-card"-column v-if="columns[13].visible" label="召回条数" align="center" prop="topK">
               <template #default="scope">
                 {{ scope.row.topK || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[14].visible" label="是否开启召回分数限制" align="center" prop="scoreThresholdEnabled">
+            <el-table class="glass-card"-column v-if="columns[14].visible" label="是否开启召回分数限制" align="center" prop="scoreThresholdEnabled">
               <template #default="scope">
                 {{ scope.row.scoreThresholdEnabled || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[15].visible" label="召回分数限制" align="center" prop="scoreThreshold">
+            <el-table class="glass-card"-column v-if="columns[15].visible" label="召回分数限制" align="center" prop="scoreThreshold">
               <template #default="scope">
                 {{ scope.row.scoreThreshold || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[18].visible" label="创建人" align="center" prop="createBy">
+            <el-table class="glass-card"-column v-if="columns[18].visible" label="创建人" align="center" prop="createBy">
               <template #default="scope">
                 {{ scope.row.createBy || '-' }}
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[20].visible" label="创建时间" align="center" prop="createTime" width="180" sortable="custom" :sort-orders="['descending', 'ascending']">
+            <el-table class="glass-card"-column v-if="columns[20].visible" label="创建时间" align="center" prop="createTime" width="180" sortable="custom" :sort-orders="['descending', 'ascending']">
               <template #default="scope">
                 <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
               </template>
             </el-table-column>
-            <el-table-column v-if="columns[24].visible" label="备注" align="center" prop="remark">
+            <el-table class="glass-card"-column v-if="columns[24].visible" label="备注" align="center" prop="remark">
               <template #default="scope">
                 {{ scope.row.remark || '-' }}
               </template>
             </el-table-column>
-    <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
+    <el-table class="glass-card"-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
       <template #default="scope">
-        <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)"
                    v-hasPermi="['knowledgeBase:knowledgeBase:edit']">修改</el-button>
-        <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)"
                    v-hasPermi="['knowledgeBase:knowledgeBase:remove']">删除</el-button>
-        <el-button link type="primary" icon="view" @click="handleDetail(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="view" @click="handleDetail(scope.row)"
                    v-hasPermi="['knowledgeBase:knowledgeBase:edit']">详情</el-button>
       </template>
     </el-table-column>
@@ -139,11 +139,11 @@
   />
 
   <!-- 添加或修改知识库对话框 -->
-  <el-dialog :title="title" v-model="open" width="800px" append-to="body" draggable>
+  <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body" draggable>
     <template #header="{ close, titleId, titleClass }">
           <span role="heading" aria-level="2" class="el-dialog__title">
             {{ title }}
-            <el-icon size="20" style="color: #909399; font-size: 16px">
+            <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
               <InfoFilled />
             </el-icon>
           </span>
@@ -255,18 +255,18 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
       </div>
     </template>
   </el-dialog>
 
   <!-- 知识库详情对话框 -->
-  <el-dialog :title="title" v-model="openDetail" width="800px" append-to="body" draggable>
+  <el-dialog class="glass-card" :title="title" v-model="openDetail" width="800px" append-to="body" draggable>
     <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           {{ title }}
-          <el-icon size="20" style="color: #909399; font-size: 16px">
+          <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
             <InfoFilled />
           </el-icon>
         </span>
@@ -410,7 +410,7 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">关 闭</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
       </div>
     </template>
   </el-dialog>

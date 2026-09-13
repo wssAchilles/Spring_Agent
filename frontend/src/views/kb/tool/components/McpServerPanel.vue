@@ -1,10 +1,10 @@
 <template>
-  <el-card class="mcp-server-panel" v-loading="loading">
+  <el-card class="mcp-server-panel glass-card" v-loading="loading">
     <template #header>
       <div class="panel-header">
         <el-icon><Connection /></el-icon>
         <span>MCP Server 状态</span>
-        <el-button size="small" plain @click="refresh" style="margin-left: auto">
+        <el-button v-ripple class="glass-btn" size="small" plain @click="refresh" style="margin-left: auto">
           <el-icon><Refresh /></el-icon>
         </el-button>
       </div>
@@ -24,8 +24,8 @@
           <el-tag size="small" :type="server.connected ? 'success' : 'danger'">
             {{ server.connected ? '已连接' : '未连接' }}
           </el-tag>
-          <el-tag v-if="server.url" size="small" type="info" style="margin-left: 4px">HTTP</el-tag>
-          <el-tag v-else-if="server.command" size="small" type="warning" style="margin-left: 4px">Stdio</el-tag>
+          <el-tag v-if="server.url" size="small" style="margin-left: 4px">HTTP</el-tag>
+          <el-tag v-else-if="server.command" size="small" style="margin-left: 4px">Stdio</el-tag>
         </div>
         <div class="server-detail">
           <span v-if="server.url" class="server-url">{{ server.url }}</span>

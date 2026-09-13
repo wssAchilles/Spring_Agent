@@ -1,15 +1,15 @@
 <template>
-  <div class="app-container">
-    <el-card>
+  <div class="app-container glass-card">
+    <el-card class="glass-card">
       <template #header>
         <div class="card-header">
           <span>知识图谱</span>
           <div style="display: flex; gap: 8px; align-items: center;">
             <el-switch v-model="colorByCommunity" active-text="社区着色" inactive-text="类型着色" size="small" />
-            <el-button type="primary" plain size="small" @click="runCommunityDetection" :loading="detecting">
+            <el-button v-ripple class="glass-btn" plain size="small" @click="runCommunityDetection" :loading="detecting">
               社区检测
             </el-button>
-            <el-button type="primary" @click="showAddNodeDialog = true">添加节点</el-button>
+            <el-button v-ripple class="glass-btn" @click="showAddNodeDialog = true">添加节点</el-button>
           </div>
         </div>
       </template>
@@ -21,7 +21,7 @@
       
       <div v-else-if="graphData.nodes.length === 0" class="empty-container">
         <el-empty description="暂无图谱数据">
-          <el-button type="primary" @click="showAddNodeDialog = true">创建第一个节点</el-button>
+          <el-button v-ripple class="glass-btn" @click="showAddNodeDialog = true">创建第一个节点</el-button>
         </el-empty>
       </div>
       
@@ -29,7 +29,7 @@
     </el-card>
 
     <!-- Add Node Dialog -->
-    <el-dialog v-model="showAddNodeDialog" title="添加节点" width="500px">
+    <el-dialog v-model="showAddNodeDialog" title="添加节点" width="500px" class="glass-card">
       <el-form :model="nodeForm" label-width="80px">
         <el-form-item label="节点名称">
           <el-input v-model="nodeForm.label" placeholder="请输入节点名称" />
@@ -47,13 +47,13 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showAddNodeDialog = false">取消</el-button>
-        <el-button type="primary" @click="addNode">确定</el-button>
+        <el-button v-ripple class="glass-btn" @click="showAddNodeDialog = false">取消</el-button>
+        <el-button v-ripple class="glass-btn" @click="addNode">确定</el-button>
       </template>
     </el-dialog>
 
     <!-- Add Edge Dialog -->
-    <el-dialog v-model="showAddEdgeDialog" title="添加关系" width="500px">
+    <el-dialog v-model="showAddEdgeDialog" title="添加关系" width="500px" class="glass-card">
       <el-form :model="edgeForm" label-width="80px">
         <el-form-item label="起始节点">
           <el-select v-model="edgeForm.sourceId" placeholder="请选择起始节点">
@@ -70,8 +70,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showAddEdgeDialog = false">取消</el-button>
-        <el-button type="primary" @click="addEdge">确定</el-button>
+        <el-button v-ripple class="glass-btn" @click="showAddEdgeDialog = false">取消</el-button>
+        <el-button v-ripple class="glass-btn" @click="addEdge">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -176,7 +176,7 @@ const renderGraph = async () => {
         label: node.label,
         title: `${node.label}\n类型: ${node.type}${node.properties ? '\n' + safeGetDescription(node.properties) : ''}`,
         color: colorByCommunity.value ? getCommunityColor(node.id) : getNodeColor(node.type),
-        font: { size: 14, color: '#333' },
+        font: { size: 14, color: '#1D1D1F' },
         size: 25
       }))
     );

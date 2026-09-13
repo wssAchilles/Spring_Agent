@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
@@ -20,15 +20,14 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -39,8 +38,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="btn-style">
           <el-col :span="1.5">
-            <el-button
-              type="primary"
+            <el-button v-ripple class="glass-btn"
               plain
               @click="handleAdd"
               v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:add']"
@@ -50,8 +48,7 @@
             </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button
-              type="danger"
+            <el-button v-ripple class="glass-btn"
               plain
               :disabled="multiple"
               @click="handleDelete"
@@ -63,7 +60,7 @@
             </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="" @click="back">
+            <el-button v-ripple class="glass-btn" type="" @click="back">
               <i class="iconfont-mini icon-fanhui-baise mr5"></i>返回
             </el-button>
           </el-col>
@@ -76,7 +73,7 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table
+      <el-table class="glass-card"
         stripe
         v-loading="loading"
         v-if="model === 'text_model' || model === 'qa_model'"
@@ -85,8 +82,8 @@
         :default-sort="defaultSort"
         @sort-change="handleSortChange"
       >
-        <el-table-column type="selection" width="55" align="center" />
-        <el-table-column
+        <el-table class="glass-card"-column type="selection" width="55" align="center" />
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(1) && model !== 'qa_model'"
           label="编号"
           align="center"
@@ -94,7 +91,7 @@
           width="80"
           sortable="custom"
         />
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(2) && model !== 'qa_model'"
           label="分段内容"
           align="left"
@@ -107,7 +104,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(3) && model === 'qa_model'"
           label="问题"
           align="left"
@@ -119,7 +116,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(4) && model === 'qa_model'"
           label="答案"
           align="left"
@@ -130,7 +127,7 @@
             {{ scope.row.answer || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(5)"
           label="备注"
           width="200"
@@ -142,7 +139,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(6)"
           label="创建人"
           align="center"
@@ -152,7 +149,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(7)"
           label="创建时间"
           align="center"
@@ -167,7 +164,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           label="操作"
           align="center"
           class-name="small-padding fixed-width"
@@ -175,26 +172,23 @@
           width="240"
         >
           <template #default="scope">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Plus"
               v-if="!scope.row.parentId && model === 'hierarchical_model'"
               @click="handleAdd(scope.row)"
               v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:query']"
               >新增
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:edit']"
               >修改
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="danger"
               icon="Delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:remove']"
@@ -210,7 +204,7 @@
           </div>
         </template>
       </el-table>
-      <el-table
+      <el-table class="glass-card"
         v-if="model === 'hierarchical_model'"
         v-loading="loading"
         :data="knowledgeSegmentList"
@@ -218,7 +212,7 @@
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
         :default-expand-all="isExpandAll"
       >
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(1)"
           label="编号"
           align="center"
@@ -226,7 +220,7 @@
           width="80"
           sortable="custom"
         />
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(2) && model !== 'qa_model'"
           label="分段内容"
           align="left"
@@ -238,7 +232,7 @@
             {{ scope.row.content || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(5)"
           label="备注"
           width="200"
@@ -250,7 +244,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(6)"
           label="创建人"
           align="center"
@@ -260,7 +254,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(7)"
           label="创建时间"
           align="center"
@@ -275,7 +269,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           label="操作"
           align="left"
           class-name="small-padding fixed-width"
@@ -283,26 +277,23 @@
           width="240"
         >
           <template #default="scope">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Plus"
               v-if="!scope.row.parentId && model === 'hierarchical_model'"
               @click="handleAdd(scope.row)"
               v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:query']"
               >新增
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:edit']"
               >修改
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="danger"
               icon="Delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['kmc:knowledgeSegment:knowledgesegment:remove']"
@@ -329,7 +320,7 @@
     </div>
 
     <!-- 添加或修改文件分段对话框 -->
-    <el-dialog
+    <el-dialog class="glass-card"
       :title="title"
       v-model="open"
       width="800px"
@@ -426,7 +417,7 @@
           <!--                                        class="keyword-input"-->
           <!--                                        style="width: 500px; margin-right: 10px; margin-bottom: 5px"-->
           <!--                                    />-->
-          <!--                                    <el-button-->
+          <!--                                    <el-button v-ripple class="glass-btn"-->
           <!--                                        icon="Delete"-->
           <!--                                        circle-->
           <!--                                        @click="removeKeyword(index, form.keywordList)"-->
@@ -434,8 +425,8 @@
           <!--                                        class="keyword-action"-->
           <!--                                        size="small"-->
           <!--                                    />-->
-          <!--                                    <el-button-->
-          <!--                                        type="primary"-->
+          <!--                                    <el-button v-ripple class="glass-btn"-->
+          <!---->
           <!--                                        icon="Plus"-->
           <!--                                        circle-->
           <!--                                        @click="addKeyword(form.keywordList)"-->
@@ -458,15 +449,15 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>
       </template>
     </el-dialog>
     <!-- 用户导入对话框 -->
-    <el-dialog
+    <el-dialog class="glass-card"
       :title="upload.title"
       v-model="upload.open"
       width="800px"
@@ -498,7 +489,6 @@
             </div>
             <span>仅允许导入xls、xlsx格式文件。</span>
             <el-link
-              type="primary"
               :underline="false"
               style="font-size: 12px; vertical-align: baseline"
               @click="importTemplate"
@@ -509,8 +499,8 @@
       </el-upload>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="upload.open = false">取 消</el-button>
-          <el-button type="primary" @click="submitFileForm">确 定</el-button>
+          <el-button v-ripple class="glass-btn" @click="upload.open = false">取 消</el-button>
+          <el-button v-ripple class="glass-btn" @click="submitFileForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>

@@ -26,11 +26,11 @@
             />
           </div>
 <!--          <div class="left-btns">-->
-<!--            <el-button class="btn-cus" link @click="copyContent(index)">-->
+<!--            <el-button v-ripple class="btn-cus glass-btn" link @click="copyContent(index)">-->
 <!--              <img class="btn-image" src="@/assets/app/copy.png" />-->
 <!--            </el-button>-->
 <!--            <el-divider direction="vertical" class="btn-divider" />-->
-<!--            <el-button-->
+<!--            <el-button v-ripple class="glass-btn"-->
 <!--                v-if="item.id > 0"-->
 <!--                class="btn-cus"-->
 <!--                link-->
@@ -58,7 +58,7 @@
       <!-- 工具调用消息 -->
       <div class="left-message message-item" v-if="item.type === 'tool_call'">
         <div class="avatar">
-          <el-avatar :size="36" style="background-color: #e8f5e9">
+          <el-avatar :size="36" style="background-color: #F5F5F7">
             <el-icon><Connection /></el-icon>
           </el-avatar>
         </div>
@@ -91,7 +91,7 @@
       <!-- 记忆召回消息 -->
       <div class="left-message message-item" v-if="item.type === 'memory_recall'">
         <div class="avatar">
-          <el-avatar :size="36" style="background-color: #fff3e0">
+          <el-avatar :size="36" style="background-color: #F5F5F7">
             <el-icon><Memo /></el-icon>
           </el-avatar>
         </div>
@@ -118,7 +118,7 @@
   </div>
   <!-- 回到底部 -->
 <!--  <div v-if="isScrolling" class="to-bottom" @click="handleGoBottom">-->
-<!--    <el-button icon="ArrowDownBold" circle />-->
+<!--    <el-button v-ripple class="glass-btn" icon="ArrowDownBold" circle />-->
 <!--  </div>-->
 </template>
 <script setup>

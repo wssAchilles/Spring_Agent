@@ -2,8 +2,7 @@
   <div class="justify-between mb15">
     <el-row :gutter="15" class="btn-style">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
+        <el-button v-ripple class="glass-btn"
           plain
           @click="handleAdd"
           @mousedown="(e) => e.preventDefault()"
@@ -12,8 +11,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="danger"
+        <el-button v-ripple class="glass-btn"
           icon="Delete"
           plain
           :disabled="multiple"
@@ -32,7 +30,7 @@
       ></right-toolbar>
     </div>
   </div>
-  <el-table
+  <el-table class="glass-card"
     stripe
     v-loading="loading"
     :data="methodList"
@@ -128,16 +126,14 @@
       v-if="getColumnVisibility(16)"
     >
       <template #default="scope">
-        <el-button
+        <el-button v-ripple class="glass-btn"
           link
-          type="primary"
           icon="Edit"
           @click="handleUpdate(scope.row)"
           >修改</el-button
         >
-        <el-button
+        <el-button v-ripple class="glass-btn"
           link
-          type="danger"
           icon="Delete"
           @click="handleDelete(scope.row)"
           >删除</el-button
@@ -163,6 +159,7 @@
 
   <!-- 添加或修改工具方法对话框 -->
   <el-dialog
+    class="glass-card"
     :title="title"
     v-model="open"
     width="800px"
@@ -222,8 +219,8 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="submitForm"
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
           >确 定</el-button
         >
       </div>

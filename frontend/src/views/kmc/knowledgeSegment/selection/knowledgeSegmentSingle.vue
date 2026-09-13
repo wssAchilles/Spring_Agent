@@ -1,5 +1,5 @@
 <template>
-  <el-dialog
+  <el-dialog class="glass-card"
       title="文件分段-单选"
       v-model="visible"
       width="1200px"
@@ -27,21 +27,20 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button
+        <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
         >
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+        <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
         </el-button>
       </el-form-item>
     </el-form>
 
-    <el-table
+    <el-table class="glass-card"
         ref="tableRef"
         stripe
         height="300px"
@@ -51,38 +50,38 @@
         row-key="id"
         @current-change="handleCurrentChange"
     >
-      <el-table-column label="ID" align="center" prop="id" />
-      <el-table-column label="分段内容文本" align="center" prop="content">
+      <el-table class="glass-card"-column label="ID" align="center" prop="id" />
+      <el-table class="glass-card"-column label="分段内容文本" align="center" prop="content">
         <template #default="scope">
           {{ scope.row.content || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="答案内容(如果有)" align="center" prop="answer">
+      <el-table class="glass-card"-column label="答案内容(如果有)" align="center" prop="answer">
         <template #default="scope">
           {{ scope.row.answer || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="内容长度" align="center" prop="wordCount">
+      <el-table class="glass-card"-column label="内容长度" align="center" prop="wordCount">
         <template #default="scope">
           {{ scope.row.wordCount || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="关键词" align="center" prop="keywords">
+      <el-table class="glass-card"-column label="关键词" align="center" prop="keywords">
         <template #default="scope">
           {{ scope.row.keywords || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="访问次数" align="center" prop="hitCount">
+      <el-table class="glass-card"-column label="访问次数" align="center" prop="hitCount">
         <template #default="scope">
           {{ scope.row.hitCount || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="分段添加dify状态" align="center" prop="syncStatus">
+      <el-table class="glass-card"-column label="分段添加dify状态" align="center" prop="syncStatus">
         <template #default="scope">
               <dict-tag :options="sync_status" :value="scope.row.syncStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
@@ -99,8 +98,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="confirm">
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="confirm">
           确 定
         </el-button>
       </div>

@@ -1,6 +1,6 @@
 <template>
   <!-- 导入表 -->
-  <el-dialog
+  <el-dialog class="glass-card"
     title="导入表"
     v-model="visible"
     width="1000px"
@@ -21,17 +21,17 @@
         />
       </el-form-item>
       <el-form-item>
-        <!-- <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-                  <el-button icon="Refresh" @click="resetQuery">重置</el-button> -->
-        <el-button type="primary" @click="handleQuery">
+        <!-- <el-button v-ripple class="glass-btn" icon="Search" @click="handleQuery">搜索</el-button>
+                  <el-button v-ripple class="glass-btn" icon="Refresh" @click="resetQuery">重置</el-button> -->
+        <el-button v-ripple class="glass-btn" @click="handleQuery">
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button @click="resetQuery">
+        <el-button v-ripple class="glass-btn" @click="resetQuery">
           <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
         </el-button>
       </el-form-item>
     </el-form>
-    <el-table
+    <el-table class="glass-card"
       @row-click="clickRow"
       v-loading="loading"
       ref="table"
@@ -62,8 +62,8 @@
     />
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="visible = false">取 消</el-button>
-        <el-button type="primary" @click="handleImportTable">确 定</el-button>
+        <el-button v-ripple class="glass-btn" @click="visible = false">取 消</el-button>
+        <el-button v-ripple class="glass-btn" @click="handleImportTable">确 定</el-button>
       </div>
     </template>
   </el-dialog>

@@ -1,14 +1,13 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
     <el-row :gutter="10">
       <el-col :span="8">
-        <el-card style="height: calc(100vh - 125px)">
+        <el-card class="glass-card" style="height: calc(100vh - 125px)">
           <template #header>
             <Collection style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">缓存列表</span>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               style="float: right; padding: 3px 0"
               link
-              type="primary"
               icon="Refresh"
               @click="refreshCacheNames()"
             ></el-button>
@@ -49,9 +48,8 @@
               class-name="small-padding fixed-width"
             >
               <template #default="scope">
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   link
-                  type="danger"
                   icon="Delete"
                   @click="handleClearCacheName(scope.row)"
                 ></el-button>
@@ -62,13 +60,12 @@
       </el-col>
 
       <el-col :span="8">
-        <el-card style="height: calc(100vh - 125px)">
+        <el-card class="glass-card" style="height: calc(100vh - 125px)">
           <template #header>
             <Key style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">键名列表</span>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               style="float: right; padding: 3px 0"
               link
-              type="primary"
               icon="Refresh"
               @click="refreshCacheKeys()"
             ></el-button>
@@ -101,9 +98,8 @@
               class-name="small-padding fixed-width"
             >
               <template #default="scope">
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   link
-                  type="danger"
                   icon="Delete"
                   @click="handleClearCacheKey(scope.row)"
                 ></el-button>
@@ -114,13 +110,12 @@
       </el-col>
 
       <el-col :span="8">
-        <el-card :bordered="false" style="height: calc(100vh - 125px)">
+        <el-card class="glass-card" :bordered="false" style="height: calc(100vh - 125px)">
           <template #header>
             <Document style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">缓存内容</span>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               style="float: right; padding: 3px 0"
               link
-              type="primary"
               @click="handleClearCacheAll()"
               >
               <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>

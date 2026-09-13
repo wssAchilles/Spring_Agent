@@ -1,5 +1,5 @@
 <template>
-   <div class="app-container" ref="app-container">
+   <div class="app-container glass-card" ref="app-container">
       <div class="pagecont-top" v-show="showSearch">
          <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" label-width="68px">
             <el-form-item label="任务名称" prop="jobName">
@@ -32,10 +32,10 @@
                </el-select>
             </el-form-item>
             <el-form-item>
-               <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                   <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
                </el-button>
-               <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                   <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
                </el-button>
             </el-form-item>
@@ -46,8 +46,7 @@
          <div class="justify-between mb15">
          <el-row :gutter="10" class="btn-style">
             <el-col :span="1.5">
-               <el-button
-                  type="primary"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleAdd"
                   v-hasPermi="['monitor:job:add']"
@@ -56,8 +55,7 @@
                  新增</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="primary"
+               <el-button v-ripple class="glass-btn"
                   plain
                   :disabled="single"
                   @click="handleUpdate"
@@ -67,8 +65,7 @@
                  修改</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="danger"
+               <el-button v-ripple class="glass-btn"
                   plain
                   :disabled="multiple"
                   @click="handleDelete"
@@ -78,8 +75,7 @@
                  删除</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="warning"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleExport"
                   v-hasPermi="['monitor:job:export']"
@@ -88,8 +84,7 @@
                  导出</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="info"
+               <el-button v-ripple class="glass-btn"
                   plain
                   icon="Operation"
                   @click="handleJobLog"
@@ -124,36 +119,36 @@
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
                <template #default="scope">
                   <!-- <el-tooltip content="修改" placement="top">
-                     <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['monitor:job:edit']"></el-button>
+                     <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['monitor:job:edit']"></el-button>
                   </el-tooltip>
                   <el-tooltip content="删除" placement="top">
-                     <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['monitor:job:remove']"></el-button>
+                     <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['monitor:job:remove']"></el-button>
                   </el-tooltip>
                   <el-tooltip content="执行一次" placement="top">
-                     <el-button link type="primary" icon="CaretRight" @click="handleRun(scope.row)" v-hasPermi="['monitor:job:changeStatus']"></el-button>
+                     <el-button v-ripple class="glass-btn" link icon="CaretRight" @click="handleRun(scope.row)" v-hasPermi="['monitor:job:changeStatus']"></el-button>
                   </el-tooltip>
                   <el-tooltip content="任务详细" placement="top">
-                     <el-button link type="primary" icon="View" @click="handleView(scope.row)" v-hasPermi="['monitor:job:query']"></el-button>
+                     <el-button v-ripple class="glass-btn" link icon="View" @click="handleView(scope.row)" v-hasPermi="['monitor:job:query']"></el-button>
                   </el-tooltip>
                   <el-tooltip content="调度日志" placement="top">
-                     <el-button link type="primary" icon="Operation" @click="handleJobLog(scope.row)" v-hasPermi="['monitor:job:query']"></el-button>
+                     <el-button v-ripple class="glass-btn" link icon="Operation" @click="handleJobLog(scope.row)" v-hasPermi="['monitor:job:query']"></el-button>
                   </el-tooltip> -->
-                  <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['monitor:job:edit']">
+                  <el-button v-ripple class="glass-btn" link  @click="handleUpdate(scope.row)" v-hasPermi="['monitor:job:edit']">
                     <i class="iconfont-mini icon-a-xiugaixianxing mr5"></i>
                     修改</el-button>
-                  <el-button link type="danger"  @click="handleDelete(scope.row)" v-hasPermi="['monitor:job:remove']">
+                  <el-button v-ripple class="glass-btn" link  @click="handleDelete(scope.row)" v-hasPermi="['monitor:job:remove']">
                     <i class="iconfont-mini icon-a-shanchuxianxing mr5"></i>
                     删除</el-button>
                   <el-popover  placement="bottom" :width="150" trigger="click">
                      <template #reference>
-                        <el-button link type="primary"  icon="More">更多</el-button>
+                        <el-button v-ripple class="glass-btn" link  icon="More">更多</el-button>
                      </template>
                      <div style="width: 90px;" class="butgdlist">
-                        <el-button style="padding-left: 14px;" link type="primary" icon="CaretRight" @click="handleRun(scope.row)" v-hasPermi="['monitor:job:changeStatus']">执行一次</el-button>
-                        <el-button link type="primary"  @click="handleView(scope.row)" v-hasPermi="['monitor:job:query']">
+                        <el-button v-ripple class="glass-btn" style="padding-left: 14px;" link icon="CaretRight" @click="handleRun(scope.row)" v-hasPermi="['monitor:job:changeStatus']">执行一次</el-button>
+                        <el-button v-ripple class="glass-btn" link  @click="handleView(scope.row)" v-hasPermi="['monitor:job:query']">
                           <i class="iconfont-mini icon-a-yincangkuaizhuang mr5"></i>
                           任务详细</el-button>
-                        <el-button link type="primary" icon="Operation" @click="handleJobLog(scope.row)" v-hasPermi="['monitor:job:query']">调度日志</el-button>
+                        <el-button v-ripple class="glass-btn" link icon="Operation" @click="handleJobLog(scope.row)" v-hasPermi="['monitor:job:query']">调度日志</el-button>
                      </div>
                   </el-popover>
                </template>
@@ -170,7 +165,7 @@
       </div>
 
       <!-- 添加或修改定时任务对话框 -->
-      <el-dialog :title="title" v-model="open" width="850px" append-to="body" draggable destroy-on-close>
+      <el-dialog class="glass-card" :title="title" v-model="open" width="850px" append-to="body" draggable destroy-on-close>
          <el-form ref="jobRef" :model="form" :rules="rules" label-width="100px">
             <el-row :gutter="20">
                <el-col :span="12">
@@ -203,7 +198,7 @@
                                     <br />参数说明：支持字符串，布尔类型，长整型，浮点型，整型
                                  </div>
                               </template>
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                         </span>
                      </template>
@@ -214,7 +209,7 @@
                   <el-form-item label="cron表达式" prop="cronExpression">
                      <el-input v-model="form.cronExpression" placeholder="请输入cron执行表达式">
                         <template #append>
-                           <el-button type="primary" @click="handleShowCron">
+                           <el-button v-ripple class="glass-btn" @click="handleShowCron">
                               生成
                               <i class="el-icon-time el-icon--right"></i>
                            </el-button>
@@ -254,18 +249,18 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button @click="cancel">取 消</el-button>
-               <el-button type="primary" @click="submitForm">确 定</el-button>
+               <el-button v-ripple class="glass-btn" @click="cancel">取 消</el-button>
+               <el-button v-ripple class="glass-btn" @click="submitForm">确 定</el-button>
             </div>
          </template>
       </el-dialog>
 
-     <el-dialog title="Cron表达式生成器" v-model="openCron" append-to="body" destroy-on-close>
+     <el-dialog class="glass-card" title="Cron表达式生成器" v-model="openCron" append-to="body" destroy-on-close>
        <crontab ref="crontabRef" @hide="openCron=false" @fill="crontabFill" :expression="expression"></crontab>
      </el-dialog>
 
       <!-- 任务日志详细 -->
-      <el-dialog title="任务详细" v-model="openView" width="800px" append-to="body" draggable destroy-on-close>
+      <el-dialog class="glass-card" title="任务详细" v-model="openView" width="800px" append-to="body" draggable destroy-on-close>
          <el-form :model="form" label-width="120px">
             <el-row :gutter="20">
                <el-col :span="12">
@@ -327,7 +322,7 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button @click="openView = false">关 闭</el-button>
+               <el-button v-ripple class="glass-btn" @click="openView = false">关 闭</el-button>
             </div>
          </template>
       </el-dialog>

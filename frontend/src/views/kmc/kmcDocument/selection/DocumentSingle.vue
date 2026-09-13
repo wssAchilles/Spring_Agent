@@ -1,5 +1,5 @@
 <template>
-  <el-dialog
+  <el-dialog class="glass-card"
     title="知识文件-单选"
     v-model="visible"
     width="1200px"
@@ -42,21 +42,20 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           plain
-          type="primary"
           @click="handleQuery"
           @mousedown="(e) => e.preventDefault()"
         >
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+        <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
         </el-button>
       </el-form-item>
     </el-form>
 
-    <el-table
+    <el-table class="glass-card"
       ref="tableRef"
       stripe
       height="420px"
@@ -66,32 +65,32 @@
       row-key="id"
       @current-change="handleCurrentChange"
     >
-      <el-table-column label="文件名称" align="center" prop="name">
+      <el-table class="glass-card"-column label="文件名称" align="center" prop="name">
         <template #default="scope">
           {{ scope.row.name || "-" }}
         </template>
       </el-table-column>
-      <el-table-column label="文件描述" align="center" prop="description">
+      <el-table class="glass-card"-column label="文件描述" align="center" prop="description">
         <template #default="scope">
           {{ scope.row.description || "-" }}
         </template>
       </el-table-column>
-      <el-table-column label="知识分类" align="center" prop="categoryName">
+      <el-table class="glass-card"-column label="知识分类" align="center" prop="categoryName">
         <template #default="scope">
           {{ scope.row.categoryName || "-" }}
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark">
+      <el-table class="glass-card"-column label="备注" align="center" prop="remark">
         <template #default="scope">
           {{ scope.row.remark || "-" }}
         </template>
       </el-table-column>
-      <el-table-column label="创建人" align="center" prop="createBy">
+      <el-table class="glass-card"-column label="创建人" align="center" prop="createBy">
         <template #default="scope">
           {{ scope.row.createBy || "-" }}
         </template>
       </el-table-column>
-      <el-table-column
+      <el-table class="glass-card"-column
         label="创建时间"
         align="center"
         prop="createTime"
@@ -113,8 +112,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="confirm">
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="confirm">
           确 定
         </el-button>
       </div>

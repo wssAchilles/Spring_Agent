@@ -32,10 +32,9 @@
         <div class="llm-prompt-title node-config-section-title">
           <span class="blue-bar"></span> 提示词
         </div>
-        <el-button
-          type="primary"
+        <el-button v-ripple
           plain
-          class="llm-add-message-trigger"
+          class="llm-add-message-trigger glass-btn"
           @click="emit('addMessage')"
         >
           <i class="iconfont-mini icon-xinzeng mr5"></i>新增

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <GuideTip tip-id="ai/key.list" />
 
     <div class="pagecont-top" v-show="showSearch">
@@ -23,15 +23,14 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -40,7 +39,7 @@
 
     <Card :data="keyList" @handleUpdate="handleUpdate" @routeTo="routeTo" />
 
-    <div class="pagecont-bottom">
+    <div class="pagecont-bottom glass-card">
       <pagination
         v-show="total > 0"
         :total="total"
@@ -52,7 +51,7 @@
 
     <!-- 地址密钥列表 -->
     <el-dialog
-      class="key-config-dialog"
+      class="key-config-dialog glass-card"
       :title="keyTableTitle"
       v-model="showKeyOpen"
       width="800px"
@@ -73,14 +72,13 @@
       >
         <el-row :gutter="20">
           <el-col :span="24">
-            <el-button
-              type="primary"
+            <el-button v-ripple class="glass-btn"
               style="margin-bottom: 15px"
               @click="addItem"
               plain
               >新增密钥</el-button
             >
-            <el-table :data="form.platformKeyList" style="width: 100%">
+            <el-table :data="form.platformKeyList" style="width: 100%" class="glass-card">
               <el-table-column label="名称" align="center" prop="name">
                 <template #default="scope">
                   <el-input
@@ -122,9 +120,8 @@
               <!-- 操作列 -->
               <el-table-column align="center" width="110px" label="操作">
                 <template #default="scope">
-                  <el-button
+                  <el-button v-ripple class="glass-btn"
                     size="small"
-                    type="danger"
                     @click="deleteItem(scope.$index, scope.row)"
                     plain
                     >删除
@@ -137,10 +134,10 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >提交</el-button
           >
-          <el-button size="small" @click="handleClose">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="handleClose">取 消</el-button>
         </div>
       </template>
     </el-dialog>
@@ -422,7 +419,7 @@ getList();
     width: 100%;
     left: 0;
     height: 60px;
-    background: #ffffff;
+    background: #F5F5F7; /* Changed to #F5F5F7 */
     border-radius: 2px 2px 2px 2px;
     line-height: 60px;
     margin: 0;

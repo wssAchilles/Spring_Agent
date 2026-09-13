@@ -75,12 +75,11 @@
                     </el-form-item>
                     <div class="auth-options">
                         <el-checkbox v-model="loginForm.rememberMe">记住密码</el-checkbox>
-                        <el-button link type="primary" @click="dialogVisible = true">忘记密码</el-button>
+                        <el-button v-ripple class="glass-btn" link @click="dialogVisible = true">忘记密码</el-button>
                     </div>
-                    <el-button
+                    <el-button v-ripple
                         :loading="loading"
-                        type="primary"
-                        class="auth-submit"
+                        class="auth-submit glass-btn"
                         size="large"
                         @click.prevent="handleLogin"
                     >
@@ -93,9 +92,9 @@
     </div>
 
     <el-dialog
+        class="glass-card fp-form-dialog"
         v-model="dialogVisible"
         title="忘记密码"
-        class="fp-form-dialog"
         width="650px"
         append-to="body"
         draggable
@@ -112,8 +111,7 @@
                     <el-form-item label="验证码">
                         <div class="wrapper">
                             <el-input v-model="fpForm.code" placeholder="请输入验证码" />
-                            <el-button
-                                type="primary"
+                            <el-button v-ripple class="glass-btn"
                                 :disabled="codeFlag"
                                 style="margin-left: 10px"
                                 @click="handleFPCodeClick"
@@ -137,7 +135,7 @@
         </el-form>
         <template #footer>
             <div class="dialog-footer">
-                <el-button type="primary" @click="dialogVisible = false"> 重置密码 </el-button>
+                <el-button v-ripple class="glass-btn" @click="dialogVisible = false"> 重置密码 </el-button>
             </div>
         </template>
     </el-dialog>

@@ -1,16 +1,16 @@
 <template>
-  <el-dialog title="实体-单选" v-model="visible" width="1200px" append-to="body" draggable destroy-on-close @close="cancel">
+  <el-dialog class="glass-card" title="实体-单选" v-model="visible" width="1200px" append-to="body" draggable destroy-on-close @close="cancel">
     <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch" label-width="68px">
       <el-form-item label="实体名称" prop="name">
         <el-input style="width: 240px" v-model="queryParams.name" placeholder="请输入参数名称" clearable @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item>
-        <el-button plain type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()"> <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询 </el-button>
-        <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()"> <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置 </el-button>
+        <el-button v-ripple class="glass-btn" plain @click="handleQuery" @mousedown="(e) => e.preventDefault()"> <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询 </el-button>
+        <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()"> <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置 </el-button>
       </el-form-item>
     </el-form>
 
-    <el-table ref="tableRef" stripe height="400px" v-loading="loading" :data="dataList" highlight-current-row row-key="id" @current-change="handleCurrentChange">
+    <el-table class="glass-card" ref="tableRef" stripe height="400px" v-loading="loading" :data="dataList" highlight-current-row row-key="id" @current-change="handleCurrentChange">
       <el-table-column label="名称" align="center" prop="name">
         <template #default="scope">
           {{ scope.row.name || "-" }}
@@ -32,8 +32,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="confirm"> 确 定 </el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="confirm"> 确 定 </el-button>
       </div>
     </template>
   </el-dialog>

@@ -1,5 +1,5 @@
 <template>
-    <div class="app-container" ref="app-container">
+    <div class="app-container glass-card" ref="app-container">
         <GuideTip tip-id="kg/dm/dmDatasource.list" />
         <div class="pagecont-top" v-show="showSearch">
             <el-form
@@ -36,15 +36,14 @@
                     </el-select>
                 </el-form-item>
                 <el-form-item>
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                         plain
-                        type="primary"
                         @click="handleQuery"
                         @mousedown="(e) => e.preventDefault()"
                     >
                         <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
                     </el-button>
-                    <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+                    <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
                         <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
                     </el-button>
                 </el-form-item>
@@ -55,8 +54,7 @@
             <div class="justify-between mb15">
                 <el-row :gutter="15" class="btn-style">
                     <el-col :span="1.5">
-                        <el-button
-                            type="primary"
+                        <el-button v-ripple class="glass-btn"
                             plain
                             @click="handleAdd"
                             v-hasPermi="['dm:datasource:datasource:add']"
@@ -66,13 +64,13 @@
                         </el-button>
                     </el-col>
                     <!--         <el-col :span="1.5">-->
-                    <!--           <el-button type="primary" plain :disabled="single" @click="handleUpdate" v-hasPermi="['dm:datasource:datasource:edit']"-->
+                    <!--           <el-button v-ripple class="glass-btn" plain :disabled="single" @click="handleUpdate" v-hasPermi="['dm:datasource:datasource:edit']"-->
                     <!--                      @mousedown="(e) => e.preventDefault()">-->
                     <!--             <i class="iconfont-mini icon-xiugai&#45;&#45;copy mr5"></i>修改-->
                     <!--           </el-button>-->
                     <!--         </el-col>-->
                     <!--         <el-col :span="1.5">-->
-                    <!--           <el-button type="danger" plain :disabled="multiple" @click="handleDelete" v-hasPermi="['dm:datasource:datasource:remove']"-->
+                    <!--           <el-button v-ripple class="glass-btn" plain :disabled="multiple" @click="handleDelete" v-hasPermi="['dm:datasource:datasource:remove']"-->
                     <!--                      @mousedown="(e) => e.preventDefault()">-->
                     <!--             <i class="iconfont-mini icon-shanchu-huise mr5"></i>删除-->
                     <!--           </el-button>-->
@@ -87,6 +85,7 @@
                 </div>
             </div>
             <el-table
+                class="glass-card"
                 stripe
                 v-loading="loading"
                 :data="daDatasourceList"
@@ -205,18 +204,16 @@
                     width="280"
                 >
                     <template #default="scope">
-                        <el-button
+                        <el-button v-ripple class="glass-btn"
                             link
-                            type="primary"
                             @click="handleTestConnection(scope.row,'table')"
                             v-hasPermi="['dm:datasource:datasource:edit']"
                         >
                             <template #icon><el-icon :size="14"><Connection /></el-icon></template>
                             测试连接
                         </el-button>
-                        <el-button
+                        <el-button v-ripple class="glass-btn"
                             link
-                            type="primary"
                             @click="handleDetail(scope.row)"
                             v-hasPermi="['dm:datasource:datasource:edit']"
                         >
@@ -225,15 +222,14 @@
                         </el-button>
                         <el-popover placement="bottom" :width="150" trigger="click">
                             <template #reference>
-                                <el-button type="primary" link @click.stop>
+                                <el-button v-ripple class="glass-btn" link @click.stop>
                                     <template #icon><el-icon :size="14"><ArrowDown /></el-icon></template>
                                     更多
                                 </el-button>
                             </template>
                             <div class="card-button-group">
-                                <el-button
+                                <el-button v-ripple class="glass-btn"
                                     link
-                                    type="primary"
                                     @click="handleUpdate(scope.row)"
                                     v-hasPermi="['dm:datasource:datasource:edit']"
                                     style="margin-left: 28px"
@@ -242,9 +238,8 @@
                                     <template #icon><el-icon :size="14"><Edit /></el-icon></template>
                                     修改
                                 </el-button>
-                                <el-button
+                                <el-button v-ripple class="glass-btn"
                                     link
-                                    type="danger"
                                     @click="handleDelete(scope.row)"
                                     v-hasPermi="['dm:datasource:datasource:remove']"
                                     style="margin-left: 28px"
@@ -282,6 +277,7 @@
             width="1000px"
             append-to="body"
             draggable
+            class="glass-card"
         >
             <template #header="{ close, titleId, titleClass }">
                 <span role="heading" aria-level="2" class="el-dialog__title">
@@ -412,9 +408,9 @@
             </el-form>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button type="primary" size="small" @click="handleTestConnection(form.value,'dialog')">测试连接</el-button>
-                    <el-button size="small" @click="cancel">取 消</el-button>
-                    <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+                    <el-button v-ripple class="glass-btn" size="small" @click="handleTestConnection(form.value,'dialog')">测试连接</el-button>
+                    <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+                    <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
                 </div>
             </template>
         </el-dialog>
@@ -426,6 +422,7 @@
             width="1000px"
             append-to="body"
             draggable
+            class="glass-card"
         >
             <template #header="{ close, titleId, titleClass }">
                 <span role="heading" aria-level="2" class="el-dialog__title">
@@ -441,7 +438,7 @@
                     </el-col>
                     <el-col :span="12">
                         <el-form-item label="数据源类型" prop="datasourceType">
-                            <div style="display: flex; align-items: center; border: 1px solid var(--el-input-border-color, #e4e7ed); border-radius: 2px; padding: 1px 11px; background-color: var(--el-fill-color-light, #f5f7fa); height: 32px; width: 100%;">
+                            <div style="display: flex; align-items: center; border: 1px solid var(--el-input-border-color, #e4e7ed); border-radius: 2px; padding: 1px 11px; background-color: var(--el-fill-color-light, #F5F5F7); height: 32px; width: 100%;">
                                 <el-tag size="small">
                                     {{ getDatasourceLabel(form.datasourceType) }}
                                 </el-tag>
@@ -514,7 +511,7 @@
             </el-form>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button size="small" @click="cancel">关 闭</el-button>
+                    <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
                 </div>
             </template>
         </el-dialog>
@@ -527,6 +524,7 @@
             append-to="body"
             draggable
             destroy-on-close
+            class="glass-card"
         >
             <el-upload
                 ref="uploadRef"
@@ -551,7 +549,6 @@
                         </div>
                         <span>仅允许导入xls、xlsx格式文件。</span>
                         <el-link
-                            type="primary"
                             :underline="false"
                             style="font-size: 12px; vertical-align: baseline"
                             @click="importTemplate"
@@ -562,8 +559,8 @@
             </el-upload>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button @click="upload.open = false">取 消</el-button>
-                    <el-button type="primary" @click="submitFileForm">确 定</el-button>
+                    <el-button v-ripple class="glass-btn" @click="upload.open = false">取 消</el-button>
+                    <el-button v-ripple class="glass-btn" @click="submitFileForm">确 定</el-button>
                 </div>
             </template>
         </el-dialog>

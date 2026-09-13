@@ -46,7 +46,7 @@
             配置工具执行后可供下游节点引用的输出变量。
           </div>
         </div>
-        <el-button type="primary" plain @click="$emit('addOutput')">
+        <el-button v-ripple class="glass-btn" plain @click="$emit('addOutput')">
           <i class="iconfont-mini icon-xinzeng mr5"></i>新增
         </el-button>
       </div>
@@ -108,9 +108,8 @@
 
         <el-table-column label="操作" width="88" align="center">
           <template #default="{ row }">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="danger"
               @click.stop="handleRemoveOutput(row.id)"
             >
               删除

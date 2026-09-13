@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
@@ -20,15 +20,14 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -45,7 +44,7 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table
+      <el-table class="glass-card"
         stripe
         v-loading="loading"
         :data="logList"
@@ -53,7 +52,7 @@
         :default-sort="defaultSort"
         @sort-change="handleSortChange"
       >
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(1)"
           label="编号"
           align="center"
@@ -61,7 +60,7 @@
           width="80"
           sortable="custom"
         />
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(2)"
           label="问题"
           align="left"
@@ -73,7 +72,7 @@
             {{ scope.row.query || "-" }}
           </template>
         </el-table-column>
-        <!-- <el-table-column
+        <!-- <el-table class="glass-card"-column
           v-if="getColumnVisibility(3)"
           label="备注"
           align="left"
@@ -83,7 +82,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column> -->
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(4)"
           label="创建人"
           align="center"
@@ -93,7 +92,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(5)"
           label="创建时间"
           align="center"
@@ -108,7 +107,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(6)"
           label="更新人"
           align="center"
@@ -118,7 +117,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(7)"
           label="更新时间"
           align="center"

@@ -105,9 +105,8 @@
       v-if="props.source === 'myApp'"
     >
       <template #default="scope">
-        <el-button
+        <el-button v-ripple class="glass-btn"
           link
-          type="primary"
           icon="Switch"
           @click="handleUpdate(scope.row)"
           >替换</el-button
@@ -133,6 +132,7 @@
 
   <!-- 选择知识图谱对话框 -->
   <el-dialog
+    class="glass-card"
     :title="graphDialogTitle"
     v-model="graphDialogOpen"
     width="1000px"
@@ -161,15 +161,14 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           plain
-          type="primary"
           @click="handleQueryGraph"
           @mousedown="(e) => e.preventDefault()"
         >
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           @click="resetQueryGraph"
           @mousedown="(e) => e.preventDefault()"
         >
@@ -256,10 +255,10 @@
     />
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="graphDialogOpen = false"
+        <el-button v-ripple class="glass-btn" size="small" @click="graphDialogOpen = false"
           >取 消</el-button
         >
-        <el-button type="primary" size="small" @click="submitGraphForm"
+        <el-button v-ripple class="glass-btn" size="small" @click="submitGraphForm"
           >确 定</el-button
         >
       </div>

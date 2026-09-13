@@ -1,6 +1,6 @@
 <template>
   <div class="card-container">
-    <div v-for="(item, index) in data" :key="index" class="card">
+    <div v-for="(item, index) in data" :key="index" class="card glass-card">
       <!-- 头部 -->
       <div class="card-top">
         <div class="card-top-left">
@@ -56,7 +56,7 @@
           <!-- 具名插槽 #content 替代 content 属性，这里写tooltip的弹窗内容 -->
           <template #content>
             <div
-              style="width: 450px; font-size: 14px; color: #333; padding: 7px"
+              style="width: 450px; font-size: 14px; color: #1D1D1F; padding: 7px; background: transparent"
             >
               {{ item.description }}
             </div>
@@ -68,9 +68,8 @@
           </div>
         </el-tooltip>
         <div class="card-bottom-button">
-          <el-button
-            class="card-bottom-operation"
-            type="primary"
+          <el-button v-ripple
+            class="card-bottom-operation glass-btn"
             @click="handleUpdate(item)"
             v-hasPermi="['ai:modelMarket:key:edit']"
           >
@@ -82,9 +81,8 @@
             </div>
           </el-button>
 
-          <el-button
-            class="card-bottom-operation"
-            type="primary"
+          <el-button v-ripple
+            class="card-bottom-operation glass-btn"
             @click="routeTo('', item)"
             :disabled="item.status === 0"
             v-hasPermi="['ai:modelMarket:key:query']"
@@ -220,7 +218,7 @@ function routeTo(link, row) {
     min-width: 448px;
     min-height: 200px;
     padding: 18px 28px 21px 28px;
-    background-color: #ffffff;
+    background-color: transparent; /* Use glass-card style */
     border-radius: 2px;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -262,7 +260,7 @@ function routeTo(link, row) {
           margin-bottom: 5px;
           font-family: PingFang SC-Heavy;
           font-size: 20px;
-          color: #333333;
+          color: #1D1D1F;
           line-height: 28px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -319,7 +317,7 @@ function routeTo(link, row) {
       min-height: 38px;
       font-family: PingFang SC, PingFang SC;
       font-size: 14px;
-      color: #333333;
+      color: #1D1D1F;
       line-height: 18px;
       text-align: left;
       font-style: normal;
@@ -359,7 +357,7 @@ function routeTo(link, row) {
           font-family: PingFang SC, PingFang SC;
           font-weight: 400;
           font-size: 12px;
-          color: #ffffff;
+          color: #1D1D1F;
           line-height: 18px;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -372,7 +370,7 @@ function routeTo(link, row) {
 
 :deep(.el-tag.el-tag--primary.diy) {
   background: #bbbbbb !important;
-  color: #ffffff !important;
+  color: #F5F5F7 !important;
   font-family: PingFang SC-Regular;
   font-size: 14px;
   border-radius: 4px;
@@ -380,7 +378,7 @@ function routeTo(link, row) {
 
 :deep(.el-tag.el-tag--success) {
   background: #0baa84 !important;
-  color: #ffffff !important;
+  color: #F5F5F7 !important;
   font-family: PingFang SC-Regular;
   font-size: 14px;
   border-radius: 4px;
@@ -390,7 +388,7 @@ function routeTo(link, row) {
 <style>
 /* 这是tooltip的根容器，箭头就在这个容器上，所有外层样式写这里！ */
 .no-border-tooltip {
-  background: #ffffff !important;
+  background: #F5F5F7 !important;
   border-radius: 4px !important; /* 和系统默认的圆角一致 */
   box-shadow: 0 0px 8px rgba(0, 0, 0, 0.2) !important; /* 阴影效果*/
   /* border: none !important; 去掉原生的边框 */

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" label-width="68px">
         <el-form-item label="消息标题" prop="title">
@@ -33,10 +33,10 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
             <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -46,8 +46,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="justify-end btn-style">
           <el-col :span="1.5">
-            <el-button
-                type="primary"
+            <el-button v-ripple class="glass-btn"
                 plain
                 @click="handleAdd"
                 v-hasPermi="['system:messageTemplate:add']"
@@ -99,12 +98,12 @@
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
           <template #default="scope">
-            <el-button link type="primary" @click="handleUpdate(scope.row)"
+            <el-button v-ripple class="glass-btn" link @click="handleUpdate(scope.row)"
                        v-hasPermi="['system:messageTemplate:edit']">
               <i class="iconfont-mini icon-a-xiugaixianxing"></i>
               修改
             </el-button>
-            <el-button link type="danger" @click="handleDelete(scope.row)"
+            <el-button v-ripple class="glass-btn" link @click="handleDelete(scope.row)"
                        v-hasPermi="['system:messageTemplate:remove']">
               <i class="iconfont-mini icon-a-shanchuxianxing"></i>
               删除
@@ -130,7 +129,7 @@
     </div>
 
     <!-- 添加或修改消息模板对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" append-to="body" draggable
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body" draggable
                destroy-on-close>
       <!-- <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
@@ -138,7 +137,7 @@
           <el-popover placement="top-start" width="641px" trigger="hover">
             <div class="tips-content">
               <div>
-                <el-icon size="20" style="color: #909399; font-size: 16px">
+                <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
                   <InfoFilled />
                 </el-icon>
                 <span class="wxtstitle ml0">温馨提示!</span>
@@ -150,7 +149,7 @@
               </div>
             </div>
             <template #reference>
-              <el-icon size="20" style="color: #909399; font-size: 16px">
+              <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
                 <InfoFilled />
               </el-icon>
             </template>
@@ -230,8 +229,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>

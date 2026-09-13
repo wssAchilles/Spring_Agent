@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
     <div class="pagecont-top">
       <!-- 基础设置标题区 -->
       <div class="pagecont-top-title">
@@ -9,7 +9,7 @@
             {{ title }}
           </div>
         </div>
-        <!--        <el-button type="primary" size="small" plain @click="back">-->
+        <!--        <el-button v-ripple class="glass-btn" size="small" plain @click="back">-->
         <!--          <img class="currImg" src="@/assets/kg/back.svg" alt="">-->
         <!--          <img class="act" src="@/assets/kg/back-act.svg" alt="">返回-->
         <!--        </el-button>-->
@@ -72,9 +72,9 @@
                     @keyup.enter="handleInputConfirm"
                     @blur="handleInputConfirm"
                   />
-                  <el-button
+                  <el-button v-ripple
                     v-else
-                    class="button-new-tag"
+                    class="button-new-tag glass-btn"
                     size="small"
                     @click="showInput"
                   >
@@ -145,7 +145,7 @@
                     <div class="indexing-title">
                       <el-icon class="icon"><Trophy /></el-icon>
                       <span>高质量</span>
-                      <el-tag size="small" type="primary" class="recommend-tag"
+                      <el-tag size="small" class="recommend-tag"
                         >推荐</el-tag
                       >
                     </div>
@@ -446,7 +446,7 @@
           <img src="@/assets/kmc/Files2.png" alt="" v-if="form.searchMethod == 'hybrid_search'"/>
           </el-icon>
           <span>混合检索</span>
-          <el-tag size="small" type="primary" class="recommend-tag">推荐</el-tag>
+          <el-tag size="small" class="recommend-tag">推荐</el-tag>
           </div>
           </div>
           <div class="search-desc">
@@ -665,39 +665,39 @@
       <!--        </div>-->
       <!--      </div>-->
       <!--      <div class="table-role">-->
-      <!--        <el-table-->
+      <!--        <el-table class="glass-card"-->
       <!--            stripe-->
       <!--            ref="roleTableRef"-->
       <!--            v-loading="roleLoading"-->
       <!--            :data="roleList"-->
       <!--            @selection-change="handleSelectionChange"-->
       <!--        >-->
-      <!--          <el-table-column type="selection" width="55" align="center" />-->
-      <!--          <el-table-column label="角色编号" prop="roleId" align="center" />-->
-      <!--          <el-table-column-->
+      <!--          <el-table class="glass-card"-column type="selection" width="55" align="center" />-->
+      <!--          <el-table class="glass-card"-column label="角色编号" prop="roleId" align="center" />-->
+      <!--          <el-table class="glass-card"-column-->
       <!--              label="角色名称"-->
       <!--              prop="roleName"-->
       <!--              align="center"-->
       <!--              :show-overflow-tooltip="true"-->
       <!--          />-->
-      <!--          <el-table-column-->
+      <!--          <el-table class="glass-card"-column-->
       <!--              label="权限字符"-->
       <!--              prop="roleKey"-->
       <!--              align="center"-->
       <!--              :show-overflow-tooltip="true"-->
       <!--          />-->
-      <!--          <el-table-column label="显示顺序" prop="roleSort" align="center" />-->
-      <!--          <el-table-column label="创建时间" align="center" prop="createTime" width="160">-->
+      <!--          <el-table class="glass-card"-column label="显示顺序" prop="roleSort" align="center" />-->
+      <!--          <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="160">-->
       <!--          </el-table-column>-->
       <!--        </el-table>-->
       <!--      </div>-->
 
       <!-- 底部操作按钮 -->
       <div class="dialog-footer">
-        <el-button type="default" size="small" plain @click="back">
+        <el-button v-ripple class="glass-btn" type="default" size="small" plain @click="back">
           取消
         </el-button>
-        <el-button type="primary" @click="submitForm"> 保存 </el-button>
+        <el-button v-ripple class="glass-btn" @click="submitForm"> 保存 </el-button>
       </div>
     </div>
   </div>
@@ -1117,13 +1117,13 @@ init();
   margin-right: 7px;
 }
 ::v-deep .el-divider__text.is-left {
-  color: #4b7eed;
+  color: #1D1D1F;
 }
 
 // 全局容器样式
 .app-container {
   min-height: calc(100vh - 124px);
-  background: #f4f7fb;
+  background: #F5F5F7;
   padding: 16px 18px 0;
 
   .pagecont-top {
@@ -1134,7 +1134,7 @@ init();
       max-width: 1180px;
       margin: 0 auto;
       padding: 24px 28px 20px;
-      background: #fff;
+      background: #F5F5F7;
       border: 1px solid #e7edf6;
       border-radius: 8px;
       box-shadow: 0 8px 24px rgba(15, 35, 80, 0.04);
@@ -1157,11 +1157,11 @@ init();
         .header-left {
           display: flex;
           align-items: center;
-          color: #1f2937;
+          color: #1D1D1F;
           font-size: 18px;
           font-weight: 600;
           .blue-bar {
-            background-color: #2666fb;
+            background: #F5F5F7;
             width: 6px;
             height: 18px;
             margin-right: 10px;
@@ -1209,18 +1209,18 @@ init();
   :deep(.el-table) {
     border: none;
     .el-table__header-wrapper {
-      background-color: #f9fafb;
+      background: #F5F5F7;
       th {
         background: transparent;
         border-bottom: 1px solid #e5e7eb;
         font-weight: 500;
-        color: #666;
+        color: #1D1D1F;
       }
     }
     .el-table__body-wrapper {
       tr {
         &:hover > td {
-          background-color: #f9fafb;
+          background: #F5F5F7;
         }
       }
       td {
@@ -1278,14 +1278,14 @@ init();
   border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #fbfcfe;
+  background: #F5F5F7;
 
   &.act {
-    background-color: #f3f7ff;
-    border-color: #2666fb;
+    background: #F5F5F7;
+    border-color: #1D1D1F;
     box-shadow: 0 0 0 2px rgba(38, 102, 251, 0.08);
     .indexing-title {
-      color: #2666fb;
+      color: #1D1D1F;
       font-weight: 500;
     }
   }
@@ -1298,13 +1298,13 @@ init();
   display: flex;
   align-items: center;
   margin-bottom: 8px;
-  color: #333;
+  color: #1D1D1F;
   font-size: 14px;
 
   .icon {
     margin-right: 8px;
     font-size: 18px;
-    color: #666;
+    color: #1D1D1F;
   }
   img {
     width: 18px;
@@ -1315,7 +1315,7 @@ init();
 .indexing-desc {
   margin: 0;
   font-size: 12px;
-  color: #666;
+  color: #1D1D1F;
   line-height: 1.65;
 }
 .recommend-tag {
@@ -1342,14 +1342,14 @@ init();
   border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #fbfcfe;
+  background: #F5F5F7;
 
   &.act {
-    background-color: #f3f7ff;
-    border-color: #2666fb;
+    background: #F5F5F7;
+    border-color: #1D1D1F;
     box-shadow: 0 0 0 2px rgba(38, 102, 251, 0.08);
     .search-title {
-      color: #2666fb;
+      color: #1D1D1F;
       font-weight: 500;
     }
   }
@@ -1358,7 +1358,7 @@ init();
   display: flex;
   align-items: center;
   margin-bottom: 10px;
-  color: #333;
+  color: #1D1D1F;
   font-size: 14px;
 
   .icon {
@@ -1379,7 +1379,7 @@ init();
 .search-desc {
   margin: 0 0 15px 0;
   font-size: 12px;
-  color: #666;
+  color: #1D1D1F;
   line-height: 1.65;
 }
 .search-options {
@@ -1409,7 +1409,7 @@ init();
 }
 .option-label {
   font-size: 12px;
-  color: #666;
+  color: #1D1D1F;
   margin-right: 10px;
   white-space: nowrap;
 }
@@ -1428,7 +1428,7 @@ init();
   align-items: center;
   margin-bottom: 8px;
   font-size: 12px;
-  color: #666;
+  color: #1D1D1F;
 
   .icon-question {
     width: 14px;
@@ -1487,8 +1487,8 @@ init();
   }
 
   &.act {
-    border-color: #2666fb;
-    background-color: #f0f7ff;
+    border-color: #1D1D1F;
+    background: #F5F5F7;
   }
 }
 .mode-icon {
@@ -1502,13 +1502,13 @@ init();
 }
 .mode-title {
   font-size: 13px;
-  color: #2666fb;
+  color: #1D1D1F;
   margin-bottom: 5px;
   //margin-right: 60px;
 }
 .mode-desc {
   font-size: 12px;
-  color: #666;
+  color: #1D1D1F;
   line-height: 1.7;
   margin-left: 40px;
   margin-top: -5px;
@@ -1519,7 +1519,7 @@ init();
 .weight-config {
   width: 100%;
   padding: 10px;
-  background: #fff;
+  background: #F5F5F7;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
 }
@@ -1531,10 +1531,10 @@ init();
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #666;
+  color: #1D1D1F;
 }
 .keyword-weight {
-  color: #2666fb;
+  color: #1D1D1F;
 }
 
 // 单选按钮样式统一（对齐目标页面）
@@ -1550,11 +1550,11 @@ init();
     font-size: 13px;
 
     :deep(.el-radio__input.is-checked .el-radio__inner) {
-      border-color: #2666fb;
-      background-color: #2666fb;
+      border-color: #1D1D1F;
+      background: #F5F5F7;
     }
     :deep(.el-radio__input.is-checked + .el-radio__label) {
-      color: #2666fb;
+      color: #1D1D1F;
     }
   }
 }
@@ -1575,7 +1575,7 @@ init();
 
 :deep(.el-form-item__label) {
   margin-right: 12px;
-  color: #344054;
+  color: #1D1D1F;
   font-weight: 500;
 }
 
@@ -1602,14 +1602,14 @@ init();
   border: 1px solid #e7edf6;
   border-radius: 8px;
   overflow: hidden;
-  background: #fff;
+  background: #F5F5F7;
 
   :deep(.el-collapse-item__header) {
     height: 48px;
     padding: 0 16px;
-    color: #1f2937;
+    color: #1D1D1F;
     font-weight: 600;
-    background: #fbfcfe;
+    background: #F5F5F7;
   }
 
   :deep(.el-collapse-item__content) {
@@ -1627,7 +1627,7 @@ init();
   gap: 10px;
 
   span {
-    color: #667085;
+    color: #1D1D1F;
     font-size: 12px;
   }
 }
@@ -1640,7 +1640,7 @@ init();
 //}
 //
 :deep(.name-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }
@@ -1652,7 +1652,7 @@ init();
 //}
 //
 :deep(.image-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }
@@ -1664,7 +1664,7 @@ init();
 //}
 //
 :deep(.tag-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }
@@ -1678,7 +1678,7 @@ init();
 //}
 //
 :deep(.status-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }
@@ -1691,7 +1691,7 @@ init();
 //}
 //
 :deep(.desc-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }
@@ -1703,7 +1703,7 @@ init();
 //  margin-right: -13px !important;
 //}
 :deep(.index-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }
@@ -1714,7 +1714,7 @@ init();
 //}
 //
 :deep(.emdedding-form .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }

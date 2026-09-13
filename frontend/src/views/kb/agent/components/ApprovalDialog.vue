@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="工作流审批" width="480px" :close-on-click-modal="false">
+  <el-dialog class="glass-card" v-model="visible" title="工作流审批" width="480px" :close-on-click-modal="false">
     <div v-if="currentApproval" class="approval-content">
       <div class="approval-info">
         <el-icon :size="32" color="#f59e0b"><WarningFilled /></el-icon>
@@ -22,13 +22,13 @@
 
     <template #footer>
       <div class="approval-footer">
-        <el-button v-if="!showRejectReason" type="danger" plain @click="showRejectReason = true">
+        <el-button v-ripple class="glass-btn" v-if="!showRejectReason" plain @click="showRejectReason = true">
           拒绝
         </el-button>
-        <el-button v-else type="danger" @click="handleReject" :loading="loading">
+        <el-button v-ripple class="glass-btn" v-else @click="handleReject" :loading="loading">
           确认拒绝
         </el-button>
-        <el-button type="primary" @click="handleApprove" :loading="loading">
+        <el-button v-ripple class="glass-btn" @click="handleApprove" :loading="loading">
           通过
         </el-button>
       </div>

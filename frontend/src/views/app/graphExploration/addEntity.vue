@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="open" width="800px" append-to="body" draggable @close="handleClose" destroy-on-close>
+  <el-dialog class="glass-card" v-model="open" width="800px" append-to="body" draggable @close="handleClose" destroy-on-close>
     <template #header>
       <span role="heading" aria-level="2" class="el-dialog__title">
         {{ title }}
@@ -10,8 +10,8 @@
         <el-col :span="24">
           <el-form-item label="实体" prop="tableData">
             <template #label> 实体 </template>
-            <el-button type="primary" style="margin-bottom: 15px" @click="addItem" plain>新增实体</el-button>
-            <el-table :data="form.tableData" style="width: 100%">
+            <el-button v-ripple class="glass-btn" style="margin-bottom: 15px" @click="addItem" plain>新增实体</el-button>
+            <el-table class="glass-card" :data="form.tableData" style="width: 100%">
               <el-table-column label="实体名称" min-width="180">
                 <template #default="scope">
                   <el-input v-model="scope.row.name" type="text" placeholder="请填写名称" />
@@ -25,7 +25,7 @@
               <!-- 操作列 -->
               <el-table-column label="操作" min-width="70">
                 <template #default="scope">
-                  <el-button size="small" type="danger" @click="deleteItem(scope.$index, scope.row)" plain>删除 </el-button>
+                  <el-button v-ripple class="glass-btn" size="small" @click="deleteItem(scope.$index, scope.row)" plain>删除 </el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -35,8 +35,8 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button type="primary" size="small" @click="submitForm">提交</el-button>
-        <el-button size="small" @click="handleClose">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="submitForm">提交</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="handleClose">取 消</el-button>
       </div>
     </template>
   </el-dialog>

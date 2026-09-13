@@ -49,7 +49,7 @@
     </el-table-column>
     <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="props.source === 'myApp'">
       <template #default="scope">
-        <el-button link type="primary" icon="Switch" @click="handleUpdate(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Switch" @click="handleUpdate(scope.row)"
           >替换</el-button>
       </template>
     </el-table-column>
@@ -72,6 +72,7 @@
 
   <!-- 选择BOT对话框 -->
   <el-dialog
+    class="glass-card"
     :title="botDialogTitle"
     v-model="botDialogOpen"
     width="1000px"
@@ -116,15 +117,14 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           plain
-          type="primary"
           @click="handleQueryBot"
           @mousedown="(e) => e.preventDefault()"
         >
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           @click="resetQueryBot"
           @mousedown="(e) => e.preventDefault()"
         >
@@ -226,24 +226,23 @@
         <div class="check-status-wrapper">
           <div v-if="checking" class="check-status">
             <el-icon class="is-loading"><loading /></el-icon>
-            <span style="color:#333333">正在进行Bot适配性检测...</span>
+            <span style="color:#1D1D1F">正在进行Bot适配性检测...</span>
           </div>
           <div v-else-if="checkResult !== null" class="check-status">
-            <el-icon v-if="checkResult.passed" style="color: #14a339">
+            <el-icon v-if="checkResult.passed" style="color: #1D1D1F">
               <circle-check />
             </el-icon>
-            <el-icon v-else style="color: #f56c6c">
+            <el-icon v-else style="color: #1D1D1F">
               <circle-close />
             </el-icon>
-            <span :style="{ color: checkResult.passed ? '#14a339' : '#ec544d' }">
+            <span style="color: #1D1D1F">
               {{ checkResult.passed ? '适配性检测通过' : '适配性检测未通过，请检查Bot配置。' }}
             </span>
           </div>
         </div>
         <div class="button-wrapper">
-          <el-button size="small" @click="handleCancel" :disabled="checking">取 消</el-button>
-          <el-button
-            type="primary"
+          <el-button v-ripple class="glass-btn" size="small" @click="handleCancel" :disabled="checking">取 消</el-button>
+          <el-button v-ripple class="glass-btn"
             size="small"
             :loading="checking"
             @click="submitBotForm"

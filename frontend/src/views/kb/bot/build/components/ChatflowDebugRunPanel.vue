@@ -62,20 +62,18 @@
 
       <div class="chatflow-debug-run-panel__composer-actions">
         <div class="chatflow-debug-run-panel__composer-buttons">
-          <el-button
+          <el-button v-ripple class="glass-btn"
             v-if="running"
-            type="danger"
             plain
             native-type="button"
             @click="stopStream()"
           >
             停止
           </el-button>
-          <el-button
+          <el-button v-ripple
             v-else
-            type="primary"
             native-type="submit"
-            class="chatflow-debug-run-panel__send-button"
+            class="chatflow-debug-run-panel__send-button glass-btn"
             :disabled="!canSend"
           >
             发送

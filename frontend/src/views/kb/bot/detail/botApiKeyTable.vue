@@ -2,8 +2,7 @@
   <div class="justify-between mb15">
     <el-row :gutter="15" class="btn-style">
       <el-col :span="1.5">
-        <el-button
-            type="primary"
+        <el-button v-ripple class="glass-btn"
             plain
             @click="genApiKey"
             icon="Plus"
@@ -22,7 +21,7 @@
       ></right-toolbar>
     </div>
   </div>
-  <el-table stripe height="58vh"
+  <el-table class="glass-card" stripe height="58vh"
             v-loading="loading"
             :data="botApiKeyList"
             @sort-change="handleSortChange">
@@ -56,8 +55,8 @@
     </el-table-column>
     <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
       <template #default="scope">
-        <el-button link type="primary" icon="CopyDocument" @click="handleCopy(scope.row)">复制密钥</el-button>
-        <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)"> 删除</el-button>
+        <el-button v-ripple class="glass-btn" link icon="CopyDocument" @click="handleCopy(scope.row)">复制密钥</el-button>
+        <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)"> 删除</el-button>
       </template>
     </el-table-column>
 

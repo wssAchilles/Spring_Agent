@@ -1,7 +1,7 @@
 <template>
   <div class="user-info-head" @click="editCropper()">
     <img :src="options.img" title="点击上传头像" class="img-circle img-lg" />
-    <el-dialog :title="title" v-model="open" width="800px" append-to-body @opened="modalOpened" @close="closeDialog">
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to-body @opened="modalOpened" @close="closeDialog">
       <el-row>
         <el-col :xs="24" :md="12" :style="{ height: '350px' }">
           <vue-cropper
@@ -32,26 +32,26 @@
             :show-file-list="false"
             :before-upload="beforeUpload"
           >
-            <el-button>
+            <el-button v-ripple class="glass-btn">
               选择
               <i class="iconfont-mini icon-daochu ml5"></i>
             </el-button>
           </el-upload>
         </el-col>
         <el-col :lg="{ span: 1, offset: 2 }" :md="2">
-          <el-button icon="Plus" @click="changeScale(1)"></el-button>
+          <el-button v-ripple class="glass-btn" icon="Plus" @click="changeScale(1)"></el-button>
         </el-col>
         <el-col :lg="{ span: 1, offset: 1 }" :md="2">
-          <el-button icon="Minus" @click="changeScale(-1)"></el-button>
+          <el-button v-ripple class="glass-btn" icon="Minus" @click="changeScale(-1)"></el-button>
         </el-col>
         <el-col :lg="{ span: 1, offset: 1 }" :md="2">
-          <el-button icon="RefreshLeft" @click="rotateLeft()"></el-button>
+          <el-button v-ripple class="glass-btn" icon="RefreshLeft" @click="rotateLeft()"></el-button>
         </el-col>
         <el-col :lg="{ span: 1, offset: 1 }" :md="2">
-          <el-button icon="RefreshRight" @click="rotateRight()"></el-button>
+          <el-button v-ripple class="glass-btn" icon="RefreshRight" @click="rotateRight()"></el-button>
         </el-col>
         <el-col :lg="{ span: 2, offset: 6 }" :md="2">
-          <el-button type="primary" @click="uploadImg()">提 交</el-button>
+          <el-button v-ripple class="glass-btn" @click="uploadImg()">提 交</el-button>
         </el-col>
       </el-row>
     </el-dialog>

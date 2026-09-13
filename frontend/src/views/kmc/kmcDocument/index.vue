@@ -1,9 +1,9 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <GuideTip tip-id="kmc/kmcDocument.list" />
     <el-container>
       <!-- 左侧可调整的部分 -->
-      <DeptTree
+      <DeptTree class="glass-card"
         ref="deptTreeRef"
         :deptOptions="KcOptions"
         :leftWidth="leftWidth"
@@ -31,15 +31,14 @@
               />
             </el-form-item>
             <el-form-item>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 plain
-                type="primary"
                 @click="handleQuery"
                 @mousedown="(e) => e.preventDefault()"
               >
                 <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
               </el-button>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 @click="resetQuery"
                 @mousedown="(e) => e.preventDefault()"
               >
@@ -58,15 +57,14 @@
                   {{ syncingDocuments.length }} 个文件处理中；页面每 5 秒读取一次后端状态，完成后“解析结果”会自动可用。
                 </div>
               </div>
-              <el-tag type="warning" effect="light">后端处理中</el-tag>
+              <el-tag effect="light">后端处理中</el-tag>
             </div>
             <div class="sync-live-line"><span></span></div>
           </div>
           <div class="justify-between mb15">
             <el-row :gutter="15" class="btn-style">
               <el-col :span="1.5">
-                <el-button
-                  type="primary"
+                <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleAdd"
                   v-hasPermi="['kmcDocument:kmcDocument:document:add']"
@@ -76,8 +74,7 @@
                 </el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button
-                  type="danger"
+                <el-button v-ripple class="glass-btn"
                   plain
                   :disabled="multiple"
                   @click="handleDelete"
@@ -97,7 +94,7 @@
               ></right-toolbar>
             </div>
           </div>
-          <el-table
+          <el-table class="glass-card"
             stripe
             v-loading="loading"
             :data="documentList"
@@ -105,8 +102,8 @@
             :default-sort="defaultSort"
             @sort-change="handleSortChange"
           >
-            <el-table-column type="selection" width="55" align="center" />
-            <el-table-column
+            <el-table class="glass-card"-column type="selection" width="55" align="center" />
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(1)"
               label="编号"
               align="center"
@@ -114,7 +111,7 @@
               width="80"
               sortable="custom"
             />
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(2)"
               label="文件名称"
               prop="name"
@@ -135,7 +132,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(3)"
               label="文件描述"
               align="left"
@@ -147,7 +144,7 @@
                 {{ scope.row.description || "-" }}
               </template>
             </el-table-column>
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(4)"
               label="分类"
               align="left"
@@ -159,7 +156,7 @@
                 {{ scope.row.categoryName || "-" }}
               </template>
             </el-table-column>
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(10)"
               label="文件大小"
               align="center"
@@ -170,7 +167,7 @@
                 {{ (Math.random() * 3 + 0).toFixed(2) }} MB
               </template>
             </el-table-column>
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(11)"
               label="文件分段数量"
               align="center"
@@ -181,7 +178,7 @@
                 {{ Math.floor(Math.random() * 10 + 1) }}
               </template>
             </el-table-column>
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(5)"
               label="解析状态"
               align="center"
@@ -190,14 +187,14 @@
             >
               <template #default="scope">
                 <div v-if="isDocumentSyncing(scope.row)" class="row-sync-status">
-                  <el-tag type="warning" effect="light">{{ getSyncStatusText(scope.row) }}</el-tag>
+                  <el-tag effect="light">{{ getSyncStatusText(scope.row) }}</el-tag>
                   <div class="sync-live-line small"><span></span></div>
                   <span>后端状态轮询中</span>
                 </div>
                 <dict-tag v-else :options="document_sync_status" :value="scope.row.syncStatus" />
               </template>
             </el-table-column>
-            <!-- <el-table-column
+            <!-- <el-table class="glass-card"-column
               v-if="getColumnVisibility(6)"
               label="备注"
               width="200"
@@ -209,7 +206,7 @@
                 {{ scope.row.remark || "-" }}
               </template>
             </el-table-column> -->
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(7)"
               label="创建人"
               align="center"
@@ -219,7 +216,7 @@
                 {{ scope.row.createBy || "-" }}
               </template>
             </el-table-column>
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(8)"
               label="创建时间"
               align="center"
@@ -234,7 +231,7 @@
                 }}</span>
               </template>
             </el-table-column>
-            <el-table-column
+            <el-table class="glass-card"-column
               v-if="getColumnVisibility(9)"
               label="操作"
               align="center"
@@ -243,19 +240,17 @@
               width="250"
             >
               <template #default="scope">
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   v-track="{ type: 'preview', documentId: scope.row.id }"
                   link
-                  type="primary"
                   icon="Document"
                   @click="handleSegment(scope.row)"
                   :disabled="scope.row.syncStatus !== 2"
                   >解析结果</el-button
                 >
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   v-track="{ type: 'preview', documentId: scope.row.id }"
                   link
-                  type="primary"
                   icon="view"
                   @click="previewRefactoring(scope.row)"
                   >预览</el-button
@@ -263,31 +258,28 @@
 
                 <el-popover placement="bottom" :width="150" trigger="click">
                   <template #reference>
-                    <el-button type="primary" icon="ArrowDown" link @click.stop
+                    <el-button v-ripple class="glass-btn" icon="ArrowDown" link @click.stop
                       >更多</el-button
                     >
                   </template>
                   <div class="card-button-group">
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       v-track="{ type: 'download', documentId: scope.row.id }"
                       link
-                      type="primary"
                       icon="download"
                       @click="handleDownload(scope.row)"
                       >下载</el-button
                     >
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       link
-                      type="primary"
                       icon="Edit"
                       @click="handleUpdate(scope.row)"
                       v-hasPermi="['kmcDocument:kmcDocument:document:edit']"
                       >修改</el-button
                     >
 
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       link
-                      type="danger"
                       icon="Delete"
                       @click="handleDelete(scope.row)"
                       v-hasPermi="['kmcDocument:kmcDocument:document:remove']"
@@ -754,20 +746,20 @@ function previewRefactoring(row) {
 </script>
 <style scoped lang="scss">
 :deep(.selectlist .el-tag.el-tag--info) {
-  background: #f3f8ff !important;
+  background: #F5F5F7 !important;
   border: 0px solid #6ba7ff !important;
-  color: #2666fb !important;
+  color: #1D1D1F !important;
 }
 
 .left-pane {
-  background-color: #ffffff;
+  background: #F5F5F7;
   overflow: hidden;
   transition: width 0s; /* 可以根据需要调整过渡时间 */
 }
 
 .resize-bar {
   cursor: ew-resize;
-  background-color: #f0f2f5;
+  background: #F5F5F7;
   height: 86vh;
   display: flex;
   align-items: center;
@@ -796,7 +788,7 @@ function previewRefactoring(row) {
 .el-aside {
   padding: 2px 0px;
   margin-bottom: 0px;
-  background-color: #f0f2f5;
+  background: #F5F5F7;
 }
 
 .custom-tree-node {
@@ -813,11 +805,11 @@ function previewRefactoring(row) {
 }
 
 .colorxz {
-  color: #358cf3;
+  color: #1D1D1F;
 }
 
 .colorwxz {
-  color: #afd1fa;
+  color: #1D1D1F;
 }
 
 .sync-progress-banner {
@@ -825,7 +817,7 @@ function previewRefactoring(row) {
   padding: 14px 16px;
   border: 1px solid #f6d58b;
   border-radius: 8px;
-  background: #fff8e6;
+  background: #F5F5F7;
 }
 
 .sync-progress-head {
@@ -837,14 +829,14 @@ function previewRefactoring(row) {
 }
 
 .sync-progress-title {
-  color: #8a5700;
+  color: #1D1D1F;
   font-size: 15px;
   font-weight: 600;
 }
 
 .sync-progress-desc {
   margin-top: 2px;
-  color: #946200;
+  color: #1D1D1F;
   font-size: 13px;
 }
 
@@ -852,7 +844,7 @@ function previewRefactoring(row) {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: #fdecc8;
+  background: #F5F5F7;
 
   span {
     display: block;
@@ -883,7 +875,7 @@ function previewRefactoring(row) {
   text-align: left;
 
   span {
-    color: #946200;
+    color: #1D1D1F;
     font-size: 12px;
   }
 }

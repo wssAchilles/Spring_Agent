@@ -5,7 +5,7 @@
     <div class="justify-between mb15">
       <el-row :gutter="15">
         <el-col :span="1.5" class="header-actions">
-          <el-button type="primary" plain @click="onImportTable">
+          <el-button v-ripple class="glass-btn" plain @click="onImportTable">
             导入表
           </el-button>
           <el-icon class="tip-icon" size="20">
@@ -15,7 +15,7 @@
         </el-col>
       </el-row>
     </div>
-    <el-table :data="tableData" max-height="410">
+    <el-table class="glass-card" :data="tableData" max-height="410">
       <el-table-column prop="tableName" label="表名"></el-table-column>
       <el-table-column prop="tableComment" label="表显示名称">
         <template #default="scope">
@@ -34,17 +34,15 @@
       </el-table-column>
       <el-table-column prop="operate" align="center" label="操作" width="180">
         <template #default="scope">
-          <el-button
+          <el-button v-ripple class="glass-btn"
             link
-            type="primary"
             icon="Edit"
             @click="onMappingClick(scope.row)"
           >
             映射
           </el-button>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             link
-            type="danger"
             icon="Delete"
             @click="onDeleteClick(scope.row)"
           >

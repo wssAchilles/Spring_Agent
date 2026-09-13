@@ -2,13 +2,13 @@
   <div class="justify-between mb15">
     <el-row :gutter="15" class="btn-style">
       <el-col :span="1.5">
-        <el-button type="primary" plain @click="handleAdd" v-hasPermi="['extDatasource:datasource:add']"
+        <el-button v-ripple class="glass-btn" plain @click="handleAdd" v-hasPermi="['extDatasource:datasource:add']"
                    @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-xinzeng mr5"></i>新增
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="warning" plain @click="handleExport" v-hasPermi="['extDatasource:datasource:export']"
+        <el-button v-ripple class="glass-btn" plain @click="handleExport" v-hasPermi="['extDatasource:datasource:export']"
                    @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-download-line mr5"></i>导出
         </el-button>
@@ -18,7 +18,7 @@
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
     </div>
   </div>
-  <el-table stripe height="374px" v-loading="loading" :data="datasourceList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+  <el-table class="glass-card" stripe height="374px" v-loading="loading" :data="datasourceList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
     <el-table-column type="selection" width="55" align="center" />
             <el-table-column v-if="columns[0].visible" label="ID" align="center" prop="id" />
             <el-table-column v-if="columns[1].visible" label="数据库连接名称" align="center" prop="name">
@@ -73,11 +73,11 @@
             </el-table-column>
     <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
       <template #default="scope">
-        <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)"
                    v-hasPermi="['extDatasource:datasource:edit']">修改</el-button>
-        <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)"
                    v-hasPermi="['extDatasource:datasource:remove']">删除</el-button>
-        <el-button link type="primary" icon="view" @click="handleDetail(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="view" @click="handleDetail(scope.row)"
                    v-hasPermi="['extDatasource:datasource:edit']">详情</el-button>
       </template>
     </el-table-column>
@@ -99,11 +99,11 @@
   />
 
   <!-- 添加或修改数据源对话框 -->
-  <el-dialog :title="title" v-model="open" width="800px" append-to="body" draggable>
+  <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body" draggable>
     <template #header="{ close, titleId, titleClass }">
           <span role="heading" aria-level="2" class="el-dialog__title">
             {{ title }}
-            <el-icon size="20" style="color: #909399; font-size: 16px">
+            <el-icon size="20" style="color: #1D1D1F;">
               <InfoFilled />
             </el-icon>
           </span>
@@ -157,18 +157,18 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
       </div>
     </template>
   </el-dialog>
 
   <!-- 数据源详情对话框 -->
-  <el-dialog :title="title" v-model="openDetail" width="800px" append-to="body" draggable>
+  <el-dialog class="glass-card" :title="title" v-model="openDetail" width="800px" append-to="body" draggable>
     <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           {{ title }}
-          <el-icon size="20" style="color: #909399; font-size: 16px">
+          <el-icon size="20" style="color: #1D1D1F;">
             <InfoFilled />
           </el-icon>
         </span>
@@ -248,7 +248,7 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">关 闭</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
       </div>
     </template>
   </el-dialog>

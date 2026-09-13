@@ -1,9 +1,9 @@
 <template>
-  <div class="app-container" ref="app-container" v-loading="appLoading">
+  <div class="app-container glass-card" ref="app-container" v-loading="appLoading">
     <el-container>
       <!-- 左侧可调整的部分 -->
       <!-- 左侧可调整的部分 -->
-      <el-aside :style="{ width: `${leftWidth}px` }" class="left-pane">
+      <el-aside :style="{ width: `${leftWidth}px` }" class="left-pane glass-card">
         <div class="left-tree">
           <div class="head-container">
             <el-input
@@ -43,18 +43,16 @@
         <div class="head-title">
           <div class="name">{{ taskInfo.name }}</div>
           <div class="btns">
-            <el-button icon="Back" @click="handleBack">返回</el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn" icon="Back" @click="handleBack">返回</el-button>
+            <el-button v-ripple class="glass-btn"
               v-if="!releaseStatus"
               icon="Upload"
-              type="primary"
               @click="handleRelease"
               >发布
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               v-if="releaseStatus"
               icon="Upload"
-              type="primary"
               @click="handleCancelRelease"
               >取消发布
             </el-button>
@@ -102,9 +100,8 @@
                   <span class="label">{{ currentNodeData.name }}</span>
                 </div>
                 <div class="title-slot">
-                  <el-button
+                  <el-button v-ripple class="glass-btn"
                     size="small"
-                    type="danger"
                     icon="Delete"
                     @click="handleDel"
                     >删除
@@ -118,7 +115,7 @@
                       <div class="collapse-title">属性信息</div>
                     </template>
                     <div class="collapse-con">
-                      <el-table
+                      <el-table class="glass-card"
                         stripe
                         height="150px"
                         v-loading="attrLoading"
@@ -163,17 +160,15 @@
                           width="140"
                         >
                           <template #default="scope">
-                            <el-button
+                            <el-button v-ripple class="glass-btn"
                               link
-                              type="primary"
                               icon="Edit"
                               @click="attrUpdate(scope.row)"
                               >修改
                             </el-button>
                             <el-divider direction="vertical" />
-                            <el-button
+                            <el-button v-ripple class="glass-btn"
                               link
-                              type="danger"
                               icon="Delete"
                               @click="attrDelete(scope.row)"
                               >删除
@@ -188,7 +183,7 @@
                       <div class="collapse-title">关联三元组</div>
                     </template>
                     <div class="collapse-con">
-                      <el-table
+                      <el-table class="glass-card"
                         stripe
                         height="200px"
                         v-loading="tripletLoading"
@@ -220,17 +215,15 @@
                           width="140"
                         >
                           <template #default="scope">
-                            <el-button
+                            <el-button v-ripple class="glass-btn"
                               link
-                              type="primary"
                               icon="Edit"
                               @click="tripletUpdate(scope.row)"
                               >修改
                             </el-button>
                             <el-divider direction="vertical" />
-                            <el-button
+                            <el-button v-ripple class="glass-btn"
                               link
-                              type="danger"
                               icon="Delete"
                               @click="tripletDelete(scope.row)"
                               >删除
@@ -275,7 +268,7 @@
                           表名称: {{ dataSource.database.tableName }}
                         </div>
                       </div>
-                      <el-table
+                      <el-table class="glass-card"
                         v-loading="dataSourceLoading"
                         :data="dataSource.tableData"
                       >
@@ -1131,7 +1124,7 @@ const tripletDelete = (val) => {
   .el-aside {
     padding: 0px;
     margin-bottom: 0px;
-    background-color: #f0f2f5;
+    background-color: #F5F5F7;
   }
 
   .left-tree {
@@ -1140,7 +1133,7 @@ const tripletDelete = (val) => {
 
   .control-tree {
     height: calc(100% - 52px);
-    background: #fff;
+    background: #F5F5F7;
     overflow: hidden auto;
 
     :deep(.el-icon) {
@@ -1159,7 +1152,7 @@ const tripletDelete = (val) => {
 
   .resize-bar {
     cursor: ew-resize;
-    background-color: #f0f2f5;
+    background-color: #F5F5F7;
     height: 86vh;
     display: flex;
     align-items: center;
@@ -1186,7 +1179,7 @@ const tripletDelete = (val) => {
 
   .head-title {
     height: 50px;
-    background: #fff;
+    background: #F5F5F7;
     padding: 10px;
     margin-bottom: 10px;
     display: flex;
@@ -1216,7 +1209,7 @@ const tripletDelete = (val) => {
     .gragh-container {
       width: 100%;
       height: 100%;
-      background: #fff url("@/assets/ke/images/bg.png") no-repeat;
+      background: #F5F5F7 url("@/assets/ke/images/bg.png") no-repeat;
       background-size: 100% 100%;
 
       :deep(.g6-toolbar) {
@@ -1315,7 +1308,7 @@ const tripletDelete = (val) => {
       right: 0;
       width: 500px;
       height: 100%;
-      background: #fff;
+      background: #F5F5F7;
       box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.2);
 
       .details-title {

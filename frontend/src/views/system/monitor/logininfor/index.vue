@@ -1,5 +1,5 @@
 <template>
-   <div class="app-container" ref="app-container">
+   <div class="app-container glass-card" ref="app-container">
       <div class="pagecont-top" v-show="showSearch">
          <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" label-width="68px">
             <el-form-item label="登录地址" prop="ipaddr">
@@ -48,10 +48,10 @@
                ></el-date-picker>
             </el-form-item>
             <el-form-item>
-               <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                   <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
                </el-button>
-               <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                   <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
                </el-button>
             </el-form-item>
@@ -61,8 +61,7 @@
          <div class="justify-between mb15">
          <el-row :gutter="10" class="btn-style">
             <el-col :span="1.5">
-               <el-button
-                  type="danger"
+               <el-button v-ripple class="glass-btn"
                   plain
                   :disabled="multiple"
                   @click="handleDelete"
@@ -72,8 +71,7 @@
                  删除</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="danger"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleClean"
                   v-hasPermi="['monitor:logininfor:remove']"
@@ -82,8 +80,7 @@
                  清空</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="primary"
+               <el-button v-ripple class="glass-btn"
                   plain
                   icon="Unlock"
                   :disabled="single"
@@ -92,8 +89,7 @@
                >解锁</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="warning"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleExport"
                   v-hasPermi="['monitor:logininfor:export']"

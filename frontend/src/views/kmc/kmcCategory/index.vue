@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <GuideTip tip-id="kmc/kmcCategory.list" />
     <div class="pagecont-top" v-show="showSearch">
       <el-form
@@ -21,15 +21,14 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -40,8 +39,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="btn-style">
           <el-col :span="1.5">
-            <el-button
-              type="primary"
+            <el-button v-ripple class="glass-btn"
               plain
               @click="handleAdd"
               v-hasPermi="['kmc:kmcCategory:kmcCategory:add']"
@@ -51,9 +49,8 @@
             </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button
-              class="toggle-expand-all"
-              type="primary"
+            <el-button v-ripple
+              class="toggle-expand-all glass-btn"
               plain
               @click="toggleExpandAll"
             >
@@ -71,7 +68,7 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table
+      <el-table class="glass-card"
         v-if="refreshTable"
         v-loading="loading"
         :data="kmcCategoryList"
@@ -80,7 +77,7 @@
         :default-expand-all="isExpandAll"
         @sort-change="handleSortChange"
       >
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(1)"
           label="分类名称"
           prop="name"
@@ -92,7 +89,7 @@
             {{ scope.row.name || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(2)"
           label="显示顺序"
           align="center"
@@ -103,7 +100,7 @@
             {{ scope.row.orderNum !== null ? scope.row.orderNum : "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(3)"
           label="备注"
           align="left"
@@ -115,7 +112,7 @@
             {{ scope.row.remark || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(4)"
           label="创建人"
           align="center"
@@ -125,7 +122,7 @@
             {{ scope.row.createBy || "-" }}
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(5)"
           label="创建时间"
           align="center"
@@ -138,7 +135,7 @@
             }}</span>
           </template>
         </el-table-column>
-        <el-table-column
+        <el-table class="glass-card"-column
           v-if="getColumnVisibility(6)"
           label="操作"
           align="center"
@@ -147,25 +144,22 @@
           width="240"
         >
           <template #default="scope">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Plus"
               @click="handleAdd(scope.row)"
               v-hasPermi="['kmc:kmcCategory:kmcCategory:add']"
               >新增</el-button
             >
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="Edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['kmc:kmcCategory:kmcCategory:edit']"
               >修改</el-button
             >
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="danger"
               icon="Delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['kmc:kmcCategory:kmcCategory:remove']"
@@ -192,7 +186,7 @@
     </div>
 
     <!-- 添加或修改知识分类对话框 -->
-    <el-dialog
+    <el-dialog class="glass-card"
       :title="title"
       v-model="open"
       width="800px"
@@ -282,8 +276,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>
@@ -291,7 +285,7 @@
     </el-dialog>
 
     <!-- 知识分类详情对话框 -->
-    <el-dialog
+    <el-dialog class="glass-card"
       :title="title"
       v-model="openDetail"
       width="800px"
@@ -355,13 +349,13 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">关 闭</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
         </div>
       </template>
     </el-dialog>
 
     <!-- 用户导入对话框 -->
-    <el-dialog
+    <el-dialog class="glass-card"
       :title="upload.title"
       v-model="upload.open"
       width="800px"
@@ -392,7 +386,6 @@
             </div>
             <span>仅允许导入xls、xlsx格式文件。</span>
             <el-link
-              type="primary"
               :underline="false"
               style="font-size: 12px; vertical-align: baseline"
               @click="importTemplate"
@@ -403,8 +396,8 @@
       </el-upload>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="upload.open = false">取 消</el-button>
-          <el-button type="primary" @click="submitFileForm">确 定</el-button>
+          <el-button v-ripple class="glass-btn" @click="upload.open = false">取 消</el-button>
+          <el-button v-ripple class="glass-btn" @click="submitFileForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>

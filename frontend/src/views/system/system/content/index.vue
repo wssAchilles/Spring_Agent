@@ -80,9 +80,9 @@
 
 <!--            {{contentDetail}}-->
             <div style="margin-top: 20px;">
-                <!--                <el-button @click="update" v-show="status">修改</el-button>-->
-                <!--                <el-button @click="confirm" v-show="!status">保存</el-button>-->
-                <el-button type="primary" @click="confirm">保存</el-button>
+                <!--                <el-button v-ripple class="glass-btn" @click="update" v-show="status">修改</el-button>-->
+                <!--                <el-button v-ripple class="glass-btn" @click="confirm" v-show="!status">保存</el-button>-->
+                <el-button v-ripple class="glass-btn" @click="confirm">保存</el-button>
             </div>
 
         </el-row>

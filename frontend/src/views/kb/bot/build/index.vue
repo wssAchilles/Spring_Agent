@@ -1,10 +1,10 @@
 <template>
-  <div ref="appContainerRef" class="app-container workflow-editor">
+  <div ref="appContainerRef" class="app-container workflow-editor glass-card">
     <div class="toolbar">
       <div class="toolbar-left">
         <span class="toolbar-title">
           <span class="title" style="">{{ flowName || "-" }}</span>
-          <el-tag type="primary" v-if="workflowType !== null">
+          <el-tag v-if="workflowType !== null">
             {{
               (workflowType == 1 && "Chatflow") ||
               (workflowType == 0 && "工作流") ||
@@ -20,8 +20,7 @@
         </span>
       </div>
       <div class="toolbar-actions">
-        <el-button
-          type="primary"
+        <el-button v-ripple class="glass-btn"
           plain
           @click="showCopyDialog()"
           icon="CopyDocument"
@@ -30,15 +29,14 @@
         >
           复制
         </el-button>
-        <el-button type="primary" class="fhbtn" plain @click="routerView">
+        <el-button v-ripple class="fhbtn glass-btn" plain @click="routerView">
           <svg-icon :iconClass="'fhs'" />返回
         </el-button>
-        <el-button type="primary" @click="openDebugRunPanel">
+        <el-button v-ripple class="glass-btn" @click="openDebugRunPanel">
           <VideoPlay class="ds" />
           调试
         </el-button>
-        <el-button
-          type="primary"
+        <el-button v-ripple class="glass-btn"
           @click="exportFlow"
           :disabled="flowBuiltinFlag == 1"
         >
@@ -643,10 +641,9 @@
             </div>
             <div v-if="!currentAddMenuItems.length" class="add-node-menu-empty">
               <span>{{ addNodeMenuEmptyText }}</span>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 v-if="addNodeMenuActiveTab === 'tools' && toolMenuLoadError"
                 link
-                type="primary"
                 @click.stop="ensureToolMenuItemsLoaded(true)"
               >
                 重新加载
@@ -862,13 +859,13 @@
                 content="用户输入字段"
                 placement="top"
               >
-                <el-button
+                <el-button v-ripple
                   text
-                  class="drawer-toggle-btn"
+                  class="drawer-toggle-btn glass-btn"
                   :class="{
                     'is-active': chatflowDebugSectionsVisible,
                     'is-inactive': !chatflowDebugSectionsVisible,
-                  }"
+                  } glass-btn"
                   @click="toggleChatflowDebugSections"
                 >
                   <el-icon><Operation /></el-icon>
@@ -906,7 +903,7 @@
       v-model="startFieldDialogVisible"
       :title="startFieldDialogTitle"
       width="560px"
-      class="start-field-dialog"
+      class="start-field-dialog glass-card"
       :close-on-click-modal="false"
       destroy-on-close
       @closed="closeStartFieldDialog"
@@ -958,8 +955,8 @@
 
       <template #footer>
         <div>
-          <el-button @click="closeStartFieldDialog">取消</el-button>
-          <el-button type="primary" @click="saveStartField">保存</el-button>
+          <el-button v-ripple class="glass-btn" @click="closeStartFieldDialog">取消</el-button>
+          <el-button v-ripple class="glass-btn" @click="saveStartField">保存</el-button>
         </div>
       </template>
     </el-dialog>
@@ -969,7 +966,7 @@
       <span>{{ edges.length }} 条连接</span>
     </div>
 
-    <el-dialog :title="title" v-model="open" width="800px" draggable>
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px" draggable>
       <el-form ref="botRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="Bot名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入应用名称" />
@@ -995,8 +992,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>

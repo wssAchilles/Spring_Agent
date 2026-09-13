@@ -1,5 +1,5 @@
 <template>
-   <div class="app-container" ref="app-container">
+   <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form class="btn-style" :model="queryParams" ref="queryRef" v-show="showSearch" :inline="true" label-width="68px">
          <el-form-item label="角色名称" prop="roleName">
@@ -47,11 +47,11 @@
             ></el-date-picker>
          </el-form-item>
          <el-form-item>
-            <!-- <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button> -->
-            <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+            <!-- <el-button v-ripple class="glass-btn" icon="Search" @click="handleQuery">搜索</el-button> -->
+            <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
               <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
             </el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+            <el-button v-ripple class="glass-btn" icon="Refresh" @click="resetQuery">重置</el-button>
          </el-form-item>
       </el-form>
     </div>
@@ -59,8 +59,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="10" class="btn-style">
           <el-col :span="1.5">
-              <el-button
-                type="primary"
+              <el-button v-ripple class="glass-btn"
                 plain
                 @click="handleAdd"
                 v-hasPermi="['system:role:add']"
@@ -69,8 +68,7 @@
                 新增</el-button>
           </el-col>
           <el-col :span="1.5">
-              <el-button
-                type="primary"
+              <el-button v-ripple class="glass-btn"
                 plain
                 :disabled="single"
                 @click="handleUpdate"
@@ -80,8 +78,7 @@
                 修改</el-button>
           </el-col>
           <el-col :span="1.5">
-              <el-button
-                type="danger"
+              <el-button v-ripple class="glass-btn"
                 plain
                 :disabled="multiple"
                 @click="handleDelete"
@@ -91,8 +88,7 @@
                 删除</el-button>
           </el-col>
           <el-col :span="1.5">
-              <el-button
-                type="warning"
+              <el-button v-ripple class="glass-btn"
                 plain
                 @click="handleExport"
                 v-hasPermi="['system:role:export']"
@@ -129,31 +125,31 @@
          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
             <template #default="scope">
               <!-- <el-tooltip content="修改" placement="top" v-if="scope.row.roleId !== 1">
-                <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
+                <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
               </el-tooltip>
               <el-tooltip content="删除" placement="top" v-if="scope.row.roleId !== 1">
-                <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:role:remove']"></el-button>
+                <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:role:remove']"></el-button>
               </el-tooltip> -->
               <!-- <el-tooltip content="数据权限" placement="top" v-if="scope.row.roleId !== 1">
-                <el-button link type="primary" icon="CircleCheck" @click="handleDataScope(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
+                <el-button v-ripple class="glass-btn" link icon="CircleCheck" @click="handleDataScope(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
               </el-tooltip> -->
               <!-- <el-tooltip content="分配用户" placement="top" v-if="scope.row.roleId !== 1">
-                <el-button link type="primary" icon="User" @click="handleAuthUser(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
+                <el-button v-ripple class="glass-btn" link icon="User" @click="handleAuthUser(scope.row)" v-hasPermi="['system:role:edit']"></el-button>
               </el-tooltip> -->
-              <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['system:role:edit']" v-if="scope.row.roleId !== 1">
+              <el-button v-ripple class="glass-btn" link  @click="handleUpdate(scope.row)" v-hasPermi="['system:role:edit']" v-if="scope.row.roleId !== 1">
                 <i class="iconfont-mini icon-a-xiugaixianxing"></i>
                 修改</el-button>
-              <el-button link type="danger"  @click="handleDelete(scope.row)" v-hasPermi="['system:role:remove']" v-if="scope.row.roleId !== 1 && scope.row.roleId !== 3">
+              <el-button v-ripple class="glass-btn" link  @click="handleDelete(scope.row)" v-hasPermi="['system:role:remove']" v-if="scope.row.roleId !== 1 && scope.row.roleId !== 3">
                 <i class="iconfont-mini icon-a-shanchuxianxing"></i>
                 删除</el-button>
               <el-popover  placement="bottom" :width="150" trigger="click" v-if="scope.row.roleId !== 1">
                 <template #reference>
-                  <el-button link type="primary"  icon="More">更多</el-button>
+                  <el-button v-ripple class="glass-btn" link  icon="More">更多</el-button>
                 </template>
                 <div style="width: 90px;" class="butgdlist">
-                  <el-button style="padding-left: 14px;" link type="primary"  @click="handleDataScope(scope.row)" v-hasPermi="['system:role:edit']">
+                  <el-button v-ripple class="glass-btn" style="padding-left: 14px;" link  @click="handleDataScope(scope.row)" v-hasPermi="['system:role:edit']">
                    <i class="iconfont-mini icon-a-mimaxianxing"></i> 数据权限</el-button>
-                  <el-button link type="primary"  @click="handleAuthUser(scope.row)" v-hasPermi="['system:role:edit']">
+                  <el-button v-ripple class="glass-btn" link  @click="handleAuthUser(scope.row)" v-hasPermi="['system:role:edit']">
                     <i class="iconfont-mini icon-a-yonghuzhanghaoxianxing"></i>分配用户</el-button>
                 </div>
               </el-popover>
@@ -171,7 +167,7 @@
     </div>
 
       <!-- 添加或修改角色配置对话框 -->
-      <el-dialog :title="title" v-model="open" width="800px" append-to="body"  draggable destroy-on-close>
+      <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body"  draggable destroy-on-close>
          <el-form ref="roleRef" :model="form" :rules="rules" label-width="100px">
           <el-row :gutter="20">
             <el-col :span="12">
@@ -184,8 +180,8 @@
                 <template #label>
                     <span>
                       <el-tooltip content="控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasRole('admin')`)" placement="top">
-                          <!-- <el-icon style="color: #909399;"><InfoFilled /></el-icon> -->
-                          <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                          <!-- <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon> -->
+                          <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                       </el-tooltip>
                       权限字符
                     </span>
@@ -233,14 +229,14 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-              <el-button @click="cancel">取 消</el-button>
-               <el-button type="primary" @click="submitForm">确 定</el-button>
+              <el-button v-ripple class="glass-btn" @click="cancel">取 消</el-button>
+               <el-button v-ripple class="glass-btn" @click="submitForm">确 定</el-button>
             </div>
          </template>
       </el-dialog>
 
       <!-- 分配角色数据权限对话框 -->
-      <el-dialog :title="title" v-model="openDataScope" width="500px" append-to-body>
+      <el-dialog class="glass-card" :title="title" v-model="openDataScope" width="500px" append-to-body>
          <el-form :model="form" label-width="80px">
             <el-form-item label="角色名称">
                <el-input v-model="form.roleName" :disabled="true" />
@@ -277,8 +273,8 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button type="primary" @click="submitDataScope">确 定</el-button>
-               <el-button @click="cancelDataScope">取 消</el-button>
+               <el-button v-ripple class="glass-btn" @click="submitDataScope">确 定</el-button>
+               <el-button v-ripple class="glass-btn" @click="cancelDataScope">取 消</el-button>
             </div>
          </template>
       </el-dialog>

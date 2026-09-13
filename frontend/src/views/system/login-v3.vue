@@ -10,7 +10,7 @@
 
     <div class="login-right-container">
       <div class="login-content">
-        <el-text type="primary" class="login-title">账号登录</el-text>
+        <el-text class="login-title">账号登录</el-text>
         <div class="titles-bar"></div>
         <el-form class="login-info" ref="loginRef" :model="loginForm" :rules="loginDataRules">
           <el-form-item class="item-box" prop="username">
@@ -51,7 +51,7 @@
             </div>
           </el-form-item>
           <el-form-item class="item-box">
-            <el-button class="login-button" type="primary" :loading="loading" @click.native.prevent="handleLogin"
+            <el-button v-ripple class="login-button glass-btn" :loading="loading" @click.native.prevent="handleLogin"
             >
               <span v-if="!loading">登 录</span>
               <span v-else>登 录 中...</span>
@@ -60,7 +60,7 @@
           <el-form-item class="item-box">
             <div class="item-passwork">
               <el-checkbox v-model="loginForm.rememberMe">记住密码</el-checkbox>
-              <el-text type="primary" @click="dialogVisible = true">忘记密码</el-text>
+              <el-text @click="dialogVisible = true">忘记密码</el-text>
             </div>
           </el-form-item>
         </el-form>
@@ -69,9 +69,9 @@
 
     <!-- 忘记密码 -->
         <el-dialog
+          class="glass-card fp-form-dialog"
             v-model="dialogVisible"
             title="忘记密码"
-            class="fp-form-dialog"
             width="650px"
             draggable
             destroy-on-close
@@ -84,7 +84,7 @@
             <el-form-item label="验证码">
               <div class="wrapper">
                 <el-input v-model="fpForm.code" placeholder="请输入验证码"/>
-                <el-button type="primary" :disabled="codeFlag" style="margin-left: 10px;" @click="handleFPCodeClick">
+                <el-button v-ripple class="glass-btn" :disabled="codeFlag" style="margin-left: 10px;" @click="handleFPCodeClick">
                   {{ codeFlag ? `${codeTime}s` : '获取验证码' }}
                 </el-button>
               </div>
@@ -100,7 +100,7 @@
           </el-form>
           <template #footer>
             <div class="dialog-footer">
-              <el-button type="primary" @click="dialogVisible = false">
+              <el-button v-ripple class="glass-btn" @click="dialogVisible = false">
                 重置密码
               </el-button>
             </div>

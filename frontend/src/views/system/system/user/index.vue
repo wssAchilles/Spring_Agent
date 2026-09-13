@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <el-container style="90%">
       <!-- 左侧可调整的部分 -->
       <DeptTree
@@ -62,10 +62,10 @@
               </el-date-picker>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+              <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                 <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
               </el-button>
-              <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+              <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                 <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
               </el-button>
             </el-form-item>
@@ -75,8 +75,7 @@
           <div class="justify-between mb15">
             <el-row :gutter="10" class="btn-style">
               <el-col :span="1.5">
-                <el-button
-                    type="primary"
+                <el-button v-ripple class="glass-btn"
                     plain
                     @click="handleAdd"
                     v-hasPermi="['system:user:add']"
@@ -86,8 +85,7 @@
                 </el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button
-                    type="primary"
+                <el-button v-ripple class="glass-btn"
                     plain
                     :disabled="single"
                     @click="handleUpdate"
@@ -98,8 +96,7 @@
                 </el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button
-                    type="danger"
+                <el-button v-ripple class="glass-btn"
                     plain
                     :disabled="multiple"
                     @click="handleDelete"
@@ -110,8 +107,7 @@
                 </el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button
-                    type="info"
+                <el-button v-ripple class="glass-btn"
                     plains
                     @click="handleImport"
                     v-hasPermi="['system:user:import']"
@@ -121,8 +117,7 @@
                 </el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button
-                    type="warning"
+                <el-button v-ripple class="glass-btn"
                     plain
                     @click="handleExport"
                     v-hasPermi="['system:user:export']"
@@ -169,38 +164,38 @@
                              width="240">
               <template #default="scope">
                 <!-- <el-tooltip content="修改" placement="top" v-if="scope.row.userId !== 1">
-                   <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
+                   <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
                 </el-tooltip>
                 <el-tooltip content="删除" placement="top" v-if="scope.row.userId !== 1">
-                   <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:user:remove']"></el-button>
+                   <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['system:user:remove']"></el-button>
                 </el-tooltip>
                 <el-tooltip content="重置密码" placement="top" v-if="scope.row.userId !== 1">
-                   <el-button link type="primary" icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['system:user:resetPwd']"></el-button>
+                   <el-button v-ripple class="glass-btn" link icon="Key" @click="handleResetPwd(scope.row)" v-hasPermi="['system:user:resetPwd']"></el-button>
                 </el-tooltip>
                 <el-tooltip content="分配角色" placement="top" v-if="scope.row.userId !== 1">
-                   <el-button link type="primary" icon="CircleCheck" @click="handleAuthRole(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
+                   <el-button v-ripple class="glass-btn" link icon="CircleCheck" @click="handleAuthRole(scope.row)" v-hasPermi="['system:user:edit']"></el-button>
                 </el-tooltip> -->
-                <el-button link type="primary" @click="handleUpdate(scope.row)"
+                <el-button v-ripple class="glass-btn" link @click="handleUpdate(scope.row)"
                            v-hasPermi="['system:user:edit']" v-if="scope.row.userId !== 1">
                   <i class="iconfont-mini icon-a-xiugaixianxing"></i>
                   修改
                 </el-button>
-                <el-button link type="danger" @click="handleDelete(scope.row)"
+                <el-button v-ripple class="glass-btn" link @click="handleDelete(scope.row)"
                            v-hasPermi="['system:user:remove']" v-if="scope.row.userId !== 1">
                   <i class="iconfont-mini icon-a-shanchuxianxing"></i>
                   删除
                 </el-button>
                 <el-popover placement="bottom" :width="150" trigger="click" v-if="scope.row.userId !== 1">
                   <template #reference>
-                    <el-button link type="primary" icon="More">更多</el-button>
+                    <el-button v-ripple class="glass-btn" link icon="More">更多</el-button>
                   </template>
                   <div style="width: 90px;" class="butgdlist">
-                    <el-button style="padding-left: 14px;" link type="primary"
+                    <el-button v-ripple class="glass-btn" style="padding-left: 14px;" link
                                @click="handleResetPwd(scope.row)"
                                v-hasPermi="['system:user:resetPwd']">
                       <i class="iconfont-mini icon-a-mimaxianxing"></i>重置密码
                     </el-button>
-                    <el-button link type="primary"
+                    <el-button v-ripple class="glass-btn" link
                                @click="handleAuthRole(scope.row)" v-hasPermi="['system:user:edit']">
                       <i class="iconfont-mini icon-a-yonghuzhanghaoxianxing"></i>分配角色
                     </el-button>
@@ -222,7 +217,7 @@
 
 
     <!-- 添加或修改用户配置对话框 -->
-    <el-dialog :title="title" v-model="open" width="58vh" append-to="body" draggable
+    <el-dialog class="glass-card" :title="title" v-model="open" width="58vh" append-to="body" draggable
                destroy-on-close>
       <el-form :model="form" :rules="rules" ref="userRef" label-width="80px">
         <el-row :gutter="20">
@@ -336,14 +331,14 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="cancel">取 消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button v-ripple class="glass-btn" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" @click="submitForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>
 
     <!-- 用户导入对话框 -->
-    <el-dialog :title="upload.title" v-model="upload.open" width="800px" append-to="body"
+    <el-dialog class="glass-card" :title="upload.title" v-model="upload.open" width="800px" append-to="body"
                draggable destroy-on-close>
       <el-upload
           ref="uploadRef"
@@ -368,7 +363,7 @@
               是否更新已经存在的用户数据
             </div>
             <span>仅允许导入xls、xlsx格式文件。</span>
-            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;"
+            <el-link :underline="false" style="font-size:12px;vertical-align: baseline;"
                      @click="importTemplate">下载模板
             </el-link>
           </div>
@@ -376,8 +371,8 @@
       </el-upload>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="upload.open = false">取 消</el-button>
-          <el-button type="primary" @click="submitFileForm">确 定</el-button>
+          <el-button v-ripple class="glass-btn" @click="upload.open = false">取 消</el-button>
+          <el-button v-ripple class="glass-btn" @click="submitFileForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>

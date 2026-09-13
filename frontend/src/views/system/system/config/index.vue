@@ -1,5 +1,5 @@
 <template>
-   <div class="app-container" ref="app-container">
+   <div class="app-container glass-card" ref="app-container">
       <div class="pagecont-top" v-show="showSearch">
          <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" label-width="68px">
             <el-form-item label="参数名称" prop="configName">
@@ -42,10 +42,10 @@
                ></el-date-picker>
             </el-form-item>
             <el-form-item>
-               <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                   <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
                </el-button>
-               <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                   <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
                </el-button>
             </el-form-item>
@@ -55,8 +55,7 @@
          <div class="justify-between mb15">
          <el-row :gutter="10" class="btn-style">
             <el-col :span="1.5">
-               <el-button
-                  type="primary"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleAdd"
                   v-hasPermi="['system:config:add']"
@@ -65,8 +64,7 @@
                  新增</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="primary"
+               <el-button v-ripple class="glass-btn"
                   plain
                   :disabled="single"
                   @click="handleUpdate"
@@ -76,8 +74,7 @@
                  修改</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="danger"
+               <el-button v-ripple class="glass-btn"
                   plain
                   :disabled="multiple"
                   @click="handleDelete"
@@ -87,8 +84,7 @@
                  删除</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="warning"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleExport"
                   v-hasPermi="['system:config:export']"
@@ -97,8 +93,7 @@
                  导出</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="danger"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleRefreshCache"
                   v-hasPermi="['system:config:remove']"
@@ -133,10 +128,10 @@
             </el-table-column>
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width"  fixed="right" width="240">
                <template #default="scope">
-                  <el-button link type="primary"  @click="handleUpdate(scope.row)" v-hasPermi="['system:config:edit']" >
+                  <el-button v-ripple class="glass-btn" link  @click="handleUpdate(scope.row)" v-hasPermi="['system:config:edit']" >
                     <i class="iconfont-mini icon-a-xiugaixianxing"></i>
                     修改</el-button>
-                  <el-button link type="danger"  @click="handleDelete(scope.row)" v-hasPermi="['system:config:remove']">
+                  <el-button v-ripple class="glass-btn" link  @click="handleDelete(scope.row)" v-hasPermi="['system:config:remove']">
                     <i class="iconfont-mini icon-a-shanchuxianxing"></i>
                     删除</el-button>
                </template>
@@ -153,7 +148,7 @@
       </div>
 
       <!-- 添加或修改参数配置对话框 -->
-      <el-dialog :title="title" v-model="open" width="800px" append-to="body"  draggable destroy-on-close>
+      <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body"  draggable destroy-on-close>
          <el-form ref="configRef" :model="form" :rules="rules" label-width="80px">
             <el-row :gutter="20">
                <el-col :span="12">
@@ -191,8 +186,8 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button @click="cancel">取 消</el-button>
-               <el-button type="primary" @click="submitForm">确 定</el-button>
+               <el-button v-ripple class="glass-btn" @click="cancel">取 消</el-button>
+               <el-button v-ripple class="glass-btn" @click="submitForm">确 定</el-button>
             </div>
          </template>
       </el-dialog>

@@ -10,7 +10,7 @@
             配置进入工作流前可用的输入变量。
           </div>
         </div>
-        <el-button type="primary" plain @click="$emit('addField')">
+        <el-button v-ripple class="glass-btn" plain @click="$emit('addField')">
           <i class="iconfont-mini icon-xinzeng mr5"></i>新增
         </el-button>
       </div>
@@ -33,16 +33,14 @@
               默认变量
             </div>
             <div v-else class="start-field-table-actions">
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 link
-                type="primary"
                 @click.stop="$emit('editField', row)"
               >
                 修改
               </el-button>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 link
-                type="danger"
                 @click.stop="handleRemoveField(row.id)"
               >
                 删除

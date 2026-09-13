@@ -1,5 +1,5 @@
 <template>
-  <el-table stripe height="58vh"
+  <el-table class="glass-card" stripe height="58vh"
             v-loading="loading"
             :data="botLogList"
             @sort-change="handleSortChange">
@@ -40,7 +40,7 @@
     </el-table-column>
     <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
       <template #default="scope">
-        <el-button link type="primary" icon="view" @click="handleDetail(scope.row)">详情</el-button>
+        <el-button v-ripple class="glass-btn" link icon="view" @click="handleDetail(scope.row)">详情</el-button>
       </template>
     </el-table-column>
 
@@ -61,6 +61,7 @@
   />
 
   <el-dialog
+      class="glass-card"
       :title="botLogDialogTitle"
       v-model="botLogDialogOpen"
       width="1000px"
@@ -142,7 +143,7 @@
         <div class="check-status-wrapper">
         </div>
         <div class="button-wrapper">
-          <el-button size="small" @click="botLogDialogOpen = false">关 闭</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="botLogDialogOpen = false">关 闭</el-button>
         </div>
       </div>
     </template>

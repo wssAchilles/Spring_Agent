@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container integrated-dashboard">
+  <div class="app-container integrated-dashboard glass-card">
     <div v-loading="pageLoading" class="app-operation-shell">
       <section class="page-head">
         <div class="page-title">
@@ -129,7 +129,7 @@
 
           <div class="table-body">
             <el-table
-              class="operation-table"
+              class="operation-table glass-card"
               :data="paginatedLowActivityList"
               :empty-text="lowActivityEmptyText"
             >
@@ -185,7 +185,7 @@
 
           <div class="table-body">
             <el-table
-              class="operation-table"
+              class="operation-table glass-card"
               :data="paginatedNewReleaseList"
               :empty-text="newReleaseEmptyText"
             >
@@ -769,12 +769,12 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .integrated-dashboard {
-  --bg-page: #f0f2f5;
-  --bg-card: #ffffff;
-  --line-soft: #e8e8e8;
-  --text-main: #1f2d3d;
-  --text-sub: #6f7f95;
-  --text-mute: #9aa7bb;
+  --bg-page: #F5F5F7;
+  --bg-card: transparent;
+  --line-soft: rgba(0, 0, 0, 0.05);
+  --text-main: #1D1D1F;
+  --text-sub: rgba(29, 29, 31, 0.7);
+  --text-mute: rgba(29, 29, 31, 0.4);
   --brand-blue: #346dff;
   --brand-green: #47d97b;
   --brand-indigo: #4f7dff;

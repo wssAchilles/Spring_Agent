@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <GuideTip tip-id="kmc/knowledgeBase.list" />
     <div class="pagecont-top" v-show="showSearch">
       <el-form
@@ -34,21 +34,19 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
         <el-form-item style="float: right; margin-right: auto">
-          <el-button
-            type="primary"
+          <el-button v-ripple class="glass-btn"
             @click="handleAdd"
             plain
             v-hasPermi="['kmc:knowledgeBase:knowledgebase:add']"
@@ -74,7 +72,7 @@
         @pagination="getList"
       />
     </div>
-    <el-dialog
+    <el-dialog class="glass-card"
       :title="title"
       v-model="open"
       width="800px"
@@ -197,9 +195,9 @@
                   @keyup.enter="handleInputConfirm"
                   @blur="handleInputConfirm"
                 />
-                <el-button
+                <el-button v-ripple
                   v-else
-                  class="button-new-tag"
+                  class="button-new-tag glass-btn"
                   size="small"
                   @click="showInput"
                 >
@@ -251,8 +249,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>
@@ -641,7 +639,7 @@ proxy.$tab.closeAllPage();
   width: 100%;
   left: 0;
   height: 60px;
-  background: #ffffff;
+  background: #F5F5F7;
   border-radius: 2px 2px 2px 2px;
   line-height: 60px;
   margin: 0;
@@ -691,13 +689,13 @@ proxy.$tab.closeAllPage();
   border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #f9fafb;
+  background: #F5F5F7;
 
   &.act {
-    background-color: #f0f7ff;
-    border-color: #2666fb;
+    background: #F5F5F7;
+    border-color: #1D1D1F;
     .indexing-title {
-      color: #2666fb;
+      color: #1D1D1F;
       font-weight: 500;
     }
   }
@@ -710,13 +708,13 @@ proxy.$tab.closeAllPage();
   display: flex;
   align-items: center;
   margin-bottom: 8px;
-  color: #333;
+  color: #1D1D1F;
   font-size: 14px;
 
   .icon {
     margin-right: 8px;
     font-size: 18px;
-    color: #666;
+    color: #1D1D1F;
   }
   img {
     width: 18px;
@@ -727,7 +725,7 @@ proxy.$tab.closeAllPage();
 .indexing-desc {
   margin: 0;
   font-size: 12px;
-  color: #666;
+  color: #1D1D1F;
   line-height: 1.5;
 }
 .recommend-tag {
@@ -739,13 +737,13 @@ proxy.$tab.closeAllPage();
 }
 
 :deep(.tag-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }
 
 :deep(.index-form-item .el-form-item__label) {
-  color: #333333;
+  color: #1D1D1F;
   font-size: 14px;
   font-family: PingFangSC-Regular-;
 }

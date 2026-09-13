@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true" label-width="68px">
         <el-form-item label="表名称" prop="tableName">
@@ -32,10 +32,10 @@
           ></el-date-picker>
         </el-form-item>
         <el-form-item>
-              <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+              <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                 <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
               </el-button>
-              <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+              <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                 <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
               </el-button>
         </el-form-item>
@@ -46,8 +46,7 @@
       <div class="justify-between mb15">
       <el-row :gutter="10" class="btn-style">
         <el-col :span="1.5">
-          <el-button
-            type="primary"
+          <el-button v-ripple class="glass-btn"
             plain
             :disabled="multiple"
             @click="handleGenTable"
@@ -57,8 +56,7 @@
             生成</el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button
-            type="primary"
+          <el-button v-ripple class="glass-btn"
             plain
             @click="openCreateTable"
             v-hasRole="['admin']"
@@ -67,8 +65,7 @@
             创建</el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button
-            type="info"
+          <el-button v-ripple class="glass-btn"
             plain
             @click="openImportTable"
             v-hasPermi="['tool:gen:import']"
@@ -77,8 +74,7 @@
             导入</el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button
-            type="primary"
+          <el-button v-ripple class="glass-btn"
             plain
             :disabled="single"
             @click="handleEditTable"
@@ -88,8 +84,7 @@
             修改</el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button
-            type="danger"
+          <el-button v-ripple class="glass-btn"
             plain
             :disabled="multiple"
             @click="handleDelete"
@@ -132,25 +127,25 @@
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width"  fixed="right" width="240">
         <template #default="scope">
           <el-tooltip content="预览" placement="top">
-            <el-button link type="primary" @click="handlePreview(scope.row)" v-hasPermi="['tool:gen:preview']">
+            <el-button v-ripple class="glass-btn" link @click="handlePreview(scope.row)" v-hasPermi="['tool:gen:preview']">
               <i class="iconfont-mini icon-a-yincangxianxing mr5"></i>
             </el-button>
           </el-tooltip>
           <el-tooltip content="编辑" placement="top">
-            <el-button link type="primary" @click="handleEditTable(scope.row)" v-hasPermi="['tool:gen:edit']">
+            <el-button v-ripple class="glass-btn" link @click="handleEditTable(scope.row)" v-hasPermi="['tool:gen:edit']">
               <i class="iconfont-mini icon-a-xiugaixianxing mr5"></i>
             </el-button>
           </el-tooltip>
           <el-tooltip content="删除" placement="top">
-            <el-button link type="danger"  @click="handleDelete(scope.row)" v-hasPermi="['tool:gen:remove']">
+            <el-button v-ripple class="glass-btn" link  @click="handleDelete(scope.row)" v-hasPermi="['tool:gen:remove']">
               <i class="iconfont-mini icon-a-shanchuxianxing mr5"></i>
             </el-button>
           </el-tooltip>
 <!--          <el-tooltip content="同步" placement="top">-->
-<!--            <el-button link type="primary" icon="Refresh" @click="handleSynchDb(scope.row)" v-hasPermi="['tool:gen:edit']"></el-button>-->
+<!--            <el-button v-ripple class="glass-btn" link icon="Refresh" @click="handleSynchDb(scope.row)" v-hasPermi="['tool:gen:edit']"></el-button>-->
 <!--          </el-tooltip>-->
             <el-tooltip content="生成代码" placement="top">
-              <el-button link type="primary"  @click="handleGenTable(scope.row)" v-hasPermi="['tool:gen:code']">
+              <el-button v-ripple class="glass-btn" link  @click="handleGenTable(scope.row)" v-hasPermi="['tool:gen:code']">
                 <i class="iconfont-mini icon-daoru mr5"></i>
               </el-button>
             </el-tooltip>
@@ -166,7 +161,7 @@
       />
     </div>
     <!-- 预览界面 -->
-    <el-dialog :title="preview.title" v-model="preview.open" width="80%" top="5vh" append-to="body" class="scrollbar" draggable destroy-on-close>
+    <el-dialog class="glass-card" :title="preview.title" v-model="preview.open" width="80%" top="5vh" append-to="body" class="scrollbar" draggable destroy-on-close>
       <el-tabs v-model="preview.activeName">
         <el-tab-pane
           v-for="(value, key) in preview.data"

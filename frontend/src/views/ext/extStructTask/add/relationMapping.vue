@@ -11,7 +11,7 @@
     <div class="justify-between mb15">
       <el-row :gutter="15">
         <el-col :span="1.5" class="header-actions">
-          <el-button type="primary" @click="addRelationItem" plain>
+          <el-button v-ripple class="glass-btn" @click="addRelationItem" plain>
             新增关系映射
           </el-button>
         </el-col>
@@ -57,10 +57,9 @@
             </el-form-item>
           </el-col>
           <el-col :span="1">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
               icon="Delete"
-              type="danger"
               @click="deleteItem(index, data)"
               plain
             >
@@ -165,9 +164,8 @@
                   },
                 ]"
               >
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   size="small"
-                  type="primary"
                   @click="addIntermediateTable(index)"
                   plain
                 >
@@ -255,10 +253,9 @@
                 </el-form-item>
               </el-col>
               <el-col :span="3">
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   link
                   icon="Delete"
-                  type="danger"
                   @click="removeIntermediateTable(index, iIndex)"
                   plain
                   :disabled="data.relationMappingMiddle.length <= 1"
@@ -583,12 +580,12 @@ defineExpose({
 
 .relation-item {
   padding: 10px;
-  background-color: #f0f2f5;
+  background-color: #F5F5F7;
   margin-bottom: 10px;
 }
 
 .relation-item.duplicate-error {
-  border: 2px solid #f56c6c;
+  border: 2px solid #1D1D1F;
   border-radius: 4px;
   padding: 15px;
   margin-bottom: 15px;
@@ -599,8 +596,8 @@ defineExpose({
   position: absolute;
   top: -10px;
   left: 10px;
-  background: #f56c6c;
-  color: white;
+  background: #1D1D1F;
+  color: #F5F5F7;
   padding: 2px 8px;
   border-radius: 3px;
   font-size: 12px;

@@ -2,8 +2,7 @@
   <div class="justify-between mb15">
     <el-row :gutter="15" class="btn-style">
       <el-col :span="1.5">
-        <el-button
-          type="primary"
+        <el-button v-ripple class="glass-btn"
           plain
           @click="handleAdd"
           v-hasPermi="['knowledge:category:add']"
@@ -13,8 +12,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-          type="warning"
+        <el-button v-ripple class="glass-btn"
           plain
           @click="handleExport"
           v-hasPermi="['knowledge:category:export']"
@@ -139,25 +137,22 @@
       width="240"
     >
       <template #default="scope">
-        <el-button
+        <el-button v-ripple class="glass-btn"
           link
-          type="primary"
           icon="Edit"
           @click="handleUpdate(scope.row)"
           v-hasPermi="['knowledge:category:edit']"
           >修改</el-button
         >
-        <el-button
+        <el-button v-ripple class="glass-btn"
           link
-          type="danger"
           icon="Delete"
           @click="handleDelete(scope.row)"
           v-hasPermi="['knowledge:category:remove']"
           >删除</el-button
         >
-        <el-button
+        <el-button v-ripple class="glass-btn"
           link
-          type="primary"
           icon="view"
           @click="handleDetail(scope.row)"
           v-hasPermi="['knowledge:category:edit']"
@@ -189,11 +184,12 @@
     width="800px"
     append-to="body"
     draggable
+    class="glass-card"
   >
     <template #header="{ close, titleId, titleClass }">
       <span role="heading" aria-level="2" class="el-dialog__title">
         {{ title }}
-        <el-icon size="20" style="color: #909399; font-size: 16px">
+        <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
           <InfoFilled />
         </el-icon>
       </span>
@@ -250,8 +246,8 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="submitForm"
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
           >确 定</el-button
         >
       </div>
@@ -265,11 +261,12 @@
     width="800px"
     append-to="body"
     draggable
+    class="glass-card"
   >
     <template #header="{ close, titleId, titleClass }">
       <span role="heading" aria-level="2" class="el-dialog__title">
         {{ title }}
-        <el-icon size="20" style="color: #909399; font-size: 16px">
+        <el-icon size="20" style="color: #1D1D1F; font-size: 16px">
           <InfoFilled />
         </el-icon>
       </span>
@@ -332,7 +329,7 @@
     </el-form>
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">关 闭</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
       </div>
     </template>
   </el-dialog>

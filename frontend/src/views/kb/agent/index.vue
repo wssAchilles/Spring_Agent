@@ -1,7 +1,7 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <el-container>
-      <el-aside class="left-aside">
+      <el-aside class="left-aside glass-card">
         <div class="border-item-head">
           <div class="head-title">
             编排
@@ -54,7 +54,7 @@
 <!--          <el-row :gutter="20">-->
 <!--            <el-col :span="24">-->
 <!--              <el-form-item label="变量">-->
-<!--                <el-button type="primary" size="small" @click="addItem" plain>新增变量</el-button>-->
+<!--                <el-button v-ripple class="glass-btn" size="small" @click="addItem" plain>新增变量</el-button>-->
 <!--              </el-form-item>-->
 <!--              <div style="margin: 0 0 10px 80px">-->
 <!--                <el-table :data="form.variables" border style="width: 100%">-->
@@ -70,7 +70,7 @@
 <!--                  </el-table-column>-->
 <!--                  <el-table-column label="操作" width="80" align="center">-->
 <!--                    <template #default="{ $index }">-->
-<!--                      <el-button type="danger" size="small" @click="handleDeleteVariable($index)">删除</el-button>-->
+<!--                      <el-button v-ripple class="glass-btn" size="small" @click="handleDeleteVariable($index)">删除</el-button>-->
 <!--                    </template>-->
 <!--                  </el-table-column>-->
 <!--                </el-table>-->
@@ -81,13 +81,13 @@
             <el-col :span="24">
               <!-- 知识库 -->
               <el-form-item label="知识库">
-                <el-button type="primary" size="small" @click="handleAddKnowledge" plain>
+                <el-button v-ripple class="glass-btn" size="small" @click="handleAddKnowledge" plain>
                   <i class="iconfont-mini icon-upload-cloud-line mr5"></i>导入知识库</el-button>
-                <el-button type="info" size="small" @click="handlePreviewRecall" plain v-if="form.knowledges && form.knowledges.length > 0">
+                <el-button v-ripple class="glass-btn" size="small" @click="handlePreviewRecall" plain v-if="form.knowledges && form.knowledges.length > 0">
                   <i class="iconfont-mini icon-eye-line mr5"></i>召回预览</el-button>
               </el-form-item>
               <div style="margin: 0 0 10px 80px">
-                <el-table :data="form.knowledges" border style="width: 100%">
+                <el-table class="glass-card" :data="form.knowledges" border style="width: 100%">
                   <el-table-column prop="name" label="知识库名称">
                     <template #default="{ row }">
                       {{ row.name }}
@@ -95,7 +95,7 @@
                   </el-table-column>
                   <el-table-column label="操作" width="80" align="center">
                     <template #default="{ $index }">
-                      <el-button type="danger" size="small" @click="handleDeleteKnowledge($index)">删除</el-button>
+                      <el-button v-ripple class="glass-btn" size="small" @click="handleDeleteKnowledge($index)">删除</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -107,11 +107,11 @@
             <el-col :span="24">
               <!-- 工具 -->
               <el-form-item label="工具">
-                <el-button type="primary" size="small" @click="handleAddTool" plain>
+                <el-button v-ripple class="glass-btn" size="small" @click="handleAddTool" plain>
                   <i class="iconfont-mini icon-upload-cloud-line mr5"></i>导入工具</el-button>
               </el-form-item>
               <div style="margin: 0 0 10px 80px">
-                <el-table :data="form.tools" border style="width: 100%">
+                <el-table class="glass-card" :data="form.tools" border style="width: 100%">
                   <el-table-column prop="name" label="工具名称">
                     <template #default="{ row }">
                       {{ row.name }}
@@ -119,7 +119,7 @@
                   </el-table-column>
                   <el-table-column label="操作" width="80" align="center">
                     <template #default="{ $index }">
-                      <el-button type="danger" size="small" @click="handleDeleteTool($index)">删除</el-button>
+                      <el-button v-ripple class="glass-btn" size="small" @click="handleDeleteTool($index)">删除</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -128,8 +128,8 @@
           </el-row>
         </el-form>
         <div class="dialog-footer">
-<!--          <el-button size="small" @click="handleReset">清 空</el-button>-->
-          <el-button type="primary" size="small" :loading="loading" @click="handleSubmit">
+<!--          <el-button v-ripple class="glass-btn" size="small" @click="handleReset">清 空</el-button>-->
+          <el-button v-ripple class="glass-btn" size="small" :loading="loading" @click="handleSubmit">
             <svg-icon icon-class="bc" />
             保存
           </el-button>
@@ -137,7 +137,7 @@
       </el-aside>
       <el-main class="right-main">
         <div class="border-item-head">
-          <span class="head-title">调试与预览<span v-if="botName" style="color: #666; font-size: 14px; font-weight: normal; margin-left: 8px;">- {{ botName }}</span></span>
+          <span class="head-title">调试与预览<span v-if="botName" style="color: #1D1D1F; font-size: 14px; font-weight: normal; margin-left: 8px;">- {{ botName }}</span></span>
           <div class="conversation-actions">
             <el-select
               v-model="currentConversationId"
@@ -155,12 +155,11 @@
                 :value="conv.id"
               />
             </el-select>
-            <el-button type="primary" size="small" @click="handleNewConversation" plain>
+            <el-button v-ripple class="glass-btn" size="small" @click="handleNewConversation" plain>
               新对话
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               v-if="currentConversationId"
-              type="danger"
               size="small"
               @click="handleDeleteConversation"
               plain

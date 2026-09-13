@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
     <div class="pagecont-top">
       <!-- 标题 -->
       <div class="panel-header">
@@ -124,8 +124,8 @@
             关联数据详情
           </div>
           <div class="data-table-wrapper">
-            <el-table stripe :data="relatedData">
-              <el-table-column label="数据类型" min-width="160">
+            <el-table class="glass-card" stripe :data="relatedData">
+              <el-table class="glass-card"-column label="数据类型" min-width="160">
                 <template #default="{ row }">
                   <div class="type-cell">
                     <span class="type-icon" :class="row.type">
@@ -135,14 +135,14 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="数量" prop="count" width="140" />
-              <el-table-column
+              <el-table class="glass-card"-column label="数量" prop="count" width="140" />
+              <el-table class="glass-card"-column
                 label="最近更新时间"
                 prop="updatedAt"
                 min-width="180"
                 align="center"
               />
-              <el-table-column label="删除影响" prop="impact" min-width="280" />
+              <el-table class="glass-card"-column label="删除影响" prop="impact" min-width="280" />
             </el-table>
             <pagination :total="relatedData.length" />
           </div>
@@ -208,18 +208,16 @@
 
       <!-- 底部按钮 -->
       <div class="btn-group">
-        <el-button class="btn-cancel" @click="back">取消</el-button>
-        <!-- <el-button
-          type="primary"
-          class="btn-export"
+        <el-button v-ripple class="btn-cancel glass-btn" @click="back">取消</el-button>
+        <!-- <el-button v-ripple
+          class="btn-export glass-btn"
           icon="Download"
           :disabled="!canDelete"
           @click="handleExport"
           >导出备份</el-button
         > -->
-        <el-button
-          type="danger"
-          class="btn-delete"
+        <el-button v-ripple
+          class="btn-delete glass-btn"
           icon="Delete"
           @click.stop="handleDelete()"
         >
@@ -411,7 +409,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .app-container {
-  background-color: #f5f7fa;
+  background: #F5F5F7;
   min-height: calc(100vh - 84px);
 
   .pagecont-top {
@@ -429,10 +427,10 @@ onMounted(() => {
     align-items: center;
     font-size: 16px;
     font-weight: 600;
-    color: #303133;
+    color: #1D1D1F;
     margin-bottom: 16px;
     .blue-bar {
-      background-color: #2666fb;
+      background: #F5F5F7;
       width: 6px;
       height: 16px;
       margin-right: 10px;
@@ -469,7 +467,7 @@ onMounted(() => {
       align-items: center;
       justify-content: center;
       border-radius: 100px;
-      background-color: #fe4f4f;
+      background: #F5F5F7;
       width: 19px;
       height: 19px;
       padding: 4px;
@@ -485,7 +483,7 @@ onMounted(() => {
       display: inline-block;
       vertical-align: middle;
       font-size: 15px;
-      color: #fe4f4f;
+      color: #1D1D1F;
       font-weight: 600;
       letter-spacing: 0.3px;
     }
@@ -493,12 +491,12 @@ onMounted(() => {
     .warn-detail {
       margin-top: 14px;
       font-size: 13px;
-      color: #fe4f4f;
+      color: #1D1D1F;
       line-height: 1.7;
       margin-left: 24px;
       span {
         font-weight: 700;
-        color: #fe4f4f;
+        color: #1D1D1F;
       }
     }
   }
@@ -512,14 +510,14 @@ onMounted(() => {
     .left-panel {
       flex: 1;
       padding: 13px 15px;
-      background-color: #ffffff;
+      background: #F5F5F7;
       border-radius: 2px;
     }
 
     .right-panel {
       width: 360px;
       padding: 13px 15px;
-      background-color: #ffffff;
+      background: #F5F5F7;
       border-radius: 2px;
     }
   }
@@ -531,7 +529,7 @@ onMounted(() => {
 
     .stat-card-h {
       flex: 1;
-      background: #ffffff;
+      background: #F5F5F7;
       border-radius: 12px;
       padding: 20px 16px;
       display: flex;
@@ -566,7 +564,7 @@ onMounted(() => {
 
       // &:hover {
       //   transform: translateY(-4px);
-      //   border-color: #ffa39e;
+      //   border-color: #1D1D1F;
       //   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
       //   &::before {
@@ -593,21 +591,21 @@ onMounted(() => {
 
         .stat-label-h {
           font-size: 12px;
-          color: #909399;
+          color: #1D1D1F;
           font-weight: 500;
         }
 
         .stat-value-h {
           font-size: 22px;
           font-weight: 700;
-          color: #303133;
+          color: #1D1D1F;
           line-height: 1.2;
           letter-spacing: -0.5px;
         }
 
         .stat-desc-h {
           font-size: 11px;
-          color: #fa8c16;
+          color: #1D1D1F;
           font-weight: 500;
           display: inline-flex;
           align-items: center;
@@ -624,7 +622,7 @@ onMounted(() => {
 
   /* 删除前检查 */
   .precheck-list {
-    background: #fff;
+    background: #F5F5F7;
     border-radius: 12px;
     padding: 0px 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -641,21 +639,21 @@ onMounted(() => {
       }
 
       .precheck-icon {
-        color: #67c23a;
+        color: #1D1D1F;
         font-size: 16px;
         flex-shrink: 0;
       }
 
       .precheck-text {
         font-size: 13px;
-        color: #606266;
+        color: #1D1D1F;
       }
     }
   }
 
   /* 关联数据详情表格 */
   .data-table-wrapper {
-    background: #fff;
+    background: #F5F5F7;
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -663,8 +661,8 @@ onMounted(() => {
     .data-table {
       :deep(.el-table__header-wrapper) {
         th {
-          background-color: #f5f7fa;
-          color: #606266;
+          background: #F5F5F7;
+          color: #1D1D1F;
           font-weight: 600;
           font-size: 13px;
           padding: 12px 0;
@@ -691,18 +689,18 @@ onMounted(() => {
       &.doc,
       &.index,
       &.permission {
-        color: #2666fb;
-        background: #eaf1ff;
+        color: #1D1D1F;
+        background: #F5F5F7;
       }
 
       &.category {
-        color: #10b981;
-        background: #e8f8f1;
+        color: #1D1D1F;
+        background: #F5F5F7;
       }
 
       &.test {
-        color: #7c5cff;
-        background: #f0edff;
+        color: #1D1D1F;
+        background: #F5F5F7;
       }
     }
 
@@ -719,16 +717,16 @@ onMounted(() => {
 
     .data-count {
       font-weight: 600;
-      color: #303133;
+      color: #1D1D1F;
     }
 
     .data-time {
-      color: #909399;
+      color: #1D1D1F;
       font-size: 12px;
     }
 
     .data-impact {
-      color: #606266;
+      color: #1D1D1F;
       font-size: 12px;
     }
 
@@ -736,7 +734,7 @@ onMounted(() => {
       text-align: center;
       padding: 12px 0 0;
       font-size: 12px;
-      color: #909399;
+      color: #1D1D1F;
       border-top: 1px solid #ebeef5;
       margin-top: 8px;
     }
@@ -744,7 +742,7 @@ onMounted(() => {
 
   /* 安全校验 */
   .security-check {
-    background: #fff;
+    background: #F5F5F7;
     border-radius: 12px;
     padding: 20px 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -758,12 +756,12 @@ onMounted(() => {
 
       .check-label-sc {
         font-size: 13px;
-        color: #606266;
+        color: #1D1D1F;
         margin-bottom: 8px;
         font-weight: 500;
 
         .required {
-          color: #fe4f4f;
+          color: #1D1D1F;
           margin-right: 4px;
         }
       }
@@ -780,7 +778,7 @@ onMounted(() => {
 
       :deep(.el-checkbox__label) {
         font-size: 13px;
-        color: #606266;
+        color: #1D1D1F;
       }
     }
   }
@@ -792,7 +790,7 @@ onMounted(() => {
     border-top: 1px solid #ebeef5;
     justify-content: flex-end;
     gap: 12px;
-    background-color: #ffffff;
+    background: #F5F5F7;
 
     .btn-cancel {
       min-width: 88px;

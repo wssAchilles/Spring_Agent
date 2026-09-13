@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
      <GuideTip tip-id="kg/ext/unstructTask.list" />
     <div class="pagecont-top" v-show="showSearch">
       <el-form
@@ -64,15 +64,14 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -83,8 +82,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="btn-style">
           <el-col :span="1.5">
-            <el-button
-              type="primary"
+            <el-button v-ripple class="glass-btn"
               plain
               @click="handleAdd"
               v-hasPermi="['ext:extUnstructTask:unstructtask:add']"
@@ -92,8 +90,7 @@
             >
               <i class="iconfont-mini icon-xinzeng mr5"></i>新增
             </el-button>
-              <el-button
-              type="danger"
+              <el-button v-ripple class="glass-btn"
               plain
               @click="handleDelete()"
               :disabled="ids.length==0"
@@ -111,7 +108,7 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table
+      <el-table class="glass-card"
         stripe
         v-loading="loading"
         :data="unstructTaskList"
@@ -240,9 +237,8 @@
           v-if="getColumnVisibility(17)"
         >
           <template #default="scope">
-              <el-button
+              <el-button v-ripple class="glass-btn"
                   link
-                  type="primary"
                   :disabled="scope.row.publishStatus == 1"
                   icon="VideoPlay"
                   @click="extraction(scope.row)"
@@ -251,9 +247,8 @@
                 >
                   执行
                 </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               :disabled="scope.row.status !== 2"
               icon="view"
               @click="handleResult(scope.row)"
@@ -263,12 +258,11 @@
            
             <el-popover placement="bottom" :width="100" trigger="click">
               <template #reference>
-                <el-button link type="primary" icon="ArrowDown">更多</el-button>
+                <el-button v-ripple class="glass-btn" link icon="ArrowDown">更多</el-button>
               </template>
               <div style="width: 90px" class="butgdlist">
-                 <el-button
+                 <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               icon="List"
               @click="showLogDialog(scope.row)"
               v-hasPermi="['ext:extUnstructTask:unstructtask:taskLog']"
@@ -276,9 +270,8 @@
               >执行日志
             </el-button>
               
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   link
-                  type="primary"
                   :disabled="scope.row.publishStatus == 1"
                   icon="Edit"
                   @click="handleUpdate(scope.row)"
@@ -287,9 +280,8 @@
                   >修改
                 </el-button>
 
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   link
-                  type="danger"
                   :disabled="scope.row.publishStatus == 1"
                   icon="Delete"
                   @click="handleDelete(scope.row)"
@@ -320,7 +312,7 @@
     </div>
 
     <!-- 添加或修改非结构化抽取任务对话框 -->
-    <el-dialog
+    <el-dialog class="glass-card"
       :title="title"
       v-model="open"
       width="800px"
@@ -349,10 +341,9 @@
           <el-col :span="24">
             <el-form-item label="添加文件" prop="docIds">
               <div>
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   :disabled="form.status && form.status != 0"
                   v-on:click="selectDoc"
-                  type="primary"
                   plain
                 >
                   <i class="iconfont icon-upload-cloud-line mr5"></i
@@ -361,7 +352,7 @@
               </div>
             </el-form-item>
             <div style="margin: 0px 0 10px 80px">
-              <el-table
+              <el-table class="glass-card"
                 stripe
                 height="300px"
                 v-loading="loading"
@@ -383,9 +374,8 @@
                   class-name="small-padding fixed-width"
                 >
                   <template #default="scope">
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       link
-                      type="danger"
                       icon="Delete"
                       :disabled="form.status && form.status != 0"
                       @click="removeSelectDoc(scope.row)"
@@ -411,12 +401,12 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="三元组" prop="relationIds">
-              <el-button type="primary" @click="addItem" plain
+              <el-button v-ripple class="glass-btn" @click="addItem" plain
                 >导入三元组</el-button
               >
             </el-form-item>
             <div style="margin: 0px 0 10px 80px">
-              <el-table style="width: 100%" :data="form.tableData">
+              <el-table class="glass-card" style="width: 100%" :data="form.tableData">
                 <el-table-column label="起点" min-width="180">
                   <template #default="scope">
                     {{ getLabelByValue(scope.row.startSchemaId) || "-" }}
@@ -435,9 +425,8 @@
                 <!-- 操作列 -->
                 <el-table-column label="操作" min-width="70">
                   <template #default="scope">
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       size="small"
-                      type="danger"
                       @click="deleteItem(scope.$index, scope.row)"
                       plain
                       >删除
@@ -464,8 +453,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>

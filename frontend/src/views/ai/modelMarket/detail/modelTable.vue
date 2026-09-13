@@ -1,5 +1,5 @@
 <template>
-  <el-table stripe
+  <el-table stripe class="glass-card"
             v-loading="loading"
             :data="modelList"
             @sort-change="handleSortChange"
@@ -31,12 +31,12 @@
     </el-table-column>
     <el-table-column label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
       <template #default="scope">
-        <el-button link type="primary"
+        <el-button v-ripple class="glass-btn" link
                    icon="Edit"
                    :disabled=true>编辑
         </el-button>
 
-        <el-button link type="danger"
+        <el-button v-ripple class="glass-btn" link
                    icon="Delete"
                    :disabled=true
         >删除

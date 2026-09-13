@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container observability-page">
-    <el-card shadow="never" class="status-card">
+  <div class="app-container observability-page glass-card">
+    <el-card shadow="never" class="status-card glass-card">
       <div class="status-row">
         <div class="status-left">
           <h2 class="page-title">LLM 可观测性</h2>
@@ -12,7 +12,7 @@
             <el-icon v-else><WarningFilled /></el-icon>
             {{ langfuseEnabled ? 'LangFuse 已连接' : 'LangFuse 未启用' }}
           </el-tag>
-          <el-button v-if="langfuseEnabled" type="primary" plain @click="openDashboard">
+          <el-button v-ripple class="glass-btn" v-if="langfuseEnabled" plain @click="openDashboard">
             <el-icon><Link /></el-icon>
             打开 Dashboard
           </el-button>
@@ -20,7 +20,7 @@
       </div>
     </el-card>
 
-    <el-card v-if="!langfuseEnabled" shadow="never" class="setup-card">
+    <el-card v-if="!langfuseEnabled" shadow="never" class="setup-card glass-card">
       <el-result icon="info" title="启用 LLM 可观测性"
         sub-title="LangFuse 提供 Agent 调用链路追踪、Token 消耗统计、质量评估面板。">
         <template #extra>
@@ -42,7 +42,7 @@ LANGFUSE_SECRET_KEY=sk-lf-...</pre>
     <template v-else>
       <el-row :gutter="16" class="metric-row">
         <el-col :xs="24" :sm="12" :lg="6" v-for="m in metrics" :key="m.label">
-          <el-card shadow="never" class="metric-card">
+          <el-card shadow="never" class="metric-card glass-card">
             <div class="metric-label">{{ m.label }}</div>
             <div class="metric-value">
               {{ m.value }}
@@ -53,20 +53,21 @@ LANGFUSE_SECRET_KEY=sk-lf-...</pre>
         </el-col>
       </el-row>
 
-      <el-card shadow="never" class="trace-card">
+      <el-card shadow="never" class="trace-card glass-card">
         <template #header>
           <div class="trace-header">
             <div>
               <div class="trace-title">最近对话追踪</div>
               <div class="trace-subtitle">展示最近 20 条 LangFuse Trace 及其 Generation / Span</div>
             </div>
-            <el-button size="small" :loading="loading" @click="refreshTraces">
+            <el-button v-ripple class="glass-btn" size="small" :loading="loading" @click="refreshTraces">
               <el-icon><Refresh /></el-icon>
               刷新
             </el-button>
           </div>
         </template>
         <el-table
+          class="glass-card"
           v-loading="loading"
           :data="traces"
           stripe
@@ -255,11 +256,11 @@ onMounted(() => {
     font-size: 20px;
     font-weight: 600;
     margin: 0;
-    color: #303133;
+    color: #1D1D1F;
   }
   .page-desc {
     font-size: 13px;
-    color: #909399;
+    color: rgba(29, 29, 31, 0.5);
     margin: 4px 0 0;
   }
   .status-right {
@@ -276,7 +277,7 @@ onMounted(() => {
 }
 
 .config-block {
-  background: #f5f7fa;
+  background: #F5F5F7;
   border: 1px solid #e4e7ed;
   border-radius: 6px;
   padding: 10px 14px;
@@ -297,7 +298,7 @@ onMounted(() => {
   min-height: 120px;
   .metric-label {
     font-size: 12px;
-    color: #909399;
+    color: rgba(29, 29, 31, 0.5);
     text-transform: uppercase;
     letter-spacing: 0;
     margin-bottom: 8px;
@@ -305,19 +306,19 @@ onMounted(() => {
   .metric-value {
     font-size: 28px;
     font-weight: 700;
-    color: #303133;
+    color: #1D1D1F;
     letter-spacing: 0;
     line-height: 1.2;
   }
   .metric-unit {
     font-size: 14px;
     font-weight: 400;
-    color: #909399;
+    color: rgba(29, 29, 31, 0.5);
     margin-left: 2px;
   }
   .metric-desc {
     font-size: 12px;
-    color: #909399;
+    color: rgba(29, 29, 31, 0.5);
     margin-top: 8px;
     line-height: 18px;
   }
@@ -333,23 +334,23 @@ onMounted(() => {
   }
   .trace-title {
     font-weight: 600;
-    color: #303133;
+    color: #1D1D1F;
   }
   .trace-subtitle {
     margin-top: 4px;
     font-size: 12px;
-    color: #909399;
+    color: rgba(29, 29, 31, 0.5);
   }
 }
 
 .query-cell {
-  color: #303133;
+  color: #1D1D1F;
   line-height: 20px;
 }
 
 .trace-id {
   margin-top: 2px;
-  color: #c0c4cc;
+  color: rgba(29, 29, 31, 0.3);
   font-size: 12px;
   font-family: 'JetBrains Mono', monospace;
 }
@@ -365,12 +366,12 @@ onMounted(() => {
 
 .span-duration {
   margin-left: 4px;
-  color: #606266;
+  color: rgba(29, 29, 31, 0.7);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .muted {
-  color: #909399;
+  color: rgba(29, 29, 31, 0.5);
 }
 
 @media (max-width: 768px) {

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form class="btn-style" :model="queryParams" ref="queryRef" v-show="showSearch" :inline="true">
         <el-form-item label="用户名称" prop="userName">
@@ -9,8 +9,8 @@
           <el-input v-model="queryParams.phonenumber" placeholder="请输入手机号码" clearable @keyup.enter="handleQuery" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
-          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          <el-button v-ripple class="glass-btn" icon="Search" @click="handleQuery">查询</el-button>
+          <el-button v-ripple class="glass-btn" icon="Refresh" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -19,13 +19,13 @@
       <div class="justify-between mb15">
         <el-row :gutter="10" class="btn-style">
           <el-col :span="1.5">
-            <el-button type="primary" plain icon="Plus" @click="openSelectUser" v-hasPermi="['system:role:add']">添加用户</el-button>
+            <el-button v-ripple class="glass-btn" plain icon="Plus" @click="openSelectUser" v-hasPermi="['system:role:add']">添加用户</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="danger" plain icon="CircleClose" :disabled="multiple" @click="cancelAuthUserAll" v-hasPermi="['system:role:remove']">批量取消授权</el-button>
+            <el-button v-ripple class="glass-btn" plain icon="CircleClose" :disabled="multiple" @click="cancelAuthUserAll" v-hasPermi="['system:role:remove']">批量取消授权</el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button type="warning" plain icon="Close" @click="handleClose">关闭</el-button>
+            <el-button v-ripple class="glass-btn" plain icon="Close" @click="handleClose">关闭</el-button>
           </el-col>
         </el-row>
         <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
@@ -49,7 +49,7 @@
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
           <template #default="scope">
-            <el-button link type="primary" icon="CircleClose" @click="cancelAuthUser(scope.row)" v-hasPermi="['system:role:remove']">取消授权</el-button>
+            <el-button v-ripple class="glass-btn" link icon="CircleClose" @click="cancelAuthUser(scope.row)" v-hasPermi="['system:role:remove']">取消授权</el-button>
           </template>
         </el-table-column>
       </el-table>

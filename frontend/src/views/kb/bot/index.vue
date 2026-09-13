@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form
           class="btn-style"
@@ -35,15 +35,14 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
               plain
-              type="primary"
               @click="handleQuery"
               @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -54,8 +53,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="btn-style">
           <el-col :span="1.5">
-            <el-button
-                type="primary"
+            <el-button v-ripple class="glass-btn"
                 plain
                 @click="handleAdd"
                 v-hasPermi="['kb:bot:bot:add']"
@@ -65,8 +63,7 @@
             </el-button>
           </el-col>
           <el-col :span="1.5">
-            <el-button
-                type="danger"
+            <el-button v-ripple class="glass-btn"
                 plain
                 :disabled="multiple"
                 @click="handleDelete"
@@ -85,7 +82,7 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table
+      <el-table class="glass-card"
           stripe
           v-loading="loading"
           :data="botList"
@@ -233,17 +230,15 @@
             width="180"
         >
           <template #default="scope">
-            <el-button
+            <el-button v-ripple class="glass-btn"
                 link
-                type="primary"
                 icon="view"
                 @click="handleDetail(scope.row)"
                 v-hasPermi="['kb:bot:bot:query']"
             >详情
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
                 link
-                type="primary"
                 icon="Operation"
                 @click="handleBuild(scope.row)"
                 v-hasPermi="['kb:bot:bot:query']"
@@ -252,21 +247,19 @@
 
             <el-popover placement="bottom" :width="100" trigger="click">
               <template #reference>
-                <el-button type="primary" icon="ArrowDown"  link @click.stop>更多</el-button>
+                <el-button v-ripple class="glass-btn" icon="ArrowDown"  link @click.stop>更多</el-button>
               </template>
               <div class="card-button-group" >
-                <el-button
+                <el-button v-ripple class="glass-btn"
                     link
-                    type="primary"
                     icon="Edit"
                     @click="handleUpdate(scope.row)"
                     :disabled="scope.row.builtinFlag === 1"
                     v-hasPermi="['kb:bot:bot:edit']"
                 >修改
                 </el-button>
-                <el-button
+                <el-button v-ripple class="glass-btn"
                     link
-                    type="danger"
                     icon="Delete"
                     @click="handleDelete(scope.row)"
                     :disabled="scope.row.builtinFlag === 1"
@@ -298,6 +291,7 @@
 
     <!-- 添加或修改bot 管理对话框 -->
     <el-dialog
+        class="glass-card"
         :title="title"
         v-model="open"
         width="800px"
@@ -352,8 +346,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
           >确 定
           </el-button>
         </div>

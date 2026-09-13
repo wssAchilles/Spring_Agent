@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
@@ -35,23 +35,21 @@
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
         <el-form-item style="float: right; margin-right: auto">
           <el-row :gutter="15" class="btn-style">
             <el-col :span="1.5">
-              <el-button
-                type="primary"
+              <el-button v-ripple class="glass-btn"
                 plain
                 @click="handleAdd"
                 v-hasPermi="['kac:solution:solution:add']"

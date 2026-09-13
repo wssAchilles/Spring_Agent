@@ -1,8 +1,8 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
     <el-row :gutter="15">
       <el-col :span="6" :xs="24">
-        <el-card class="box-card">
+        <el-card class="box-card glass-card">
           <template v-slot:header>
             <div class="head-container">
               <span class="head-title"></span>
@@ -51,7 +51,7 @@
         </el-card>
       </el-col>
       <el-col :span="18" :xs="24">
-        <el-card>
+        <el-card class="glass-card">
           <template v-slot:header>
             <div class="head-container">
               <span class="head-title"></span>

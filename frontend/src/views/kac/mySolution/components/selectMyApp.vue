@@ -1,5 +1,6 @@
 <template>
   <el-dialog
+      class="glass-card"
       title="导入关联应用"
       v-model="dialogVisible"
       width="1200px"
@@ -25,15 +26,14 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button
+        <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
         >
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+        <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
         </el-button>
       </el-form-item>
@@ -90,8 +90,8 @@
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleClose">取 消</el-button>
-        <el-button type="primary" @click="handleConfirm">确 定</el-button>
+        <el-button v-ripple class="glass-btn" @click="handleClose">取 消</el-button>
+        <el-button v-ripple class="glass-btn" @click="handleConfirm">确 定</el-button>
       </div>
     </template>
   </el-dialog>

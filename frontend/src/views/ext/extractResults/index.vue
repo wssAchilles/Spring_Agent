@@ -1,9 +1,9 @@
 <template>
-    <div class="app-container" ref="app-container" v-loading="appLoading">
+    <div class="app-container glass-card" ref="app-container" v-loading="appLoading">
         <el-container>
             <!-- 左侧可调整的部分 -->
             <!-- 左侧可调整的部分 -->
-            <el-aside :style="{ width: `${leftWidth}px` }" class="left-pane">
+            <el-aside :style="{ width: `${leftWidth}px` }" class="left-pane glass-card">
                 <div class="left-tree">
                     <div class="head-container">
                         <el-input :suffix-icon="Search" v-model="filterText" clearable
@@ -38,10 +38,10 @@
                 <div class="head-title">
                     <div class="name">{{ taskInfo.name }}</div>
                     <div class="btns">
-                        <el-button icon="Back" @click="handleBack">返回</el-button>
-                        <el-button v-if="!releaseStatus" icon="Upload" type="primary" @click="handleRelease">发布
+                        <el-button v-ripple class="glass-btn" icon="Back" @click="handleBack">返回</el-button>
+                        <el-button v-ripple class="glass-btn" v-if="!releaseStatus" icon="Upload" @click="handleRelease">发布
                         </el-button>
-                        <el-button v-if="releaseStatus" icon="Upload" type="primary" @click="handleCancelRelease">取消发布
+                        <el-button v-ripple class="glass-btn" v-if="releaseStatus" icon="Upload" @click="handleCancelRelease">取消发布
                         </el-button>
                     </div>
                 </div>
@@ -78,7 +78,7 @@
                                     <span class="label">{{ currentNodeData.name }}</span>
                                 </div>
                                 <div class="title-slot">
-                                    <el-button size="small" type="danger" icon="Delete" @click="handleDel">删除
+                                    <el-button v-ripple class="glass-btn" size="small" icon="Delete" @click="handleDel">删除
                                     </el-button>
                                 </div>
                             </div>
@@ -89,18 +89,18 @@
                                             <div class="collapse-title">属性信息</div>
                                         </template>
                                         <div class="collapse-con">
-                                            <el-table stripe height="100px" v-loading="attrLoading" :data="attrData">
+                                            <el-table class="glass-card" stripe height="100px" v-loading="attrLoading" :data="attrData">
                                                 <el-table-column label="属性名称" key="a" prop="a"/>
                                                 <el-table-column label="数据类型" key="b" prop="b" show-overflow-tooltip/>
                                                 <el-table-column label="属性值" key="c" prop="c" show-overflow-tooltip/>
                                                 <el-table-column label="操作" class-name="small-padding fixed-width"
                                                                  fixed="right" width="150">
                                                     <template #default="scope">
-                                                        <el-button link type="primary" icon="Edit"
+                                                        <el-button v-ripple class="glass-btn" link icon="Edit"
                                                                    @click="attrUpdate(scope.row)">修改
                                                         </el-button>
                                                         <el-divider direction="vertical"/>
-                                                        <el-button link type="danger" icon="Delete"
+                                                        <el-button v-ripple class="glass-btn" link icon="Delete"
                                                                    @click="attrDelete(scope.row)">删除
                                                         </el-button>
                                                     </template>
@@ -113,7 +113,7 @@
                                             <div class="collapse-title">关联三元组</div>
                                         </template>
                                         <div class="collapse-con">
-                                            <el-table stripe height="200px" v-loading="tripletLoading"
+                                            <el-table class="glass-card" stripe height="200px" v-loading="tripletLoading"
                                                       :data="tripletData">
                                                 <el-table-column label="起点" key="startName" prop="startName"
                                                                  show-overflow-tooltip/>
@@ -124,11 +124,11 @@
                                                 <el-table-column label="操作" class-name="small-padding fixed-width"
                                                                  fixed="right" width="150">
                                                     <template #default="scope">
-                                                        <el-button link type="primary" icon="Edit"
+                                                        <el-button v-ripple class="glass-btn" link icon="Edit"
                                                                    @click="tripletUpdate(scope.row)">修改
                                                         </el-button>
                                                         <el-divider direction="vertical"/>
-                                                        <el-button link type="danger" icon="Delete"
+                                                        <el-button v-ripple class="glass-btn" link icon="Delete"
                                                                    @click="tripletDelete(scope.row)">删除
                                                         </el-button>
                                                     </template>
@@ -162,8 +162,8 @@
                                                         "{y}-{m}-{d}") }}
                                                     </td>
                                                     <!--                          <td style="text-align: right">-->
-                                                    <!--                            <el-button link type="primary" icon="view" @click="previewRefactoring(doc)">预览</el-button>-->
-                                                    <!--                            <el-button link type="primary" icon="download" @click="handleDownload(doc)">下载</el-button>-->
+                                                    <!--                            <el-button v-ripple class="glass-btn" link icon="view" @click="previewRefactoring(doc)">预览</el-button>-->
+                                                    <!--                            <el-button v-ripple class="glass-btn" link icon="download" @click="handleDownload(doc)">下载</el-button>-->
                                                     <!--                          </td>-->
                                                 </div>
                                             </div>
@@ -960,7 +960,7 @@
         .el-aside {
             padding: 0px;
             margin-bottom: 0px;
-            background-color: #f0f2f5;
+            background-color: #F5F5F7;
         }
 
         .left-tree {
@@ -969,7 +969,7 @@
 
         .control-tree {
             height: calc(100% - 52px);
-            background: #fff;
+            background: #F5F5F7;
             overflow: hidden auto;
 
             :deep(.el-icon) {
@@ -984,7 +984,7 @@
 
         .resize-bar {
             cursor: ew-resize;
-            background-color: #f0f2f5;
+            background-color: #F5F5F7;
             height: 86vh;
             display: flex;
             align-items: center;
@@ -1011,7 +1011,7 @@
 
         .head-title {
             height: 50px;
-            background: #fff;
+            background: #F5F5F7;
             padding: 10px;
             margin-bottom: 10px;
             display: flex;
@@ -1041,7 +1041,7 @@
             .gragh-container {
                 width: 100%;
                 height: 100%;
-                background: #fff url("@/assets/ke/images/bg.png") no-repeat;
+                background: #F5F5F7 url("@/assets/ke/images/bg.png") no-repeat;
                 background-size: 100% 100%;
 
                 :deep(.g6-toolbar) {
@@ -1140,7 +1140,7 @@
                 right: 0;
                 width: 500px;
                 height: 100%;
-                background: #fff;
+                background: #F5F5F7;
                 box-shadow: 0px 0px 4px 1px rgba(0, 0, 0, 0.2);
 
                 .details-title {

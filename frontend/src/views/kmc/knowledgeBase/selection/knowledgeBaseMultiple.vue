@@ -1,5 +1,5 @@
 <template>
-  <el-dialog
+  <el-dialog class="glass-card"
       title="知识库-多选"
       v-model="visible"
       width="1200px"
@@ -26,21 +26,20 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button
+        <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
         >
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+        <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
         </el-button>
       </el-form-item>
     </el-form>
 
-    <el-table
+    <el-table class="glass-card"
         ref="multipletableRef"
         stripe
         height="300px"
@@ -51,34 +50,34 @@
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
     >
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="编码" align="center" prop="id" />
-      <el-table-column label="名称" align="center" prop="name">
+      <el-table class="glass-card"-column type="selection" width="55" align="center" />
+      <el-table class="glass-card"-column label="编码" align="center" prop="id" />
+      <el-table class="glass-card"-column label="名称" align="center" prop="name">
         <template #default="scope">
           {{ scope.row.name || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="描述" align="center" prop="description" min-width="250">
+      <el-table class="glass-card"-column label="描述" align="center" prop="description" min-width="250">
         <template #default="scope">
           {{ scope.row.description || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="索引方式" align="center" prop="indexingTechnique">
+      <el-table class="glass-card"-column label="索引方式" align="center" prop="indexingTechnique">
         <template #default="scope">
           <dict-tag :options="kmc_know_index" :value="scope.row.indexingTechnique" />
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark">
+      <el-table class="glass-card"-column label="备注" align="center" prop="remark">
         <template #default="scope">
           {{ scope.row.remark || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="创建人" align="center" prop="createBy">
+      <el-table class="glass-card"-column label="创建人" align="center" prop="createBy">
         <template #default="scope">
           {{ scope.row.createBy || '-' }}
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="180">
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
@@ -94,8 +93,8 @@
     />
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="cancel">取 消</el-button>
-        <el-button type="primary" size="small" @click="confirm">
+        <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="confirm">
           确 定
         </el-button>
       </div>

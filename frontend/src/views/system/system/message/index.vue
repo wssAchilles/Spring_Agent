@@ -1,5 +1,5 @@
 <template>
-    <div class="app-container">
+    <div class="app-container glass-card">
         <div class="pagecont-top" v-show="showSearch">
             <el-form
                 class="btn-style"
@@ -36,15 +36,14 @@
                     ></el-date-picker>
                 </el-form-item>
                 <el-form-item>
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                         plain
-                        type="primary"
                         @click="handleQuery"
                         @mousedown="(e) => e.preventDefault()"
                     >
                         <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
                     </el-button>
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                         @click="resetQuery"
                         @mousedown="(e) => e.preventDefault()"
                     >
@@ -58,7 +57,7 @@
             <div class="justify-between mb15">
                 <el-row :gutter="10" class="btn-style">
                     <el-col :span="1.5">
-                        <el-button @click="readAllMsg" plain>
+                        <el-button v-ripple class="glass-btn" @click="readAllMsg" plain>
                             <i class="iconfont-mini icon-a-zu22378 mr5"></i>全部设为已读
                         </el-button>
                     </el-col>
@@ -110,17 +109,15 @@
                     width="240"
                 >
                     <template #default="scope">
-                        <el-button
+                        <el-button v-ripple class="glass-btn"
                             link
-                            type="primary"
                             icon="View"
                             @click="handleView(scope.row)"
                         >
                             详情
                         </el-button>
-                        <el-button
+                        <el-button v-ripple class="glass-btn"
                             link
-                            type="danger"
                             icon="Delete"
                             @click="deleteMsg(scope.row.id)"
                         >
@@ -139,6 +136,7 @@
         </div>
 
         <el-dialog
+          class="glass-card"
             title="消息详情"
             v-model="openView"
             width="800px"
@@ -197,7 +195,7 @@
             </el-form>
             <template #footer>
                 <div class="dialog-footer">
-                    <el-button @click="openView = false">关 闭</el-button>
+                    <el-button v-ripple class="glass-btn" @click="openView = false">关 闭</el-button>
                 </div>
             </template>
         </el-dialog>

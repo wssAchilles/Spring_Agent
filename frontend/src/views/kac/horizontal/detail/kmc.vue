@@ -49,7 +49,7 @@
     </el-table-column>
     <el-table-column label="操作" align="center" class-name="small-padding fixed-width" v-if="props.source === 'myApp'">
       <template #default="scope">
-        <el-button link type="primary" icon="Switch" @click="handleUpdate(scope.row)"
+        <el-button v-ripple class="glass-btn" link icon="Switch" @click="handleUpdate(scope.row)"
           >替换</el-button>
       </template>
     </el-table-column>
@@ -72,6 +72,7 @@
 
   <!-- 选择知识库对话框 -->
   <el-dialog
+    class="glass-card"
     :title="knowledgeDialogTitle"
     v-model="knowledgeDialogOpen"
     width="1000px"
@@ -100,15 +101,14 @@
         />
       </el-form-item>
       <el-form-item>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           plain
-          type="primary"
           @click="handleQueryKnowledge"
           @mousedown="(e) => e.preventDefault()"
         >
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           @click="resetQueryKnowledge"
           @mousedown="(e) => e.preventDefault()"
         >
@@ -193,8 +193,8 @@
     />
     <template #footer>
       <div class="dialog-footer">
-        <el-button size="small" @click="knowledgeDialogOpen = false">取 消</el-button>
-        <el-button type="primary" size="small" @click="submitKnowledgeForm"
+        <el-button v-ripple class="glass-btn" size="small" @click="knowledgeDialogOpen = false">取 消</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="submitKnowledgeForm"
           >确 定</el-button
         >
       </div>

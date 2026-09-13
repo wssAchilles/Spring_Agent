@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <GuideTip tip-id="kg/knowledge/document.list" />
     <el-container>
       <!-- 左侧可调整的部分 -->
@@ -30,15 +30,14 @@
               />
             </el-form-item>
             <el-form-item>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 plain
-                type="primary"
                 @click="handleQuery"
                 @mousedown="(e) => e.preventDefault()"
               >
                 <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
               </el-button>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 @click="resetQuery"
                 @mousedown="(e) => e.preventDefault()"
               >
@@ -52,8 +51,7 @@
           <div class="justify-between mb15">
             <el-row :gutter="15" class="btn-style">
               <el-col :span="1.5">
-                <el-button
-                  type="primary"
+                <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleAdd"
                   v-hasPermi="['kg:knowledge:document:add']"
@@ -63,8 +61,7 @@
                 </el-button>
               </el-col>
               <el-col :span="1.5">
-                <el-button
-                  type="danger"
+                <el-button v-ripple class="glass-btn"
                   plain
                   :disabled="multiple"
                   @click="handleDelete"
@@ -203,50 +200,46 @@
               width="240"
             >
               <template #default="scope">
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   v-track="{
                     type: 'preview',
                     documentId: scope.row.id,
                     module: 'kg',
                   }"
                   link
-                  type="primary"
                   icon="view"
                   @click="previewRefactoring(scope.row)"
                   >预览</el-button
                 >
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   v-track="{
                     type: 'download',
                     documentId: scope.row.id,
                     module: 'kg',
                   }"
                   link
-                  type="primary"
                   icon="download"
                   @click="handleDownload(scope.row)"
                   >下载</el-button
                 >
                 <el-popover placement="bottom" :width="150" trigger="click">
                   <template #reference>
-                    <el-button type="primary" link @click.stop>
+                    <el-button v-ripple class="glass-btn" link @click.stop>
                       <template #icon><el-icon :size="14"><ArrowDown /></el-icon></template>
                       更多
                     </el-button>
                   </template>
                   <div class="card-button-group">
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       link
-                      type="primary"
                       @click="handleUpdate(scope.row)"
                       v-hasPermi="['kg:knowledge:document:edit']"
                     >
                       <template #icon><el-icon :size="14"><Edit /></el-icon></template>
                       修改
                     </el-button>
-                    <el-button
+                    <el-button v-ripple class="glass-btn"
                       link
-                      type="danger"
                       @click="handleDelete(scope.row)"
                       v-hasPermi="['kg:knowledge:document:remove']"
                     >
@@ -284,6 +277,7 @@
       width="800px"
       append-to="body"
       draggable
+      class="glass-card"
     >
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
@@ -372,8 +366,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm"
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
             >确 定</el-button
           >
         </div>
@@ -754,20 +748,20 @@ getCategoryTree();
 </script>
 <style scoped lang="scss">
 :deep(.selectlist .el-tag.el-tag--info) {
-  background: #f3f8ff !important;
-  border: 0px solid #6ba7ff !important;
-  color: #2666fb !important;
+  background: #F5F5F7 !important;
+  border: 1px solid #e4e7ed !important;
+  color: #1D1D1F !important;
 }
 
 .left-pane {
-  background-color: #ffffff;
+  background-color: #F5F5F7;
   overflow: hidden;
   transition: width 0s; /* 可以根据需要调整过渡时间 */
 }
 
 .resize-bar {
   cursor: ew-resize;
-  background-color: #f0f2f5;
+  background-color: #F5F5F7;
   height: 86vh;
   display: flex;
   align-items: center;
@@ -796,7 +790,7 @@ getCategoryTree();
 .el-aside {
   padding: 2px 0px;
   margin-bottom: 0px;
-  background-color: #f0f2f5;
+  background-color: #F5F5F7;
 }
 
 .custom-tree-node {

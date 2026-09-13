@@ -2,15 +2,13 @@
   <div class="justify-between mb15">
     <el-row :gutter="10" class="btn-style">
       <el-col :span="1.5">
-        <el-button
-            type="primary"
+        <el-button v-ripple class="glass-btn"
             plain
             icon="Plus"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-            type="info"
+        <el-button v-ripple class="glass-btn"
             plain
             icon="Sort"
             @click="toggleExpandAll"
@@ -20,7 +18,7 @@
     <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
   </div>
 
-  <el-table
+  <el-table class="glass-card"
       v-if="refreshTable"
       v-loading="loading"
       :data="detailsList"
@@ -28,37 +26,37 @@
       :default-expand-all="isExpandAll"
       :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
   >
-    <el-table-column label="ID" align="center" prop="parentId" >
+    <el-table class="glass-card"-column label="ID" align="center" prop="parentId" >
       <template #default="scope">
         {{ scope.row.id || '-' }}
       </template>
     </el-table-column>
-    <el-table-column label="标题" prop="title" />
-    <el-table-column label="内容" align="center" prop="content" >
+    <el-table class="glass-card"-column label="标题" prop="title" />
+    <el-table class="glass-card"-column label="内容" align="center" prop="content" >
       <template #default="scope">
         {{ scope.row.content || '-' }}
       </template>
     </el-table-column>
-    <el-table-column label="创建人" align="center" prop="createBy" >
+    <el-table class="glass-card"-column label="创建人" align="center" prop="createBy" >
       <template #default="scope">
         {{ scope.row.createBy || '-' }}
       </template>
     </el-table-column>
-    <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+    <el-table class="glass-card"-column label="创建时间" align="center" prop="createTime" width="180">
       <template #default="scope">
         <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
       </template>
     </el-table-column>
-    <el-table-column label="备注" align="center" prop="remark" >
+    <el-table class="glass-card"-column label="备注" align="center" prop="remark" >
       <template #default="scope">
         {{ scope.row.remark || '-' }}
       </template>
     </el-table-column>
-    <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+    <el-table class="glass-card"-column label="操作" align="center" class-name="small-padding fixed-width">
       <template #default="scope">
-        <el-button link type="primary" icon="Edit"  >修改</el-button>
-        <el-button link type="primary" icon="Plus"  >新增</el-button>
-        <el-button link type="danger" icon="Delete" >删除</el-button>
+        <el-button v-ripple class="glass-btn" link icon="Edit"  >修改</el-button>
+        <el-button v-ripple class="glass-btn" link icon="Plus"  >新增</el-button>
+        <el-button v-ripple class="glass-btn" link icon="Delete" >删除</el-button>
       </template>
     </el-table-column>
   </el-table>

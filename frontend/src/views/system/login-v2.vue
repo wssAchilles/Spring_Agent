@@ -41,7 +41,7 @@
             </div>
           </el-form-item>
 
-          <el-button :loading="loading" @click.native.prevent="handleLogin" class="item-width" style="margin-top: 20px"
+          <el-button v-ripple :loading="loading" @click.native.prevent="handleLogin" class="item-width glass-btn" style="margin-top: 20px"
           >
             <span v-if="!loading">登 录</span>
             <span v-else>登 录 中...</span>

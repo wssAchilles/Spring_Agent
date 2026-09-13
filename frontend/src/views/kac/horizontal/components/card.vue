@@ -4,7 +4,7 @@
     class="card-container"
     :class="{ 'card-container--overview': props.variant === 'overview' }"
   >
-    <div v-for="(item, index) in data" :key="item.id || index" class="card">
+    <div v-for="(item, index) in data" :key="item.id || index" class="card glass-card">
       <div class="card-inner">
         <div class="card-title-row">
           <div class="card-title-info">
@@ -46,8 +46,7 @@
                   popper-class="card-more-popper"
                 >
                   <template #reference>
-                    <el-button
-                      type="primary"
+                    <el-button v-ripple
                       link
                       @click.stop
                       :class="[
@@ -55,26 +54,24 @@
                         {
                           'custom-more-button--plain': props.source === 'myApp',
                         },
-                      ]"
+                      ] glass-btn"
                     >
                       <el-icon class="more-icon"><More /></el-icon>
                     </el-button>
                   </template>
                   <div class="card-button-group">
-                    <el-button
+                    <el-button v-ripple
                       text
-                      type="primary"
-                      class="card-menu-btn"
+                      class="card-menu-btn glass-btn"
                       @click.stop="handleUpdate(item)"
                       v-hasPermi="['kac:apply:apply:edit']"
                     >
                       <el-icon class="card-menu-icon"><EditPen /></el-icon>
                       修改
                     </el-button>
-                    <el-button
+                    <el-button v-ripple
                       text
-                      type="danger"
-                      class="card-menu-btn"
+                      class="card-menu-btn glass-btn"
                       @click.stop="handleDelete(item)"
                       v-hasPermi="['kac:apply:apply:remove']"
                     >
@@ -118,17 +115,15 @@
         </div>
 
         <div class="card-actions">
-          <el-button
-            type="primary"
-            class="card-action-btn"
+          <el-button v-ripple
+            class="card-action-btn glass-btn"
             @click.stop="handleExperience(item)"
           >
             <el-icon class="card-action-icon"><VideoPlay /></el-icon>
             立即体验
           </el-button>
-          <el-button
-            type="primary"
-            class="card-action-btn card-action-btn--detail"
+          <el-button v-ripple
+            class="card-action-btn card-action-btn--detail glass-btn"
             @click.stop="handleDetail(item)"
           >
             <el-icon class="card-action-icon"><View /></el-icon>
@@ -138,7 +133,7 @@
       </div>
     </div>
 
-    <el-dialog :title="title" v-model="open" width="800px">
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px">
       <el-form ref="applyRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="来源应用" prop="source">
           <el-input
@@ -171,8 +166,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取消</el-button>
-          <el-button type="primary" size="small" @click="submitForm">
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm">
             确定
           </el-button>
         </div>

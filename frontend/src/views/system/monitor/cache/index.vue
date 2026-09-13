@@ -1,8 +1,8 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
     <el-row>
       <el-col :span="24" class="card-box">
-        <el-card>
+        <el-card class="glass-card">
           <template #header><Monitor style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">基本信息</span></template>
           <div class="el-table el-table--enable-row-hover el-table--medium">
             <table cellspacing="0" style="width: 100%">
@@ -44,7 +44,7 @@
       </el-col>
 
       <el-col :span="12" class="card-box">
-        <el-card>
+        <el-card class="glass-card">
           <template #header><PieChart style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">命令统计</span></template>
           <div class="el-table el-table--enable-row-hover el-table--medium">
             <div ref="commandstats" style="height: 420px" />
@@ -53,7 +53,7 @@
       </el-col>
 
       <el-col :span="12" class="card-box">
-        <el-card>
+        <el-card class="glass-card">
           <template #header><Odometer style="width: 1em; height: 1em; vertical-align: middle;" /> <span style="vertical-align: middle;">内存信息</span></template>
           <div class="el-table el-table--enable-row-hover el-table--medium">
             <div ref="usedmemory" style="height: 420px" />

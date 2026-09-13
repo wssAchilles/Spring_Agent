@@ -53,10 +53,9 @@
         </div>
       </el-form-item>
       <el-form-item style="width:100%;">
-        <el-button
+        <el-button v-ripple class="glass-btn"
           :loading="loading"
           size="large"
-          type="primary"
           style="width:100%;"
           @click.prevent="handleRegister"
         >

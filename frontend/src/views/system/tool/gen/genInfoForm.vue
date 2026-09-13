@@ -27,7 +27,7 @@
           <template #label>
             生成包路径
             <el-tooltip content="生成在哪个java包下，例如 tech。qiantong.system" placement="top">
-              <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+              <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
             </el-tooltip>
           </template>
           <el-input v-model="info.packageName" />
@@ -39,7 +39,7 @@
           <template #label>
             二级模块名称
             <el-tooltip content="二级模块名称，例如 dept (system 大模块下的 部门子模块) " placement="top">
-              <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+              <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
             </el-tooltip>
           </template>
           <el-input v-model="info.moduleName" />
@@ -51,7 +51,7 @@
           <template #label>
             生成业务名
             <el-tooltip content="可理解为功能英文名，例如 user" placement="top">
-              <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+              <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
             </el-tooltip>
           </template>
           <el-input v-model="info.businessName" />
@@ -63,7 +63,7 @@
           <template #label>
             生成功能名
             <el-tooltip content="用作类描述，例如 用户" placement="top">
-              <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+              <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
             </el-tooltip>
           </template>
           <el-input v-model="info.functionName" />
@@ -75,7 +75,7 @@
           <template #label>
             生成代码方式
             <el-tooltip content="默认为zip压缩包下载，也可以自定义生成路径" placement="top">
-              <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+              <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
             </el-tooltip>
           </template>
           <el-radio v-model="info.genType" value="0">zip压缩包</el-radio>
@@ -88,7 +88,7 @@
           <template #label>
             上级菜单
             <el-tooltip content="分配到指定菜单下，例如 系统管理" placement="top">
-              <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+              <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
             </el-tooltip>
           </template>
           <tree-select
@@ -106,13 +106,13 @@
           <template #label>
             自定义路径
             <el-tooltip content="填写磁盘绝对路径，若不填写，则生成到当前Web项目下" placement="top">
-              <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+              <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
             </el-tooltip>
           </template>
           <el-input v-model="info.genPath">
             <template #append>
               <el-dropdown>
-                <el-button type="primary">
+                <el-button v-ripple class="glass-btn">
                   最近路径快速选择
                   <i class="el-icon-arrow-down el-icon--right"></i>
                 </el-button>
@@ -136,7 +136,7 @@
             <template #label>
               树编码字段
               <el-tooltip content="树显示的编码字段名， 如：dept_id" placement="top">
-                <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+                <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
             <el-select v-model="info.treeCode" placeholder="请选择">
@@ -154,7 +154,7 @@
             <template #label>
               树父编码字段
               <el-tooltip content="树显示的父编码字段名， 如：parent_Id" placement="top">
-                <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+                <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
             <el-select v-model="info.treeParentCode" placeholder="请选择">
@@ -172,7 +172,7 @@
             <template #label>
               树名称字段
               <el-tooltip content="树节点的显示名称字段名， 如：dept_name" placement="top">
-                <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+                <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
             <el-select v-model="info.treeName" placeholder="请选择">
@@ -196,7 +196,7 @@
             <template #label>
               关联子表的表名
               <el-tooltip content="关联子表的表名， 如：sys_user" placement="top">
-                <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+                <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
             <el-select v-model="info.subTableName" placeholder="请选择" @change="subSelectChange">
@@ -214,7 +214,7 @@
             <template #label>
               子表关联的外键名
               <el-tooltip content="子表关联的外键名， 如：user_id" placement="top">
-                <el-icon style="color: #909399;margin-top:9px"><InfoFilled /></el-icon>
+                <el-icon style="color: #1D1D1F; margin-top:9px"><InfoFilled /></el-icon>
               </el-tooltip>
             </template>
             <el-select v-model="info.subTableFkName" placeholder="请选择">

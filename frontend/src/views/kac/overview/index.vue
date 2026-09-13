@@ -14,7 +14,7 @@
         </div>
       </section>
 
-      <aside class="quick-panel">
+      <aside class="quick-panel glass-card">
         <div class="panel-title">
           <span></span>
           快捷入口
@@ -46,7 +46,7 @@
       </aside>
     </div>
 
-    <section class="overview-section">
+    <section class="overview-section glass-card">
       <div class="section-head">
         <div class="panel-title">
           <span></span>
@@ -64,7 +64,7 @@
 
       <div class="section-content" v-loading="applyLoading">
         <div v-if="applyList.length" class="apply-grid">
-          <div v-for="item in applyList" :key="item.id" class="apply-card">
+          <div v-for="item in applyList" :key="item.id" class="apply-card glass-card">
             <div class="apply-card-header">
               <div class="apply-icon-wrapper">
                 <el-icon :size="24" color="#409eff">

@@ -7,7 +7,7 @@
           每个分支右侧都有独立连接点，最后一个分支固定为 ELSE。
         </div>
       </div>
-      <el-button link type="primary" @click="$emit('addCase')">新增分支</el-button>
+      <el-button v-ripple class="glass-btn" link @click="$emit('addCase')">新增分支</el-button>
     </div>
 
     <div
@@ -22,10 +22,9 @@
             getBranchLabel(index, cases.length)
           }}</span>
         </div>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           v-if="!caseItem.isElse"
           link
-          type="danger"
           @click="$emit('removeCase', caseItem.id)"
         >
           删除

@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="logIsShow">
+  <el-dialog class="glass-card" v-model="logIsShow">
     <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           执行日志
@@ -12,7 +12,7 @@
                          :search="false"></right-toolbar>
         </div>
       </div>
-      <el-table stripe  
+      <el-table class="glass-card" stripe  
                 v-loading="loading"
                 :data="taskLogList"
                 :default-sort="defaultSort"
@@ -42,13 +42,13 @@
         </el-table-column>
         <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
           <template #default="scope">
-            <el-button link type="primary" icon="view"
+            <el-button v-ripple class="glass-btn" link icon="view"
                        @click="handleDetail(scope.row)"
                        v-if="scope.row.errorMsg "
             >查看错误日志
             </el-button>
 
-            <el-button link type="primary"
+            <el-button v-ripple class="glass-btn" link
                        icon="view"
                        @click="showLogDetail(scope.row)"
             >查看具体步骤
@@ -73,12 +73,12 @@
     </div>
     <template #footer>
       <div class="dialog-footer">
-        <el-button type="primary" size="small" @click="logIsShow=false">关 闭</el-button>
+        <el-button v-ripple class="glass-btn" size="small" @click="logIsShow=false">关 闭</el-button>
       </div>
     </template>
 
     <!-- 查看具体步骤 -->
-    <el-dialog v-model="open" width="800px" append-to="body" draggable>
+    <el-dialog class="glass-card" v-model="open" width="800px" append-to="body" draggable>
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           操作步骤
@@ -90,7 +90,7 @@
         </div>
       </div>
 
-      <el-table stripe  
+      <el-table class="glass-card" stripe  
                 v-loading="detailPageLoading"
                 :data="taskLogDetailList"
                 @sort-change="handleLogDetailSortChange"
@@ -132,13 +132,13 @@
       />
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" size="small" @click="cancel">关 闭</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">关 闭</el-button>
         </div>
       </template>
     </el-dialog>
 
     <!-- 查看错误消息 -->
-    <el-dialog
+    <el-dialog class="glass-card"
         v-model="centerDialogVisible"
         width="800px"
         destroy-on-close
@@ -153,7 +153,7 @@
       </div>
       <template #footer>
         <div class="dialog-footer">
-          <el-button type="primary" size="small" @click="centerDialogVisible=false">关 闭</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="centerDialogVisible=false">关 闭</el-button>
         </div>
       </template>
     </el-dialog>

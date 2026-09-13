@@ -1,41 +1,37 @@
 <template>
-  <div class="app-container" ref="app-container" v-loading="appLoading">
+  <div class="app-container glass-card" ref="app-container" v-loading="appLoading">
     <div class="head-title">
       <div class="name">{{ taskInfo.name }}</div>
       <div class="btns">
-        <el-button v-if="taskInfo.pageType != 0" icon="Back" @click="handleBack"
+        <el-button v-ripple class="glass-btn" v-if="taskInfo.pageType != 0" icon="Back" @click="handleBack"
           >返回</el-button
         >
         <!-- 结构化/非结构化 -->
-        <el-button
+        <el-button v-ripple class="glass-btn"
           :disabled="graphData.nodes.length == 0"
           v-if="taskInfo.pageType != 0 && !releaseStatus"
           icon="Upload"
-          type="primary"
           @click="handleRelease"
         >
           发布
         </el-button>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           :disabled="graphData.nodes.length == 0"
           v-if="taskInfo.pageType != 0 && releaseStatus"
           icon="Upload"
-          type="primary"
           @click="handleCancelRelease"
         >
           取消发布
         </el-button>
         <!-- 故障树 -->
-        <el-button
+        <el-button v-ripple class="glass-btn"
           v-if="taskInfo.pageType == 3"
-          type="primary"
           @click="handleAddEntity"
         >
           <i class="iconfont-mini icon-xinzeng mr5"></i>编辑实体
         </el-button>
-        <el-button
+        <el-button v-ripple class="glass-btn"
           v-if="taskInfo.pageType == 3"
-          type="primary"
           @click="handleAddRelationship"
         >
           <i class="iconfont-mini icon-xinzeng mr5"></i>编辑三元组
@@ -44,7 +40,7 @@
     </div>
     <el-container class="wrap-container">
       <div :class="['gragh-wrap', { isfull: isfull }]">
-        <div class="control-tree">
+        <div class="control-tree glass-card">
           <el-tree
             node-key="id"
             :props="props"
@@ -115,7 +111,7 @@
           id="gragh-container"
         ></div>
         <transition name="el-zoom-in-right">
-          <div class="details-dialog" v-if="detailShow">
+          <div class="details-dialog glass-card" v-if="detailShow">
             <div class="details-title">
               <div class="title-label">
                 <el-icon class="icon" @click="detailClose">
@@ -126,10 +122,9 @@
                 }}</span>
               </div>
               <div class="title-slot">
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   :disabled="releaseStatus"
                   size="small"
-                  type="danger"
                   icon="Delete"
                   @click="handleDel"
                   >删除
@@ -144,6 +139,7 @@
                   </template>
                   <div class="collapse-con">
                     <el-table
+                      class="glass-card"
                       stripe
                       height="150px"
                       v-loading="attrLoading"
@@ -186,18 +182,16 @@
                         width="120"
                       >
                         <template #default="scope">
-                          <el-button
+                          <el-button v-ripple class="glass-btn"
                             :disabled="releaseStatus"
                             link
-                            type="primary"
                             icon="Edit"
                             @click="attrUpdate(scope.row)"
                             >修改
                           </el-button>
-                          <el-button
+                          <el-button v-ripple class="glass-btn"
                             :disabled="releaseStatus"
                             link
-                            type="danger"
                             icon="Delete"
                             @click="attrDelete(scope.row)"
                             >删除
@@ -213,6 +207,7 @@
                   </template>
                   <div class="collapse-con">
                     <el-table
+                      class="glass-card"
                       stripe
                       height="200px"
                       v-loading="tripletLoading"
@@ -242,10 +237,9 @@
                         fixed="right"
                       >
                         <template #default="scope">
-                          <el-button
+                          <el-button v-ripple class="glass-btn"
                             :disabled="releaseStatus"
                             link
-                            type="danger"
                             icon="Delete"
                             @click="tripletDelete(scope.row)"
                             >删除</el-button
@@ -292,6 +286,7 @@
                         </div>
                       </div>
                       <el-table
+                        class="glass-card"
                         height="200px"
                         v-loading="dataSourceLoading"
                         :data="dataSource.tableData"
@@ -374,7 +369,7 @@
         </transition>
         <!-- 属性信息修改 -->
         <el-dialog
-          class="attr-dialog"
+          class="attr-dialog glass-card"
           title="属性信息"
           v-model="attrVisible"
           width="500px"
@@ -400,8 +395,8 @@
           </el-form>
           <template #footer>
             <div class="dialog-footer">
-              <el-button @click="attrFormCancel">取 消</el-button>
-              <el-button type="primary" @click="attrFormSubmit"
+              <el-button v-ripple class="glass-btn" @click="attrFormCancel">取 消</el-button>
+              <el-button v-ripple class="glass-btn" @click="attrFormSubmit"
                 >确 定</el-button
               >
             </div>
@@ -423,7 +418,7 @@
       </div>
     </el-container>
     <!-- 预览文件弹窗 -->
-    <el-dialog class="fileDialog" v-model="dialogVisible" :title="'预览'">
+    <el-dialog class="fileDialog glass-card" v-model="dialogVisible" :title="'预览'">
       <div class="filecont" style="height: 100%">
         <vue-office-pdf
           v-if="fileType === 'pdf'"
@@ -1454,7 +1449,7 @@ function previewRefactoring(row) {
 .app-container {
   .head-title {
     height: 46px;
-    background: #fff;
+    background: #F5F5F7;
     padding: 0px 15px;
     display: flex;
     justify-content: space-between;
@@ -1510,11 +1505,7 @@ function previewRefactoring(row) {
       left: 10px;
       width: 250px;
       height: calc(100% - 20px);
-      background: radial-gradient(
-        100% 0% at 50% 50%,
-        #1c3668 0%,
-        rgba(0, 15, 39, 0.27) 100%
-      );
+      background: #F5F5F7;
       border: 1px solid var(--el-color-primary);
       border-radius: 4px;
       overflow: hidden auto;
@@ -1524,7 +1515,7 @@ function previewRefactoring(row) {
         width: 0;
       }
       :deep(.el-tree) {
-        --el-tree-text-color: #fff;
+        --el-tree-text-color: #1D1D1F;
         background: transparent;
         .el-tree-node__content:hover {
           background-color: var(--el-color-primary);
@@ -1617,7 +1608,7 @@ function previewRefactoring(row) {
         :deep(.el-input__wrapper) {
           background: transparent;
           .el-input__inner {
-            color: #fff;
+            color: #1D1D1F;
           }
         }
       }
@@ -1636,7 +1627,7 @@ function previewRefactoring(row) {
       .tool-mask {
         width: 151px;
         max-height: 214px;
-        background: #1c376a;
+        background: #F5F5F7;
         border-radius: 4px 4px 4px 4px;
         border: 1px solid #448fff;
         position: absolute;
@@ -1667,7 +1658,7 @@ function previewRefactoring(row) {
             line-height: 1;
             font-family: PingFangSCs;
             font-size: 13px;
-            color: #d7e3fa;
+            color: #1D1D1F;
           }
         }
       }
@@ -1676,7 +1667,7 @@ function previewRefactoring(row) {
     .gragh-container {
       width: 100%;
       height: 100%;
-      background: #fff url("@/assets/ke/images/bg1.png") no-repeat;
+      background: #F5F5F7 url("@/assets/ke/images/bg1.png") no-repeat;
       background-size: 100% 100%;
       transition: width 0.3s;
       &.detailShow {
@@ -1698,7 +1689,7 @@ function previewRefactoring(row) {
       right: 0;
       width: 400px;
       height: 100%;
-      background: #fff;
+      background: #F5F5F7;
       border: 1px solid rgba(0, 0, 0, 0.1);
 
       .details-title {

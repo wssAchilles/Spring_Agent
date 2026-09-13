@@ -1,6 +1,6 @@
 <template>
     <!-- 仅修改模板结构部分 -->
-    <div class="app-container" ref="app-container">
+    <div class="app-container glass-card" ref="app-container">
         <div class="pagecont-top">
             <el-form ref="extStructRef" :model="form" :rules="rules" style="width: 75%;" label-width="100px">
                 <!-- 结构化抽取任务区块 -->
@@ -31,16 +31,16 @@
 
                         <el-col :span="12">
                             <div>
-                                <el-button type="primary" plain @click="testConnection">测试连接</el-button>
+                                <el-button v-ripple class="glass-btn" plain @click="testConnection">测试连接</el-button>
                                 <!-- 条件渲染绿色圆形对号图标 -->
                                 <div v-if="connectionSuccess" class="success-icon">
-                                    <el-icon style="color: white;">
+                                    <el-icon style="color: #1D1D1F;">
                                         <check/>
                                     </el-icon>
                                 </div>
                                 <!-- 条件渲染红色圆形 X 图标 -->
                                 <div v-if="connectionError" class="error-icon">
-                                    <el-icon style="color: white;">
+                                    <el-icon style="color: #1D1D1F;">
                                         <close/>
                                     </el-icon>
                                 </div>
@@ -54,14 +54,14 @@
                     <div class="module-header">
                         <span class="module-title">数据映射</span>
                         <div class="header-actions">
-                            <el-button type="primary" plain @click="openImportTable">导入表</el-button>
+                            <el-button v-ripple class="glass-btn" plain @click="openImportTable">导入表</el-button>
                             <el-icon class="tip-icon" size="20" style="">
                                 <InfoFilled/>
                             </el-icon>
                             <span class="tip-text">注：导入表之前需确保数据库连接信息正确</span>
                         </div>
                     </div>
-                    <el-table :data="tableData">
+                    <el-table class="glass-card" :data="tableData">
                         <el-table-column
                                 prop="tableName"
                                 label="表名">
@@ -98,9 +98,9 @@
                                 width="180">
                             <template #default="scope">
                                 <div>
-                                    <el-button link type="primary" icon="Edit" @click="mappingClick(scope.row)">映射
+                                    <el-button v-ripple class="glass-btn" link icon="Edit" @click="mappingClick(scope.row)">映射
                                     </el-button>
-                                    <el-button link type="danger" icon="Delete"
+                                    <el-button v-ripple class="glass-btn" link icon="Delete"
                                                @click="tableDataDeleteClick(scope.row)">
                                         删除
                                     </el-button>
@@ -112,8 +112,8 @@
 
                 <!-- 底部按钮保持原位 -->
                 <div class="dialog-footer" style="width: 30%;float: right;margin: -75px -163px 0px 0px;">
-                    <el-button @click="handleBack">取 消</el-button>
-                    <el-button type="primary" @click="submitFileForm">确 定</el-button>
+                    <el-button v-ripple class="glass-btn" @click="handleBack">取 消</el-button>
+                    <el-button v-ripple class="glass-btn" @click="submitFileForm">确 定</el-button>
                 </div>
             </el-form>
         </div>
@@ -340,7 +340,7 @@
     .module-block {
         border: 1px solid #ebeef5;
         border-radius: 4px;
-        background: #fff;
+        background: #F5F5F7;
         padding: 10px 20px;
         margin-bottom: 20px;
         box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);

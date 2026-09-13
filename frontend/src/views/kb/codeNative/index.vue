@@ -6,14 +6,14 @@
         <span class="toolbar-title">{{ botName }}</span>
       </div>
       <div class="toolbar-actions">
-        <el-button type="primary" class="fhbtn" plain @click="routerView">
+        <el-button v-ripple class="fhbtn glass-btn" plain @click="routerView">
           <svg-icon :iconClass="'fhs'"/>
           返回
         </el-button>
-        <el-button type="primary" @click="openDebugRunPanel">
+        <el-button v-ripple class="glass-btn" @click="openDebugRunPanel">
           <VideoPlay class="ds"/>调试
         </el-button>
-        <el-button type="primary" @click="saveCodeNative">
+        <el-button v-ripple class="glass-btn" @click="saveCodeNative">
           <img src="@/assets/icons/svg/bc.svg" alt="" class="bcimg"/>保存
         </el-button>
       </div>
@@ -52,8 +52,8 @@
 <!--        </el-form>-->
 
 <!--        <div class="drawer-footer">-->
-<!--          <el-button @click="drawerVisible = false">取消</el-button>-->
-<!--          <el-button type="primary" :loading="loading" @click="runCode">-->
+<!--          <el-button v-ripple class="glass-btn" @click="drawerVisible = false">取消</el-button>-->
+<!--          <el-button v-ripple class="glass-btn" :loading="loading" @click="runCode">-->
 <!--            确认执行-->
 <!--          </el-button>-->
 <!--        </div>-->
@@ -86,13 +86,13 @@
             content="用户输入字段"
             placement="top"
         >
-          <el-button
+          <el-button v-ripple
               text
-              class="drawer-toggle-btn"
+              class="drawer-toggle-btn glass-btn"
               :class="{
                     'is-active': chatflowDebugSectionsVisible,
                     'is-inactive': !chatflowDebugSectionsVisible,
-                  }"
+                  } glass-btn"
               @click="toggleChatflowDebugSections"
           >
             <el-icon><Operation /></el-icon>

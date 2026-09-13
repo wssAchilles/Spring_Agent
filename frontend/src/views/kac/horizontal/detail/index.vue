@@ -1,6 +1,6 @@
 <template>
   <div
-    class="app-container app-detail-page"
+    class="app-container app-detail-page glass-card"
     ref="appContainer"
     v-loading="loading"
   >
@@ -29,8 +29,7 @@
         </div>
       </div>
       <div class="hero-actions">
-        <el-button
-          type="primary"
+        <el-button v-ripple class="glass-btn"
           plain
           icon="CopyDocument"
           :disabled="isDisabled"
@@ -39,8 +38,7 @@
         >
           复制应用
         </el-button>
-        <el-button
-          type="primary"
+        <el-button v-ripple class="glass-btn"
           icon="Promotion"
           :disabled="isDisabled && applyDetail.myApplyFlag === false"
           @click="handleUse(applyDetail)"
@@ -144,7 +142,7 @@
 
       <aside
         v-if="visibleMountedResourceGroups.length"
-        class="resource-panel"
+        class="resource-panel glass-card"
         :style="
           mainPanelHeight ? { maxHeight: `${mainPanelHeight}px` } : undefined
         "
@@ -178,9 +176,8 @@
                 <h3>{{ item.name }}</h3>
                 <p>{{ item.description }}</p>
               </div>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 v-if="isMyAppSource"
-                type="primary"
                 plain
                 icon="Switch"
                 @click="openResourceDialog(group.type)"
@@ -194,6 +191,7 @@
     </div>
 
     <el-dialog
+      class="glass-card resource-manager-dialog"
       :title="resourceDialogTitle"
       v-model="resourceDialogOpen"
       width="1100px"
@@ -225,7 +223,7 @@
       />
     </el-dialog>
 
-    <el-dialog :title="title" v-model="open" width="800px" draggable>
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px" draggable>
       <el-form ref="applyRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="应用名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入应用名称" />
@@ -251,8 +249,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取消</el-button>
-          <el-button type="primary" size="small" @click="submitForm">
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm">
             确定
           </el-button>
         </div>

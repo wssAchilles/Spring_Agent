@@ -34,16 +34,14 @@
         width="240"
     >
       <template #default="scope">
-        <el-button
+        <el-button v-ripple class="glass-btn"
             link
-            type="primary"
             icon="VideoPlay"
             @click="handleUpdate(scope.row)"
         >立即体验
         </el-button>
-        <el-button
+        <el-button v-ripple class="glass-btn"
             link
-            type="primary"
             icon="view"
             @click="handleDetail(scope.row)"
         >查看详情

@@ -7,7 +7,7 @@
     <div
       v-for="(item, index) in data"
       :key="item.id || index"
-      class="card"
+      class="card glass-card"
       @click="handleDetail(item)"
     >
       <div class="card-cover">
@@ -21,20 +21,18 @@
           <div class="card-title-button">
             <el-popover placement="bottom" trigger="click">
               <template #reference>
-                <el-button
-                  type="primary"
+                <el-button v-ripple
                   link
                   @click.stop
-                  class="custom-more-button"
+                  class="custom-more-button glass-btn"
                 >
                   <el-icon class="more-icon"><More /></el-icon>
                 </el-button>
               </template>
               <div class="card-button-group">
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   style="margin-left: 12px"
                   text
-                  type="primary"
                   @click.stop="handleUpdate(item)"
                   v-hasPermi="['kac:solution:solution:edit']"
                 >
@@ -44,9 +42,8 @@
                   ></i>
                   修改
                 </el-button>
-                <el-button
+                <el-button v-ripple class="glass-btn"
                   text
-                  type="danger"
                   icon="Delete"
                   style="margin-left: 12px"
                   @click.stop="handleDelete(item)"
@@ -107,7 +104,7 @@
       </div>
     </div>
 
-    <el-dialog :title="title" v-model="open" width="800px">
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px">
       <el-form
         ref="solutionRef"
         :model="form"
@@ -138,8 +135,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取消</el-button>
-          <el-button type="primary" size="small" @click="submitForm">
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm">
             确定
           </el-button>
         </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <!-- MCP Server 状态面板 -->
     <McpServerPanel style="margin-bottom: 16px;" />
 
@@ -16,10 +16,10 @@
       </el-form-item>
 
       <el-form-item>
-        <el-button plain type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+        <el-button v-ripple class="glass-btn" plain @click="handleQuery" @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
         </el-button>
-        <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+        <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
           <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
         </el-button>
       </el-form-item>
@@ -30,13 +30,13 @@
      <div class="justify-between mb15">
        <el-row :gutter="15" class="btn-style">
          <el-col :span="1.5">
-           <el-button type="primary" plain @click="handleAdd" v-hasPermi="['kb:tool:tool:add']"
+           <el-button v-ripple class="glass-btn" plain @click="handleAdd" v-hasPermi="['kb:tool:tool:add']"
                       @mousedown="(e) => e.preventDefault()">
              <i class="iconfont-mini icon-xinzeng mr5"></i>新增
            </el-button>
          </el-col>
          <el-col :span="1.5">
-           <el-button type="danger" plain :disabled="multiple" @click="handleDelete" v-hasPermi="['kb:tool:tool:remove']"
+           <el-button v-ripple class="glass-btn" plain :disabled="multiple" @click="handleDelete" v-hasPermi="['kb:tool:tool:remove']"
                       @mousedown="(e) => e.preventDefault()">
              <i class="iconfont-mini icon-shanchu-huise mr5"></i> 删除
            </el-button>
@@ -46,7 +46,7 @@
          <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
        </div>
      </div>
-     <el-table stripe   v-loading="loading" :data="toolList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+     <el-table class="glass-card" stripe   v-loading="loading" :data="toolList" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
        <el-table-column type="selection" width="55" align="center" />
        <el-table-column v-if="getColumnVisibility(0)" label="编号" align="center" prop="id"
                         width="85"
@@ -80,9 +80,9 @@
                </el-table-column>
         <el-table-column v-if="getColumnVisibility(6)" label="来源" align="center" width="100">
           <template #default="scope">
-            <el-tag v-if="scope.row.source === 'mcp'" type="primary" size="small">MCP</el-tag>
-            <el-tag v-else-if="scope.row.source === 'custom'" type="success" size="small">自定义</el-tag>
-            <el-tag v-else type="info" size="small">内置</el-tag>
+            <el-tag v-if="scope.row.source === 'mcp'" size="small">MCP</el-tag>
+            <el-tag v-else-if="scope.row.source === 'custom'" size="small">自定义</el-tag>
+            <el-tag v-else size="small">内置</el-tag>
           </template>
         </el-table-column>
 <!--       <el-table-column v-if="getColumnVisibility(15)" label="备注" align="left" prop="remark" width="250"-->
@@ -108,11 +108,11 @@
        </el-table-column>
        <el-table-column v-if="getColumnVisibility(16)" label="操作" align="center" class-name="small-padding fixed-width" fixed="right" width="240">
          <template #default="scope">
-           <el-button link type="primary" icon="view" @click="routeTo('/kb/tool/toolDetail',scope.row)"
+           <el-button v-ripple class="glass-btn" link icon="view" @click="routeTo('/kb/tool/toolDetail',scope.row)"
                       v-hasPermi="['kb:tool:tool:query']">详情</el-button>
-           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)"
+           <el-button v-ripple class="glass-btn" link icon="Edit" @click="handleUpdate(scope.row)"
                       v-hasPermi="['kb:tool:tool:edit']">修改</el-button>
-           <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)"
+           <el-button v-ripple class="glass-btn" link icon="Delete" @click="handleDelete(scope.row)"
                       v-hasPermi="['kb:tool:tool:remove']">删除</el-button>
          </template>
        </el-table-column>
@@ -135,7 +135,7 @@
     </div>
 
     <!-- 添加或修改工具管理对话框 -->
-    <el-dialog :title="title" v-model="open" width="800px" append-to="body" draggable>
+    <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body" draggable>
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">
           {{ title }}
@@ -171,9 +171,9 @@
                     @keyup.enter="handleInputConfirm"
                     @blur="handleInputConfirm"
                 />
-                <el-button
+                <el-button v-ripple
                     v-else
-                    class="button-new-tag"
+                    class="button-new-tag glass-btn"
                     size="small"
                     @click="showInput"
                 >
@@ -200,8 +200,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button size="small" @click="cancel">取 消</el-button>
-          <el-button type="primary" size="small" @click="submitForm">确 定</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>

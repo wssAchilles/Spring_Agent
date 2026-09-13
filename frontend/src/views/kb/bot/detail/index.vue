@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <div class="pagecont-top" v-show="showSearch" style="padding-bottom:15px">
       <div class="infotop">
         <div class="infotop-title mb15">
@@ -11,10 +11,9 @@
           </span>
           <el-row :gutter="15" class="btn-style" style="margin-left: auto">
             <el-col :span="1.5">
-              <el-button
-                  type="primary"
+              <el-button v-ripple
                   size="small"
-                  class="fhbtn"
+                  class="fhbtn glass-btn"
                   plain
                   @click="handleReturn"
                   @mousedown="(e) => e.preventDefault()"

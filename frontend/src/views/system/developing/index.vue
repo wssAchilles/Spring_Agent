@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container glass-card">
     <div class="emptyBg">
       <div class="empty-content">
         <img

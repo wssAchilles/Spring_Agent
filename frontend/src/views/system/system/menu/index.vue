@@ -1,5 +1,5 @@
 <template>
-   <div class="app-container" ref="app-container">
+   <div class="app-container glass-card" ref="app-container">
       <div class="pagecont-top" v-show="showSearch">
          <el-form class="btn-style" :model="queryParams" ref="queryRef" :inline="true"  label-width="68px">
             <el-form-item label="菜单名称" prop="menuName">
@@ -22,10 +22,10 @@
                </el-select>
             </el-form-item>
             <el-form-item>
-               <el-button type="primary" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="handleQuery" @mousedown="(e) => e.preventDefault()">
                   <i class="iconfont-mini icon-a-chaxunxianxing mr5"></i>查询
                </el-button>
-               <el-button @click="resetQuery" @mousedown="e => e.preventDefault()">
+               <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="e => e.preventDefault()">
                   <i class="iconfont-mini icon-a-shuaxinxianxing mr5"></i>重置
                </el-button>
             </el-form-item>
@@ -35,8 +35,7 @@
          <div class="justify-between mb15">
          <el-row :gutter="10" class="btn-style">
             <el-col :span="1.5">
-               <el-button
-                  type="primary"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="handleAdd"
                   v-hasPermi="['system:menu:add']"
@@ -45,8 +44,7 @@
                  新增</el-button>
             </el-col>
             <el-col :span="1.5">
-               <el-button
-                  type="info"
+               <el-button v-ripple class="glass-btn"
                   plain
                   @click="toggleExpandAll"
                >
@@ -58,6 +56,7 @@
          </div>
 
          <el-table
+            class="glass-card"
             v-if="refreshTable"
             v-loading="loading"
             :data="menuList"
@@ -94,13 +93,13 @@
             </el-table-column>
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width"  fixed="right" width="240">
                <template #default="scope">
-                  <el-button link type="primary" @click="handleUpdate(scope.row)" v-hasPermi="['system:menu:edit']">
+                  <el-button v-ripple class="glass-btn" link @click="handleUpdate(scope.row)" v-hasPermi="['system:menu:edit']">
                     <i class="iconfont-mini icon-a-xiugaixianxing"></i>
                     修改</el-button>
-                  <el-button link type="primary"  @click="handleAdd(scope.row)" v-hasPermi="['system:menu:add']">
+                  <el-button v-ripple class="glass-btn" link  @click="handleAdd(scope.row)" v-hasPermi="['system:menu:add']">
                     <i class="iconfont-mini icon-xinzeng"></i>
                     新增</el-button>
-                  <el-button link type="danger"  @click="handleDelete(scope.row)" v-hasPermi="['system:menu:remove']">
+                  <el-button v-ripple class="glass-btn" link  @click="handleDelete(scope.row)" v-hasPermi="['system:menu:remove']">
                     <i class="iconfont-mini icon-a-shanchuxianxing"></i>
                     删除</el-button>
                </template>
@@ -109,7 +108,7 @@
       </div>
 
       <!-- 添加或修改菜单对话框 -->
-      <el-dialog :title="title" v-model="open" width="800px" append-to="body" draggable destroy-on-close>
+      <el-dialog class="glass-card" :title="title" v-model="open" width="800px" append-to="body" draggable destroy-on-close>
          <el-form ref="menuRef" :model="form" :rules="rules" label-width="100px">
             <el-row :gutter="20">
                <el-col :span="24">
@@ -172,7 +171,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="默认不填则和路由地址相同：如地址为：`user`，则名称为`User`（注意：因为router会删除名称相同路由，为避免名字的冲突，特殊情况下请自定义，保证唯一性）" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            路由名称
                         </span>
@@ -185,7 +184,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="访问的路由地址，如：`user`，如外网地址需内链访问则以`http(s)://`开头" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            路由地址
                         </span>
@@ -198,7 +197,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择是外链则路由地址需要以`http(s)://`开头" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            是否外链
                         </span>
@@ -215,7 +214,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="访问的组件路径，如：`system/user/index`，默认在`views`目录下" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            组件路径
                         </span>
@@ -229,7 +228,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasPermi('system:user:list')`)" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            权限字符
                         </span>
@@ -242,7 +241,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content='访问路由的默认传递参数，如：`{"id": 1, "name": "ry"}`' placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            路由参数
                         </span>
@@ -254,7 +253,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择是则会被`keep-alive`缓存，需要匹配组件的`name`和地址保持一致" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            是否缓存
                         </span>
@@ -270,7 +269,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择隐藏则路由将不会出现在侧边栏，但仍然可以访问" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            显示状态
                         </span>
@@ -289,7 +288,7 @@
                      <template #label>
                         <span>
                            <el-tooltip content="选择停用则路由将不会出现在侧边栏，也不能被访问" placement="top">
-                              <el-icon style="color: #909399;"><InfoFilled /></el-icon>
+                              <el-icon style="color: #1D1D1F;"><InfoFilled /></el-icon>
                            </el-tooltip>
                            菜单状态
                         </span>
@@ -307,8 +306,8 @@
          </el-form>
          <template #footer>
             <div class="dialog-footer">
-               <el-button @click="cancel">取 消</el-button>
-               <el-button type="primary" @click="submitForm">确 定</el-button>
+               <el-button v-ripple class="glass-btn" @click="cancel">取 消</el-button>
+               <el-button v-ripple class="glass-btn" @click="submitForm">确 定</el-button>
             </div>
          </template>
       </el-dialog>

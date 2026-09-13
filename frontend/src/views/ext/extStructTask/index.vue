@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" ref="app-container">
+  <div class="app-container glass-card" ref="app-container">
     <GuideTip tip-id="kg/ext/structTask.list" />
     <div class="pagecont-top" v-show="showSearch">
       <el-form
@@ -66,15 +66,14 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button
+          <el-button v-ripple class="glass-btn"
             plain
-            type="primary"
             @click="handleQuery"
             @mousedown="(e) => e.preventDefault()"
           >
             <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
           </el-button>
-          <el-button @click="resetQuery" @mousedown="(e) => e.preventDefault()">
+          <el-button v-ripple class="glass-btn" @click="resetQuery" @mousedown="(e) => e.preventDefault()">
             <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
           </el-button>
         </el-form-item>
@@ -85,8 +84,7 @@
       <div class="justify-between mb15">
         <el-row :gutter="15" class="btn-style">
           <el-col :span="1.5">
-            <el-button
-              type="primary"
+            <el-button v-ripple class="glass-btn"
               plain
               @click="routeTo(`/kg/ext/addStructTask`)"
               v-hasPermi="['ext:extStructTask:struct:add']"
@@ -94,8 +92,7 @@
             >
               <i class="iconfont-mini icon-xinzeng mr5"></i>新增
             </el-button>
-             <el-button
-              type="danger"
+             <el-button v-ripple class="glass-btn"
               plain
               @click="handleDelete()"
               :disabled="ids.length==0"
@@ -113,7 +110,7 @@
           ></right-toolbar>
         </div>
       </div>
-      <el-table
+      <el-table class="glass-card"
         stripe
         v-loading="loading"
         :data="extStructList"
@@ -278,18 +275,16 @@
           width="220"
         >
           <template #default="scope">
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               v-if="scope.row.publishStatus != 1"
               icon="VideoPlay"
               @click="extraction(scope.row)"
               v-hasPermi="['ext:extStructTask:struct:edit']"
               >执行
             </el-button>
-            <el-button
+            <el-button v-ripple class="glass-btn"
               link
-              type="primary"
               v-if="scope.row.status == 2"
               icon="view"
               @click="handleResult(scope.row)"
@@ -305,23 +300,21 @@
                 v-if="scope.row.publishStatus != 1"
               >
                 <template #reference>
-                  <el-button type="primary" icon="ArrowDown" link @click.stop
+                  <el-button v-ripple class="glass-btn" icon="ArrowDown" link @click.stop
                     >更多</el-button
                   >
                 </template>
                 <div class="card-button-group">
-                  <!-- <el-button
+                  <!-- <el-button v-ripple class="glass-btn"
                     link
-                    type="primary"
                     style="margin-left: 12px"
                     v-if="scope.row.status == 2"
                     icon="VideoPlay"
                     @click="handleRun(scope.row)"
                     >执行一次
                   </el-button> -->
-                  <el-button
+                  <el-button v-ripple class="glass-btn"
                     link
-                    type="primary"
                     v-if="scope.row.publishStatus != 1"
                     icon="Edit"
                     @click="routeTo(`/kg/ext/editStructTask`, scope.row)"
@@ -329,9 +322,8 @@
                      style="padding-left: 30px"
                     >修改
                   </el-button>
-                  <el-button
+                  <el-button v-ripple class="glass-btn"
                     link
-                    type="danger"
                     v-if="scope.row.publishStatus != 1"
                     icon="Delete"
                     @click="handleDelete(scope.row)"
@@ -343,27 +335,24 @@
               </el-popover>
             </template>
             <template v-else>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 link
-                type="primary"
                 style="margin-left: 12px"
                 v-if="scope.row.status == 2"
                 icon="VideoPlay"
                 @click="handleRun(scope.row)"
                 >执行一次
               </el-button>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 link
-                type="primary"
                 v-if="scope.row.publishStatus != 1"
                 icon="Edit"
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['ext:extStructTask:struct:edit']"
                 >编辑
               </el-button>
-              <el-button
+              <el-button v-ripple class="glass-btn"
                 link
-                type="danger"
                 v-if="scope.row.publishStatus != 1"
                 icon="Delete"
                 @click="handleDelete(scope.row)"

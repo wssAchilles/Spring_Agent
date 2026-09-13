@@ -2,15 +2,13 @@
   <div class="justify-between mb15">
     <el-row :gutter="10" class="btn-style">
       <el-col :span="1.5">
-        <el-button
-            type="primary"
+        <el-button v-ripple class="glass-btn"
             plain
             icon="Plus"
         >新增</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button
-            type="info"
+        <el-button v-ripple class="glass-btn"
             plain
             icon="Sort"
             @click="toggleExpandAll"
@@ -56,9 +54,9 @@
     </el-table-column>
     <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
       <template #default="scope">
-        <el-button link type="primary" icon="Edit"  >修改</el-button>
-        <el-button link type="primary" icon="Plus"  >新增</el-button>
-        <el-button link type="danger" icon="Delete" >删除</el-button>
+        <el-button v-ripple class="glass-btn" link icon="Edit"  >修改</el-button>
+        <el-button v-ripple class="glass-btn" link icon="Plus"  >新增</el-button>
+        <el-button v-ripple class="glass-btn" link icon="Delete" >删除</el-button>
       </template>
     </el-table-column>
   </el-table>

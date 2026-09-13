@@ -33,14 +33,14 @@
       </el-col>
       <el-col :span="2">
         <div>
-          <el-button type="primary" plain @click="onTestConnection">
+          <el-button v-ripple class="glass-btn" plain @click="onTestConnection">
             测试连接
           </el-button>
           <div v-if="connectionSuccess" class="success-icon">
-            <el-icon style="color: white"><check /></el-icon>
+            <el-icon style="color: #1D1D1F;"><check /></el-icon>
           </div>
           <div v-if="connectionError" class="error-icon">
-            <el-icon style="color: white"><close /></el-icon>
+            <el-icon style="color: #1D1D1F;"><close /></el-icon>
           </div>
         </div>
       </el-col>
@@ -66,10 +66,9 @@
             placeholder="请输入cron执行表达式"
           >
             <template #append>
-              <el-button
-                type="primary"
+              <el-button v-ripple class="glass-btn"
                 @click="onShowCron"
-                style="background-color: #2666fb; color: #fff"
+                style="background: #F5F5F7; color: #1D1D1F;"
               >
                 生成
                 <i class="el-icon-time el-icon--right"></i>
