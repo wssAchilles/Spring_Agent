@@ -256,8 +256,10 @@ public class Phase34ExplainabilityAndAuditContractTest {
         boolean honestValid = merkleTreeEngine.verifyInclusionProof(realRoot, honestProof.leafHash(), honestProof.proofPath());
         assertTrue(honestValid, "诚实证据链必须验证通过");
 
-        // 篡改 1: 篡改叶子哈希中的单个字符 (单比特翻转)
-        String tamperedLeaf = honestProof.leafHash().substring(0, 10) + "0" + honestProof.leafHash().substring(11);
+        // 篡改 1: 篡改叶子哈希中的单个字符 (单比特翻转，确保100%发生变更)
+        char leafChar = honestProof.leafHash().charAt(10);
+        char mutatedLeafChar = (leafChar == '0') ? '1' : '0';
+        String tamperedLeaf = honestProof.leafHash().substring(0, 10) + mutatedLeafChar + honestProof.leafHash().substring(11);
         boolean tamperedLeafValid = merkleTreeEngine.verifyInclusionProof(realRoot, tamperedLeaf, honestProof.proofPath());
         assertFalse(tamperedLeafValid, "叶子哈希单比特篡改必须导致验真失败");
 
@@ -266,7 +268,9 @@ public class Phase34ExplainabilityAndAuditContractTest {
         for (int i = 0; i < honestProof.proofPath().size(); i++) {
             MerkleProof.ProofElement orig = honestProof.proofPath().get(i);
             if (i == 0) {
-                String corruptedSibling = "ff" + orig.hash().substring(2);
+                char sibChar = orig.hash().charAt(0);
+                char mutatedSibChar = (sibChar == '0') ? '1' : '0';
+                String corruptedSibling = mutatedSibChar + orig.hash().substring(1);
                 tamperedPath.add(new MerkleProof.ProofElement(corruptedSibling, orig.isLeft()));
             } else {
                 tamperedPath.add(orig);
@@ -275,8 +279,10 @@ public class Phase34ExplainabilityAndAuditContractTest {
         boolean tamperedPathValid = merkleTreeEngine.verifyInclusionProof(realRoot, honestProof.leafHash(), tamperedPath);
         assertFalse(tamperedPathValid, "兄弟路径哈希单比特篡改必须导致验真失败");
 
-        // 篡改 3: 篡改根哈希
-        String tamperedRoot = "00" + realRoot.substring(2);
+        // 篡改 3: 篡改根哈希 (确保100%发生变更)
+        char rootChar = realRoot.charAt(0);
+        char mutatedRootChar = (rootChar == '0') ? '1' : '0';
+        String tamperedRoot = mutatedRootChar + realRoot.substring(1);
         boolean tamperedRootValid = merkleTreeEngine.verifyInclusionProof(tamperedRoot, honestProof.leafHash(), honestProof.proofPath());
         assertFalse(tamperedRootValid, "根哈希篡改必须导致验真失败");
     }
