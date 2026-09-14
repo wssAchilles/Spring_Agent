@@ -40,8 +40,11 @@ public class MemoryConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public LongTermMemory longTermMemory(ObjectProvider<VectorStore> vectorStore,
-                                         ObjectProvider<EmbeddingModel> embeddingModel) {
-        return new LongTermMemory(vectorStore.getIfAvailable(), embeddingModel.getIfAvailable());
+                                         ObjectProvider<EmbeddingModel> embeddingModel,
+                                         ObjectProvider<ChatModel> chatModel,
+                                         ObjectProvider<UserMemoryGraphService> graphService) {
+        return new LongTermMemory(vectorStore.getIfAvailable(), embeddingModel.getIfAvailable(),
+                chatModel.getIfAvailable(), graphService.getIfAvailable());
     }
 
     @Bean

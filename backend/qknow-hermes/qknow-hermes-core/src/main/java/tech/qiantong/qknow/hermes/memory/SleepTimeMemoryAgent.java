@@ -14,13 +14,22 @@ public class SleepTimeMemoryAgent {
     private final MemoryManager memoryManager;
     private final long idleThresholdMs;
     private final int scanCount;
+    private final tech.qiantong.qknow.redis.service.IRedisService redisService;
 
     public SleepTimeMemoryAgent(MemoryManager memoryManager,
                                 @Value("${hermes.memory.sleep-agent.idle-threshold-ms:1800000}") long idleThresholdMs,
                                 @Value("${hermes.memory.sleep-agent.scan-count:500}") int scanCount) {
+        this(memoryManager, idleThresholdMs, scanCount, null);
+    }
+
+    public SleepTimeMemoryAgent(MemoryManager memoryManager,
+                                @Value("${hermes.memory.sleep-agent.idle-threshold-ms:1800000}") long idleThresholdMs,
+                                @Value("${hermes.memory.sleep-agent.scan-count:500}") int scanCount,
+                                @org.springframework.beans.factory.annotation.Autowired(required = false) tech.qiantong.qknow.redis.service.IRedisService redisService) {
         this.memoryManager = memoryManager;
         this.idleThresholdMs = idleThresholdMs;
         this.scanCount = scanCount;
+        this.redisService = redisService;
     }
 
     @Value("${hermes.memory.sleep-agent.enabled:true}")
@@ -46,7 +55,7 @@ public class SleepTimeMemoryAgent {
         long now = System.currentTimeMillis();
         ShortTermMemory shortTerm = memoryManager.getShortTerm();
         // 分批处理，避免 SCAN 全量加载到内存
-        int batchSize = 50;
+        int batchSize = usageRatio > 0.80 ? 20 : 50;
         int processed = 0;
         List<String> sessionIds = shortTerm.listSessionIds(scanCount);
         for (int i = 0; i < sessionIds.size(); i++) {
@@ -61,14 +70,41 @@ public class SleepTimeMemoryAgent {
                 log.warn("Sleep-time memory skipped incomplete identity: sessionId={}", sessionId);
                 continue;
             }
+
+            // 获取 Redis 会话分布式写锁，防止前台对话冲突
+            String lockKey = "memory:lock:session:" + sessionId;
+            boolean lockAcquired = false;
+            if (redisService != null) {
+                lockAcquired = redisService.setNx(lockKey, "1", 60L);
+                if (!lockAcquired) {
+                    log.debug("Session lock contention, skipping consolidation: sessionId={}", sessionId);
+                    continue;
+                }
+            }
+
             try {
+                int initialCount = shortTerm.size(sessionId);
                 memoryManager.onConversationEnd(sessionId, userId, scope);
-                shortTerm.clearSession(sessionId);
+
+                // 安全增量裁剪，保障并发消息0丢失
+                if (redisService != null) {
+                    Long currentSize = redisService.getListSize("memory:short:" + sessionId);
+                    log.debug("Consolidating sessionId={}, initialCount={}, currentSize={}", sessionId, initialCount, currentSize);
+                    redisService.lTrim("memory:short:" + sessionId, initialCount, -1);
+                } else {
+                    shortTerm.clearSession(sessionId);
+                }
                 processed++;
-                log.info("Sleep-time memory consolidated: sessionId={}, userId={}, scope={}", sessionId, userId, scope);
+                log.info("Sleep-time memory consolidated: sessionId={}, userId={}, scope={}, initialCount={}",
+                        sessionId, userId, scope, initialCount);
             } catch (Exception e) {
                 log.warn("Sleep-time memory consolidation failed: sessionId={}", sessionId, e);
+            } finally {
+                if (redisService != null && lockAcquired) {
+                    redisService.delete(lockKey);
+                }
             }
+
             // 每批处理后让出 CPU，避免长时间阻塞
             if (processed >= batchSize) {
                 processed = 0;

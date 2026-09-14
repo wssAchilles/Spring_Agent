@@ -64,4 +64,23 @@ public interface IRedisService {
      * @param timeout 过期时间（秒）
      */
     void expire(String key, long timeout);
+
+    /**
+     * 分布式锁原子设值 (SET NX EX)
+     *
+     * @param key     键
+     * @param value   值
+     * @param timeout 过期时间（秒）
+     * @return 是否成功设置
+     */
+    boolean setNx(String key, String value, long timeout);
+
+    /**
+     * 裁剪 List 保留指定区间元素 (LTRIM)
+     *
+     * @param key   键
+     * @param start 起始索引
+     * @param end   结束索引
+     */
+    void lTrim(String key, long start, long end);
 }

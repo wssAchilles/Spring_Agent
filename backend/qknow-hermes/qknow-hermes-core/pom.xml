@@ -141,6 +141,13 @@
             <version>0.2.0</version>
         </dependency>
 
+        <!-- Neo4j Framework for Knowledge & User Memory Graph -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-neo4j</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

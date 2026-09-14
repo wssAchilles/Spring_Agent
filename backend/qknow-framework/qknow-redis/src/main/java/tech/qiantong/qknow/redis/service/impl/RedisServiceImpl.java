@@ -142,4 +142,15 @@ public class RedisServiceImpl implements IRedisService {
     public void expire(String key, long timeout) {
         stringRedisTemplate.expire(key, timeout, TimeUnit.SECONDS);
     }
+
+    @Override
+    public boolean setNx(String key, String value, long timeout) {
+        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(key, value, timeout, TimeUnit.SECONDS);
+        return Boolean.TRUE.equals(success);
+    }
+
+    @Override
+    public void lTrim(String key, long start, long end) {
+        stringRedisTemplate.opsForList().trim(key, start, end);
+    }
 }

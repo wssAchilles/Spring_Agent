@@ -194,3 +194,8 @@ limitations
 1. **唯一生成模型**：本系统的所有生成侧（Chat / Generation / RAG 检索对话 / Tool Calling）**唯一**使用的是 **DeepSeek API**。
 2. **唯一向量模型**：本系统的所有向量化侧（Embedding）**唯一**使用的是 **阿里千问 (Qwen) Embedding**。
 3. **彻底弃用声明**：项目中绝无任何本地部署的大语言模型（如 Llama, Qwen-Chat 等），且已彻底弃用 OpenAI/GPT API，原因在于网络延迟与成本考量。所有关于“昂贵大模型与廉价本地小模型之间路由”的假设在本系统均不成立。
+4. **唯一编译与运行环境 (Java 21 虚拟环境隔离铁律)**：
+   - 本项目后端全量模块统一且**唯一使用 Java 21** 编译与运行（父 POM 及全部子模块均显式锁定 Java 21）。
+   - 用户的 Mac 主机系统全局环境保持为 **Java 17**。本项目专用的 Java 21 是由 SDKMAN 管理的独立隔离虚拟环境，绝对路径固定为：`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`。
+   - **严禁污染主机环境**：任何 Agent 或脚本绝对不允许全局覆盖系统默认 JDK，禁止创建或修改系统全局软链接。所有 Maven 编译、单元测试与后端执行，必须且只能通过局部前缀显式传入环境变量：
+     `JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem`

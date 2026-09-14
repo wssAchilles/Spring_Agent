@@ -79,11 +79,21 @@ flowchart TB
 
 ### 环境要求
 
-- 本地使用 **SDKMAN** 管理的 **Java 21**（而非全局覆盖），Maven 3.9+
+- 本地使用 **SDKMAN** 管理的 **Java 21**（路径：`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`），Maven 3.9+
 - Node.js 18+、npm
 - **Mac 原生（Bare Metal）部署的 PostgreSQL 15+**，需启用 PgVector 与 pg_trgm（绝对不是 Docker 容器）
 - **Mac 原生（Bare Metal）部署的 Redis 7+**（绝对不是 Docker 容器）
 - Docker 与 Docker Compose v2，仅用于本地 Neo4j
+
+> ☕ **Java 21 独立虚拟环境与主机系统隔离铁律（重要）：**
+> - **项目唯一版本**：本项目全模块统一锁定为 **Java 21**（父 POM `java.version=21`，`qknow-common`、`qknow-ai` 及 `tests` 均显式配置 Java 21）。
+> - **SDKMAN 虚拟环境管理**：本项目的 Java 21 通过 SDKMAN 单独管理在 `/Users/achilles/.sdkman/candidates/java/21.0.5-tem`，相当于本项目的虚拟化环境。
+> - **主机环境零污染原则**：开发者的 Mac 主机全局环境保持为 **Java 17**。**严禁任何 Agent 或开发者修改 Mac 本机全局系统 JDK，禁止篡改全局环境变量或软链接**。
+> - **执行规范**：所有 Maven 构建、测试或后端启动，必须且只能使用局部环境变量传参，例如：
+>   ```bash
+>   JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem mvn clean compile
+>   JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem mvn test -pl tests
+>   ```
 
 **警告**：本地开发环境使用的是 Mac 原生部署的 PostgreSQL 与 Redis，严禁使用 Docker 启动这些核心数据库；根目录 `docker-compose.yml` 只允许启动 Neo4j。
 
