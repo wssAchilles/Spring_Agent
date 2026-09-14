@@ -53,9 +53,12 @@
 | **40** | **低延迟全双工流式多模态实时音视频交互中枢** | 全双工 WebSocket 二进制音频总线、双阈值贝叶斯时序能量 VAD 检测器与抗瞬态杂音打断状态机（打断延迟 $\le 200\text{ms}$）、流式 ASR -> DeepSeek SSE -> 短语切片 -> 短语 TTS 重叠微管线（TTFA $\le 800\text{ms}$，延迟压降 $\ge 70\%$）、基于感知哈希 (pHash) 的视觉关键帧自适应 Token 流控（节约 $\ge 60\%$ 图像 Token）与代际号 (Epoch) 零悬挂消除 | 27+28+33 | **Delivered** | `phase_40_plan.md` |
 | **41** | **全局混沌工程自治、故障自愈与多活机房裂脑防御** | 动态注入高并发延迟/网络分区/节点硬下线（Chaos Mesh 原理）、基于 Raft 租约与分布式 CAS 的多活机房防裂脑硬仲裁、自适应健康探针与亚健康节点自愈隔离、李雅普诺夫弹性恢复时间上界（MTTR $\le 1000\text{ms}$） | 16+20+28+31 | **Delivered** | `phase_41_plan.md` |
 | **42** | **具身智能体空间环境感知、数字孪生交互与具身控制回路** | 3D 场景语义表征与拓扑栅格图、视听觉多模态空间定位、数字孪生仿真闭环交互、受控动作执行原语与物理不可逆操作安全沙盒校验 | 22+27+30+40 | **Delivered** | `phase_42_plan.md` |
-| **43** | **隐私计算多方安全求交与联邦 Agent 跨域知识共享网络** | 不可知传输 (OT) 与隐匿查询、基于同态加密/秘密分享的隐私求交 (PSI)、多机构联邦知识库安全协同检索、模型梯度/特征跨域安全汇聚与防投毒门禁 | 32+37+41 | **Planned** | `phase_43_plan.md` |
-| **44** | **认知负荷感知自适应交互与动态多模态信息呈现中枢** | 用户认知负荷量化建模（交互速率/凝视停留/回退频次）、长文本/复杂图表自适应渐进披露与动态降噪、多模态看板智能重排与眼动注意力聚焦引导 | 12+19+34+40 | **Planned** | `phase_44_plan.md` |
-| **45** | **企业级多智能体持续对抗进化、红蓝对抗攻防演练与主动安全免疫系统** | 红蓝对抗自动生成对抗性 Payload（越狱/间谍 Agent/投毒/数据渗漏）、蓝队动态自适应安全免疫防御规则进化、全自动安全渗透评测闭环与 CVE 级防御知识沉淀 | 31+32+39+41 | **Planned** | `phase_45_plan.md` |
+| **43** | **隐私计算多方安全求交与联邦 Agent 跨域知识共享网络** | 不可知传输 (OT) 与隐匿查询、基于同态加密/秘密分享的隐私求交 (PSI)、多机构联邦知识库安全协同检索、模型梯度/特征跨域安全汇聚与防投毒门禁 | 32+37+41 | **Delivered** | `phase_43_plan.md` |
+| **44** | **认知负荷感知自适应交互与动态多模态信息呈现中枢** | 用户认知负荷量化建模（交互速率/凝视停留/回退频次）、长文本/复杂图表自适应渐进披露与动态降噪、多模态看板智能重排与眼动注意力聚焦引导 | 12+19+34+40 | **Delivered** | `phase_44_plan.md` |
+| **45** | **企业级多智能体持续对抗进化、红蓝对抗攻防演练与主动安全免疫系统** | 红蓝对抗自动生成对抗性 Payload（越狱/间谍 Agent/投毒/数据渗漏）、蓝队动态自适应安全免疫防御规则进化、全自动安全渗透评测闭环与 CVE 级防御知识沉淀 | 31+32+39+41 | **Delivered** | `phase_45_plan.md` |
+| **46** | **模型上下文协议 (Model Context Protocol, MCP) 企业级原生子系统** | 纯 Java 21 原生 Record 协议契约、注解驱动服务端能力导出、动态客户端连接池与 Spring AI 适配、间接提示词注入四道防御 | 30+32+45 | **Delivered** | `phase_46_plan.md` |
+| **46.1** | **借鉴 claw-code 核心思想的企业级硬化与增强型 MCP 架构** | 双下划线命名空间隔离清洗、11 阶段全生命周期状态机、自省健康报告与 Stdio 虚拟线程进程流通信 | 46 | **Delivered** | `claw_code_mcp_architecture_report.md` |
+| **47** | **分布式多智能体网格与声明式 A2A 通信 DSL 引擎** | 标准 A2A 协议信封、千问 1536 维超球面 AgentCard 动态语义竞标、Kahn 算法拓扑排查无环 DSL 编译与零停机原子热部署引擎 | 22+31+46 | **Delivered** | `phase_47_plan.md` |
 
 ## 每阶段标准工作流
 
@@ -118,6 +121,7 @@
 | 2026-09-14 | **Phase 46 Delivered**：模型上下文协议 (Model Context Protocol, MCP) 企业级原生子系统全面交付：纯 Java 21 原生 Record 协议契约（`qknow-mcp-core`：不可变 `JsonRpcRequest/Response` 与 Resources/Prompts/Tools 三大正交原语模型）、注解驱动服务端能力导出（`qknow-mcp-server`：知识库超球面向量检索、Neo4j 只读 Cypher 拓扑、百表压缩只读 SQL 与受限子进程瞬态沙箱四大业务能力一键外溢赋能 Cursor/Claude Desktop）、动态客户端连接池与 Spring AI `ToolCallback` 适配器（`qknow-mcp-client`）、间接提示词注入（Indirect Prompt Injection）四道防御拦截器（`McpSecurityFilterPipeline`：模式 Schema 校验、租约权限、Phase 32 对抗门禁深度拦截与 Phase 45 主动免疫抗原沉淀，同源变种二次免疫响应耗时 $\le 1\text{ms}$）；专属契约测试 10/10 全绿，后端全量防退化回归测试突破千项大关（**1002/1002 全绿**，0 失败 0 错误），前端 Vite 生产构建 31.31s 极速成功（0 错误通过）！ |
 | 2026-09-14 | **Phase 46.1 Delivered**：借鉴开源前沿 `ultraworkers/claw-code` 核心思想的企业级硬化与增强型 MCP 架构全面交付：`McpNamingConvention`（借鉴 `claw-code` 双下划线 `mcp__{server}__{tool}` 隔离规范与字符白名单正则清洗，彻底消除多 MCP Server 并行接入工具同名冲突，支持合格名称反向路由拆解）、`McpLifecyclePhase` & `McpLifecycleState`（11 阶段全生命周期状态机精准追踪：ConfigLoad->ServerRegistration->SpawnConnect->InitializeHandshake->ToolDiscovery->ResourceDiscovery->Ready->Invocation->ErrorSurfacing->Shutdown->Cleanup）、`McpErrorSurface`（结构化富错误上下文、错误码、阶段与 `recoverable` 属性标记）、`McpDiscoveryReport`（自省健康与发现报告，对标 `claw mcp` 与 `claw doctor`，非核心节点断开时保持弹性可用，核心节点断开标记 `degraded` 预警）、标准 `initialize` 握手与能力协商双向贯通、`StdioMcpSession`（基于 Java 21 虚拟线程与子进程标准 I/O 管道的本地流式通信通道）、`McpSpringAiToolCallbackAdapter` 强化（无损挂载双下划线隔离命名空间工具）；专属契约测试 8/8 全绿（0.186s），后端全量防退化回归测试达到 **1010/1010 全绿**（0 失败 0 错误，8 项预留跳过），前端 Vite 生产构建 30.82s 极速成功（0 错误通过）！ |
 | 2026-09-14 | **NEXT-GEN MILESTONE: 全栈进入下一代 Agentic AI 开放互联新纪元！** 深度融合原生 MCP 生态、A2A 跨智能体分布式总线、双核混合推理 MoR 与自进化知识图谱 3.0，全面建立开放、自主、免疫的企业级 AI 基础设施！ |
+| 2026-09-14 | **Phase 47 Delivered**：分布式多智能体网格与声明式 A2A (Agent-to-Agent) 通信 DSL 引擎全面交付：标准不可变 A2A 协议信封（`A2AMessageEnvelope`：携带 traceId、spanId、60s 时效安全租约 token 与 JSON-RPC/A2A 消息原语）、`AgentCard` 智能体语义能力名片（严格绑定阿里千问 1536 维超球面归一化嵌入与历史信誉得分，定理 1.2 加权凸组合最优竞标选拔）、`AgentMeshRegistry`（分布式智能体能力网格中心、动态语义竞标与时效租约签发核验）、`DslWorkflowCompiler`（声明式工作流三阶编译门禁器，定理 1.1 基于 Kahn 算法入度消除的拓扑排序无环排查，$\mathcal{O}(|V|+|E|)$ 复杂度静态截断死锁并输出涉案环路节点）、`DslWorkflowEngine`（零停机原子热部署与多智能体并发调度引擎，CompletableFuture 异步并发栅栏、A2A 协议信封驱动上下文融合与 CAS 响应式黑板状态提交）；专属契约测试 8/8 全绿（0.165s），后端全量防退化回归测试达到 **1018/1018 全绿**（0 失败 0 错误，8 项预留跳过），前端 Vite 生产构建 31.32s 极速成功（0 错误通过）！ |
 
 
 
