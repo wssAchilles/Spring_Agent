@@ -70,12 +70,16 @@ public class AggregatorNodeBO extends BaseNodeBO {
     }
 
     /**
-     * 拼接策略：将所有输入值连接成字符串
+     * 拼接策略：将所有有效输入值连接成字符串（自动过滤被 SKIPPED 的前驱分支）
      */
     private String doConcat(JSONArray inputKeysArray, JSONObject contextVariables) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < inputKeysArray.size(); i++) {
             String key = inputKeysArray.getString(i);
+            if (isBranchSkipped(key, contextVariables)) {
+                log.debug("汇聚节点跳过剪枝分支: key={}", key);
+                continue;
+            }
             String value = contextVariables.getString(key);
             if (StrUtil.isNotBlank(value)) {
                 if (sb.length() > 0) {
@@ -88,7 +92,7 @@ public class AggregatorNodeBO extends BaseNodeBO {
     }
 
     /**
-     * 最高分策略：找到 score 最高的输入 key，返回其值
+     * 最高分策略：找到 score 最高的输入 key，返回其值（自动过滤被 SKIPPED 的前驱分支）
      * 评分 key 格式为: inputKey + ".score"
      */
     private String doHighestScore(JSONArray inputKeysArray, JSONObject contextVariables) {
@@ -97,6 +101,10 @@ public class AggregatorNodeBO extends BaseNodeBO {
 
         for (int i = 0; i < inputKeysArray.size(); i++) {
             String key = inputKeysArray.getString(i);
+            if (isBranchSkipped(key, contextVariables)) {
+                log.debug("汇聚节点跳过剪枝分支: key={}", key);
+                continue;
+            }
             String scoreKey = key + ".score";
             Object scoreObj = contextVariables.get(scoreKey);
 
@@ -123,5 +131,31 @@ public class AggregatorNodeBO extends BaseNodeBO {
         }
 
         return "";
+    }
+
+    /**
+     * 判断某个 inputKey 对应的分支是否已被剪枝（SKIPPED）
+     */
+    private boolean isBranchSkipped(String key, JSONObject contextVariables) {
+        if (contextVariables == null || key == null) {
+            return false;
+        }
+        // 1. 若 key 形如 "branch_b.text"，解析前缀 nodeUuid
+        if (key.contains(".")) {
+            String nodeUuid = key.substring(0, key.indexOf("."));
+            Object nodeStatus = contextVariables.get(nodeUuid + ".status");
+            if (nodeStatus instanceof Number num && num.intValue() == tech.qiantong.qknow.hermes.flow.enums.RuntimeStatusEnums.SKIPPED.getCode()) {
+                return true;
+            }
+            if (Boolean.TRUE.equals(contextVariables.get(nodeUuid + ".skipped"))) {
+                return true;
+            }
+        }
+        // 2. 检查直接带有 status 标识的 key
+        Object directStatus = contextVariables.get(key + ".status");
+        if (directStatus instanceof Number num && num.intValue() == tech.qiantong.qknow.hermes.flow.enums.RuntimeStatusEnums.SKIPPED.getCode()) {
+            return true;
+        }
+        return false;
     }
 }

@@ -33,24 +33,35 @@ public class ApprovalNodeExecutor {
 
         log.info("审批节点暂停: flowId={}, nodeId={}, 等待人工审批", flowId, nodeId);
 
-        // 创建 CompletableFuture 等待审批
+        // 记录待办项并注册 CompletableFuture（便于进程内事件通知）
         CompletableFuture<Void> approvalFuture = new CompletableFuture<>();
         PENDING_APPROVALS.put(approvalKey, approvalFuture);
 
-        try {
-            // 阻塞等待审批（带超时）
-            approvalFuture.get(DEFAULT_TIMEOUT_HOURS, TimeUnit.HOURS);
-
-            log.info("审批节点通过: flowId={}, nodeId={}", flowId, nodeId);
-            return NodeRunResultBO.success(nodeId, node.getName(),
-                    Map.of("status", "APPROVED", "timestamp", System.currentTimeMillis()));
-
-        } catch (Exception e) {
-            log.warn("审批节点超时或失败: flowId={}, nodeId={}", flowId, nodeId);
-            PENDING_APPROVALS.remove(approvalKey);
-            return NodeRunResultBO.failure(nodeId, node.getName(),
-                    "审批超时或被拒绝: " + e.getMessage());
+        // 提取配置中的审批原因与元数据
+        String reason = "等待人工审批";
+        if (node.getConfig() != null && !node.getConfig().isBlank()) {
+            try {
+                com.alibaba.fastjson2.JSONObject config = com.alibaba.fastjson2.JSONObject.parseObject(node.getConfig());
+                if (config.containsKey("reason") && !config.getString("reason").isBlank()) {
+                    reason = config.getString("reason");
+                }
+            } catch (Exception e) {
+                log.debug("解析审批配置异常: {}", e.getMessage());
+            }
         }
+
+        // 非阻塞 Delimited Continuation：立即返回 SUSPENDED 挂起状态，物理工作线程零阻塞归还线程池
+        Map<String, Object> output = new java.util.LinkedHashMap<>();
+        output.put("status", "SUSPENDED");
+        output.put("approvalKey", approvalKey);
+        output.put("flowId", flowId);
+        output.put("requestId", requestId);
+        output.put("nodeId", nodeId);
+        output.put("reason", reason);
+        output.put("suspendedAt", System.currentTimeMillis());
+
+        log.info("审批节点非阻塞挂起成功: approvalKey={}, reason={}", approvalKey, reason);
+        return NodeRunResultBO.suspended(nodeId, node.getName(), output);
     }
 
     /**

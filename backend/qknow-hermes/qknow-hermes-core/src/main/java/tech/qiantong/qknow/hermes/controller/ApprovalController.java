@@ -16,6 +16,9 @@ import java.util.Map;
 @RequestMapping("/hermes/approval")
 public class ApprovalController {
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.hermes.flow.dag.DagCheckpointManager checkpointManager;
+
     @Operation(summary = "获取待审批列表")
     @GetMapping("/pending")
     public CommonResult<List<Map<String, Object>>> getPending() {
@@ -41,7 +44,18 @@ public class ApprovalController {
         String flowId = body.get("flowId");
         String requestId = body.get("requestId");
         String nodeId = body.get("nodeId");
-        boolean success = ApprovalNodeExecutor.approve(flowId, requestId, nodeId);
+
+        boolean inMemorySuccess = ApprovalNodeExecutor.approve(flowId, requestId, nodeId);
+        boolean checkpointSuccess = false;
+
+        if (checkpointManager != null && requestId != null) {
+            Map<String, Object> input = new HashMap<>();
+            input.put("approverDecision", "APPROVED");
+            input.put("approvedAt", System.currentTimeMillis());
+            checkpointSuccess = checkpointManager.wakeSuspendedWithLock(requestId, input);
+        }
+
+        boolean success = inMemorySuccess || checkpointSuccess;
         return success ? CommonResult.success(true) : CommonResult.error(404, "审批请求不存在或已处理");
     }
 
@@ -52,7 +66,12 @@ public class ApprovalController {
         String requestId = body.get("requestId");
         String nodeId = body.get("nodeId");
         String reason = body.getOrDefault("reason", "人工拒绝");
-        boolean success = ApprovalNodeExecutor.reject(flowId, requestId, nodeId, reason);
-        return success ? CommonResult.success(true) : CommonResult.error(404, "审批请求不存在或已处理");
+
+        boolean inMemorySuccess = ApprovalNodeExecutor.reject(flowId, requestId, nodeId, reason);
+        if (checkpointManager != null && requestId != null) {
+            checkpointManager.saveCompensationLog(requestId, "APPROVAL_REJECTED: " + reason);
+        }
+
+        return (inMemorySuccess || checkpointManager != null) ? CommonResult.success(true) : CommonResult.error(404, "审批请求不存在或已处理");
     }
 }

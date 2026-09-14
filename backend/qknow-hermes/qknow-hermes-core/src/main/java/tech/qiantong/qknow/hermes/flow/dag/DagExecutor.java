@@ -15,8 +15,8 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
- * DAG 并行执行器
- * 支持独立分支并行执行，依赖分支顺序执行
+ * DAG 反应式并行执行器
+ * 支持独立分支并行执行、条件分支动态递归剪枝（零物理线程占用）、断点全量上下文挂起与恢复
  */
 @Slf4j
 @Component
@@ -34,7 +34,7 @@ public class DagExecutor {
     }
 
     /**
-     * 执行工作流
+     * 执行工作流（集成动态递归剪枝）
      *
      * @param flowNodes 节点列表
      * @param flowEdges 边列表
@@ -43,7 +43,7 @@ public class DagExecutor {
      */
     public List<NodeRunResultBO> execute(List<KbFlowNodeDO> flowNodes, List<KbFlowEdgeDO> flowEdges,
                                           RuntimeContextBO context) {
-        // 1. 验证 DAG
+        // 1. 验证 DAG 是否存在环路
         if (DagUtils.hasCycle(flowNodes, flowEdges)) {
             throw new IllegalStateException("工作流存在环，无法执行");
         }
@@ -52,9 +52,10 @@ public class DagExecutor {
         List<List<String>> parallelGroups = DagUtils.getParallelGroups(flowNodes, flowEdges);
         log.info("工作流共 {} 个节点，分为 {} 个执行组", flowNodes.size(), parallelGroups.size());
 
-        // 3. 构建节点映射
+        // 3. 构建节点映射与动态剪枝集合
         Map<String, KbFlowNodeDO> nodeMap = flowNodes.stream()
                 .collect(Collectors.toMap(KbFlowNodeDO::getUuid, n -> n));
+        Set<String> prunedNodes = ConcurrentHashMap.newKeySet();
 
         // 4. 按组顺序执行
         List<NodeRunResultBO> allResults = new ArrayList<>();
@@ -65,8 +66,8 @@ public class DagExecutor {
             log.info("执行第 {} 组，包含 {} 个节点: {}", groupIndex + 1, group.size(), group);
 
             if (group.size() == 1) {
-                // 单节点直接执行
-                NodeRunResultBO result = executeNode(group.get(0), nodeMap, flowEdges, context);
+                // 单节点执行（含剪枝判定）
+                NodeRunResultBO result = executeNodeWithPruning(group.get(0), nodeMap, flowEdges, context, prunedNodes);
                 allResults.add(result);
                 resultMap.put(group.get(0), result);
 
@@ -83,7 +84,7 @@ public class DagExecutor {
                 List<CompletableFuture<NodeRunResultBO>> futures = new ArrayList<>();
                 for (String nodeUuid : group) {
                     CompletableFuture<NodeRunResultBO> future = CompletableFuture.supplyAsync(
-                            () -> executeNode(nodeUuid, nodeMap, flowEdges, context),
+                            () -> executeNodeWithPruning(nodeUuid, nodeMap, flowEdges, context, prunedNodes),
                             executorService
                     );
                     futures.add(future);
@@ -94,6 +95,7 @@ public class DagExecutor {
 
                 // 收集结果
                 boolean hasError = false;
+                boolean hasSuspended = false;
                 for (CompletableFuture<NodeRunResultBO> future : futures) {
                     try {
                         NodeRunResultBO result = future.get();
@@ -103,7 +105,7 @@ public class DagExecutor {
                         if (isError(result)) {
                             hasError = true;
                         } else if (isSuspended(result)) {
-                            hasError = true;
+                            hasSuspended = true;
                         }
                     } catch (Exception e) {
                         log.error("并行执行异常", e);
@@ -115,6 +117,10 @@ public class DagExecutor {
                     log.error("并行执行组中存在失败节点，终止工作流");
                     break;
                 }
+                if (hasSuspended) {
+                    log.info("并行执行组中存在挂起节点，暂停工作流");
+                    break;
+                }
             }
         }
 
@@ -123,7 +129,7 @@ public class DagExecutor {
 
     /**
      * 带断点续传的工作流执行
-     * 支持从上次中断的位置恢复执行
+     * 支持从上次中断的位置恢复执行，并携带全量上下文变量
      */
     public List<NodeRunResultBO> executeWithCheckpoint(String runtimeId, String flowId,
                                                         List<KbFlowNodeDO> flowNodes,
@@ -137,7 +143,13 @@ public class DagExecutor {
         if (checkpoint != null) {
             startGroupIndex = checkpoint.getGroupIndex();
             restoredResults = checkpointManager.restoreCompletedResults(checkpoint);
-            log.info("从检查点恢复: runtimeId={}, groupIndex={}, 已完成节点={}", runtimeId, startGroupIndex, restoredResults.size());
+            // 恢复上下文环境变量
+            Map<String, Object> restoredVars = checkpointManager.restoreVariables(checkpoint);
+            if (context != null && context.getVariables() != null && !restoredVars.isEmpty()) {
+                context.getVariables().putAll(restoredVars);
+            }
+            log.info("从检查点恢复: runtimeId={}, groupIndex={}, 已完成节点={}",
+                    runtimeId, startGroupIndex, restoredResults.size());
         }
 
         // 验证 DAG
@@ -148,6 +160,17 @@ public class DagExecutor {
         List<List<String>> parallelGroups = DagUtils.getParallelGroups(flowNodes, flowEdges);
         Map<String, KbFlowNodeDO> nodeMap = flowNodes.stream()
                 .collect(Collectors.toMap(KbFlowNodeDO::getUuid, n -> n));
+
+        Set<String> prunedNodes = ConcurrentHashMap.newKeySet();
+        // 初始化剪枝状态（从已有结果中提取）
+        for (NodeRunResultBO r : restoredResults.values()) {
+            if (RuntimeStatusEnums.SKIPPED.getCode().equals(r.getStatus())) {
+                prunedNodes.add(r.getNodeUuid());
+            }
+            if (r.getNextNodeIds() != null) {
+                prunedNodes.addAll(DagUtils.computePrunedNodes(r.getNodeUuid(), r.getNextNodeIds(), flowEdges));
+            }
+        }
 
         List<NodeRunResultBO> allResults = new ArrayList<>(restoredResults.values());
         Map<String, NodeRunResultBO> resultMap = new LinkedHashMap<>(restoredResults);
@@ -167,18 +190,20 @@ public class DagExecutor {
             if (pending.isEmpty()) continue;
 
             if (pending.size() == 1) {
-                NodeRunResultBO result = executeNode(pending.get(0), nodeMap, flowEdges, context);
+                NodeRunResultBO result = executeNodeWithPruning(pending.get(0), nodeMap, flowEdges, context, prunedNodes);
                 allResults.add(result);
                 resultMap.put(pending.get(0), result);
 
                 if (isError(result)) {
-                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
+                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
+                            context != null ? context.getVariables() : Collections.emptyMap());
                     log.error("节点执行失败，检查点已保存，终止工作流: {}", result.getNodeName());
                     completedSuccessfully = false;
                     break;
                 }
                 if (isSuspended(result)) {
-                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
+                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
+                            context != null ? context.getVariables() : Collections.emptyMap());
                     log.info("节点挂起，检查点已保存: runtimeId={}, node={}", runtimeId, result.getNodeName());
                     completedSuccessfully = false;
                     break;
@@ -187,13 +212,14 @@ public class DagExecutor {
                 List<CompletableFuture<NodeRunResultBO>> futures = new ArrayList<>();
                 for (String nodeUuid : pending) {
                     futures.add(CompletableFuture.supplyAsync(
-                            () -> executeNode(nodeUuid, nodeMap, flowEdges, context),
+                            () -> executeNodeWithPruning(nodeUuid, nodeMap, flowEdges, context, prunedNodes),
                             executorService));
                 }
 
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
                 boolean hasError = false;
+                boolean hasSuspended = false;
                 for (CompletableFuture<NodeRunResultBO> future : futures) {
                     try {
                         NodeRunResultBO result = future.get();
@@ -202,7 +228,7 @@ public class DagExecutor {
                         if (isError(result)) {
                             hasError = true;
                         } else if (isSuspended(result)) {
-                            hasError = true;
+                            hasSuspended = true;
                         }
                     } catch (Exception e) {
                         log.error("并行执行异常", e);
@@ -211,15 +237,24 @@ public class DagExecutor {
                 }
 
                 if (hasError) {
-                    checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex, resultMap);
+                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
+                            context != null ? context.getVariables() : Collections.emptyMap());
                     log.error("并行执行组中存在失败节点，检查点已保存，终止工作流");
+                    completedSuccessfully = false;
+                    break;
+                }
+                if (hasSuspended) {
+                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
+                            context != null ? context.getVariables() : Collections.emptyMap());
+                    log.info("并行执行组中存在挂起节点，检查点已保存");
                     completedSuccessfully = false;
                     break;
                 }
             }
 
-            // 每组执行完后保存检查点
-            checkpointManager.saveCheckpoint(runtimeId, flowId, groupIndex + 1, resultMap);
+            // 每组执行完后保存检查点（包含变量环境）
+            checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex + 1, resultMap,
+                    context != null ? context.getVariables() : Collections.emptyMap());
         }
 
         // 只在全部成功时删除检查点
@@ -231,6 +266,52 @@ public class DagExecutor {
 
     public boolean wakeSuspended(String runtimeId, Map<String, Object> humanInput) {
         return checkpointManager.wakeSuspended(runtimeId, humanInput);
+    }
+
+    /**
+     * 带动态递归剪枝检测的节点执行
+     */
+    private NodeRunResultBO executeNodeWithPruning(String nodeUuid, Map<String, KbFlowNodeDO> nodeMap,
+                                                  List<KbFlowEdgeDO> flowEdges, RuntimeContextBO context,
+                                                  Set<String> prunedNodes) {
+        // 1. 若当前节点已被前面的条件分支剪除，则不提交物理执行，直接标记为 SKIPPED
+        if (prunedNodes.contains(nodeUuid)) {
+            KbFlowNodeDO def = nodeMap.get(nodeUuid);
+            String name = def != null ? def.getName() : "未知节点";
+            NodeRunResultBO skipped = new NodeRunResultBO();
+            skipped.setNodeUuid(nodeUuid);
+            skipped.setNodeName(name);
+            skipped.setStatus(RuntimeStatusEnums.SKIPPED.getCode());
+            skipped.setOutput(Map.of("status", "SKIPPED", "reason", "pruned_by_condition"));
+            if (context != null && context.getVariables() != null) {
+                context.getVariables().put(nodeUuid + ".status", RuntimeStatusEnums.SKIPPED.getCode());
+                context.getVariables().put(nodeUuid + ".skipped", true);
+            }
+            log.info("节点处于未命中条件分支，跳过物理执行并标记为 SKIPPED: nodeUuid={}, nodeName={}",
+                    nodeUuid, name);
+            return skipped;
+        }
+
+        // 2. 正常物理执行
+        NodeRunResultBO result = executeNode(nodeUuid, nodeMap, flowEdges, context);
+
+        // 3. 若为条件网关节点（产出了选中的后继分支），递归计算未选中的后继子图并加入剪枝集合
+        if (result.getNextNodeIds() != null) {
+            Set<String> newlyPruned = DagUtils.computePrunedNodes(nodeUuid, result.getNextNodeIds(), flowEdges);
+            if (!newlyPruned.isEmpty()) {
+                prunedNodes.addAll(newlyPruned);
+                for (String p : newlyPruned) {
+                    if (context != null && context.getVariables() != null) {
+                        context.getVariables().put(p + ".status", RuntimeStatusEnums.SKIPPED.getCode());
+                        context.getVariables().put(p + ".skipped", true);
+                    }
+                }
+                log.info("条件分支决策激活: nodeUuid={}, 选中={}, 动态剪枝下游节点={}",
+                        nodeUuid, result.getNextNodeIds(), newlyPruned);
+            }
+        }
+
+        return result;
     }
 
     /**

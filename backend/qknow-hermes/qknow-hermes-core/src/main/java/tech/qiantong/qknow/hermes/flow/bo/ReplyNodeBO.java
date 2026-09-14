@@ -32,7 +32,9 @@ public class ReplyNodeBO extends BaseNodeBO {
     protected NodeRunResultBO executeLogic(Map<String, Object> inputData, RuntimeContextBO context) {
         KbFlowNodeDO nodeDefinition = super.getNodeDefinition();
         JSONObject contextVariables = context.getVariables();
-        JSONArray outputDefArray = JSONArray.parseArray(nodeDefinition.getOutput());
+        JSONArray outputDefArray = nodeDefinition.getOutput() != null && !nodeDefinition.getOutput().isBlank()
+                ? JSONArray.parseArray(nodeDefinition.getOutput())
+                : new JSONArray();
 
         Map<String, Object> outputData = new java.util.HashMap<>(outputDefArray.size());
 

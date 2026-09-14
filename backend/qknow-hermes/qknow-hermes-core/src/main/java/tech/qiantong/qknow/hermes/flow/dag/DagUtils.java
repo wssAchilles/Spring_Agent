@@ -166,4 +166,47 @@ public class DagUtils {
                 .map(KbFlowEdgeDO::getTargetNodeUuid)
                 .collect(Collectors.toSet());
     }
+
+    /**
+     * 递归计算条件分支未命中时应剪枝（SKIPPED）的下游节点集合
+     *
+     * @param conditionNodeUuid 条件节点 UUID
+     * @param selectedNextNodeIds 选中的后继节点 UUID 集合
+     * @param edges 边列表
+     * @return 应当被标记为 SKIPPED 的节点 UUID 集合
+     */
+    public static Set<String> computePrunedNodes(String conditionNodeUuid,
+                                                List<String> selectedNextNodeIds,
+                                                List<KbFlowEdgeDO> edges) {
+        Set<String> selectedSet = selectedNextNodeIds != null ? new HashSet<>(selectedNextNodeIds) : Collections.emptySet();
+
+        // 1. 获取条件节点的所有直接后继节点
+        Set<String> allDirectSuccessors = getSuccessors(conditionNodeUuid, edges);
+
+        // 2. 未选中的直接后继节点作为剪枝根
+        Set<String> unselectedDirectSuccessors = new HashSet<>(allDirectSuccessors);
+        unselectedDirectSuccessors.removeAll(selectedSet);
+
+        if (unselectedDirectSuccessors.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        // 3. 从未选中的分支根节点开始，递归向下标记下游可达节点
+        Set<String> prunedNodes = new LinkedHashSet<>();
+        Queue<String> queue = new LinkedList<>(unselectedDirectSuccessors);
+
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            if (prunedNodes.add(current)) {
+                Set<String> nextSuccessors = getSuccessors(current, edges);
+                for (String next : nextSuccessors) {
+                    if (!selectedSet.contains(next)) {
+                        queue.offer(next);
+                    }
+                }
+            }
+        }
+
+        return prunedNodes;
+    }
 }

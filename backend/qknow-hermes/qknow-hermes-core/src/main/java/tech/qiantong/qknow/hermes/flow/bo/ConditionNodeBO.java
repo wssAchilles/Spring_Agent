@@ -102,22 +102,22 @@ public class ConditionNodeBO extends BaseNodeBO {
             // 解析比较操作
             if (resolved.contains("==")) {
                 String[] parts = resolved.split("==", 2);
-                return compare(parts[0].trim(), parts[1].trim(), "==");
+                return compare(stripQuotes(parts[0]), stripQuotes(parts[1]), "==");
             } else if (resolved.contains("!=")) {
                 String[] parts = resolved.split("!=", 2);
-                return compare(parts[0].trim(), parts[1].trim(), "!=");
+                return compare(stripQuotes(parts[0]), stripQuotes(parts[1]), "!=");
             } else if (resolved.contains(">=")) {
                 String[] parts = resolved.split(">=", 2);
-                return compare(parts[0].trim(), parts[1].trim(), ">=");
+                return compare(stripQuotes(parts[0]), stripQuotes(parts[1]), ">=");
             } else if (resolved.contains("<=")) {
                 String[] parts = resolved.split("<=", 2);
-                return compare(parts[0].trim(), parts[1].trim(), "<=");
+                return compare(stripQuotes(parts[0]), stripQuotes(parts[1]), "<=");
             } else if (resolved.contains(">")) {
                 String[] parts = resolved.split(">", 2);
-                return compare(parts[0].trim(), parts[1].trim(), ">");
+                return compare(stripQuotes(parts[0]), stripQuotes(parts[1]), ">");
             } else if (resolved.contains("<")) {
                 String[] parts = resolved.split("<", 2);
-                return compare(parts[0].trim(), parts[1].trim(), "<");
+                return compare(stripQuotes(parts[0]), stripQuotes(parts[1]), "<");
             }
 
             // 布尔值判断
@@ -126,6 +126,17 @@ public class ConditionNodeBO extends BaseNodeBO {
             log.warn("条件表达式评估失败: {}", expression, e);
             return false;
         }
+    }
+
+    private String stripQuotes(String str) {
+        if (str == null) return "";
+        str = str.trim();
+        if ((str.startsWith("'") && str.endsWith("'")) || (str.startsWith("\"") && str.endsWith("\""))) {
+            if (str.length() >= 2) {
+                return str.substring(1, str.length() - 1).trim();
+            }
+        }
+        return str;
     }
 
     private boolean compare(String left, String right, String operator) {
