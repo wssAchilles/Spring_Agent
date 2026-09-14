@@ -245,6 +245,7 @@
         <module>qknow-module-system</module>
         <module>qknow-server</module>
         <module>qknow-hermes</module>
+        <module>qknow-mcp</module>
         <module>tests</module>
     </modules>
     <packaging>pom</packaging>

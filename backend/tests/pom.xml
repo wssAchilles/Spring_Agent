@@ -75,6 +75,24 @@
         </dependency>
         <dependency>
             <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-mcp-core</artifactId>
+            <version>${qknow.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-mcp-server</artifactId>
+            <version>${qknow.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-mcp-client</artifactId>
+            <version>${qknow.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
             <artifactId>qknow-module-ext-biz</artifactId>
             <version>${qknow.version}</version>
             <scope>test</scope>
