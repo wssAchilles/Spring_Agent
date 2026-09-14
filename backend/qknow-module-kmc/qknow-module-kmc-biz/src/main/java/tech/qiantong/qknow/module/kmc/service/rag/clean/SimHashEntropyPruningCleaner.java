@@ -203,6 +203,30 @@ public class SimHashEntropyPruningCleaner {
     }
 
     /**
+     * 将指纹从 4 个倒排桶中注销移除 (Machine Unlearning 级联反注册)
+     *
+     * @param fingerprint 待注销指纹
+     * @return 是否成功注销至少一个桶中的记录
+     */
+    public boolean unindexSimHash(long fingerprint) {
+        boolean removedAny = false;
+        for (int i = 0; i < 4; i++) {
+            int chunk = (int) ((fingerprint >> (i * 16)) & 0xFFFF);
+            List<Long> candidates = buckets[i].get(chunk);
+            if (candidates != null) {
+                synchronized (candidates) {
+                    boolean removed = candidates.remove(Long.valueOf(fingerprint));
+                    removedAny |= removed;
+                    if (candidates.isEmpty()) {
+                        buckets[i].remove(chunk);
+                    }
+                }
+            }
+        }
+        return removedAny;
+    }
+
+    /**
      * 查询倒排桶中是否存在近似重复指纹 (汉明距离 <= 3)
      */
     public boolean isNearDuplicate(long fingerprint) {
