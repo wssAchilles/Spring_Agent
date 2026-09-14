@@ -102,6 +102,12 @@
             <artifactId>onnxruntime</artifactId>
             <version>1.20.0</version>
         </dependency>
+
+        <!-- Phase 25: 反应式流高吞吐分块与背压 -->
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

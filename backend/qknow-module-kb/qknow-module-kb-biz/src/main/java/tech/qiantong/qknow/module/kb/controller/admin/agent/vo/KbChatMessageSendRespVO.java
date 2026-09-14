@@ -46,6 +46,9 @@ public class KbChatMessageSendRespVO {
 
         @Schema(description = "引用的文章名称", example = "")
         private List<String> documentNameList;
+
+        @Schema(description = "流式帧序列号 (支持断点续传)", example = "1")
+        private Long sequenceId;
     }
 
 }

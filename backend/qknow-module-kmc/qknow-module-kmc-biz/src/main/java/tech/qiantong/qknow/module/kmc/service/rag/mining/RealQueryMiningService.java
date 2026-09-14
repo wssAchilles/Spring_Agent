@@ -49,6 +49,7 @@ public class RealQueryMiningService {
         LOW_CONFIDENCE("low_confidence", "低置信度召回"),
         CRAG_AMBIGUOUS("crag_ambiguous", "CRAG歧义重写难例"),
         FOLLOW_UP("follow_up", "多轮追问长尾难例"),
+        NEGATIVE_FEEDBACK("negative_feedback", "用户负反馈强监督难例"),
         GENERAL("general", "通用样本");
 
         private final String code;
@@ -210,5 +211,32 @@ public class RealQueryMiningService {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * 第 5 漏斗：用户负反馈 (Downvote / Correction) 强监督难例直接入库与脱敏沉淀
+     */
+    public MinedQueryItem ingestNegativeFeedback(String rawQuery, Long kbId, String expectedContext, String comment) {
+        if (rawQuery == null || rawQuery.isBlank()) {
+            return null;
+        }
+        QuerySanitizer sanitizer = this.querySanitizer != null ? this.querySanitizer : new QuerySanitizer();
+        String sanitizedQuery = sanitizer.sanitize(rawQuery);
+
+        List<String> contexts = new ArrayList<>();
+        if (expectedContext != null && !expectedContext.isBlank()) {
+            contexts.add(expectedContext);
+        }
+
+        return MinedQueryItem.builder()
+                .id("mine-neg-" + UUID.randomUUID().toString().substring(0, 8))
+                .rawQuery(rawQuery)
+                .query(sanitizedQuery)
+                .category(MiningCategory.NEGATIVE_FEEDBACK.getCode())
+                .expectedKbId(kbId)
+                .expectedContexts(contexts)
+                .confidenceScore(0.1)
+                .split("test")
+                .build();
     }
 }

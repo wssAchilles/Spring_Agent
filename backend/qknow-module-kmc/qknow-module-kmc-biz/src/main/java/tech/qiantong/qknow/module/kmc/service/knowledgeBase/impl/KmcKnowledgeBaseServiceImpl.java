@@ -97,6 +97,12 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
     @Resource
     private JdbcTemplate jdbcTemplate;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.module.kmc.service.rag.adaptive.AdaptivePolicyGovernor adaptivePolicyGovernor;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.module.kmc.service.rag.adaptive.DiscountedLinUcbRouter discountedLinUcbRouter;
+
     private ExecutorService executor = null;
     // 锁对象：防止并发创建线程池
     private final Object executorLock = new Object();
