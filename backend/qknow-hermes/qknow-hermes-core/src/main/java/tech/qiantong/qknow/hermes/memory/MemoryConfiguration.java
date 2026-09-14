@@ -60,4 +60,59 @@ public class MemoryConfiguration {
                                        WorkingMemory workingMemory) {
         return new MemoryManager(shortTermMemory, longTermMemory, workingMemory);
     }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.memory.dst.DialogueStateTracker dialogueStateTracker() {
+        return new tech.qiantong.qknow.hermes.memory.dst.DialogueStateTrackerImpl();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.memory.scoring.MemoryScoringService memoryScoringService() {
+        return new tech.qiantong.qknow.hermes.memory.scoring.MemoryScoringServiceImpl();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.memory.reflection.ReflectionTreeEngine reflectionTreeEngine(ObjectProvider<ChatModel> chatModel) {
+        return new tech.qiantong.qknow.hermes.memory.reflection.ReflectionTreeEngineImpl(chatModel.getIfAvailable());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.memory.reflection.AsyncReflectionWorker asyncReflectionWorker(tech.qiantong.qknow.hermes.memory.reflection.ReflectionTreeEngine reflectionTreeEngine) {
+        return new tech.qiantong.qknow.hermes.memory.reflection.AsyncReflectionWorker(reflectionTreeEngine);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.memory.graph.EpisodicGraphService episodicGraphService() {
+        return new tech.qiantong.qknow.hermes.memory.graph.EpisodicGraphServiceImpl();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.memory.persona.UserPreferenceEvolutionGovernor userPreferenceEvolutionGovernor() {
+        return new tech.qiantong.qknow.hermes.memory.persona.UserPreferenceEvolutionGovernorImpl();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ReflectiveMemoryCoordinator reflectiveMemoryCoordinator(
+            WorkingMemory workingMemory,
+            tech.qiantong.qknow.hermes.memory.dst.DialogueStateTracker dialogueStateTracker,
+            tech.qiantong.qknow.hermes.memory.scoring.MemoryScoringService memoryScoringService,
+            tech.qiantong.qknow.hermes.memory.reflection.ReflectionTreeEngine reflectionTreeEngine,
+            tech.qiantong.qknow.hermes.memory.graph.EpisodicGraphService episodicGraphService,
+            tech.qiantong.qknow.hermes.memory.persona.UserPreferenceEvolutionGovernor preferenceGovernor) {
+        return new ReflectiveMemoryCoordinator(
+                workingMemory,
+                dialogueStateTracker,
+                memoryScoringService,
+                reflectionTreeEngine,
+                episodicGraphService,
+                preferenceGovernor
+        );
+    }
 }

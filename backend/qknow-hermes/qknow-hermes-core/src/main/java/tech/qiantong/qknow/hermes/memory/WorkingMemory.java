@@ -108,6 +108,33 @@ public class WorkingMemory {
         return redisService.hashGetAll(redisKey(sessionId));
     }
 
+    /**
+     * 在指定的物理 UTF-8 字节预算内组装工作记忆上下文
+     */
+    public String assembleContextWithinByteBudget(int maxBytes) {
+        Map<String, Object> snap = snapshot();
+        if (snap.isEmpty()) {
+            return "";
+        }
+        java.util.List<String> fragments = new java.util.ArrayList<>();
+        for (Map.Entry<String, Object> entry : snap.entrySet()) {
+            fragments.add(entry.getKey() + ": " + entry.getValue());
+        }
+        return ByteBudgeter.assembleContext(fragments, maxBytes);
+    }
+
+    public String assembleContextWithinByteBudget(String sessionId, int maxBytes) {
+        Map<String, Object> snap = snapshot(sessionId);
+        if (snap.isEmpty()) {
+            return "";
+        }
+        java.util.List<String> fragments = new java.util.ArrayList<>();
+        for (Map.Entry<String, Object> entry : snap.entrySet()) {
+            fragments.add(entry.getKey() + ": " + entry.getValue());
+        }
+        return ByteBudgeter.assembleContext(fragments, maxBytes);
+    }
+
     private String redisKey(String sessionId) {
         return "memory:working:" + sessionId;
     }
