@@ -102,3 +102,4 @@ MEMORY.md
 backend/.venv/models/
 /models/
 models/
+gurobi.lic
