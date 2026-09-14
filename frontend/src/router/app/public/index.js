@@ -47,4 +47,11 @@ export default [
             }
         ]
     },
+    {
+        path: '/audit/explainability',
+        hidden: true,
+        component: () => import('@/views/audit/ExplainabilityDashboard.vue'),
+        name: 'ExplainabilityDashboard',
+        meta: { title: '神经符号可解释性与密码学审计中心', activeMenu: '/audit/explainability' }
+    }
 ]

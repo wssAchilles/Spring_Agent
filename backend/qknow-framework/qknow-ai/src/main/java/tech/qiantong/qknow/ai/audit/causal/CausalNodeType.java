@@ -8,6 +8,10 @@ package tech.qiantong.qknow.ai.audit.causal;
 public enum CausalNodeType {
     /** 用户原始或脱敏查询 */
     QUERY,
+    /** 安全护栏脱敏与对抗注入审查 */
+    GUARDRAIL_SANITIZED,
+    /** SLA 延迟感知动态选路网关 */
+    SLA_ROUTED,
     /** 意图分解与子任务规划 */
     INTENT_DECOMPOSITION,
     /** 检索召回且采纳的知识切片 */
@@ -17,5 +21,7 @@ public enum CausalNodeType {
     /** 多智能体拜占庭共识裁决 */
     BFT_CONSENSUS,
     /** 模型最终生成的合规响应 */
-    FINAL_OUTPUT
+    FINAL_OUTPUT,
+    /** RFC 6962 不可篡改密码学存证锚点 */
+    MERKLE_ANCHOR
 }
