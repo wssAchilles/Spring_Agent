@@ -47,6 +47,11 @@ public class FaithfulnessVerifier {
         StringBuffer cleanedSb = new StringBuffer();
         while (matcher.find()) {
             String citedId = matcher.group(1);
+            // 排除系统脱敏占位符 (如 REDACTED_PHONE, REDACTED_ID_CARD 等)
+            if (citedId.startsWith("REDACTED_")) {
+                matcher.appendReplacement(cleanedSb, Matcher.quoteReplacement(matcher.group()));
+                continue;
+            }
             if (!validSet.contains(citedId)) {
                 hasPhantom = true;
                 phantomCitations.add(matcher.group());
