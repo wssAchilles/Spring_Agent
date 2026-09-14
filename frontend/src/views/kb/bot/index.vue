@@ -90,7 +90,6 @@
       <el-table
         v-else
         ref="botTableRef"
-        class="glass-card"
         stripe
         v-loading="loading"
         :data="botList"
@@ -234,7 +233,7 @@
             v-if="getColumnVisibility(8)"
             class-name="small-padding fixed-width"
             fixed="right"
-            width="180"
+            width="210"
         >
           <template #default="scope">
             <el-button v-ripple class="glass-btn"
@@ -402,7 +401,7 @@ const columns = ref([
   {key: 10, label: "密钥数", visible: true},
   {key: 5, label: "创建人", visible: true},
   {key: 6, label: "创建时间", visible: true},
-  {key: 7, label: "最后更新时间", visible: true},
+  {key: 7, label: "最后更新时间", visible: false},
   {key: 8, label: "操作", visible: true}
 ]);
 

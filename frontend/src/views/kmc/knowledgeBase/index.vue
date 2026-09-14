@@ -97,12 +97,12 @@
         @pagination="getList"
       />
     </div>
-    <el-dialog class="glass-card"
+    <el-dialog
       :title="title"
       v-model="open"
       width="800px"
-      append-to="body"
-      draggable
+      append-to-body
+      align-center
     >
       <template #header="{ close, titleId, titleClass }">
         <span role="heading" aria-level="2" class="el-dialog__title">

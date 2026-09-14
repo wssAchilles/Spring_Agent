@@ -20,6 +20,7 @@
   /* 浅色模式 - 钛金单色灰阶基础令牌 (Light Titanium Palette) */
   --mono-bg: #F5F5F7;
   --mono-surface: #FFFFFF;
+  --mono-surface-striped: #F7F7F9;
   --mono-surface-hover: rgba(0, 0, 0, 0.03);
   --mono-text-primary: #1D1D1F;
   --mono-text-secondary: #6E6E73;
@@ -79,6 +80,7 @@
 @mixin dark-theme-tokens {
   --mono-bg: #0A0A0C;
   --mono-surface: #161618;
+  --mono-surface-striped: #1A1A1D;
   --mono-surface-hover: rgba(255, 255, 255, 0.04);
   --mono-text-primary: #EDEDEF;
   --mono-text-secondary: #9BA1A6;
@@ -196,10 +198,46 @@ body {
 .el-dialog {
   @extend .glass-modal-l3;
   border-radius: 16px !important;
+  margin: 0 auto !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+
+  .el-dialog__header {
+    flex-shrink: 0;
+    padding: 16px 20px;
+    margin-right: 0;
+    border-bottom: 1px solid var(--mono-border-subtle);
+  }
+
   .el-dialog__title {
     color: var(--mono-text-primary) !important;
     font-weight: 600;
   }
+
+  .el-dialog__body {
+    flex: 1 1 auto;
+    overflow-y: auto !important;
+    max-height: calc(90vh - 130px) !important;
+    padding: 20px !important;
+  }
+
+  .el-dialog__footer {
+    flex-shrink: 0;
+    padding: 12px 20px;
+    border-top: 1px solid var(--mono-border-subtle);
+  }
+}
+
+/* 遮罩层弹性居中，彻底杜绝弹窗头部跑出屏幕视口 */
+.el-overlay-dialog {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
 }
 
 .el-popover.el-popper,
@@ -239,6 +277,15 @@ body {
   --el-table-header-bg-color: transparent;
   --el-table-tr-bg-color: transparent;
 
+  /* 核心隔离: 彻底消除因挂载 glass-card 类而导致的 transform 破坏 sticky 定位与 hover 浮动 */
+  &.glass-card,
+  & {
+    transform: none !important;
+    &:hover {
+      transform: none !important;
+    }
+  }
+
   th.el-table__cell {
     background-color: transparent !important;
     color: var(--mono-text-secondary) !important;
@@ -250,8 +297,41 @@ body {
     border-bottom: 1px solid var(--mono-border-subtle) !important;
   }
 
+  /* 核心防击穿保护: 固定列 (Fixed Left & Fixed Right) 必须使用实体表面背景，彻底杜绝底层文字透射叠印 */
+  th.el-table-fixed-column--left,
+  td.el-table-fixed-column--left,
+  th.el-table-fixed-column--right,
+  td.el-table-fixed-column--right,
+  .el-table__fixed-right th,
+  .el-table__fixed-right td,
+  .el-table__fixed-left th,
+  .el-table__fixed-left td {
+    background-color: var(--mono-surface) !important;
+    position: sticky !important;
+    z-index: 3 !important;
+  }
+
+  /* 固定列在 hover 时保持正确的 hover 背景色 */
+  .el-table__body tr:hover > td.el-table-fixed-column--left,
+  .el-table__body tr:hover > td.el-table-fixed-column--right,
+  .el-table__body tr.hover-row > td.el-table-fixed-column--left,
+  .el-table__body tr.hover-row > td.el-table-fixed-column--right {
+    background-color: var(--mono-surface-hover) !important;
+  }
+
+  /* 右侧固定列左边缘投影阴影，清晰区分滚动遮罩层 */
+  .el-table__cell.el-table-fixed-column--right.is-first-column::before {
+    box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* 斑马纹行样式: 必须使用实体不透明背景，确保固定列与普通列都不穿透 */
   &.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
-    background: var(--mono-surface-hover) !important;
+    background-color: var(--mono-surface-striped) !important;
+  }
+
+  &.el-table--striped .el-table__body tr.el-table__row--striped td.el-table-fixed-column--right,
+  &.el-table--striped .el-table__body tr.el-table__row--striped td.el-table-fixed-column--left {
+    background-color: var(--mono-surface-striped) !important;
   }
 
   .el-table__body tr:hover > td.el-table__cell {

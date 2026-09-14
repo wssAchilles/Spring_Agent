@@ -82,7 +82,6 @@
       <el-table
         v-else-if="model === 'text_model' || model === 'qa_model'"
         ref="segmentTableRef"
-        class="glass-card"
         stripe
         v-loading="loading"
         :data="knowledgeSegmentList"
@@ -104,7 +103,7 @@
           label="分段内容"
           align="left"
           prop="content"
-          width="600px"
+          min-width="320"
           :show-overflow-tooltip="{ effect: 'light' }"
         >
           <template #default="scope">
@@ -212,7 +211,7 @@
           />
         </template>
       </el-table>
-      <el-table class="glass-card"
+      <el-table
         v-if="model === 'hierarchical_model'"
         v-loading="loading"
         :data="knowledgeSegmentList"

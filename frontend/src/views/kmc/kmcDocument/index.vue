@@ -102,7 +102,6 @@
           <el-table
             v-else
             ref="documentTableRef"
-            class="glass-card"
             stripe
             v-loading="loading"
             :data="documentList"
