@@ -1,0 +1,85 @@
+{
+  "document_id": "doc_layout_sample_001",
+  "document_name": "2026年企业多模态技术白皮书.pdf",
+  "total_pages": 3,
+  "pages": [
+    {
+      "page_number": 1,
+      "width": 612.0,
+      "height": 792.0,
+      "elements": [
+        {
+          "id": "elem_01",
+          "type": "TITLE",
+          "bbox": [54.0, 40.0, 558.0, 80.0],
+          "content": "面向混合架构的下一代企业级多模态知识中台技术规范",
+          "font_size": 24.0
+        },
+        {
+          "id": "elem_02",
+          "type": "TEXT",
+          "bbox": [54.0, 100.0, 290.0, 250.0],
+          "content": "在分布式企业级知识库系统中，复杂版面解析是保障下游生成精度的核心首道关卡。左栏重点阐述混合计算拓扑的解耦理论与微服务编排原则。",
+          "font_size": 10.5
+        },
+        {
+          "id": "elem_03",
+          "type": "TEXT",
+          "bbox": [54.0, 260.0, 290.0, 420.0],
+          "content": "左栏第二段继续推导跨模态对比学习的互信息下界。通过引入 InfoNCE 损失函数，能够从数学上严格证明对齐特征的完备性与紧致性。",
+          "font_size": 10.5
+        },
+        {
+          "id": "elem_04",
+          "type": "TEXT",
+          "bbox": [322.0, 100.0, 558.0, 250.0],
+          "content": "右栏首先关注工程容灾与异构多语言接入。针对深度学习推理与高分辨率光栅化计算，推荐采用物理进程隔离与 cgroups 资源限制。",
+          "font_size": 10.5
+        },
+        {
+          "id": "elem_05",
+          "type": "TEXT",
+          "bbox": [322.0, 260.0, 558.0, 420.0],
+          "content": "右栏第二段阐述表格与图表资产的跨模态抽取。如图 1 所示，多阶段流水线能够有效解决悬空代词指代丢失导致的模型严重幻觉问题。",
+          "font_size": 10.5
+        },
+        {
+          "id": "elem_06",
+          "type": "FIGURE",
+          "bbox": [54.0, 440.0, 558.0, 680.0],
+          "content": "图 1: 全链路多模态版面解析与知识图谱融合架构拓扑图",
+          "image_uri": "https://minio.internal/kmc-assets/doc_001/fig_1.webp"
+        }
+      ]
+    },
+    {
+      "page_number": 2,
+      "width": 612.0,
+      "height": 792.0,
+      "tables": [
+        {
+          "table_id": "tbl_01",
+          "page_number": 2,
+          "bbox": [54.0, 80.0, 558.0, 400.0],
+          "rows": 4,
+          "cols": 4,
+          "cells": [
+            {"row": 0, "col": 0, "rowspan": 2, "colspan": 1, "text": "业务模块", "is_header": true},
+            {"row": 0, "col": 1, "rowspan": 1, "colspan": 2, "text": "2026年目标规划", "is_header": true},
+            {"row": 0, "col": 3, "rowspan": 2, "colspan": 1, "text": "合规评级", "is_header": true},
+            {"row": 1, "col": 1, "rowspan": 1, "colspan": 1, "text": "Q1 (万元)", "is_header": true},
+            {"row": 1, "col": 2, "rowspan": 1, "colspan": 1, "text": "Q2 (万元)", "is_header": true},
+            {"row": 2, "col": 0, "rowspan": 1, "colspan": 1, "text": "云计算基础设施", "is_header": false},
+            {"row": 2, "col": 1, "rowspan": 1, "colspan": 1, "text": "12000.5", "is_header": false},
+            {"row": 2, "col": 2, "rowspan": 1, "colspan": 1, "text": "14500.0", "is_header": false},
+            {"row": 2, "col": 3, "rowspan": 1, "colspan": 1, "text": "AAA", "is_header": false},
+            {"row": 3, "col": 0, "rowspan": 1, "colspan": 1, "text": "大模型应用研发", "is_header": false},
+            {"row": 3, "col": 1, "rowspan": 1, "colspan": 1, "text": "8500.0", "is_header": false},
+            {"row": 3, "col": 2, "rowspan": 1, "colspan": 1, "text": "11200.8", "is_header": false},
+            {"row": 3, "col": 3, "rowspan": 1, "colspan": 1, "text": "A+", "is_header": false}
+          ]
+        }
+      ]
+    }
+  ]
+}
