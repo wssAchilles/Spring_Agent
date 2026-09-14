@@ -39,6 +39,12 @@
         </dependency>
         <dependency>
             <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-common</artifactId>
+            <version>${qknow.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
             <artifactId>qknow-hermes-core</artifactId>
             <version>${qknow.version}</version>
             <scope>test</scope>
