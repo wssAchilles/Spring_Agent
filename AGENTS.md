@@ -199,3 +199,25 @@ limitations
    - 用户的 Mac 主机系统全局环境保持为 **Java 17**。本项目专用的 Java 21 是由 SDKMAN 管理的独立隔离虚拟环境，绝对路径固定为：`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`。
    - **严禁污染主机环境**：任何 Agent 或脚本绝对不允许全局覆盖系统默认 JDK，禁止创建或修改系统全局软链接。所有 Maven 编译、单元测试与后端执行，必须且只能通过局部前缀显式传入环境变量：
      `JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem`
+
+## 八、Git 提交信息规范铁律 (Git Commit Message Iron Rule)
+
+任何 Agent 在本项目中执行代码与文档提交（git commit）时，必须严格遵守 `.github/copilot-instructions.md` 规范准则，绝不允许提交单行或格式随意的信息：
+
+1. **结构格式**：严格使用 Conventional Commits 格式（`type(scope): 简短说明`）。
+2. **语言要求**：提交标题（Title）与正文（Body）必须独占使用**中文（简体中文）**。
+3. **空行间隔**：标题与正文之间必须且只能由**一个真实物理空行**隔开。
+4. **正文要点**：
+   - 正文必须使用真实物理换行符与 `- ` 项目符号列出具体变更要点；
+   - 严禁在提交信息中出现字面量 `\n` 转义字符；
+   - 正文要点优先保持在 **2-4 条**核心要点。
+5. **精炼聚焦**：标题必须简短集中、聚焦核心，正文清晰说明修改的核心动机与关键变更。
+6. **标准模板形态**：
+   ```text
+   type(scope): 中文标题
+
+   - 要点 1
+   - 要点 2
+   - 要点 3
+   ```
+
