@@ -36,8 +36,7 @@ public class ExplorationSafetyGate {
             return new SafetyIntervention(
                     true,
                     allowableSpeed,
-                    String.format("Triggered HOCBF intervention: speed %.2f exceeds allowable %.2f for unknown boundary distance %.2f",
-                            currentSpeed, allowableSpeed, distanceToUnknown)
+                    "Triggered HOCBF intervention: speed " + currentSpeed + " exceeds allowable " + allowableSpeed + " for unknown boundary distance " + distanceToUnknown
             );
         }
 
