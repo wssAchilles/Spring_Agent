@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 异构存储六层级联机器遗忘引擎 (CascadedUnlearningEngine)
@@ -54,7 +55,7 @@ public class CascadedUnlearningEngine {
         private final Long documentId;
         private final List<Long> segmentIds;
         private final long requestedAt;
-        private volatile UnlearningStatus status;
+        private final AtomicReference<UnlearningStatus> status;
         private final Map<StorageLayer, Boolean> layerPurgeStatus = new ConcurrentHashMap<>();
         private final List<String> executionLogs = new CopyOnWriteArrayList<>();
         private volatile long completedAt;
@@ -65,10 +66,22 @@ public class CascadedUnlearningEngine {
             this.documentId = documentId;
             this.segmentIds = segmentIds != null ? segmentIds : Collections.emptyList();
             this.requestedAt = System.currentTimeMillis();
-            this.status = UnlearningStatus.PENDING;
+            this.status = new AtomicReference<>(UnlearningStatus.PENDING);
             for (StorageLayer layer : StorageLayer.values()) {
                 layerPurgeStatus.put(layer, false);
             }
+        }
+
+        public UnlearningStatus getStatus() {
+            return status.get();
+        }
+
+        public void setStatus(UnlearningStatus newStatus) {
+            this.status.set(newStatus);
+        }
+
+        public boolean compareAndSetStatus(UnlearningStatus expect, UnlearningStatus update) {
+            return this.status.compareAndSet(expect, update);
         }
     }
 
@@ -145,7 +158,7 @@ public class CascadedUnlearningEngine {
         boolean offered = sagaQueue.offer(task);
         if (!offered) {
             log.error("[CascadedUnlearning] SAGA 队列已满，触发背压拦截");
-            task.status = UnlearningStatus.FAILED;
+            task.setStatus(UnlearningStatus.FAILED);
             throw new RejectedExecutionException("SAGA 注销队列已满，请稍后重试");
         }
 
@@ -156,7 +169,10 @@ public class CascadedUnlearningEngine {
      * 同步执行六层级联注销流水线 (支持契约测试或原子同步调用)
      */
     public boolean executeSync(UnlearningTask task) {
-        task.status = UnlearningStatus.IN_PROGRESS;
+        if (!task.compareAndSetStatus(UnlearningStatus.PENDING, UnlearningStatus.IN_PROGRESS)) {
+            // 已被异步 Worker 或并发线程抢占执行，直接返回终态判断，避免重复执行
+            return task.getStatus() == UnlearningStatus.COMPLETED;
+        }
         task.executionLogs.add("开始执行六层级联注销流水线: " + task.getTaskId());
 
         StorageLayer[] layers = StorageLayer.values();
@@ -173,13 +189,13 @@ public class CascadedUnlearningEngine {
                 task.executionLogs.add("层级 " + layer + " 物理擦除成功");
             }
 
-            task.status = UnlearningStatus.COMPLETED;
+            task.setStatus(UnlearningStatus.COMPLETED);
             task.completedAt = System.currentTimeMillis();
             task.executionLogs.add("六层级联注销全部圆满完成");
             return true;
         } catch (Exception e) {
             log.error("[CascadedUnlearning] 任务 {} 执行异常，进入 SAGA 补偿流程: {}", task.getTaskId(), e.getMessage());
-            task.status = UnlearningStatus.COMPENSATING;
+            task.setStatus(UnlearningStatus.COMPENSATING);
             task.executionLogs.add("异常: " + e.getMessage() + "，启动逆向补偿");
 
             // 逆向补偿执行过的层级
@@ -195,7 +211,7 @@ public class CascadedUnlearningEngine {
                     }
                 }
             }
-            task.status = UnlearningStatus.COMPENSATED;
+            task.setStatus(UnlearningStatus.COMPENSATED);
             return false;
         }
     }
@@ -261,7 +277,7 @@ public class CascadedUnlearningEngine {
             while (running.get() && !Thread.currentThread().isInterrupted()) {
                 try {
                     UnlearningTask task = sagaQueue.poll(500, TimeUnit.MILLISECONDS);
-                    if (task != null && task.status == UnlearningStatus.PENDING) {
+                    if (task != null && task.getStatus() == UnlearningStatus.PENDING) {
                         executeSync(task);
                     }
                 } catch (InterruptedException e) {

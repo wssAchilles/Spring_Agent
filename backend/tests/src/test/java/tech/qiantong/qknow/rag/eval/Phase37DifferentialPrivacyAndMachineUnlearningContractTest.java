@@ -406,6 +406,17 @@ public class Phase37DifferentialPrivacyAndMachineUnlearningContractTest {
         CascadedUnlearningEngine.UnlearningTask task = unlearningEngine.submitUnlearningRequest(tenantId, docId, segIds);
         boolean syncResult = unlearningEngine.executeSync(task);
 
+        // 若由后台异步 worker 抢先执行，等待其完成终态流转
+        long waitStart = System.currentTimeMillis();
+        while ((task.getStatus() == CascadedUnlearningEngine.UnlearningStatus.PENDING ||
+                task.getStatus() == CascadedUnlearningEngine.UnlearningStatus.IN_PROGRESS ||
+                task.getStatus() == CascadedUnlearningEngine.UnlearningStatus.COMPENSATING) &&
+               System.currentTimeMillis() - waitStart < 2000) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ignored) {}
+        }
+
         // 断言：由于 Layer 3 故障，最终返回 false，且触发 SAGA 逆向补偿
         assertFalse(syncResult, "发生故障时 SAGA 必须返回失败");
         assertEquals(CascadedUnlearningEngine.UnlearningStatus.COMPENSATED, task.getStatus());
