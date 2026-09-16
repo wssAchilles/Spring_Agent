@@ -160,7 +160,7 @@ import { Clock, More } from "@element-plus/icons-vue";
 import GraphCover from "@/assets/kac/moren.jpg";
 import heatFlameIcon from "@/assets/kac/overview/heat-flame.svg";
 import { useRouter } from "vue-router";
-// import { delSolution, updateSolution } from "@/api/kac/solution/solution";
+import { delSolution, updateSolution } from "@/api/kac/solution/solution";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();

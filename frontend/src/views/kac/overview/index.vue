@@ -64,10 +64,15 @@
 
       <div class="section-content" v-loading="applyLoading">
         <div v-if="applyList.length" class="apply-grid">
-          <div v-for="item in applyList" :key="item.id" class="apply-card glass-card">
+          <div
+            v-for="item in applyList"
+            :key="item.id"
+            class="apply-card glass-card interactive-card"
+            @click="handleCardClick(item)"
+          >
             <div class="apply-card-header">
               <div class="apply-icon-wrapper">
-                <el-icon :size="24" color="#409eff">
+                <el-icon :size="24" color="#0052ff">
                   <component :is="getIconComponent(item.icon)" />
                 </el-icon>
               </div>
@@ -93,20 +98,59 @@
               </el-tag>
             </div>
             <div class="apply-description">{{ item.description }}</div>
+
+            <!-- 卡片底部交互操作坞 -->
+            <div class="card-action-dock">
+              <el-button
+                v-ripple
+                size="small"
+                type="primary"
+                class="dock-btn dock-run"
+                @click.stop="handleCardClick(item)"
+              >
+                <el-icon><VideoPlay /></el-icon>
+                立即体验
+              </el-button>
+              <el-button
+                v-ripple
+                size="small"
+                class="dock-btn dock-detail"
+                @click.stop="handleDetailClick(item)"
+              >
+                <el-icon><View /></el-icon>
+                查看详情
+              </el-button>
+            </div>
           </div>
         </div>
         <el-empty v-else description="暂无应用推荐" />
       </div>
     </section>
+
+    <!-- 沉浸式毛玻璃应用运行抽屉 -->
+    <AppRunnerDrawer ref="runnerDrawerRef" />
   </div>
 </template>
 
 <script setup name="Overview">
 import { computed, onMounted, reactive, ref } from "vue";
-import { ArrowRight, Edit, Search, Document, Connection, Aim, ChatDotRound, Calendar, DataAnalysis } from "@element-plus/icons-vue";
+import {
+  ArrowRight,
+  Edit,
+  Search,
+  Document,
+  Connection,
+  Aim,
+  ChatDotRound,
+  Calendar,
+  DataAnalysis,
+  VideoPlay,
+  View
+} from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
 import { listApply } from "@/api/kac/apply/apply.js";
 import useUserStore from "@/store/system/user.js";
+import AppRunnerDrawer from "@/views/kac/components/runner/AppRunnerDrawer.vue";
 import bannerImage from "@/assets/kac/overview/banner.png";
 import quickSolutionIcon from "@/assets/kac/overview/quick-solution.png";
 import quickHorizontalIcon from "@/assets/kac/overview/quick-horizontal.png";
@@ -117,12 +161,26 @@ import quickMyAppIcon from "@/assets/kac/overview/quick-my-app.png";
 const router = useRouter();
 const userStore = useUserStore();
 
+const runnerDrawerRef = ref(null);
 const applyLoading = ref(false);
 const applyList = ref([]);
 const overviewStats = reactive({
   applyTotal: 0,
   myApplyTotal: 0,
 });
+
+function handleCardClick(item) {
+  if (runnerDrawerRef.value) {
+    runnerDrawerRef.value.open(item);
+  }
+}
+
+function handleDetailClick(item) {
+  router.push({
+    path: "/kac/horizontal/horizontalDetail",
+    query: { id: item.id, title: item.name },
+  });
+}
 
 const quickEntries = [
   {
@@ -511,6 +569,60 @@ onMounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.interactive-card {
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -4px rgba(0, 82, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 82, 255, 0.35);
+
+    .card-action-dock {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.card-action-dock {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(226, 232, 240, 0.8);
+  opacity: 0.9;
+  transition: all 0.2s ease;
+
+  .dock-btn {
+    border-radius: 6px;
+    font-size: 12px;
+    padding: 6px 12px;
+
+    &.dock-run {
+      background: #0052ff;
+      border-color: #0052ff;
+      color: #fff;
+
+      &:hover {
+        background: #0042d1;
+      }
+    }
+
+    &.dock-detail {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid #cbd5e1;
+      color: #334155;
+
+      &:hover {
+        border-color: #0052ff;
+        color: #0052ff;
+      }
+    }
+  }
 }
 
 @media (max-width: 1440px) {

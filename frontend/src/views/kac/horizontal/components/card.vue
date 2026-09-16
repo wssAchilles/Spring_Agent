@@ -4,7 +4,12 @@
     class="card-container"
     :class="{ 'card-container--overview': props.variant === 'overview' }"
   >
-    <div v-for="(item, index) in data" :key="item.id || index" class="card glass-card">
+    <div
+      v-for="(item, index) in data"
+      :key="item.id || index"
+      class="card glass-card clickable-card"
+      @click="handleExperience(item)"
+    >
       <div class="card-inner">
         <div class="card-title-row">
           <div class="card-title-info">
@@ -174,6 +179,9 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 沉浸式毛玻璃即时运行抽屉 -->
+    <AppRunnerDrawer ref="runnerDrawerRef" />
   </div>
 </template>
 
@@ -197,16 +205,14 @@ import {
   VideoPlay,
 } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
+import AppRunnerDrawer from "@/views/kac/components/runner/AppRunnerDrawer.vue";
+import {
+  delApply,
+  getByApplyIdId,
+  updateApply,
+} from "@/api/kac/apply/apply.js";
 
-
-// import {
-//   delApply,
-//   getByApplyIdId,
-//   updateApply,
-// } from "@/api/kac/apply/apply.js";
-// import { listBot } from "@/api/kb/bot/bot.js";
-// import { listKnowledgeBase } from "@/api/kmc/knowledgeBase/knowledgeBase.js";
-
+const runnerDrawerRef = ref(null);
 const { proxy } = getCurrentInstance();
 const router = useRouter();
 
@@ -367,16 +373,6 @@ async function ensureDropdownData() {
   if (dropdownLoaded.value) {
     return;
   }
-
-  const [knowledgeBaseRes, graphRes, botRes] = await Promise.all([
-    listKnowledgeBase({ pageSize: 1000, pageNum: 1 }),
-    listSimple({ pageSize: 1000, pageNum: 1 }),
-    listBot({ pageSize: 1000, pageNum: 1 }),
-  ]);
-
-  knowledgeBaseList.value = knowledgeBaseRes.data.rows;
-  graphList.value = graphRes.data.rows;
-  botList.value = botRes.data.rows;
   dropdownLoaded.value = true;
 }
 
@@ -401,43 +397,14 @@ async function handleUpdate(row) {
   open.value = true;
 }
 
-// id 与页面类型的映射关系
-const pageTypeMap = {
-  2: "sunWeekMoonReports",
-  3: "templateReports",
-  4: "chat",
-  5: "semanticSearch",
-  6: "entityRelationSearch",
-  7: "preciseSearch",
-  8: "batchSearch",
-};
-
 function handleExperience(row) {
   if (String(row.status) === '0') {
     ElMessage({ message: '该应用已停用', type: 'warning' });
     return;
   }
-
-  if (props.source === 'vertical') {
-    router.push({
-      path: '/kac/vertical/verticalDetail',
-      query: { id: row.id, title: row.name },
-    });
-    return;
+  if (runnerDrawerRef.value) {
+    runnerDrawerRef.value.open(row);
   }
-
-  if (row.pluginId != null) {
-    router.push({
-      path: '/kac/horizontal/pluginApply',
-      query: { applyId: row.id, title: row.name },
-    });
-    return;
-  }
-
-  router.push({
-    path: '/kac/horizontal/horizontalDetail',
-    query: { id: row.id, title: row.name },
-  });
 }
 
 function handleDetail(row) {

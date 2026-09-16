@@ -126,6 +126,24 @@
             <scope>compile</scope>
         </dependency>
 
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-ai</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-module-kmc-api</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-module-app-api</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
     </dependencies>
 
 </project>

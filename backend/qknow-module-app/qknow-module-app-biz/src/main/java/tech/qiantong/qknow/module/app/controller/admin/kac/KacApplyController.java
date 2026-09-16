@@ -18,11 +18,13 @@ import tech.qiantong.qknow.common.core.page.PageParam;
 import tech.qiantong.qknow.common.core.page.PageResult;
 import tech.qiantong.qknow.common.core.utils.object.BeanUtils;
 import tech.qiantong.qknow.common.core.utils.poi.ExcelUtil;
-import tech.qiantong.qknow.module.app.controller.admin.kac.vo.KacApplyPageReqVO;
-import tech.qiantong.qknow.module.app.controller.admin.kac.vo.KacApplyRespVO;
-import tech.qiantong.qknow.module.app.controller.admin.kac.vo.KacApplySaveReqVO;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
+import tech.qiantong.qknow.module.app.controller.admin.kac.vo.*;
 import tech.qiantong.qknow.module.app.convert.kac.KacApplyConvert;
 import tech.qiantong.qknow.module.app.dal.dataobject.kac.KacApplyDO;
+import tech.qiantong.qknow.module.app.dal.dataobject.kac.KacApplyExecutionLogDO;
+import tech.qiantong.qknow.module.app.dal.mapper.kac.KacApplyExecutionLogMapper;
+import tech.qiantong.qknow.module.app.service.kac.IAppExecutionEngine;
 import tech.qiantong.qknow.module.app.service.kac.IKacApplyService;
 
 import java.util.Arrays;
@@ -41,6 +43,12 @@ import java.util.List;
 public class KacApplyController extends BaseController {
     @Resource
     private IKacApplyService kacApplyService;
+
+    @Resource
+    private IAppExecutionEngine appExecutionEngine;
+
+    @Resource
+    private KacApplyExecutionLogMapper kacApplyExecutionLogMapper;
 
     @Operation(summary = "查询应用管理列表")
     @PreAuthorize("@ss.hasPermi('kac:apply:list')")
@@ -109,4 +117,62 @@ public class KacApplyController extends BaseController {
     public CommonResult<Integer> remove(@PathVariable Long[] ids) {
         return CommonResult.toAjax(kacApplyService.removeKacApply(Arrays.asList(ids)));
     }
+
+    @Operation(summary = "获取应用详情（兼容前端双层路由 /kac/apply/apply/{id}）")
+    @PreAuthorize("@ss.hasPermi('kac:apply:query')")
+    @GetMapping("/apply/{id}")
+    public CommonResult<KacApplyRespVO> getApplyDetailCompat(@PathVariable("id") Long id) {
+        return getInfo(id);
+    }
+
+    @Operation(summary = "同步执行应用")
+    @PostMapping("/run")
+    public CommonResult<AppRunResultRespVO> run(@Valid @RequestBody AppRunReqVO reqVO) {
+        AppRunResultRespVO result = appExecutionEngine.run(reqVO, getUserId(), getUsername(), super.getWorkSpaceId());
+        return CommonResult.success(result);
+    }
+
+    @Operation(summary = "流式打字机执行应用 (SSE)")
+    @PostMapping(value = "/stream-run", produces = "text/event-stream;charset=UTF-8")
+    public ResponseBodyEmitter streamRun(@Valid @RequestBody AppRunReqVO reqVO) {
+        return appExecutionEngine.streamRun(reqVO, getUserId(), getUsername(), super.getWorkSpaceId());
+    }
+
+    @Operation(summary = "复制克隆应用")
+    @PreAuthorize("@ss.hasPermi('kac:apply:add')")
+    @Log(title = "应用管理", businessType = BusinessType.INSERT)
+    @PostMapping("/copy")
+    public CommonResult<Long> copy(@RequestBody KacApplySaveReqVO reqVO) {
+        if (reqVO.getId() != null) {
+            KacApplyDO origin = kacApplyService.getKacApplyById(reqVO.getId());
+            if (origin != null) {
+                reqVO.setName(origin.getName() + " (副本)");
+                reqVO.setDescription(origin.getDescription());
+                reqVO.setIcon(origin.getIcon());
+                reqVO.setType(origin.getType());
+                reqVO.setTags(origin.getTags());
+                reqVO.setConfig(origin.getConfig());
+                reqVO.setExecutionMode(origin.getExecutionMode());
+                reqVO.setInputSchema(origin.getInputSchema());
+                reqVO.setOutputSchema(origin.getOutputSchema());
+                reqVO.setPromptTemplate(origin.getPromptTemplate());
+                reqVO.setExecutionConfig(origin.getExecutionConfig());
+                reqVO.setId(null);
+            }
+        }
+        reqVO.setWorkspaceId(super.getWorkSpaceId());
+        reqVO.setCreatorId(getUserId());
+        reqVO.setCreateBy(getUsername());
+        return CommonResult.toAjax(kacApplyService.createKacApply(reqVO));
+    }
+
+    @Operation(summary = "查询执行审计日志列表")
+    @GetMapping("/executions/list")
+    public CommonResult<PageResult<KacApplyExecutionLogDO>> listExecutions(
+            @RequestParam(value = "applyId", required = false) Long applyId,
+            PageParam pageParam) {
+        PageResult<KacApplyExecutionLogDO> page = kacApplyExecutionLogMapper.selectPageByApply(applyId, pageParam);
+        return CommonResult.success(page);
+    }
 }
+

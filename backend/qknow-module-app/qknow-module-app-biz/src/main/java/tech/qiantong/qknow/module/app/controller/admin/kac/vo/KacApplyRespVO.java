@@ -55,6 +55,24 @@ public class KacApplyRespVO implements Serializable {
     @Schema(description = "配置", example = "")
     private String config;
 
+    @Schema(description = "当前发布的版本ID")
+    private Long publishedVersionId;
+
+    @Schema(description = "执行模式: DIRECT_PROMPT_RAG, HERMES_AGENT, HERMES_DAG")
+    private String executionMode;
+
+    @Schema(description = "动态入参表单Schema定义 (JSON字符串)")
+    private String inputSchema;
+
+    @Schema(description = "出参Schema定义 (JSON字符串)")
+    private String outputSchema;
+
+    @Schema(description = "提示词模板")
+    private String promptTemplate;
+
+    @Schema(description = "执行策略配置 (JSON字符串)")
+    private String executionConfig;
+
     @Excel(name = "是否有效")
     @Schema(description = "是否有效", example = "")
     private Boolean validFlag;

@@ -65,9 +65,7 @@
             class="value-card"
             :style="{ backgroundImage: `url(${valueBg})` }"
           >
-            <p>
-              文章编写应用的核心价值在于大幅<span>降低创作门槛</span>并显著提升内容产出效率。它通过<span>智能辅助</span>与实时纠错，帮助创作者快速跨越构思与表达的障碍，将繁琐的文字组织工作自动化。最终，插件让创作者得以从重复性的劳动中解放出来，将更多<span>精力聚焦</span>于核心观点的创新与情感价值的传递。
-            </p>
+            <p v-html="formattedValueDesc"></p>
             <div class="value-metrics">
               <div v-for="item in coreMetrics" :key="item.title">
                 <strong>{{ item.title }}</strong>
@@ -255,6 +253,8 @@
         </div>
       </template>
     </el-dialog>
+    <!-- 沉浸式应用试运行抽屉 -->
+    <AppRunnerDrawer ref="runnerDrawerRef" />
   </div>
 </template>
 
@@ -272,6 +272,7 @@ import {
   watch,
 } from "vue";
 import { Clock } from "@element-plus/icons-vue";
+import AppRunnerDrawer from "@/views/kac/components/runner/AppRunnerDrawer.vue";
 import Kmc from "@/views/kac/horizontal/detail/kmc.vue";
 import Kg from "@/views/kac/horizontal/detail/kg.vue";
 import Bot from "@/views/kac/horizontal/detail/bot.vue";
@@ -317,6 +318,7 @@ const mainPanelRef = ref(null);
 const mainPanelHeight = ref(0);
 let mainPanelResizeObserver = null;
 
+const runnerDrawerRef = ref(null);
 const knowledgeBaseList = ref([]);
 const graphList = ref([]);
 const botList = ref([]);
@@ -336,6 +338,14 @@ const data = reactive({
   form: {},
 });
 const { applyDetail, form } = toRefs(data);
+
+const formattedValueDesc = computed(() => {
+  const name = applyDetail.value?.name || "该应用";
+  if (applyDetail.value?.description) {
+    return `${name} 核心赋能于：<span>${applyDetail.value.description}</span>。通过接入高精度知识库切片召回与 DeepSeek 认知推理，驱动全链路<span>自动化知识交付与决策</span>，让专业能力即插即用。`;
+  }
+  return `${name} 深度整合企业级知识图谱与 DeepSeek 认知推理能力，通过高精度语义对齐与结构化工具流，提供毫秒级响应与确定性知识交付，显著降低业务决策门槛与流程流转成本。`;
+});
 
 const coreMetrics = [
   { title: "提升效率", desc: "智能生成，高效创作" },
@@ -667,31 +677,10 @@ function normalizeResourceRows(
 }
 
 function handleUse(row) {
-  let path = "";
-  const source = getSource();
-
-  if (source === "vertical") {
-    path = "/kac/vertical/pluginApply";
-  } else if (source === "horizontal") {
-    path = "/kac/horizontal/pluginApply";
-  } else if (source === "myApp") {
-    path = "/kac/myApp/pluginApply";
-  } else if (row.pluginId != null) {
-    path = "/kac/horizontal/pluginApply";
-  } else {
-    ElMessage({
-      message: "功能正常开发中",
-      type: "warning",
-    });
-    return;
+  const target = (row && row.id) ? row : applyDetail.value;
+  if (runnerDrawerRef.value) {
+    runnerDrawerRef.value.open(target);
   }
-  router.push({
-    path,
-    query: {
-      applyId: applyDetail.value.id,
-      title: applyDetail.value.name,
-    },
-  });
 }
 
 function openResourceDialog(type) {

@@ -53,6 +53,24 @@ public class KacApplyDO extends BaseEntity {
     /** 配置 */
     private String config;
 
+    /** 当前发布的版本ID */
+    private Long publishedVersionId;
+
+    /** 执行模式: DIRECT_PROMPT_RAG, HERMES_AGENT, HERMES_DAG */
+    private String executionMode;
+
+    /** 动态入参表单Schema定义 (JSON字符串) */
+    private String inputSchema;
+
+    /** 出参Schema定义 (JSON字符串) */
+    private String outputSchema;
+
+    /** 提示词模板 */
+    private String promptTemplate;
+
+    /** 执行策略配置 (JSON字符串) */
+    private String executionConfig;
+
     /** 是否有效 */
     private Boolean validFlag;
 

@@ -138,6 +138,12 @@
 
         <dependency>
             <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-neo4j</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>tech.qiantong</groupId>
             <artifactId>qknow-module-app-api</artifactId>
             <version>${qknow.version}</version>
         </dependency>

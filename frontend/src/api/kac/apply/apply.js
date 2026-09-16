@@ -60,3 +60,24 @@ export function copy(data) {
     })
 }
 
+export const copyApply = copy;
+
+// 同步执行应用
+export function runApply(data) {
+    return request({
+        url: '/kac/apply/run',
+        method: 'post',
+        data: data
+    })
+}
+
+// 查询应用执行审计日志
+export function listApplyExecutions(query) {
+    return request({
+        url: '/kac/apply/executions/list',
+        method: 'get',
+        params: query
+    })
+}
+
+
