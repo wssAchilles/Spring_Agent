@@ -97,7 +97,7 @@ jobs:
 
       - name: Run Maven Reactor Tests
         env:
-          MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dfile.encoding=UTF-8'
+          MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -Dfile.encoding=UTF-8'
         run: |
           mvn -B -ntp -T 1C -f backend/pom.xml -pl tests -am test \
             -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
