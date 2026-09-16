@@ -44,32 +44,59 @@ public class AiApiKeyServiceImpl extends ServiceImpl<AiApiKeyMapper, AiApiKeyDO>
 
     @Override
     public PageResult<AiApiKeyPageReqVO> getAiApiKeyPage(AiApiKeyPageReqVO pageReqVO) {
-        // MyBatis Plus 查询
+        // 获取模型平台字典数据
         List<SysDictData> platformDictList = DictUtils.getDictCache("ai_model_platform");
-        assert platformDictList != null;
+        if (CollUtil.isEmpty(platformDictList)) {
+            try {
+                Object dictService = tech.qiantong.qknow.common.utils.spring.SpringUtils.getBean("sysDictTypeServiceImpl");
+                if (dictService != null) {
+                    java.lang.reflect.Method method = dictService.getClass().getMethod("selectDictDataByType", String.class);
+                    @SuppressWarnings("unchecked")
+                    List<SysDictData> dbList = (List<SysDictData>) method.invoke(dictService, "ai_model_platform");
+                    if (CollUtil.isNotEmpty(dbList)) {
+                        platformDictList = dbList;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("[AiApiKeyService] 尝试从数据库加载字典失败: {}", e.getMessage());
+            }
+        }
+        if (CollUtil.isEmpty(platformDictList)) {
+            platformDictList = Arrays.stream(AiPlatformEnum.values())
+                    .filter(p -> StrUtil.isNotBlank(p.getPlatform()))
+                    .map(p -> {
+                        SysDictData d = new SysDictData();
+                        d.setDictLabel(p.getName());
+                        d.setDictValue(p.getPlatform());
+                        d.setDictType("ai_model_platform");
+                        return d;
+                    })
+                    .toList();
+        }
+
         if (StrUtil.isNotBlank(pageReqVO.getName())) {
             platformDictList = platformDictList.stream()
-                    .filter(item -> item.getDictValue().contains(pageReqVO.getName()))
+                    .filter(item -> item.getDictValue() != null && item.getDictValue().toLowerCase().contains(pageReqVO.getName().toLowerCase()))
                     .toList();
+        }
+
+        if (platformDictList.isEmpty()) {
+            return new PageResult<>(Collections.emptyList(), 0L);
         }
 
         Integer pageNum = pageReqVO.getPageNum();
         Integer pageSize = pageReqVO.getPageSize();
-        if (pageNum < 1) {
+        if (pageNum == null || pageNum < 1) {
             pageNum = 1;
         }
+        if (pageSize == null || pageSize < 1) {
+            pageSize = 10;
+        }
         int startIndex = (pageNum - 1) * pageSize;
-        int endIndex = pageNum * pageSize;
-
+        int endIndex = Math.min(pageNum * pageSize, platformDictList.size());
 
         if (startIndex >= platformDictList.size()) {
-            startIndex = platformDictList.size() / pageSize;
-            if (platformDictList.size() % pageSize > 0) {
-                startIndex = startIndex + pageSize;
-            }
-        }
-        if (endIndex > platformDictList.size()) {
-            endIndex = platformDictList.size();
+            startIndex = Math.max(0, platformDictList.size() - pageSize);
         }
         List<SysDictData> subList = platformDictList.subList(startIndex, endIndex);
 
