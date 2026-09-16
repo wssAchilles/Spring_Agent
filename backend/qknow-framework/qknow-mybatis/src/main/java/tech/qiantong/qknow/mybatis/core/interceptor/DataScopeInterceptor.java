@@ -1,4 +1,4 @@
-package tech.qiantong.qknow.framework.security;
+package tech.qiantong.qknow.mybatis.core.interceptor;
 
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
@@ -7,7 +7,6 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectBody;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.plugin.*;
@@ -50,12 +49,9 @@ public class DataScopeInterceptor implements Interceptor {
     public String rewriteSql(String originalSql) {
         try {
             Statement statement = CCJSqlParserUtil.parse(originalSql);
-            if (statement instanceof Select) {
-                Select select = (Select) statement;
-                SelectBody selectBody = select.getSelectBody();
-                if (selectBody instanceof PlainSelect) {
-                    PlainSelect plainSelect = (PlainSelect) selectBody;
-                    
+            if (statement instanceof Select select) {
+                PlainSelect plainSelect = select.getPlainSelect();
+                if (plainSelect != null) {
                     Expression dataScopeCondition = CCJSqlParserUtil.parseCondExpression("dept_id = ?");
                     Expression where = plainSelect.getWhere();
                     

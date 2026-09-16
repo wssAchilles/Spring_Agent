@@ -1,4 +1,4 @@
-package tech.qiantong.qknow.framework.jackson;
+package tech.qiantong.qknow.common.jackson;
 
 public enum DesensitizeType {
     PHONE,

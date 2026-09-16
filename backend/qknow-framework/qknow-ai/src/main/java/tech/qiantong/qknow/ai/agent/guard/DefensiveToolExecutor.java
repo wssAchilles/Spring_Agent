@@ -1,4 +1,4 @@
-package tech.qiantong.qknow.agent;
+package tech.qiantong.qknow.ai.agent.guard;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

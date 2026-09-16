@@ -1,7 +1,9 @@
-package tech.qiantong.qknow.framework.security;
+package tech.qiantong.qknow.common.security;
 
 import okhttp3.Dns;
 import org.junit.jupiter.api.Test;
+import tech.qiantong.qknow.common.security.ssrf.SafeDns;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -50,9 +52,9 @@ public class SafeDnsTest {
 
         SafeDns safeDns = new SafeDns(mockDns);
         assertDoesNotThrow(() -> {
-            List<InetAddress> addresses = safeDns.lookup("dns.google");
-            assertEquals(1, addresses.size());
-            assertEquals("8.8.8.8", addresses.get(0).getHostAddress());
+            List<InetAddress> results = safeDns.lookup("public.example.com");
+            assertEquals(1, results.size());
+            assertEquals("8.8.8.8", results.get(0).getHostAddress());
         });
     }
 }

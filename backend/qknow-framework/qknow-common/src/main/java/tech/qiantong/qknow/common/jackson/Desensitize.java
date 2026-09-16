@@ -1,4 +1,4 @@
-package tech.qiantong.qknow.framework.jackson;
+package tech.qiantong.qknow.common.jackson;
 
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

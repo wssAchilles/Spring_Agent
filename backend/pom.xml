@@ -279,6 +279,9 @@
                             <version>0.2.0</version>
                         </path>
                     </annotationProcessorPaths>
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <!-- Add maven-surefire-plugin for FFM -->
@@ -287,7 +290,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
                 <configuration>
-                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+                    <argLine>--enable-preview --enable-native-access=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
         </plugins>

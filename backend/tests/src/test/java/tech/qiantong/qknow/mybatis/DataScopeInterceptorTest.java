@@ -1,6 +1,8 @@
-package tech.qiantong.qknow.framework.security;
+package tech.qiantong.qknow.mybatis;
 
 import org.junit.jupiter.api.Test;
+import tech.qiantong.qknow.mybatis.core.interceptor.DataScopeInterceptor;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DataScopeInterceptorTest {

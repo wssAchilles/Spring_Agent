@@ -1,4 +1,4 @@
-package tech.qiantong.qknow.agent;
+package tech.qiantong.qknow.ai.agent.guard;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,13 +46,13 @@ class DefensiveToolExecutorTest {
         CircuitBreakerException exception = assertThrows(CircuitBreakerException.class, () -> {
             executor.executeTool(toolName, params, toolLogic);
         });
-        
-        assertTrue(exception.getMessage().contains("Semantic loop detected"));
+
+        assertTrue(exception.getMessage().contains("语义死循环"));
     }
 
     @Test
-    void testResultSpillForLargeOutput() {
-        // 模拟工具返回 5MB 大小的字符串
+    void testSpillLargeResultToDisk() {
+        // 构造 > 1MB 的超大结果 (5MB)
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 5 * 1024 * 1024; i++) {
             sb.append("A");
@@ -92,7 +92,7 @@ class DefensiveToolExecutorTest {
     void testTimeoutBudget() {
         // 模拟耗时工具调用
         Callable<String> slowLogic = () -> {
-            Thread.sleep(2000);
+            Thread.sleep(1500);
             return "done";
         };
         

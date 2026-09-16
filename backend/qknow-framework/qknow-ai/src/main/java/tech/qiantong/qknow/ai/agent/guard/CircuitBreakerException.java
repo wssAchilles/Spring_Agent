@@ -1,4 +1,4 @@
-package tech.qiantong.qknow.agent;
+package tech.qiantong.qknow.ai.agent.guard;
 
 /**
  * Agent 断路器异常，用于在发生死循环或超时时熔断执行
