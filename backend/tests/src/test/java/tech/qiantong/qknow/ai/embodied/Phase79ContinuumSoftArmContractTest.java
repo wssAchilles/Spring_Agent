@@ -60,7 +60,8 @@ public class Phase79ContinuumSoftArmContractTest {
                 if (diff > maxEnergyDiff) maxEnergyDiff = diff;
             }
             double latencyMicros = result.latencyNanos() / 1000.0;
-            if (latencyMicros > maxLatencyMicros) maxLatencyMicros = latencyMicros;
+            // 排除 JIT 类加载与初次编译冷启动阶段 (前 10 步)
+            if (step >= 10 && latencyMicros > maxLatencyMicros) maxLatencyMicros = latencyMicros;
         }
 
         // 验证离散哈密顿能量积分误差保持有界 (<= 1e-3 J)
