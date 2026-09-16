@@ -1,25 +1,166 @@
-name: ci
+name: Continuous Integration & Quality Gate
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+# 1. 并发控制：同一分支有新提交时自动取消正在运行的陈旧构建
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  backend-tests:
+  # ============================================================================
+  # 阶段 1：智能变更路径侦测中心（识别本次提交影响的工程组件）
+  # ============================================================================
+  detect-changes:
+    name: Detect Changed Components
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Evaluate Path Filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+            workflows:
+              - '.github/workflows/**'
+
+  # ============================================================================
+  # 阶段 2（轨道 A）：前端质量门禁（Vue 3 + Vite 5 静态检查与生产构建）
+  # ============================================================================
+  frontend-gate:
+    name: Frontend Quality (ESLint & Production Build)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true' || needs.detect-changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies (npm ci)
+        run: npm ci
+
+      - name: Run ESLint Verification (Diagnostic)
+        run: npm run eslint:lint
+        continue-on-error: true
+
+      - name: Verify Production Build
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+          VITE_APP_ENV: 'production'
+        run: npm run build:prod
+
+  # ============================================================================
+  # 阶段 2（轨道 B）：后端质量门禁（Java 21 + Maven Reactor 1258+ 项全量单测）
+  # ============================================================================
+  backend-gate:
+    name: Backend Quality (Java 21 & Reactor Tests)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v5
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '21'
-          cache: maven
-      - name: Unit tests (tests module + reactor deps)
-        run: mvn -B -f backend/pom.xml -pl tests -am test
-      - name: Upload surefire on failure
+          cache: 'maven'
+
+      - name: Run Maven Reactor Tests
+        env:
+          MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dfile.encoding=UTF-8'
+        run: |
+          mvn -B -ntp -T 1C -f backend/pom.xml -pl tests -am test \
+            -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
+
+      - name: Upload Surefire Reports on Failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
           path: backend/tests/target/surefire-reports
           if-no-files-found: ignore
+
+  # ============================================================================
+  # 阶段 3：全流程质量门禁聚合判定与 Step Summary 看板输出
+  # ============================================================================
+  quality-gate-status:
+    name: Overall Quality Gate
+    needs: [detect-changes, frontend-gate, backend-gate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consolidate Quality Gate Results
+        run: |
+          FRONTEND_RES="${{ needs.frontend-gate.result }}"
+          BACKEND_RES="${{ needs.backend-gate.result }}"
+
+          echo "=========================================="
+          echo "Quality Gate Execution Summary:"
+          echo "Frontend Gate: $FRONTEND_RES"
+          echo "Backend Gate:  $BACKEND_RES"
+          echo "=========================================="
+
+          for res in "$FRONTEND_RES" "$BACKEND_RES"; do
+            if [ "$res" = "failure" ] || [ "$res" = "cancelled" ]; then
+              echo "::error::One or more essential quality gates failed or were cancelled."
+              exit 1
+            fi
+          done
+
+          echo "✅ All triggered quality gates have passed successfully."
+
+      - name: Publish Quality Dashboard to Summary
+        if: always()
+        run: |
+          FRONTEND_RES="${{ needs.frontend-gate.result }}"
+          BACKEND_RES="${{ needs.backend-gate.result }}"
+
+          format_status() {
+            case "$1" in
+              success) echo "✅ **通过 (Passed)**" ;;
+              skipped) echo "⏭️ **跳过 (Skipped: 路径未命中)**" ;;
+              failure) echo "❌ **失败 (Failed)**" ;;
+              cancelled) echo "⏹️ **已取消 (Cancelled)**" ;;
+              *) echo "❓ **$1**" ;;
+            esac
+          }
+
+          echo "## 🛡️ 全栈自动化质量门禁执行看板" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 门禁检查轨道 | 涉及工程技术栈 | 门禁执行状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 前端代码规范与构建 | Vue 3 + Vite 5 + ESLint 9 | $(format_status "$FRONTEND_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "| 后端微服务与契约单测 | Java 21 + Maven Reactor (1258+ Tests) | $(format_status "$BACKEND_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 **提示**：当仅提交文档或非代码资产时，代码测试轨道将自动优雅跳过，实现秒级交付。" >> $GITHUB_STEP_SUMMARY
+
