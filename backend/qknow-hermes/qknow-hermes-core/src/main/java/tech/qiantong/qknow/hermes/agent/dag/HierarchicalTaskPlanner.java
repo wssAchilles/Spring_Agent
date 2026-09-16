@@ -18,10 +18,18 @@ import java.util.*;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class HierarchicalTaskPlanner {
 
     private final ChatModel chatModel;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public HierarchicalTaskPlanner(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    public HierarchicalTaskPlanner() {
+        this(null);
+    }
 
     private static final String PLANNER_SYSTEM_PROMPT = """
             你是一个工业级多智能体系统的主管任务规划专家。
@@ -44,6 +52,10 @@ public class HierarchicalTaskPlanner {
             """;
 
     public PhasedExecutionPlan plan(String userQuery) {
+        if (chatModel == null) {
+            log.warn("[HierarchicalPlanner] ChatModel 未注入，使用默认单节点执行计划");
+            return new PhasedExecutionPlan(List.of(List.of(new DagTaskNode("task-1", userQuery, "GENERAL", List.of(), 30, Map.of()))), 1);
+        }
         String prompt = "用户目标任务：" + userQuery;
         Prompt chatPrompt = new Prompt(List.of(
                 new SystemMessage(PLANNER_SYSTEM_PROMPT),

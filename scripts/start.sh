@@ -53,8 +53,8 @@ release_port 9090 "Hermes 端口 9090"
 
 echo "[3/6] 清理编译锁并编译后端代码"
 rm -rf "$PROJECT_DIR/backend/qknow-hermes/qknow-hermes-proto/target"
-echo "正在编译后端代码 (mvn clean install)..."
-(cd "$PROJECT_DIR/backend" && mvn clean install -DskipTests) || { echo "后端编译失败"; exit 1; }
+echo "正在编译后端代码 (mvn install)..."
+(cd "$PROJECT_DIR/backend" && mvn install -DskipTests) || { echo "后端编译失败"; exit 1; }
 
 echo "[4/6] 启动本机主后端"
 start_background backend \
@@ -110,4 +110,6 @@ echo "正在实时输出前端日志。按 Ctrl+C 只退出日志跟随，服务
 echo "如需停止服务，请另开终端执行：bash scripts/stop.sh"
 echo
 
-tail -n 120 -F "$(service_log_file frontend)"
+if [[ "${1:-}" != "--no-tail" ]]; then
+  tail -n 120 -F "$(service_log_file frontend)"
+fi

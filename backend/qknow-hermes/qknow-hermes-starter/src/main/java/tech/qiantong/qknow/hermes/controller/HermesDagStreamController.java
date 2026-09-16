@@ -24,8 +24,13 @@ public class HermesDagStreamController {
 
     private final RealtimeDagEventStreamer eventStreamer;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     public HermesDagStreamController(RealtimeDagEventStreamer eventStreamer) {
-        this.eventStreamer = eventStreamer;
+        this.eventStreamer = eventStreamer != null ? eventStreamer : new RealtimeDagEventStreamer();
+    }
+
+    public HermesDagStreamController() {
+        this(new RealtimeDagEventStreamer());
     }
 
     /**

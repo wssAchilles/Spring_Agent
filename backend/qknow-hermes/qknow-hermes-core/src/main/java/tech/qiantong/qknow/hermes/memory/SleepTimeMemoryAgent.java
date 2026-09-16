@@ -22,6 +22,7 @@ public class SleepTimeMemoryAgent {
         this(memoryManager, idleThresholdMs, scanCount, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public SleepTimeMemoryAgent(MemoryManager memoryManager,
                                 @Value("${hermes.memory.sleep-agent.idle-threshold-ms:1800000}") long idleThresholdMs,
                                 @Value("${hermes.memory.sleep-agent.scan-count:500}") int scanCount,

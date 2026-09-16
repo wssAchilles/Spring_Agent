@@ -18,6 +18,7 @@ import java.util.function.Consumer;
  * 实时 DAG 事件推流器 (RealtimeDagEventStreamer)
  * 基于反应式架构与微秒级分发管道，将内核工作流执行事件流式推送到前端画布
  */
+@org.springframework.stereotype.Component
 public class RealtimeDagEventStreamer {
 
     private static final Logger log = LoggerFactory.getLogger(RealtimeDagEventStreamer.class);

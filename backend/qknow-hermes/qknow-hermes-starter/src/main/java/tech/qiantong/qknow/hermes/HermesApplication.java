@@ -23,6 +23,22 @@ public class HermesApplication {
     }
 
     @org.springframework.context.annotation.Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+    public io.micrometer.core.instrument.MeterRegistry meterRegistry() {
+        return new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    }
+
+    @org.springframework.context.annotation.Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+    public org.springframework.ai.chat.model.ChatModel defaultChatModel(
+            tech.qiantong.qknow.hermes.config.ChatModelFactory chatModelFactory,
+            org.springframework.core.env.Environment env) {
+        String apiKey = env.getProperty("HERMES_OPENAI_API_KEY", env.getProperty("DEEPSEEK_API_KEY", "sk-placeholder"));
+        String baseUrl = env.getProperty("HERMES_OPENAI_BASE_URL", "https://api.deepseek.com");
+        return chatModelFactory.getChatModel("deepseek", baseUrl, apiKey, "deepseek-chat");
+    }
+
+    @org.springframework.context.annotation.Bean
     public org.springframework.boot.CommandLineRunner runMemoryAgent(tech.qiantong.qknow.hermes.memory.SleepTimeMemoryAgent agent) {
         return args -> {
             log.info("========== 强制执行 SleepTimeMemoryAgent.consolidateIdleConversations() ==========");

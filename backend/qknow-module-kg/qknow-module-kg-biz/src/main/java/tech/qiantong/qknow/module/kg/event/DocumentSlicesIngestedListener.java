@@ -27,8 +27,13 @@ public class DocumentSlicesIngestedListener {
             new ThreadPoolExecutor.CallerRunsPolicy()
     );
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     public DocumentSlicesIngestedListener(GraphRagCoordinator graphRagCoordinator) {
         this.graphRagCoordinator = graphRagCoordinator;
+    }
+
+    public DocumentSlicesIngestedListener() {
+        this(null);
     }
 
     public void setAsyncHook(Consumer<DocumentSlicesIngestedEvent> hook) {

@@ -44,6 +44,7 @@ public class DeepSeekCostGovernor {
     private final AtomicInteger activeLlmRequests = new AtomicInteger(0);
     private final MeterRegistry registry;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     public DeepSeekCostGovernor(MeterRegistry registry) {
         this.registry = registry;
 
@@ -57,6 +58,10 @@ public class DeepSeekCostGovernor {
             registerModelMetrics("deepseek-chat");
             registerModelMetrics("deepseek-reasoner");
         }
+    }
+
+    public DeepSeekCostGovernor() {
+        this(new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
     }
 
     private ModelAccumulator getOrCreate(String model) {
