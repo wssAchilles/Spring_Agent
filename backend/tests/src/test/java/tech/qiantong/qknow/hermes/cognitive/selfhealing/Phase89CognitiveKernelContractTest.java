@@ -112,8 +112,8 @@ public class Phase89CognitiveKernelContractTest {
             compressor.storeMemory("sess_001", MemoryHierarchyType.EPISODIC, content, importance, emb);
         }
 
-        // JIT 预热消除类加载与初始冷启动抖动
-        for (int w = 0; w < 5; w++) {
+        // JIT 预热消除类加载与批量执行下的冷启动抖动
+        for (int w = 0; w < 100; w++) {
             compressor.retrieveAndCompressContext("sess_001", "预热", qEmb, 400);
         }
 
@@ -169,8 +169,8 @@ public class Phase89CognitiveKernelContractTest {
         embeddings.put(validFact2, entEmb);
         embeddings.put(hallucinatedFact, createNormalizedSphericalEmbedding(999));
 
-        // JIT 预热消除类加载与初始冷启动抖动
-        for (int w = 0; w < 5; w++) {
+        // JIT 预热消除类加载与批量执行下的冷启动抖动
+        for (int w = 0; w < 100; w++) {
             aligner.alignAndGroundFacts(candidates, embeddings, 0.65);
         }
 

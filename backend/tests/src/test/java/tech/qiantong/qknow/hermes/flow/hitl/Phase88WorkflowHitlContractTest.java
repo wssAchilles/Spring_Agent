@@ -71,6 +71,11 @@ public class Phase88WorkflowHitlContractTest {
                 "wf_001", "main", "node_llm", "大模型生成节点",
                 snap2.snapshotId(), currentVars, "prompt", "report", emb0);
 
+        // JVM 预热消除冷启动与 GC 抖动
+        for (int w = 0; w < 100; w++) {
+            manager.reconstructStateAtSnapshot(snap3.snapshotId());
+        }
+
         // 3. 验证单步反差分重构性能与绝对数据保真性 (耗时 <= 50μs)
         long startNano = System.nanoTime();
         Map<String, Object> reconstructed = manager.reconstructStateAtSnapshot(snap3.snapshotId());
