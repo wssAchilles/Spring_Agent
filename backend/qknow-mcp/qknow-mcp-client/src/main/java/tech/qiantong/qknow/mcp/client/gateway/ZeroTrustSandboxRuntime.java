@@ -131,6 +131,11 @@ public class ZeroTrustSandboxRuntime {
         } catch (TimeoutException te) {
             future.cancel(true);
             throw new TimeoutException("MCP 沙箱任务超时已强杀: 耗时超过 " + timeoutMs + "ms");
+        } catch (ExecutionException ee) {
+            if (ee.getCause() instanceof InterruptedException) {
+                throw new TimeoutException("MCP 沙箱任务超时已强杀 (线程已被中断): " + ee.getMessage());
+            }
+            throw ee;
         } finally {
             killTask.cancel(true);
         }
