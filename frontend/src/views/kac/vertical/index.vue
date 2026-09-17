@@ -180,10 +180,17 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .vertical-industry-page {
-  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 16px 20px 0 20px;
+  position: relative;
 }
 
 .industry-matrix-nav {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -191,7 +198,7 @@ onMounted(() => {
   border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 12px;
   padding: 10px 16px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 
   .nav-title {
     font-size: 13px;
@@ -231,16 +238,46 @@ onMounted(() => {
 }
 
 .pagecont-top {
-  margin-bottom: 20px;
+  flex-shrink: 0;
+  margin-bottom: 8px;
 }
 
 .card-list-panel {
-  min-height: 380px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 4px 24px 4px;
+  background: transparent;
 }
 
+/* 翻页选项底栏：牢固固定在右下角，微毛玻璃白底与上边框防穿透 */
 .pagecont-bottom {
-  margin-top: 24px;
+  flex-shrink: 0;
+  height: 56px;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(226, 232, 240, 0.85);
+  padding: 0 20px;
+  margin: 0 -20px;
+  z-index: 10;
+  box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.03);
+
+  :deep(.pagination-container) {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+  }
+
+  :deep(.el-pagination) {
+    justify-content: flex-end;
+  }
 }
 </style>

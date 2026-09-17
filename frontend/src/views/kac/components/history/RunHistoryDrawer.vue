@@ -4,8 +4,11 @@
     title="执行审计与历史快照"
     size="580px"
     direction="rtl"
+    class="history-drawer glass-drawer"
     custom-class="history-drawer glass-drawer"
     :destroy-on-close="true"
+    append-to-body
+    :lock-scroll="true"
   >
     <div class="history-container" v-loading="loading">
       <div v-if="logList.length === 0" class="empty-state">

@@ -82,6 +82,7 @@
 
     <!-- 挂载工业级 AppRunnerDrawer 执行抽屉 -->
     <AppRunnerDrawer
+      ref="runnerDrawerRef"
       v-model="runnerVisible"
       :app-data="selectedApp"
     />
@@ -102,12 +103,16 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const runnerDrawerRef = ref(null);
 const runnerVisible = ref(false);
 const selectedApp = ref(null);
 
 function handleExperience(item) {
   selectedApp.value = item;
   runnerVisible.value = true;
+  if (runnerDrawerRef.value) {
+    runnerDrawerRef.value.open(item);
+  }
 }
 
 function handleDetail(item) {

@@ -1,26 +1,66 @@
 <template>
   <div class="dynamic-param-form">
     <el-form :model="formData" label-position="top" class="param-form">
-      <div v-if="!schemaList || schemaList.length === 0" class="empty-schema-tip">
-        <el-icon><InfoFilled /></el-icon>
-        <span>该应用未配置特定输入参数模式，请输入默认提示词或指令：</span>
-        <el-input
-          v-model="formData.query"
-          type="textarea"
-          :rows="4"
-          placeholder="请输入您希望该应用处理的指令、问题或内容..."
-          class="glass-input mt-2"
-        />
+      <!-- 模式一：通用自然语言指令输入模式 (无特定 Schema) -->
+      <div v-if="!schemaList || schemaList.length === 0" class="prompt-input-wrapper">
+        <div class="prompt-header">
+          <div class="prompt-label-group">
+            <span class="prompt-main-label">
+              <el-icon class="label-icon"><EditPen /></el-icon>
+              业务需求与执行指令
+            </span>
+            <span class="prompt-sub-label">支持自然语言描述、复杂业务场景或专业领域问答</span>
+          </div>
+          <div class="prompt-actions" v-if="formData.query">
+            <el-button
+              link
+              size="small"
+              class="clear-link-btn"
+              @click="formData.query = ''"
+            >
+              <el-icon class="mr-1"><Delete /></el-icon>
+              清空输入
+            </el-button>
+          </div>
+        </div>
+
+        <div class="textarea-container">
+          <el-input
+            v-model="formData.query"
+            type="textarea"
+            :rows="7"
+            :autosize="{ minRows: 6, maxRows: 12 }"
+            placeholder="请在此输入您希望该应用处理的核心指令、业务背景或待分析内容...&#10;例如：「请结合平台已沉淀的高保真知识库与风险研判模型，对当前业务场景进行合规穿透核验，并输出包含关键指标与处置建议的执行白皮书。」"
+            class="glass-textarea"
+            resize="vertical"
+          />
+          <div class="textarea-footer">
+            <span class="shortcut-tip">
+              提示：输入完成后可点击下方「立即运行」或按 <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+            </span>
+            <span class="char-count">
+              {{ (formData.query || '').length }} 字符
+            </span>
+          </div>
+        </div>
       </div>
 
-      <template v-else>
+      <!-- 模式二：结构化动态 Schema 参数输入模式 -->
+      <div v-else class="schema-form-grid">
         <el-form-item
           v-for="item in schemaList"
           :key="item.field"
-          :label="item.label"
           :required="item.required"
           class="param-form-item"
+          :class="{ 'full-width-item': item.type === 'TEXTAREA' || !item.type }"
         >
+          <template #label>
+            <div class="form-item-label-row">
+              <span class="field-title">{{ item.label }}</span>
+              <span class="field-key" v-if="item.field">({{ item.field }})</span>
+            </div>
+          </template>
+
           <!-- 纯文本输入 -->
           <el-input
             v-if="item.type === 'STRING'"
@@ -35,11 +75,12 @@
             v-else-if="item.type === 'TEXTAREA'"
             v-model="formData[item.field]"
             type="textarea"
-            :rows="item.rows || 3"
+            :rows="item.rows || 5"
+            :autosize="{ minRows: item.rows || 4, maxRows: 10 }"
             :placeholder="item.placeholder || `请输入${item.label}`"
             show-word-limit
-            maxlength="2000"
-            class="glass-input"
+            maxlength="4000"
+            class="glass-textarea"
           />
 
           <!-- 下拉单选 -->
@@ -65,6 +106,7 @@
             :min="item.min !== undefined ? item.min : 0"
             :max="item.max !== undefined ? item.max : 99999"
             class="glass-number"
+            controls-position="right"
           />
 
           <!-- 兜底文本输入 -->
@@ -72,17 +114,18 @@
             v-else
             v-model="formData[item.field]"
             :placeholder="item.placeholder || `请输入${item.label}`"
+            clearable
             class="glass-input"
           />
         </el-form-item>
-      </template>
+      </div>
     </el-form>
   </div>
 </template>
 
 <script setup>
 import { computed, watch } from "vue";
-import { InfoFilled } from "@element-plus/icons-vue";
+import { EditPen, Delete } from "@element-plus/icons-vue";
 
 const props = defineProps({
   schema: {
@@ -139,53 +182,180 @@ watch(
 .dynamic-param-form {
   width: 100%;
 
-  .empty-schema-tip {
-    font-size: 13px;
-    color: #64748b;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    background: rgba(241, 245, 249, 0.6);
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px dashed rgba(203, 213, 225, 0.8);
+  .prompt-input-wrapper {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04);
+    transition: all 0.25s ease;
 
-    .mt-2 {
-      margin-top: 8px;
+    &:hover {
+      border-color: rgba(0, 82, 255, 0.3);
+      box-shadow: 0 4px 16px -2px rgba(0, 82, 255, 0.06);
+    }
+
+    .prompt-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+
+      .prompt-label-group {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .prompt-main-label {
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #0f172a;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+
+          .label-icon {
+            color: #0052ff;
+            font-size: 15px;
+          }
+        }
+
+        .prompt-sub-label {
+          font-size: 11.5px;
+          color: #64748b;
+        }
+      }
+
+      .clear-link-btn {
+        font-size: 12px;
+        color: #94a3b8;
+        padding: 0;
+
+        &:hover {
+          color: #ef4444;
+        }
+      }
+    }
+
+    .textarea-container {
+      position: relative;
+
+      .textarea-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        padding: 0 4px;
+        font-size: 11.5px;
+        color: #94a3b8;
+
+        .shortcut-tip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+
+          kbd {
+            display: inline-block;
+            padding: 1px 5px;
+            font-size: 10.5px;
+            font-family: inherit;
+            color: #475569;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+          }
+        }
+
+        .char-count {
+          font-variant-numeric: tabular-nums;
+          font-weight: 500;
+        }
+      }
     }
   }
 
-  .param-form-item {
-    margin-bottom: 16px;
+  .schema-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 
-    :deep(.el-form-item__label) {
-      font-size: 13px;
-      font-weight: 500;
-      color: #1e293b;
-      line-height: 20px;
-      padding-bottom: 4px;
+    .param-form-item {
+      margin-bottom: 0;
+
+      .form-item-label-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        line-height: 20px;
+
+        .field-title {
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .field-key {
+          font-size: 11px;
+          color: #94a3b8;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+      }
     }
   }
 
   .glass-input,
-  .glass-select {
-    :deep(.el-input__wrapper),
-    :deep(.el-textarea__inner) {
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(226, 232, 240, 0.9);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  .glass-select,
+  .glass-number {
+    width: 100%;
+
+    :deep(.el-input__wrapper) {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
+      padding: 6px 12px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: rgba(0, 82, 255, 0.4);
+        border-color: #94a3b8;
       }
 
-      &.is-focus,
+      &.is-focus {
+        border-color: #0052ff;
+        box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.12);
+      }
+    }
+  }
+
+  .glass-textarea {
+    width: 100%;
+
+    :deep(.el-textarea__inner) {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #1e293b;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+      transition: all 0.2s ease;
+
+      &::placeholder {
+        color: #94a3b8;
+        font-size: 12.5px;
+        line-height: 1.6;
+      }
+
+      &:hover {
+        border-color: #94a3b8;
+      }
+
       &:focus {
         border-color: #0052ff;
-        box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.15);
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(0, 82, 255, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.02);
       }
     }
   }
