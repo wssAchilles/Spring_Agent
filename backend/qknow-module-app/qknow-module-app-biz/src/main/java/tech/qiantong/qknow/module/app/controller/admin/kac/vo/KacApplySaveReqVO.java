@@ -68,6 +68,15 @@ public class KacApplySaveReqVO extends BaseEntity {
     @Schema(description = "执行策略配置 (JSON字符串)")
     private String executionConfig;
 
+    @Schema(description = "应用大类 (0: 横向通用应用, 1: 纵向行业应用)")
+    private Integer category;
+
+    @Schema(description = "所属垂直行业分类")
+    private String industry;
+
+    @Schema(description = "行业关键业务KPI指标 (JSON字符串)")
+    private String kpiMetrics;
+
     @Schema(description = "备注", example = "")
     @Size(max = 512, message = "备注长度不能超过512个字符")
     private String remark;

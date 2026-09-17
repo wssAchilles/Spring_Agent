@@ -1,20 +1,52 @@
 <template>
-  <div class="app-container glass-card" ref="app-container">
+  <div class="app-container horizontal-page glass-card" ref="app-container">
+    <!-- 顶部原子生产力技能矩阵胶囊导航 -->
+    <div class="skill-category-nav">
+      <div class="nav-title">原子技能矩阵:</div>
+      <div class="skill-chips">
+        <button
+          v-for="tab in skillTabs"
+          :key="tab.value"
+          class="skill-chip-btn"
+          :class="{ active: currentType === tab.value }"
+          @click="selectType(tab.value)"
+        >
+          <span class="chip-label">{{ tab.label }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
         :model="queryParams"
         ref="queryRef"
         :inline="true"
-        label-width="75px"
+        label-width="80px"
         v-show="showSearch"
         @submit.prevent
       >
-        <el-form-item label="名称" prop="name">
+        <el-form-item label="技能类型" prop="type">
+          <el-select
+            v-model="queryParams.type"
+            placeholder="请选择技能类型"
+            clearable
+            class="el-form-input-width"
+            @change="handleQuery"
+          >
+            <el-option
+              v-for="item in typeSelectOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="应用名称" prop="name">
           <el-input
             class="el-form-input-width"
             v-model="queryParams.name"
-            placeholder="请输入名称"
+            placeholder="请输入应用名称"
             clearable
             @keyup.enter="handleQuery"
           />
@@ -34,8 +66,9 @@
       </el-form>
     </div>
 
-    <div class="card-list-panel">
+    <div class="card-list-panel" v-loading="loading">
       <Card :data="applyList" source="horizontal" variant="overview" />
+      <el-empty v-if="!applyList.length && !loading" description="暂无符合条件的原子技能应用" />
     </div>
 
     <div class="pagecont-bottom">
@@ -60,6 +93,19 @@ const { proxy } = getCurrentInstance();
 const loading = ref(true);
 const showSearch = ref(true);
 const total = ref(0);
+const currentType = ref("");
+
+const skillTabs = [
+  { label: "全部技能", value: "" },
+  { label: "文本写作", value: "写作" },
+  { label: "语义检索", value: "搜索" },
+  { label: "知识问答", value: "问答" },
+  { label: "效率工具", value: "效率" },
+  { label: "分析助手", value: "分析" },
+  { label: "模板生成", value: "模板" },
+];
+
+const typeSelectOptions = ["写作", "搜索", "问答", "效率", "分析", "模板"];
 
 const data = reactive({
   queryParams: {
@@ -68,7 +114,8 @@ const data = reactive({
     workspaceId: null,
     pluginId: null,
     name: null,
-    category: 0,
+    type: null,
+    category: 0, // 严格锁定横向通用应用
     description: null,
     status: null,
     source: null,
@@ -77,14 +124,20 @@ const data = reactive({
     useCount: null,
     createTime: null,
     myApplyFlag: 0,
-    orderByColumn: "createTime",
-    isAsc: "desc",
+    orderByColumn: "id",
+    isAsc: "asc",
   },
 });
 
 const { queryParams } = toRefs(data);
 
 const applyList = ref([]);
+
+function selectType(val) {
+  currentType.value = val;
+  queryParams.value.type = val || null;
+  handleQuery();
+}
 
 /** 查询应用列表 */
 function getList() {
@@ -104,6 +157,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  currentType.value = "";
   proxy.resetForm("queryRef");
   handleQuery();
 }
@@ -111,9 +165,63 @@ function resetQuery() {
 getList();
 </script>
 <style lang="scss" scoped>
-.app-container {
+.horizontal-page {
   box-sizing: border-box;
   padding-bottom: 45px;
+}
+
+.skill-category-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+
+  .nav-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+
+  .skill-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .skill-chip-btn {
+      appearance: none;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #64748b;
+      padding: 5px 14px;
+      border-radius: 16px;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        border-color: #cbd5e1;
+        color: #1e293b;
+        background: #ffffff;
+      }
+
+      &.active {
+        border-color: #2563eb;
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+      }
+    }
+  }
 }
 
 .card-list-panel {

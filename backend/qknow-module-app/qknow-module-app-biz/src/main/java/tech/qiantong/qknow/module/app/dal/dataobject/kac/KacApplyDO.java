@@ -71,6 +71,15 @@ public class KacApplyDO extends BaseEntity {
     /** 执行策略配置 (JSON字符串) */
     private String executionConfig;
 
+    /** 应用大类 (0: 横向通用应用, 1: 纵向行业应用) */
+    private Integer category;
+
+    /** 所属垂直行业分类 (金融科技、高端制造、智慧医疗等) */
+    private String industry;
+
+    /** 行业关键业务KPI指标 (JSON字符串) */
+    private String kpiMetrics;
+
     /** 是否有效 */
     private Boolean validFlag;
 

@@ -1,5 +1,45 @@
 <template>
-  <div class="app-container glass-card" ref="app-container">
+  <div class="app-container my-solution-page glass-card" ref="app-container">
+    <!-- 顶部私有资产治理看板 -->
+    <div class="asset-metrics-board">
+      <div class="metric-card">
+        <div class="metric-icon total-icon">
+          <i class="iconfont icon-a-zu22377"></i>
+        </div>
+        <div class="metric-info">
+          <div class="metric-title">自建方案总数</div>
+          <div class="metric-num">{{ total }} <span class="metric-unit">套</span></div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon running-icon">
+          <i class="iconfont icon-yunxing"></i>
+        </div>
+        <div class="metric-info">
+          <div class="metric-title">在线运行中</div>
+          <div class="metric-num">{{ runningCount }} <span class="metric-unit">套</span></div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon draft-icon">
+          <i class="iconfont icon-caogao"></i>
+        </div>
+        <div class="metric-info">
+          <div class="metric-title">草稿待发布</div>
+          <div class="metric-num">{{ draftCount }} <span class="metric-unit">套</span></div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon invoke-icon">
+          <i class="iconfont icon-shuju"></i>
+        </div>
+        <div class="metric-info">
+          <div class="metric-title">月度调用量</div>
+          <div class="metric-num">1,280 <span class="metric-unit">次</span></div>
+        </div>
+      </div>
+    </div>
+
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
@@ -14,7 +54,7 @@
           <el-input
             class="el-form-input-width"
             v-model="queryParams.name"
-            placeholder="请输入名称"
+            placeholder="请输入方案名称"
             clearable
             @keyup.enter="handleQuery"
           />
@@ -34,13 +74,13 @@
         <el-form-item style="float: right; margin-right: auto">
           <el-row :gutter="15" class="btn-style">
             <el-col :span="1.5">
-              <el-button v-ripple class="glass-btn"
-                plain
+              <el-button v-ripple class="glass-btn primary-add-btn"
+                type="primary"
                 @click="handleAdd"
                 v-hasPermi="['kac:solution:solution:add']"
               >
                 <i class="iconfont-mini icon-xinzeng mr5"></i>
-                新增</el-button
+                新建私有方案</el-button
               >
             </el-col>
           </el-row>
@@ -251,10 +291,10 @@
   </div>
 </template>
 
-<script setup name="Horizontal">
+<script setup name="MySolution">
 import SolutionCard from "./components/solutionCard.vue";
 import SelectMyApp from "./components/selectMyApp.vue";
-import { getCurrentInstance, nextTick, ref, reactive, toRefs } from "vue";
+import { getCurrentInstance, nextTick, ref, reactive, toRefs, computed } from "vue";
 import {
   addSolution,
   listSolution,
@@ -278,6 +318,10 @@ const platForm = ref('local');
 const appTitles = ref([]);
 const openDetail = ref(false);
 const allApplyList = ref([]); // 存储所有应用列表
+
+const solutionList = ref([]);
+const runningCount = computed(() => solutionList.value.filter((s) => s.status === 1).length);
+const draftCount = computed(() => solutionList.value.filter((s) => s.status !== 1).length);
 
 const inputValue = ref("");
 const inputVisible = ref(false);
@@ -317,8 +361,6 @@ const data = reactive({
 });
 
 const { queryParams, form, rules } = toRefs(data);
-
-const solutionList = ref([]);
 
 // 处理输入确认（回车或失去焦点）
 const handleInputConfirm = () => {
@@ -526,9 +568,84 @@ getList();
   overflow-y: auto;
   padding-right: 10px;
 }
-.app-container {
+.my-solution-page {
   box-sizing: border-box;
   padding-bottom: 45px;
+}
+
+.asset-metrics-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 14px;
+
+  .metric-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    .metric-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+
+      &.total-icon {
+        background: rgba(59, 130, 246, 0.12);
+        color: #2563eb;
+      }
+      &.running-icon {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+      }
+      &.draft-icon {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+      }
+      &.invoke-icon {
+        background: rgba(99, 102, 241, 0.12);
+        color: #4f46e5;
+      }
+    }
+
+    .metric-info {
+      .metric-title {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+      .metric-num {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.1;
+
+        .metric-unit {
+          font-size: 12px;
+          font-weight: 400;
+          color: #94a3b8;
+          margin-left: 2px;
+        }
+      }
+    }
+  }
 }
 
 .card-list-panel {

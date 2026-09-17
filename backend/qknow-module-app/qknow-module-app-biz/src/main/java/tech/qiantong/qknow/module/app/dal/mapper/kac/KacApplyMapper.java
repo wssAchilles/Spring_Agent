@@ -26,6 +26,8 @@ public interface KacApplyMapper extends BaseMapperX<KacApplyDO> {
                 .eqIfPresent(KacApplyDO::getDescription, reqVO.getDescription())
                 .eqIfPresent(KacApplyDO::getType, reqVO.getType())
                 .eqIfPresent(KacApplyDO::getStatus, reqVO.getStatus())
+                .eqIfPresent(KacApplyDO::getCategory, reqVO.getCategory())
+                .eqIfPresent(KacApplyDO::getIndustry, reqVO.getIndustry())
                 .orderBy(reqVO.getOrderByColumn(), reqVO.getIsAsc(), allowedColumns));
     }
 }

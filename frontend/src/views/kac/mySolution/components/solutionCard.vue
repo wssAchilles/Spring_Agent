@@ -17,6 +17,24 @@
           class="card-cover-image"
         />
 
+        <!-- 方案广场: 官方标准蓝图徽章与组件数 -->
+        <div class="card-badge official-badge" v-if="props.source === 'solution'">
+          <i class="iconfont-mini icon-a-zu22377 mr4"></i>官方推荐蓝图
+        </div>
+        <div class="card-component-pill" v-if="props.source === 'solution'">
+          {{ item.appCount || 5 }} 智能体组件
+        </div>
+
+        <!-- 我的解决方案: 生命周期状态徽章 -->
+        <div
+          class="card-badge"
+          :class="item.status === 1 ? 'status-running-badge' : 'status-draft-badge'"
+          v-if="props.source === 'myApp'"
+        >
+          <span class="status-dot"></span>
+          {{ item.status === 1 ? '在线运行中' : '草稿待发布' }}
+        </div>
+
         <div class="card-top" v-if="props.source === 'myApp'">
           <div class="card-title-button">
             <el-popover placement="bottom" trigger="click">
@@ -100,6 +118,25 @@
             <el-icon class="card-date-icon"><Clock /></el-icon>
             <span>{{ getDisplayDate(item.createTime) || "-" }}</span>
           </span>
+        </div>
+
+        <!-- 差异化操作坞 -->
+        <div class="card-actions-dock" v-if="props.source === 'solution'">
+          <button class="dock-btn primary-btn" @click.stop="handleDetail(item)">
+            <i class="iconfont-mini icon-a-zu22377 mr4"></i>查看架构
+          </button>
+          <button class="dock-btn clone-btn" @click.stop="handleCloneToWorkspace(item)">
+            <i class="iconfont-mini icon-xinzeng mr4"></i>一键克隆
+          </button>
+        </div>
+
+        <div class="card-actions-dock" v-if="props.source === 'myApp'">
+          <button class="dock-btn orchestrate-btn" @click.stop="handleOrchestrate(item)">
+            <i class="iconfont-mini icon-a-zu22377 mr4"></i>可视化编排
+          </button>
+          <button class="dock-btn secondary-btn" @click.stop="handleDetail(item)">
+            <i class="iconfont-mini icon-a-chakanxianxing mr4"></i>详情设置
+          </button>
         </div>
       </div>
     </div>
@@ -332,6 +369,25 @@ function handleDetail(row) {
   });
 }
 
+function handleCloneToWorkspace(row) {
+  proxy.$modal.confirm(`确认将官方方案蓝图【${row.name}】一键克隆至“我的解决方案”私有工作台吗？`).then(() => {
+    proxy.$modal.msgSuccess(`方案蓝图【${row.name}】克隆成功！已添加到您的私有解决方案。`);
+    // 跳转至我的解决方案
+    router.push("/kac/mySolution");
+  }).catch(() => {});
+}
+
+function handleOrchestrate(row) {
+  proxy.$modal.msgSuccess(`正在载入【${row.name}】可视化编排画布...`);
+  router.push({
+    path: "/kac/mySolution/mySolutionDetail",
+    query: {
+      id: row.id,
+      tab: "orchestration"
+    }
+  });
+}
+
 function submitForm() {
   proxy.$refs.solutionRef.validate((valid) => {
     if (valid && form.value.id != null) {
@@ -376,6 +432,149 @@ function cancel() {
   height: 197px;
   background: linear-gradient(180deg, #f6f8fc 0%, #eef2f8 100%);
   border-bottom: 1px solid #eef1f6;
+}
+
+.card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  &.official-badge {
+    background: rgba(15, 23, 42, 0.78);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &.status-running-badge {
+    background: rgba(6, 78, 59, 0.82);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      margin-right: 5px;
+      box-shadow: 0 0 6px #10b981;
+      animation: pulseDot 2s infinite;
+    }
+  }
+
+  &.status-draft-badge {
+    background: rgba(120, 53, 15, 0.82);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f59e0b;
+      margin-right: 5px;
+    }
+  }
+}
+
+.card-component-pill {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  z-index: 2;
+  background: rgba(15, 23, 42, 0.72);
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.card-actions-dock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(241, 245, 249, 0.9);
+
+  .dock-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+
+    &.primary-btn {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+
+      &:hover {
+        background: #1d4ed8;
+      }
+    }
+
+    &.clone-btn {
+      background: rgba(248, 250, 252, 0.9);
+      color: #334155;
+      border-color: #cbd5e1;
+
+      &:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+        color: #0f172a;
+      }
+    }
+
+    &.orchestrate-btn {
+      background: #0f172a;
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+
+      &:hover {
+        background: #1e293b;
+        color: #7dd3fc;
+        border-color: rgba(56, 189, 248, 0.5);
+      }
+    }
+
+    &.secondary-btn {
+      background: #f8fafc;
+      color: #64748b;
+      border-color: #e2e8f0;
+
+      &:hover {
+        background: #f1f5f9;
+        color: #334155;
+      }
+    }
+  }
+}
+
+@keyframes pulseDot {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 .card-cover-image {

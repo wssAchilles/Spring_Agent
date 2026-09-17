@@ -1,5 +1,21 @@
 <template>
-  <div class="app-container glass-card" ref="app-container">
+  <div class="app-container solution-marketplace-page glass-card" ref="app-container">
+    <!-- 顶部方案全景蓝图领域胶囊导航 -->
+    <div class="solution-category-nav">
+      <div class="nav-title">方案全景蓝图:</div>
+      <div class="solution-chips">
+        <button
+          v-for="tab in typeTabs"
+          :key="tab.value"
+          class="solution-chip-btn"
+          :class="{ active: currentType === tab.value }"
+          @click="selectType(tab.value)"
+        >
+          <span class="chip-label">{{ tab.label }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
@@ -25,6 +41,7 @@
             placeholder="请选择类型"
             clearable
             class="el-form-input-width"
+            @change="handleQuery"
           >
             <el-option
               v-for="item in typeOptions"
@@ -98,6 +115,16 @@ const { proxy } = getCurrentInstance();
 const loading = ref(true);
 const showSearch = ref(true);
 const total = ref(0);
+const currentType = ref("");
+
+const typeTabs = [
+  { label: "全部蓝图", value: "" },
+  { label: "技术架构", value: "技术" },
+  { label: "企业管理", value: "管理" },
+  { label: "科研学术", value: "研究" },
+  { label: "数据治理", value: "数据" },
+  { label: "智能客服", value: "客服" },
+];
 
 const typeOptions = ["技术", "管理", "研究", "数据", "客服"];
 
@@ -116,14 +143,20 @@ const data = reactive({
     name: null,
     type: null,
     mySolutionFlag: 0,
-    orderByColumn: "createTime",
-    isAsc: "desc",
+    orderByColumn: "id",
+    isAsc: "asc",
   },
 });
 
 const { queryParams } = toRefs(data);
 
 const solutionList = ref([]);
+
+function selectType(val) {
+  currentType.value = val;
+  queryParams.value.type = val || null;
+  handleQuery();
+}
 
 /** 查询解决方案列表 */
 function getList() {
@@ -177,6 +210,7 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
+  currentType.value = "";
   proxy.resetForm("queryRef");
   handleQuery();
 }
@@ -184,9 +218,63 @@ function resetQuery() {
 getList();
 </script>
 <style lang="scss" scoped>
-.app-container {
+.solution-marketplace-page {
   box-sizing: border-box;
   padding-bottom: 45px;
+}
+
+.solution-category-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+
+  .nav-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+
+  .solution-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .solution-chip-btn {
+      appearance: none;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #64748b;
+      padding: 5px 14px;
+      border-radius: 16px;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        border-color: #cbd5e1;
+        color: #1e293b;
+        background: #ffffff;
+      }
+
+      &.active {
+        border-color: #0284c7;
+        background: #0284c7;
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+      }
+    }
+  }
 }
 
 .card-list-panel {

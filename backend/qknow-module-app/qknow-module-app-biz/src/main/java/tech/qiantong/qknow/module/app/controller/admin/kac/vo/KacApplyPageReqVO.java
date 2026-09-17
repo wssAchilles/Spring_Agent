@@ -33,4 +33,10 @@ public class KacApplyPageReqVO extends PageParam {
 
     @Schema(description = "工作区id", example = "")
     private Long workspaceId;
+
+    @Schema(description = "应用大类 (0: 横向通用应用, 1: 纵向行业应用)", example = "0")
+    private Integer category;
+
+    @Schema(description = "所属垂直行业分类", example = "金融科技")
+    private String industry;
 }

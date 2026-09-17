@@ -1,35 +1,53 @@
 <template>
-  <div class="app-container glass-card" ref="app-container">
+  <div class="app-container vertical-industry-page glass-card" ref="app-container">
+    <!-- 顶部行业矩阵筛选胶囊 -->
+    <div class="industry-matrix-nav">
+      <div class="nav-title">行业矩阵深潜:</div>
+      <div class="industry-chips">
+        <button
+          v-for="tab in industryTabs"
+          :key="tab.value"
+          class="industry-chip-btn"
+          :class="{ active: currentIndustry === tab.value }"
+          @click="selectIndustry(tab.value)"
+        >
+          <span class="chip-label">{{ tab.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 搜索筛选栏 -->
     <div class="pagecont-top" v-show="showSearch">
       <el-form
         class="btn-style"
         :model="queryParams"
         ref="queryRef"
         :inline="true"
-        label-width="75px"
+        label-width="80px"
         v-show="showSearch"
         @submit.prevent
       >
-        <el-form-item label="行业分类" prop="type">
+        <el-form-item label="行业分类" prop="industry">
           <el-select
-            v-model="queryParams.type"
+            v-model="queryParams.industry"
             placeholder="请选择行业分类"
             clearable
             class="el-form-input-width"
+            @change="handleQuery"
           >
             <el-option
-              v-for="item in industryOptions"
+              v-for="item in industrySelectOptions"
               :key="item"
               :label="item"
               :value="item"
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="名称" prop="name">
+        <el-form-item label="应用名称" prop="name">
           <el-input
             class="el-form-input-width"
             v-model="queryParams.name"
-            placeholder="请输入名称"
+            placeholder="请输入行业应用名称"
             clearable
             @keyup.enter="handleQuery"
           />
@@ -49,14 +67,13 @@
       </el-form>
     </div>
 
+    <!-- 专属垂直行业卡片列表 -->
     <div class="card-list-panel" v-loading="loading">
-      <Card
+      <VerticalCard
         v-if="applyList.length"
         :data="applyList"
-        source="vertical"
-        variant="overview"
       />
-      <el-empty v-else description="暂无行业应用" />
+      <el-empty v-else description="暂无该行业相关应用" />
     </div>
 
     <div class="pagecont-bottom">
@@ -72,27 +89,36 @@
 </template>
 
 <script setup name="Vertical">
-import Card from "@/views/kac/horizontal/components/card.vue";
-import { ref, reactive, toRefs } from "vue";
+import { ref, reactive, toRefs, onMounted } from "vue";
+import VerticalCard from "@/views/kac/vertical/components/VerticalCard.vue";
 import { listApply } from "@/api/kac/apply/apply.js";
-
-const { proxy } = getCurrentInstance();
 
 const loading = ref(true);
 const showSearch = ref(true);
 const total = ref(0);
+const currentIndustry = ref("");
 
-const industryOptions = ["金融", "医疗", "教育", "制造", "零售"];
+const industryTabs = [
+  { label: "全部行业", value: "" },
+  { label: "金融科技", value: "金融科技" },
+  { label: "智慧医疗", value: "智慧医疗" },
+  { label: "智能制造", value: "智能制造" },
+  { label: "智慧教育", value: "智慧教育" },
+  { label: "数字政务", value: "数字政务" },
+  { label: "跨境电商", value: "跨境电商" },
+  { label: "智慧水利", value: "智慧水利" },
+  { label: "智慧能源", value: "智慧能源" },
+];
 
-const mockApps = [
-  { id: 1, name: '金融风控助手', description: '基于AI的金融风险评估工具', icon: 'Money', status: 1, tags: '[{"name":"金融"},{"name":"AI"}]', type: '金融' },
-  { id: 2, name: '医疗知识库', description: '医学文献智能检索与问答系统', icon: 'FirstAidKit', status: 1, tags: '[{"name":"医疗"},{"name":"知识库"}]', type: '医疗' },
-  { id: 3, name: '智能教学助手', description: '个性化学习路径推荐引擎', icon: 'Reading', status: 1, tags: '[{"name":"教育"},{"name":"AI"}]', type: '教育' },
-  { id: 4, name: '产线质检系统', description: '基于视觉AI的产品质量检测', icon: 'Monitor', status: 1, tags: '[{"name":"制造"},{"name":"视觉"}]', type: '制造' },
-  { id: 5, name: '智能推荐引擎', description: '用户行为分析与商品推荐', icon: 'ShoppingCart', status: 1, tags: '[{"name":"零售"},{"name":"AI"}]', type: '零售' },
-  { id: 6, name: '信贷审批助手', description: '自动化信贷申请审核流程', icon: 'CreditCard', status: 1, tags: '[{"name":"金融"},{"name":"自动化"}]', type: '金融' },
-  { id: 7, name: '电子病历分析', description: '病历信息结构化与智能分析', icon: 'Document', status: 1, tags: '[{"name":"医疗"},{"name":"NLP"}]', type: '医疗' },
-  { id: 8, name: '在线考试系统', description: '智能组卷与自动评分平台', icon: 'EditPen', status: 1, tags: '[{"name":"教育"},{"name":"考试"}]', type: '教育' }
+const industrySelectOptions = [
+  "金融科技",
+  "智慧医疗",
+  "智能制造",
+  "智慧教育",
+  "数字政务",
+  "跨境电商",
+  "智慧水利",
+  "智慧能源",
 ];
 
 const data = reactive({
@@ -100,55 +126,37 @@ const data = reactive({
     pageNum: 1,
     pageSize: 10,
     name: null,
-    type: null,
-    category: 1,
-    myApplyFlag: 0,
-    orderByColumn: "createTime",
-    isAsc: "desc",
+    industry: null,
+    category: 1, // 严格固定为纵向行业应用
+    orderByColumn: "id",
+    isAsc: "asc",
   },
 });
 
 const { queryParams } = toRefs(data);
-
 const applyList = ref([]);
+
+function selectIndustry(val) {
+  currentIndustry.value = val;
+  queryParams.value.industry = val || null;
+  handleQuery();
+}
 
 /** 查询行业应用列表 */
 function getList() {
   loading.value = true;
   listApply(queryParams.value)
     .then((response) => {
-      const rows = response.data.rows;
-      if (rows && rows.length > 0) {
-        applyList.value = rows;
-        total.value = response.data.total;
-      } else {
-        applyMockData();
-      }
+      applyList.value = response.data.rows || [];
+      total.value = response.data.total || 0;
     })
     .catch(() => {
-      applyMockData();
+      applyList.value = [];
+      total.value = 0;
     })
     .finally(() => {
       loading.value = false;
     });
-}
-
-/** 使用模拟数据 */
-function applyMockData() {
-  let filtered = [...mockApps];
-  if (queryParams.value.name) {
-    filtered = filtered.filter((item) =>
-      item.name.includes(queryParams.value.name)
-    );
-  }
-  if (queryParams.value.type) {
-    filtered = filtered.filter(
-      (item) => item.type === queryParams.value.type
-    );
-  }
-  total.value = filtered.length;
-  const start = (queryParams.value.pageNum - 1) * queryParams.value.pageSize;
-  applyList.value = filtered.slice(start, start + queryParams.value.pageSize);
 }
 
 /** 搜索按钮操作 */
@@ -159,45 +167,80 @@ function handleQuery() {
 
 /** 重置按钮操作 */
 function resetQuery() {
-  proxy.resetForm("queryRef");
+  queryParams.value.name = null;
+  queryParams.value.industry = null;
+  currentIndustry.value = "";
   handleQuery();
 }
 
-getList();
+onMounted(() => {
+  getList();
+});
 </script>
-<style lang="scss" scoped>
-.app-container {
-  box-sizing: border-box;
-  padding-bottom: 45px;
+
+<style scoped lang="scss">
+.vertical-industry-page {
+  padding: 24px;
+}
+
+.industry-matrix-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+
+  .nav-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    white-space: nowrap;
+  }
+
+  .industry-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .industry-chip-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &:hover {
+      color: #2563eb;
+      background: rgba(37, 99, 235, 0.06);
+    }
+
+    &.active {
+      background: #2563eb;
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+  }
+}
+
+.pagecont-top {
+  margin-bottom: 20px;
 }
 
 .card-list-panel {
-  margin-top: 15px;
-  padding: 15px;
-  background: #ffffff;
-  border-radius: 2px;
-  min-height: 200px;
+  min-height: 380px;
 }
 
 .pagecont-bottom {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  left: 0;
-  height: 60px;
-  background: #ffffff;
-  border-radius: 2px 2px 2px 2px;
-  line-height: 60px;
-  margin: 0;
-  padding: 0 18px 0 0;
-  flex: none;
-  .pagination-container {
-    margin-top: 0;
-  }
-}
-.pagecont-top {
-  ::v-deep .el-form-item:first-child .el-form-item__label {
-    width: 65px !important;
-  }
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

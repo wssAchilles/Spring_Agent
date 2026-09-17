@@ -33,4 +33,10 @@ public class KacSolutionPageReqVO extends PageParam {
 
     @Schema(description = "工作区id", example = "")
     private Long workspaceId;
+
+    @Schema(description = "创建人id", example = "1")
+    private Long creatorId;
+
+    @Schema(description = "我的解决方案标识 (1: 仅自建方案, 0/null: 方案广场推荐)", example = "1")
+    private Integer mySolutionFlag;
 }

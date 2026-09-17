@@ -20,12 +20,25 @@ public interface KacSolutionMapper extends BaseMapperX<KacSolutionDO> {
     default PageResult<KacSolutionDO> selectPage(KacSolutionPageReqVO reqVO) {
         Set<String> allowedColumns = new HashSet<>(Arrays.asList("id", "create_time", "update_time"));
 
-        return selectPage(reqVO, new LambdaQueryWrapperX<KacSolutionDO>()
+        LambdaQueryWrapperX<KacSolutionDO> wrapper = new LambdaQueryWrapperX<KacSolutionDO>()
                 .eqIfPresent(KacSolutionDO::getWorkspaceId, reqVO.getWorkspaceId())
                 .likeIfPresent(KacSolutionDO::getName, reqVO.getName())
                 .eqIfPresent(KacSolutionDO::getDescription, reqVO.getDescription())
                 .eqIfPresent(KacSolutionDO::getType, reqVO.getType())
-                .eqIfPresent(KacSolutionDO::getStatus, reqVO.getStatus())
-                .orderBy(reqVO.getOrderByColumn(), reqVO.getIsAsc(), allowedColumns));
+                .eqIfPresent(KacSolutionDO::getStatus, reqVO.getStatus());
+
+        if (reqVO.getMySolutionFlag() != null) {
+            if (reqVO.getMySolutionFlag() == 1) {
+                if (reqVO.getCreatorId() != null) {
+                    wrapper.eq(KacSolutionDO::getCreatorId, reqVO.getCreatorId());
+                } else {
+                    wrapper.isNotNull(KacSolutionDO::getCreatorId);
+                }
+            } else if (reqVO.getMySolutionFlag() == 0) {
+                wrapper.isNull(KacSolutionDO::getCreatorId);
+            }
+        }
+
+        return selectPage(reqVO, wrapper.orderBy(reqVO.getOrderByColumn(), reqVO.getIsAsc(), allowedColumns));
     }
 }
