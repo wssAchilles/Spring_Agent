@@ -34,6 +34,7 @@ export default [
     {
         path: '/kb',
         component: Layout,
+        hidden: true,
         children: [
             {
                 path: 'bot/processflow',

@@ -87,7 +87,25 @@
             padding: 0 15px 0 15px;
         }
         .el-menu-item{
-            
+          display: flex !important;
+          align-items: center !important;
+          justify-content: flex-start !important;
+          padding-left: 20px !important;
+
+          .svg-icon {
+            font-size: 18px !important;
+            width: 18px !important;
+            height: 18px !important;
+            margin-right: 12px !important;
+            flex-shrink: 0;
+            color: #536071;
+          }
+
+          &.is-active {
+            .svg-icon {
+              color: #ffffff !important;
+            }
+          }
         }
       }
       
@@ -107,7 +125,9 @@
         }
 
         .nest-menu{
-           justify-content: center;
+           display: flex;
+           align-items: center;
+           justify-content: flex-start;
         }
       }
     }

@@ -18,10 +18,7 @@
         >
           <svg-icon
             :style="getTitleStyle(onlyOneChild.meta.title)"
-            :icon-class="
-              onlyOneChild.meta.icon || (item.meta && item.meta.icon)
-            "
-            v-if="!props.isNest"
+            :icon-class="getMenuIcon(onlyOneChild, item)"
           />
           <template #title
             ><span
@@ -43,7 +40,7 @@
       <template v-if="item.meta" #title>
         <svg-icon
           :style="getTitleStyle(item.meta.title)"
-          :icon-class="item.meta && item.meta.icon"
+          :icon-class="getMenuIcon(item)"
         />
         <span class="menu-title" :title="hasTitle(item.meta.title)">{{
           item.meta.title
@@ -87,32 +84,73 @@ const props = defineProps({
 });
 
 const onlyOneChild = ref({});
-const getTitleStyle = (title) => {
-  console.log("🚀 ~ getTitleStyle ~ title:", title);
-  // if (title == '首页' || title == '系统工具') {
-  //   return {
-  //     fontSize: '19px !important',
-  //     width: '19px !important',
-  //     height: '19px !important'
-  //   };
-  // } else if (title == '知识中心') {
-  //   return {
-  //     fontSize: '17px !important',
-  //     width: '17px !important',
-  //     height: '17px !important'
-  //   };
-  // }
-  return {
-    fontSize: "19px !important",
-    width: "19px !important",
-    height: "19px !important",
-  };
+
+// 菜单语义图标保底字典 (当数据库未配置或配为'#'时自动激活)
+const FALLBACK_ICON_MAP = {
+  '知识文件': 'file-text-line',
+  '知识分类': 'folder-5-fill',
+  '图谱探索': 'kac-entity-graph',
+  '工作流': 'flow-chart',
+  'Chatflow': 'message-ai-3-fill',
+  'chatflow': 'message-ai-3-fill',
+  'Agent': 'brain-ai-3-line',
+  'agent': 'brain-ai-3-line',
+  '工具管理': 'tools-line',
+  '概念配置': 'atom-fill',
+  '关系配置': 'link',
+  '非结构化抽取': 'file-ai-line',
+  '结构化抽取': 'table',
+  '抽取日志': 'log',
+  '数据源': 'database-2-line',
+  '模型市场': 'apps-ai-fill',
+  '我的模型': 'ai-generate-3d-fill',
+  '知识库': 'book-open-fill',
+  '基础设置': 'tools-line',
+  '权限设置': 'lock',
+  '检索设置': 'search',
+  '删除设置': 'alert-triangle-fill',
+  '概览': '概览',
+  '解决方案': 'solution',
+  '横向通用应用': '横向',
+  '纵向行业应用': '纵向',
+  '我的解决方案': 'my-solution',
+  '我的应用': '我的应用'
 };
 
-const demo = (e)=>{
-    console.log(e,props.isNest,111111);
-    return props.isNest ? 1 :2
-}
+const getMenuIcon = (child, parent) => {
+  const childIcon = child?.meta?.icon;
+  if (childIcon && childIcon !== '#' && childIcon !== '') {
+    return childIcon;
+  }
+  const parentIcon = parent?.meta?.icon;
+  if (parentIcon && parentIcon !== '#' && parentIcon !== '') {
+    return parentIcon;
+  }
+  const title = child?.meta?.title || parent?.meta?.title || '';
+  if (FALLBACK_ICON_MAP[title]) {
+    return FALLBACK_ICON_MAP[title];
+  }
+  // 语义关键词模糊保底匹配
+  if (title.includes('文件') || title.includes('文档')) return 'file-text-line';
+  if (title.includes('分类') || title.includes('目录')) return 'folder-5-fill';
+  if (title.includes('图谱') || title.includes('探索')) return 'kac-entity-graph';
+  if (title.includes('流') || title.includes('flow') || title.includes('Flow')) return 'flow-chart';
+  if (title.includes('智能体') || title.includes('Agent') || title.includes('agent')) return 'brain-ai-3-line';
+  if (title.includes('模型')) return 'apps-ai-fill';
+  if (title.includes('数据') || title.includes('库')) return 'database-2-line';
+  if (title.includes('配置') || title.includes('设置') || title.includes('管理')) return 'tools-line';
+  if (title.includes('日志') || title.includes('记录')) return 'log';
+  if (title.includes('权限') || title.includes('安全')) return 'lock';
+  return 'article-fill';
+};
+
+const getTitleStyle = (title) => {
+  return {
+    fontSize: "18px !important",
+    width: "18px !important",
+    height: "18px !important",
+  };
+};
 
 function hasOneShowingChild(children = [], parent) {
   if (!children) {

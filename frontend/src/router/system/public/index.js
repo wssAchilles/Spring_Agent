@@ -99,7 +99,7 @@ export default [
     path: '',
     component: Layout,
     redirect: '/kd/integrated',
-    meta: { title: '看板', icon: '组 24885' },
+    meta: { title: '看板', icon: 'dashboard' },
     children: [
         {
             path: 'kd/integrated',
