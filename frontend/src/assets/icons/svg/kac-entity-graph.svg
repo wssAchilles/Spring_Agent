@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pegMainNode" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#4338CA"/>
+    </linearGradient>
+    <linearGradient id="pegSubNode1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="pegSubNode2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F472B6"/>
+      <stop offset="100%" stop-color="#DB2777"/>
+    </linearGradient>
+    <linearGradient id="pegSubNode3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <!-- 拓扑连接线 -->
+  <line x1="24" y1="24" x2="12" y2="12" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="3 3"/>
+  <line x1="24" y1="24" x2="38" y2="14" stroke="#CBD5E1" stroke-width="2.5"/>
+  <line x1="24" y1="24" x2="34" y2="38" stroke="#CBD5E1" stroke-width="2.5"/>
+  <line x1="24" y1="24" x2="10" y2="34" stroke="#CBD5E1" stroke-width="2"/>
+  <line x1="12" y1="12" x2="38" y2="14" stroke="#E2E8F0" stroke-width="1.5"/>
+
+  <!-- 次级实体节点 -->
+  <circle cx="12" cy="12" r="5" fill="url(#pegSubNode1)"/>
+  <circle cx="38" cy="14" r="5.5" fill="url(#pegSubNode2)"/>
+  <circle cx="34" cy="38" r="5" fill="url(#pegSubNode3)"/>
+  <circle cx="10" cy="34" r="4" fill="#94A3B8"/>
+
+  <!-- 中心核心知识实体节点 -->
+  <circle cx="24" cy="24" r="9" fill="url(#pegMainNode)"/>
+  <circle cx="24" cy="24" r="6" fill="#EEF2FF" fill-opacity="0.3"/>
+  <circle cx="24" cy="24" r="3" fill="#FFFFFF"/>
+</svg>

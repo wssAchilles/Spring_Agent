@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pqcChat1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="pqcSpark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <!-- 辅助回答对话泡 (底衬) -->
+  <path d="M14 16 C14 11.5 18 8 23 8 L32 8 C37 8 41 11.5 41 16 C41 20.5 37 24 32 24 L30 24 L26 28 L27 24 L23 24 C18 24 14 20.5 14 16 Z" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1.5"/>
+  <line x1="20" y1="16" x2="34" y2="16" stroke="#93C5FD" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 主 AI 问答对话泡 (前景) -->
+  <path d="M7 26 C7 20.5 11.5 16 17 16 L27 16 C32.5 16 37 20.5 37 26 C37 31.5 32.5 36 27 36 L21 36 L14 42 L15.5 36 L17 36 C11.5 36 7 31.5 7 26 Z" fill="url(#pqcChat1)"/>
+  
+  <!-- 气泡内部声纹与文字条 -->
+  <line x1="14" y1="24" x2="22" y2="24" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="14" y1="29" x2="28" y2="29" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- 智能火花/问答星光 -->
+  <path d="M37 7 Q37 12 42 12 Q37 12 37 17 Q37 12 32 12 Q37 12 37 7 Z" fill="url(#pqcSpark)"/>
+</svg>

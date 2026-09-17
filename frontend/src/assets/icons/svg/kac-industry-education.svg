@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pedCap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#312E81"/>
+    </linearGradient>
+    <linearGradient id="pedGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <!-- 底部展开的书卷典籍 -->
+  <path d="M8 30 C15 28 22 30 24 33 C26 30 33 28 40 30 L40 40 C33 38 26 40 24 43 C22 40 15 38 8 40 Z" fill="#EEF2FF" stroke="#6366F1" stroke-width="2"/>
+  <line x1="24" y1="33" x2="24" y2="43" stroke="#6366F1" stroke-width="2"/>
+
+  <!-- 学士帽主体 (棱形顶板) -->
+  <polygon points="24,8 42,16 24,24 6,16" fill="url(#pedCap)"/>
+  <!-- 帽沿基底 -->
+  <path d="M14 20.5 V26 C14 29 18.5 31 24 31 C29.5 31 34 29 34 26 V20.5" fill="#3730A3"/>
+
+  <!-- 金黄流苏与垂珠 -->
+  <circle cx="24" cy="16" r="1.5" fill="url(#pedGold)"/>
+  <path d="M24 16 L38 21 L38 28" fill="none" stroke="url(#pedGold)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="38" cy="28.5" r="1.5" fill="#F59E0B"/>
+</svg>

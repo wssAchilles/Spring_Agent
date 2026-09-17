@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pneGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="pneBolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <!-- 风力发电机塔架 -->
+  <path d="M19 40 L23 18 H25 L29 40 Z" fill="#CBD5E1"/>
+  <circle cx="24" cy="18" r="3" fill="#64748B"/>
+  
+  <!-- 三叶风车风翼 (绿色清洁能源) -->
+  <path d="M24 18 C24 18 25 6 22 5 C20 4 21 16 24 18 Z" fill="url(#pneGreen)"/>
+  <path d="M24 18 C24 18 13 22 13 25 C13 27 22 21 24 18 Z" fill="url(#pneGreen)"/>
+  <path d="M24 18 C24 18 33 24 35 22 C37 20 27 17 24 18 Z" fill="url(#pneGreen)"/>
+
+  <!-- 光伏太阳能板 (底座右侧) -->
+  <polygon points="30,34 42,34 38,42 28,42" fill="#38BDF8" stroke="#0284C7" stroke-width="1.5"/>
+  <line x1="35" y1="34" x2="33" y2="42" stroke="#FFFFFF" stroke-width="1"/>
+
+  <!-- 高能绿电闪电电弧 -->
+  <polygon points="12,12 18,12 15,20 20,20 10,32 13,22 8,22" fill="url(#pneBolt)"/>
+</svg>

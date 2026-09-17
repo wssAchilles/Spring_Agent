@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pifShield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A"/>
+      <stop offset="100%" stop-color="#1E40AF"/>
+    </linearGradient>
+    <linearGradient id="pifGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <!-- 风控安全护盾外壳 -->
+  <path d="M24 4 L38 9 C38 23 29 37 24 42 C19 37 10 23 10 9 Z" fill="url(#pifShield)" stroke="#93C5FD" stroke-width="2"/>
+  <!-- 护盾内部微光内层 -->
+  <path d="M24 8 L34 12 C34 22 28 32 24 37 C20 32 14 22 14 12 Z" fill="#2563EB" fill-opacity="0.4"/>
+  <!-- 中心金色金融货币符号 -->
+  <circle cx="24" cy="22" r="8" fill="url(#pifGold)"/>
+  <text x="24" y="27" font-family="PingFang SC, Arial, sans-serif" font-size="13" font-weight="900" fill="#78350F" text-anchor="middle">¥</text>
+  <!-- 底部微光安全节点 -->
+  <circle cx="24" cy="35" r="1.8" fill="#60A5FA"/>
+</svg>

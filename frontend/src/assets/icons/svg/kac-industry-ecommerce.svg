@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pecOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#C2410C"/>
+    </linearGradient>
+    <linearGradient id="pecGlobe" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <!-- 背景经纬度全球地球仪 -->
+  <circle cx="30" cy="18" r="11" fill="#F0F9FF" stroke="url(#pecGlobe)" stroke-width="1.8"/>
+  <ellipse cx="30" cy="18" rx="11" ry="4" fill="none" stroke="#BAE6FD" stroke-width="1.2"/>
+  <ellipse cx="30" cy="18" rx="4" ry="11" fill="none" stroke="#BAE6FD" stroke-width="1.2"/>
+
+  <!-- 前方高能购物车 -->
+  <path d="M6 10 H12 L16 28 H36 L40 16 H14" fill="none" stroke="url(#pecOrange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 车轮 -->
+  <circle cx="18" cy="36" r="3.5" fill="#EA580C"/>
+  <circle cx="34" cy="36" r="3.5" fill="#EA580C"/>
+  <!-- 选品礼物盒/金块 -->
+  <rect x="18" y="15" width="8" height="8" rx="2" fill="#FBBF24"/>
+  <line x1="22" y1="15" x2="22" y2="23" stroke="#D97706" stroke-width="1.2"/>
+</svg>

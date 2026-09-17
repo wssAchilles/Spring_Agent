@@ -14,7 +14,8 @@
         <div class="card-title-row">
           <div class="card-title-info">
             <span class="card-title-icon">
-              <img :src="getImage(item)" alt="应用图标" />
+              <img v-if="isHttpUrl(item.icon)" :src="item.icon" alt="应用图标" />
+              <svg-icon v-else :icon-class="getSvgIcon(item)" class="kac-card-svg" />
             </span>
             <div class="card-title-text">
               <div class="card-title">{{ item.name || "-" }}</div>
@@ -275,31 +276,92 @@ function checkOverflow() {
   });
 }
 
-const iconSvgMap = {
-  Edit: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Edit.svg',
-  Search: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Search.svg',
-  Document: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Document.svg',
-  Connection: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Connection.svg',
-  Aim: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Aim.svg',
-  ChatDotRound: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/ChatDotRound.svg',
-  Calendar: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Calendar.svg',
-  DataAnalysis: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/DataAnalysis.svg',
-  Monitor: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Monitor.svg',
-  Money: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Money.svg',
-  FirstAidKit: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/FirstAidKit.svg',
-  Reading: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Reading.svg',
-  ShoppingCart: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/ShoppingCart.svg',
-  CreditCard: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/CreditCard.svg',
-  EditPen: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/EditPen.svg',
-  Service: 'https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/Service.svg',
+const appSvgMapping = {
+  // 横向通用原子技能专属 SVG 标识
+  'kac-article-write': 'kac-article-write',
+  'kac-batch-search': 'kac-batch-search',
+  'kac-exact-search': 'kac-exact-search',
+  'kac-entity-graph': 'kac-entity-graph',
+  'kac-semantic-search': 'kac-semantic-search',
+  'kac-qa-chat': 'kac-qa-chat',
+  'kac-template-report': 'kac-template-report',
+  'kac-calendar-report': 'kac-calendar-report',
+  'kac-data-analysis': 'kac-data-analysis',
+  'kac-smart-summary': 'kac-smart-summary',
+
+  // 纵向行业中枢应用专属 SVG 标识
+  'kac-industry-finance': 'kac-industry-finance',
+  'kac-industry-medical': 'kac-industry-medical',
+  'kac-industry-manufacturing': 'kac-industry-manufacturing',
+  'kac-industry-education': 'kac-industry-education',
+  'kac-industry-government': 'kac-industry-government',
+  'kac-industry-ecommerce': 'kac-industry-ecommerce',
+  'kac-industry-water': 'kac-industry-water',
+  'kac-industry-energy': 'kac-industry-energy',
+
+  // 兼容既有 Element 图标名映射
+  'Edit': 'kac-article-write',
+  'Search': 'kac-batch-search',
+  'Aim': 'kac-semantic-search',
+  'Connection': 'kac-entity-graph',
+  'ChatDotRound': 'kac-qa-chat',
+  'Calendar': 'kac-calendar-report',
+  'DataAnalysis': 'kac-data-analysis',
+  'Document': 'kac-template-report',
+  'Money': 'kac-industry-finance',
+  'FirstAidKit': 'kac-industry-medical',
+  'Monitor': 'kac-industry-manufacturing',
+  'Reading': 'kac-industry-education',
+  'ShoppingCart': 'kac-industry-ecommerce',
+  'Help': 'kac-industry-water',
+  'Cpu': 'kac-industry-energy',
 };
 
-function getImage(row) {
-  if (iconSvgMap[row.icon]) return iconSvgMap[row.icon];
+function isHttpUrl(val) {
+  return typeof val === 'string' && (val.startsWith('http://') || val.startsWith('https://'));
+}
+
+function getSvgIcon(item) {
+  if (!item) return 'kac-article-write';
   
-  // 如果没有配置图标或图标路径不可用，随便找一些临时的png图片做封面
-  const seed = row.id || row.name || Math.random();
-  return `https://picsum.photos/seed/${seed}/200/200.png`;
+  // 1. 显式映射
+  if (item.icon && appSvgMapping[item.icon]) {
+    return appSvgMapping[item.icon];
+  }
+  
+  // 2. 根据应用名称或行业类型智能匹配
+  const name = (item.name || '').trim();
+  const industry = (item.industry || item.type || '').trim();
+
+  // 行业中枢匹配
+  if (name.includes('金融') || name.includes('反欺诈') || name.includes('银行') || industry.includes('金融')) return 'kac-industry-finance';
+  if (name.includes('医疗') || name.includes('诊疗') || name.includes('临床') || industry.includes('医疗')) return 'kac-industry-medical';
+  if (name.includes('制造') || name.includes('产线') || name.includes('工业') || industry.includes('制造')) return 'kac-industry-manufacturing';
+  if (name.includes('教育') || name.includes('组卷') || name.includes('学情') || industry.includes('教育')) return 'kac-industry-education';
+  if (name.includes('政务') || name.includes('公文') || name.includes('红头') || industry.includes('政务')) return 'kac-industry-government';
+  if (name.includes('电商') || name.includes('选品') || name.includes('跨境') || industry.includes('电商')) return 'kac-industry-ecommerce';
+  if (name.includes('水利') || name.includes('防汛') || name.includes('大坝') || industry.includes('水利')) return 'kac-industry-water';
+  if (name.includes('能源') || name.includes('电网') || name.includes('绿电') || industry.includes('能源')) return 'kac-industry-energy';
+
+  // 通用原子技能匹配
+  if (name.includes('文章') || name.includes('写作') || name.includes('公文')) return 'kac-article-write';
+  if (name.includes('批量') || name.includes('批量检索')) return 'kac-batch-search';
+  if (name.includes('精确') || name.includes('精准') || name.includes('代码检索')) return 'kac-exact-search';
+  if (name.includes('实体') || name.includes('关系') || name.includes('图谱')) return 'kac-entity-graph';
+  if (name.includes('语义') || name.includes('向量')) return 'kac-semantic-search';
+  if (name.includes('问答') || name.includes('对话') || name.includes('客服')) return 'kac-qa-chat';
+  if (name.includes('模板') || name.includes('报告')) return 'kac-template-report';
+  if (name.includes('日报') || name.includes('周报') || name.includes('日历') || name.includes('日程')) return 'kac-calendar-report';
+  if (name.includes('分析') || name.includes('数据') || name.includes('统计') || name.includes('大屏')) return 'kac-data-analysis';
+  if (name.includes('摘要') || name.includes('总结') || name.includes('提炼')) return 'kac-smart-summary';
+
+  // 3. 原生本地 SVG 标识
+  if (item.icon && typeof item.icon === 'string' && !isHttpUrl(item.icon)) {
+    return item.icon;
+  }
+
+  // 4. 默认优雅保底
+  return 'skill';
 }
 
 function getStatusOption(status) {
@@ -517,16 +579,34 @@ watch(
 }
 
 .card-title-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   overflow: hidden;
-  background: #f4f6fb;
-  border: 1px solid #eef1f6;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.85) 100%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .kac-card-svg {
+    width: 26px;
+    height: 26px;
+    transition: transform 0.25s ease;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    border-color: rgba(147, 197, 253, 0.6);
+
+    .kac-card-svg {
+      transform: scale(1.08);
+    }
+  }
 
   img {
     width: 100%;

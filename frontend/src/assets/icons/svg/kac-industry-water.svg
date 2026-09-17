@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pwtBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="pwtDrop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <!-- 水利大坝梯形闸门 -->
+  <path d="M10 38 L16 16 H32 L38 38 Z" fill="#E2E8F0" stroke="#64748B" stroke-width="2"/>
+  <line x1="20" y1="16" x2="18" y2="38" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="28" y1="16" x2="30" y2="38" stroke="#94A3B8" stroke-width="1.5"/>
+
+  <!-- 大坝顶部溢洪通道水波 -->
+  <path d="M4 36 Q12 30 20 36 T36 36 T48 36" fill="none" stroke="url(#pwtBlue)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M6 42 Q14 36 22 42 T38 42 T46 42" fill="none" stroke="#7DD3FC" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- 悬浮核心防汛智慧水滴 -->
+  <path d="M24 4 C24 4 17 12 17 16 C17 19.8 20.1 23 24 23 C27.9 23 31 19.8 31 16 C31 12 24 4 24 4 Z" fill="url(#pwtDrop)"/>
+  <circle cx="21.5" cy="15" r="1.5" fill="#FFFFFF"/>
+</svg>

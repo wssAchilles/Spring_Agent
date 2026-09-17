@@ -302,8 +302,9 @@ getList();
   }
 }
 .pagecont-top {
-  ::v-deep .el-form-item:first-child .el-form-item__label {
-    width: 41px !important;
+  :deep(.el-form-item__label) {
+    white-space: nowrap !important;
+    font-weight: 500;
   }
 }
 </style>

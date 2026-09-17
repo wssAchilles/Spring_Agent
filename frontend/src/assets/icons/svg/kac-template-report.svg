@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="ptrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="ptrWand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <!-- 底层模板规范表格卡片 -->
+  <rect x="7" y="6" width="28" height="36" rx="4" fill="#F0F9FF" stroke="#0284C7" stroke-width="2"/>
+  <!-- 模板顶部标题横幅 -->
+  <rect x="7" y="6" width="28" height="8" rx="3" fill="#0284C7"/>
+  <line x1="12" y1="10" x2="22" y2="10" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 模板结构化网格线 -->
+  <line x1="7" y1="22" x2="35" y2="22" stroke="#BAE6FD" stroke-width="1.5"/>
+  <line x1="7" y1="30" x2="35" y2="30" stroke="#BAE6FD" stroke-width="1.5"/>
+  <line x1="20" y1="14" x2="20" y2="42" stroke="#BAE6FD" stroke-width="1.5"/>
+
+  <!-- 表格内填充数据指示条 -->
+  <line x1="10" y1="18" x2="17" y2="18" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="23" y1="18" x2="31" y2="18" stroke="#7DD3FC" stroke-width="2" stroke-linecap="round"/>
+  <line x1="10" y1="26" x2="18" y2="26" stroke="#7DD3FC" stroke-width="2" stroke-linecap="round"/>
+  <line x1="23" y1="26" x2="30" y2="26" stroke="#38BDF8" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 报告一键生成魔法棒 -->
+  <g transform="translate(18, 16)">
+    <line x1="8" y1="26" x2="23" y2="11" stroke="url(#ptrWand)" stroke-width="3.5" stroke-linecap="round"/>
+    <polygon points="23,11 25,6 20,8" fill="#F59E0B"/>
+    <!-- 生成星光 -->
+    <path d="M23 7 Q23 11 27 11 Q23 11 23 15 Q23 11 19 11 Q23 11 23 7 Z" fill="#FBBF24"/>
+    <circle cx="12" cy="10" r="1.5" fill="#FBBF24"/>
+  </g>
+</svg>

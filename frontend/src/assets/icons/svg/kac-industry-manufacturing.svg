@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="pmnGear1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="pmnGear2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+  </defs>
+  <!-- 工业齿轮主体 1 -->
+  <g transform="translate(18, 18)">
+    <circle cx="0" cy="0" r="12" fill="url(#pmnGear1)"/>
+    <circle cx="0" cy="0" r="5" fill="#FFFFFF"/>
+    <!-- 8个齿 -->
+    <rect x="-2" y="-15" width="4" height="4" fill="#334155" rx="1"/>
+    <rect x="-2" y="11" width="4" height="4" fill="#334155" rx="1"/>
+    <rect x="-15" y="-2" width="4" height="4" fill="#334155" rx="1"/>
+    <rect x="11" y="-2" width="4" height="4" fill="#334155" rx="1"/>
+    <g transform="rotate(45)">
+      <rect x="-2" y="-15" width="4" height="4" fill="#334155" rx="1"/>
+      <rect x="-2" y="11" width="4" height="4" fill="#334155" rx="1"/>
+      <rect x="-15" y="-2" width="4" height="4" fill="#334155" rx="1"/>
+      <rect x="11" y="-2" width="4" height="4" fill="#334155" rx="1"/>
+    </g>
+  </g>
+
+  <!-- 联动副齿轮 2 -->
+  <g transform="translate(34, 32)">
+    <circle cx="0" cy="0" r="8" fill="url(#pmnGear2)"/>
+    <circle cx="0" cy="0" r="3" fill="#FFFFFF"/>
+  </g>
+
+  <!-- 激光质检红外扫描线与光标 -->
+  <line x1="4" y1="20" x2="44" y2="20" stroke="#EF4444" stroke-width="2" stroke-dasharray="3 2"/>
+  <polygon points="24,14 28,18 20,18" fill="#EF4444"/>
+  <polygon points="24,26 28,22 20,22" fill="#EF4444"/>
+</svg>
