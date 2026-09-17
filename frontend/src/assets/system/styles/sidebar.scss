@@ -75,144 +75,227 @@
     }
 
     .el-menu {
-      --el-menu-item-height:42px;
-      --el-menu-sub-item-height:42px;
+      --el-menu-item-height: 40px;
+      --el-menu-sub-item-height: 40px;
       border: none;
       height: 100%;
       width: 100% !important;
       background-color: transparent !important;
 
-      .nest-menu{
-        &>a{
-            padding: 0 15px 0 15px;
+      .sidebar-item {
+        margin-bottom: 4px;
+        padding: 0 8px;
+
+        & > .el-sub-menu,
+        & > a {
+          padding: 0 !important;
         }
-        .el-menu-item{
+      }
+
+      /* 父目录 SubMenu 标题行 */
+      .el-sub-menu__title {
+        height: 40px !important;
+        line-height: 40px !important;
+        border-radius: 8px !important;
+        padding: 0 10px !important;
+        margin: 2px 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        color: #334155 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+          background-color: #f1f5f9 !important;
+          color: #0f172a !important;
+        }
+
+        .svg-icon {
+          font-size: 18px !important;
+          width: 18px !important;
+          height: 18px !important;
+          margin-right: 10px !important;
+          margin-left: 0 !important;
+          color: #475569 !important;
+          fill: currentColor !important;
+          flex-shrink: 0 !important;
+        }
+
+        .menu-title {
+          color: inherit !important;
+          font-weight: inherit !important;
+          font-size: 14px !important;
+          flex: 1 !important;
+          text-align: left !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+
+        .el-sub-menu__icon-arrow {
+          color: #94a3b8 !important;
+          position: static !important;
+          margin-left: auto !important;
+          margin-top: 0 !important;
+          font-size: 13px !important;
           display: flex !important;
           align-items: center !important;
-          justify-content: flex-start !important;
-          padding-left: 20px !important;
+          justify-content: center !important;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        &:hover .el-sub-menu__icon-arrow {
+          color: #2563eb !important;
+        }
+      }
+
+      /* 父目录展开与激活高亮态 */
+      .el-sub-menu.is-opened > .el-sub-menu__title,
+      .el-sub-menu.is-active > .el-sub-menu__title {
+        background-color: rgba(37, 99, 235, 0.06) !important;
+        color: #1d4ed8 !important;
+
+        .svg-icon {
+          color: #2563eb !important;
+          fill: currentColor !important;
+        }
+
+        .el-sub-menu__icon-arrow {
+          color: #2563eb !important;
+        }
+      }
+
+      /* 单级根菜单（如【图谱探索】、【首页】） */
+      .sidebar-item > a .el-menu-item {
+        height: 40px !important;
+        line-height: 40px !important;
+        border-radius: 8px !important;
+        padding: 0 10px !important;
+        margin: 2px 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        color: #334155 !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
+
+        .svg-icon {
+          font-size: 18px !important;
+          width: 18px !important;
+          height: 18px !important;
+          margin-right: 10px !important;
+          margin-left: 0 !important;
+          flex-shrink: 0 !important;
+          color: #475569 !important;
+          fill: currentColor !important;
+        }
+
+        .menu-title {
+          font-size: 14px !important;
+          color: inherit !important;
+          font-weight: inherit !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+
+        &:hover {
+          background-color: #f1f5f9 !important;
+          color: #0f172a !important;
+        }
+
+        &.is-active {
+          background: #2563eb !important;
+          color: #ffffff !important;
+          font-weight: 600 !important;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+
+          .menu-title,
+          .svg-icon {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+          }
+        }
+      }
+
+      /* 子菜单区域与垂直树状导轨线 (Tree Guideline) */
+      .el-sub-menu .el-menu {
+        position: relative !important;
+        margin-left: 18px !important;
+        margin-right: 4px !important;
+        margin-top: 3px !important;
+        margin-bottom: 6px !important;
+        padding-left: 8px !important;
+        border-left: 1.5px solid #e2e8f0 !important;
+        background-color: transparent !important;
+      }
+
+      .nest-menu > a {
+        padding: 0 !important;
+        margin-bottom: 2px !important;
+      }
+
+      .nest-menu .el-menu-item {
+        height: 36px !important;
+        line-height: 36px !important;
+        border-radius: 6px !important;
+        padding: 0 10px !important;
+        margin: 1px 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        color: #64748b !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        background-color: transparent !important;
+        transition: all 0.2s ease !important;
+
+        .svg-icon {
+          font-size: 16px !important;
+          width: 16px !important;
+          height: 16px !important;
+          margin-right: 8px !important;
+          margin-left: 0 !important;
+          color: #64748b !important;
+          fill: currentColor !important;
+          flex-shrink: 0 !important;
+        }
+
+        .menu-title {
+          color: inherit !important;
+          font-size: 13px !important;
+          font-weight: inherit !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+
+        &:hover {
+          background-color: #f1f5f9 !important;
+          color: #0f172a !important;
 
           .svg-icon {
-            font-size: 18px !important;
-            width: 18px !important;
-            height: 18px !important;
-            margin-right: 12px !important;
-            flex-shrink: 0;
-            color: #536071;
-          }
-
-          &.is-active {
-            .svg-icon {
-              color: #ffffff !important;
-            }
+            color: #334155 !important;
           }
         }
-      }
-      
 
-      .sidebar-item{
-        margin-bottom: 15px;
-        &>.el-sub-menu,
-        &>a{
-            padding: 0 15px;
-        }
-        
-
-        .el-sub-menu__title {
-            &:hover{
-                background-color: transparent !important;
-            }
-        }
-
-        .nest-menu{
-           display: flex;
-           align-items: center;
-           justify-content: flex-start;
-        }
-      }
-    }
-
-    .el-menu-item, .menu-title {
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      white-space: nowrap !important;
-      color: #536071;
-      font-weight: 500;
-      // font-family: PingFangSC;
-    }
-
-    .el-menu-item .el-menu-tooltip__trigger {
-      display: inline-block !important;
-    }
-
-     .el-menu-item {
         &.is-active {
-          background: var(--el-color-primary) !important;
-          border-radius: 4px;
+          background: #2563eb !important;
           color: #ffffff !important;
-          font-weight: 600;
-          position: relative;
-          transition: none !important;
-          height: 100%;
-        .svg-icon {
-            font-size:18px !important;
-            width:18px !important;
-            height:18px !important;
-            filter: none;
+          font-weight: 600 !important;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+
+          .menu-title,
+          .svg-icon {
             color: #ffffff !important;
-        }
-        .menu-title {
-            color: #ffffff !important;
-        }
-
+            fill: #ffffff !important;
+          }
         }
       }
-    // menu hover
-    // .sub-menu-title-noDropdown,
-    // .el-sub-menu__title ,.submenu-title-noDropdown {
-    //   &:hover {
-    //     background-color: rgba(0, 0, 0, 0.00) !important;
-    //     color: #ffffff;
-    //   }
-    // }
-
-    & .theme-dark .is-active > .el-sub-menu__title {
-      color: $base-menu-color-active !important;
-      background-color: $base-menu-color-sub-active !important;
     }
-
-    & .nest-menu .el-sub-menu>.el-sub-menu__title,
-    & .el-sub-menu .el-menu-item {
-      min-width: 100% !important;
-
-      &:hover {
-        //background-color: rgba(0, 0, 0, 0.06) !important;
-      }
-    }
-
-    & .theme-dark .nest-menu .el-sub-menu>.el-sub-menu__title,
-    & .theme-dark .el-sub-menu .el-menu-item {
-      //background-color: $base-sub-menu-background !important;
-
-      &:hover {
-        color: #ffffff;
-        //background-color: $base-sub-menu-hover !important;
-      }
-    }
-
-    & .theme-dark .nest-menu .el-sub-menu>.el-sub-menu__title,
-    & .theme-dark .el-sub-menu .el-menu-item {
-      &:hover span {
-        color: #ffffff;
-      }
-    }
-    & .theme-dark .el-sub-menu.is-active {
-    //   background-color: #0c2135 !important;
-    }
-  }
-
-  .el-submenu.is-opened > .el-submenu__title .el-submenu__icon-arrow {
-    color: #ffffff!important;
   }
 
   .hideSidebar {

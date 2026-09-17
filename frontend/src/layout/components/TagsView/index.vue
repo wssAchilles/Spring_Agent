@@ -79,11 +79,7 @@ function isActive(r) {
 }
 
 function activeStyle(tag) {
-  if (!isActive(tag)) return {};
-  return {
-    'background-color': theme.value,
-    'border-color': theme.value
-  };
+  return {};
 }
 
 function isAffix(tag) {
@@ -340,84 +336,134 @@ function handleScroll() {
 
 <style scoped lang="scss">
 .tags-view-container {
-  height: 34px;
+  height: 38px;
   width: 100%;
-  background: #fff;
-  border-bottom: 1px solid #d8dce5;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 0 3px 0 rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
 
   .tags-view-wrapper {
+    display: flex;
+    align-items: center;
+    height: 100%;
+
+    ::v-deep(.el-scrollbar__wrap) {
+      display: flex;
+      align-items: center;
+    }
+
     .tags-view-item {
       display: inline-flex;
       align-items: center;
       position: relative;
       cursor: pointer;
-      height: 26px;
-      line-height: 26px;
-      border: 1px solid #d8dce5;
-      color: #495060;
-      background: #fff;
-      padding: 0 8px;
+      height: 28px;
+      line-height: 28px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      color: #64748b;
+      background: #f8fafc;
+      padding: 0 10px;
       font-size: 12px;
-      margin-left: 5px;
-      margin-top: 4px;
+      font-weight: 500;
+      margin: 0 3px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 
       &:first-of-type {
-        margin-left: 15px;
+        margin-left: 12px;
       }
 
       &:last-of-type {
-        margin-right: 15px;
+        margin-right: 12px;
+      }
+
+      &:not(.active):hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
       }
 
       &.active {
-        background-color: #42b983;
-        color: #fff;
-        border-color: #42b983;
+        background: #eff6ff !important;
+        color: #2563eb !important;
+        border-color: #bfdbfe !important;
+        font-weight: 600 !important;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08) !important;
 
         &::before {
           content: '';
-          background: #fff;
+          background: #2563eb;
           display: inline-block;
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
-          margin-right: 5px;
+          margin-right: 6px;
+          box-shadow: 0 0 0 2px #dbeafe;
         }
       }
 
       span {
         display: inline-flex;
         align-items: center;
-        margin-left: 4px;
+        justify-content: center;
+        margin-left: 6px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.08);
+          color: #ef4444;
+        }
 
         .el-icon-close {
+          width: 11px;
+          height: 11px;
           cursor: pointer;
         }
+      }
+
+      &.active span:hover {
+        background: rgba(37, 99, 235, 0.15);
+        color: #1d4ed8;
       }
     }
   }
 
   .contextmenu {
     margin: 0;
-    background: #fff;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    padding: 4px;
+    min-width: 110px;
     z-index: 3000;
     position: absolute;
     list-style-type: none;
-    padding: 5px 0;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 400;
-    color: #333;
-    box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, 0.3);
 
     li {
-      margin: 0;
-      padding: 7px 16px;
+      margin: 1px 0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       cursor: pointer;
+      transition: all 0.15s ease;
 
       &:hover {
-        background: #eee;
+        background: #f1f5f9;
+        color: #2563eb;
       }
     }
   }

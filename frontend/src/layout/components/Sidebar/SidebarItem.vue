@@ -87,6 +87,12 @@ const onlyOneChild = ref({});
 
 // 菜单语义图标保底字典 (当数据库未配置或配为'#'时自动激活)
 const FALLBACK_ICON_MAP = {
+  '知识中心': 'book-open-line',
+  '知识抽取': 'file-ai-line',
+  '知识应用': 'apps-ai-fill',
+  '数据管理': 'database-2-line',
+  'Bot 管理': 'bot管理',
+  'Bot管理': 'bot管理',
   '知识文件': 'file-text-line',
   '知识分类': 'folder-5-fill',
   '图谱探索': 'kac-entity-graph',
@@ -114,7 +120,8 @@ const FALLBACK_ICON_MAP = {
   '横向通用应用': '横向',
   '纵向行业应用': '纵向',
   '我的解决方案': 'my-solution',
-  '我的应用': '我的应用'
+  '我的应用': '我的应用',
+  '系统管理': 'system'
 };
 
 const getMenuIcon = (child, parent) => {
@@ -131,6 +138,8 @@ const getMenuIcon = (child, parent) => {
     return FALLBACK_ICON_MAP[title];
   }
   // 语义关键词模糊保底匹配
+  if (title.includes('Bot') || title.includes('bot')) return 'bot管理';
+  if (title.includes('抽取')) return 'file-ai-line';
   if (title.includes('文件') || title.includes('文档')) return 'file-text-line';
   if (title.includes('分类') || title.includes('目录')) return 'folder-5-fill';
   if (title.includes('图谱') || title.includes('探索')) return 'kac-entity-graph';
@@ -138,6 +147,8 @@ const getMenuIcon = (child, parent) => {
   if (title.includes('智能体') || title.includes('Agent') || title.includes('agent')) return 'brain-ai-3-line';
   if (title.includes('模型')) return 'apps-ai-fill';
   if (title.includes('数据') || title.includes('库')) return 'database-2-line';
+  if (title.includes('应用')) return 'apps-ai-fill';
+  if (title.includes('中心') || title.includes('知识')) return 'book-open-line';
   if (title.includes('配置') || title.includes('设置') || title.includes('管理')) return 'tools-line';
   if (title.includes('日志') || title.includes('记录')) return 'log';
   if (title.includes('权限') || title.includes('安全')) return 'lock';

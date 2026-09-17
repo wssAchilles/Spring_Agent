@@ -14,16 +14,10 @@
             <el-menu
                 :default-active="activeMenu"
                 :collapse="isCollapse"
-                :background-color="
-                    sideTheme === 'theme-dark'
-                        ? variables.menuBackground
-                        : variables.menuLightBackground
-                "
-                :text-color="
-                    sideTheme === 'theme-dark' ? variables.menuColor : variables.menuLightColor
-                "
-                :unique-opened="true"
-                :active-text-color="/*系统配置 theme*/ '#fff'"
+                :background-color="'transparent'"
+                :text-color="'#334155'"
+                :unique-opened="false"
+                :active-text-color="'#2563eb'"
                 :collapse-transition="false"
                 mode="vertical"
             >
