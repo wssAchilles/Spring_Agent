@@ -33,7 +33,7 @@ public class ExtTaskLogDO extends BaseEntity {
     private Long taskId;
 
     /** 任务类型 */
-    private Integer taskType;
+    private String taskType;
 
     /** 任务名称 */
     private String taskName;

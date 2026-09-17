@@ -82,7 +82,7 @@ public class ExtTaskLogServiceImpl extends ServiceImpl<ExtTaskLogMapper, ExtTask
         entity.setWorkspaceId(workSpaceId);
         entity.setTaskId(taskId);
         entity.setTaskName(taskName);
-        entity.setTaskType(taskType.getValue());
+        entity.setTaskType(String.valueOf(taskType.getValue()));
         entity.setStatus(ExtLogStatusEnum.SUCCESS.getValue());// 默认是成功的状态
         entity.setStartTime(new Date());
         extTaskLogMapper.insert(entity);

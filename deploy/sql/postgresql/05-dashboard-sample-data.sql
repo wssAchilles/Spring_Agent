@@ -51,11 +51,12 @@ with sample_tasks as (
     where remark = 'dashboard_sample'
 )
 insert into ext_task_log
-    (workspace_id, task_id, task_type, status, error_msg, start_time, end_time,
+    (workspace_id, task_id, task_name, task_type, status, error_msg, start_time, end_time,
      valid_flag, del_flag, create_by, creator_id, create_time, update_by, updater_id, update_time, remark)
 select
     1001,
     id,
+    name,
     'unstructured_extract',
     case when rn = 3 then 2 else 1 end,
     case when rn = 3 then '样例：发现 3 个低质量切片，等待人工复检' else null end,

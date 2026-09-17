@@ -1205,6 +1205,7 @@ CREATE TABLE IF NOT EXISTS ext_task_log (
     workspace_id BIGINT NOT NULL,
     task_id      BIGINT DEFAULT NULL,
     task_type    VARCHAR(32) DEFAULT NULL,
+    task_name    VARCHAR(128) DEFAULT NULL,
     status       SMALLINT DEFAULT 0,
     error_msg    TEXT DEFAULT NULL,
     start_time   TIMESTAMP DEFAULT NULL,
