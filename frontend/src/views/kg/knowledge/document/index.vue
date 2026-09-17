@@ -35,13 +35,19 @@
                 @click="handleQuery"
                 @mousedown="(e) => e.preventDefault()"
               >
-                <i class="iconfont-mini icon-a-zu22377 mr5"></i>查询
+                <svg class="btn-svg-icon mr5" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="7" cy="7" r="4.5" />
+                  <path d="M10.5 10.5L14 14" />
+                </svg>查询
               </el-button>
               <el-button v-ripple class="glass-btn"
                 @click="resetQuery"
                 @mousedown="(e) => e.preventDefault()"
               >
-                <i class="iconfont-mini icon-a-zu22378 mr5"></i>重置
+                <svg class="btn-svg-icon mr5" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2.5 7.5a5 5 0 1 1 1 3.5" />
+                  <path d="M2.5 3.5v4h4" />
+                </svg>重置
               </el-button>
             </el-form-item>
           </el-form>
@@ -57,7 +63,9 @@
                   v-hasPermi="['kg:knowledge:document:add']"
                   @mousedown="(e) => e.preventDefault()"
                 >
-                  <i class="iconfont-mini icon-xinzeng mr5"></i>新增
+                  <svg class="btn-svg-icon mr5" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 2.5v11M2.5 8h11" />
+                  </svg>新增
                 </el-button>
               </el-col>
               <el-col :span="1.5">
@@ -65,11 +73,13 @@
                   plain
                   :disabled="multiple"
                   @click="handleDelete"
-                  icon="Delete"
                   v-hasPermi="['kg:knowledge:document:remove']"
                   @mousedown="(e) => e.preventDefault()"
                 >
-                  删除
+                  <svg class="btn-svg-icon mr5" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2.5 4.5h11M5.5 4.5V2.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7M12.5 4.5l-.8 8.4a1.4 1.4 0 0 1-1.4 1.3H5.7a1.4 1.4 0 0 1-1.4-1.3L3.5 4.5" />
+                    <path d="M6.5 7.5v4M9.5 7.5v4" />
+                  </svg>删除
                 </el-button>
               </el-col>
             </el-row>
@@ -207,10 +217,13 @@
                     module: 'kg',
                   }"
                   link
-                  icon="view"
                   @click="previewRefactoring(scope.row)"
-                  >预览</el-button
                 >
+                  <svg class="btn-svg-icon mr4" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z" />
+                    <circle cx="8" cy="8" r="2" />
+                  </svg>预览
+                </el-button>
                 <el-button v-ripple class="glass-btn"
                   v-track="{
                     type: 'download',
@@ -218,15 +231,19 @@
                     module: 'kg',
                   }"
                   link
-                  icon="download"
                   @click="handleDownload(scope.row)"
-                  >下载</el-button
                 >
+                  <svg class="btn-svg-icon mr4" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 2.5v7.5M5 7.5l3 3 3-3" />
+                    <path d="M2.5 11.5v1.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1.5" />
+                  </svg>下载
+                </el-button>
                 <el-popover placement="bottom" :width="150" trigger="click">
                   <template #reference>
                     <el-button v-ripple class="glass-btn" link @click.stop>
-                      <template #icon><el-icon :size="14"><ArrowDown /></el-icon></template>
-                      更多
+                      <svg class="btn-svg-icon mr4" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 6l4 4 4-4" />
+                      </svg>更多
                     </el-button>
                   </template>
                   <div class="card-button-group">
@@ -235,16 +252,18 @@
                       @click="handleUpdate(scope.row)"
                       v-hasPermi="['kg:knowledge:document:edit']"
                     >
-                      <template #icon><el-icon :size="14"><Edit /></el-icon></template>
-                      修改
+                      <svg class="btn-svg-icon mr4" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 2.5l2.5 2.5-8 8H3v-2.5l8-8z" />
+                      </svg>修改
                     </el-button>
                     <el-button v-ripple class="glass-btn"
                       link
                       @click="handleDelete(scope.row)"
                       v-hasPermi="['kg:knowledge:document:remove']"
                     >
-                      <template #icon><el-icon :size="14"><Delete /></el-icon></template>
-                      删除
+                      <svg class="btn-svg-icon mr4" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 4.5h11M5.5 4.5V2.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3v1.7M12.5 4.5l-.8 8.4a1.4 1.4 0 0 1-1.4 1.3H5.7a1.4 1.4 0 0 1-1.4-1.3L3.5 4.5" />
+                      </svg>删除
                     </el-button>
                   </div>
                 </el-popover>
@@ -366,10 +385,16 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
-          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
-            >确 定</el-button
-          >
+          <el-button v-ripple class="glass-btn" size="small" @click="cancel">
+            <svg class="btn-svg-icon mr4" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+            </svg>取 消
+          </el-button>
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm">
+            <svg class="btn-svg-icon mr4" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3.5 8.5l3 3 6-6" />
+            </svg>确 定
+          </el-button>
         </div>
       </template>
     </el-dialog>
@@ -884,5 +909,23 @@ getCategoryTree();
     line-height: 1.5em;
     max-height: 3em;
   }
+}
+
+.btn-svg-icon {
+  display: inline-block;
+  vertical-align: -2px;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.mr4 {
+    margin-right: 4px;
+  }
+  &.mr5 {
+    margin-right: 5px;
+  }
+}
+
+.glass-btn:hover .btn-svg-icon {
+  transform: scale(1.08);
 }
 </style>

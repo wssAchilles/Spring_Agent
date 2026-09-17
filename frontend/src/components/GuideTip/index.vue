@@ -7,8 +7,18 @@
                 <span v-html="config.title"></span>
             </span>
       <div class="header-buttons">
-        <el-button v-if="config.type !== 'danger'" class="btn-never-show" @click="neverShow">不再展示</el-button>
-        <el-button :class="['btn-close', config.type]" @click="close">关闭</el-button>
+        <el-button v-if="config.type !== 'danger'" class="btn-never-show" @click="neverShow">
+          <svg class="tip-btn-svg" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 2l12 12M6.7 6.7A2.8 2.8 0 0 0 9.3 9.3M3.1 3.1C1.9 4.3 1 6 1 8c1.5 3.5 4.5 6 7 6 1.1 0 2.2-.4 3.2-1.1m2.7-2.7C14.6 9.4 15 8.7 15 8c-1.5-3.5-4.5-6-7-6-.8 0-1.6.2-2.3.5" />
+          </svg>
+          不再展示
+        </el-button>
+        <el-button :class="['btn-close', config.type]" @click="close">
+          <svg class="tip-btn-svg" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+          </svg>
+          关闭
+        </el-button>
       </div>
     </div>
     <div v-if="config.content" class="tip-content" v-html="config.content" @click="handleClick"></div>
@@ -183,6 +193,9 @@ const methods = {
       margin-top: 2px;
 
       .el-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         height: 22px;
         font-family: PingFangSC-Regular, PingFangSC-Regular;
         font-weight: normal;
@@ -190,8 +203,12 @@ const methods = {
         line-height: 18px;
         text-align: left;
         text-transform: none;
-        padding: 2px 4px;
+        padding: 2px 6px;
         border-radius: 2px;
+
+        .tip-btn-svg {
+          flex-shrink: 0;
+        }
 
         &.btn-never-show {
           background-color: #fff;
