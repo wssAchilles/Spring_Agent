@@ -1,0 +1,694 @@
+/**
+ * ============================================================================
+ * Apple iOS 26 Liquid Glass & Vibrancy Design System (Light Mode)
+ * 数值取自 Figma 源文件《Apple iOS 26 Library (Community)》真实节点
+ *
+ * 已对源文件核实的三条结构事实：
+ * 1. 材质 =「高光层 + 模糊层」两层叠加，模糊半径统一 50px，提亮靠 color-dodge 混合。
+ *    源文件中不存在 saturate() —— 单层 backdrop-filter 无法还原。
+ * 2. 圆角：icon 5.25 / control 12 / card 30 / container 34 / dock 38（外层容器 42）
+ * 3. 系统强调色 12 个中 9 个已被 iOS 26 刷新，与经典 HIG 值不同
+ *
+ * 未能核实、请勿当作已验证的部分见 tokens/ios26-tokens.json 的 $verification 段。
+ * ============================================================================
+ */
+
+/* Figma 节点 48:33518 —— 五种材质的唯一数据源，勿在此以外重复定义。
+   层序自下而上：高光层 → 模糊层（背景模糊 + 色调 + 混合模式）。
+   Chrome 是唯一没有高光层的单层材质。 */
+$ios26-materials: (
+  ultrathin: (
+    highlight: rgba(255, 255, 255, 0.07),
+    highlight-blend: normal,
+    blur: 50px,
+    blur-blend: color-dodge,
+    tint: rgba(255, 255, 255, 0.03),
+  ),
+  thin: (
+    highlight: rgba(255, 255, 255, 0.05),
+    highlight-blend: normal,
+    blur: 50px,
+    blur-blend: color-dodge,
+    tint: rgba(255, 255, 255, 0.4),
+  ),
+  regular: (
+    highlight: rgba(255, 255, 255, 0.25),
+    highlight-blend: plus-lighter,
+    blur: 50px,
+    blur-blend: color-dodge,
+    tint: rgba(255, 255, 255, 0.6),
+  ),
+  thick: (
+    highlight: rgba(255, 255, 255, 0.34),
+    highlight-blend: plus-lighter,
+    blur: 50px,
+    blur-blend: color-dodge,
+    tint: rgba(255, 255, 255, 0.84),
+  ),
+  chrome: (
+    highlight: null,
+    highlight-blend: null,
+    blur: 25px,
+    blur-blend: hard-light,
+    tint: rgba(255, 255, 255, 0.75),
+  ),
+);
+
+:root {
+  /* ==========================================================================
+     1. 配色体系 (Colors - Light Mode)
+     ========================================================================== */
+
+  /* 材质上的通透填充 (Vibrant Fills) —— 节点 48:33647，
+     Figma 具名样式「Vibrant Fills/Light/Vibrant Primary | Secondary | Tertiary」。
+     注：源文件中未找到非 vibrant 的 fills 族，不要套用经典的 rgba(120,120,128,a)。 */
+  --ios26-fill-vibrant-primary: #cccccc;
+  --ios26-fill-vibrant-secondary: #e0e0e0;
+  --ios26-fill-vibrant-tertiary: #ededed;
+
+  /* 材质上的通透文字色 (Vibrant Labels) —— 节点 48:33647。
+     与下方 --ios26-label-*（普通背景上的标签色）是两套体系，勿混用。 */
+  --ios26-vibrant-label-primary: #000000;
+  --ios26-vibrant-label-secondary: #3d3d3d;
+  --ios26-vibrant-label-tertiary: rgba(80, 80, 80, 0.7);
+  --ios26-vibrant-label-quaternary: rgba(72, 72, 72, 0.6);
+
+  /* 系统背景层 (System Backgrounds) */
+  --ios26-bg-primary: #FFFFFF;
+  --ios26-bg-secondary: #F2F2F7;
+  --ios26-bg-tertiary: #FFFFFF;
+  --ios26-bg-grouped-primary: #F2F2F7;
+  --ios26-bg-grouped-secondary: #FFFFFF;
+  --ios26-bg-grouped-tertiary: #F2F2F7;
+
+  /* 标签文字层 (Labels) */
+  --ios26-label-primary: #000000;
+  --ios26-label-secondary: rgba(60, 60, 67, 0.60);
+  --ios26-label-tertiary: rgba(60, 60, 67, 0.30);
+  --ios26-label-quaternary: rgba(60, 60, 67, 0.18);
+
+  /* 分割线与描边 (Separators)
+     已对源文件两次独立确认（节点 48:33651 材质样本内的分隔线、节点 48:32456 Separators 色板组）。
+     原值 rgba(60, 60, 67, 0.29) 有误，已更正。 */
+  --ios26-separator-non-opaque: rgba(0, 0, 0, 0.12);
+  --ios26-separator-opaque: #c6c6c8;
+  --ios26-border-glass-specular: rgba(255, 255, 255, 0.75);
+
+  /* 12 种系统强调色 (System Accent Colors - Light)
+     已对 Figma 源文件校验（节点 48:32457）。iOS 26 刷新了色板：
+     与经典 Apple HIG 值（#007AFF / #FF3B30 / #FF9500 / #AF52DE / #5856D6 /
+     #30B0C7 / #32ADE6 / #00C7BE / #A2845E）有 9 处不同，请勿改回旧值。 */
+  --ios26-color-red: #ff383c;
+  --ios26-color-orange: #ff8d28;
+  --ios26-color-yellow: #ffcc00;
+  --ios26-color-green: #34c759;
+  --ios26-color-mint: #00c8b3;
+  --ios26-color-teal: #00c3d0;
+  --ios26-color-cyan: #00c0e8;
+  --ios26-color-blue: #0088ff;
+  --ios26-color-indigo: #6155f5;
+  --ios26-color-purple: #cb30e0;
+  --ios26-color-pink: #ff2d55;
+  --ios26-color-brown: #ac7f5e;
+
+  /* 系统灰阶 (System Grays 1-6) */
+  --ios26-gray-1: #8E8E93;
+  --ios26-gray-2: #AEAEB2;
+  --ios26-gray-3: #C7C7CC;
+  --ios26-gray-4: #D1D1D6;
+  --ios26-gray-5: #E5E5EA;
+  --ios26-gray-6: #F2F2F7;
+
+  /* ==========================================================================
+     2. 字体排印体系 (Typography - 严格对齐 SF Pro 尺寸与像素 Tracking)
+     ========================================================================== */
+  --ios26-font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+
+  --ios26-font-size-large-title: 34px;
+  --ios26-line-height-large-title: 41px;
+  --ios26-tracking-large-title: 0.4px;
+  --ios26-font-weight-large-title: 400;
+
+  --ios26-font-size-title-1: 28px;
+  --ios26-line-height-title-1: 34px;
+  --ios26-tracking-title-1: 0.38px;
+  --ios26-font-weight-title-1: 400;
+
+  --ios26-font-size-title-2: 22px;
+  --ios26-line-height-title-2: 28px;
+  --ios26-tracking-title-2: -0.26px;
+  --ios26-font-weight-title-2: 400;
+
+  --ios26-font-size-title-3: 20px;
+  --ios26-line-height-title-3: 25px;
+  --ios26-tracking-title-3: -0.45px;
+  --ios26-font-weight-title-3: 400;
+
+  --ios26-font-size-headline: 17px;
+  --ios26-line-height-headline: 22px;
+  --ios26-tracking-headline: -0.43px;
+  --ios26-font-weight-headline: 590;
+
+  --ios26-font-size-body: 17px;
+  --ios26-line-height-body: 22px;
+  --ios26-tracking-body: -0.43px;
+  --ios26-font-weight-body: 400;
+
+  --ios26-font-size-callout: 16px;
+  --ios26-line-height-callout: 21px;
+  --ios26-tracking-callout: -0.31px;
+
+  --ios26-font-size-subheadline: 15px;
+  --ios26-line-height-subheadline: 20px;
+  --ios26-tracking-subheadline: -0.23px;
+
+  --ios26-font-size-footnote: 13px;
+  --ios26-line-height-footnote: 18px;
+  --ios26-tracking-footnote: -0.08px;
+
+  --ios26-font-size-caption-1: 12px;
+  --ios26-line-height-caption-1: 16px;
+  --ios26-tracking-caption-1: 0.00px;
+
+  --ios26-font-size-caption-2: 11px;
+  --ios26-line-height-caption-2: 13px;
+  --ios26-tracking-caption-2: 0.06px;
+
+  /* ==========================================================================
+     3. 玻璃材质与折射参数 (Materials & Liquid Glass Parameters)
+     ========================================================================== */
+  /* 材质分量由文件顶部的 $ios26-materials 生成，勿在此单独修改 */
+  @each $name, $m in $ios26-materials {
+    --ios26-material-#{$name}-blur: blur(#{map-get($m, blur)});
+    --ios26-material-#{$name}-blur-blend: #{map-get($m, blur-blend)};
+    --ios26-material-#{$name}-tint: #{map-get($m, tint)};
+    @if map-get($m, highlight) {
+      --ios26-material-#{$name}-highlight: #{map-get($m, highlight)};
+      --ios26-material-#{$name}-highlight-blend: #{map-get($m, highlight-blend)};
+    }
+  }
+  
+  /* iOS 26 Liquid Glass - Large（浅色模式，节点 48:33721）
+     注意方向：模糊层用 hard-light 叠的是「暗色」rgba(0,0,0,0.08)，不是白色；
+     下层底色是 #0f0f0f 经 color-dodge 后压 rgba(250,250,250,0.6)。
+     纯白方案无法还原。另有 26px 外扩 + SVG 亮度遮罩做边缘衰减（遮罩素材需单独导出）。 */
+  --ios26-liquid-backdrop: blur(40px);
+  --ios26-liquid-blur-blend: hard-light;
+  --ios26-liquid-blur-tint: rgba(0, 0, 0, 0.08);
+  --ios26-liquid-blur-outset: 26px;
+  --ios26-liquid-fill-base: #0f0f0f;
+  --ios26-liquid-fill-blend: color-dodge;
+  --ios26-liquid-fill-overlay: rgba(250, 250, 250, 0.6);
+  --ios26-liquid-radius: 34px;
+  --ios26-liquid-bg-fallback: rgba(255, 255, 255, 0.78);
+
+  /* 滚动边缘效果。源文件以 CSS 变量暴露该半径（默认 10px），
+     soft 变体取它的一半作为容器模糊。 */
+  --ios26-scroll-edge-effect-blur-radius: 10px;
+
+  /* ⚠️ 以下四个不是 iOS 26 令牌 —— 源文件中不存在投影体系。
+     已查验 11 个组件/整屏（Dock、小组件、搜索框、快捷操作菜单、控制中心、
+     锁屏控件、整屏 Home Screen 等）全部零投影。iOS 26 的层级靠玻璃材质 +
+     模糊光晕（Dock / 锁屏控件 / 搜索框上那个 blur(30px) 遮罩环）表达。
+     这组仅供网页场景在玻璃与背景对比不足时兜底，可按需删除。 */
+  --ios26-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0.5px 1.5px rgba(0, 0, 0, 0.03);
+  --ios26-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+  --ios26-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --ios26-shadow-dock: 0 20px 50px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06);
+
+  /* 源文件中真实存在的两处阴影 */
+  --ios26-shadow-app-icon-label: 0 2px 25px #000000;
+  --ios26-shadow-lg-small-preferred: 0 0 2px rgba(0, 0, 0, 0.1), 0 1px 8px rgba(0, 0, 0, 0.12);
+
+  /* ==========================================================================
+     4. 连续圆角（已对 Figma 节点逐一校验，标注见行尾）
+     ========================================================================== */
+  --ios26-radius-icon: 5.25px;          /* 已校验：Launch Pad 图标 21px × 25% */
+  --ios26-radius-xs: 6px;               /* 未校验 */
+  --ios26-radius-sm: 10px;              /* 未校验 */
+  --ios26-radius-control: 12px;         /* 已校验：Launch Pad，节点 48:35568 */
+  --ios26-radius-md: 14px;              /* 未校验 */
+  --ios26-radius-modal: 26px;           /* 未校验 */
+  --ios26-radius-card: 30px;            /* 已校验：_HSQA - BG，节点 48:34682 */
+  --ios26-radius-widget: 28px;          /* 已校验：主屏小组件，节点 48:35623 */
+  --ios26-radius-container: 34px;       /* 已校验：Liquid Glass Large/Medium + Squircle 遮罩 88px */
+  --ios26-radius-dock: 38px;            /* 已校验：Dock 玻璃层，节点 48:35586（原值 38.5px 有误） */
+  --ios26-radius-dock-container: 42px;  /* 已校验：Dock 外层容器，同节点 */
+  --ios26-radius-pill: 1000px;          /* 已校验：Liquid Glass Small */
+
+  /* ==========================================================================
+     5. 间距体系 (4pt / 8pt Grid Spacing)
+     ========================================================================== */
+  --ios26-space-4: 4px;
+  --ios26-space-8: 8px;
+  --ios26-space-12: 12px;
+  --ios26-space-16: 16px;
+  --ios26-space-20: 20px;
+  --ios26-space-24: 24px;
+  --ios26-space-32: 32px;
+  --ios26-space-40: 40px;
+  --ios26-space-48: 48px;
+
+  /* ==========================================================================
+     6. 动效模型 (CASpringAnimation: mass=1.0, stiffness=180, damping=22)
+     ========================================================================== */
+  --ios26-spring-standard: cubic-bezier(0.25, 1, 0.33, 1);
+  --ios26-spring-snappy: cubic-bezier(0.18, 0.89, 0.32, 1.15);
+  --ios26-spring-bouncy: cubic-bezier(0.34, 1.35, 0.45, 1);
+
+  --ios26-duration-fast: 200ms;
+  --ios26-duration-normal: 320ms;
+  --ios26-duration-slow: 450ms;
+}
+
+/* ==========================================================================
+   iOS 26 材质混合宏 (Material Mixins)
+   ========================================================================== */
+
+/// 渲染一种 iOS 26 材质（Figma 节点 48:33518 的真实双层结构）。
+///
+/// 层序自下而上：高光层 → 模糊层。模糊层同时承载 backdrop-filter、色调与混合模式。
+///
+/// ⚠️ 本容器**绝不能创建层叠上下文** —— 不要给它加 transform / opacity /
+///    filter / isolation / 自身 z-index，也别套在带这些属性的祖先里。
+///    CSS 规定任何层叠上下文都构成「隔离组」，会拦住 mix-blend-mode，
+///    使 color-dodge 退化为普通半透明叠加，玻璃失去通透感。
+///    实测（620×440 壁纸样本，与 Figma 渲染图逐像素比对）：
+///      正确结构 |Δ| = 4；加了 transform 后 |Δ| = 17；纯模糊无混合 |Δ| = 39。
+///    这也是旧版用 transform: translateZ(0) “加速”反而劣化的原因。
+///
+/// 代价：伪元素占用正 z-index，直接子元素会被盖住，故在末尾统一抬升。
+///
+/// $style  : ultrathin | thin | regular | thick | chrome
+/// $radius : 圆角，默认容器级 34px
+@mixin ios26-material($style: regular, $radius: var(--ios26-radius-container)) {
+  $m: map-get($ios26-materials, $style);
+  @if $m == null {
+    @error "ios26-material: 未知材质 `#{$style}`，可选 #{map-keys($ios26-materials)}";
+  }
+
+  position: relative;
+  border-radius: $radius;
+  overflow: hidden;
+
+  // 模糊层（上）：背景模糊 + 色调 + 混合
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    backdrop-filter: blur(#{map-get($m, blur)});
+    -webkit-backdrop-filter: blur(#{map-get($m, blur)});
+    background: map-get($m, tint);
+    mix-blend-mode: map-get($m, blur-blend);
+    pointer-events: none;
+  }
+
+  // 高光层（下）—— Chrome 没有这一层
+  @if map-get($m, highlight) {
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      background: map-get($m, highlight);
+      mix-blend-mode: map-get($m, highlight-blend);
+      pointer-events: none;
+    }
+  }
+
+  // 把直接子元素抬到玻璃层之上。用 :where() 保持零特异性，便于按需覆盖。
+  > :where(*) {
+    position: relative;
+    z-index: 3;
+  }
+}
+
+/// 悬浮 Dock 玻璃壳。Figma 节点 48:35586 的真实配方：
+/// 模糊层（30px / hard-light / 黑 40%）+ 玻璃层（黑 20% / screen）。
+/// 圆角是分层的：玻璃层 38px，外层容器 42px。
+/// 同样受 ios26-material 的层叠上下文约束 —— 本容器不得创建层叠上下文。
+@mixin ios26-glass-dock($radius: var(--ios26-radius-dock)) {
+  position: relative;
+  border-radius: var(--ios26-radius-dock-container);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: $radius;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    background: rgba(0, 0, 0, 0.4);
+    mix-blend-mode: hard-light;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: $radius;
+    background: rgba(0, 0, 0, 0.2);
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  > :where(*) {
+    position: relative;
+    z-index: 3;
+  }
+}
+
+/// 快捷操作背景 (_HSQA - BG)。Figma 节点 48:34682 的 Brighten 四层叠加。
+/// 源文件用的是 rgba(255,255,0,0.3) + saturation —— 抽取饱和度的技巧，
+/// 换成灰色会得到不同结果，不要「顺手改合理」。
+/// 多层填充用 background-blend-mode 表达，顺序与 Figma 填充栈一致（CSS 首层在最上）。
+@mixin ios26-quick-action-bg($radius: var(--ios26-radius-card)) {
+  position: relative;
+  border-radius: $radius;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px 0 1px 0;
+    z-index: 1;
+    border-radius: $radius;
+    background:
+      linear-gradient(#1a1a1a, #1a1a1a),
+      linear-gradient(#e6e6e6, #e6e6e6),
+      linear-gradient(rgba(255, 255, 0, 0.3), rgba(255, 255, 0, 0.3)),
+      linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5));
+    background-blend-mode: plus-lighter, darken, saturation, normal;
+    pointer-events: none;
+  }
+
+  > :where(*) {
+    position: relative;
+    z-index: 3;
+  }
+}
+
+/// 滚动边缘效果。源文件暴露了 --scroll-edge-effect-blur-radius（默认 10px），
+/// soft 变体以该值的一半作为容器模糊。
+/// 注：soft 在源文件里还叠了一层 SVG alpha 遮罩做边缘衰减，素材未能取回，
+/// 此处只落地可复现的部分。
+@mixin ios26-scroll-edge-effect($variant: soft) {
+  @if $variant == soft {
+    position: relative;
+    backdrop-filter: blur(calc(var(--ios26-scroll-edge-effect-blur-radius, 10px) / 2));
+    -webkit-backdrop-filter: blur(calc(var(--ios26-scroll-edge-effect-blur-radius, 10px) / 2));
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      background: #000;
+      mix-blend-mode: screen;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    > :where(*) {
+      position: relative;
+      z-index: 3;
+    }
+  } @else {
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    background: #fff;
+    mix-blend-mode: multiply;
+    border-top: 1px solid var(--ios26-separator-non-opaque);
+  }
+}
+
+/* ==========================================================================
+   可复用核心玻璃组件样式类 (Reusable Component Classes)
+   ========================================================================== */
+
+/* 1. 导航栏。iOS 26 的导航栏贴滚动内容时用的是滚动边缘效果，
+      常规栏用 regular 材质；需要贴边衰减时改用 .glass-scroll-edge-* 类。 */
+.glass-navbar,
+.ios26-glass-navbar {
+  @include ios26-material(regular, 0);
+  border-bottom: 0.5px solid var(--ios26-separator-non-opaque);
+  transition: all var(--ios26-duration-normal) var(--ios26-spring-standard);
+}
+
+/* 2. 卡片容器 (对齐 Figma _HSQA - BG 的 30px 真实圆角)。
+      源文件里卡片背景是独立的四层 Brighten 配方、不属于五种材质，
+      故此处用 regular 材质；需要那套 Brighten 时叠加 .glass-quick-action。 */
+.glass-card,
+.liquid-glass-card,
+.ios26-glass-card {
+  @include ios26-material(regular, var(--ios26-radius-card));
+  box-shadow: var(--ios26-shadow-md);
+  padding: var(--ios26-space-20);
+  transition: box-shadow var(--ios26-duration-normal) var(--ios26-spring-standard);
+
+  // 注意：这里不能做 transform 位移或加 will-change: transform ——
+  // 二者都会创建层叠上下文、隔离玻璃的混合模式（实测 |Δ| 从 4 恶化到 19）。
+  // 悬停反馈只用 box-shadow / outline 这类不建层叠上下文的属性。
+  &:hover {
+    box-shadow: var(--ios26-shadow-lg);
+  }
+}
+
+/* 3. 悬浮 Dock（对齐 Figma 节点 48:35586：玻璃层 38px / 外层容器 42px） */
+.glass-dock,
+.ios26-glass-dock {
+  @include ios26-glass-dock();
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ios26-space-12);
+  padding: var(--ios26-space-8) var(--ios26-space-16);
+  box-shadow: var(--ios26-shadow-dock);
+  transition: transform var(--ios26-duration-normal) var(--ios26-spring-snappy);
+}
+
+/* 4. 液态高光微质感按钮 (含触感微按压) */
+.glass-button,
+.ios26-glass-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ios26-space-8);
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-subheadline);
+  font-weight: 500;
+  padding: 8px 16px;
+  color: var(--ios26-label-primary);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.58) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: var(--ios26-radius-md);
+  border: 0.5px solid rgba(255, 255, 255, 0.80);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  user-select: none;
+  transition: transform var(--ios26-duration-fast) var(--ios26-spring-snappy),
+              background var(--ios26-duration-fast) ease,
+              box-shadow var(--ios26-duration-fast) ease;
+
+  &:hover {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.75) 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 1px 1px #FFFFFF;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.96);
+    background: rgba(240, 240, 245, 0.88);
+  }
+
+  // 注：本按钮的尺寸与状态派生值未对 Figma 核实；
+  // 仅基色改为已校验的系统蓝（#0088ff，iOS 26 已非 #007AFF）。
+  &.is-primary {
+    color: #FFFFFF;
+    background: linear-gradient(180deg, #1a93ff 0%, var(--ios26-color-blue) 100%);
+    border: 0.5px solid rgba(255, 255, 255, 0.40);
+    box-shadow: 0 4px 14px rgba(0, 136, 255, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.55);
+
+    &:hover {
+      background: linear-gradient(180deg, #1C8DFF 0%, #0071EB 100%);
+      box-shadow: 0 6px 18px rgba(0, 122, 255, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.65);
+    }
+
+    &:active {
+      transform: scale(0.96);
+      background: #0062CC;
+    }
+  }
+}
+
+/* 5. 模态弹窗 / 浮层表单 */
+.glass-sheet,
+.glass-dialog,
+.ios26-glass-dialog {
+  @include ios26-material(thick, var(--ios26-radius-modal));
+  box-shadow: var(--ios26-shadow-lg);
+}
+
+/* 6. 快捷操作背景（对齐 Figma 节点 48:34682 的四层 Brighten 配方） */
+.glass-quick-action,
+.ios26-glass-quick-action {
+  @include ios26-quick-action-bg();
+}
+
+/* 7. 滚动边缘效果（对齐 Figma 节点 48:33697 / 48:33701） */
+.glass-scroll-edge-soft {
+  @include ios26-scroll-edge-effect(soft);
+}
+
+.glass-scroll-edge-hard {
+  @include ios26-scroll-edge-effect(hard);
+}
+
+/* ==========================================================================
+   排印工具类 (Typography Utility Classes - 精确至 0.01px Tracking)
+   ========================================================================== */
+.ios26-text-large-title {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-large-title);
+  line-height: var(--ios26-line-height-large-title);
+  letter-spacing: var(--ios26-tracking-large-title);
+  font-weight: var(--ios26-font-weight-large-title);
+  color: var(--ios26-label-primary);
+}
+
+.ios26-text-title-1 {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-title-1);
+  line-height: var(--ios26-line-height-title-1);
+  letter-spacing: var(--ios26-tracking-title-1);
+  font-weight: var(--ios26-font-weight-title-1);
+  color: var(--ios26-label-primary);
+}
+
+.ios26-text-title-2 {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-title-2);
+  line-height: var(--ios26-line-height-title-2);
+  letter-spacing: var(--ios26-tracking-title-2);
+  font-weight: var(--ios26-font-weight-title-2);
+  color: var(--ios26-label-primary);
+}
+
+.ios26-text-title-3 {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-title-3);
+  line-height: var(--ios26-line-height-title-3);
+  letter-spacing: var(--ios26-tracking-title-3);
+  font-weight: var(--ios26-font-weight-title-3);
+  color: var(--ios26-label-primary);
+}
+
+.ios26-text-headline {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-headline);
+  line-height: var(--ios26-line-height-headline);
+  letter-spacing: var(--ios26-tracking-headline);
+  font-weight: var(--ios26-font-weight-headline);
+  color: var(--ios26-label-primary);
+}
+
+.ios26-text-body {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-body);
+  line-height: var(--ios26-line-height-body);
+  letter-spacing: var(--ios26-tracking-body);
+  font-weight: 400;
+  color: var(--ios26-label-primary);
+}
+
+.ios26-text-callout {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-callout);
+  line-height: var(--ios26-line-height-callout);
+  letter-spacing: var(--ios26-tracking-callout);
+  font-weight: 400;
+  color: var(--ios26-label-secondary);
+}
+
+.ios26-text-subheadline {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-subheadline);
+  line-height: var(--ios26-line-height-subheadline);
+  letter-spacing: var(--ios26-tracking-subheadline);
+  font-weight: 400;
+  color: var(--ios26-label-secondary);
+}
+
+.ios26-text-footnote {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-footnote);
+  line-height: var(--ios26-line-height-footnote);
+  letter-spacing: var(--ios26-tracking-footnote);
+  font-weight: 400;
+  color: var(--ios26-label-tertiary);
+}
+
+.ios26-text-caption-1 {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-caption-1);
+  line-height: var(--ios26-line-height-caption-1);
+  letter-spacing: var(--ios26-tracking-caption-1);
+  font-weight: 400;
+  color: var(--ios26-label-tertiary);
+}
+
+.ios26-text-caption-2 {
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-caption-2);
+  line-height: var(--ios26-line-height-caption-2);
+  letter-spacing: var(--ios26-tracking-caption-2);
+  font-weight: 400;
+  color: var(--ios26-label-quaternary);
+}
+
+/* ==========================================================================
+   动效关键帧与微交互 (Motion Keyframes & Mixins)
+   ========================================================================== */
+@keyframes ios26-sheet-spring-in {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.006);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1.0);
+  }
+}
+
+.ios26-spring-sheet-enter {
+  animation: ios26-sheet-spring-in var(--ios26-duration-slow) var(--ios26-spring-bouncy) forwards;
+}
+
+@mixin ios26-tactile-press {
+  transform: scale(1.0);
+  transition: transform var(--ios26-duration-fast) var(--ios26-spring-snappy),
+              filter var(--ios26-duration-fast) ease;
+  will-change: transform;
+
+  &:active {
+    transform: scale(0.96);
+    filter: brightness(0.97);
+  }
+}
+
+.ios26-pressable {
+  @include ios26-tactile-press;
+}
