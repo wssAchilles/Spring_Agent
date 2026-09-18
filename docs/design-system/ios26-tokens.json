@@ -1,0 +1,272 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "Apple iOS 26 Design Tokens (Light Mode)",
+  "version": "4.0.0",
+  "description": "Extracted from the Figma file 'Apple iOS 26 Library (Community)'. Sections under $verification.verifiedAgainstFigma were read from live Figma node data — do not round or approximate them.",
+  "$verification": {
+    "date": "2026-09-18",
+    "sourceFile": "dHJNjVZenNWLC0hIPmCse4",
+    "verifiedAgainstFigma": [
+      "color.system (12) / color.gray (8) / color.label (4) / color.background (3+3) — Colors page, nodes 48:32457 / 48:32454 / 48:32455 / 48:32452",
+      "color.fill.vibrant (3) / color.separator (2) / color.vibrantLabel (4) — material sample frame 48:33647 and Separators group 48:32456",
+      "typography.scale (base = Large/Default, node 48:33201)",
+      "typography.dynamicType — all 7 size classes (nodes 48:33237 xSmall / 48:33225 Small / 48:33213 Medium / 48:33201 Large / 48:33189 xLarge / 48:33177 xxLarge / 48:33165 xxxLarge)",
+      "material (5 styles, node 48:33518)",
+      "liquidGlass large/medium/small — nodes 48:33721 / 48:33734 / 48:33747 / 48:33760",
+      "scrollEdgeEffect — nodes 48:33697 (soft) / 48:33701 (hard)",
+      "component.dock — node 48:35586; component.launchPad — node 48:35568; component.quickActionBackground — node 48:34682",
+      "borderRadius — 30 / 34 / 38 / 42 / 28 / 12 / 5.25px all confirmed against the nodes above",
+      "shadow — investigated across 11 components/screens; the library carries elevation with glass materials plus a blur(30px) masked halo, not drop shadows. Only two shadows exist (app-icon label text-shadow; Liquid Glass Small selected state). Node 48:35623 also supplied the widget radius 28px."
+    ],
+    "notYetVerified": [
+      "color.fill — only the Vibrant Fills family was found; a non-vibrant fills family was never located",
+      "motion.* — never read from Figma; the four pages in scope are symbol-definition pages and carry no prototype data",
+      "spacing scale — only per-component values observed; no global grid was established"
+    ]
+  },
+  "color": {
+    "system": {
+      "$note": "iOS 26 refreshed these. 9 of 12 differ from the classic Apple HIG values (#007AFF blue, #FF3B30 red, #FF9500 orange, #AF52DE purple, #5856D6 indigo, #30B0C7 teal, #32ADE6 cyan, #00C7BE mint, #A2845E brown).",
+      "red": { "value": "#ff383c", "type": "color" },
+      "orange": { "value": "#ff8d28", "type": "color" },
+      "yellow": { "value": "#ffcc00", "type": "color" },
+      "green": { "value": "#34c759", "type": "color" },
+      "mint": { "value": "#00c8b3", "type": "color" },
+      "teal": { "value": "#00c3d0", "type": "color" },
+      "cyan": { "value": "#00c0e8", "type": "color" },
+      "blue": { "value": "#0088ff", "type": "color" },
+      "indigo": { "value": "#6155f5", "type": "color" },
+      "purple": { "value": "#cb30e0", "type": "color" },
+      "pink": { "value": "#ff2d55", "type": "color" },
+      "brown": { "value": "#ac7f5e", "type": "color" }
+    },
+    "gray": {
+      "1": { "value": "#8e8e93", "type": "color" },
+      "2": { "value": "#aeaeb2", "type": "color" },
+      "3": { "value": "#c7c7cc", "type": "color" },
+      "4": { "value": "#d1d1d6", "type": "color" },
+      "5": { "value": "#e5e5ea", "type": "color" },
+      "6": { "value": "#f2f2f7", "type": "color" },
+      "note": "Source names these grays/black, grays/gray, grays/gray-2 … grays/gray-6, grays/white."
+    },
+    "label": {
+      "primary": { "value": "#000000", "type": "color" },
+      "secondary": { "value": "rgba(60, 60, 67, 0.6)", "type": "color" },
+      "tertiary": { "value": "rgba(60, 60, 67, 0.3)", "type": "color" },
+      "quaternary": { "value": "rgba(60, 60, 67, 0.18)", "type": "color" }
+    },
+    "background": {
+      "primary": { "value": "#ffffff", "type": "color" },
+      "secondary": { "value": "#f2f2f7", "type": "color" },
+      "tertiary": { "value": "#ffffff", "type": "color" },
+      "groupedPrimary": { "value": "#f2f2f7", "type": "color" },
+      "groupedSecondary": { "value": "#ffffff", "type": "color" },
+      "groupedTertiary": { "value": "#f2f2f7", "type": "color" }
+    },
+    "fill": {
+      "vibrant": {
+        "primary": { "value": "#cccccc", "type": "color" },
+        "secondary": { "value": "#e0e0e0", "type": "color" },
+        "tertiary": { "value": "#ededed", "type": "color" }
+      },
+      "$note": "Read from the material sample frame 48:33647, where they appear as the named Figma styles 'Vibrant Fills/Light/Vibrant Primary | Secondary | Tertiary'. These are the fills used on top of materials.",
+      "$unverified": "A non-vibrant fills family (fill.primary … quaternary) was never located in this file. Do NOT assume the classic rgba(120,120,128,a) values. The Colors page Fills group (48:32453) cannot supply them: its swatches render a letter glyph over a 2-colour transparency checkerboard (#212121/#000000 and #E5E5E5/#FFFFFF), which physically contains no fill data."
+    },
+    "separator": {
+      "nonOpaque": { "value": "rgba(0, 0, 0, 0.12)", "type": "color" },
+      "opaque": { "value": "#c6c6c8", "type": "color" },
+      "$note": "Confirmed twice, independently: the separator line inside the material sample (node 48:33651) and the Separators swatch group (node 48:32456). The previously documented nonOpaque value rgba(60,60,67,0.29) was WRONG."
+    },
+    "vibrantLabel": {
+      "$note": "Label colours for text placed ON a material (node 48:33647). Distinct from color.label.*, which are for plain backgrounds. Source style names: 'Vibrant Labels/Light/Vibrant Primary … Quaternary'.",
+      "primary": { "value": "#000000", "type": "color" },
+      "secondary": { "value": "#3d3d3d", "type": "color" },
+      "tertiary": { "value": "rgba(80, 80, 80, 0.7)", "type": "color" },
+      "quaternary": { "value": "rgba(72, 72, 72, 0.6)", "type": "color" }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "system": { "value": "system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'SF Pro', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif", "type": "fontFamily" }
+    },
+    "$notes": [
+      "Figma family is 'SF Pro' with fontVariationSettings '\"wdth\" 100'.",
+      "Headline is the only style not at weight 400 — it is 590 (Semibold), not 600.",
+      "Tracking follows Apple's optical correction: positive at the smallest sizes, negative through the mid range, positive again at the largest."
+    ],
+    "scale": {
+      "$note": "Base = the Large (Default) Dynamic Type column, node 48:33201.",
+      "largeTitle": { "fontSize": { "value": "34px" }, "lineHeight": { "value": "41px" }, "letterSpacing": { "value": "0.40px" }, "fontWeight": { "value": "400" } },
+      "title1": { "fontSize": { "value": "28px" }, "lineHeight": { "value": "34px" }, "letterSpacing": { "value": "0.38px" }, "fontWeight": { "value": "400" } },
+      "title2": { "fontSize": { "value": "22px" }, "lineHeight": { "value": "28px" }, "letterSpacing": { "value": "-0.26px" }, "fontWeight": { "value": "400" } },
+      "title3": { "fontSize": { "value": "20px" }, "lineHeight": { "value": "25px" }, "letterSpacing": { "value": "-0.45px" }, "fontWeight": { "value": "400" } },
+      "headline": { "fontSize": { "value": "17px" }, "lineHeight": { "value": "22px" }, "letterSpacing": { "value": "-0.43px" }, "fontWeight": { "value": "590" } },
+      "body": { "fontSize": { "value": "17px" }, "lineHeight": { "value": "22px" }, "letterSpacing": { "value": "-0.43px" }, "fontWeight": { "value": "400" } },
+      "callout": { "fontSize": { "value": "16px" }, "lineHeight": { "value": "21px" }, "letterSpacing": { "value": "-0.31px" }, "fontWeight": { "value": "400" } },
+      "subheadline": { "fontSize": { "value": "15px" }, "lineHeight": { "value": "20px" }, "letterSpacing": { "value": "-0.23px" }, "fontWeight": { "value": "400" } },
+      "footnote": { "fontSize": { "value": "13px" }, "lineHeight": { "value": "18px" }, "letterSpacing": { "value": "-0.08px" }, "fontWeight": { "value": "400" } },
+      "caption1": { "fontSize": { "value": "12px" }, "lineHeight": { "value": "16px" }, "letterSpacing": { "value": "0.00px" }, "fontWeight": { "value": "400" } },
+      "caption2": { "fontSize": { "value": "11px" }, "lineHeight": { "value": "13px" }, "letterSpacing": { "value": "0.06px" }, "fontWeight": { "value": "400" } }
+    },
+    "dynamicType": {
+      "$note": "All 7 size classes verified. Headline is 590 in every column; every other style is 400.",
+      "$format": "fontSize/lineHeight/letterSpacing (px)",
+      "xSmall": {
+        "largeTitle": "31/38/+0.37", "title1": "25/31/+0.15", "title2": "19/23/-0.45", "title3": "17/22/-0.43",
+        "headline": "14/19/-0.15", "body": "14/19/-0.15", "callout": "13/18/-0.08", "subheadline": "12/16/0",
+        "footnote": "12/16/0", "caption1": "11/13/+0.06", "caption2": "11/13/+0.06"
+      },
+      "small": {
+        "largeTitle": "32/39/+0.41", "title1": "26/32/+0.22", "title2": "20/24/-0.45", "title3": "18/23/-0.44",
+        "headline": "15/20/-0.23", "body": "15/20/-0.23", "callout": "14/19/-0.15", "subheadline": "13/18/-0.08",
+        "footnote": "12/16/0", "caption1": "11/13/+0.06", "caption2": "11/13/+0.06"
+      },
+      "medium": {
+        "largeTitle": "33/40/+0.40", "title1": "27/33/+0.29", "title2": "21/28/-0.36", "title3": "19/24/-0.45",
+        "headline": "16/21/-0.31", "body": "16/21/-0.31", "callout": "15/20/-0.23", "subheadline": "14/19/-0.15",
+        "footnote": "12/16/0", "caption1": "11/13/+0.06", "caption2": "11/13/+0.06"
+      },
+      "large": {
+        "largeTitle": "34/41/+0.40", "title1": "28/34/+0.38", "title2": "22/28/-0.26", "title3": "20/25/-0.45",
+        "headline": "17/22/-0.43", "body": "17/22/-0.43", "callout": "16/21/-0.31", "subheadline": "15/20/-0.23",
+        "footnote": "13/18/-0.08", "caption1": "12/16/0", "caption2": "11/13/+0.06"
+      },
+      "xLarge": {
+        "largeTitle": "36/43/+0.37", "title1": "30/36/+0.40", "title2": "24/30/+0.07", "title3": "22/28/0",
+        "headline": "19/24/-0.45", "body": "19/24/-0.45", "callout": "18/23/-0.44", "subheadline": "17/22/-0.43",
+        "footnote": "15/20/-0.23", "caption1": "14/19/-0.15", "caption2": "13/18/-0.08"
+      },
+      "xxLarge": {
+        "largeTitle": "38/46/+0.37", "title1": "32/39/+0.41", "title2": "26/32/+0.22", "title3": "24/30/+0.07",
+        "headline": "21/26/-0.36", "body": "21/26/-0.36", "callout": "20/24/-0.45", "subheadline": "19/24/-0.45",
+        "footnote": "17/22/-0.43", "caption1": "16/21/-0.31", "caption2": "15/20/-0.23"
+      },
+      "xxxLarge": {
+        "largeTitle": "40/48/+0.37", "title1": "34/41/+0.40", "title2": "28/34/+0.38", "title3": "26/32/+0.22",
+        "headline": "23/29/-0.10", "body": "23/29/-0.10", "callout": "22/28/-0.26", "subheadline": "21/28/-0.36",
+        "footnote": "19/24/-0.45", "caption1": "18/23/-0.44", "caption2": "17/22/-0.43"
+      }
+    }
+  },
+  "material": {
+    "$notes": [
+      "Every material is TWO stacked layers, not one translucent fill: (1) a highlight fill, then (2) a backdrop-blur layer carrying its own tint and blend mode.",
+      "Blur radius is a flat 50px across Ultrathin/Thin/Regular/Thick — NOT a 20/25/30/40 progression.",
+      "There is no saturate() in the source. The lift comes from color-dodge blending.",
+      "Chrome is the only single-layer material.",
+      "Layer order is as observed in Figma's generated output; confirm visually before shipping."
+    ],
+    "ultrathin": { "highlightFill": "rgba(255,255,255,0.07)", "highlightBlendMode": "normal", "blurRadius": "50px", "blurBlendMode": "color-dodge", "blurTint": "rgba(255,255,255,0.03)" },
+    "thin": { "highlightFill": "rgba(255,255,255,0.05)", "highlightBlendMode": "normal", "blurRadius": "50px", "blurBlendMode": "color-dodge", "blurTint": "rgba(255,255,255,0.4)" },
+    "regular": { "highlightFill": "rgba(255,255,255,0.25)", "highlightBlendMode": "plus-lighter", "blurRadius": "50px", "blurBlendMode": "color-dodge", "blurTint": "rgba(255,255,255,0.6)" },
+    "thick": { "highlightFill": "rgba(255,255,255,0.34)", "highlightBlendMode": "plus-lighter", "blurRadius": "50px", "blurBlendMode": "color-dodge", "blurTint": "rgba(255,255,255,0.84)" },
+    "chrome": { "blurRadius": "25px", "blurBlendMode": "hard-light", "blurTint": "rgba(255,255,255,0.75)" }
+  },
+  "liquidGlass": {
+    "$shared": {
+      "blurOutset": "26px",
+      "blurLayerOpacity": "0.67",
+      "mask": "The blur layer extends 26px past the container and is masked by an SVG luminance mask producing the soft edge falloff — this is what reads as 'liquid' rather than as a plain frosted panel. The mask asset must be exported separately."
+    },
+    "large": {
+      "radius": "34px", "blurRadius": "40px", "blurBlendMode": "hard-light", "blurTint": "rgba(0,0,0,0.08)",
+      "fillBase": "#0f0f0f", "fillBlendMode": "color-dodge", "fillOverlay": "rgba(250,250,250,0.6)"
+    },
+    "medium": {
+      "radius": "34px", "blurRadius": "40px", "blurBlendMode": "hard-light", "blurTint": "rgba(0,0,0,0.08)",
+      "fillBase": "#0f0f0f", "fillBlendMode": "color-dodge", "fillOverlay": "rgba(245,245,245,0.4)",
+      "$note": "Identical to large except fillOverlay alpha (0.4 vs 0.6)."
+    },
+    "small": {
+      "radius": "1000px (pill)", "blurRadius": "20px", "blurBlendMode": "hard-light",
+      "bright": {
+        "blurTint": "rgba(0,0,0,0.04)",
+        "defaultFill": "#333 + color-dodge, gradient rgb(247,247,247) + rgba(255,255,255,0.5)"
+      },
+      "dim": {
+        "blurTint": "rgba(255,255,255,0.05)",
+        "defaultFill": "rgba(204,204,204,0.5) + color-burn, gradient rgba(255,255,255,0.06) + rgba(0,0,0,0.6)",
+        "glassEffect": "rgba(0,0,0,0.2) + screen"
+      },
+      "preferredTint": {
+        "$note": "Both contexts share this; the accent is the system blue.",
+        "shadow": "0 0 2px rgba(0,0,0,0.1), 0 1px 8px rgba(0,0,0,0.12)",
+        "layers": ["rgba(255,255,255,0.5)", "white + saturation", "#999 + overlay", "#0091ff"]
+      }
+    },
+    "scrollEdgeEffect": {
+      "$note": "Apple exposes --scroll-edge-effect-blur-radius (default 10px); the soft variant blurs at half that value.",
+      "soft": {
+        "containerBlur": "calc(var(--scroll-edge-effect-blur-radius, 10px) / 2)",
+        "layer": "backdrop-blur(30px) + bg-black + mix-blend-screen + opacity 0.9 + SVG alpha mask"
+      },
+      "hard": {
+        "layer": "backdrop-blur(30px) + bg-white + mix-blend-multiply + 1px top border (separators/non-opaque)"
+      }
+    }
+  },
+  "component": {
+    "$note": "Recipes read from the Symbols page. These validate the implementation the existing guide describes.",
+    "dock": {
+      "node": "48:35586 (_Dock - iPhone)",
+      "containerRadius": "42px",
+      "glassRadius": "38px",
+      "blurLayer": { "blurRadius": "30px", "blendMode": "hard-light", "tint": "rgba(0,0,0,0.4)", "opacity": "0.67", "mask": "SVG luminance" },
+      "glassEffect": { "fill": "rgba(0,0,0,0.2)", "blendMode": "screen" },
+      "padding": "17px horizontal, 19px top, 17px bottom",
+      "appIconSlot": "66px", "appIcon": "64px"
+    },
+    "launchPad": {
+      "node": "48:35568",
+      "radius": "12px",
+      "backgroundLayers": [
+        { "size": "60x45", "fill": "#0f0f0f", "blendMode": "plus-lighter", "backdropBlur": "40px", "highlight": "rgba(255,255,255,0.45)" },
+        { "size": "52x53", "fill": "#232323", "blendMode": "plus-lighter", "backdropBlur": "40px", "highlight": "rgba(255,255,255,0.45)", "opacity": "0.75" },
+        { "size": "60x61", "fill": "#252525", "blendMode": "plus-lighter", "backdropBlur": "40px", "highlight": "rgba(255,255,255,0.45)" }
+      ],
+      "icon": "21px with 5.25px radius (25% ratio)", "iconGap": "3.5px"
+    },
+    "quickActionBackground": {
+      "node": "48:34682 (_HSQA - BG, Light)",
+      "radius": "30px",
+      "brightenLayers": [
+        "rgba(255,255,255,0.5)",
+        "rgba(255,255,0,0.3) + saturation",
+        "#e6e6e6 + darken",
+        "#1a1a1a + plus-lighter"
+      ]
+    }
+  },
+  "borderRadius": {
+    "icon": { "value": "5.25px", "note": "21px launch-pad icon — 25% ratio" },
+    "control": { "value": "12px", "note": "VERIFIED — launch pad, node 48:35568" },
+    "widget": { "value": "28px", "note": "VERIFIED — home-screen widget, node 48:35623" },
+    "card": { "value": "30px", "note": "VERIFIED — _HSQA - BG, node 48:34682" },
+    "container": { "value": "34px", "note": "VERIFIED — liquid glass large/medium, squircle mask" },
+    "dockGlass": { "value": "38px", "note": "VERIFIED — dock blur/glass layers, node 48:35586. The previous value 38.5px was wrong." },
+    "dockContainer": { "value": "42px", "note": "VERIFIED — outer dock container, node 48:35586" },
+    "pill": { "value": "1000px", "note": "VERIFIED — liquid glass small" }
+  },
+  "shadow": {
+    "$finding": "This library does NOT express elevation with drop shadows. Across 11 components/screens read (5 materials, 4 Liquid Glass sizes, Dock, Launch Pad, the quick-action menu and its buttons, Control Center widgets, Lock Screen controls, and the full Home Screen), only two shadows exist at all. Elevation in iOS 26 is carried by the glass materials plus a blurred halo — the `blur(30px)` masked ring present on the Dock, Lock Screen controls and Search Field.",
+    "appIconLabel": { "value": "text-shadow: 0 2px 25px #000000", "type": "shadow", "note": "VERIFIED — node 48:35600 and siblings. Keeps app-icon labels legible over the wallpaper." },
+    "liquidGlassSmallPreferred": { "value": "0 0 2px rgba(0,0,0,0.1), 0 1px 8px rgba(0,0,0,0.12)", "type": "shadow", "note": "VERIFIED — tinted/selected state of Liquid Glass Small, node 48:33747." },
+    "$removed": "The previously documented sm / md / lg / dock tokens were never derived from Figma and have been deleted from this file. The stylesheet keeps a shadow-* variable family clearly labelled as a web-only fallback, not an iOS 26 token."
+  },
+  "spacing": {
+    "$unverified": true,
+    "$note": "Only per-component values were observed (e.g. gap 40px in the colour grids, 20px in the swatch grids, 17px dock padding, 3.5px launch-pad icon gap). No global 4pt/8pt grid was established from the source, so the 4/8/12/16/20/24/32/40/48 scale below remains an assumption.",
+    "4": { "value": "4px" }, "8": { "value": "8px" }, "12": { "value": "12px" }, "16": { "value": "16px" },
+    "20": { "value": "20px" }, "24": { "value": "24px" }, "32": { "value": "32px" }, "40": { "value": "40px" }, "48": { "value": "48px" }
+  },
+  "motion": {
+    "$unverified": true,
+    "$note": "Never read from Figma. The four pages in scope (Symbols / Colors / Materials / Text Styles) are symbol-definition pages and contain no prototype data, so get_motion_context has nothing to return here.",
+    "spring": {
+      "standard": { "value": "cubic-bezier(0.25, 1, 0.33, 1)" },
+      "snappy": { "value": "cubic-bezier(0.18, 0.89, 0.32, 1.15)" },
+      "bouncy": { "value": "cubic-bezier(0.34, 1.35, 0.45, 1)" }
+    },
+    "duration": { "fast": { "value": "200ms" }, "normal": { "value": "320ms" }, "slow": { "value": "450ms" } }
+  }
+}
