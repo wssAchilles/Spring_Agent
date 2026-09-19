@@ -81,6 +81,11 @@ public class SharedBlackboard {
         return true;
     }
 
+    public String getFact(String key) {
+        BlackboardEntry entry = factsTable.get(key);
+        return entry == null ? null : entry.value();
+    }
+
     public Map<String, String> getFactsByKeys(List<String> keys) {
         Map<String, String> results = new LinkedHashMap<>();
         if (keys == null) {
