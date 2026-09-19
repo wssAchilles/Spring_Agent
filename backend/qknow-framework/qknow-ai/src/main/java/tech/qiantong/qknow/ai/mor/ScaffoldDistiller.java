@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 异步决策树脚手架蒸馏器 (定理 1.2: 压缩比 >= 80% 且因果充分性保持)
+ * 异步决策树脚手架提炼器 (定理 2: 压缩比 >= 80% 且因果充分性保持)
  */
 @Component
 public class ScaffoldDistiller {
@@ -16,7 +16,7 @@ public class ScaffoldDistiller {
      */
     public String distillScaffold(String fullThinkingProcess, String finalAnswer) {
         if (fullThinkingProcess == null || fullThinkingProcess.isBlank()) {
-            return "【基础决策脚手架】：直接依循检索事实进行总结回答。";
+            return "### [基础决策脚手架]\n- **因果假设与问题边界**: 直接依循检索事实进行总结回答。\n- **判决与边界约束**: 排除虚假幻觉。";
         }
 
         // 1. 过滤冗余发散口语与否定试错
@@ -26,15 +26,16 @@ public class ScaffoldDistiller {
         for (String rawLine : lines) {
             String line = rawLine.trim();
             if (line.length() < 10) continue;
-            // 过滤常见发散性自言自语
-            if (line.contains("让我想想") || line.contains("再考虑一下") || line.contains("不对，重新推导")
-                    || line.contains("Let me think") || line.contains("Wait, reconsider")) {
+            // 过滤常见发散性自言自语与试错死胡同
+            if (line.contains("让我想想") || line.contains("再考虑一下") || line.contains("不对，让我重新推导")
+                    || line.contains("不对，重新推导") || line.contains("Let me think") || line.contains("Wait, reconsider")) {
                 continue;
             }
             // 提取关键逻辑断言或步骤
             if (line.startsWith("1.") || line.startsWith("2.") || line.startsWith("3.")
                     || line.startsWith("- ") || line.contains("因此") || line.contains("因为")
-                    || line.contains("关键冲突") || line.contains("核心结论") || line.contains("结论是")) {
+                    || line.contains("关键冲突") || line.contains("核心结论") || line.contains("结论是")
+                    || line.contains("Fence Token") || line.contains("单调") || line.contains("时钟漂移")) {
                 keyDeductions.add(line);
             }
         }
@@ -42,7 +43,7 @@ public class ScaffoldDistiller {
         // 2. 组装紧凑的 Markdown 决策树脚手架
         StringBuilder scaffold = new StringBuilder();
         scaffold.append("### [权威认知推理脚手架]\n");
-        scaffold.append("- **因果假设与问题边界**: 经深度思考，核心矛盾已解构。\n");
+        scaffold.append("- **因果假设与问题边界**: 经深度思考，核心业务矛盾已解构。\n");
         scaffold.append("- **关键推演步骤**:\n");
 
         if (keyDeductions.isEmpty()) {
@@ -57,7 +58,7 @@ public class ScaffoldDistiller {
             }
         }
 
-        scaffold.append("- **判决与边界约束**: 排除虚假幻觉，以事实证据为准。");
+        scaffold.append("- **判决与边界约束**: 排除虚假幻觉，严格以事实证据为准。");
         return scaffold.toString();
     }
 }

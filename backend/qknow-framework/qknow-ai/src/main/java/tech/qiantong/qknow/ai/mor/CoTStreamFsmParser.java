@@ -145,4 +145,12 @@ public class CoTStreamFsmParser {
     public String getFullContent() {
         return contentAccumulator.toString();
     }
+
+    public String getContentAccumulatorText() {
+        return getFullContent();
+    }
+
+    public String getThinkingAccumulatorText() {
+        return getFullThinkingProcess();
+    }
 }

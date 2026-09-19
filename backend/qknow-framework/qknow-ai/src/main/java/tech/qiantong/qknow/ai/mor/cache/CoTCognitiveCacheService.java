@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 阿里千问 1536 维超球面与检索切片不可变签名双重复合键认知缓存器 (定理 1.3 局部李普希茨零幻觉)
+ * 阿里千问 1536 维超球面与检索切片不可变签名双重复合键认知缓存器 (定理 3 局部李普希茨零幻觉)
  */
 @Service
 public class CoTCognitiveCacheService {
@@ -21,7 +21,7 @@ public class CoTCognitiveCacheService {
     // L1 本地无锁内存缓存 (ConcurrentHashMap + 1000 容量防 OOM)
     private final Map<String, CacheEntry> localL1Cache = new ConcurrentHashMap<>();
     private static final int MAX_L1_CAPACITY = 1000;
-    private static final double SIMILARITY_THRESHOLD = 0.92; // 测地线余弦命中门限
+    private static final double SIMILARITY_THRESHOLD = 0.92; // 测地线余弦命中门限 (tau* >= 0.92)
 
     record CacheEntry(
             float[] qwen1536Embedding,
@@ -83,7 +83,7 @@ public class CoTCognitiveCacheService {
     }
 
     /**
-     * 查询认知脚手架 (定理 1.3: 测地线距离 <= 0.40 且知识签名严格匹配)
+     * 查询认知脚手架 (定理 3: 测地线距离 <= 0.40 且知识签名严格匹配)
      */
     public Optional<CognitiveScaffold> getScaffold(float[] queryEmbedding, List<String> sliceSignatures) {
         if (queryEmbedding == null || queryEmbedding.length != 1536) {
@@ -113,14 +113,15 @@ public class CoTCognitiveCacheService {
     }
 
     /**
-     * 异步写入认知脚手架 (L1 本地缓存 + 软容量防 OOM)
+     * 写入认知脚手架 (L1 本地缓存 + 软容量防 OOM)
      */
-    public void putScaffold(float[] queryEmbedding, List<String> sliceSignatures, String distilledScaffold, long ttlSeconds) {
+    public boolean putScaffold(float[] queryEmbedding, List<String> sliceSignatures, String distilledScaffold,
+                              String tenantId, String securityScopeHash, long ttlSeconds) {
         if (queryEmbedding == null || queryEmbedding.length != 1536 || distilledScaffold == null || distilledScaffold.isBlank()) {
-            return;
+            return false;
         }
         if (localL1Cache.size() >= MAX_L1_CAPACITY) {
-            // 简单清理最早访问的条目
+            // 清理最早访问的条目
             localL1Cache.keySet().stream().findFirst().ifPresent(localL1Cache::remove);
         }
 
@@ -133,11 +134,21 @@ public class CoTCognitiveCacheService {
                 slicesHash,
                 distilledScaffold,
                 System.currentTimeMillis(),
-                ttlSeconds > 0 ? ttlSeconds : 86400L
+                ttlSeconds > 0 ? ttlSeconds : 86400L,
+                tenantId != null ? tenantId : "default",
+                securityScopeHash != null ? securityScopeHash : "public"
         );
 
         localL1Cache.put(compositeKey, new CacheEntry(queryEmbedding.clone(), scaffold, System.currentTimeMillis()));
-        log.info("[CoTCache] 沉淀认知脚手架成功: cluster={}, slicesHash={}", cluster, slicesHash.substring(0, 8));
+        log.info("[CoTCache] 沉淀认知脚手架成功: cluster={}, slicesHash={}", cluster, slicesHash.substring(0, Math.min(8, slicesHash.length())));
+        return true;
+    }
+
+    /**
+     * 兼容重载
+     */
+    public void putScaffold(float[] queryEmbedding, List<String> sliceSignatures, String distilledScaffold, long ttlSeconds) {
+        putScaffold(queryEmbedding, sliceSignatures, distilledScaffold, "default", "public", ttlSeconds);
     }
 
     private double computeCosineSimilarity(float[] a, float[] b) {
