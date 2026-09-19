@@ -29,7 +29,7 @@ public class ShortTermMemory {
 
     public ShortTermMemory(ChatModel chatModel, IRedisService redisService) {
         this.chatModel = chatModel;
-        this.messages = new ArrayList<>();
+        this.messages = new java.util.concurrent.CopyOnWriteArrayList<>();
         this.redisService = redisService;
     }
 
@@ -121,11 +121,29 @@ public class ShortTermMemory {
         String summary = summarizeText(conversationText);
 
         String key = redisKey(sessionId);
-        redisService.delete(key);
-        redisService.rightPush(key, encode(new SystemMessage("以下是之前对话的摘要：" + summary)));
-        for (Message retained : context.subList(splitIndex, context.size())) {
-            redisService.rightPush(key, encode(retained));
+        // 安全增量裁剪：移除破坏性 delete(key)，使用 lTrim 仅裁剪左侧旧消息并插入摘要，保障右侧并发追加的新消息零丢失
+        redisService.lTrim(key, splitIndex, -1);
+        redisService.leftPush(key, encode(new SystemMessage("以下是之前对话的摘要：" + summary)));
+    }
+
+    /**
+     * 安全增量裁剪指定会话前 countToTrim 条旧消息。
+     * 基于 Redis lTrim 仅裁剪左侧已处理条目，保障在途并发新消息零丢失。
+     */
+    public void safeTrimIncremental(String sessionId, int countToTrim) {
+        if (countToTrim <= 0) {
+            return;
         }
+        if (redisService == null || sessionId == null || sessionId.isBlank()) {
+            int toRemove = Math.min(countToTrim, messages.size());
+            for (int i = 0; i < toRemove; i++) {
+                if (!messages.isEmpty()) {
+                    messages.remove(0);
+                }
+            }
+            return;
+        }
+        redisService.lTrim(redisKey(sessionId), countToTrim, -1);
     }
 
     private static final long SESSION_TTL_SECONDS = 86400; // 24 小时

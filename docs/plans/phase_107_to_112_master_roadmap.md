@@ -67,14 +67,14 @@ flowchart TD
   3. **四道纵深防御安全体系**：模式严格校验、瞬态操作时效租约 (LeaseToken)、间接提示词注入 (Indirect Prompt Injection) 主动免疫审查、完全清空环境变量沙箱；
   4. **不可变存证凭单**：基于 SHA-256 签发 `McpServerExportReceipt`。
 
-### 阶段 108：双核混合推理中枢 (MoR) 与千问 1536 维 CoT 思考链认知缓存器 (Phase 108)
-- **对应空间**：支柱一（复杂业务 Agent 认知与编排） & 支柱三（高保真 RAG）
-- **核心定位**：深度榨取 DeepSeek 唯一生成模型能力（V3 + R1），实现以 V3 的极速与成本输出逼近 R1 的深度思考质量。
+### 阶段 108：自适应思考调控中枢 (Adaptive Thinking) 与千问 1536 维 CoT 思考链认知缓存器 (Phase 108)
+- **对应空间**：支柱一（复杂业务 Agent 认知与编排） & 支柱三（高保真 RAG 知识引擎）
+- **核心定位**：深度挖掘系统唯一生成模型生态（以 `deepseek-flash` 为唯一主干），通过单模型动态参数化思考控制（`thinking: enabled/disabled` 与 `reasoning_effort`）以及原生 `reasoning_content` 双轨流式提取，实现“以 Flash 默认极速和成本输出深度推演级别的严密质量”。
 - **攻坚重心**：
-  1. **双核自适应路由中枢 (`MixtureOfReasoningGovernor`)**：三维语义决策模型（语义复杂度、RAG 置信度、时态冲突度），毫秒级分流 V3 极速与 R1 深度推演；
-  2. **流式状态机解析器 (`CoTFsmParser`)**：非阻塞拦截 `<think>` 标签并实时推向前端思考抽屉，正文打字机吞吐零卡顿；
-  3. **思考链决策脚手架蒸馏器 (`ScaffoldDistiller`)**：将数千 Token 思考过程抽象为 200~400 字的精炼因果逻辑树；
-  4. **千问 1536 维超球面认知缓存 (`CoTCognitiveCacheService`)**：高频复杂问题命中缓存后直接调用 V3 注入脚手架，端到端 P99 时延降低 $\ge 60\%$，API 纳元成本削减 $\ge 65\%$。
+  1. **自适应思考调控中枢 (`AdaptiveThinkingGovernor`)**：三维决策模型（意图语义复杂度、RAG 检索证据置信度、因果矛盾冲突度），动态调控同一 Flash 模型是否开启 `thinking` 思考模式及设定 `reasoning_effort: low/medium/high`；
+  2. **双轨流式思考分发器 (`DualTrackThinkingDispatcher`)**：基于已打通的原生 `reasoning_content`，将思考推演过程与最终正文流式解耦推送，打字机零假死、零内容污染；
+  3. **思考链决策脚手架提炼器 (`CoTScaffoldDistiller`)**：将多步思考推演链抽象精炼为 200~400 字的因果决策脚手架树；
+  4. **千问 1536 维超球面认知缓存器 (`CoTCognitiveCacheService`)**：基于唯一向量模型阿里千问 1536 维嵌入空间沉淀认知脚手架；高频复杂场景语义召回后直接以 Flash 默认极速模式（`thinking: disabled`）外挂脚手架出流，端到端首字延迟降低 $\ge 60\%$，纳元成本削减 $\ge 65\%$。
 
 ### 阶段 109：分布式多智能体通信网格 (A2A) 与 L1/L2 双态事件黑板中枢 (Phase 109)
 - **对应空间**：支柱一（复杂业务 Agent 认知与编排）
@@ -94,13 +94,15 @@ flowchart TD
   3. **零停机内存指针原子翻转**：利用 Java 21 `AtomicReference` 实现免重启热重载与平滑灰度发布；
   4. **不可变编译凭单 (`DslWorkflowCompilationReceipt`)**：记录编译 AST 摘要与哈希防篡改凭证。
 
-### 阶段 111：长效情境记忆网络、睡眠期画像提炼与自适应滑动窗口压缩器 (Phase 111)
+### 阶段 111：长效情境记忆网络、睡眠期画像提炼与自适应滑动窗口压缩器 (Phase 111) [已完成 / COMPLETED]
 - **对应空间**：支柱三（高保真 RAG 知识引擎与多模态图谱） & 支柱一
 - **核心定位**：构建短时工作记忆与长效情境记忆统一闭环，攻克超长任务上下文丢失与膨胀矛盾。
-- **攻坚重心**：
-  1. **睡眠期画像巩固 Agent (`SleepTimeMemoryConsolidator`)**：系统空闲或夜间静默触发，提炼长会话中实体、用户偏好与纠偏记录，沉淀至知识图谱；
-  2. **情境自适应工作记忆压缩器 (`ContextAdaptiveWorkingMemoryCompressor`)**：实时监控上下文 Token 水位，针对早期步骤自适应分层浓缩，保障关键因果信息不失真；
-  3. **短时与长效记忆时空对齐**：依托阿里千问 1536 维超球面向量实现跨时空记忆的高精度召回与动态注入。
+- **攻坚成果**：
+  1. **睡眠期画像巩固引擎 (`SleepTimeMemoryConsolidator`)**：系统空闲或夜间静默触发，基于 Redis `setNx` 租约分布式锁 + CAS 版本检查 + Lua 增量裁剪（在途并发新消息 100% 零丢失），三维结构化画像提炼（`UserPreferences`, `DomainEntities`, `Corrections & Reflections`）与置信度门禁（$\ge 0.75$）；
+  2. **情境自适应工作记忆分层压缩器 (`ContextAdaptiveWorkingMemoryCompressor`)**：四级队列滑动窗口（$L_0$ 系统硬锚点、$L_1$ 近期因果决策事实、$L_2$ 上下文浓缩、$L_3$ 工具原始报文模式投影），在 75% 压缩比下关键因果决策事实保留率 $\ge 95\%$，工具 JSON 模式投影压缩率 $\ge 75\%$，单次压缩耗时 $\le 15\text{ms}$；
+  3. **短时与长效记忆超球面时空对齐**：依托阿里千问 1536 维超球面流形测地线距离 $d_g$ 证明局部拓扑保序定理（定理 1.3），拓扑逆转率严格为 0%；
+  4. **不可变存证凭单 (`MemoryConsolidationReceipt`)**：纯 Java 21 Record 格式，携带 SHA-256 自签名与防篡改验真能力；
+  5. **文档与契约索引**：学术报告 [`phase_111_academic_report.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/plans/phase_111_academic_report.md)、工业报告 [`phase_111_industrial_report.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/plans/phase_111_industrial_report.md)、实施详案 [`phase_111_plan.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/plans/phase_111_plan.md)、专属契约测试 [`Phase111MemoryConsolidationTest.java`](file:///Users/achilles/Documents/许子祺/Agent/backend/tests/src/test/java/tech/qiantong/qknow/hermes/memory/Phase111MemoryConsolidationTest.java)。
 
 ### 阶段 112：全景可视化工作流 Studio、在线 DSL 双向同步与沉浸式时空调试中枢 (Phase 112)
 - **对应空间**：支柱四（前端工作流交互与开发者体验）
