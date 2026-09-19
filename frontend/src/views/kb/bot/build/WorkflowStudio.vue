@@ -17,6 +17,9 @@
           <span class="meta-item" v-else>
             <span class="status-chip active">双向同步就绪</span>
           </span>
+          <span class="meta-item" v-if="activeBranchId">
+            <span class="status-chip branch">分叉: {{ activeBranchId }}</span>
+          </span>
         </div>
       </div>
 
@@ -47,6 +50,10 @@
       </div>
 
       <div class="topbar-right">
+        <!-- 自动排版按钮 (Sugiyama 布局) -->
+        <button class="action-btn" @click="triggerAutoLayout" title="使用 Sugiyama 分层有向图算法自动消除交叉">
+          一键排版
+        </button>
         <button class="action-btn" @click="triggerFormatDsl">
           格式化
         </button>
@@ -64,10 +71,12 @@
       <!-- 左侧 Monaco 代码编辑面板 -->
       <div class="editor-pane" v-show="viewMode === 'SPLIT' || viewMode === 'CODE'">
         <div class="pane-header">
-          <span class="pane-title">声明式 DSL (YAML / JSON)</span>
-          <span class="error-count-tag" v-if="diagnostics.length > 0">
-            {{ diagnostics.length }} 个语法问题
-          </span>
+          <span class="pane-title">声明式 DSL (支持 Schema 智能感知)</span>
+          <div class="header-tools">
+            <span class="error-count-tag" v-if="diagnostics.length > 0">
+              {{ diagnostics.length }} 个语法问题
+            </span>
+          </div>
         </div>
         <div class="editor-body">
           <textarea
@@ -188,6 +197,14 @@
 
     <!-- 底部可折叠时空调试与 OpenTelemetry 瀑布流中枢 -->
     <section class="studio-bottom-debugger" v-if="showTracePanel">
+      <div class="debugger-toolbar">
+        <span class="debugger-title">时空调试中枢 (Time-Travel Debugger)</span>
+        <div class="fork-controls" v-if="activeNodeId">
+          <button class="fork-btn" @click="triggerForkExecution">
+            在 #{{ activeNodeId }} 处派生分叉执行 (Fork & Resume)
+          </button>
+        </div>
+      </div>
       <TraceWaterfall
         :trace-spans="sampleTraceSpans"
         :active-node-id="activeNodeId"
@@ -207,10 +224,14 @@ import {
   type DslWorkflowAst,
   type MarkerDiagnostic
 } from './components/sync/DslCanvasBiDirectionalSyncEngine';
+import { SugiyamaLayoutEngine } from './components/layout/SugiyamaLayoutEngine';
+import { TimeTravelForkEngine, type StepSnapshot } from './components/debug/engine/TimeTravelForkEngine';
 import TraceWaterfall from './components/trace/TraceWaterfall.vue';
 import type { RawTraceSpan } from '@/views/kd/observability/engine/WaterfallVirtualTimelineEngine';
 
 const syncEngine = new DslCanvasBiDirectionalSyncEngine();
+const layoutEngine = new SugiyamaLayoutEngine();
+const forkEngine = new TimeTravelForkEngine();
 const { fitView } = useVueFlow();
 
 const viewMode = ref<'SPLIT' | 'CANVAS' | 'CODE'>('SPLIT');
@@ -218,6 +239,7 @@ const showTracePanel = ref<boolean>(true);
 const epochVersion = ref<number>(1);
 const isSuspended = ref<boolean>(false);
 const activeNodeId = ref<string>('');
+const activeBranchId = ref<string>('');
 const diagnostics = ref<MarkerDiagnostic[]>([]);
 const currentAst = ref<DslWorkflowAst | null>(null);
 
@@ -282,11 +304,11 @@ const initialDsl = JSON.stringify({
 
 const dslCode = ref<string>(initialDsl);
 
-// 示例 OpenTelemetry Trace Spans (用于瀑布流联动)
+// 示例 Trace Spans
 const sampleTraceSpans = ref<RawTraceSpan[]>([
   {
     spanId: "span_root",
-    traceId: "trace_20260919_001",
+    traceId: "trace_20260920_001",
     parentSpanId: null,
     spanName: "WorkflowExecution: wf_agentic_studio_01",
     spanType: "WORKFLOW",
@@ -300,7 +322,7 @@ const sampleTraceSpans = ref<RawTraceSpan[]>([
   },
   {
     spanId: "span_task_1",
-    traceId: "trace_20260919_001",
+    traceId: "trace_20260920_001",
     parentSpanId: "span_root",
     spanName: "IntentParser: node_task_01",
     spanType: "AGENT",
@@ -314,7 +336,7 @@ const sampleTraceSpans = ref<RawTraceSpan[]>([
   },
   {
     spanId: "span_mcp_1",
-    traceId: "trace_20260919_001",
+    traceId: "trace_20260920_001",
     parentSpanId: "span_root",
     spanName: "McpCall: enterprise_sql_query",
     spanType: "MCP",
@@ -328,7 +350,7 @@ const sampleTraceSpans = ref<RawTraceSpan[]>([
   },
   {
     spanId: "span_loop_1",
-    traceId: "trace_20260919_001",
+    traceId: "trace_20260920_001",
     parentSpanId: "span_root",
     spanName: "LoopEvaluator: node_loop_01",
     spanType: "AGENT",
@@ -342,7 +364,7 @@ const sampleTraceSpans = ref<RawTraceSpan[]>([
   },
   {
     spanId: "span_hitl_1",
-    traceId: "trace_20260919_001",
+    traceId: "trace_20260920_001",
     parentSpanId: "span_root",
     spanName: "HitlWait: node_hitl_01",
     spanType: "HITL",
@@ -357,7 +379,6 @@ const sampleTraceSpans = ref<RawTraceSpan[]>([
 ]);
 
 onMounted(() => {
-  // 首次载入初始化
   applyCodeToCanvas(dslCode.value);
 });
 
@@ -418,6 +439,50 @@ function onTraceSpanClick(payload: { nodeId: string | null }) {
   }
 }
 
+/**
+ * 触发 Sugiyama 分层有向图自动排版
+ */
+function triggerAutoLayout() {
+  if (flowNodes.value.length === 0) return;
+  const layoutRes = layoutEngine.layout(flowNodes.value, flowEdges.value, { direction: 'LR' });
+  flowNodes.value = layoutRes.nodes;
+  onCanvasNodesChange();
+  setTimeout(() => {
+    try {
+      fitView({ duration: 400 });
+    } catch {}
+  }, 50);
+}
+
+/**
+ * 触发时空快照现场分叉执行
+ */
+function triggerForkExecution() {
+  if (!activeNodeId.value) return;
+
+  const mockSnapshots: StepSnapshot[] = sampleTraceSpans.value.map((s, idx) => ({
+    stepIndex: idx,
+    nodeId: s.attributes?.['dsl.node_id'] || `node_${idx}`,
+    nodeName: s.spanName,
+    inputs: { query: '原始参数' },
+    outputs: { result: '原始输出' },
+    timestamp: Date.now() - (sampleTraceSpans.value.length - idx) * 1000,
+    tokenCount: s.tokenCount
+  }));
+
+  const targetIdx = mockSnapshots.findIndex(s => s.nodeId === activeNodeId.value);
+  const forkStep = targetIdx >= 0 ? targetIdx : 0;
+
+  const branch = forkEngine.forkFromStep(
+    'STU_live_session_receipt',
+    mockSnapshots,
+    forkStep,
+    { inputs: { mutated: true, mockMode: 'ACTIVE' } }
+  );
+
+  activeBranchId.value = branch.branchId;
+}
+
 function addNode(type: 'TASK' | 'STATE_GRAPH_LOOP' | 'SWARM_HANDOFF' | 'DEBATE_ARENA' | 'HITL_APPROVAL' | 'MCP_TOOL_CALL') {
   const newId = `node_${type.toLowerCase()}_${Date.now().toString().slice(-4)}`;
   const newNode = {
@@ -455,7 +520,6 @@ function triggerFormatDsl() {
 }
 
 function onSaveWorkflow() {
-  // 生成并触发保存与不可变凭单存证
   epochVersion.value++;
 }
 </script>
@@ -545,6 +609,12 @@ function onSaveWorkflow() {
 .status-chip.warning {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
+}
+
+.status-chip.branch {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.4);
 }
 
 .topbar-center {
@@ -801,8 +871,41 @@ function onSaveWorkflow() {
 
 /* 底部时空调试面板 */
 .studio-bottom-debugger {
-  height: 220px;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
   position: relative;
   z-index: 10;
+}
+
+.debugger-toolbar {
+  height: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  background: rgba(14, 14, 18, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+}
+
+.debugger-title {
+  color: #a1a1aa;
+  font-weight: 600;
+}
+
+.fork-btn {
+  padding: 2px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fork-btn:hover {
+  background: rgba(168, 85, 247, 0.3);
 }
 </style>
