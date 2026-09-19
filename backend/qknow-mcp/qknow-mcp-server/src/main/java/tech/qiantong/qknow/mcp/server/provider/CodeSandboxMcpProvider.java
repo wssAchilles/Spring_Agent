@@ -28,6 +28,8 @@ public class CodeSandboxMcpProvider {
                 ),
                 "required", List.of("language", "code")
             ),
+            tech.qiantong.qknow.mcp.server.annotation.McpTool.RiskLevel.HIGH_RISK,
+            true,
             params -> {
                 String language = (String) params.get("language");
                 String code = (String) params.get("code");

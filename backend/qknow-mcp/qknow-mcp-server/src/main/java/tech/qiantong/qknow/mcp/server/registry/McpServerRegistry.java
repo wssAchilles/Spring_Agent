@@ -5,17 +5,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.qiantong.qknow.mcp.core.model.*;
 import tech.qiantong.qknow.mcp.core.protocol.*;
-import tech.qiantong.qknow.mcp.server.annotation.McpPromptMapping;
-import tech.qiantong.qknow.mcp.server.annotation.McpResourceMapping;
-import tech.qiantong.qknow.mcp.server.annotation.McpToolMapping;
+import tech.qiantong.qknow.mcp.server.annotation.McpTool.RiskLevel;
+import tech.qiantong.qknow.mcp.server.model.McpServerExportReceipt;
+import tech.qiantong.qknow.mcp.server.security.QuadDefenseSecurityPipeline;
+import tech.qiantong.qknow.mcp.server.security.QuadDefenseSecurityPipeline.SecurityPipelineException;
 
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
- * MCP 服务端统一注册与请求分发路由中心
+ * MCP 服务端统一注册与请求分发路由中心 (强化版：内嵌四级纵深防御与数字存证)
  */
 public class McpServerRegistry {
 
@@ -24,25 +24,63 @@ public class McpServerRegistry {
 
     private final String serverName;
     private final String serverVersion;
+    private final QuadDefenseSecurityPipeline securityPipeline;
 
     private final Map<String, ToolHandler> tools = new ConcurrentHashMap<>();
     private final Map<String, ResourceHandler> resources = new ConcurrentHashMap<>();
     private final Map<String, PromptHandler> prompts = new ConcurrentHashMap<>();
 
-    public record ToolHandler(McpTool metadata, Function<Map<String, Object>, CallToolResult> executor) {}
+    public record ToolHandler(
+            McpTool metadata,
+            RiskLevel riskLevel,
+            boolean requiresLease,
+            Function<Map<String, Object>, CallToolResult> executor
+    ) {}
+
     public record ResourceHandler(McpResource metadata, Function<String, ResourceContent> executor) {}
     public record PromptHandler(McpPrompt metadata, Function<Map<String, Object>, List<PromptMessage>> executor) {}
 
     public McpServerRegistry(String serverName, String serverVersion) {
+        this(serverName, serverVersion, null);
+    }
+
+    public McpServerRegistry(String serverName, String serverVersion, QuadDefenseSecurityPipeline securityPipeline) {
         this.serverName = serverName;
         this.serverVersion = serverVersion;
+        this.securityPipeline = securityPipeline;
     }
 
     public void registerTool(String name, String description, Map<String, Object> inputSchema,
                              Function<Map<String, Object>, CallToolResult> executor) {
-        McpTool tool = new McpTool(name, description, inputSchema);
-        tools.put(name, new ToolHandler(tool, executor));
-        log.info("[MCP Server] 成功注册工具: {}", name);
+        RiskLevel risk = RiskLevel.SAFE;
+        boolean reqLease = false;
+        if (inputSchema != null) {
+            if (Boolean.TRUE.equals(inputSchema.get("requiresLease"))) {
+                reqLease = true;
+                risk = RiskLevel.HIGH_RISK;
+            }
+            if (inputSchema.containsKey("riskLevel")) {
+                Object r = inputSchema.get("riskLevel");
+                if (r instanceof RiskLevel rl) {
+                    risk = rl;
+                } else if ("HIGH_RISK".equalsIgnoreCase(String.valueOf(r))) {
+                    risk = RiskLevel.HIGH_RISK;
+                }
+            }
+        }
+        registerTool(name, description, inputSchema, risk, reqLease, executor);
+    }
+
+    public void registerTool(String name, String description, Map<String, Object> inputSchema,
+                             RiskLevel riskLevel, boolean requiresLease,
+                             Function<Map<String, Object>, CallToolResult> executor) {
+        Map<String, Object> schemaWithMeta = new HashMap<>(inputSchema != null ? inputSchema : Map.of());
+        schemaWithMeta.put("requiresLease", requiresLease);
+        schemaWithMeta.put("riskLevel", riskLevel.name());
+
+        McpTool tool = new McpTool(name, description, schemaWithMeta);
+        tools.put(name, new ToolHandler(tool, riskLevel, requiresLease, executor));
+        log.info("[MCP Server] 成功注册工具: {} (风险等级: {}, 需租约: {})", name, riskLevel, requiresLease);
     }
 
     public void registerResource(String uriPattern, String name, String description, String mimeType,
@@ -60,7 +98,23 @@ public class McpServerRegistry {
     }
 
     /**
-     * 核心 JSON-RPC 2.0 请求分发处理器
+     * 签发当前服务导出不可变存证凭单
+     */
+    public McpServerExportReceipt issueExportReceipt(String transportChannel) {
+        List<McpTool> toolList = tools.values().stream().map(ToolHandler::metadata).toList();
+        return McpServerExportReceipt.create(
+                serverName,
+                serverVersion,
+                transportChannel,
+                toolList,
+                resources.size(),
+                prompts.size(),
+                securityPipeline != null
+        );
+    }
+
+    /**
+     * 核心 JSON-RPC 2.0 请求分发与四道防线拦截处理器
      */
     public JsonRpcResponse handleRequest(JsonRpcRequest request) {
         if (request == null || request.method() == null) {
@@ -94,7 +148,22 @@ public class McpServerRegistry {
                         return JsonRpcResponse.error(reqId, JsonRpcError.METHOD_NOT_FOUND, "未找到目标工具: " + toolName, null);
                     }
 
+                    // 四道防线护航审查
+                    if (securityPipeline != null) {
+                        // 防线二：租约校验
+                        securityPipeline.verifyLeaseIfRequired(toolName, handler.riskLevel(), handler.requiresLease(), arguments);
+                        // 防线三：入参提示词注入审查
+                        securityPipeline.sanitizeInboundArguments(toolName, arguments);
+                    }
+
+                    // 执行真实底层工具调用
                     CallToolResult result = handler.executor().apply(arguments);
+
+                    // 防线三：出参脱敏与间接提示词注入净化
+                    if (securityPipeline != null) {
+                        result = securityPipeline.sanitizeOutboundResult(toolName, result);
+                    }
+
                     return JsonRpcResponse.success(reqId, result);
                 }
                 case "resources/list" -> {
@@ -135,6 +204,9 @@ public class McpServerRegistry {
                     return JsonRpcResponse.error(reqId, JsonRpcError.METHOD_NOT_FOUND, "不支持的方法: " + method, null);
                 }
             }
+        } catch (SecurityPipelineException spe) {
+            log.warn("[MCP Server] 安全流水线强力拦截: code={}, msg={}", spe.getErrorCode(), spe.getMessage());
+            return JsonRpcResponse.error(reqId, spe.getErrorCode(), spe.getMessage(), null);
         } catch (SecurityException se) {
             log.warn("[MCP Server] 安全审查拦截: {}", se.getMessage());
             return JsonRpcResponse.error(reqId, JsonRpcError.SECURITY_VIOLATION, "安全拦截: " + se.getMessage(), null);
