@@ -11,6 +11,7 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -27,9 +28,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+/**
+ * DeepSeek 官方兼容模型客户端。
+ * 遵循官方最新规范：默认使用 deepseek-flash 主干模型，
+ * 支持动态 thinking 思考启闭、reasoning_content 保持与回传、原生工具调用以及双轨流式输出。
+ */
 public class DeepSeekCompatibleChatModel implements ChatModel {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String DEFAULT_MODEL_NAME = "deepseek-flash";
 
     private final HttpClient httpClient;
     private final String endpoint;
@@ -43,7 +50,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                 .build();
         this.endpoint = normalizeBaseUrl(baseUrl) + "/chat/completions";
         this.apiKey = apiKey;
-        this.modelName = modelName;
+        this.modelName = (modelName != null && !modelName.isBlank()) ? modelName : DEFAULT_MODEL_NAME;
         this.temperature = temperature;
     }
 
@@ -104,20 +111,84 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         }
     }
 
-    private Map<String, Object> buildRequestBody(Prompt prompt, boolean stream) {
-        List<Map<String, String>> messages = new ArrayList<>();
-        for (Message message : prompt.getInstructions()) {
-            messages.add(Map.of(
-                    "role", toRole(message.getMessageType()),
-                    "content", message.getText() == null ? "" : message.getText()
-            ));
+    /**
+     * 构建发送给 DeepSeek 官方 API 的请求体。
+     * 关键防御：在多轮对话中完整回传历史 AssistantMessage 的 reasoning_content 与 tool_calls，
+     * 彻底避免工具调用上下文中的 HTTP 400 Bad Request 报错。
+     */
+    public Map<String, Object> buildRequestBody(Prompt prompt, boolean stream) {
+        List<Map<String, Object>> messages = new ArrayList<>();
+        if (prompt != null && prompt.getInstructions() != null) {
+            for (Message message : prompt.getInstructions()) {
+                Map<String, Object> msgMap = new LinkedHashMap<>();
+                String role = toRole(message.getMessageType());
+                msgMap.put("role", role);
+                msgMap.put("content", message.getText() == null ? "" : message.getText());
+
+                // 回传 AssistantMessage 中的思考链与工具调用元数据
+                if (message instanceof AssistantMessage assistantMessage) {
+                    Map<String, Object> metadata = assistantMessage.getMetadata();
+                    if (metadata != null) {
+                        Object reasoning = metadata.get("reasoning_content");
+                        if (reasoning != null && !reasoning.toString().isEmpty()) {
+                            msgMap.put("reasoning_content", reasoning.toString());
+                        }
+                        Object toolCalls = metadata.get("tool_calls");
+                        if (toolCalls != null) {
+                            msgMap.put("tool_calls", toolCalls);
+                        }
+                    }
+                }
+
+                // 回传 Tool 消息的 tool_call_id
+                if (MessageType.TOOL.equals(message.getMessageType())) {
+                    Map<String, Object> metadata = message.getMetadata();
+                    if (metadata != null && metadata.containsKey("tool_call_id")) {
+                        msgMap.put("tool_call_id", metadata.get("tool_call_id"));
+                    }
+                }
+
+                messages.add(msgMap);
+            }
         }
+
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", modelName);
+        String targetModel = (this.modelName != null && !this.modelName.isBlank()) ? this.modelName : DEFAULT_MODEL_NAME;
+        Double targetTemperature = this.temperature;
+
+        // 从 Prompt Options 中提取运行时覆盖配置与思考控制
+        if (prompt != null && prompt.getOptions() != null) {
+            ChatOptions options = prompt.getOptions();
+            if (options.getModel() != null && !options.getModel().isBlank()) {
+                targetModel = options.getModel();
+            }
+            if (options.getTemperature() != null) {
+                targetTemperature = options.getTemperature();
+            }
+            if (options instanceof DeepSeekChatOptions dsOptions) {
+                if (dsOptions.getThinkingEnabled() != null) {
+                    body.put("thinking", Map.of("type", dsOptions.getThinkingEnabled() ? "enabled" : "disabled"));
+                }
+                if (dsOptions.getReasoningEffort() != null && !dsOptions.getReasoningEffort().isBlank()) {
+                    body.put("reasoning_effort", dsOptions.getReasoningEffort());
+                }
+                if (dsOptions.getTools() != null && !dsOptions.getTools().isEmpty()) {
+                    body.put("tools", dsOptions.getTools());
+                }
+                if (dsOptions.getToolChoice() != null) {
+                    body.put("tool_choice", dsOptions.getToolChoice());
+                }
+                if (dsOptions.getMaxTokens() != null) {
+                    body.put("max_tokens", dsOptions.getMaxTokens());
+                }
+            }
+        }
+
+        body.put("model", targetModel);
         body.put("messages", messages);
         body.put("stream", stream);
-        if (temperature != null) {
-            body.put("temperature", temperature);
+        if (targetTemperature != null) {
+            body.put("temperature", targetTemperature);
         }
         if (stream) {
             body.put("stream_options", Map.of("include_usage", true));
@@ -125,16 +196,37 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         return body;
     }
 
-    private ChatResponse parseResponse(String responseBody) throws IOException {
+    /**
+     * 解析非流式响应，同时提取 content 与 reasoning_content。
+     */
+    public ChatResponse parseResponse(String responseBody) throws IOException {
         JsonNode root = OBJECT_MAPPER.readTree(responseBody);
         JsonNode choice = root.path("choices").path(0);
-        String content = choice.path("message").path("content").asText("");
+        JsonNode messageNode = choice.path("message");
+
+        String content = messageNode.path("content").asText("");
         String finishReason = choice.path("finish_reason").asText("");
+        String reasoningContent = messageNode.path("reasoning_content").asText("");
+
+        Map<String, Object> metadataMap = new LinkedHashMap<>();
+        if (!reasoningContent.isEmpty()) {
+            metadataMap.put("reasoning_content", reasoningContent);
+        }
+        if (messageNode.has("tool_calls")) {
+            metadataMap.put("tool_calls", OBJECT_MAPPER.convertValue(messageNode.get("tool_calls"), List.class));
+        }
+
+        AssistantMessage assistantMessage = AssistantMessage.builder()
+                .content(content)
+                .properties(metadataMap)
+                .build();
 
         ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
                 .finishReason(finishReason)
+                .metadata(metadataMap)
                 .build();
-        Generation generation = new Generation(new AssistantMessage(content), generationMetadata);
+
+        Generation generation = new Generation(assistantMessage, generationMetadata);
 
         JsonNode usageNode = root.path("usage");
         DefaultUsage usage = new DefaultUsage(
@@ -169,22 +261,46 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         }
     }
 
-    private ChatResponse parseStreamChunk(String payload) throws IOException {
+    /**
+     * 解析流式片段。
+     * 关键防御：当模型在思考阶段（content 为空但 reasoning_content 持续输出）时，
+     * 绝不返回 null，确保思考流数据包能够实时到达前端，根除流式打字机 10~30 秒白屏假死。
+     */
+    public ChatResponse parseStreamChunk(String payload) throws IOException {
         JsonNode root = OBJECT_MAPPER.readTree(payload);
         JsonNode choice = root.path("choices").path(0);
-        String content = choice.path("delta").path("content").asText("");
+        JsonNode deltaNode = choice.path("delta");
+
+        String content = deltaNode.path("content").asText("");
+        String reasoningContent = deltaNode.path("reasoning_content").asText("");
         String finishReason = choice.path("finish_reason").asText("");
         JsonNode usageNode = root.path("usage");
         boolean hasUsage = !usageNode.isMissingNode();
 
-        if (content.isEmpty() && finishReason.isEmpty() && !hasUsage) {
+        // 若正文、思考片段、结束标识与用量统计均为空，方视为空片段丢弃
+        if (content.isEmpty() && reasoningContent.isEmpty() && finishReason.isEmpty() && !hasUsage) {
             return null;
         }
 
+        Map<String, Object> metadataMap = new LinkedHashMap<>();
+        if (!reasoningContent.isEmpty()) {
+            metadataMap.put("reasoning_content", reasoningContent);
+        }
+        if (deltaNode.has("tool_calls")) {
+            metadataMap.put("tool_calls", OBJECT_MAPPER.convertValue(deltaNode.get("tool_calls"), List.class));
+        }
+
+        AssistantMessage assistantMessage = AssistantMessage.builder()
+                .content(content)
+                .properties(metadataMap)
+                .build();
+
         ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
                 .finishReason(finishReason)
+                .metadata(metadataMap)
                 .build();
-        Generation generation = new Generation(new AssistantMessage(content), generationMetadata);
+
+        Generation generation = new Generation(assistantMessage, generationMetadata);
 
         DefaultUsage usage = hasUsage ? new DefaultUsage(
                 usageNode.path("prompt_tokens").isMissingNode() ? null : usageNode.path("prompt_tokens").asInt(),
@@ -207,6 +323,9 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         }
         if (MessageType.ASSISTANT.equals(messageType)) {
             return "assistant";
+        }
+        if (MessageType.TOOL.equals(messageType)) {
+            return "tool";
         }
         return "user";
     }

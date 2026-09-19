@@ -167,7 +167,7 @@ hermes:
       platform: ${HERMES_RAG_QUERY_TRANSFORM_PLATFORM:DeepSeek}
       base-url: ${HERMES_RAG_QUERY_TRANSFORM_BASE_URL:https://api.deepseek.com/v1}
       api-key: ${HERMES_OPENAI_API_KEY:}
-      model-name: ${HERMES_RAG_QUERY_TRANSFORM_MODEL:deepseek-chat}
+      model-name: ${HERMES_RAG_QUERY_TRANSFORM_MODEL:${DEEPSEEK_MODEL:deepseek-flash}}
     context:
       max-bytes: ${HERMES_RAG_CONTEXT_MAX_BYTES:12000}
       max-tokens: ${HERMES_RAG_CONTEXT_MAX_TOKENS:0}
@@ -223,7 +223,7 @@ mybatis-plus-join:
 # PageHelper分页插件
 pagehelper:
   helperDialect: postgresql
-  supportMethodsArguments: true
+  supportMethodsArguments: false
   params: count=countSql
 
 # 防止XSS攻击

@@ -15,7 +15,7 @@ public class JudgeConfig {
 
     private String apiKey;
 
-    private String modelName = "deepseek-chat";
+    private String modelName = "deepseek-flash";
 
     private double threshold = 0.7;
 }

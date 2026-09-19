@@ -35,7 +35,8 @@ public class HermesApplication {
             org.springframework.core.env.Environment env) {
         String apiKey = env.getProperty("HERMES_OPENAI_API_KEY", env.getProperty("DEEPSEEK_API_KEY", "sk-placeholder"));
         String baseUrl = env.getProperty("HERMES_OPENAI_BASE_URL", "https://api.deepseek.com");
-        return chatModelFactory.getChatModel("deepseek", baseUrl, apiKey, "deepseek-chat");
+        String defaultModel = env.getProperty("HERMES_OPENAI_MODEL", env.getProperty("DEEPSEEK_MODEL", "deepseek-flash"));
+        return chatModelFactory.getChatModel("deepseek", baseUrl, apiKey, defaultModel);
     }
 
     @org.springframework.context.annotation.Bean

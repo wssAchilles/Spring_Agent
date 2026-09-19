@@ -36,11 +36,11 @@ spring:
 hermes:
   routing:
     tool-calling-model:
-      enabled: true
-      platform: openai
-      base-url: https://api.openai.com
-      api-key: ${OPENAI_API_KEY:}
-      model-name: gpt-4o
+      enabled: false
+      platform: deepseek
+      base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
+      api-key: ${HERMES_OPENAI_API_KEY:}
+      model-name: ${HERMES_DEFAULT_MODEL:deepseek-flash}
   judge:
     enabled: false  # 关闭反思循环，省 ~15% tokens
     min-score: 0.6
@@ -64,7 +64,7 @@ hermes:
       platform: DeepSeek
       base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
       api-key: ${HERMES_OPENAI_API_KEY:}
-      model-name: deepseek-chat
+      model-name: ${HERMES_DEFAULT_MODEL:deepseek-flash}
       max-doc-chars: 8000
       max-concurrent: 3
     hype:
@@ -72,7 +72,7 @@ hermes:
       platform: DeepSeek
       base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
       api-key: ${HERMES_OPENAI_API_KEY:}
-      model-name: deepseek-chat
+      model-name: ${HERMES_DEFAULT_MODEL:deepseek-flash}
       question-count: 3
       max-chunk-chars: 2000
       timeout-seconds: 30
@@ -117,7 +117,7 @@ qknow:
       threshold: 0.85
       prompt-version: manual-v1
       platform: DeepSeek
-      model-name: deepseek-chat
+      model-name: ${HERMES_DEFAULT_MODEL:deepseek-flash}
       base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com/v1}
       api-key: ${HERMES_OPENAI_API_KEY:}
 

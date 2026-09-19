@@ -16,7 +16,7 @@ public class RagasEvalConfig {
     private boolean enabled = true;
     private double threshold = 0.85;
     private String platform = "DeepSeek";
-    private String modelName = "deepseek-chat";
+    private String modelName = "deepseek-flash";
     private String baseUrl;
     private String apiKey;
     private String promptVersion = "manual-v1";

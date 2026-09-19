@@ -140,7 +140,7 @@ public class HyPEIndexer {
         private String platform = "DeepSeek";
         private String baseUrl = "https://api.deepseek.com";
         private String apiKey;
-        private String modelName = "deepseek-chat";
+        private String modelName = "deepseek-flash";
         private int questionCount = 3;
         private int maxChunkChars = 2000;
         private int timeoutSeconds = 30;

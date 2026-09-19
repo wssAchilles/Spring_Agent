@@ -14,14 +14,14 @@ public class ToolRoutingConfig {
     @Data
     public static class ToolCallingModel {
         /** 是否启用工具调用模型路由 */
-        private boolean enabled = true;
-        /** 平台名称（openai / deepseek / dashscope） */
-        private String platform = "openai";
+        private boolean enabled = false;
+        /** 平台名称（唯一使用 deepseek） */
+        private String platform = "deepseek";
         /** API 端点 */
-        private String baseUrl = "https://api.openai.com";
+        private String baseUrl = "https://api.deepseek.com";
         /** API Key */
         private String apiKey = "";
-        /** 模型名称 */
-        private String modelName = "gpt-4o";
+        /** 模型名称（主干 deepseek-flash） */
+        private String modelName = "deepseek-flash";
     }
 }

@@ -95,7 +95,7 @@ public class ContextualEnrichmentService {
         private String platform = "DeepSeek";
         private String baseUrl = "https://api.deepseek.com";
         private String apiKey;
-        private String modelName = "deepseek-chat";
+        private String modelName = "deepseek-flash";
         private int maxDocChars = 8000;
         private int maxConcurrent = 3;
         private int timeoutSeconds = 30;

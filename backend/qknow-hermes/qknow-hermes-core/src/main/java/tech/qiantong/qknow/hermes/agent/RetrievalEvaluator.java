@@ -102,7 +102,9 @@ public class RetrievalEvaluator {
         } else if (credentials != null && StrUtil.isNotBlank(credentials.getApiKey())) {
             apiKey = credentials.getApiKey();
         }
-        return chatModelFactory.getChatModel("DeepSeek", null, apiKey, "deepseek-chat", 0.0D);
+        String modelName = (modelConfig != null && StrUtil.isNotBlank(modelConfig.getModelName()))
+                ? modelConfig.getModelName() : "deepseek-flash";
+        return chatModelFactory.getChatModel("DeepSeek", null, apiKey, modelName, 0.0D);
     }
 
     private String buildPrompt(String question, List<RAGContext> ragContexts) {

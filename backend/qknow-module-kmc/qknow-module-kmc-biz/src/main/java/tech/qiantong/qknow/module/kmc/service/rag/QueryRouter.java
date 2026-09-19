@@ -123,7 +123,7 @@ public class QueryRouter {
         private String platform = "DeepSeek";
         private String baseUrl = "https://api.deepseek.com";
         private String apiKey;
-        private String modelName = "deepseek-chat";
+        private String modelName = "deepseek-flash";
         private String classifyPrompt;
         private String systemPrompt;
         private String promptVersion = "manual-v1";

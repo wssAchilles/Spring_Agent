@@ -166,7 +166,7 @@ hermes:
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY:}
-      model-name: deepseek-chat
+      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       max-doc-chars: 8000
       max-concurrent: 3
     router:
@@ -174,13 +174,13 @@ hermes:
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY:}
-      model-name: deepseek-chat
+      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
     hype:
       enabled: true
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY:}
-      model-name: deepseek-chat
+      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       question-count: 3
     query-transform:
       enabled: false
@@ -188,7 +188,7 @@ hermes:
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY}
-      model-name: deepseek-chat
+      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       max-chunk-chars: 2000
       timeout-seconds: 30
       max-chunks-per-document: 20
@@ -207,14 +207,14 @@ qknow:
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY}
-      model-name: deepseek-chat
+      model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       threshold: 0.85
     query-entity:
       enabled: false
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY}
-      model: deepseek-chat
+      model: ${DEEPSEEK_MODEL:deepseek-flash}
       temperature: 0.0
     crag:
       enabled: true
@@ -223,7 +223,7 @@ qknow:
       platform: DeepSeek
       base-url: https://api.deepseek.com
       api-key: ${HERMES_OPENAI_API_KEY}
-      model: deepseek-chat
+      model: ${DEEPSEEK_MODEL:deepseek-flash}
       temperature: 0.0
     local-reranker:
       enabled: true

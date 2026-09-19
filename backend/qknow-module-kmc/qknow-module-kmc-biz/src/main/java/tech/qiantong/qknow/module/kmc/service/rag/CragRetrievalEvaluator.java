@@ -188,7 +188,7 @@ public class CragRetrievalEvaluator {
         private String platform = "DeepSeek";
         private String baseUrl;
         private String apiKey;
-        private String model = "deepseek-chat";
+        private String model = "deepseek-flash";
         private Double temperature = 0.0D;
     }
 }

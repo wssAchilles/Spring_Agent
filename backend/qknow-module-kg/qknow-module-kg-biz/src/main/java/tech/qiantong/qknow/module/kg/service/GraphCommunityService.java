@@ -42,6 +42,9 @@ public class GraphCommunityService {
     @org.springframework.beans.factory.annotation.Value("${HERMES_OPENAI_API_KEY:}")
     private String llmApiKey;
 
+    @org.springframework.beans.factory.annotation.Value("${HERMES_OPENAI_MODEL:${DEEPSEEK_MODEL:deepseek-flash}}")
+    private String llmModelName = "deepseek-flash";
+
     private static final String COMMUNITY_SUMMARY_SYSTEM_PROMPT = """
             你是一个图谱社区摘要专家。以下是图谱社区中的实体和标签。
             请用一段连贯、有见地的文本总结该社区的总体概念和隐藏联系。
@@ -227,7 +230,7 @@ public class GraphCommunityService {
         // LLM Map-Reduce 模式
         try {
             ChatModel chatModel = chatModelService.getChatModel(
-                    "DeepSeek", llmBaseUrl, llmApiKey, "deepseek-chat");
+                    "DeepSeek", llmBaseUrl, llmApiKey, llmModelName);
 
             // MAP 阶段：并发向每个社区提问
             ExecutorService executor = Executors.newFixedThreadPool(
@@ -367,7 +370,7 @@ public class GraphCommunityService {
 
         try {
             ChatModel chatModel = chatModelService.getChatModel(
-                    "DeepSeek", llmBaseUrl, llmApiKey, "deepseek-chat");
+                    "DeepSeek", llmBaseUrl, llmApiKey, llmModelName);
 
             String entities = community.getEntities() != null
                     ? String.join("、", community.getEntities().stream().limit(20).toList())

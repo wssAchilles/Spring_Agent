@@ -11,6 +11,7 @@ public class CostEstimator {
     private static final double DEFAULT_OUTPUT_PRICE_PER_MILLION = 2.0;
 
     private static final Map<String, double[]> PRICING = Map.of(
+            "deepseek-flash", new double[]{0.5, 2.0},
             "deepseek-chat", new double[]{1.0, 2.0},
             "gpt-4o", new double[]{25.0, 47.0}
     );

@@ -173,7 +173,7 @@ public class ModelGatewayProxyService {
     protected GatewayDto.GatewayChatResponse doHttpChatCall(ProviderChannel channel,
                                                            ApiKeyEntry apiKey,
                                                            GatewayDto.GatewayChatRequest request) throws IOException, InterruptedException {
-        String upstreamModel = channel.resolveUpstreamModel(request.getModel() != null ? request.getModel() : "deepseek-chat");
+        String upstreamModel = channel.resolveUpstreamModel(request.getModel() != null ? request.getModel() : "deepseek-flash");
         String endpoint = channel.getBaseUrl().replaceAll("/+$", "") + "/chat/completions";
 
         Map<String, Object> payload = new LinkedHashMap<>();

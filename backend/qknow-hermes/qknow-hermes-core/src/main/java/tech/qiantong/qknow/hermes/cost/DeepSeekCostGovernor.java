@@ -24,10 +24,11 @@ public class DeepSeekCostGovernor {
     public record ModelPricingNano(long hitPromptNano, long missPromptNano, long completionNano) {}
 
     private static final Map<String, ModelPricingNano> PRICING_TABLE = Map.of(
+            "deepseek-flash", new ModelPricingNano(100L, 500L, 2_000L),
             "deepseek-chat", new ModelPricingNano(500L, 2_000L, 8_000L),
             "deepseek-reasoner", new ModelPricingNano(1_000L, 4_000L, 16_000L)
     );
-    private static final ModelPricingNano DEFAULT_PRICING = new ModelPricingNano(500L, 2_000L, 8_000L);
+    private static final ModelPricingNano DEFAULT_PRICING = new ModelPricingNano(100L, 500L, 2_000L);
 
     /**
      * 模型级分段累加器容器
@@ -55,6 +56,7 @@ public class DeepSeekCostGovernor {
                     .register(registry);
 
             // 预注册默认模型的 Prometheus 指标
+            registerModelMetrics("deepseek-flash");
             registerModelMetrics("deepseek-chat");
             registerModelMetrics("deepseek-reasoner");
         }
