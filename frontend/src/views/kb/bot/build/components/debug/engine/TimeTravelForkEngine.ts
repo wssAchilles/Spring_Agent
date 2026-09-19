@@ -1,11 +1,14 @@
 /**
  * 时空快照现场分叉与断点继续执行引擎 (TimeTravelForkEngine)
- * 遵循 Phase 113 规范与 UI/UX Pro Max 规范
+ * 遵循 Phase 113 与 Phase 120 规范 (定理 1.1 与定理 1.2 落地)
  * 1. 历史快照深度不可变性 (Anti-Reverse Time Contamination)
- * 2. 现场断点参数修改与 Mock 注入 (In-place Mutation)
- * 3. 派生独立的分叉批次 (Fork Branching)，在画布上以虚线路径呈现
- * 4. 密码学哈希防篡改对齐 (SHA-256 Digest of Mutated Variables)
+ * 2. 持久化结构共享快照树接入 (Persistent Structural Sharing Trie)
+ * 3. 现场断点参数修改与 Mock 注入 (In-place Mutation / Hot Patching)
+ * 4. 派生独立的分叉批次 (Fork Branching)，在画布上以虚线路径呈现
+ * 5. 密码学 SHA-256 哈希防篡改对齐 (与后端 Java 21 Record 完全一致)
  */
+
+import { PersistentSnapshotTree, PersistentSnapshotManager, computeSha256 } from './PersistentSnapshotTree.js';
 
 export interface StepSnapshot {
   stepIndex: number;
@@ -15,6 +18,7 @@ export interface StepSnapshot {
   outputs: Record<string, any>;
   timestamp: number;
   tokenCount: number;
+  stateDigest?: string;
 }
 
 export interface ForkExecutionBranch {
@@ -25,15 +29,17 @@ export interface ForkExecutionBranch {
   mutatedVariables: Record<string, any>;
   mutatedVariablesHash: string;
   historicalSnapshots: ReadonlyArray<StepSnapshot>;
+  stateTree?: PersistentSnapshotTree<any>;
   activeStepIndex: number;
   status: 'FORKED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
 }
 
 export class TimeTravelForkEngine {
   private branches: Map<string, ForkExecutionBranch> = new Map();
+  private snapshotManager: PersistentSnapshotManager = new PersistentSnapshotManager();
 
   /**
-   * 从指定历史快照步数进行分叉派生
+   * 从指定历史快照步数进行分叉派生 (接入结构共享树与防逆向污染)
    *
    * @param parentReceiptId 父凭单 ID
    * @param historySnapshots 完整的历史快照数组
@@ -53,21 +59,41 @@ export class TimeTravelForkEngine {
       throw new Error(`分叉步数超出有效范围 [0, ${historySnapshots.length - 1}]`);
     }
 
-    // 1. 截取 0 ~ forkStepIndex 的前序历史快照，执行深度不可变冻结
+    // 1. 构建前序结构共享快照树，保证内存 O(Delta_V) 有界
+    let branchTree = new PersistentSnapshotTree<any>();
     const prefixHistory: StepSnapshot[] = [];
+
     for (let i = 0; i <= forkStepIndex; i++) {
       const original = historySnapshots[i];
+      // 提取输入与输出中的所有变量合并入状态树
+      const combinedVars = {
+        ...(original.inputs || {}),
+        ...(original.outputs || {})
+      };
+
       if (i === forkStepIndex) {
-        // 在分叉点注入修改参数
+        // 在分叉点注入现场热补丁修改参数
+        const mergedInputs = { ...(original.inputs || {}), ...(mutatedVariables.inputs || {}) };
+        const mergedOutputs = { ...(original.outputs || {}), ...(mutatedVariables.outputs || {}) };
+        const mutatedCombined = { ...mergedInputs, ...mergedOutputs, ...(mutatedVariables || {}) };
+
+        branchTree = branchTree.setBatch(mutatedCombined);
+        const digest = branchTree.computeDigest();
+
         prefixHistory.push(Object.freeze({
           ...original,
-          inputs: Object.freeze({ ...original.inputs, ...mutatedVariables.inputs }),
-          outputs: Object.freeze({ ...original.outputs, ...mutatedVariables.outputs }),
-          timestamp: Date.now()
+          inputs: Object.freeze(mergedInputs),
+          outputs: Object.freeze(mergedOutputs),
+          timestamp: Date.now(),
+          stateDigest: digest
         }));
       } else {
-        // 前序历史严格保持原始引用并冻结
-        prefixHistory.push(Object.freeze({ ...original }));
+        // 前序历史通过路径复制递增，保持原始引用严格不可变并冻结
+        branchTree = branchTree.setBatch(combinedVars);
+        prefixHistory.push(Object.freeze({
+          ...original,
+          stateDigest: branchTree.computeDigest()
+        }));
       }
     }
 
@@ -82,6 +108,7 @@ export class TimeTravelForkEngine {
       mutatedVariables: Object.freeze({ ...mutatedVariables }),
       mutatedVariablesHash: mutatedHash,
       historicalSnapshots: Object.freeze(prefixHistory),
+      stateTree: branchTree,
       activeStepIndex: forkStepIndex,
       status: 'FORKED'
     };
@@ -91,7 +118,7 @@ export class TimeTravelForkEngine {
   }
 
   /**
-   * 恢复并继续单步执行分叉分支
+   * 恢复并继续单步执行分叉分支 (保持状态树增量推进)
    */
   public stepForward(branchId: string, nextStepSnapshot: StepSnapshot): ForkExecutionBranch {
     const branch = this.branches.get(branchId);
@@ -99,16 +126,47 @@ export class TimeTravelForkEngine {
       throw new Error(`未找到分叉分支: ${branchId}`);
     }
 
-    const updatedHistory = [...branch.historicalSnapshots, Object.freeze(nextStepSnapshot)];
+    let updatedTree = branch.stateTree || new PersistentSnapshotTree<any>();
+    const combinedVars = {
+      ...(nextStepSnapshot.inputs || {}),
+      ...(nextStepSnapshot.outputs || {})
+    };
+    updatedTree = updatedTree.setBatch(combinedVars);
+
+    const snapshotWithDigest: StepSnapshot = Object.freeze({
+      ...nextStepSnapshot,
+      stateDigest: updatedTree.computeDigest()
+    });
+
+    const updatedHistory = [...branch.historicalSnapshots, snapshotWithDigest];
     const updatedBranch: ForkExecutionBranch = {
       ...branch,
       historicalSnapshots: Object.freeze(updatedHistory),
+      stateTree: updatedTree,
       activeStepIndex: branch.activeStepIndex + 1,
       status: 'RUNNING'
     };
 
     this.branches.set(branchId, updatedBranch);
     return updatedBranch;
+  }
+
+  /**
+   * O(1) 获取指定分支任意历史步长的状态快照
+   */
+  public getSnapshotAt(branchId: string, stepIndex: number): StepSnapshot | undefined {
+    const branch = this.branches.get(branchId);
+    if (!branch || stepIndex < 0 || stepIndex >= branch.historicalSnapshots.length) {
+      return undefined;
+    }
+    return branch.historicalSnapshots[stepIndex];
+  }
+
+  /**
+   * 获取指定分支当前最新状态树
+   */
+  public getBranchStateTree(branchId: string): PersistentSnapshotTree<any> | undefined {
+    return this.branches.get(branchId)?.stateTree;
   }
 
   /**
@@ -119,17 +177,17 @@ export class TimeTravelForkEngine {
   }
 
   /**
-   * 计算修改变量的简易一致性哈希 (十六进制字符串)
+   * 获取指定分支
    */
-  private computeVariablesHash(vars: Record<string, any>): string {
-    const json = JSON.stringify(vars || {});
-    let hash = 0;
-    for (let i = 0; i < json.length; i++) {
-      const char = json.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash |= 0;
-    }
-    const hex = Math.abs(hash).toString(16).padStart(16, '0');
-    return `hash_vars_${hex}`;
+  public getBranch(branchId: string): ForkExecutionBranch | undefined {
+    return this.branches.get(branchId);
+  }
+
+  /**
+   * 计算修改变量的强密码学 SHA-256 哈希值 (与后端 Java 21 Record 格式对齐)
+   */
+  public computeVariablesHash(vars: Record<string, any>): string {
+    const json = JSON.stringify(vars || {}, Object.keys(vars || {}).sort());
+    return computeSha256(json);
   }
 }
