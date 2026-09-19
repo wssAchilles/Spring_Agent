@@ -64,8 +64,7 @@ onMounted(() => {
   text-align: center;
   overflow: hidden;
   border: 0;
-  border-bottom: 1px solid #e7ebf1;
-  background: #ffffff;
+  border-bottom: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12));
 
   & .sidebar-logo-link {
     height: 100%;
@@ -91,7 +90,7 @@ onMounted(() => {
       font-size: 20px;
       font-weight: 800;
       line-height: 1;
-      background: #3478f6;
+      background: var(--ios26-color-blue, #0088ff);
       box-shadow: none;
       transform-origin: center;
     }
@@ -102,9 +101,9 @@ onMounted(() => {
 
     & .sidebar-logo-word {
       display: inline-block;
-      color: #172033;
+      color: var(--ios26-label-primary, #000000);
       font-size: 18px;
-      font-weight: 700;
+      font-weight: 590;
       line-height: 1;
       letter-spacing: 0;
     }
@@ -123,8 +122,8 @@ onMounted(() => {
     & .sidebar-title {
       display: inline-block;
       margin: 0;
-      color: #fff;
-      font-weight: 600;
+      color: var(--ios26-label-primary, #000000);
+      font-weight: 590;
       line-height: 50px;
       font-size: 14px;
       font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
@@ -133,7 +132,7 @@ onMounted(() => {
   }
 
   &.navbar-logo{
-    background-color: #fff !important;
+    background-color: transparent !important;
   }
 
   &.collapse {

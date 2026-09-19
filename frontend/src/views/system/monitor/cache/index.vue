@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container glass-card">
+  <div class="app-container monitor-container">
     <el-row>
       <el-col :span="24" class="card-box">
         <el-card class="glass-card">
@@ -130,3 +130,30 @@ function getList() {
 
 getList();
 </script>
+
+<style lang="scss" scoped>
+/* 缓存监控页面画布容器规范：消除外层双重卡片白色底板，确保多卡片在系统画布上平滑流动 */
+.monitor-container {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+  padding: 16px 20px 28px 20px;
+
+  .card-box {
+    padding-left: 10px;
+    padding-right: 10px;
+    margin-bottom: 20px;
+
+    :deep(.el-card) {
+      border: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12));
+      box-shadow: var(--ios26-shadow-sm, 0 4px 16px rgba(0, 0, 0, 0.04));
+      transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+
+      &:hover {
+        box-shadow: var(--ios26-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.08));
+      }
+    }
+  }
+}
+</style>

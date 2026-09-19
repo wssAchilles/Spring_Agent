@@ -260,87 +260,11 @@ function handleScroll() {
 
 <style lang="scss" scoped>
 .tags-view-container {
-  height: 34px;
+  height: 36px;
   width: 100%;
-  background: #fff;
-  border-bottom: 1px solid #d8dce5;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 0 3px 0 rgba(0, 0, 0, 0.04);
-
-  .tags-view-wrapper {
-    .tags-view-item {
-      display: inline-block;
-      position: relative;
-      cursor: pointer;
-      height: 26px;
-      line-height: 26px;
-      border: 1px solid #d8dce5;
-      color: #495060;
-      background: #fff;
-      padding: 0 8px;
-      font-size: 12px;
-      margin-left: 5px;
-      margin-top: 4px;
-
-      &:first-of-type {
-        margin-left: 15px;
-      }
-
-      &:last-of-type {
-        margin-right: 15px;
-      }
-
-      &.active {
-        background-color: #42b983;
-        color: #fff;
-        border-color: #42b983;
-
-        &::before {
-          content: '';
-          background: #fff;
-          display: inline-block;
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          position: relative;
-          margin-right: 5px;
-        }
-      }
-    }
-  }
-
-  .contextmenu {
-    margin: 0;
-    background: #fff;
-    z-index: 3000;
-    position: absolute;
-    list-style-type: none;
-    padding: 5px 0;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 400;
-    color: #333;
-    box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, 0.3);
-
-    li {
-      margin: 0;
-      padding: 7px 16px;
-      cursor: pointer;
-
-      &:hover {
-        background: #eee;
-      }
-    }
-  }
-}
-</style>
-
-<style scoped lang="scss">
-.tags-view-container {
-  height: 38px;
-  width: 100%;
-  background: #ffffff;
-  border-bottom: 1px solid #f1f5f9;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  background: var(--ios26-bg-primary, #ffffff);
+  border-bottom: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12));
+  box-shadow: none;
   display: flex;
   align-items: center;
 
@@ -359,19 +283,19 @@ function handleScroll() {
       align-items: center;
       position: relative;
       cursor: pointer;
-      height: 28px;
-      line-height: 28px;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      color: #64748b;
-      background: #f8fafc;
+      height: 26px;
+      line-height: 26px;
+      border: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12));
+      border-radius: 1000px;
+      color: var(--ios26-label-secondary, rgba(60, 60, 67, 0.6));
+      background: var(--ios26-fill-vibrant-secondary, #e0e0e0);
       padding: 0 10px;
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 510;
       margin: 0 3px;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      box-shadow: none;
 
       &:first-of-type {
         margin-left: 12px;
@@ -382,79 +306,69 @@ function handleScroll() {
       }
 
       &:not(.active):hover {
-        background: #f1f5f9;
-        color: #0f172a;
-        border-color: #cbd5e1;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        background: var(--ios26-fill-vibrant-primary, #cccccc);
+        color: var(--ios26-label-primary, #000000);
+        // 派生值: 派生自 --ios26-color-blue (#0088ff) 的 28% 透明度悬停微边框
+        border-color: rgba(0, 136, 255, 0.28);
       }
 
       &.active {
-        background: #eff6ff !important;
-        color: #2563eb !important;
-        border-color: #bfdbfe !important;
-        font-weight: 600 !important;
-        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08) !important;
-
-        &::before {
-          content: '';
-          background: #2563eb;
-          display: inline-block;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          margin-right: 6px;
-          box-shadow: 0 0 0 2px #dbeafe;
-        }
+        background: var(--ios26-color-blue, #0088ff) !important;
+        color: #ffffff !important;
+        border-color: var(--ios26-color-blue, #0088ff) !important;
+        font-weight: 510 !important;
+        // 派生值: 派生自 --ios26-color-blue (#0088ff) 的 25% 投影光晕
+        box-shadow: 0 2px 6px rgba(0, 136, 255, 0.25) !important;
       }
 
       span {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        margin-left: 6px;
-        width: 16px;
-        height: 16px;
+        margin-left: 4px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
         transition: all 0.15s ease;
 
         &:hover {
-          background: rgba(0, 0, 0, 0.08);
-          color: #ef4444;
+          background: rgba(0, 0, 0, 0.15);
+          color: #ff383c;
         }
 
         .el-icon-close {
-          width: 11px;
-          height: 11px;
+          width: 10px;
+          height: 10px;
           cursor: pointer;
         }
       }
 
       &.active span:hover {
-        background: rgba(37, 99, 235, 0.15);
-        color: #1d4ed8;
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
       }
     }
   }
 
   .contextmenu {
     margin: 0;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-    padding: 4px;
-    min-width: 110px;
+    background: var(--ios26-bg-primary, #ffffff);
+    border: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12));
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.04);
+    padding: 6px;
+    min-width: 120px;
     z-index: 3000;
     position: absolute;
     list-style-type: none;
 
     li {
       margin: 1px 0;
-      padding: 6px 10px;
-      border-radius: 6px;
-      color: #475569;
+      padding: 6px 12px;
+      border-radius: 8px;
+      color: var(--ios26-label-primary, #000000);
       font-size: 12px;
-      font-weight: 500;
+      font-weight: 510;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -462,8 +376,8 @@ function handleScroll() {
       transition: all 0.15s ease;
 
       &:hover {
-        background: #f1f5f9;
-        color: #2563eb;
+        background: var(--ios26-fill-vibrant-secondary, #e0e0e0);
+        color: var(--ios26-color-blue, #0088ff);
       }
     }
   }

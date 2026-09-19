@@ -59,8 +59,10 @@ getBreadcrumb();
   margin-left: 8px;
 
   .no-redirect {
-    // color: #97a8be;
-    color: #888888;
+    color: var(--ios26-label-primary, #000000);
+    font-size: 17px;
+    font-weight: 590;
+    letter-spacing: var(--ios26-tracking-headline, -0.43px);
     cursor: text;
   }
 }

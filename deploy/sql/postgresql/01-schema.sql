@@ -241,7 +241,8 @@ CREATE TABLE IF NOT EXISTS system_job_log (
     status         CHAR(1) DEFAULT '0',
     exception_info TEXT DEFAULT '',
     start_time     TIMESTAMP DEFAULT NULL,
-    stop_time      TIMESTAMP DEFAULT NULL
+    stop_time      TIMESTAMP DEFAULT NULL,
+    create_time    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 COMMENT ON TABLE system_job_log IS '定时任务调度日志表';
 

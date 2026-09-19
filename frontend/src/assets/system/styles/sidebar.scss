@@ -20,7 +20,7 @@
     -webkit-transition: width .28s;
     transition: width 0.28s;
     width: $base-sidebar-width !important;
-    background-color: #ffffff !important;
+    background-color: var(--ios26-bg-grouped-primary, #f2f2f7) !important;
     height: 100%;
     position: fixed;
     font-size: 0px;
@@ -29,9 +29,9 @@
     left: 0;
     z-index: 1001;
     overflow: hidden;
-    -webkit-box-shadow: 1px 0 0 #e3e8ef;
-    box-shadow: 1px 0 0 #e3e8ef;
-    background: #ffffff;
+    border-right: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12));
+    box-shadow: none;
+    background: var(--ios26-bg-grouped-primary, #f2f2f7) !important;
 
     &.navbar-logo{
         box-shadow: none;
@@ -96,20 +96,20 @@
       .el-sub-menu__title {
         height: 40px !important;
         line-height: 40px !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
         padding: 0 10px !important;
         margin: 2px 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        color: #334155 !important;
+        color: var(--ios26-label-primary, #000000) !important;
         font-size: 14px !important;
-        font-weight: 600 !important;
+        font-weight: 510 !important;
         transition: all 0.2s ease !important;
 
         &:hover {
-          background-color: #f1f5f9 !important;
-          color: #0f172a !important;
+          background-color: var(--ios26-fill-vibrant-secondary, #e0e0e0) !important;
+          color: var(--ios26-label-primary, #000000) !important;
         }
 
         .svg-icon {
@@ -118,7 +118,7 @@
           height: 18px !important;
           margin-right: 10px !important;
           margin-left: 0 !important;
-          color: #475569 !important;
+          color: var(--ios26-label-secondary, rgba(60, 60, 67, 0.6)) !important;
           fill: currentColor !important;
           flex-shrink: 0 !important;
         }
@@ -135,7 +135,7 @@
         }
 
         .el-sub-menu__icon-arrow {
-          color: #94a3b8 !important;
+          color: var(--ios26-label-tertiary, rgba(60, 60, 67, 0.3)) !important;
           position: static !important;
           margin-left: auto !important;
           margin-top: 0 !important;
@@ -147,23 +147,24 @@
         }
 
         &:hover .el-sub-menu__icon-arrow {
-          color: #2563eb !important;
+          color: var(--ios26-color-blue, #0088ff) !important;
         }
       }
 
       /* 父目录展开与激活高亮态 */
       .el-sub-menu.is-opened > .el-sub-menu__title,
       .el-sub-menu.is-active > .el-sub-menu__title {
-        background-color: rgba(37, 99, 235, 0.06) !important;
-        color: #1d4ed8 !important;
+        // 派生值: 系统蓝 #0088ff 之 8% alpha 展开态轻量高亮底衬
+        background-color: rgba(0, 136, 255, 0.08) !important;
+        color: var(--ios26-color-blue, #0088ff) !important;
 
         .svg-icon {
-          color: #2563eb !important;
+          color: var(--ios26-color-blue, #0088ff) !important;
           fill: currentColor !important;
         }
 
         .el-sub-menu__icon-arrow {
-          color: #2563eb !important;
+          color: var(--ios26-color-blue, #0088ff) !important;
         }
       }
 
@@ -171,15 +172,15 @@
       .sidebar-item > a .el-menu-item {
         height: 40px !important;
         line-height: 40px !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
         padding: 0 10px !important;
         margin: 2px 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        color: #334155 !important;
+        color: var(--ios26-label-primary, #000000) !important;
         font-size: 14px !important;
-        font-weight: 500 !important;
+        font-weight: 510 !important;
         transition: all 0.2s ease !important;
 
         .svg-icon {
@@ -189,7 +190,7 @@
           margin-right: 10px !important;
           margin-left: 0 !important;
           flex-shrink: 0 !important;
-          color: #475569 !important;
+          color: var(--ios26-label-secondary, rgba(60, 60, 67, 0.6)) !important;
           fill: currentColor !important;
         }
 
@@ -203,15 +204,16 @@
         }
 
         &:hover {
-          background-color: #f1f5f9 !important;
-          color: #0f172a !important;
+          background-color: var(--ios26-fill-vibrant-secondary, #e0e0e0) !important;
+          color: var(--ios26-label-primary, #000000) !important;
         }
 
         &.is-active {
-          background: #2563eb !important;
+          background: var(--ios26-color-blue, #0088ff) !important;
           color: #ffffff !important;
-          font-weight: 600 !important;
-          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+          font-weight: 510 !important;
+          // 派生值: 派生自 --ios26-color-blue (#0088ff) 的 25% 投影光晕
+          box-shadow: 0 2px 8px rgba(0, 136, 255, 0.25) !important;
 
           .menu-title,
           .svg-icon {
@@ -229,7 +231,7 @@
         margin-top: 3px !important;
         margin-bottom: 6px !important;
         padding-left: 8px !important;
-        border-left: 1.5px solid #e2e8f0 !important;
+        border-left: 1px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12)) !important;
         background-color: transparent !important;
       }
 
@@ -241,15 +243,15 @@
       .nest-menu .el-menu-item {
         height: 36px !important;
         line-height: 36px !important;
-        border-radius: 6px !important;
+        border-radius: 10px !important;
         padding: 0 10px !important;
         margin: 1px 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        color: #64748b !important;
+        color: var(--ios26-label-secondary, rgba(60, 60, 67, 0.6)) !important;
         font-size: 13px !important;
-        font-weight: 500 !important;
+        font-weight: 510 !important;
         background-color: transparent !important;
         transition: all 0.2s ease !important;
 
@@ -259,7 +261,7 @@
           height: 16px !important;
           margin-right: 8px !important;
           margin-left: 0 !important;
-          color: #64748b !important;
+          color: var(--ios26-label-secondary, rgba(60, 60, 67, 0.6)) !important;
           fill: currentColor !important;
           flex-shrink: 0 !important;
         }
@@ -274,19 +276,20 @@
         }
 
         &:hover {
-          background-color: #f1f5f9 !important;
-          color: #0f172a !important;
+          background-color: var(--ios26-fill-vibrant-secondary, #e0e0e0) !important;
+          color: var(--ios26-label-primary, #000000) !important;
 
           .svg-icon {
-            color: #334155 !important;
+            color: var(--ios26-label-primary, #000000) !important;
           }
         }
 
         &.is-active {
-          background: #2563eb !important;
+          background: var(--ios26-color-blue, #0088ff) !important;
           color: #ffffff !important;
-          font-weight: 600 !important;
-          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+          font-weight: 510 !important;
+          // 派生值: 派生自 --ios26-color-blue (#0088ff) 的 25% 投影光晕
+          box-shadow: 0 2px 8px rgba(0, 136, 255, 0.25) !important;
 
           .menu-title,
           .svg-icon {
@@ -346,6 +349,52 @@
     }
 
     .el-menu--collapse {
+      .el-menu-item,
+      .el-sub-menu__title {
+        height: 40px !important;
+        line-height: 40px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        border-radius: 12px !important;
+
+        .el-menu-tooltip__trigger {
+          padding: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .svg-icon,
+        .el-menu-tooltip__trigger .svg-icon {
+          margin: 0 !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          margin-top: 0 !important;
+          margin-bottom: 0 !important;
+          font-size: 18px !important;
+          width: 18px !important;
+          height: 18px !important;
+          flex-shrink: 0 !important;
+        }
+      }
+
+      .sidebar-item > a .el-menu-item .svg-icon,
+      .sidebar-item .el-sub-menu__title .svg-icon,
+      .el-menu-item .svg-icon,
+      .el-sub-menu__title .svg-icon,
+      .svg-icon {
+        margin: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+      }
+
       .el-sub-menu {
         &>.el-sub-menu__title {
           &>span {
@@ -365,9 +414,10 @@
         }
       }
       
-      // 当前选中的菜单项显示图标
+      // 当前选中的菜单项保持统一 40px 高度与居中
       .el-menu-item.is-active {
-        height: 42px !important;
+        height: 40px !important;
+        line-height: 40px !important;
         &>i,
         &>span {
           height: auto !important;

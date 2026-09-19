@@ -15,9 +15,9 @@
                 :default-active="activeMenu"
                 :collapse="isCollapse"
                 :background-color="'transparent'"
-                :text-color="'#334155'"
+                :text-color="variables.menuLightColor || 'rgba(60, 60, 67, 0.6)'"
                 :unique-opened="false"
-                :active-text-color="'#2563eb'"
+                :active-text-color="variables.primaryColor || '#0088ff'"
                 :collapse-transition="false"
                 mode="vertical"
             >

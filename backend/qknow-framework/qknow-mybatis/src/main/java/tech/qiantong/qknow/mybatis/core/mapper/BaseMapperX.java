@@ -41,6 +41,9 @@ public interface BaseMapperX<T> extends MPJBaseMapper<T> {
     }
 
     default PageResult<T> selectPage(PageParam pageParam, Collection<SortingField> sortingFields, @Param("ew") Wrapper<T> queryWrapper) {
+        // 清理当前线程可能残留的 PageHelper 分页变量，彻底防止与 MyBatis-Plus 的 IPage 产生双重分页冲突 (LIMIT ? LIMIT ?)
+        com.github.pagehelper.PageHelper.clearPage();
+
         // 特殊：不分页，直接查询全部
         if (PageParam.PAGE_SIZE_NONE.equals(pageParam.getPageSize())) {
             List<T> list = selectList(queryWrapper);
@@ -55,6 +58,9 @@ public interface BaseMapperX<T> extends MPJBaseMapper<T> {
     }
 
     default <D> PageResult<D> selectJoinPage(PageParam pageParam, Class<D> clazz, MPJLambdaWrapper<T> lambdaWrapper) {
+        // 清理当前线程可能残留的 PageHelper 分页变量，彻底防止与 MyBatis-Plus 的 IPage 产生双重分页冲突
+        com.github.pagehelper.PageHelper.clearPage();
+
         // 特殊：不分页，直接查询全部
         if (PageParam.PAGE_SIZE_NONE.equals(pageParam.getPageSize())) {
             List<D> list = selectJoinList(clazz, lambdaWrapper);
@@ -69,6 +75,9 @@ public interface BaseMapperX<T> extends MPJBaseMapper<T> {
     }
 
     default <DTO> PageResult<DTO> selectJoinPage(PageParam pageParam, Class<DTO> resultTypeClass, MPJBaseJoin<T> joinQueryWrapper) {
+        // 清理当前线程可能残留的 PageHelper 分页变量，彻底防止与 MyBatis-Plus 的 IPage 产生双重分页冲突
+        com.github.pagehelper.PageHelper.clearPage();
+
         IPage<DTO> mpPage = MyBatisUtils.buildPage(pageParam);
         selectJoinPage(mpPage, resultTypeClass, joinQueryWrapper);
         // 转换返回

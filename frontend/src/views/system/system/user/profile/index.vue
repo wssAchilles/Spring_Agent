@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container glass-card">
+  <div class="app-container profile-container">
     <el-row :gutter="15">
       <el-col :span="6" :xs="24">
         <el-card class="box-card glass-card">
@@ -144,5 +144,14 @@ getUser();
   border-radius: 2px;
   background: var(--el-color-primary);
   margin-right: 10px;
+}
+
+/* 个人中心画布容器规范：消除外层双重卡片白色底板 */
+.profile-container {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+  padding: 16px 20px 28px 20px;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container glass-card">
-    <div class="emptyBg">
+  <div class="app-container developing-container">
+    <div class="emptyBg glass-card">
       <div class="empty-content">
         <img
           src="@/assets/system/images/no_data/noData.png"
@@ -18,13 +18,20 @@
 </script>
 
 <style scoped>
+.developing-container {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
+  padding: 16px 20px 28px 20px;
+}
+
 .emptyBg {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: calc(100vh - 124px);
+  height: calc(100vh - 150px);
   padding: 40px 0;
-  background-color: #fff;
 }
 
 .empty-content {

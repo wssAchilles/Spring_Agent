@@ -60,6 +60,7 @@
         <fastjson.version>2.0.60</fastjson.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <oshi.version>6.9.1</oshi.version>
+        <jna.version>5.18.1</jna.version>
         <commons.io.version>2.21.0</commons.io.version>
         <poi.version>5.2.3</poi.version>
         <velocity.version>2.3</velocity.version>
@@ -144,6 +145,18 @@
                 <groupId>com.github.oshi</groupId>
                 <artifactId>oshi-core</artifactId>
                 <version>${oshi.version}</version>
+            </dependency>
+
+            <!-- JNA 统一锁定 5.18.1，彻底解决 oshi-core 6.9.1 与 elasticsearch 传递依赖的 5.10.0 版本冲突导致的 Memory.close() NoSuchMethodError -->
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna-platform</artifactId>
+                <version>${jna.version}</version>
             </dependency>
 
             <!-- io常用工具类 -->

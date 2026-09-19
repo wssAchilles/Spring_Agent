@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=620, height=440, initial-scale=1.0">
+  <title>iOS 26 Liquid Glass 材质像素级比对测试场</title>
+  <style>
+    :root {
+      --ios26-radius-card: 30px;
+      --ios26-duration-normal: 320ms;
+      --ios26-spring-standard: cubic-bezier(0.25, 1, 0.33, 1);
+      --ios26-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+      --ios26-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+      --ios26-space-20: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 620px;
+      height: 440px;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "PingFang SC", sans-serif;
+      position: relative;
+      /* 真实高动态 iOS 风格渐变壁纸 */
+      background:
+        radial-gradient(circle at 20% 25%, #ff5252 0%, transparent 42%),
+        radial-gradient(circle at 80% 20%, #2196f3 0%, transparent 48%),
+        radial-gradient(circle at 50% 85%, #9c27b0 0%, transparent 52%),
+        radial-gradient(circle at 85% 80%, #00e676 0%, transparent 38%),
+        linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 高频几何色块，为 backdrop 混合提供多频段细节 */
+    .bg-shape-1 {
+      position: absolute;
+      top: 35px;
+      left: 70px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #ff9800, #f44336);
+      filter: blur(6px);
+      z-index: 0;
+    }
+    .bg-shape-2 {
+      position: absolute;
+      bottom: 40px;
+      right: 80px;
+      width: 210px;
+      height: 150px;
+      border-radius: 36px;
+      background: linear-gradient(135deg, #00e5ff, #2979ff);
+      filter: blur(10px);
+      z-index: 0;
+    }
+    .bg-shape-3 {
+      position: absolute;
+      top: 130px;
+      right: 170px;
+      width: 130px;
+      height: 130px;
+      border-radius: 28px;
+      background: linear-gradient(60deg, #e91e63, #ff4081);
+      transform: rotate(20deg);
+      filter: blur(8px);
+      z-index: 0;
+    }
+
+    /* 居中测试卡片容器 (380px x 260px) */
+    .test-card {
+      width: 380px;
+      height: 260px;
+      position: relative;
+      border-radius: 30px;
+      z-index: 10;
+    }
+
+    /* ==========================================================================
+       1. Figma 节点 48:33518 标准规范 (Ground Truth)
+       双层物理结构：下层 plus-lighter 高光 + 上层 color-dodge 模糊提亮
+       ========================================================================== */
+    .mode-reference {
+      position: relative;
+      border-radius: 30px;
+      overflow: hidden;
+    }
+    .mode-reference::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      background: rgba(255, 255, 255, 0.25);
+      mix-blend-mode: plus-lighter;
+      pointer-events: none;
+    }
+    .mode-reference::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: inherit;
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      background: rgba(255, 255, 255, 0.6);
+      mix-blend-mode: color-dodge;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       2. 前端当前生产实现 (.glass-card / .ios26-glass-card)
+       ========================================================================== */
+    .mode-production {
+      position: relative;
+      border-radius: var(--ios26-radius-card, 30px);
+      overflow: hidden;
+      box-shadow: var(--ios26-shadow-md);
+      padding: var(--ios26-space-20);
+    }
+    .mode-production::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: inherit;
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      background: rgba(255, 255, 255, 0.6);
+      mix-blend-mode: color-dodge;
+      pointer-events: none;
+    }
+    .mode-production::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      background: rgba(255, 255, 255, 0.25);
+      mix-blend-mode: plus-lighter;
+      pointer-events: none;
+    }
+    .mode-production > :where(*) {
+      position: relative;
+      z-index: 3;
+    }
+
+    /* ==========================================================================
+       3. 反模式 A: 带有半透明底衬并加了 transform: translateZ(0) 隔离层叠上下文
+       模拟旧代码中为了“GPU加速”加 transform，使双层材质与卡片底衬混合而无法透壁纸
+       ========================================================================== */
+    .mode-anti-transform {
+      position: relative;
+      border-radius: 30px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.35); /* 传统卡片常用底色 */
+      transform: translateZ(0); /* 强制隔离组 */
+    }
+    .mode-anti-transform::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: inherit;
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      background: rgba(255, 255, 255, 0.6);
+      mix-blend-mode: color-dodge;
+      pointer-events: none;
+    }
+    .mode-anti-transform::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      background: rgba(255, 255, 255, 0.25);
+      mix-blend-mode: plus-lighter;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       4. 反模式 B: 带有 isolation: isolate 隔离层叠上下文
+       完全断开 backdrop 混合链
+       ========================================================================== */
+    .mode-anti-isolate {
+      position: relative;
+      border-radius: 30px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.35);
+      isolation: isolate;
+    }
+    .mode-anti-isolate::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: inherit;
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      background: rgba(255, 255, 255, 0.6);
+      mix-blend-mode: color-dodge;
+      pointer-events: none;
+    }
+    .mode-anti-isolate::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      background: rgba(255, 255, 255, 0.25);
+      mix-blend-mode: plus-lighter;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       5. 反模式 C: 经典传统单层半透明毛玻璃 (白雾无 Vibrancy 增益)
+       ========================================================================== */
+    .mode-anti-single {
+      position: relative;
+      border-radius: 30px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-shape-1"></div>
+  <div class="bg-shape-2"></div>
+  <div class="bg-shape-3"></div>
+
+  <div id="testCard" class="test-card mode-production"></div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode') || 'production';
+    const card = document.getElementById('testCard');
+    card.className = 'test-card mode-' + mode;
+  </script>
+</body>
+</html>

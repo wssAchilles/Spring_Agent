@@ -155,22 +155,69 @@
     //     visibleNumber.value = parseInt(width / 85);
     // }
 
-    // 计算可用宽度下的顶部导航栏可显示菜单数量
+    let resizeObserver = null;
+
+    // 智能计算可用宽度下的顶部导航栏可显示菜单数量
     function calculateVisibleMenus() {
         const container = document.getElementById('topmenu-container');
         if (!container) return;
         const availableWidth = container.clientWidth;
-        const menuWidth = 124; // 每个菜单项宽度
 
-        if (availableWidth < 0) {
+        if (availableWidth <= 0) {
             visibleNumber.value = 0;
             return;
         }
 
-        const rawCount = Math.floor(availableWidth / menuWidth);
-        const finalCount = Math.max(0, rawCount - 1); // 减1留给“更多菜单”
+        // 安全余量：包含容器内部呼吸间距与左右内边距
+        const safePadding = 24;
+        const moreMenuWidth = 160; // “更多菜单”项占用的宽度 (含文字、图标、箭头与间隙)
+        const effectiveWidth = Math.max(0, availableWidth - safePadding);
 
-        visibleNumber.value = finalCount;
+        const menus = topMenus.value || [];
+        if (menus.length === 0) {
+            visibleNumber.value = 0;
+            return;
+        }
+
+        // 收集已渲染的一级菜单项的实际 DOM 宽度
+        const renderedItems = container.querySelectorAll(':scope > .el-menu-item');
+        const itemWidths = [];
+
+        for (let i = 0; i < menus.length; i++) {
+            if (renderedItems && renderedItems[i] && renderedItems[i].offsetWidth > 0) {
+                // 采纳已渲染的真实物理宽度并预留 2px 安全微距
+                itemWidths.push(renderedItems[i].offsetWidth + 2);
+            } else {
+                // 未渲染或尚未挂载时的精准预估：汉字数 * 16px + 图标 24px + 左右 padding (46px)
+                const titleLen = (menus[i].meta?.title || '').length || 4;
+                const estimatedWidth = Math.max(110, titleLen * 16 + 24 + 48);
+                itemWidths.push(estimatedWidth);
+            }
+        }
+
+        // 1. 若所有菜单项总宽度能完全放入，则无需折叠，全量展示
+        const totalAllWidth = itemWidths.reduce((acc, w) => acc + w, 0);
+        if (totalAllWidth <= effectiveWidth) {
+            visibleNumber.value = menus.length;
+            return;
+        }
+
+        // 2. 否则必须扣除“更多菜单”项的宽度
+        const widthForItems = Math.max(0, effectiveWidth - moreMenuWidth);
+        let accumulatedWidth = 0;
+        let count = 0;
+
+        for (let i = 0; i < itemWidths.length; i++) {
+            if (accumulatedWidth + itemWidths[i] <= widthForItems) {
+                accumulatedWidth += itemWidths[i];
+                count++;
+            } else {
+                break;
+            }
+        }
+
+        // 保底展示 1 个，防止全空
+        visibleNumber.value = Math.max(1, count);
     }
 
     function closePageExclusion(key) {
@@ -266,16 +313,35 @@
         return routes;
     }
 
-    onMounted(() => {
-        window.addEventListener('resize', calculateVisibleMenus);
-    });
-    onBeforeUnmount(() => {
-        window.removeEventListener('resize', calculateVisibleMenus);
+    watch(topMenus, () => {
+        nextTick(() => {
+            calculateVisibleMenus();
+        });
     });
 
     onMounted(() => {
-        calculateVisibleMenus();
+        const container = document.getElementById('topmenu-container');
+        if (container && typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(() => {
+                calculateVisibleMenus();
+            });
+            resizeObserver.observe(container);
+        }
+        window.addEventListener('resize', calculateVisibleMenus);
+        nextTick(() => {
+            calculateVisibleMenus();
+            setTimeout(calculateVisibleMenus, 200);
+        });
     });
+
+    onBeforeUnmount(() => {
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+            resizeObserver = null;
+        }
+        window.removeEventListener('resize', calculateVisibleMenus);
+    });
+
     // 如果需要暴露给父组件使用，可以使用 defineExpose
     defineExpose({
         handleSelect
@@ -283,33 +349,36 @@
 </script>
 
 <style lang="scss">
-    .el-menu--horizontal.el-menu {
-        padding-top: 10px;
+    .el-menu--horizontal.el-menu.custom-topmenu {
+        overflow: hidden !important;
+        flex-wrap: nowrap !important;
+        max-width: 100% !important;
     }
 
     .topmenu-container.el-menu--horizontal > .el-menu-item {
-        font-size: 16px;
-        font-weight: bold;
+        font-size: 14px;
+        font-weight: 590;
         float: left;
         height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #333 !important;
-        padding: 0 23px !important;
+        color: var(--ios26-label-primary, #000) !important;
+        padding: 0 16px !important;
+        transition: all 0.2s ease;
     }
 
     /* sub-menu item */
     .topmenu-container.el-menu--horizontal > .el-sub-menu .el-sub-menu__title {
-        font-size: 16px;
+        font-size: 14px;
+        font-weight: 590;
         float: left;
         height: 40px !important;
         line-height: 40px !important;
-        color: #333 !important;
-        padding: 0 15px !important;
-        margin: 0 10px !important;
-        border-radius: 5px;
-        border-bottom: 0;
+        color: var(--ios26-label-primary, #000) !important;
+        padding: 0 14px !important;
+        margin: 0 6px !important;
+        border-radius: 8px;
     }
 
     .topmenu-container.el-menu--horizontal > .el-menu-item.is-active,

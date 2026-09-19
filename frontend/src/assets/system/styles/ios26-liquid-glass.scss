@@ -516,11 +516,13 @@ $ios26-materials: (
     color: #FFFFFF;
     background: linear-gradient(180deg, #1a93ff 0%, var(--ios26-color-blue) 100%);
     border: 0.5px solid rgba(255, 255, 255, 0.40);
+    // 派生值: 派生自 --ios26-color-blue (#0088ff) 的 35% 投影
     box-shadow: 0 4px 14px rgba(0, 136, 255, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.55);
 
     &:hover {
       background: linear-gradient(180deg, #1C8DFF 0%, #0071EB 100%);
-      box-shadow: 0 6px 18px rgba(0, 122, 255, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.65);
+      // 派生值: 派生自 --ios26-color-blue (#0088ff) 的 45% 悬停扩散投影
+      box-shadow: 0 6px 18px rgba(0, 136, 255, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.65);
     }
 
     &:active {
@@ -681,7 +683,6 @@ $ios26-materials: (
   transform: scale(1.0);
   transition: transform var(--ios26-duration-fast) var(--ios26-spring-snappy),
               filter var(--ios26-duration-fast) ease;
-  will-change: transform;
 
   &:active {
     transform: scale(0.96);

@@ -17,44 +17,45 @@
   --duration-fast: 150ms;
   --duration-normal: 250ms;
 
-  /* 浅色模式 - 钛金单色灰阶基础令牌 (Light Titanium Palette) */
-  --mono-bg: #F5F5F7;
-  --mono-surface: #FFFFFF;
-  --mono-surface-striped: #F7F7F9;
-  --mono-surface-hover: rgba(0, 0, 0, 0.03);
-  --mono-text-primary: #1D1D1F;
-  --mono-text-secondary: #6E6E73;
-  --mono-text-muted: #86868B;
-  --mono-border: rgba(0, 0, 0, 0.08);
-  --mono-border-subtle: rgba(0, 0, 0, 0.04);
+  /* 浅色模式 - iOS 26 灰阶与背景令牌 (变量名保留，值换为 iOS 26 核实值) */
+  --mono-bg: #f2f2f7;
+  --mono-surface: #ffffff;
+  --mono-surface-striped: #f2f2f7;
+  --mono-surface-hover: rgba(0, 0, 0, 0.04);
+  --mono-text-primary: #000000;
+  --mono-text-secondary: rgba(60, 60, 67, 0.6);
+  --mono-text-muted: rgba(60, 60, 67, 0.3);
+  --mono-border: rgba(0, 0, 0, 0.12);
+  --mono-border-subtle: rgba(0, 0, 0, 0.08);
   --mono-border-strong: rgba(0, 0, 0, 0.16);
-  --mono-input-bg: rgba(0, 0, 0, 0.02);
-  --mono-focus-ring: rgba(29, 29, 31, 0.12);
-  --mono-glow-color: rgba(0, 0, 0, 0.05);
+  --mono-input-bg: rgba(0, 0, 0, 0.04);
+  /* 派生值: 派生自 --ios26-color-blue (#0088ff) 的 20% 透明度聚焦环 */
+  --mono-focus-ring: rgba(0, 136, 255, 0.2);
+  --mono-glow-color: rgba(0, 0, 0, 0.04);
 
-  /* 基础纯色阶 (Titanium & Neutral Scale) - 向后兼容 */
+  /* 基础纯色阶 - 向后兼容 */
   --monochrome-bg: var(--mono-bg);
   --monochrome-surface: var(--mono-surface);
   --monochrome-text-primary: var(--mono-text-primary);
   --monochrome-text-secondary: var(--mono-text-secondary);
   --monochrome-border: var(--mono-border);
 
-  /* 四级毛玻璃材质规范 - 浅色 */
-  --glass-l0-bg: #F5F5F7;
-  --glass-l1-bg: rgba(255, 255, 255, 0.65);
-  --glass-l1-blur: 16px;
-  --glass-l1-border: rgba(0, 0, 0, 0.06);
-  --glass-l1-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+  /* 四级毛玻璃材质规范 - 浅色 (映射 iOS 26 真实材质 thin/regular/thick) */
+  --glass-l0-bg: #f2f2f7;
+  --glass-l1-bg: rgba(255, 255, 255, 0.4);
+  --glass-l1-blur: 50px;
+  --glass-l1-border: rgba(0, 0, 0, 0.12);
+  --glass-l1-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 
-  --glass-l2-bg: rgba(255, 255, 255, 0.82);
-  --glass-l2-blur: 12px;
-  --glass-l2-border: rgba(255, 255, 255, 0.85);
-  --glass-l2-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --glass-l2-bg: rgba(255, 255, 255, 0.6);
+  --glass-l2-blur: 50px;
+  --glass-l2-border: rgba(0, 0, 0, 0.12);
+  --glass-l2-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 
-  --glass-l3-bg: rgba(255, 255, 255, 0.94);
-  --glass-l3-blur: 8px;
-  --glass-l3-border: rgba(0, 0, 0, 0.08);
-  --glass-l3-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.12);
+  --glass-l3-bg: rgba(255, 255, 255, 0.84);
+  --glass-l3-blur: 50px;
+  --glass-l3-border: rgba(0, 0, 0, 0.12);
+  --glass-l3-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
 
   /* 兼容旧变量 */
   --glass-bg: var(--glass-l2-bg);
@@ -62,13 +63,14 @@
   --glass-shadow: var(--glass-l2-shadow);
   --glass-blur: blur(var(--glass-l2-blur));
 
-  /* Element Plus 变量强力穿透映射 - 浅色 */
-  --el-color-primary: #1D1D1F;
-  --el-color-primary-light-3: #434345;
-  --el-color-primary-light-5: #68686B;
-  --el-color-primary-light-7: #8E8E91;
-  --el-color-primary-light-9: #DCDCDD;
-  --el-color-primary-dark-2: #000000;
+  /* Element Plus 变量强力穿透映射 - 浅色 (iOS 26 系统蓝 #0088ff 及其派生) */
+  --el-color-primary: #0088ff;
+  --el-color-primary-light-3: #4da6ff;
+  --el-color-primary-light-5: #80bfff;
+  --el-color-primary-light-7: #b3d9ff;
+  --el-color-primary-light-8: #cce6ff;
+  --el-color-primary-light-9: #e6f2ff;
+  --el-color-primary-dark-2: #006cd9;
   --el-text-color-primary: var(--mono-text-primary);
   --el-text-color-regular: var(--mono-text-secondary);
   --el-border-color: var(--mono-border);
@@ -76,20 +78,21 @@
   --el-fill-color-blank: transparent;
 }
 
-/* 深色模式令牌定义 (深色闭环映射) */
+/* 深色模式令牌定义 (源文件实测 Dark 节点值对齐) */
 @mixin dark-theme-tokens {
-  --mono-bg: #0A0A0C;
-  --mono-surface: #161618;
-  --mono-surface-striped: #1A1A1D;
-  --mono-surface-hover: rgba(255, 255, 255, 0.04);
-  --mono-text-primary: #EDEDEF;
-  --mono-text-secondary: #9BA1A6;
-  --mono-text-muted: #687076;
-  --mono-border: rgba(255, 255, 255, 0.10);
-  --mono-border-subtle: rgba(255, 255, 255, 0.05);
-  --mono-border-strong: rgba(255, 255, 255, 0.20);
-  --mono-input-bg: rgba(255, 255, 255, 0.04);
-  --mono-focus-ring: rgba(237, 237, 239, 0.18);
+  --mono-bg: #000000;
+  --mono-surface: #1c1c1e;
+  --mono-surface-striped: #2c2c2e;
+  --mono-surface-hover: rgba(255, 255, 255, 0.06);
+  --mono-text-primary: #ffffff;
+  --mono-text-secondary: rgba(235, 235, 245, 0.6);
+  --mono-text-muted: rgba(235, 235, 245, 0.3);
+  --mono-border: rgba(255, 255, 255, 0.17);
+  --mono-border-subtle: rgba(255, 255, 255, 0.08);
+  --mono-border-strong: #38383a;
+  --mono-input-bg: rgba(255, 255, 255, 0.06);
+  /* 派生值: 派生自 --ios26-color-blue (#0088ff) 的 30% 透明度聚焦环 */
+  --mono-focus-ring: rgba(0, 136, 255, 0.3);
   --mono-glow-color: rgba(255, 255, 255, 0.06);
 
   --monochrome-bg: var(--mono-bg);
@@ -98,35 +101,51 @@
   --monochrome-text-secondary: var(--mono-text-secondary);
   --monochrome-border: var(--mono-border);
 
-  /* 四级毛玻璃材质规范 - 深色 */
-  --glass-l0-bg: #0A0A0C;
-  --glass-l1-bg: rgba(22, 22, 24, 0.60);
-  --glass-l1-blur: 16px;
-  --glass-l1-border: rgba(255, 255, 255, 0.06);
+  /* 四级毛玻璃材质规范 - 深色 (注: 深色玻璃配方源文件未读，保留单层近似并加注释标注) */
+  --glass-l0-bg: #000000;
+  --glass-l1-bg: rgba(28, 28, 30, 0.60);
+  --glass-l1-blur: 50px;
+  --glass-l1-border: rgba(255, 255, 255, 0.08);
   --glass-l1-shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
 
-  --glass-l2-bg: rgba(30, 30, 34, 0.75);
-  --glass-l2-blur: 12px;
+  --glass-l2-bg: rgba(44, 44, 46, 0.75);
+  --glass-l2-blur: 50px;
   --glass-l2-border: rgba(255, 255, 255, 0.12);
   --glass-l2-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
 
-  --glass-l3-bg: rgba(36, 36, 42, 0.92);
-  --glass-l3-blur: 8px;
-  --glass-l3-border: rgba(255, 255, 255, 0.15);
+  --glass-l3-bg: rgba(58, 58, 60, 0.88);
+  --glass-l3-blur: 50px;
+  --glass-l3-border: rgba(255, 255, 255, 0.17);
   --glass-l3-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.85);
 
   /* Element Plus 变量强力穿透映射 - 深色 */
-  --el-color-primary: #EDEDEF;
-  --el-color-primary-light-3: #DCDCDD;
-  --el-color-primary-light-5: #B5B5B8;
-  --el-color-primary-light-7: #8E8E91;
-  --el-color-primary-light-9: #434345;
-  --el-color-primary-dark-2: #FFFFFF;
+  --el-color-primary: #0088ff;
+  --el-color-primary-light-3: #4da6ff;
+  --el-color-primary-light-5: #80bfff;
+  --el-color-primary-light-7: #b3d9ff;
+  --el-color-primary-light-9: #e6f2ff;
+  --el-color-primary-dark-2: #006cd9;
   --el-text-color-primary: var(--mono-text-primary);
   --el-text-color-regular: var(--mono-text-secondary);
   --el-border-color: var(--mono-border);
   --el-bg-color: var(--mono-surface);
   --el-fill-color-blank: transparent;
+
+  /* iOS 26 实测深色基础映射 */
+  --ios26-bg-primary: #000000;
+  --ios26-bg-secondary: #1c1c1e;
+  --ios26-bg-tertiary: #2c2c2e;
+  --ios26-bg-grouped-primary: #000000;
+  --ios26-bg-grouped-secondary: #1c1c1e;
+  --ios26-bg-grouped-tertiary: #2c2c2e;
+  --ios26-label-primary: #ffffff;
+  --ios26-label-secondary: rgba(235, 235, 245, 0.6);
+  --ios26-label-tertiary: rgba(235, 235, 245, 0.3);
+  --ios26-label-quaternary: rgba(235, 235, 245, 0.16);
+  --ios26-separator-non-opaque: #38383a;
+  --ios26-separator-opaque: rgba(255, 255, 255, 0.17);
+  --ios26-fill-vibrant-secondary: rgba(120, 120, 128, 0.32);
+  --ios26-fill-vibrant-primary: rgba(120, 120, 128, 0.4);
 }
 
 /* 双通道匹配绑定 */
@@ -149,55 +168,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 硬件加速与渲染隔离通用类 */
-.glass-accelerated {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  contain: layout style;
-}
-
-/* Level 1 结构容器 (Sidebar, Header) */
+/* Level 1 结构容器 (如部分局部面板) */
 .glass-container-l1 {
-  background: var(--glass-l1-bg) !important;
-  backdrop-filter: blur(var(--glass-l1-blur));
-  -webkit-backdrop-filter: blur(var(--glass-l1-blur));
-  border: 1px solid var(--glass-l1-border);
-  box-shadow: var(--glass-l1-shadow);
-}
-
-/* Level 2 业务卡片 (Cards) */
-.glass-card {
-  background: var(--glass-l2-bg) !important;
-  backdrop-filter: blur(var(--glass-l2-blur));
-  -webkit-backdrop-filter: blur(var(--glass-l2-blur));
-  border: 1px solid var(--glass-l2-border);
-  box-shadow: var(--glass-l2-shadow);
-  border-radius: 12px;
-  transition: transform var(--duration-fast) var(--ease-standard),
-              box-shadow var(--duration-fast) var(--ease-standard),
-              border-color var(--duration-fast) var(--ease-standard);
-  transform: translateZ(0);
-  position: relative;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.08), 0 0 16px 0 var(--mono-glow-color);
-  }
+  @include ios26-material(thin, var(--ios26-radius-control, 12px));
+  border: 0.5px solid var(--ios26-separator-non-opaque);
 }
 
 /* Level 3 模态层与浮标 (Modals & Floating Elements) */
 .glass-modal-l3 {
-  background: var(--glass-l3-bg) !important;
-  backdrop-filter: blur(var(--glass-l3-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-l3-blur)) !important;
-  border: 1px solid var(--glass-l3-border) !important;
-  box-shadow: var(--glass-l3-shadow) !important;
+  @include ios26-material(thick, var(--ios26-radius-modal, 26px));
+  border: 0.5px solid var(--ios26-separator-non-opaque) !important;
+  box-shadow: var(--ios26-shadow-lg) !important;
 }
 
-/* Element Plus 核心组件单色玻璃化深度覆写 */
+/* Element Plus 核心组件 iOS 26 玻璃化深度覆写 */
 .el-dialog {
-  @extend .glass-modal-l3;
-  border-radius: 16px !important;
+  @include ios26-material(thick, 26px);
+  border-radius: 26px !important;
   margin: 0 auto !important;
   max-height: 90vh !important;
   display: flex !important;
@@ -205,17 +192,21 @@ body {
   overflow: hidden !important;
   position: relative !important;
   box-sizing: border-box !important;
+  border: 0.5px solid var(--ios26-separator-non-opaque) !important;
+  box-shadow: var(--ios26-shadow-lg) !important;
 
   .el-dialog__header {
     flex-shrink: 0;
     padding: 16px 20px;
     margin-right: 0;
-    border-bottom: 1px solid var(--mono-border-subtle);
+    border-bottom: 0.5px solid var(--ios26-separator-non-opaque);
   }
 
   .el-dialog__title {
     color: var(--mono-text-primary) !important;
-    font-weight: 600;
+    font-weight: 590 !important; // 铁律：iOS 26 Headline 字重严格为 590
+    font-size: var(--ios26-font-size-headline, 17px) !important;
+    letter-spacing: var(--ios26-tracking-headline, -0.43px) !important;
   }
 
   .el-dialog__body {
@@ -223,12 +214,13 @@ body {
     overflow-y: auto !important;
     max-height: calc(90vh - 130px) !important;
     padding: 20px !important;
+    color: var(--mono-text-primary) !important;
   }
 
   .el-dialog__footer {
     flex-shrink: 0;
     padding: 12px 20px;
-    border-top: 1px solid var(--mono-border-subtle);
+    border-top: 0.5px solid var(--ios26-separator-non-opaque);
   }
 }
 
@@ -242,12 +234,10 @@ body {
 
 .el-popover.el-popper,
 .el-dropdown__popper.el-popper {
-  background: var(--glass-l3-bg) !important;
-  backdrop-filter: blur(var(--glass-l3-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-l3-blur)) !important;
-  border: 1px solid var(--glass-l3-border) !important;
-  border-radius: 12px !important;
-  box-shadow: var(--glass-l3-shadow) !important;
+  @include ios26-material(thick, var(--ios26-radius-control, 12px));
+  border: 0.5px solid var(--ios26-separator-non-opaque) !important;
+  border-radius: var(--ios26-radius-control, 12px) !important;
+  box-shadow: var(--ios26-shadow-md) !important;
   color: var(--mono-text-primary) !important;
 }
 
@@ -255,9 +245,9 @@ body {
 .el-select__wrapper,
 .el-textarea__inner {
   background-color: var(--mono-input-bg) !important;
-  border: 1px solid var(--mono-border) !important;
+  border: 0.5px solid var(--mono-border) !important;
   box-shadow: none !important;
-  border-radius: 8px !important;
+  border-radius: var(--ios26-radius-control, 12px) !important;
   color: var(--mono-text-primary) !important;
   transition: border-color var(--duration-fast) var(--ease-standard),
               box-shadow var(--duration-fast) var(--ease-standard);
@@ -273,7 +263,7 @@ body {
 .el-table {
   background-color: transparent !important;
   color: var(--mono-text-primary) !important;
-  --el-table-border-color: var(--mono-border-subtle);
+  --el-table-border-color: var(--mono-border);
   --el-table-header-bg-color: transparent;
   --el-table-tr-bg-color: transparent;
 
@@ -289,12 +279,12 @@ body {
   th.el-table__cell {
     background-color: transparent !important;
     color: var(--mono-text-secondary) !important;
-    font-weight: 600;
-    border-bottom: 1px solid var(--mono-border) !important;
+    font-weight: 590;
+    border-bottom: 0.5px solid var(--mono-border) !important;
   }
 
   td.el-table__cell {
-    border-bottom: 1px solid var(--mono-border-subtle) !important;
+    border-bottom: 0.5px solid var(--mono-border) !important;
   }
 
   /* 核心防击穿保护: 固定列 (Fixed Left & Fixed Right) 必须使用实体表面背景，彻底杜绝底层文字透射叠印 */
@@ -324,7 +314,7 @@ body {
     box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.08) !important;
   }
 
-  /* 斑马纹行样式: 必须使用实体不透明背景，确保固定列与普通列都不穿透 */
+  /* 斑马纹行样式: 使用 iOS 26 groupedPrimary 背景 (#f2f2f7)，确保固定列与普通列都不穿透 */
   &.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
     background-color: var(--mono-surface-striped) !important;
   }
@@ -339,37 +329,167 @@ body {
   }
 }
 
-/* 单色微交互按钮规范 */
-.glass-btn {
-  background: var(--glass-l2-bg);
-  border: 1px solid var(--mono-border);
-  color: var(--mono-text-primary);
-  border-radius: 8px;
-  font-weight: 500;
-  padding: 8px 16px;
-  transition: all var(--duration-fast) var(--ease-standard);
+/* iOS 26 按钮规范 (拟物液态高光微质感、字重 510、圆角 12px、触感微按压) */
+.glass-btn,
+.el-button.glass-btn,
+.app-container .glass-btn,
+.app-container .el-button.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  line-height: 1;
+  padding: 0 14px;
+  font-family: var(--ios26-font-family);
+  font-size: var(--ios26-font-size-subheadline, 14px);
+  font-weight: 510;
+  letter-spacing: -0.2px;
+  color: var(--mono-text-primary, #000000) !important;
+  border-radius: var(--ios26-radius-control, 12px) !important;
+  border: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12)) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.62) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.95) !important;
   user-select: none;
   cursor: pointer;
+  transition: all var(--duration-fast, 150ms) var(--ease-standard);
 
   &:hover {
-    background: var(--mono-surface);
-    border-color: var(--mono-border-strong);
-    color: var(--mono-text-primary);
+    background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.82) 100%) !important;
+    border-color: rgba(0, 136, 255, 0.40) !important;
+    color: var(--ios26-color-blue, #0088ff) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06), inset 0 0.5px 0.5px #ffffff !important;
   }
 
   &:active {
-    transform: scale(0.97);
+    transform: scale(0.96) !important;
+    background: rgba(240, 240, 245, 0.88) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  /* 尺寸分级适配 */
+  &.el-button--small,
+  &.glass-btn-sm {
+    height: 28px !important;
+    line-height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  &.el-button--large,
+  &.glass-btn-lg {
+    height: 40px !important;
+    line-height: 40px !important;
+    padding: 0 20px !important;
+    font-size: 15px !important;
+    border-radius: 14px !important;
+  }
+
+  /* 主操作高光蓝变体 */
+  &.el-button--primary,
+  &.is-primary {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+    background: linear-gradient(180deg, #1a93ff 0%, var(--ios26-color-blue, #0088ff) 100%) !important;
+    box-shadow: 0 2px 8px rgba(0, 136, 255, 0.28), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.6) !important;
+
+    &:hover {
+      background: linear-gradient(180deg, #339cff 0%, #0076e0) !important;
+      border-color: rgba(255, 255, 255, 0.55) !important;
+      box-shadow: 0 4px 14px rgba(0, 136, 255, 0.45), inset 0 0.5px 0.5px #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    &:active {
+      transform: scale(0.96) !important;
+      background: #0066cc !important;
+    }
+  }
+
+  /* 危险/删除操作变体 */
+  &.el-button--danger,
+  &.is-danger {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.40) !important;
+    background: linear-gradient(180deg, #ff5c5c 0%, var(--ios26-color-red, #ff383c) 100%) !important;
+    box-shadow: 0 2px 8px rgba(255, 56, 60, 0.28), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.6) !important;
+
+    &:hover {
+      background: linear-gradient(180deg, #ff7070 0%, #e62024) !important;
+      border-color: rgba(255, 255, 255, 0.55) !important;
+      box-shadow: 0 4px 14px rgba(255, 56, 60, 0.45), inset 0 0.5px 0.5px #ffffff !important;
+      color: #ffffff !important;
+    }
+
+    &:active {
+      transform: scale(0.96) !important;
+      background: #cc1b1f !important;
+    }
   }
 }
 
 .glass-floating-btn {
-  @extend .glass-btn;
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  height: 32px;
+  line-height: 1;
+  padding: 0 16px;
+  font-family: var(--ios26-font-family);
+  font-size: 13px;
+  font-weight: 510;
+  color: var(--mono-text-primary, #000000) !important;
+  border-radius: var(--ios26-radius-pill, 1000px) !important;
+  border: 0.5px solid var(--ios26-separator-non-opaque, rgba(0, 0, 0, 0.12)) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.62) 100%) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.95) !important;
+  user-select: none;
+  cursor: pointer;
+  transition: all var(--duration-fast, 150ms) var(--ease-standard);
+
+  &:hover {
+    background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.82) 100%) !important;
+    border-color: rgba(0, 136, 255, 0.40) !important;
+    color: var(--ios26-color-blue, #0088ff) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08), inset 0 0.5px 0.5px #ffffff !important;
+  }
+
+  &:active {
+    transform: scale(0.96) !important;
+    background: rgba(240, 240, 245, 0.88) !important;
+  }
+}
+
+/* 深色模式按钮材质穿透 */
+html.dark,
+html[data-theme='dark'] {
+  .glass-btn,
+  .el-button.glass-btn,
+  .app-container .glass-btn,
+  .app-container .el-button.glass-btn,
+  .glass-floating-btn {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.25) !important;
+
+    &:hover {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.09) 100%) !important;
+      border-color: rgba(0, 136, 255, 0.5) !important;
+      color: #4da6ff !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.35) !important;
+    }
+
+    &:active {
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
 }
 
 /* 快速交叉淡入动效 (配合骨架屏切换) */
@@ -382,20 +502,18 @@ body {
   opacity: 0;
 }
 
-/* 系统框架顶栏与侧边栏 L1 单色毛玻璃绑定 */
+/* 系统框架顶栏与侧边栏 iOS 26 规范绑定 */
 .navbar {
-  background: var(--glass-l1-bg) !important;
-  backdrop-filter: blur(var(--glass-l1-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-l1-blur)) !important;
-  border-bottom: 1px solid var(--glass-l1-border) !important;
-  box-shadow: var(--glass-l1-shadow) !important;
+  @include ios26-material(thin, 0);
+  border-bottom: 0.5px solid var(--ios26-separator-non-opaque) !important;
+  box-shadow: none !important;
 }
 
 .sidebar-container {
-  background: var(--glass-l1-bg) !important;
-  backdrop-filter: blur(var(--glass-l1-blur)) !important;
-  -webkit-backdrop-filter: blur(var(--glass-l1-blur)) !important;
-  border-right: 1px solid var(--glass-l1-border) !important;
+  background: var(--ios26-bg-grouped-primary, #f2f2f7) !important;
+  border-right: 0.5px solid var(--ios26-separator-non-opaque) !important;
+  box-shadow: none !important;
 }
+
 
 

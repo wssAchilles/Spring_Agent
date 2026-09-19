@@ -50,9 +50,13 @@ public class MessageController extends BaseController {
 //    @PreAuthorize("@ss.hasPermi('system:message:message:list')")
     @GetMapping("/list")
     public CommonResult<PageResult<MessageRespVO>> list(MessagePageReqVO message) {
-        startPage();
-        PageResult<MessageDO> page = messageService.getMessagePage(message);
-        return CommonResult.success(BeanUtils.toBean(page, MessageRespVO.class));
+        try {
+            startPage();
+            PageResult<MessageDO> page = messageService.getMessagePage(message);
+            return CommonResult.success(BeanUtils.toBean(page, MessageRespVO.class));
+        } finally {
+            clearPage();
+        }
     }
 
     @Operation(summary = "导出消息列表")
