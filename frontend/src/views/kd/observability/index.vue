@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container observability-page glass-card">
+  <div class="app-container observability-page">
     <el-card shadow="never" class="status-card glass-card">
       <div class="status-row">
         <div class="status-left">
@@ -243,10 +243,15 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+/* 可观测性页面画布容器规范：消除外层双重卡片白色底板 */
 .observability-page {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: none !important;
   min-height: 100%;
   overflow-y: auto;
-  padding-bottom: 24px;
+  padding: 16px 20px 28px 20px;
 }
 
 .status-card {
