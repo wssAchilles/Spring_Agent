@@ -13,9 +13,7 @@
     <artifactId>qknow-hermes-core</artifactId>
     <description>Hermes 认知内核核心引擎</description>
 
-    <properties>
-        <grpc.version>1.68.0</grpc.version>
-    </properties>
+
 
     <dependencyManagement>
         <dependencies>

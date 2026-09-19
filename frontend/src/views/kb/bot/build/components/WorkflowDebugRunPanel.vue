@@ -4,9 +4,14 @@
       <div class="workflow-debug-run-panel__title">
         <span class="blue-bar"></span>输入参数
       </div>
-      <el-button v-ripple class="glass-btn" :loading="running" @click="handleRun">
-        执行
-      </el-button>
+      <div style="display: flex; gap: 8px;">
+        <el-button v-ripple class="glass-btn" plain @click="triggerDemoHitl">
+          模拟审批
+        </el-button>
+        <el-button v-ripple class="glass-btn" :loading="running" @click="handleRun">
+          执行
+        </el-button>
+      </div>
     </div>
 
     <el-form
@@ -143,8 +148,8 @@ import hljs from "highlight.js";
 import "highlight.js/styles/xcode.min.css";
 import DebugOverflowTooltipLabel from "./DebugOverflowTooltipLabel.vue";
 import HitlApprovalMetacenter from "./debug/HitlApprovalMetacenter.vue";
-import { TimeTravelForkEngine } from "./debug/engine/TimeTravelForkEngine.js";
-import { PersistentSnapshotManager } from "./debug/engine/PersistentSnapshotTree.js";
+import { TimeTravelForkEngine } from "./debug/engine/TimeTravelForkEngine";
+import { PersistentSnapshotManager } from "./debug/engine/PersistentSnapshotTree";
 
 const conversationInAbortController = ref(); // 对话进行中 abort 控制器(控制 stream 对话)
 const forkEngine = new TimeTravelForkEngine();
@@ -315,6 +320,11 @@ async function handleRun() {
       payloadSummary: "正在识别用户意图与参数槽位提取..."
     }
   ];
+  snapshotManager.clear();
+  snapshotManager.recordStep(0, "intent_detector", "INTENT", { status: "RUNNING" });
+  historicalSnapshots.value = snapshotManager.getAllSnapshots();
+  currentTimeStep.value = 0;
+
   pruningMetric.value = {
     totalTools: 512,
     stageOneCount: 10,
@@ -362,39 +372,71 @@ async function handleRun() {
               latencyMicros: 64000,
               payloadSummary: "DeepSeek 认知内核流式推理输出中..."
             });
+
+            // 实时录制快照树
+            snapshotManager.recordStep(1, "two_stage_tool_router", "TOOL", { status: "SUCCEEDED" });
+            snapshotManager.recordStep(2, "cognitive_reasoner", "REASONING", { status: "RUNNING" });
+            historicalSnapshots.value = snapshotManager.getAllSnapshots();
+            currentTimeStep.value = historicalSnapshots.value.length - 1;
+            selectEventForWhyline(dagExecutionEvents.value[2]);
           }
         }
       },
       (error) => {
+        finalizeExecution();
         stopStream();
         throw error;
       },
       () => {
+        finalizeExecution();
         stopStream();
-        if (dagExecutionEvents.value.length > 0) {
-          dagExecutionEvents.value.forEach((e) => {
-            if (e.status === "RUNNING") e.status = "SUCCEEDED";
-          });
-        }
       }
     );
   } finally {
-    running.value = false;
-    // 执行结束录制终态快照供时间旅行穿梭
-    if (dagExecutionEvents.value.length > 0) {
-      snapshotManager.clear();
-      dagExecutionEvents.value.forEach((evt, idx) => {
-        snapshotManager.recordStep(
-          idx,
-          evt.nodeId,
-          evt.nodeType,
-          { output: evt.payloadSummary, status: evt.status, latency: evt.latencyMicros }
-        );
-      });
-      historicalSnapshots.value = snapshotManager.getAllSnapshots();
-      currentTimeStep.value = historicalSnapshots.value.length - 1;
+    finalizeExecution();
+  }
+}
+
+function finalizeExecution() {
+  running.value = false;
+  if (dagExecutionEvents.value.length > 0) {
+    dagExecutionEvents.value.forEach((e) => {
+      if (e.status === "RUNNING") e.status = "SUCCEEDED";
+    });
+    snapshotManager.clear();
+    dagExecutionEvents.value.forEach((evt, idx) => {
+      snapshotManager.recordStep(
+        idx,
+        evt.nodeId,
+        evt.nodeType,
+        { output: evt.payloadSummary, status: evt.status, latency: evt.latencyMicros }
+      );
+    });
+    historicalSnapshots.value = snapshotManager.getAllSnapshots();
+    currentTimeStep.value = historicalSnapshots.value.length - 1;
+    if (dagExecutionEvents.value.length > 0 && !activeWhylineInspection.value) {
+      selectEventForWhyline(dagExecutionEvents.value[dagExecutionEvents.value.length - 1]);
     }
   }
+}
+
+function triggerDemoHitl() {
+  hitlActiveTicket.value = {
+    ticketId: "TICKET-PHASE120-001",
+    workflowId: "flow_retrieval_001",
+    nodeId: "node_hitl_security_gate",
+    riskLevel: "CRITICAL",
+    contextSummary: "检索任务命中企业敏感知识资产外发门禁，已挂起等待审批员人工核验与参数修订。",
+    stateDigest: "sha256_7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
+    inputData: {
+      action: "EXECUTE_DEEP_RETRIEVAL",
+      scope: "CONFIDENTIAL_ARCHIVE",
+      user: "admin",
+      params: { max_docs: 50, bypass_cache: true }
+    },
+    suggestedDecision: "REVISE_SCOPE"
+  };
+  hitlDrawerVisible.value = true;
 }
 
 /** 停止 stream 流式调用 */

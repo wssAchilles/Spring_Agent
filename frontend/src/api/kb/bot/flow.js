@@ -55,7 +55,7 @@ export const ProcessFlow = {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${getToken()}`
             },
             openWhenHidden: true,
             body: JSON.stringify({
@@ -63,8 +63,16 @@ export const ProcessFlow = {
                 input: input
             }),
             onmessage: onMessage,
-            onerror: onError,
-            onclose: onClose,
+            onerror(err) {
+                if (onError) onError(err);
+                throw err;
+            },
+            onclose() {
+                if (onClose) onClose();
+                try {
+                    ctrl?.abort();
+                } catch (e) {}
+            },
             signal: ctrl.signal
         });
     }

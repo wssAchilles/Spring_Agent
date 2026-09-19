@@ -8,7 +8,7 @@
  * 5. 密码学 SHA-256 哈希防篡改对齐 (与后端 Java 21 Record 完全一致)
  */
 
-import { PersistentSnapshotTree, PersistentSnapshotManager, computeSha256 } from './PersistentSnapshotTree.js';
+import { PersistentSnapshotTree, PersistentSnapshotManager, computeSha256 } from './PersistentSnapshotTree';
 
 export interface StepSnapshot {
   stepIndex: number;
