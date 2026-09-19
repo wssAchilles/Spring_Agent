@@ -238,3 +238,11 @@ limitations
    - **支柱三：高保真 RAG 知识引擎与多模态图谱 (Advanced RAG & Multimodal Knowledge)**：超长文档层次化理解、图谱子图推理与 GraphRAG 深度融合、极低延迟流式打字机与上下文对齐；
    - **支柱四：前端工作流交互与开发者体验 (Interactive Canvas & HITL Experience)**：可视化 DAG 画布沉浸式调试、节点级状态回溯、人机协同审批 (HITL) 交互优化与单色钛金毛玻璃体验升华。
 
+## 十、DeepSeek 官方开发者文档唯一准则铁律 (DeepSeek Official Documentation Iron Rule)
+
+任何 Agent 在涉及 DeepSeek 相关的任何知识库构建、API 接口调用、参数配置、思考链 (Thinking) 控制、模型选型、Prompt 规范或任务编排设计时，**必须且只能以 DeepSeek 官方开发者文档（https://api-docs.deepseek.com/zh-cn/）为唯一最高准则**：
+
+1. **强制前置阅读官方文档**：在提出方案、设计契约或编写代码前，必须显式检索并阅读官方最新文档（通过网络抓取或检索工具如 `read_url_content` 获取 `https://api-docs.deepseek.com/zh-cn/` 及相关子路由，如 `/guides/reasoning_model`、`/api/create-chat-completion` 等），确保获取第一手权威信息。
+2. **彻底禁止使用过时本地知识**：严禁凭借过往训练记忆、历史知识库或过时经验对 DeepSeek 的模型命名、参数结构、上下文窗口或能力边界做主观臆断（例如：严禁使用已被官方弃用或非官方标准的模型名称与参数组合）。
+3. **参数结构与协议严格对齐**：所有与 DeepSeek API 交互的请求体（如 `model`、`messages`、`thinking: {"type": ...}`、`stream`、`tools`、`response_format` 等）及响应解析逻辑，必须与官方文档中声明的最新 JSON Schema 保持绝对一致，确保代码库达到极轻量、零侵入与零误差兼容。
+
