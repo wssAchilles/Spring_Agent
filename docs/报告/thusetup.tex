@@ -14,16 +14,37 @@
 
 % 载入所需的宏包
 
+% 高等数学与符号宏包
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
 % 定理类环境宏包
 \usepackage{amsthm}
-% 也可以使用 ntheorem
-% \usepackage[amsmath,thmmarks,hyperref]{ntheorem}
 
-% 数学字体配置已简化，使用默认设置
+% 学术环境声明
+\theoremstyle{definition}
+\newtheorem{definition}{定义}[chapter]
+\newtheorem{axiom}{公理}[chapter]
+\newtheorem{example}{例}[chapter]
 
-% 可以使用 nomencl 生成符号和缩略语说明
-% \usepackage{nomencl}
-% \makenomenclature
+\theoremstyle{plain}
+\newtheorem{theorem}{定理}[chapter]
+\newtheorem{lemma}[theorem]{引理}
+\newtheorem{proposition}[theorem]{命题}
+\newtheorem{corollary}[theorem]{推论}
+
+\theoremstyle{remark}
+\newtheorem{remark}{注}[chapter]
+
+% 算法环境中文定制
+\makeatletter
+\AtBeginDocument{%
+  \renewcommand{\algorithmicrequire}{\textbf{输入:}}%
+  \renewcommand{\algorithmicensure}{\textbf{输出:}}%
+}
+\makeatother
+\floatname{algorithm}{算法}
 
 % 表格加脚注
 \usepackage{threeparttable}

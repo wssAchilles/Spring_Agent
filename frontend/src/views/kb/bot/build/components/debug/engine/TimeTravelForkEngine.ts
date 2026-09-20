@@ -72,9 +72,13 @@ export class TimeTravelForkEngine {
       };
 
       if (i === forkStepIndex) {
-        // 在分叉点注入现场热补丁修改参数
-        const mergedInputs = { ...(original.inputs || {}), ...(mutatedVariables.inputs || {}) };
-        const mergedOutputs = { ...(original.outputs || {}), ...(mutatedVariables.outputs || {}) };
+        // 在分叉点注入现场热补丁修改参数 (自适应兼容扁平变量字典与 inputs/outputs 嵌套结构)
+        const patchInputs = mutatedVariables.inputs 
+          ? mutatedVariables.inputs 
+          : (mutatedVariables.outputs ? {} : mutatedVariables);
+        const patchOutputs = mutatedVariables.outputs || {};
+        const mergedInputs = { ...(original.inputs || {}), ...patchInputs };
+        const mergedOutputs = { ...(original.outputs || {}), ...patchOutputs };
         const mutatedCombined = { ...mergedInputs, ...mergedOutputs, ...(mutatedVariables || {}) };
 
         branchTree = branchTree.setBatch(mutatedCombined);
