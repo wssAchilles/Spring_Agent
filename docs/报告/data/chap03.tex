@@ -1,248 +1,156 @@
 % !TeX root = ../thuthesis-example.tex
 
-\chapter{系统具体实现}
+\chapter{系统总体架构与双核解耦设计}
 
-本章基于第二章的设计方案，详细介绍各核心模块的具体实现，包括技术选型、接口设计、关键代码和配置参数。
+本章系统阐述 Knowledge Hub 的全景宏观架构与分层微服务拓扑。重点论述控制面与认知面的物理双核解耦、基于 gRPC 的全双工流式通信契约与双向背压取消级联机制，以及面向企业生产环境的零信任 MCP（Model Context Protocol）协议生态和基础设施安全治理。
 
-\section{开发环境与技术选型}
-
-系统的开发环境和技术栈如表~\ref{tab:tech-stack} 所示。
-
-\begin{table}[htbp]
-    \centering
-    \caption{系统技术栈}
-    \label{tab:tech-stack}
-    \begin{tabular}{lll}
-        \toprule
-        层级     & 技术选型                                & 版本              \\
-        \midrule
-        后端框架   & Spring Boot                         & 3.5.8           \\
-        AI 框架  & Spring AI / Spring AI Alibaba       & 1.1.0 / 1.1.2.2 \\
-        ORM    & MyBatis-Plus                        & —               \\
-        前端框架   & Vue 3 / Vite / Pinia / Element Plus & 3.4.31 / 5.3.2  \\
-        DAG 画布 & VueFlow                             & 1.48.2          \\
-        图可视化   & vis-network                         & 9.1.9           \\
-        向量存储   & PostgreSQL + PgVector               & —               \\
-        图数据库   & Neo4j                               & 5.26.0          \\
-        缓存     & Redis                               & 7-alpine        \\
-        AI 模型  & DeepSeek / 通义千问                     & —               \\
-        可观测性   & LangFuse                            & —               \\
-        部署     & Docker Compose / Nginx              & —               \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-\section{gRPC 通信协议与底层网络实现}
-
-控制面与认知面摒弃了传统的 HTTP RESTful 协议，转而深度定制了基于 HTTP/2 的 gRPC 框架进行跨进程通信。在底层网络传输层，系统采用了 Netty 作为 NIO 异步通信框架，并开启了 \texttt{Epoll} 原生传输模式以最大化利用 Linux 内核的网络 I/O 性能。Protobuf 服务契约（.proto）严格定义了三个核心 RPC 存根（Stub）：
-
-\texttt{Chat} 方法采用服务端流式响应模式（Server-side Streaming）。控制面通过 \texttt{ChatRequest} 一次性装载高密度的环境数据（包含环境提示词、多轮对话历史、K-NN 预检索的向量文本块及工具回调地址）；认知面则通过持续开启的 Stream 管道异步推送 \texttt{ChatEvent} 事件流。为了应对复杂推理场景中大语言模型可能输出的异构数据，\texttt{ChatEvent} 巧妙地运用了 Protobuf 的 \texttt{oneof} 联合体语法，精确隔离了 8 种互斥的子事件：如用于打字机效果的 \texttt{StreamingChunk}（毫秒级推送增量 Token）、用于中途暴露思维链的 \texttt{ReflectionStart} 与 \texttt{ToolInvoked}，以及标记推演结束的 \texttt{DoneSignal}。
-
-\texttt{ExecuteFlow} 同样为流式接口，专为 DAG 异步计算设计；而 \texttt{HealthCheck} 则是基于单播（Unary）的一元调用，配合 Consul 注册中心实现每 5 秒一次的心跳探活与服务剔除。
-
-在工程实践中，为解决 gRPC 长连接在云原生环境（如 LVS 负载均衡器下）容易被静默切断的问题，系统在 \texttt{ManagedChannel} 级别全局启用了 Keep-Alive 探针机制（配置为每 30 秒发送一次 PING 帧）。同时，控制面实现了指数退避（Exponential Backoff）的自动重试拦截器。最核心的设计哲学在于：控制面揽下了所有如鉴权解析、数据库 I/O 等“脏活累活”，使得发往 gRPC 管道的数据完全自洽，从而确保了认知面的绝对无状态化。
-
-\section{RAG 检索引擎实现}
+\section{系统全局架构拓扑}
 
 \begin{figure}[htbp]
     \centering
-    \begin{minipage}[b]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{"figures/知识库界面.png"}
-        \caption{知识库界面}
-        \label{fig:kb_list}
-    \end{minipage}
-    \hfill
-    \begin{minipage}[b]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{"figures/知识库内部文件.png"}
-        \caption{知识库内部文件管理}
-        \label{fig:kb_files}
-    \end{minipage}
+    \includegraphics[width=0.95\linewidth,height=0.85\textheight,keepaspectratio]{"figures/qKnow 知识平台架构全景图.pdf"}
+    \caption{Knowledge Hub 全景微服务架构拓扑}
+    \label{fig:qknow_architecture_full}
 \end{figure}
 
-作为检索增强生成的基础设施，知识库的前端展示如图~\ref{fig:kb_list} 所示，平台提供了卡片化的知识库集合概览。进入特定的知识库后，其内部文件管理界面如图~\ref{fig:kb_files} 所示，系统支持上传多源异构文档并针对特定文件发起解析任务。文档准备就绪后，即可进入底层的切块与向量化流程。
+如图~\ref{fig:qknow_architecture_full} 所示，Knowledge Hub 整体上由面向现代化浏览器的富交互前端、基于 Spring Boot 3 的业务控制面、基于 Hermes 认知内核的推理控制面，以及异构数据存储引擎矩阵构成。各层级之间具备严格的物理与逻辑边界。
 
-\subsection{文档切块实现}
+\section{双核解耦架构与微服务设计}
 
-RecursiveSplitter 的核心实现采用递归下降算法。分隔符优先级数组定义为：
+传统的大模型应用多采用将 Web 业务逻辑、数据库 CRUD 与大模型 API 调用揉合在单一单体应用中的架构。在企业级高并发场景下，大模型推理的高耗时（通常为数秒至数十秒）和流式长连接会迅速占满 Web 容器的工作线程，导致常规的业务操作（如用户登录、知识库配置、工作流管理）发生大面积超时与假死。
 
+为了彻底根治该问题，本平台创新性地提出了"控制面（Control Plane）＋认知面（Cognitive Plane）"物理双核解耦架构。
+
+\subsection{控制面中枢（Control Plane）设计职责}
+控制面依托 \texttt{qknow-server} 独立进程运行（默认监听端口 8099），是一个具有强状态保证、高事务一致性的企业级业务中枢，承担以下核心职责：
+\begin{enumerate}
+    \item \textbf{多租户工作区与 RBAC 安全网关}：负责用户身份认证（JWT）、工作区隔离、角色与操作权限细粒度分配，以及跨组织的数据范围动态改写。
+    \item \textbf{知识资产管理与前置预检索（KMC）}：管理多源文档元数据，承载非结构化切分、向量批处理管道调度，并在发起推理前执行高吞吐的混合预检索，生成带有置信度排名的结构化上下文上下文。
+    \item \textbf{模型凭证与成本审计网关}：负责管理 DeepSeek API 密钥的脱敏存储与加权轮换，记录 Token 消耗并实施配额审计。
+    \item \textbf{工作流拓扑解析与断点管理}：将前端 DAG 图元反序列化为依赖图谱，管理长事务检查点与人工审批事件的外部接收。
+\end{enumerate}
+
+\subsection{Hermes 认知内核（Cognitive Plane）设计职责}
+认知面以 \texttt{qknow-hermes} 为核心（默认监听 gRPC 端口 9090），是一个专注于高并发、流式符号推理的轻量级计算服务，承担以下职责：
+\begin{enumerate}
+    \item \textbf{多步 ReAct 规划与工具分发}：依托阿里开源 ReactAgent 引擎与阿里巴巴 Spring AI 抽象，实现思考（Thought）、行动（Action）与观察（Observation）的自循环。
+    \item \textbf{仿生分层记忆检索与更新}：实时维护 Redis 中的短期工作记忆窗口，并结合 PgVector 检索长期记忆，执行艾宾浩斯强化衰减计算。
+    \item \textbf{AI Judge 认知评测与反思修正}：对生成结果进行事实性、相关性评分，并在自洽性未达标时动态触发自修正闭环。
+    \item \textbf{绝对无状态化计算}：Hermes 内部绝不直接连接业务关系型数据库，所有必需的知识证据与模型密钥均通过 RPC 首包参数显式注入，使认知服务能够依据算力负载进行零成本的横向弹性伸缩（HPA）。
+\end{enumerate}
+
+\subsection{API/BIZ 分离与领域驱动防腐层}
+在工程模块拆分层面，控制面严格遵从领域驱动设计（DDD）规范，所有业务模块（如 \texttt{qknow-module-kmc}、\texttt{qknow-module-kb}、\texttt{qknow-module-ai}）均被物理拆分为契约模块 \texttt{*-api} 与实现模块 \texttt{*-biz}。
+\begin{itemize}
+    \item \texttt{*-api} 模块仅包含不可变 DTO、枚举、查询条件 VO 以及 RPC 接口规范，没有任何外部第三方依赖或内部 Mapper 细节；
+    \item \texttt{*-biz} 承载具体持久化实现、Spring Bean 托管与领域逻辑。
+\end{itemize}
+模块之间禁止发生直接跨库的硬外键关联与 Mapper 交叉调用，调用关系必须经由 \texttt{*-api} 暴露的公共 Service 接口完成。这在编译期形成了坚固的防腐隔离网，彻底消除了循环依赖与模块级联污染风险。
+
+\section{gRPC 双向背压流式协议与生命周期级联}
+
+控制面与认知面摒弃了传统性能孱弱的 HTTP/JSON 轮询，转而采用基于 HTTP/2 传输层的 gRPC 协议，并以 Protocol Buffers 3（Protobuf）作为强类型契约。
+
+\subsection{服务契约与事件联合体设计}
+核心契约在 \texttt{hermes.proto} 中严格定义：
 \begin{verbatim}
-DEFAULT_CHINESE_SEPARATORS = ["\n\n", "\n", "。", "；", "！", "？",
-                               "!", "?", "，", ",", " ", ""]
+service HermesService {
+  rpc Chat (ChatRequest) returns (stream ChatEvent);
+  rpc ExecuteFlow (FlowRequest) returns (stream FlowEvent);
+  rpc HealthCheck (HealthRequest) returns (HealthResponse);
+}
 \end{verbatim}
 
-递归函数 \texttt{recursiveSplit} 的逻辑为：尝试使用当前分隔符切分文本；若切分后的片段仍超过 chunkSize，递归使用下一级分隔符；当所有分隔符都尝试完毕后，回退到字符级硬切分。
+\texttt{ChatRequest} 报文实现了自包含上下文注入：包含了唯一的 \texttt{request\_id}、解密后的模型凭证 \texttt{ModelCredentials}、对话会话历史，以及控制面预先完成混合检索召回的 \texttt{repeated RAGContext} 证据链。
 
-重叠应用函数 \texttt{applyOverlap(chunks)} 在相邻块之间添加重叠：从前一个块的尾部取 \texttt{chunkOverlap} 个字符，拼接到当前块的头部。
+\texttt{ChatEvent} 采用 Protobuf 的 \texttt{oneof} 语法，精确定义了 8 类互斥的流式事件帧：
+\begin{itemize}
+    \item \texttt{StreamingChunk}：增量吐字 Token 片段（携带模型思考链与正文）；
+    \item \texttt{ToolInvoked}：工具调用的开始、入参及执行终态；
+    \item \texttt{ReflectionStart / ReflectionScore}：反思评估阶段的中间打分向量；
+    \item \texttt{DoneSignal}：全流程正常终止完成信号；
+    \item \texttt{ErrorEvent}：错误码与受控异常信息。
+\end{itemize}
 
-父子切块函数 \texttt{splitParentChild} 先以大块切分生成父块，再对每个父块以小块切分生成子块，子块通过 \texttt{parent\_segment\_id} 元数据关联父块。
+\subsection{双向背压取消级联机制（Cancel Propagation）}
+在生产大模型流式对话系统中，最具破坏性的隐患之一是：\textbf{用户在前端关闭了网页或点击了“停止生成”，由于传统的单向通信缺乏反向中断通知，后端微服务与底层大模型 API 依然持续进行昂贵的流式推演，造成巨大的 Token 与算力浪费}。
 
-\subsection{向量存储实现}
-
-向量存储使用 Spring AI 的 \texttt{PgVectorStore}，通过 \texttt{ConcurrentHashMap} 缓存实例，键为 \texttt{embeddingModel.getClass().getName() + "@" + identityHashCode}。构建代码为：
-
-\begin{verbatim}
-PgVectorStore.builder(jdbcTemplate, embeddingModel).build()
-\end{verbatim}
-
-嵌入模型工厂 \texttt{EmbeddingServiceImpl} 支持三种平台：OpenAI（标准 API）、TongYi/DashScope（兼容模式端点 \texttt{dashscope.aliyuncs.com/compatible-mode}）和 Ollama（本地部署）。
-
-\subsection{检索服务实现}
-
-\texttt{RagRetrievalService} 是检索引擎的主入口，其 \texttt{retrieve()} 方法实现了完整的检索流程：
-
-（1）查询路由：对 SIMPLE 级别的查询跳过检索。
-
-（2）权限检查：基于 RBAC 的知识库访问控制。
-
-（3）首次检索：调用 \texttt{retrieveOnce()} 执行四路并行召回。
-
-（4）CRAG 评估：对首次检索结果进行质量分类。
-
-（5）条件二次检索：当评估结果为 INCORRECT 且提供了重写查询时，使用重写查询重新检索。
-
-\texttt{retrieveOnce()} 方法使用 4 线程池并行执行四条检索路径，每条路径的超时时间为 30 秒。候选 top-K 设置为 $\max(\text{topK} \times 3, 50)$。
-
-\subsection{上下文构建实现}
-
-\texttt{RagContextBuilder} 负责将检索结果组装为 LLM 可用的上下文文本。构建流程为：
-
-（1）父段扩展：如果子块有 \texttt{parentSegmentId}，从数据库中获取父段内容并前置。
-
-（2）相邻段扩展：如果没有父段，则获取 position-1 和 position+1 的相邻段。
-
-（3）内容去重：按 \texttt{content.hashCode()} 去重。
-
-（4）Token 估算：ASCII 单词计 1 个 Token，非 ASCII 非空白字符计 2 个 Token。
-
-（5）预算截断：当总字节数超过 12000 或 Token 数超过阈值时停止追加。
-
-输出格式为：
-\begin{verbatim}
-[来源 {index}] {docName} / segmentId={id} / parentId={parentId}
-内容：{content}
-\end{verbatim}
-
-\section{Hermes 认知内核实现}
-
-\subsection{反思循环实现}
-
-\texttt{HermesKernel.reflect()} 方法实现了完整的反思循环。关键实现细节包括：
-
-（1）提示词重构：首次尝试仅包含系统提示词和参考知识；后续尝试附加完整的评分反馈向量（事实性分数、相关性分数、指令遵循度分数、综合分数和改进建议）。
-
-（2）自洽性检查：通过 3 次独立 LLM 调用获取采样结果，使用空白字符分词后计算成对 Jaccard 相似度。空响应或纯空白响应被过滤，有效采样数不足 2 时默认返回一致性分数 1.0。
-
-（3）双重门限：通过条件为 \texttt{judgeResult.passed AND consistency >= 0.6}。
-
-\subsection{智能体编排实现}
+本平台在 \texttt{GrpcReactorBridge} 中构建了严格的响应式 Reactor Flux 与 gRPC \texttt{ServerCall} 双向取消级联桥接：
 
 \begin{figure}[htbp]
     \centering
-    \begin{minipage}[b]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{"figures/agent工具列表.png"}
-        \caption{Agent 工具与实例管理}
-        \label{fig:agent_tools}
-    \end{minipage}
-    \hfill
-    \begin{minipage}[b]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{"figures/agent编排语义.png"}
-        \caption{智能体工作流编排与调试}
-        \label{fig:agent_orchestration}
-    \end{minipage}
+    \begin{tikzpicture}[node distance=1.8cm, auto]
+        \tikzstyle{block} = [rectangle, draw, fill=blue!10, text width=6em, text centered, rounded corners, minimum height=3em];
+        \tikzstyle{signal} = [rectangle, draw, fill=red!15, text width=7em, text centered, rounded corners, minimum height=3em];
+        \tikzstyle{line} = [draw, -latex', thick];
+        
+        \node [block] (client) {前端客户端 (Web/SSE)};
+        \node [block, right of=client, node distance=3.8cm] (control) {控制面中继 (HermesGrpcClient)};
+        \node [block, right of=control, node distance=3.8cm] (bridge) {服务端桥接 (GrpcReactorBridge)};
+        \node [signal, right of=bridge, node distance=3.8cm] (deepseek) {DeepSeek API (物理 HTTP 连接)};
+        
+        \path [line, dashed, red] (client) -- node [above] {1. 断开连接} (control);
+        \path [line, dashed, red] (control) -- node [above] {2. ClientCall.cancel} (bridge);
+        \path [line, dashed, red] (bridge) -- node [above] {3. dispose()} (deepseek);
+    \end{tikzpicture}
+    \caption{客户端中断向底层 LLM 调用的毫秒级级联取消流}
+    \label{fig:cancel_propagation}
 \end{figure}
 
-在智能体管理方面，平台提供了如图~\ref{fig:agent_tools} 所示的 Agent 工具与实例列表管理界面，用于集中维护各个专职智能体的配置与凭证。进入具体实例后，智能体工作流编排与实时聊天调试界面如图~\ref{fig:agent_orchestration} 所示，用户可以在左侧自由挂载模型、知识库与扩展工具，并在右侧直接测试流式对话。在后端架构层面，\texttt{AgentOrchestrator} 的 \texttt{executeAgent()} 方法实现了对应的完整编排流程。关键实现步骤：
+如图~\ref{fig:cancel_propagation} 所示，其核心控制时序如下：
+\begin{enumerate}
+    \item 当 Web 前端中断 SSE 连接时，Spring WebFlux / MVC 触发 \texttt{emitter.onDispose()}；
+    \item 控制面 \texttt{HermesGrpcClient} 捕获该事件，立即调用 gRPC 原生存根的 \texttt{ClientCall.cancel("client disposed", null)}，向网络通道发送 HTTP/2 \texttt{RST\_STREAM} 帧；
+    \item Hermes 认知服务端将原始 \texttt{StreamObserver} 转型为 \texttt{ServerCallStreamObserver}，其注册的 \texttt{setOnCancelHandler} 监听器毫秒级捕获该信号；
+    \item 桥接器原子触发 Reactor 的 \texttt{subscription.dispose()}，切断底层响应式管道；
+    \item 底层与 DeepSeek 官方 API 保持的长连接物理 Socket 被立即主动关闭，生成过程强制终止，算力账单秒级止损。
+\end{enumerate}
 
-（1）CRAG 评估：调用 \texttt{RetrievalEvaluator}，当评估结果为 INCORRECT 时清空 RAG 上下文，当为 AMBIGUOUS 时保留但附加警告标签。
+\section{企业级零信任 MCP 工具生态与安全沙箱}
 
-（2）知识工具构建：为每个知识库创建 \texttt{FunctionToolCallback} 包装的搜索工具，以及一个合并的知识查询别名。
+为了打通企业业务系统与本地环境的工具交互，系统全面接入了 Anthropic 发起的模型上下文协议（Model Context Protocol, MCP）。
 
-（3）ReactAgent 构建：使用 Alibaba ReactAgent 构建，配置 \texttt{ModelCall\-LimitHook} 限制最大 LLM 调用次数。
+\subsection{双通道传输客户端架构}
+系统在 \texttt{qknow-hermes-core} 中实现了双模式 MCP 客户端：
+\begin{itemize}
+    \item \textbf{Streamable HTTP 客户端 (\texttt{HttpMcpClient})}：面向分布式微服务。遵循 MCP 2025-03-26 规范，基于 Java 21 原生 \texttt{HttpClient} 发起 JSON-RPC 2.0 请求。在首次握手 \texttt{initialize} 完成后，服务端响应头中下发全局唯一的 \texttt{mcp-session-id}，客户端在后续交互中透明透传，实现有状态会话与心跳保持。
+    \item \textbf{本地进程 Stdio 客户端 (\texttt{StdioMcpClient})}：面向本地沙箱化命令行工具（如 Git、Python 脚本等）。通过 \texttt{ProcessBuilder} 启动隔离子进程，以换行符作为 JSON-RPC 帧定界符，使用 \texttt{AtomicLong} 分配单调自增序号匹配异步响应；并在退出时提供 2 秒超时的软关闭，超时未退出的进程调用 \texttt{destroyForcibly()} 强杀，根治孤儿僵尸进程。
+\end{itemize}
 
-（4）流式推理：订阅 \texttt{agent.stream()} 返回的 Flux，按 \texttt{OutputType} 映射为 gRPC 事件。
+\subsection{虚拟线程三态断路器（McpVirtualThreadCircuitBreaker）}
+由于外部工具调用的稳定性无法得到严格保证，网络闪断或下游死锁极易导致智能体推理挂死。为此，平台构建了基于马尔可夫链的虚拟线程三态断路器：
+\begin{itemize}
+    \item \textbf{关闭态（CLOSED）}：正常转发工具调用请求。若在滑动窗口内连续发生 5 次超时或异常，立即自动切入开启态；
+    \item \textbf{开启态（OPEN）}：对后续所有该工具的调用实施物理拦截，直接返回结构化的软着陆兜底信封（Fail-Open Soft Landing），冷却周期固定为 10 秒；
+    \item \textbf{半开启态（HALF\_OPEN）}：冷却结束后跃迁至半开启态。通过原子 CAS 变量 \texttt{halfOpenProbeInFlight} 严格限制仅放行 1 个试探请求。若该请求成功执行，断路器重置为关闭态；若再度失败，则重返开启态并翻倍冷却时间。
+\end{itemize}
+所有工具执行均被封装进 Java 21 的独立虚拟线程池（\texttt{Executors.newVirtualThreadPerTaskExecutor()}），并设置 5000ms 硬超时，使认知核心工作线程免受外部不可信代码的侵扰。
 
-\subsection{Plan-and-Solve 实现}
+\subsection{零信任参数校验与反注入沙箱（DeepSchemaSecurityInspector）}
+为防止攻击者通过构造恶意提示词触发高危系统命令执行，系统在工具回调前置切面中嵌入了严格的 AST 审查机制：
+\begin{enumerate}
+    \item \textbf{参数递归深度有界性}：约束入参 JSON 对象的最大递归解析深度 $D_{\max} \le 8$，字符串最大长度 $\le 4096$，严防深层循环嵌套引发 JVM 递归栈溢出（StackOverflowError）；
+    \item \textbf{高危命令正则强拦截}：正则过滤包含 \texttt{rm}, \texttt{sudo}, \texttt{chmod}, \texttt{mkfs}, \texttt{dd}, \texttt{curl}, \texttt{wget}, \texttt{bash} 等破坏性命令片段；
+    \item \textbf{间接提示词注入（Indirect Prompt Injection）防御}：对工具返回的外部网络正文进行二次安全扫描，阻断潜藏的 \texttt{ignore previous instructions}、\texttt{system prompt override} 等越狱诱导指令。
+\end{enumerate}
 
-\texttt{planAndSolve()} 方法的实现包括：
+\section{基础框架底层治理与存储隔离机制}
 
-（1）复杂度判定：\texttt{isComplexQuestion()} 检查查询长度是否超过 100 字符或是否包含预定义的复杂关键词（"对比"、"比较"、"分析"、"总结"等 10 个词）。
+\subsection{Spring Security 与 Redis DB 3 无状态滑动续期}
+系统在控制面构筑了基于无状态 JWT 与 Redis 缓存联动的安全拦截链。为化解传统 JWT 签发后无法在有效期内被动吊销的安全痛点，客户端持有的令牌负载中仅存放不可逆的随机 UUID；用户的真实权限列表、机构归属以及角色的完整元数据统一托管于 Redis 的 \texttt{login\_tokens:\{uuid\}} 键中。
+当用户在前端主动点击注销时，系统立即物理擦除对应的 Redis 键，使客户端令牌秒级失效。同时，在请求拦截器中配置了滑动时间窗口：若距离上次访问时间已消耗超过 10 分钟且剩余有效期不足 20 分钟，后台透明执行过期时间重置，保障了用户在连续活跃操作下的无感鉴权体验。
 
-（2）任务分解：LLM 返回 JSON 数组，每个元素包含 \texttt{taskId}、\texttt{objective} 和 \texttt{dependencies}。
+\subsection{JSqlParser AST 语法树级多租户数据权限}
+平台基于 MyBatis-Plus 拦截器体系，在 \texttt{DataScopeInterceptor} 中引入了 JSqlParser 抽象语法树解析。在 SQL 提交至 PostgreSQL 数据库执行前，动态重写 AST。针对原 SQL 中存在的复杂 Where 查询条件，代码通过物理小括号进行强行边界包裹：
+\begin{equation}
+    \text{Where}_{\text{rewritten}} = (\text{Where}_{\text{original}}) \land (\text{DataScopeConditions})
+\end{equation}
+该设计在编译期阻断了由于原条件中包含 \texttt{OR} 逻辑连接词可能导致的数据越权渗透（SQL Injection via Operator Precedence）。
 
-（3）环检测：使用 DFS 着色算法（白/灰/黑模式）检测依赖环。
-
-（4）并行执行：按拓扑顺序逐层执行，无依赖任务通过 \texttt{Completable\-Future} 异步并行执行，结果通过 \texttt{LinkedHashMap} 保持顺序。
-
-\subsection{记忆系统实现}
-
-短期记忆支持双模式存储：内存模式使用 \texttt{ArrayList<Message>}，Redis 模式使用 \texttt{IRedisService} 的 List 操作（键格式 \texttt{memory:short:\{sessionId\}}）。摘要压缩使用 LLM 对早期对话生成摘要，替换为单条 \texttt{SystemMessage}。
-
-长期记忆的检索流程：先从向量存储中获取 $\max(\text{topK} \times 3, 20)$ 条结果，然后按复合评分公式重新排序。记忆合并的阈值为余弦相似度 0.85，合并时更新元数据中的 \texttt{updated\_at} 和 \texttt{consolidated\_count}。
-
-\section{DAG 工作流引擎实现}
-
-\subsection{节点执行模板}
-
-\texttt{BaseNodeBO.execute()} 实现了模板方法模式的框架：
-
-（1）\texttt{prepareInput(context)}：从节点定义的 input JSON 中读取变量名，从上下文变量中获取对应值。
-
-（2）\texttt{executeLogic(inputData, context)}：子类实现的具体执行逻辑。
-
-（3）\texttt{processOutput(result, context)}：将结果输出合并到上下文变量。
-
-（4）\texttt{findNextNodes(result, context)}：根据边列表查找后继节点。
-
-变量插值函数 \texttt{format(text, context)} 使用正则 \texttt{\{\{\textbackslash s*(.+?)\textbackslash s*\}\}} 匹配占位符，从上下文中查找替换值。
-
-\subsection{条件分支实现}
-
-\texttt{ConditionNodeBO} 实现了内置的表达式评估器（不依赖 SpEL），支持 \texttt{==}、\texttt{!=}、\texttt{>}、\texttt{<}、\texttt{>=}、\texttt{<=} 比较操作。评估顺序为：先尝试数值比较（\texttt{Double.parseDouble}），失败则回退到字符串比较（\texttt{String.compareTo}），最后尝试布尔比较。
-
-条件匹配采用"首个匹配胜出"策略：按配置顺序评估条件，第一个满足的条件决定路由分支。\texttt{default} 条件始终匹配但不中断循环（最后一个 default 生效）。
-
-\subsection{流式输出实现}
-
-\texttt{ReplyNodeBO} 实现了三种输出模式：
-
-（1）ChatFlow 模式：解析内容模板中的 \texttt{\{\{ nodeUuid.variable \}\}} 引用，将 LLM 流式段作为 \texttt{Flux<String>} 透传，非 LLM 段作为单元素 Flux 发射。
-
-（2）工作流流式模式：检查源节点类型是否为 LLM 且存在 Flux，存在则包装 JSON 元数据后透传，否则从上下文读取值。
-
-（3）阻塞模式：直接从上下文变量读取值，组装输出 Map。
-
-\subsection{Human-in-the-loop 人工审批与挂起恢复实现}
-
-在企业级 AI 编排中，敏感操作（如大额转账、邮件群发）必须引入人类介入（Human-in-the-loop）。\texttt{ApprovalNodeExecutor} 摒弃了传统的自旋锁等待方案，转而采用了更为优雅的异步挂起/唤醒（Suspend/Resume）机制。在内存层，系统利用静态 \texttt{ConcurrentHashMap<String, CompletableFuture<Boolean>>} 作为信号量注册中心来映射唯一的 \texttt{TraceID}。
-
-当流程流转至审批节点时，执行线程会主动陷入挂起状态，通过带有超时上限（如 24 小时）的 \texttt{CompletableFuture.get(timeout)} 出让 CPU 时间片。同时，系统通过消息队列向企微/钉钉推送 Webhook 审批表单卡片。一旦人工在前端点击审批通过或驳回，控制面的 REST API 回调端点将极速寻址到对应的 \texttt{TraceID}，并通过 \texttt{future.complete(true/false)} 瞬间唤醒沉睡的 DAG 工作流线程。若在超时窗口内未收到任何人工回调，触发器则会抛出 \texttt{TimeoutException}，迫使流程安全回滚并走向降级分支。
-
-\section{前端实现}
-
-\subsection{DAG 画布与前端工程化实现}
-
-前端 DAG 可视化画布深度二次封装了 VueFlow 引擎。为了保障数千个节点下画布的流畅渲染，系统开启了 VueFlow 的按需渲染（Only Render Visible Elements）特性，配合硬件 GPU 加速，实现了复杂工作流拓扑下维持 60 FPS 的丝滑体验。画布的工程配置参数被严格校准：对齐网格粒度设定为 20px，默认缩放设为 0.2，视口极限缩放区间限制在 $[0.1, 2.0]$，节点间的连接线统一采用平滑的贝塞尔曲线（Smooth Step / Bezier）。
-
-在组件化设计上，系统抽象了 6 种高度定制的业务节点类型。基于 Vue 3 的 Composition API 和 Pinia 状态树，每个节点组件内部实现了精准的状态响应式隔离。每个视觉节点标准配备了左侧的 \texttt{Target Handle}（输入锚点）和右侧的 \texttt{Source Handle}（输出锚点），并在节点边缘动态挂载了用于快速新建分支的“+”按钮以及一键销毁按钮。当用户点击特定节点时，通过 Vue 的全局事件总线（EventBus），右侧的侧边栏抽屉（Drawer）会动态挂载对应节点类型的配置表单组件，实现了“图谱拓扑展示”与“业务属性编辑”的完美前端解耦。
-
-\subsection{流式通信实现}
-
-前端使用 \texttt{@microsoft/fetch-event-source} 库实现 SSE 流式通信。请求头包含 \texttt{Content-Type: application/json} 和 \texttt{Authorization: Bearer <token>}。事件处理支持三种类型：文本内容（增量追加到 Markdown 渲染器）、工具调用（折叠卡片显示输入输出 JSON）和记忆召回（显示召回数量和相似度分数）。
-
-\section{安全实现}
-
-\subsection{无状态 JWT 认证与防重放实现}
-
-平台的登录认证架构摒弃了传统的 Session/Cookie 机制，采用了深度定制的无状态 JWT（JSON Web Token）方案，以适应微服务与 Kubernetes 的横向扩展需求。
-
-\textbf{登录阶段（Login）}：客户端通过加密通道发送包含图形验证码校验的登录载荷。服务端在拦截器层拦截后，调用 Spring Security 的内部校验器，使用强哈希算法（BCrypt）对比密码盐值。校验通过后，系统并非直接将用户敏感信息塞入 JWT Payload，而是生成一个无实际语义的 \texttt{UUID} 作为会话密钥，将完整的 \texttt{LoginUser} 实体序列化并下沉存储至高可用 Redis 集群中（设定硬性 TTL 为 600 分钟）。随后，系统使用 HS512 算法对包含该 \texttt{UUID} 的 JWT 进行签名下发。这种“JWT 令牌 + Redis 会话”的双重设计，完美解决了原生 JWT 无法在服务端主动注销（Revoke）的安全死穴。
-
-\textbf{请求鉴权阶段（Authentication）}：系统在全局拦截层注册了专属的 JWT 鉴权过滤器链。对于每个 HTTP 请求，鉴权过滤器首先从请求头的 \texttt{Authorization: Bearer} 字段提取 JWT 密文，利用公钥验签并逆向解析出 \texttt{UUID}。随后以此为键向 Redis 发起 $O(1)$ 的高速查询。若命中，则将反序列化后的安全上下文（SecurityContext）注入当前线程。为提升用户体验，系统还引入了滑动窗口续期机制（Sliding Window Session）：当查询 Redis 发现当前会话的剩余存活时间不足 20 分钟时，系统会在底层自动刷新 Redis 过期时间。
-
-\subsection{RBAC 授权}
-
-权限检查通过 \texttt{@PreAuthorize} 注解实现，全系统共 410+ 处注解。管理员（userId == 1）拥有通配符权限。数据范围过滤通过 \texttt{@DataScope} 切面注入 SQL WHERE 子句，支持全部、自定义、本部门、部门及下级、仅本人五种范围。
+\subsection{Redis 存储空间的物理逻辑隔离（DB 0 vs DB 3）}
+系统在同一个 Redis 集群实例中设计了严密的数据库逻辑隔离规约：
+\begin{itemize}
+    \item \textbf{控制面主系统（\texttt{qknow-server}）}：独占使用 **Redis DB 3**。专门用于存放 Sa-Token/Spring Security 鉴权会话凭证、系统配置字典、全量 API 请求幂等 Token 以及防重限流滑动窗口；
+    \item \textbf{Hermes 认知微服务（\texttt{qknow-hermes}）}：独占使用 **Redis DB 0**。专门用于存放高频吞吐的短期对话消息队列（\texttt{memory:short:*}）、多智能体分布式执行锁以及认知生命周期元数据。
+\end{itemize}
+这种设计从根本上规避了大模型高频对话历史频繁触发 \texttt{lTrim} 修剪带来高并发 I/O 脉冲对核心业务系统的性能干扰，即使认知节点发生崩溃重置，也不会波及全平台的正常登录态。
