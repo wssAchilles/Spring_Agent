@@ -1,0 +1,3 @@
+method,queries,recall@5,recall@10,mrr@10,ndcg@10,hopRecall@10
+token_overlap,40,0.450000,0.450000,0.650000,0.495259,0.650000
+exact_token_overlap,40,0.450000,0.450000,0.650000,0.495259,0.650000

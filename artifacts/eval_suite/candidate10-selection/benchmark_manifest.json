@@ -1,0 +1,42 @@
+{
+  "fixture": "backend/tests/src/test/resources/rag-eval/candidate10-selection",
+  "fixtureSha256": "7b0be52a77c507ef0f3da7f2b1e54a12c9834b92344c51e314bb680934778c84",
+  "files": {
+    "queries.jsonl": "7778e4447fa0338348e2baf9bdb34e800439a9cdb5f06a00574046fbf9d8b6d1",
+    "corpus.jsonl": "68388a618a963b1de58f0dd617ae5230e61366f7f3abbf62cc6d7de32087749b",
+    "qrels.tsv": "fb2c6e450e34734a967bf560ce155f83a9b89e54fb9303d993b88dbb11baea92"
+  },
+  "counts": {
+    "queries": 40,
+    "answerableQueries": 30,
+    "corpusSegments": 1120,
+    "qrelQueries": 30,
+    "positiveQrelPairs": 46
+  },
+  "queryLanguages": {
+    "zh": 20,
+    "en": 20
+  },
+  "qrelGrades": {
+    "1": 46
+  },
+  "schema": {
+    "queries": [
+      "id",
+      "retrievalQuery",
+      "answerable",
+      "familyId"
+    ],
+    "corpus": [
+      "segmentId",
+      "content",
+      "metadata"
+    ],
+    "qrels": [
+      "queryId",
+      "segmentId",
+      "grade"
+    ]
+  },
+  "status": "VALID"
+}

@@ -1,0 +1,62 @@
+{
+  "builderVersion": "eswa-benchmark-builder-v2",
+  "selectionSeed": 20260921,
+  "selectionRule": "stable SHA-256 ordering, first candidates under character 3-gram Jaccard threshold",
+  "leakageCheck": {
+    "algorithm": "character 3-gram Jaccard after whitespace normalisation",
+    "threshold": 0.85,
+    "maxSelectedScore": 0.12058408,
+    "leakage_warnings_count": 0,
+    "rejectedCandidates": []
+  },
+  "counts": {
+    "benchmarkQueries": 300,
+    "corpusSegments": 3601,
+    "qrelPairs": 639,
+    "qrelQueries": 300
+  },
+  "selectionCounts": {
+    "MultiHopRAG.inference_query": 50,
+    "MultiHopRAG.comparison_query": 50,
+    "hotpot_dev_distractor_v1.hard": 50,
+    "split_merged.questanswer_2docs": 15,
+    "split_merged.questanswer_3docs": 15,
+    "candidate10.single-hop": 40,
+    "candidate10.cross-component": 40,
+    "candidate10.troubleshooting": 40
+  },
+  "sourceAvailability": {
+    "MultiHopRAG.total": 2556,
+    "MultiHopRAG.inference_query": 816,
+    "MultiHopRAG.comparison_query": 856,
+    "hotpot.total": 7405,
+    "hotpot.hard": 7405,
+    "split.questanswer_2docs": 797,
+    "split.questanswer_3docs": 797,
+    "candidate10.corpusSegments": 1120
+  },
+  "sourceFiles": {
+    "data/MultiHopRAG.json": "03cfb4926461f868684903aadc8024447bdda5bb3f6804741424cce338515bff",
+    "data/hotpot_dev_distractor_v1.json": "e3da074df24e8369009918aa5cdbdd254dadcde4c63f7569d36afd6f2268caa8",
+    "data/split_merged.json": "b199fb281ac526c1c8da7364cad7ea22b7f6fe1d4167e511edbdda8ad3bd943a",
+    "data/corpus.json": "20b61b5ab84de84a927420c5d265b7ec8d859ae49980699958a787ade9e4d28f",
+    "backend/tests/src/test/resources/rag-eval/candidate10-selection/corpus.jsonl": "68388a618a963b1de58f0dd617ae5230e61366f7f3abbf62cc6d7de32087749b"
+  },
+  "outputs": {
+    "benchmark_300.jsonl": {
+      "path": "/Users/achilles/Documents/许子祺/Agent/backend/tests/src/test/resources/eval/benchmark_300.jsonl",
+      "sha256": "542a8cd168d2b575b14ed795d74e4d5a57b663f989cd22f22cc183fa8e451dd3"
+    },
+    "qrels_300.tsv": {
+      "path": "/Users/achilles/Documents/许子祺/Agent/backend/tests/src/test/resources/eval/qrels_300.tsv",
+      "sha256": "f012e319fed7b6eae5edd0b5b083e28583793b9330035c094598d585a3edc761"
+    },
+    "corpus_300.jsonl": {
+      "path": "/Users/achilles/Documents/许子祺/Agent/backend/tests/src/test/resources/eval/corpus_300.jsonl",
+      "sha256": "508361faae21c1ba55a5166f8d1844825190ea67d0eae7152a096d5839b909e1"
+    }
+  },
+  "enterpriseTrackDisclaimer": "Track 2 is generated from the frozen candidate10-selection fixture. It is a synthetic diagnostic benchmark and must not be presented as a production private-enterprise case study.",
+  "qrelsFormat": "project-compatible TREC-style qrels: queryId, segmentId, grade; iteration is implicitly 0",
+  "status": "VALID"
+}

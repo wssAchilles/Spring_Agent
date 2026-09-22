@@ -1,0 +1,2078 @@
+{
+  "schemaVersion": "eswa.evidence-integrity.v1",
+  "status": "NOT_SUBMISSION_READY",
+  "inputSha256": {
+    "backend/tests/src/test/resources/eval/benchmark_300.jsonl": "542a8cd168d2b575b14ed795d74e4d5a57b663f989cd22f22cc183fa8e451dd3",
+    "backend/tests/src/test/resources/eval/corpus_300.jsonl": "508361faae21c1ba55a5166f8d1844825190ea67d0eae7152a096d5839b909e1",
+    "backend/tests/src/test/resources/eval/qrels_300.tsv": "f012e319fed7b6eae5edd0b5b083e28583793b9330035c094598d585a3edc761",
+    "backend/tests/evidence/eval_results_300.jsonl": "fdd0c6f7d0fe82280d87fec11c90c6d9d9ede4f617a0a3529edf017de9ba0f2e"
+  },
+  "counts": {
+    "queryRows": 300,
+    "uniqueIds": 300,
+    "uniqueQuestionTexts": 211,
+    "duplicateTextGroups": 31,
+    "conflictingGoldGroups": 11,
+    "corpusSegments": 3601,
+    "qrelPairs": 639,
+    "resultRows": 1500,
+    "missingOriginalLeakageScores": 120
+  },
+  "arithmeticConsistency": {
+    "passed": true,
+    "errors": []
+  },
+  "rowChecksumMismatches": [],
+  "duplicateQuestionGroups": [
+    {
+      "query": "which diagnostic segment should be inspected for a recovery issue in candidate10 family c10s-f001?",
+      "ids": [
+        "ent-troubleshoot-000",
+        "ent-troubleshoot-001",
+        "ent-troubleshoot-002",
+        "ent-troubleshoot-003",
+        "ent-troubleshoot-004",
+        "ent-troubleshoot-005",
+        "ent-troubleshoot-006",
+        "ent-troubleshoot-007",
+        "ent-troubleshoot-008",
+        "ent-troubleshoot-009",
+        "ent-troubleshoot-010",
+        "ent-troubleshoot-011",
+        "ent-troubleshoot-012",
+        "ent-troubleshoot-013",
+        "ent-troubleshoot-014",
+        "ent-troubleshoot-015",
+        "ent-troubleshoot-016",
+        "ent-troubleshoot-017",
+        "ent-troubleshoot-018",
+        "ent-troubleshoot-019",
+        "ent-troubleshoot-020",
+        "ent-troubleshoot-021",
+        "ent-troubleshoot-022",
+        "ent-troubleshoot-023",
+        "ent-troubleshoot-024",
+        "ent-troubleshoot-025",
+        "ent-troubleshoot-026",
+        "ent-troubleshoot-027",
+        "ent-troubleshoot-028",
+        "ent-troubleshoot-029",
+        "ent-troubleshoot-030",
+        "ent-troubleshoot-031",
+        "ent-troubleshoot-032",
+        "ent-troubleshoot-033",
+        "ent-troubleshoot-034",
+        "ent-troubleshoot-035",
+        "ent-troubleshoot-036",
+        "ent-troubleshoot-037",
+        "ent-troubleshoot-038",
+        "ent-troubleshoot-039"
+      ],
+      "distinctGoldSets": 40
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f001?",
+      "ids": [
+        "ent-single-000",
+        "ent-single-001",
+        "ent-single-002",
+        "ent-single-003"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f002?",
+      "ids": [
+        "ent-single-004",
+        "ent-single-005",
+        "ent-single-006",
+        "ent-single-007"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f003?",
+      "ids": [
+        "ent-single-008",
+        "ent-single-009",
+        "ent-single-010",
+        "ent-single-011"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f004?",
+      "ids": [
+        "ent-single-012",
+        "ent-single-013",
+        "ent-single-014",
+        "ent-single-015"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f005?",
+      "ids": [
+        "ent-single-016",
+        "ent-single-017",
+        "ent-single-018",
+        "ent-single-019"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f006?",
+      "ids": [
+        "ent-single-020",
+        "ent-single-021",
+        "ent-single-022",
+        "ent-single-023"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f007?",
+      "ids": [
+        "ent-single-024",
+        "ent-single-025",
+        "ent-single-026",
+        "ent-single-027"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f008?",
+      "ids": [
+        "ent-single-028",
+        "ent-single-029",
+        "ent-single-030",
+        "ent-single-031"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f009?",
+      "ids": [
+        "ent-single-032",
+        "ent-single-033",
+        "ent-single-034",
+        "ent-single-035"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which single configuration evidence is associated with candidate10 family c10s-f010?",
+      "ids": [
+        "ent-single-036",
+        "ent-single-037",
+        "ent-single-038",
+        "ent-single-039"
+      ],
+      "distinctGoldSets": 4
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f001?",
+      "ids": [
+        "ent-cross-000",
+        "ent-cross-001"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f002?",
+      "ids": [
+        "ent-cross-002",
+        "ent-cross-003"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f003?",
+      "ids": [
+        "ent-cross-004",
+        "ent-cross-005"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f004?",
+      "ids": [
+        "ent-cross-006",
+        "ent-cross-007"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f005?",
+      "ids": [
+        "ent-cross-008",
+        "ent-cross-009"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f006?",
+      "ids": [
+        "ent-cross-010",
+        "ent-cross-011"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f007?",
+      "ids": [
+        "ent-cross-012",
+        "ent-cross-013"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f008?",
+      "ids": [
+        "ent-cross-014",
+        "ent-cross-015"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f009?",
+      "ids": [
+        "ent-cross-016",
+        "ent-cross-017"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f010?",
+      "ids": [
+        "ent-cross-018",
+        "ent-cross-019"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f011?",
+      "ids": [
+        "ent-cross-020",
+        "ent-cross-021"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f012?",
+      "ids": [
+        "ent-cross-022",
+        "ent-cross-023"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f013?",
+      "ids": [
+        "ent-cross-024",
+        "ent-cross-025"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f014?",
+      "ids": [
+        "ent-cross-026",
+        "ent-cross-027"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f015?",
+      "ids": [
+        "ent-cross-028",
+        "ent-cross-029"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f016?",
+      "ids": [
+        "ent-cross-030",
+        "ent-cross-031"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f017?",
+      "ids": [
+        "ent-cross-032",
+        "ent-cross-033"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f018?",
+      "ids": [
+        "ent-cross-034",
+        "ent-cross-035"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f019?",
+      "ids": [
+        "ent-cross-036",
+        "ent-cross-037"
+      ],
+      "distinctGoldSets": 1
+    },
+    {
+      "query": "which two component segments jointly describe candidate10 family c10s-f020?",
+      "ids": [
+        "ent-cross-038",
+        "ent-cross-039"
+      ],
+      "distinctGoldSets": 1
+    }
+  ],
+  "fullSelectedCorpusOverlap": {
+    "definition": "casefolded character trigrams with whitespace removed; full selected corpus only",
+    "threshold": 0.85,
+    "maxJaccard": 0.5181818181818182,
+    "exceedances": [],
+    "perQuery": [
+      {
+        "queryId": "ent-cross-000",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-001",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-002",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-003",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-004",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-005",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-006",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-007",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-008",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-009",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-010",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-011",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-012",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-013",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-014",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-015",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-016",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-017",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-018",
+        "maxJaccard": 0.08411214953271028,
+        "segmentId": "hp-f1455c357f9c-01"
+      },
+      {
+        "queryId": "ent-cross-019",
+        "maxJaccard": 0.08411214953271028,
+        "segmentId": "hp-f1455c357f9c-01"
+      },
+      {
+        "queryId": "ent-cross-020",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-021",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-022",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-023",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-024",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-025",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-026",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-027",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-028",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-029",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-030",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-031",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-032",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-033",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-034",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-035",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-036",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-037",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-038",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-cross-039",
+        "maxJaccard": 0.08333333333333333,
+        "segmentId": "hp-f1325a07a332-5004"
+      },
+      {
+        "queryId": "ent-single-000",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-001",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-002",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-003",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-004",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-005",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-006",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-007",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-008",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-009",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-010",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-011",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-012",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-013",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-014",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-015",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-016",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-017",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-018",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-019",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-020",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-021",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-022",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-023",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-024",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-025",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-026",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-027",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-028",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-029",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-030",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-031",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-032",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-033",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-034",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-035",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-036",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-037",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-038",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-single-039",
+        "maxJaccard": 0.11627906976744186,
+        "segmentId": "hp-29cd14bf916f-1008"
+      },
+      {
+        "queryId": "ent-troubleshoot-000",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-001",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-002",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-003",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-004",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-005",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-006",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-007",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-008",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-009",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-010",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-011",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-012",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-013",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-014",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-015",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-016",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-017",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-018",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-019",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-020",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-021",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-022",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-023",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-024",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-025",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-026",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-027",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-028",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-029",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-030",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-031",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-032",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-033",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-034",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-035",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-036",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-037",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-038",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "ent-troubleshoot-039",
+        "maxJaccard": 0.09497206703910614,
+        "segmentId": "hp-abfe4eb78270-8000"
+      },
+      {
+        "queryId": "hp-5a70eee85542994082a3e3f0",
+        "maxJaccard": 0.48175182481751827,
+        "segmentId": "hp-c46826049c35-4006"
+      },
+      {
+        "queryId": "hp-5a70f0a75542994082a3e403",
+        "maxJaccard": 0.28448275862068967,
+        "segmentId": "hp-cba7460e1795-7000"
+      },
+      {
+        "queryId": "hp-5a70f0e75542994082a3e408",
+        "maxJaccard": 0.21243523316062177,
+        "segmentId": "hp-c17c019aeb98-1001"
+      },
+      {
+        "queryId": "hp-5a70f11a5542994082a3e40b",
+        "maxJaccard": 0.18439716312056736,
+        "segmentId": "hp-4d53a80dcb20-00"
+      },
+      {
+        "queryId": "hp-5a70f1685542994082a3e40f",
+        "maxJaccard": 0.36363636363636365,
+        "segmentId": "hp-9856c3add8bf-2000"
+      },
+      {
+        "queryId": "hp-5a70f39c5542994082a3e429",
+        "maxJaccard": 0.3137254901960784,
+        "segmentId": "hp-5ed5b5530161-1000"
+      },
+      {
+        "queryId": "hp-5a70f4695542994082a3e435",
+        "maxJaccard": 0.2413793103448276,
+        "segmentId": "hp-ab4f1c1e7976-03"
+      },
+      {
+        "queryId": "hp-5a70f4c45542994082a3e437",
+        "maxJaccard": 0.2719298245614035,
+        "segmentId": "hp-2f550b9f1769-8000"
+      },
+      {
+        "queryId": "hp-5a70f6425542994082a3e44c",
+        "maxJaccard": 0.29457364341085274,
+        "segmentId": "hp-e993b3ab1558-7000"
+      },
+      {
+        "queryId": "hp-5a70f9335542994082a3e46a",
+        "maxJaccard": 0.22549019607843138,
+        "segmentId": "hp-eb706df1b4b0-01"
+      },
+      {
+        "queryId": "hp-5a70ff335542994082a3e49c",
+        "maxJaccard": 0.29605263157894735,
+        "segmentId": "hp-90d3d3301546-9001"
+      },
+      {
+        "queryId": "hp-5a7100435542994082a3e4a3",
+        "maxJaccard": 0.14049586776859505,
+        "segmentId": "hp-1e1f240539e1-6000"
+      },
+      {
+        "queryId": "hp-5a7103b35542994082a3e4c0",
+        "maxJaccard": 0.20175438596491227,
+        "segmentId": "hp-1147612c4105-5000"
+      },
+      {
+        "queryId": "hp-5a7108fa5542994082a3e4ef",
+        "maxJaccard": 0.28888888888888886,
+        "segmentId": "hp-2f1da6f5e90c-4003"
+      },
+      {
+        "queryId": "hp-5a71095e5542994082a3e4f3",
+        "maxJaccard": 0.2230769230769231,
+        "segmentId": "hp-2998e6697d54-2000"
+      },
+      {
+        "queryId": "hp-5a7109e95542994082a3e4fa",
+        "maxJaccard": 0.2971014492753623,
+        "segmentId": "hp-0e069ee7c63e-8001"
+      },
+      {
+        "queryId": "hp-5a710a1e5542994082a3e4fd",
+        "maxJaccard": 0.38235294117647056,
+        "segmentId": "hp-67135cba528d-2001"
+      },
+      {
+        "queryId": "hp-5a710a915542994082a3e504",
+        "maxJaccard": 0.16022099447513813,
+        "segmentId": "hp-b7f3845b838d-3000"
+      },
+      {
+        "queryId": "hp-5a710bb15542994082a3e50d",
+        "maxJaccard": 0.2636363636363636,
+        "segmentId": "hp-729f48866879-4000"
+      },
+      {
+        "queryId": "hp-5a710d155542994082a3e520",
+        "maxJaccard": 0.5037037037037037,
+        "segmentId": "hp-ad644942da7c-5000"
+      },
+      {
+        "queryId": "hp-5a71148b5542994082a3e567",
+        "maxJaccard": 0.2376237623762376,
+        "segmentId": "hp-aa436d6cdded-7005"
+      },
+      {
+        "queryId": "hp-5a7115475542994082a3e56d",
+        "maxJaccard": 0.1937984496124031,
+        "segmentId": "hp-0d0426ea1c41-6001"
+      },
+      {
+        "queryId": "hp-5a71166d5542994082a3e576",
+        "maxJaccard": 0.17708333333333334,
+        "segmentId": "hp-c354b9bb8275-5001"
+      },
+      {
+        "queryId": "hp-5a7119095542994082a3e589",
+        "maxJaccard": 0.3511450381679389,
+        "segmentId": "hp-221851e61354-1000"
+      },
+      {
+        "queryId": "hp-5a7119f75542994082a3e58e",
+        "maxJaccard": 0.2116788321167883,
+        "segmentId": "hp-cd74e213b424-1001"
+      },
+      {
+        "queryId": "hp-5a711bb55542994082a3e597",
+        "maxJaccard": 0.3006993006993007,
+        "segmentId": "hp-7f3ad97ba83d-5000"
+      },
+      {
+        "queryId": "hp-5a711c535542994082a3e59b",
+        "maxJaccard": 0.3263888888888889,
+        "segmentId": "hp-6c8eb5c9a9c9-8000"
+      },
+      {
+        "queryId": "hp-5a711cb45542994082a3e59f",
+        "maxJaccard": 0.31496062992125984,
+        "segmentId": "hp-19cc722a2f8a-01"
+      },
+      {
+        "queryId": "hp-5a711ef85542994082a3e5ac",
+        "maxJaccard": 0.22340425531914893,
+        "segmentId": "hp-ae898be27739-6000"
+      },
+      {
+        "queryId": "hp-5a71214d5542994082a3e5b9",
+        "maxJaccard": 0.3409090909090909,
+        "segmentId": "hp-3688d16039f9-6004"
+      },
+      {
+        "queryId": "hp-5a71224f5542994082a3e5c1",
+        "maxJaccard": 0.3,
+        "segmentId": "hp-779146c88063-1000"
+      },
+      {
+        "queryId": "hp-5a71231a5542994082a3e5c4",
+        "maxJaccard": 0.16666666666666666,
+        "segmentId": "hp-7302b3f4b349-9001"
+      },
+      {
+        "queryId": "hp-5a7125165542994082a3e5d0",
+        "maxJaccard": 0.4090909090909091,
+        "segmentId": "hp-6f428b2c9be3-7000"
+      },
+      {
+        "queryId": "hp-5a7125b95542994082a3e5d5",
+        "maxJaccard": 0.26666666666666666,
+        "segmentId": "hp-1f76a10987a9-2001"
+      },
+      {
+        "queryId": "hp-5a71278c5542994082a3e5e2",
+        "maxJaccard": 0.1792452830188679,
+        "segmentId": "hp-c354f220f7ab-7002"
+      },
+      {
+        "queryId": "hp-5a7128b05542994082a3e5f2",
+        "maxJaccard": 0.16666666666666666,
+        "segmentId": "hp-08d525598865-4001"
+      },
+      {
+        "queryId": "hp-5a7129685542994082a3e5fa",
+        "maxJaccard": 0.5181818181818182,
+        "segmentId": "hp-b71f19d87e44-8002"
+      },
+      {
+        "queryId": "hp-5a71299e5542994082a3e5fe",
+        "maxJaccard": 0.23931623931623933,
+        "segmentId": "hp-83d957123790-6000"
+      },
+      {
+        "queryId": "hp-5a712af15542994082a3e614",
+        "maxJaccard": 0.16901408450704225,
+        "segmentId": "hp-3c9df0fdea8b-1000"
+      },
+      {
+        "queryId": "hp-5a712beb5542994082a3e61c",
+        "maxJaccard": 0.20987654320987653,
+        "segmentId": "hp-3d1649e7aa08-3000"
+      },
+      {
+        "queryId": "hp-5a712c4b5542994082a3e622",
+        "maxJaccard": 0.22900763358778625,
+        "segmentId": "hp-e2f04609391b-7000"
+      },
+      {
+        "queryId": "hp-5a712e895542994082a3e636",
+        "maxJaccard": 0.32044198895027626,
+        "segmentId": "hp-e00d32e86ec4-8003"
+      },
+      {
+        "queryId": "hp-5a712fca5542994082a3e641",
+        "maxJaccard": 0.23770491803278687,
+        "segmentId": "hp-83e261f1c860-2000"
+      },
+      {
+        "queryId": "hp-5a7130365542994082a3e645",
+        "maxJaccard": 0.1864406779661017,
+        "segmentId": "hp-4c55e1048bce-5001"
+      },
+      {
+        "queryId": "hp-5a7131565542994082a3e64f",
+        "maxJaccard": 0.13333333333333333,
+        "segmentId": "hp-3f69a3071772-1000"
+      },
+      {
+        "queryId": "hp-5a7133565542994082a3e65c",
+        "maxJaccard": 0.26851851851851855,
+        "segmentId": "hp-84adb3c8c379-5000"
+      },
+      {
+        "queryId": "hp-5a7133fa5542994082a3e660",
+        "maxJaccard": 0.3219178082191781,
+        "segmentId": "hp-e03dd1c1c324-7000"
+      },
+      {
+        "queryId": "hp-5a7136e25542994082a3e67e",
+        "maxJaccard": 0.14018691588785046,
+        "segmentId": "hp-fbcc48846177-00"
+      },
+      {
+        "queryId": "hp-5a7137dc5542994082a3e68a",
+        "maxJaccard": 0.21052631578947367,
+        "segmentId": "hp-151e0cb87ed9-2001"
+      },
+      {
+        "queryId": "hp-5a71380c5542994082a3e68b",
+        "maxJaccard": 0.2376237623762376,
+        "segmentId": "hp-709f21eda91d-00"
+      },
+      {
+        "queryId": "mh-comparison-000",
+        "maxJaccard": 0.15358361774744028,
+        "segmentId": "mh-5f9f68650f4b-00"
+      },
+      {
+        "queryId": "mh-comparison-001",
+        "maxJaccard": 0.14960629921259844,
+        "segmentId": "mh-e099df73332f-00"
+      },
+      {
+        "queryId": "mh-comparison-002",
+        "maxJaccard": 0.16723549488054607,
+        "segmentId": "mh-73f254468b85-01"
+      },
+      {
+        "queryId": "mh-comparison-003",
+        "maxJaccard": 0.15,
+        "segmentId": "mh-08ab63b8f98e-00"
+      },
+      {
+        "queryId": "mh-comparison-004",
+        "maxJaccard": 0.10661764705882353,
+        "segmentId": "mh-3ac4f7adea20-01"
+      },
+      {
+        "queryId": "mh-comparison-005",
+        "maxJaccard": 0.1407942238267148,
+        "segmentId": "mh-109b098f8d51-02"
+      },
+      {
+        "queryId": "mh-comparison-006",
+        "maxJaccard": 0.1752988047808765,
+        "segmentId": "mh-1fc41ae2985d-00"
+      },
+      {
+        "queryId": "mh-comparison-007",
+        "maxJaccard": 0.23247232472324722,
+        "segmentId": "mh-93cbb7654d79-01"
+      },
+      {
+        "queryId": "mh-comparison-008",
+        "maxJaccard": 0.31351351351351353,
+        "segmentId": "mh-7767e701dafb-00"
+      },
+      {
+        "queryId": "mh-comparison-009",
+        "maxJaccard": 0.281786941580756,
+        "segmentId": "mh-01248779cd10-01"
+      },
+      {
+        "queryId": "mh-comparison-010",
+        "maxJaccard": 0.19665271966527198,
+        "segmentId": "mh-918a57b602dd-00"
+      },
+      {
+        "queryId": "mh-comparison-011",
+        "maxJaccard": 0.13468013468013468,
+        "segmentId": "mh-3ac4f7adea20-01"
+      },
+      {
+        "queryId": "mh-comparison-012",
+        "maxJaccard": 0.14331210191082802,
+        "segmentId": "mh-a796a0e5d681-00"
+      },
+      {
+        "queryId": "mh-comparison-013",
+        "maxJaccard": 0.12686567164179105,
+        "segmentId": "mh-459e906f29e0-00"
+      },
+      {
+        "queryId": "mh-comparison-014",
+        "maxJaccard": 0.14246575342465753,
+        "segmentId": "mh-a72b67978870-01"
+      },
+      {
+        "queryId": "mh-comparison-015",
+        "maxJaccard": 0.19666666666666666,
+        "segmentId": "mh-6e3d1a2b3439-01"
+      },
+      {
+        "queryId": "mh-comparison-016",
+        "maxJaccard": 0.12315270935960591,
+        "segmentId": "hp-b4b6ae6addf4-01"
+      },
+      {
+        "queryId": "mh-comparison-017",
+        "maxJaccard": 0.1566265060240964,
+        "segmentId": "mh-93cbb7654d79-01"
+      },
+      {
+        "queryId": "mh-comparison-018",
+        "maxJaccard": 0.1556420233463035,
+        "segmentId": "mh-a517314e1d63-00"
+      },
+      {
+        "queryId": "mh-comparison-019",
+        "maxJaccard": 0.2558139534883721,
+        "segmentId": "mh-c83df614043f-01"
+      },
+      {
+        "queryId": "mh-comparison-020",
+        "maxJaccard": 0.14130434782608695,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-comparison-021",
+        "maxJaccard": 0.1810344827586207,
+        "segmentId": "mh-5f4242417fcb-00"
+      },
+      {
+        "queryId": "mh-comparison-022",
+        "maxJaccard": 0.2,
+        "segmentId": "mh-7b742c6e5604-00"
+      },
+      {
+        "queryId": "mh-comparison-023",
+        "maxJaccard": 0.2813852813852814,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-comparison-024",
+        "maxJaccard": 0.13488372093023257,
+        "segmentId": "mh-505a7d8e20b2-01"
+      },
+      {
+        "queryId": "mh-comparison-025",
+        "maxJaccard": 0.12301587301587301,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-comparison-026",
+        "maxJaccard": 0.24899598393574296,
+        "segmentId": "mh-2d347ea57a7b-00"
+      },
+      {
+        "queryId": "mh-comparison-027",
+        "maxJaccard": 0.1504424778761062,
+        "segmentId": "mh-100486f67823-00"
+      },
+      {
+        "queryId": "mh-comparison-028",
+        "maxJaccard": 0.11594202898550725,
+        "segmentId": "hp-02c54693184d-8006"
+      },
+      {
+        "queryId": "mh-comparison-029",
+        "maxJaccard": 0.18770226537216828,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-comparison-030",
+        "maxJaccard": 0.2834008097165992,
+        "segmentId": "mh-6347f9338477-00"
+      },
+      {
+        "queryId": "mh-comparison-031",
+        "maxJaccard": 0.1991869918699187,
+        "segmentId": "mh-7b742c6e5604-00"
+      },
+      {
+        "queryId": "mh-comparison-032",
+        "maxJaccard": 0.21161825726141079,
+        "segmentId": "mh-0a8d1d799848-00"
+      },
+      {
+        "queryId": "mh-comparison-033",
+        "maxJaccard": 0.1111111111111111,
+        "segmentId": "mh-2e64c1013eb3-01"
+      },
+      {
+        "queryId": "mh-comparison-034",
+        "maxJaccard": 0.1782178217821782,
+        "segmentId": "mh-10d477a19787-00"
+      },
+      {
+        "queryId": "mh-comparison-035",
+        "maxJaccard": 0.10989010989010989,
+        "segmentId": "hp-c448e6759112-6006"
+      },
+      {
+        "queryId": "mh-comparison-036",
+        "maxJaccard": 0.1553398058252427,
+        "segmentId": "mh-b22f3f8552b2-00"
+      },
+      {
+        "queryId": "mh-comparison-037",
+        "maxJaccard": 0.14410480349344978,
+        "segmentId": "mh-11dbc0f888f1-01"
+      },
+      {
+        "queryId": "mh-comparison-038",
+        "maxJaccard": 0.16883116883116883,
+        "segmentId": "mh-95d8210a2210-00"
+      },
+      {
+        "queryId": "mh-comparison-039",
+        "maxJaccard": 0.1830065359477124,
+        "segmentId": "mh-4eac18322f48-01"
+      },
+      {
+        "queryId": "mh-comparison-040",
+        "maxJaccard": 0.15129151291512916,
+        "segmentId": "mh-3ac4f7adea20-01"
+      },
+      {
+        "queryId": "mh-comparison-041",
+        "maxJaccard": 0.1918819188191882,
+        "segmentId": "mh-424ed1480363-00"
+      },
+      {
+        "queryId": "mh-comparison-042",
+        "maxJaccard": 0.17318435754189945,
+        "segmentId": "mh-bb4c4d2e0422-00"
+      },
+      {
+        "queryId": "mh-comparison-043",
+        "maxJaccard": 0.1145374449339207,
+        "segmentId": "mh-1dc2ed7b2564-00"
+      },
+      {
+        "queryId": "mh-comparison-044",
+        "maxJaccard": 0.20748299319727892,
+        "segmentId": "mh-0be50a797883-01"
+      },
+      {
+        "queryId": "mh-comparison-045",
+        "maxJaccard": 0.125,
+        "segmentId": "mh-3be7c66e6131-01"
+      },
+      {
+        "queryId": "mh-comparison-046",
+        "maxJaccard": 0.16,
+        "segmentId": "mh-b2eee59a56c6-00"
+      },
+      {
+        "queryId": "mh-comparison-047",
+        "maxJaccard": 0.17518248175182483,
+        "segmentId": "mh-ab783775f56a-00"
+      },
+      {
+        "queryId": "mh-comparison-048",
+        "maxJaccard": 0.12181303116147309,
+        "segmentId": "hp-ecd151987c3a-4002"
+      },
+      {
+        "queryId": "mh-comparison-049",
+        "maxJaccard": 0.16417910447761194,
+        "segmentId": "mh-265821b0acde-00"
+      },
+      {
+        "queryId": "mh-inference-000",
+        "maxJaccard": 0.14285714285714285,
+        "segmentId": "mh-b91048dce016-02"
+      },
+      {
+        "queryId": "mh-inference-001",
+        "maxJaccard": 0.18971061093247588,
+        "segmentId": "mh-1cee8b570fd1-03"
+      },
+      {
+        "queryId": "mh-inference-002",
+        "maxJaccard": 0.17150395778364116,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-003",
+        "maxJaccard": 0.13125,
+        "segmentId": "mh-404ff49fd733-00"
+      },
+      {
+        "queryId": "mh-inference-004",
+        "maxJaccard": 0.14,
+        "segmentId": "hp-403ae7a3c00c-9004"
+      },
+      {
+        "queryId": "mh-inference-005",
+        "maxJaccard": 0.15051020408163265,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-006",
+        "maxJaccard": 0.1474820143884892,
+        "segmentId": "mh-91d5f0808c56-03"
+      },
+      {
+        "queryId": "mh-inference-007",
+        "maxJaccard": 0.18981481481481483,
+        "segmentId": "mh-c06af9eace17-00"
+      },
+      {
+        "queryId": "mh-inference-008",
+        "maxJaccard": 0.1349862258953168,
+        "segmentId": "mh-26d74b9970af-00"
+      },
+      {
+        "queryId": "mh-inference-009",
+        "maxJaccard": 0.1417004048582996,
+        "segmentId": "mh-02389fbe8420-01"
+      },
+      {
+        "queryId": "mh-inference-010",
+        "maxJaccard": 0.13777777777777778,
+        "segmentId": "mh-08f66c2d7566-02"
+      },
+      {
+        "queryId": "mh-inference-011",
+        "maxJaccard": 0.1388888888888889,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-012",
+        "maxJaccard": 0.15303430079155672,
+        "segmentId": "mh-3df2c1bec576-01"
+      },
+      {
+        "queryId": "mh-inference-013",
+        "maxJaccard": 0.14732142857142858,
+        "segmentId": "hp-403ae7a3c00c-9004"
+      },
+      {
+        "queryId": "mh-inference-014",
+        "maxJaccard": 0.1583011583011583,
+        "segmentId": "mh-2966d39747da-02"
+      },
+      {
+        "queryId": "mh-inference-015",
+        "maxJaccard": 0.1382716049382716,
+        "segmentId": "hp-ecd151987c3a-4002"
+      },
+      {
+        "queryId": "mh-inference-016",
+        "maxJaccard": 0.1543026706231454,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-017",
+        "maxJaccard": 0.1436950146627566,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-018",
+        "maxJaccard": 0.15748031496062992,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-inference-019",
+        "maxJaccard": 0.1455223880597015,
+        "segmentId": "mh-5f3e1616059b-01"
+      },
+      {
+        "queryId": "mh-inference-020",
+        "maxJaccard": 0.16524216524216523,
+        "segmentId": "mh-1cf3a62129da-00"
+      },
+      {
+        "queryId": "mh-inference-021",
+        "maxJaccard": 0.11049723756906077,
+        "segmentId": "hp-9bf7bce58ff0-9002"
+      },
+      {
+        "queryId": "mh-inference-022",
+        "maxJaccard": 0.13043478260869565,
+        "segmentId": "mh-f31d4dad4dd0-00"
+      },
+      {
+        "queryId": "mh-inference-023",
+        "maxJaccard": 0.17940199335548174,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-inference-024",
+        "maxJaccard": 0.14613180515759314,
+        "segmentId": "mh-3df2c1bec576-01"
+      },
+      {
+        "queryId": "mh-inference-025",
+        "maxJaccard": 0.14080459770114942,
+        "segmentId": "mh-3ae8ae83406f-00"
+      },
+      {
+        "queryId": "mh-inference-026",
+        "maxJaccard": 0.12137203166226913,
+        "segmentId": "mh-a72b67978870-01"
+      },
+      {
+        "queryId": "mh-inference-027",
+        "maxJaccard": 0.15017064846416384,
+        "segmentId": "mh-3df2c1bec576-01"
+      },
+      {
+        "queryId": "mh-inference-028",
+        "maxJaccard": 0.13310580204778158,
+        "segmentId": "mh-0fb77a4c66a1-00"
+      },
+      {
+        "queryId": "mh-inference-029",
+        "maxJaccard": 0.13144329896907217,
+        "segmentId": "mh-a72b67978870-01"
+      },
+      {
+        "queryId": "mh-inference-030",
+        "maxJaccard": 0.18835616438356165,
+        "segmentId": "mh-2966d39747da-02"
+      },
+      {
+        "queryId": "mh-inference-031",
+        "maxJaccard": 0.1111111111111111,
+        "segmentId": "mh-0d5a9ae85cf0-00"
+      },
+      {
+        "queryId": "mh-inference-032",
+        "maxJaccard": 0.10948905109489052,
+        "segmentId": "mh-0d5a9ae85cf0-00"
+      },
+      {
+        "queryId": "mh-inference-033",
+        "maxJaccard": 0.12238805970149254,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-034",
+        "maxJaccard": 0.14516129032258066,
+        "segmentId": "mh-2640c70a3534-02"
+      },
+      {
+        "queryId": "mh-inference-035",
+        "maxJaccard": 0.13399503722084366,
+        "segmentId": "mh-8a743df15553-00"
+      },
+      {
+        "queryId": "mh-inference-036",
+        "maxJaccard": 0.2,
+        "segmentId": "mh-dc318c907098-00"
+      },
+      {
+        "queryId": "mh-inference-037",
+        "maxJaccard": 0.19090909090909092,
+        "segmentId": "mh-6e3d1a2b3439-01"
+      },
+      {
+        "queryId": "mh-inference-038",
+        "maxJaccard": 0.11455108359133127,
+        "segmentId": "mh-3ae8ae83406f-00"
+      },
+      {
+        "queryId": "mh-inference-039",
+        "maxJaccard": 0.14699792960662525,
+        "segmentId": "hp-44b346373f1f-7001"
+      },
+      {
+        "queryId": "mh-inference-040",
+        "maxJaccard": 0.18018018018018017,
+        "segmentId": "mh-5a78a5cd0d2d-01"
+      },
+      {
+        "queryId": "mh-inference-041",
+        "maxJaccard": 0.15074309978768577,
+        "segmentId": "hp-403ae7a3c00c-9004"
+      },
+      {
+        "queryId": "mh-inference-042",
+        "maxJaccard": 0.1509433962264151,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-inference-043",
+        "maxJaccard": 0.1409090909090909,
+        "segmentId": "hp-9d6c4068c078-3001"
+      },
+      {
+        "queryId": "mh-inference-044",
+        "maxJaccard": 0.11572700296735905,
+        "segmentId": "mh-1016d464c2f3-03"
+      },
+      {
+        "queryId": "mh-inference-045",
+        "maxJaccard": 0.14285714285714285,
+        "segmentId": "mh-abfb96ec3162-03"
+      },
+      {
+        "queryId": "mh-inference-046",
+        "maxJaccard": 0.14960629921259844,
+        "segmentId": "mh-1016d464c2f3-03"
+      },
+      {
+        "queryId": "mh-inference-047",
+        "maxJaccard": 0.14028776978417265,
+        "segmentId": "mh-eae4133b1fc3-01"
+      },
+      {
+        "queryId": "mh-inference-048",
+        "maxJaccard": 0.17222222222222222,
+        "segmentId": "mh-5f4242417fcb-00"
+      },
+      {
+        "queryId": "mh-inference-049",
+        "maxJaccard": 0.17563739376770537,
+        "segmentId": "mh-2b466a1d6b91-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe14c",
+        "maxJaccard": 0.06976744186046512,
+        "segmentId": "split-3315909a1437-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe14d",
+        "maxJaccard": 0.025,
+        "segmentId": "split-3638efabab5b-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe156",
+        "maxJaccard": 0.04582210242587601,
+        "segmentId": "split-34dae5159cd5-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe164",
+        "maxJaccard": 0.029585798816568046,
+        "segmentId": "split-63d5fccf6fb2-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe17a",
+        "maxJaccard": 0.01891891891891892,
+        "segmentId": "split-c33f142e9e4a-02"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe187",
+        "maxJaccard": 0.031413612565445025,
+        "segmentId": "split-3d0f7ceb1e10-02"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe190",
+        "maxJaccard": 0.013736263736263736,
+        "segmentId": "split-3f7be532ad03-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe1e6",
+        "maxJaccard": 0.0058997050147492625,
+        "segmentId": "split-85747661ea7a-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe1f2",
+        "maxJaccard": 0.0034482758620689655,
+        "segmentId": "split-0a1c45940bcc-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe20e",
+        "maxJaccard": 0.03943661971830986,
+        "segmentId": "split-aadcbc822e86-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe21b",
+        "maxJaccard": 0.019498607242339833,
+        "segmentId": "split-1a63dd828565-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe237",
+        "maxJaccard": 0.00804289544235925,
+        "segmentId": "split-37684a55854d-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe249",
+        "maxJaccard": 0.056716417910447764,
+        "segmentId": "split-248d717aefd5-02"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe25b",
+        "maxJaccard": 0.03494623655913978,
+        "segmentId": "split-168f42ad4507-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe264",
+        "maxJaccard": 0.02358490566037736,
+        "segmentId": "split-0207d7a0338e-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe14c",
+        "maxJaccard": 0.0469208211143695,
+        "segmentId": "split-3315909a1437-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe14d",
+        "maxJaccard": 0.023255813953488372,
+        "segmentId": "split-98181a6b02fe-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe156",
+        "maxJaccard": 0.033426183844011144,
+        "segmentId": "split-34dae5159cd5-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe164",
+        "maxJaccard": 0.03283582089552239,
+        "segmentId": "split-f041f57a2412-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe17a",
+        "maxJaccard": 0.03194103194103194,
+        "segmentId": "split-5f6d442b16f9-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe187",
+        "maxJaccard": 0.03225806451612903,
+        "segmentId": "split-2f40135c558a-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe190",
+        "maxJaccard": 0.009868421052631578,
+        "segmentId": "split-dee8af35b940-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe1e6",
+        "maxJaccard": 0.007614213197969543,
+        "segmentId": "split-2cf4397466a3-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe1f2",
+        "maxJaccard": 0.008522727272727272,
+        "segmentId": "split-927a45aa495e-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe20e",
+        "maxJaccard": 0.02046783625730994,
+        "segmentId": "split-aadcbc822e86-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe21b",
+        "maxJaccard": 0.0028169014084507044,
+        "segmentId": "split-bb042ba0feaf-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe237",
+        "maxJaccard": 0.007272727272727273,
+        "segmentId": "split-0a1c45940bcc-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe249",
+        "maxJaccard": 0.0963855421686747,
+        "segmentId": "split-248d717aefd5-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe25b",
+        "maxJaccard": 0.03282828282828283,
+        "segmentId": "split-348da0b47285-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe264",
+        "maxJaccard": 0.013824884792626729,
+        "segmentId": "split-f74b0a5a0c48-02"
+      }
+    ],
+    "limitation": "No inference about training contamination, independence or annotation correctness."
+  },
+  "phase1InitialAttempts": [
+    {
+      "suite": "tech.qiantong.qknow.ai.transformer.StructureAwareMarkdownSplitterTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/01_StructureAwareMarkdownSplitterTest.log",
+      "sha256": "fbada1b44192628a15f7ee597d3c28e0a704219523295b302c2aa7d125ae0b70"
+    },
+    {
+      "suite": "tech.qiantong.qknow.ai.rag.Phase116GraphRagScaffoldContractTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/02_Phase116GraphRagScaffoldContractTest.log",
+      "sha256": "47512d4a3275d52e1e25f24624323087cbab2fded263d50327f779c5cc165388"
+    },
+    {
+      "suite": "tech.qiantong.qknow.hermes.agent.ReActCycleGuardContractTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/03_ReActCycleGuardContractTest.log",
+      "sha256": "b08947d114069f677e183ba1b303a86de3974a3fc61af061a4ac8f9f2d617159"
+    },
+    {
+      "suite": "tech.qiantong.qknow.rag.eval.Phase18NativeAccelerationAndTantivyGateTest",
+      "tests": 5,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": false,
+      "log": "backend/tests/evidence/phase1_logs/04_Phase18NativeAccelerationAndTantivyGateTest.log",
+      "sha256": "404523d2565cac86750bf74549de6d4d18f5906633cc8ee330df227e9e3c0d0d"
+    },
+    {
+      "suite": "tech.qiantong.qknow.hermes.flow.ReactiveWorkflowContractTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/05_ReactiveWorkflowContractTest.log",
+      "sha256": "eda27071bb2d9647f46c0d9c124208372a03eab690d29d8822662bfcdcce8b4b"
+    },
+    {
+      "suite": "tech.qiantong.qknow.hermes.streaming.Phase92StreamingInteractionContractTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/06_Phase92StreamingInteractionContractTest.log",
+      "sha256": "b424775c90ab5f518f91354dba2959fcf6a975429dc8f266144c90f2e01d2401"
+    },
+    {
+      "suite": "tech.qiantong.qknow.hermes.flow.hitl.Phase124WorkflowHitlGovernorContractTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/07_Phase124WorkflowHitlGovernorContractTest.log",
+      "sha256": "7033bf3f1ebb745690fa86ccbb820ffbb695f5464865f141045adef7adb52169"
+    },
+    {
+      "suite": "tech.qiantong.qknow.hermes.flow.dag.DagCheckpointManagerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/08_DagCheckpointManagerTest.log",
+      "sha256": "83df5c266ef0189e4d0aa804e77c75bba4ced663c8f29b8d1173100f6c8764cc"
+    },
+    {
+      "suite": "tech.qiantong.qknow.hermes.flow.hitl.Phase88WorkflowHitlContractTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "buildSuccess": true,
+      "log": "backend/tests/evidence/phase1_logs/09_Phase88WorkflowHitlContractTest.log",
+      "sha256": "efec2240c2a9333e7d663d3460c769bfd592f4bc609ef38b34706e8766a486c8"
+    }
+  ],
+  "phase1": {
+    "counts": {
+      "tests": 56,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 56
+    },
+    "suites": [
+      {
+        "suite": "tech.qiantong.qknow.rag.eval.Phase18NativeAccelerationAndTantivyGateTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.ai.transformer.StructureAwareMarkdownSplitterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.ai.rag.Phase116GraphRagScaffoldContractTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.hermes.agent.ReActCycleGuardContractTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.hermes.streaming.Phase92StreamingInteractionContractTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.hermes.flow.dag.DagCheckpointManagerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.hermes.flow.hitl.Phase88WorkflowHitlContractTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.hermes.flow.hitl.Phase124WorkflowHitlGovernorContractTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      },
+      {
+        "suite": "tech.qiantong.qknow.hermes.flow.ReactiveWorkflowContractTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "buildSuccess": true,
+        "log": "backend/tests/evidence/phase1_recheck.log",
+        "sha256": "802d9cb2159057e1f06bca74de158c68364cce7f1abb5e3a24f445368e1e7259"
+      }
+    ],
+    "localNativeBuild": "cargo build --manifest-path backend/tools/vecsim-jni/Cargo.toml --release --locked",
+    "nativeOverride": "-Dqknow.native.lib.dir=<project>/backend/tools/vecsim-jni/target/release",
+    "javaVersionLog": "backend/tests/evidence/phase1_logs/java_version.txt",
+    "limitation": "Maven logs include component mocks. They are not production-load or real-database concurrency evidence. Initial stale-JNI failure remains archived."
+  },
+  "issues": [
+    {
+      "code": "NONINDEPENDENT_QUERY_ROWS",
+      "detail": "Repeated question texts, including contradictory gold sets, invalidate treating all 300 rows as independent observations."
+    },
+    {
+      "code": "UNSUPPORTED_RELEVANCE_GRADES",
+      "detail": "benchmark_builder.py assigns public grades by evidence position (3,2,1), not source relevance judgments."
+    },
+    {
+      "code": "SYNTHETIC_ENTERPRISE_CONTENT",
+      "detail": "candidate10 content comprises identifier/pressure fixtures; family membership is not a software dependency or incident label."
+    },
+    {
+      "code": "QRELS_FORMAT_NOT_STANDARD_TREC",
+      "detail": "Frozen qrels have a header and three fields; standard TREC requires query, iteration, document, relevance. No labels were changed."
+    },
+    {
+      "code": "PARTIAL_ORIGINAL_OVERLAP_SCREEN",
+      "detail": "Original builder screens 180 public questions against corpus.json and candidate10 only; enterprise rows have no leakage_score; selected Hotpot/split passages were outside that screen."
+    },
+    {
+      "code": "THREE_PATH_PROXY",
+      "detail": "QuadPath ID invokes BM25, 128-bucket hashed vectors and metadata-family scores, followed by RRF and tie breaking. No fourth metadata ranking, Qwen embedding, graph traversal or backend call is executed."
+    },
+    {
+      "code": "SEQUENTIAL_PROXY",
+      "detail": "eval_runner_300.py loops over queries and methods synchronously; stage elapsed times do not measure production concurrency."
+    },
+    {
+      "code": "SENSITIVITY_SCOPE_INCOMPLETE",
+      "detail": "K=1,3,5,10 cutoff analysis does not implement alpha/h/chunk-size/RRF grids."
+    },
+    {
+      "code": "NO_MEASURED_ROI_OR_ENERGY",
+      "detail": "No incident, annotation, metered-energy or finance records establish MTTR, hallucination, kappa, 312% ROI, or cost superiority."
+    }
+  ]
+}

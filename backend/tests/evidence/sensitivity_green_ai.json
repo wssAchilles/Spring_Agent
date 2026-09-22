@@ -1,0 +1,250 @@
+{
+  "schemaVersion": "eswa.sensitivity_green_ai.v1",
+  "source": "backend/tests/evidence/eval_results_300_v2.jsonl",
+  "evaluationMode": "offline_deterministic_retrieval",
+  "kValues": [
+    1,
+    3,
+    5,
+    10
+  ],
+  "sensitivityMetricDefinition": "binary gold-segment metrics recomputed from stored top-ten rankings; NDCG is binary because qrel grades are not stored per result row",
+  "sensitivity": [
+    {
+      "method": "KnowledgeHub_QuadPath",
+      "k": 1,
+      "recall": 0.10138888888888888,
+      "mrr": 0.24333333333333335,
+      "map": 0.24333333333333335,
+      "ndcg": 0.24333333333333335,
+      "hopRecall": 0.0
+    },
+    {
+      "method": "KnowledgeHub_QuadPath",
+      "k": 3,
+      "recall": 0.22927777777777783,
+      "mrr": 0.32166666666666666,
+      "map": 0.18944444444444447,
+      "ndcg": 0.23437249336636795,
+      "hopRecall": 0.08
+    },
+    {
+      "method": "KnowledgeHub_QuadPath",
+      "k": 5,
+      "recall": 0.30744444444444446,
+      "mrr": 0.33549999999999996,
+      "map": 0.21706759259259256,
+      "ndcg": 0.27177121049325365,
+      "hopRecall": 0.18333333333333332
+    },
+    {
+      "method": "KnowledgeHub_QuadPath",
+      "k": 10,
+      "recall": 0.3713333333333333,
+      "mrr": 0.34361375661375665,
+      "map": 0.23256968694885363,
+      "ndcg": 0.29993506933104697,
+      "hopRecall": 0.23333333333333334
+    },
+    {
+      "method": "Dense_Only",
+      "k": 1,
+      "recall": 0.04444444444444444,
+      "mrr": 0.11333333333333333,
+      "map": 0.11333333333333333,
+      "ndcg": 0.11333333333333333,
+      "hopRecall": 0.0
+    },
+    {
+      "method": "Dense_Only",
+      "k": 3,
+      "recall": 0.11805555555555555,
+      "mrr": 0.16555555555555554,
+      "map": 0.08740740740740739,
+      "ndcg": 0.11557983532443414,
+      "hopRecall": 0.02666666666666667
+    },
+    {
+      "method": "Dense_Only",
+      "k": 5,
+      "recall": 0.18011111111111108,
+      "mrr": 0.17772222222222223,
+      "map": 0.11175833333333332,
+      "ndcg": 0.14764156802412073,
+      "hopRecall": 0.1
+    },
+    {
+      "method": "Dense_Only",
+      "k": 10,
+      "recall": 0.22205555555555553,
+      "mrr": 0.18475793650793654,
+      "map": 0.12023584656084656,
+      "ndcg": 0.16496257100738737,
+      "hopRecall": 0.13333333333333333
+    },
+    {
+      "method": "BM25_Only",
+      "k": 1,
+      "recall": 0.17372222222222222,
+      "mrr": 0.39666666666666667,
+      "map": 0.39666666666666667,
+      "ndcg": 0.39666666666666667,
+      "hopRecall": 0.013333333333333334
+    },
+    {
+      "method": "BM25_Only",
+      "k": 3,
+      "recall": 0.39216666666666666,
+      "mrr": 0.49222222222222217,
+      "map": 0.33629629629629626,
+      "ndcg": 0.39394234382737037,
+      "hopRecall": 0.18333333333333332
+    },
+    {
+      "method": "BM25_Only",
+      "k": 5,
+      "recall": 0.48088888888888887,
+      "mrr": 0.5042222222222222,
+      "map": 0.36995833333333333,
+      "ndcg": 0.4350623487689739,
+      "hopRecall": 0.33
+    },
+    {
+      "method": "BM25_Only",
+      "k": 10,
+      "recall": 0.5526666666666668,
+      "mrr": 0.5116640211640212,
+      "map": 0.38553350970017636,
+      "ndcg": 0.46418480323912426,
+      "hopRecall": 0.4
+    },
+    {
+      "method": "Graph_Only",
+      "k": 1,
+      "recall": 0.033888888888888885,
+      "mrr": 0.07666666666666666,
+      "map": 0.07666666666666666,
+      "ndcg": 0.07666666666666666,
+      "hopRecall": 0.0
+    },
+    {
+      "method": "Graph_Only",
+      "k": 3,
+      "recall": 0.07916666666666666,
+      "mrr": 0.11166666666666666,
+      "map": 0.06018518518518519,
+      "ndcg": 0.07859922427614538,
+      "hopRecall": 0.016666666666666666
+    },
+    {
+      "method": "Graph_Only",
+      "k": 5,
+      "recall": 0.10388888888888888,
+      "mrr": 0.11916666666666667,
+      "map": 0.06668981481481481,
+      "ndcg": 0.09038082657396077,
+      "hopRecall": 0.03333333333333333
+    },
+    {
+      "method": "Graph_Only",
+      "k": 10,
+      "recall": 0.14027777777777778,
+      "mrr": 0.12533597883597883,
+      "map": 0.07373214285714286,
+      "ndcg": 0.10524163719607744,
+      "hopRecall": 0.06
+    },
+    {
+      "method": "Hybrid_Dual",
+      "k": 1,
+      "recall": 0.10538888888888889,
+      "mrr": 0.25,
+      "map": 0.25,
+      "ndcg": 0.25,
+      "hopRecall": 0.0
+    },
+    {
+      "method": "Hybrid_Dual",
+      "k": 3,
+      "recall": 0.23538888888888887,
+      "mrr": 0.3283333333333333,
+      "map": 0.19157407407407406,
+      "ndcg": 0.2387955527791238,
+      "hopRecall": 0.07333333333333333
+    },
+    {
+      "method": "Hybrid_Dual",
+      "k": 5,
+      "recall": 0.2971666666666667,
+      "mrr": 0.3393333333333333,
+      "map": 0.21430555555555558,
+      "ndcg": 0.26868128064721847,
+      "hopRecall": 0.15666666666666668
+    },
+    {
+      "method": "Hybrid_Dual",
+      "k": 10,
+      "recall": 0.36216666666666664,
+      "mrr": 0.35021296296296295,
+      "map": 0.22757826278659612,
+      "ndcg": 0.2962498234523727,
+      "hopRecall": 0.18666666666666668
+    }
+  ],
+  "greenAiScenario": {
+    "powerW": 35.0,
+    "pue": 1.2,
+    "carbonIntensityGPerKWh": 442.0,
+    "formula": "energy_kWh = recorded_total_seconds * power_W * PUE / 3.6e6",
+    "limitation": "scenario based on wall-clock elapsed time, not CPU time or measured power; excludes indexing and hosted services; not evidence of carbon or cost superiority",
+    "externalApiCalls": 0,
+    "hostedApiCost": "not estimated; no hosted calls were made",
+    "methods": [
+      {
+        "method": "KnowledgeHub_QuadPath",
+        "queries": 300,
+        "totalRecordedSeconds": 2.381595581,
+        "energyKWhScenario": 2.778528177833333e-05,
+        "co2eGramsScenario": 0.012281094546023332,
+        "externalApiCalls": 0,
+        "observedHostedApiCostUsd": 0.0
+      },
+      {
+        "method": "Dense_Only",
+        "queries": 300,
+        "totalRecordedSeconds": 1.393845499,
+        "energyKWhScenario": 1.6261530821666667e-05,
+        "co2eGramsScenario": 0.007187596623176667,
+        "externalApiCalls": 0,
+        "observedHostedApiCostUsd": 0.0
+      },
+      {
+        "method": "BM25_Only",
+        "queries": 300,
+        "totalRecordedSeconds": 0.393316578,
+        "energyKWhScenario": 4.588693409999999e-06,
+        "co2eGramsScenario": 0.00202820248722,
+        "externalApiCalls": 0,
+        "observedHostedApiCostUsd": 0.0
+      },
+      {
+        "method": "Graph_Only",
+        "queries": 300,
+        "totalRecordedSeconds": 0.330732959,
+        "energyKWhScenario": 3.858551188333333e-06,
+        "co2eGramsScenario": 0.0017054796252433332,
+        "externalApiCalls": 0,
+        "observedHostedApiCostUsd": 0.0
+      },
+      {
+        "method": "Hybrid_Dual",
+        "queries": 300,
+        "totalRecordedSeconds": 1.958209306,
+        "energyKWhScenario": 2.284577523666667e-05,
+        "co2eGramsScenario": 0.010097832654606669,
+        "externalApiCalls": 0,
+        "observedHostedApiCostUsd": 0.0
+      }
+    ]
+  }
+}

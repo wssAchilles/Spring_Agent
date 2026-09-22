@@ -1,0 +1,6 @@
+left,right,metric,queries,meanLeft,meanRight,meanDelta,bootstrap95Low,bootstrap95High,exactSignP
+token_overlap,exact_token_overlap,recall@5,40,0.450000,0.450000,0.000000,0.000000,0.000000,1.000000
+token_overlap,exact_token_overlap,recall@10,40,0.450000,0.450000,0.000000,0.000000,0.000000,1.000000
+token_overlap,exact_token_overlap,mrr@10,40,0.650000,0.650000,0.000000,0.000000,0.000000,1.000000
+token_overlap,exact_token_overlap,ndcg@10,40,0.495259,0.495259,0.000000,0.000000,0.000000,1.000000
+token_overlap,exact_token_overlap,hopRecall@10,40,0.650000,0.650000,0.000000,0.000000,0.000000,1.000000

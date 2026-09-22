@@ -1,0 +1,287 @@
+{
+  "schemaVersion": "eswa.roi_scenario.v1",
+  "status": "VALID_SCENARIO_WITH_HEADLINE_INCONSISTENCY",
+  "inputs": {
+    "baseline_mttr_min": 84.0,
+    "knowledge_hub_mttr_min": 22.0,
+    "annual_events": 12,
+    "staff_count": 3,
+    "staff_rate_usd_per_hour": 120.0,
+    "downtime_cost_usd_per_hour": 140000.0,
+    "additional_incident_hours": 1.0,
+    "attribution_weight": 0.2,
+    "hallucination_baseline": 0.316,
+    "hallucination_knowledge_hub": 0.114,
+    "capex_usd": 250000.0,
+    "annual_opex_usd": 35000.0,
+    "discount_rate": 0.08,
+    "requested_roi_pct": 312.6,
+    "requested_npv_usd": 1014350.0,
+    "requested_payback_months": 4.6
+  },
+  "derived": {
+    "deltaMttrMin": 62.0,
+    "mttrReductionPct": 73.80952380952381,
+    "annualDirectDowntimeAvoidedUsd": 347200.00000000006,
+    "annualLaborSavingsUsd": 4464.0,
+    "annualHallucinationRiskAvoidedUsd": 339360.00000000006,
+    "annualDirectBenefitUsd": 351664.00000000006,
+    "annualRiskInclusiveBenefitUsd": 691024.0000000001,
+    "incidentCostPerMinuteUsd": 2333.3333333333335,
+    "additionalIncidentLossUsd": 140000.0
+  },
+  "stages": {
+    "baseline": {
+      "fault_localization_min": 55.0,
+      "remediation_plan_min": 15.0,
+      "approval_execution_min": 14.0
+    },
+    "knowledge_hub": {
+      "fault_localization_min": 3.0,
+      "remediation_plan_min": 4.0,
+      "approval_execution_min": 15.0
+    }
+  },
+  "scenarios": [
+    {
+      "name": "conservative_direct_benefit",
+      "annualBenefitUsd": 351664.00000000006,
+      "annualNetCashFlowUsd": 316664.00000000006,
+      "cashFlowsUsd": [
+        -250000.0,
+        316664.00000000006,
+        316664.00000000006,
+        316664.00000000006,
+        316664.00000000006,
+        316664.00000000006
+      ],
+      "discountedCashFlowsUsd": [
+        -250000.0,
+        293207.4074074074,
+        271488.3401920439,
+        251378.09277041102,
+        232757.4933059361,
+        215516.19750549638
+      ],
+      "npv5Usd": 1014347.5311812948,
+      "roi5Pct": 533.3280000000001,
+      "discountedReturnOnCapexPct": 405.7390124725179,
+      "paybackMonths": 9.47376398959149
+    },
+    {
+      "name": "risk_inclusive_benefit",
+      "annualBenefitUsd": 691024.0000000001,
+      "annualNetCashFlowUsd": 656024.0000000001,
+      "cashFlowsUsd": [
+        -250000.0,
+        656024.0000000001,
+        656024.0000000001,
+        656024.0000000001,
+        656024.0000000001,
+        656024.0000000001
+      ],
+      "discountedCashFlowsUsd": [
+        -250000.0,
+        607429.6296296297,
+        562434.8422496571,
+        520773.0020830158,
+        482197.22415094054,
+        446478.9112508708
+      ],
+      "npv5Usd": 2369313.609364114,
+      "roi5Pct": 1212.0480000000002,
+      "discountedReturnOnCapexPct": 947.7254437456455,
+      "paybackMonths": 4.573003426703901
+    }
+  ],
+  "sensitivity": [
+    {
+      "name": "base direct benefit",
+      "annualBenefitUsd": 351664.00000000006,
+      "annualNetCashFlowUsd": 316664.00000000006,
+      "cashFlowsUsd": [
+        -250000.0,
+        316664.00000000006,
+        316664.00000000006,
+        316664.00000000006,
+        316664.00000000006,
+        316664.00000000006
+      ],
+      "discountedCashFlowsUsd": [
+        -250000.0,
+        293207.4074074074,
+        271488.3401920439,
+        251378.09277041102,
+        232757.4933059361,
+        215516.19750549638
+      ],
+      "npv5Usd": 1014347.5311812948,
+      "roi5Pct": 533.3280000000001,
+      "discountedReturnOnCapexPct": 405.7390124725179,
+      "paybackMonths": 9.47376398959149,
+      "downtimeFactor": 1.0,
+      "attributionFactor": 1.0,
+      "staffRateUsdPerHour": 120.0
+    },
+    {
+      "name": "downtime cost -50%",
+      "annualBenefitUsd": 178064.00000000003,
+      "annualNetCashFlowUsd": 143064.00000000003,
+      "cashFlowsUsd": [
+        -250000.0,
+        143064.00000000003,
+        143064.00000000003,
+        143064.00000000003,
+        143064.00000000003,
+        143064.00000000003
+      ],
+      "discountedCashFlowsUsd": [
+        -250000.0,
+        132466.6666666667,
+        122654.32098765434,
+        113568.81572930957,
+        105156.31086047181,
+        97366.95450043684
+      ],
+      "npv5Usd": 321213.0687445393,
+      "roi5Pct": 186.12800000000004,
+      "discountedReturnOnCapexPct": 128.4852274978157,
+      "paybackMonths": 20.969635967119608,
+      "downtimeFactor": 0.5,
+      "attributionFactor": 1.0,
+      "staffRateUsdPerHour": 120.0
+    },
+    {
+      "name": "attribution weight -50%",
+      "annualBenefitUsd": 178064.00000000003,
+      "annualNetCashFlowUsd": 143064.00000000003,
+      "cashFlowsUsd": [
+        -250000.0,
+        143064.00000000003,
+        143064.00000000003,
+        143064.00000000003,
+        143064.00000000003,
+        143064.00000000003
+      ],
+      "discountedCashFlowsUsd": [
+        -250000.0,
+        132466.6666666667,
+        122654.32098765434,
+        113568.81572930957,
+        105156.31086047181,
+        97366.95450043684
+      ],
+      "npv5Usd": 321213.0687445393,
+      "roi5Pct": 186.12800000000004,
+      "discountedReturnOnCapexPct": 128.4852274978157,
+      "paybackMonths": 20.969635967119608,
+      "downtimeFactor": 1.0,
+      "attributionFactor": 0.5,
+      "staffRateUsdPerHour": 120.0
+    },
+    {
+      "name": "staff rate = $60/h",
+      "annualBenefitUsd": 349432.00000000006,
+      "annualNetCashFlowUsd": 314432.00000000006,
+      "cashFlowsUsd": [
+        -250000.0,
+        314432.00000000006,
+        314432.00000000006,
+        314432.00000000006,
+        314432.00000000006,
+        314432.00000000006
+      ],
+      "discountedCashFlowsUsd": [
+        -250000.0,
+        291140.7407407408,
+        269574.7599451303,
+        249606.25920845402,
+        231116.90667449444,
+        213997.13580971703
+      ],
+      "npv5Usd": 1005435.8023785367,
+      "roi5Pct": 528.864,
+      "discountedReturnOnCapexPct": 402.17432095141464,
+      "paybackMonths": 9.541013637288824,
+      "downtimeFactor": 1.0,
+      "attributionFactor": 1.0,
+      "staffRateUsdPerHour": 60.0
+    },
+    {
+      "name": "downtime/attribution -50%, staff $60/h",
+      "annualBenefitUsd": 89032.00000000001,
+      "annualNetCashFlowUsd": 54032.000000000015,
+      "cashFlowsUsd": [
+        -250000.0,
+        54032.000000000015,
+        54032.000000000015,
+        54032.000000000015,
+        54032.000000000015,
+        54032.000000000015
+      ],
+      "discountedCashFlowsUsd": [
+        -250000.0,
+        50029.62962962964,
+        46323.73113854596,
+        42892.34364680181,
+        39715.133006297976,
+        36773.271302127745
+      ],
+      "npv5Usd": -34265.89127659686,
+      "roi5Pct": 8.064000000000023,
+      "discountedReturnOnCapexPct": -13.706356510638745,
+      "paybackMonths": 55.522653242522935,
+      "downtimeFactor": 0.5,
+      "attributionFactor": 0.5,
+      "staffRateUsdPerHour": 60.0
+    }
+  ],
+  "requestedHeadlineConsistency": {
+    "annuityFactor": 3.992710037078085,
+    "impliedAnnualNetFromNpvUsd": 316664.6183315799,
+    "impliedAnnualNetFromRoiUsd": 206300.00000000003,
+    "impliedAnnualNetFromPaybackUsd": 652173.9130434783,
+    "npvAndDirectBenefitDifferenceUsd": -2.4688187051797286,
+    "roiAndDirectBenefitDifferencePct": 220.72800000000007,
+    "paybackAndRiskInclusiveDifferenceMonths": -0.026996573296099058,
+    "interpretation": "The supplied NPV aligns with the direct-benefit case, while the supplied 4.6-month payback aligns with the risk-inclusive case. The supplied 312.6% ROI cannot be obtained from the same cash-flow definition without an additional unreported assumption."
+  },
+  "sourceBasis": [
+    {
+      "name": "Gartner downtime-cost benchmark (protocol source)",
+      "url": "https://blogs.gartner.com/andrew-lerner/2014/07/16/the-cost-of-downtime/",
+      "verification": "NOT_VERIFIED",
+      "note": "The original blog URL is retired/unavailable in this run; secondary indexes attribute a $140,000--$540,000/hour range to the post. Authors must confirm the primary citation before submission."
+    },
+    {
+      "name": "Ponemon Institute, 2016 Cost of Data Center Outages",
+      "url": "https://www.ponemon.org/research/ponemon-library/security/2016-cost-of-data-center-outages.html",
+      "verification": "VERIFIED_PUBLIC",
+      "note": "Public study page; its reported average outage cost is not substituted for the scenario's declared $140,000/hour input."
+    },
+    {
+      "name": "Vertiv/Ponemon 2016 primary report PDF",
+      "url": "https://www.vertiv.com/globalassets/documents/reports/2016-cost-of-data-center-outages-11-11_51190_1.pdf",
+      "verification": "VERIFIED_PUBLIC",
+      "note": "Primary report states the sample and outage-cost methodology; it is used for provenance and not as a customer measurement."
+    },
+    {
+      "name": "IEEE Computer, Software Systems With Antifragility to Downtime",
+      "url": "https://doi.org/10.1109/MC.2018.2888772",
+      "verification": "VERIFIED_METADATA",
+      "note": "Supports the relevance of downtime resilience; it does not validate the numeric $140,000/hour input."
+    },
+    {
+      "name": "Google SRE book, Service Level Objectives",
+      "url": "https://sre.google/sre-book/service-level-objectives/",
+      "verification": "VERIFIED_PUBLIC",
+      "note": "Supports SLO/error-budget framing for the scenario; it is not used as a monetary benchmark."
+    }
+  ],
+  "limitations": [
+    "This is a representative parameterized scenario, not a measured customer incident.",
+    "The $140,000/hour value and hallucination rates require author-confirmed public citations or project logs before submission.",
+    "No ROI, MTTR, or outage-loss claim is inferred from the retrieval or 100-question generation experiments.",
+    "The risk term assumes an additional one-hour incident caused by an erroneous action. It must be disjoint from the recovery-time benefit to avoid double counting."
+  ]
+}

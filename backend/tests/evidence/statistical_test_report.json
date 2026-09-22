@@ -1,0 +1,987 @@
+{
+  "schemaVersion": "eswa.statistical_test_report.v1",
+  "source": "backend/tests/evidence/eval_results_300.jsonl",
+  "evaluationMode": "offline_deterministic_retrieval",
+  "nRows": 1500,
+  "nQueries": 300,
+  "uniqueQuestionTexts": 300,
+  "interpretation": "EXPLORATORY_ONLY_NONINDEPENDENT_RECORDS",
+  "limitations": [
+    "Query IDs are not independent question texts; identical texts may carry conflicting gold sets.",
+    "P-values are unadjusted and do not establish production-pipeline superiority.",
+    "NDCG uses frozen evidence-position grades, not independently judged relevance grades.",
+    "The Nemenyi CD uses 300 row blocks nominally; Demsar's independent-dataset design is not met."
+  ],
+  "nMethods": 5,
+  "methods": [
+    "KnowledgeHub_QuadPath",
+    "Dense_Only",
+    "BM25_Only",
+    "Graph_Only",
+    "Hybrid_Dual"
+  ],
+  "metrics": [
+    "recall@5",
+    "recall@10",
+    "mrr@10",
+    "map@10",
+    "ndcg@10",
+    "hopRecall@10"
+  ],
+  "alpha": 0.05,
+  "testDirection": "positive delta means KnowledgeHub_QuadPath is better",
+  "inputSchemaVersions": [
+    "eswa.eval_results.v1"
+  ],
+  "runnerVersions": [
+    "2026-09-21"
+  ],
+  "inputFingerprints": [
+    "c9ebff81745502b1b906bcad94565a1c038495b88b297189e5f155f446d20f63"
+  ],
+  "methodology": {
+    "wilcoxon": {
+      "zeroMethod": "wilcox",
+      "continuityCorrection": true,
+      "alternative": "two-sided",
+      "delta": "KnowledgeHub_QuadPath - comparator",
+      "rankBiserial": "(positive rank sum - negative rank sum) / (positive rank sum + negative rank sum)"
+    },
+    "friedman": {
+      "rankDirection": "higher metric value receives better (lower) rank",
+      "imanDavenportDf": [
+        4,
+        1196
+      ]
+    },
+    "nemenyi": {
+      "qCritical": "studentized_range.ppf(1-alpha, k, infinity) / sqrt(2)",
+      "criticalDistance": "qCritical * sqrt(k*(k+1)/(6*N))"
+    }
+  },
+  "wilcoxonSignedRank": [
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Dense_Only",
+      "metric": "recall@5",
+      "n": 300,
+      "nNonzero": 83,
+      "W": 75.0,
+      "WPlus": 3411.0,
+      "WMinus": 75.0,
+      "pTwoSided": 2.0129700219940932e-14,
+      "rankBiserial": 0.9569707401032702,
+      "medianDelta": 0.0,
+      "meanLeft": 0.30744444444444446,
+      "meanRight": 0.18011111111111108
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Dense_Only",
+      "metric": "recall@10",
+      "n": 300,
+      "nNonzero": 97,
+      "W": 50.0,
+      "WPlus": 4703.0,
+      "WMinus": 50.0,
+      "pTwoSided": 2.168914958969963e-17,
+      "rankBiserial": 0.9789606564275195,
+      "medianDelta": 0.0,
+      "meanLeft": 0.3713333333333333,
+      "meanRight": 0.22205555555555553
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Dense_Only",
+      "metric": "mrr@10",
+      "n": 300,
+      "nNonzero": 122,
+      "W": 682.0,
+      "WPlus": 6821.0,
+      "WMinus": 682.0,
+      "pTwoSided": 4.0172657964610886e-15,
+      "rankBiserial": 0.8182060509129682,
+      "medianDelta": 0.0,
+      "meanLeft": 0.34361375661375665,
+      "meanRight": 0.18475793650793654
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Dense_Only",
+      "metric": "map@10",
+      "n": 300,
+      "nNonzero": 152,
+      "W": 734.0,
+      "WPlus": 10894.0,
+      "WMinus": 734.0,
+      "pTwoSided": 9.238283925638327e-21,
+      "rankBiserial": 0.8737530099759202,
+      "medianDelta": 0.0,
+      "meanLeft": 0.23256968694885363,
+      "meanRight": 0.12023584656084656
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Dense_Only",
+      "metric": "ndcg@10",
+      "n": 300,
+      "nNonzero": 153,
+      "W": 631.5,
+      "WPlus": 11149.5,
+      "WMinus": 631.5,
+      "pTwoSided": 9.851470456986861e-22,
+      "rankBiserial": 0.8927934810287751,
+      "medianDelta": 0.0,
+      "meanLeft": 0.2752860535190314,
+      "meanRight": 0.14770751065344012
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Dense_Only",
+      "metric": "hopRecall@10",
+      "n": 300,
+      "nNonzero": 30,
+      "W": 0.0,
+      "WPlus": 465.0,
+      "WMinus": 0.0,
+      "pTwoSided": 4.617427956906429e-08,
+      "rankBiserial": 1.0,
+      "medianDelta": 0.0,
+      "meanLeft": 0.23333333333333334,
+      "meanRight": 0.13333333333333333
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "BM25_Only",
+      "metric": "recall@5",
+      "n": 300,
+      "nNonzero": 111,
+      "W": 373.5,
+      "WPlus": 373.5,
+      "WMinus": 5842.5,
+      "pTwoSided": 4.050291097170377e-16,
+      "rankBiserial": -0.8798262548262549,
+      "medianDelta": 0.0,
+      "meanLeft": 0.30744444444444446,
+      "meanRight": 0.48088888888888887
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "BM25_Only",
+      "metric": "recall@10",
+      "n": 300,
+      "nNonzero": 104,
+      "W": 137.0,
+      "WPlus": 137.0,
+      "WMinus": 5323.0,
+      "pTwoSided": 2.1089585816158184e-17,
+      "rankBiserial": -0.9498168498168498,
+      "medianDelta": 0.0,
+      "meanLeft": 0.3713333333333333,
+      "meanRight": 0.5526666666666668
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "BM25_Only",
+      "metric": "mrr@10",
+      "n": 300,
+      "nNonzero": 122,
+      "W": 685.5,
+      "WPlus": 685.5,
+      "WMinus": 6817.5,
+      "pTwoSided": 4.219061897626535e-15,
+      "rankBiserial": -0.8172730907636945,
+      "medianDelta": 0.0,
+      "meanLeft": 0.34361375661375665,
+      "meanRight": 0.5116640211640212
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "BM25_Only",
+      "metric": "map@10",
+      "n": 300,
+      "nNonzero": 180,
+      "W": 1709.5,
+      "WPlus": 1709.5,
+      "WMinus": 14580.5,
+      "pTwoSided": 3.8160129856493217e-20,
+      "rankBiserial": -0.7901166359729895,
+      "medianDelta": -0.035416666666666693,
+      "meanLeft": 0.23256968694885363,
+      "meanRight": 0.38553350970017636
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "BM25_Only",
+      "metric": "ndcg@10",
+      "n": 300,
+      "nNonzero": 185,
+      "W": 2612.5,
+      "WPlus": 2612.5,
+      "WMinus": 14592.5,
+      "pTwoSided": 2.1680819610909785e-16,
+      "rankBiserial": -0.6963092124382447,
+      "medianDelta": 0.0,
+      "meanLeft": 0.2752860535190314,
+      "meanRight": 0.415399633831138
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "BM25_Only",
+      "metric": "hopRecall@10",
+      "n": 300,
+      "nNonzero": 56,
+      "W": 85.5,
+      "WPlus": 85.5,
+      "WMinus": 1510.5,
+      "pTwoSided": 2.4414549116181503e-11,
+      "rankBiserial": -0.8928571428571429,
+      "medianDelta": 0.0,
+      "meanLeft": 0.23333333333333334,
+      "meanRight": 0.4
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Graph_Only",
+      "metric": "recall@5",
+      "n": 300,
+      "nNonzero": 115,
+      "W": 252.0,
+      "WPlus": 6418.0,
+      "WMinus": 252.0,
+      "pTwoSided": 3.6198181389218785e-18,
+      "rankBiserial": 0.9244377811094453,
+      "medianDelta": 0.0,
+      "meanLeft": 0.30744444444444446,
+      "meanRight": 0.10388888888888888
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Graph_Only",
+      "metric": "recall@10",
+      "n": 300,
+      "nNonzero": 117,
+      "W": 146.0,
+      "WPlus": 6757.0,
+      "WMinus": 146.0,
+      "pTwoSided": 1.2470868591390602e-19,
+      "rankBiserial": 0.9576995509198899,
+      "medianDelta": 0.0,
+      "meanLeft": 0.3713333333333333,
+      "meanRight": 0.14027777777777778
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Graph_Only",
+      "metric": "mrr@10",
+      "n": 300,
+      "nNonzero": 137,
+      "W": 420.5,
+      "WPlus": 9032.5,
+      "WMinus": 420.5,
+      "pTwoSided": 1.636904098030457e-20,
+      "rankBiserial": 0.9110335343277266,
+      "medianDelta": 0.0,
+      "meanLeft": 0.34361375661375665,
+      "meanRight": 0.12533597883597883
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Graph_Only",
+      "metric": "map@10",
+      "n": 300,
+      "nNonzero": 153,
+      "W": 573.5,
+      "WPlus": 11207.5,
+      "WMinus": 573.5,
+      "pTwoSided": 3.483200174704609e-22,
+      "rankBiserial": 0.9026398438163145,
+      "medianDelta": 0.0,
+      "meanLeft": 0.23256968694885363,
+      "meanRight": 0.07373214285714286
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Graph_Only",
+      "metric": "ndcg@10",
+      "n": 300,
+      "nNonzero": 155,
+      "W": 535.5,
+      "WPlus": 11554.5,
+      "WMinus": 535.5,
+      "pTwoSided": 7.438673369888967e-23,
+      "rankBiserial": 0.9114143920595533,
+      "medianDelta": 0.0,
+      "meanLeft": 0.2752860535190314,
+      "meanRight": 0.10044498530003355
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Graph_Only",
+      "metric": "hopRecall@10",
+      "n": 300,
+      "nNonzero": 52,
+      "W": 0.0,
+      "WPlus": 1378.0,
+      "WMinus": 0.0,
+      "pTwoSided": 5.767460702438847e-13,
+      "rankBiserial": 1.0,
+      "medianDelta": 0.0,
+      "meanLeft": 0.23333333333333334,
+      "meanRight": 0.06
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Hybrid_Dual",
+      "metric": "recall@5",
+      "n": 300,
+      "nNonzero": 44,
+      "W": 393.5,
+      "WPlus": 596.5,
+      "WMinus": 393.5,
+      "pTwoSided": 0.23150042557945016,
+      "rankBiserial": 0.20505050505050504,
+      "medianDelta": 0.0,
+      "meanLeft": 0.30744444444444446,
+      "meanRight": 0.2971666666666667
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Hybrid_Dual",
+      "metric": "recall@10",
+      "n": 300,
+      "nNonzero": 47,
+      "W": 478.5,
+      "WPlus": 649.5,
+      "WMinus": 478.5,
+      "pTwoSided": 0.36150072490241836,
+      "rankBiserial": 0.15159574468085107,
+      "medianDelta": 0.0,
+      "meanLeft": 0.3713333333333333,
+      "meanRight": 0.36216666666666664
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Hybrid_Dual",
+      "metric": "mrr@10",
+      "n": 300,
+      "nNonzero": 77,
+      "W": 1403.0,
+      "WPlus": 1403.0,
+      "WMinus": 1600.0,
+      "pTwoSided": 0.6184962470227879,
+      "rankBiserial": -0.0656010656010656,
+      "medianDelta": 0.0,
+      "meanLeft": 0.34361375661375665,
+      "meanRight": 0.35021296296296295
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Hybrid_Dual",
+      "metric": "map@10",
+      "n": 300,
+      "nNonzero": 108,
+      "W": 2800.0,
+      "WPlus": 3086.0,
+      "WMinus": 2800.0,
+      "pTwoSided": 0.6622450875050201,
+      "rankBiserial": 0.04858987427794767,
+      "medianDelta": 0.0,
+      "meanLeft": 0.23256968694885363,
+      "meanRight": 0.22757826278659612
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Hybrid_Dual",
+      "metric": "ndcg@10",
+      "n": 300,
+      "nNonzero": 113,
+      "W": 2799.5,
+      "WPlus": 3641.5,
+      "WMinus": 2799.5,
+      "pTwoSided": 0.22832683513438823,
+      "rankBiserial": 0.13072504269523366,
+      "medianDelta": 0.0,
+      "meanLeft": 0.2752860535190314,
+      "meanRight": 0.26490347517795887
+    },
+    {
+      "left": "KnowledgeHub_QuadPath",
+      "right": "Hybrid_Dual",
+      "metric": "hopRecall@10",
+      "n": 300,
+      "nNonzero": 20,
+      "W": 31.5,
+      "WPlus": 178.5,
+      "WMinus": 31.5,
+      "pTwoSided": 0.001875951408596395,
+      "rankBiserial": 0.7,
+      "medianDelta": 0.0,
+      "meanLeft": 0.23333333333333334,
+      "meanRight": 0.18666666666666668
+    }
+  ],
+  "friedmanImanDavenport": [
+    {
+      "metric": "recall@5",
+      "n": 300,
+      "k": 5,
+      "chiSquare": 372.4452975047975,
+      "pTwoSided": 2.4939608208730348e-79,
+      "imanDavenportF": 134.56650493092937,
+      "imanDavenportDf1": 4,
+      "imanDavenportDf2": 1196,
+      "imanDavenportP": 5.79380709601293e-95,
+      "alpha": 0.05,
+      "meanRanks": {
+        "KnowledgeHub_QuadPath": 2.8516666666666666,
+        "Dense_Only": 3.4383333333333335,
+        "BM25_Only": 2.1666666666666665,
+        "Graph_Only": 3.6533333333333333,
+        "Hybrid_Dual": 2.89
+      },
+      "qCritical": 2.7277743708703768,
+      "criticalDistance": 0.35215415701974606,
+      "nemenyiPairs": [
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Dense_Only",
+          "meanRankDifference": 0.5866666666666669,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "BM25_Only",
+          "meanRankDifference": 0.685,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.8016666666666667,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.03833333333333355,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "BM25_Only",
+          "meanRankDifference": 1.271666666666667,
+          "significant": true
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.21499999999999986,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.5483333333333333,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 1.4866666666666668,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.7233333333333336,
+          "significant": true
+        },
+        {
+          "left": "Graph_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.7633333333333332,
+          "significant": true
+        }
+      ],
+      "nonSignificantCliques": [
+        [
+          "KnowledgeHub_QuadPath",
+          "Hybrid_Dual"
+        ],
+        [
+          "Dense_Only",
+          "Graph_Only"
+        ]
+      ]
+    },
+    {
+      "metric": "recall@10",
+      "n": 300,
+      "k": 5,
+      "chiSquare": 399.04553734061966,
+      "pTwoSided": 4.4722517721160804e-85,
+      "imanDavenportF": 148.96554202181386,
+      "imanDavenportDf1": 4,
+      "imanDavenportDf2": 1196,
+      "imanDavenportP": 2.0314931725345112e-103,
+      "alpha": 0.05,
+      "meanRanks": {
+        "KnowledgeHub_QuadPath": 2.8016666666666667,
+        "Dense_Only": 3.513333333333333,
+        "BM25_Only": 2.145,
+        "Graph_Only": 3.683333333333333,
+        "Hybrid_Dual": 2.8566666666666665
+      },
+      "qCritical": 2.7277743708703768,
+      "criticalDistance": 0.35215415701974606,
+      "nemenyiPairs": [
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Dense_Only",
+          "meanRankDifference": 0.7116666666666664,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "BM25_Only",
+          "meanRankDifference": 0.6566666666666667,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.8816666666666664,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.054999999999999716,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "BM25_Only",
+          "meanRankDifference": 1.3683333333333332,
+          "significant": true
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.16999999999999993,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.6566666666666667,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 1.538333333333333,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.7116666666666664,
+          "significant": true
+        },
+        {
+          "left": "Graph_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.8266666666666667,
+          "significant": true
+        }
+      ],
+      "nonSignificantCliques": [
+        [
+          "KnowledgeHub_QuadPath",
+          "Hybrid_Dual"
+        ],
+        [
+          "Dense_Only",
+          "Graph_Only"
+        ]
+      ]
+    },
+    {
+      "metric": "mrr@10",
+      "n": 300,
+      "k": 5,
+      "chiSquare": 372.82510624386987,
+      "pTwoSided": 2.0646930635616376e-79,
+      "imanDavenportF": 134.76558295999536,
+      "imanDavenportDf1": 4,
+      "imanDavenportDf2": 1196,
+      "imanDavenportP": 4.407406776622511e-95,
+      "alpha": 0.05,
+      "meanRanks": {
+        "KnowledgeHub_QuadPath": 2.82,
+        "Dense_Only": 3.555,
+        "BM25_Only": 2.158333333333333,
+        "Graph_Only": 3.695,
+        "Hybrid_Dual": 2.7716666666666665
+      },
+      "qCritical": 2.7277743708703768,
+      "criticalDistance": 0.35215415701974606,
+      "nemenyiPairs": [
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Dense_Only",
+          "meanRankDifference": 0.7350000000000003,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "BM25_Only",
+          "meanRankDifference": 0.6616666666666666,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.875,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.04833333333333334,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "BM25_Only",
+          "meanRankDifference": 1.396666666666667,
+          "significant": true
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.13999999999999968,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.7833333333333337,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 1.5366666666666666,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.6133333333333333,
+          "significant": true
+        },
+        {
+          "left": "Graph_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.9233333333333333,
+          "significant": true
+        }
+      ],
+      "nonSignificantCliques": [
+        [
+          "KnowledgeHub_QuadPath",
+          "Hybrid_Dual"
+        ],
+        [
+          "Dense_Only",
+          "Graph_Only"
+        ]
+      ]
+    },
+    {
+      "metric": "map@10",
+      "n": 300,
+      "k": 5,
+      "chiSquare": 437.6352841391007,
+      "pTwoSided": 2.0453519591239286e-93,
+      "imanDavenportF": 171.64087901133462,
+      "imanDavenportDf1": 4,
+      "imanDavenportDf2": 1196,
+      "imanDavenportP": 3.3387284100325596e-116,
+      "alpha": 0.05,
+      "meanRanks": {
+        "KnowledgeHub_QuadPath": 2.8016666666666667,
+        "Dense_Only": 3.6816666666666666,
+        "BM25_Only": 1.97,
+        "Graph_Only": 3.74,
+        "Hybrid_Dual": 2.8066666666666666
+      },
+      "qCritical": 2.7277743708703768,
+      "criticalDistance": 0.35215415701974606,
+      "nemenyiPairs": [
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Dense_Only",
+          "meanRankDifference": 0.8799999999999999,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "BM25_Only",
+          "meanRankDifference": 0.8316666666666668,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.9383333333333335,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.004999999999999893,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "BM25_Only",
+          "meanRankDifference": 1.7116666666666667,
+          "significant": true
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.05833333333333357,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.875,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 1.7700000000000002,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.8366666666666667,
+          "significant": true
+        },
+        {
+          "left": "Graph_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.9333333333333336,
+          "significant": true
+        }
+      ],
+      "nonSignificantCliques": [
+        [
+          "KnowledgeHub_QuadPath",
+          "Hybrid_Dual"
+        ],
+        [
+          "Dense_Only",
+          "Graph_Only"
+        ]
+      ]
+    },
+    {
+      "metric": "ndcg@10",
+      "n": 300,
+      "k": 5,
+      "chiSquare": 401.4914685314681,
+      "pTwoSided": 1.3244626129285605e-85,
+      "imanDavenportF": 150.33771632988473,
+      "imanDavenportDf1": 4,
+      "imanDavenportDf2": 1196,
+      "imanDavenportP": 3.2821135603133853e-104,
+      "alpha": 0.05,
+      "meanRanks": {
+        "KnowledgeHub_QuadPath": 2.743333333333333,
+        "Dense_Only": 3.6433333333333335,
+        "BM25_Only": 2.045,
+        "Graph_Only": 3.7533333333333334,
+        "Hybrid_Dual": 2.815
+      },
+      "qCritical": 2.7277743708703768,
+      "criticalDistance": 0.35215415701974606,
+      "nemenyiPairs": [
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Dense_Only",
+          "meanRankDifference": 0.9000000000000004,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "BM25_Only",
+          "meanRankDifference": 0.6983333333333333,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Graph_Only",
+          "meanRankDifference": 1.0100000000000002,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.07166666666666677,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "BM25_Only",
+          "meanRankDifference": 1.5983333333333336,
+          "significant": true
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.10999999999999988,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.8283333333333336,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 1.7083333333333335,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.77,
+          "significant": true
+        },
+        {
+          "left": "Graph_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.9383333333333335,
+          "significant": true
+        }
+      ],
+      "nonSignificantCliques": [
+        [
+          "KnowledgeHub_QuadPath",
+          "Hybrid_Dual"
+        ],
+        [
+          "Dense_Only",
+          "Graph_Only"
+        ]
+      ]
+    },
+    {
+      "metric": "hopRecall@10",
+      "n": 300,
+      "k": 5,
+      "chiSquare": 226.03076923076932,
+      "pTwoSided": 9.440729364725968e-48,
+      "imanDavenportF": 69.38946104757696,
+      "imanDavenportDf1": 4,
+      "imanDavenportDf2": 1196,
+      "imanDavenportP": 7.164613148217285e-53,
+      "alpha": 0.05,
+      "meanRanks": {
+        "KnowledgeHub_QuadPath": 2.9233333333333333,
+        "Dense_Only": 3.1733333333333333,
+        "BM25_Only": 2.506666666666667,
+        "Graph_Only": 3.3566666666666665,
+        "Hybrid_Dual": 3.04
+      },
+      "qCritical": 2.7277743708703768,
+      "criticalDistance": 0.35215415701974606,
+      "nemenyiPairs": [
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Dense_Only",
+          "meanRankDifference": 0.25,
+          "significant": false
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "BM25_Only",
+          "meanRankDifference": 0.4166666666666665,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.4333333333333331,
+          "significant": true
+        },
+        {
+          "left": "KnowledgeHub_QuadPath",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.1166666666666667,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "BM25_Only",
+          "meanRankDifference": 0.6666666666666665,
+          "significant": true
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.18333333333333313,
+          "significant": false
+        },
+        {
+          "left": "Dense_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.1333333333333333,
+          "significant": false
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Graph_Only",
+          "meanRankDifference": 0.8499999999999996,
+          "significant": true
+        },
+        {
+          "left": "BM25_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.5333333333333332,
+          "significant": true
+        },
+        {
+          "left": "Graph_Only",
+          "right": "Hybrid_Dual",
+          "meanRankDifference": 0.31666666666666643,
+          "significant": false
+        }
+      ],
+      "nonSignificantCliques": [
+        [
+          "KnowledgeHub_QuadPath",
+          "Dense_Only",
+          "Hybrid_Dual"
+        ],
+        [
+          "Dense_Only",
+          "Graph_Only",
+          "Hybrid_Dual"
+        ]
+      ]
+    }
+  ],
+  "sourceSha256": "e2a54d6eada4a3029de2f14e70a89435568ffdeeaba018baee178d1763f18db1"
+}

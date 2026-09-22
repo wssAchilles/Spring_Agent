@@ -1,0 +1,1550 @@
+{
+  "schemaVersion": "eswa.evidence-integrity.v2",
+  "status": "VALID",
+  "inputs": {
+    "backend/tests/src/test/resources/eval/benchmark_300.jsonl": {
+      "sha256": "81ebef4b5356deb10efd8afc43213f8e601f9bbeedf32eea3010f8d148a53fd2",
+      "bytes": 550678
+    },
+    "backend/tests/src/test/resources/eval/corpus_300.jsonl": {
+      "sha256": "ebd7aff156c761f1eb4844db7a8ed044316720af60e7455d2488dce8db23fcf4",
+      "bytes": 1788324
+    },
+    "backend/tests/src/test/resources/eval/qrels_300.tsv": {
+      "sha256": "a4e67b97ca895dfea56e7d3ab07b057a45622382f04bae2ec6659701485761d5",
+      "bytes": 31776
+    }
+  },
+  "counts": {
+    "queryRows": 300,
+    "uniqueQueryIds": 300,
+    "uniqueQuestionTexts": 300,
+    "corpusSegments": 3801,
+    "qrelRows": 679,
+    "qrelQueries": 300
+  },
+  "qrelsFormat": "trec-4-column",
+  "duplicateQuestionGroups": [],
+  "danglingQueryIds": [],
+  "danglingSegmentIds": [],
+  "conflictingGoldAnnotations": [],
+  "goldQrelMismatches": [],
+  "rowChecksumMismatches": [],
+  "sourceAnchorIssues": [],
+  "threeGramJaccard": {
+    "definition": "casefolded character trigrams after whitespace removal",
+    "threshold": 0.85,
+    "maxJaccard": 0.51818182,
+    "exceedances": [],
+    "perQuery": [
+      {
+        "queryId": "ent-conf-000",
+        "maxJaccard": 0.13425926,
+        "segmentId": "src-topo-dbb357102db756"
+      },
+      {
+        "queryId": "ent-conf-001",
+        "maxJaccard": 0.13855422,
+        "segmentId": "src-topo-2d45a7127f401d"
+      },
+      {
+        "queryId": "ent-conf-002",
+        "maxJaccard": 0.13855422,
+        "segmentId": "src-topo-2d45a7127f401d"
+      },
+      {
+        "queryId": "ent-conf-003",
+        "maxJaccard": 0.13690476,
+        "segmentId": "src-topo-2d45a7127f401d"
+      },
+      {
+        "queryId": "ent-conf-004",
+        "maxJaccard": 0.12796209,
+        "segmentId": "src-conf-f2b990bbe29a41"
+      },
+      {
+        "queryId": "ent-conf-005",
+        "maxJaccard": 0.11627907,
+        "segmentId": "src-conf-77a98bde749ee9"
+      },
+      {
+        "queryId": "ent-conf-006",
+        "maxJaccard": 0.13855422,
+        "segmentId": "src-topo-2d45a7127f401d"
+      },
+      {
+        "queryId": "ent-conf-007",
+        "maxJaccard": 0.10067114,
+        "segmentId": "src-topo-f32b9b191711c6"
+      },
+      {
+        "queryId": "ent-conf-008",
+        "maxJaccard": 0.10559006,
+        "segmentId": "src-topo-f32b9b191711c6"
+      },
+      {
+        "queryId": "ent-conf-009",
+        "maxJaccard": 0.15263158,
+        "segmentId": "src-topo-dbb357102db756"
+      },
+      {
+        "queryId": "ent-conf-010",
+        "maxJaccard": 0.12616822,
+        "segmentId": "src-topo-76cff4ce378e0a"
+      },
+      {
+        "queryId": "ent-conf-011",
+        "maxJaccard": 0.1042654,
+        "segmentId": "src-topo-76cff4ce378e0a"
+      },
+      {
+        "queryId": "ent-conf-012",
+        "maxJaccard": 0.08878505,
+        "segmentId": "src-topo-76cff4ce378e0a"
+      },
+      {
+        "queryId": "ent-conf-013",
+        "maxJaccard": 0.11872146,
+        "segmentId": "src-topo-76cff4ce378e0a"
+      },
+      {
+        "queryId": "ent-conf-014",
+        "maxJaccard": 0.11872146,
+        "segmentId": "src-conf-7f4ee1902e758e"
+      },
+      {
+        "queryId": "ent-conf-015",
+        "maxJaccard": 0.14563107,
+        "segmentId": "src-conf-7f4ee1902e758e"
+      },
+      {
+        "queryId": "ent-conf-016",
+        "maxJaccard": 0.09638554,
+        "segmentId": "src-topo-28dfd7b8429f36"
+      },
+      {
+        "queryId": "ent-conf-017",
+        "maxJaccard": 0.11981567,
+        "segmentId": "src-conf-7f4ee1902e758e"
+      },
+      {
+        "queryId": "ent-conf-018",
+        "maxJaccard": 0.16463415,
+        "segmentId": "src-topo-2d45a7127f401d"
+      },
+      {
+        "queryId": "ent-conf-019",
+        "maxJaccard": 0.14201183,
+        "segmentId": "src-topo-2d45a7127f401d"
+      },
+      {
+        "queryId": "ent-conf-020",
+        "maxJaccard": 0.10884354,
+        "segmentId": "src-topo-43301cbe5ade81"
+      },
+      {
+        "queryId": "ent-conf-021",
+        "maxJaccard": 0.14569536,
+        "segmentId": "src-topo-43301cbe5ade81"
+      },
+      {
+        "queryId": "ent-conf-022",
+        "maxJaccard": 0.1626506,
+        "segmentId": "src-topo-b996f9f425cf2f"
+      },
+      {
+        "queryId": "ent-conf-023",
+        "maxJaccard": 0.11428571,
+        "segmentId": "src-topo-b996f9f425cf2f"
+      },
+      {
+        "queryId": "ent-conf-024",
+        "maxJaccard": 0.14204545,
+        "segmentId": "src-topo-b996f9f425cf2f"
+      },
+      {
+        "queryId": "ent-conf-025",
+        "maxJaccard": 0.08661417,
+        "segmentId": "hp-388f3d32d9f4-7003"
+      },
+      {
+        "queryId": "ent-conf-026",
+        "maxJaccard": 0.09448819,
+        "segmentId": "hp-0dda9400a8eb-8006"
+      },
+      {
+        "queryId": "ent-conf-027",
+        "maxJaccard": 0.11794872,
+        "segmentId": "src-conf-01b4bb43154bf2"
+      },
+      {
+        "queryId": "ent-conf-028",
+        "maxJaccard": 0.16410256,
+        "segmentId": "src-conf-f76a8a5b806631"
+      },
+      {
+        "queryId": "ent-conf-029",
+        "maxJaccard": 0.21578947,
+        "segmentId": "src-conf-f76a8a5b806631"
+      },
+      {
+        "queryId": "ent-conf-030",
+        "maxJaccard": 0.13861386,
+        "segmentId": "src-conf-f76a8a5b806631"
+      },
+      {
+        "queryId": "ent-conf-031",
+        "maxJaccard": 0.1038961,
+        "segmentId": "src-topo-8f6f32709e769b"
+      },
+      {
+        "queryId": "ent-conf-032",
+        "maxJaccard": 0.12021858,
+        "segmentId": "src-conf-55f9e73b6405be"
+      },
+      {
+        "queryId": "ent-conf-033",
+        "maxJaccard": 0.16666667,
+        "segmentId": "src-topo-b168e50ab96b63"
+      },
+      {
+        "queryId": "ent-conf-034",
+        "maxJaccard": 0.14583333,
+        "segmentId": "src-topo-23d45513d3f845"
+      },
+      {
+        "queryId": "ent-conf-035",
+        "maxJaccard": 0.13076923,
+        "segmentId": "src-topo-56dff95ba5d550"
+      },
+      {
+        "queryId": "ent-conf-036",
+        "maxJaccard": 0.14893617,
+        "segmentId": "src-topo-23d45513d3f845"
+      },
+      {
+        "queryId": "ent-conf-037",
+        "maxJaccard": 0.15789474,
+        "segmentId": "src-conf-471a0792ceb3db"
+      },
+      {
+        "queryId": "ent-conf-038",
+        "maxJaccard": 0.10989011,
+        "segmentId": "src-conf-79a5c48bf6bfbf"
+      },
+      {
+        "queryId": "ent-conf-039",
+        "maxJaccard": 0.17977528,
+        "segmentId": "src-conf-79a5c48bf6bfbf"
+      },
+      {
+        "queryId": "ent-reco-000",
+        "maxJaccard": 0.13362069,
+        "segmentId": "src-reco-cd433e83952fff"
+      },
+      {
+        "queryId": "ent-reco-001",
+        "maxJaccard": 0.10548523,
+        "segmentId": "src-reco-cd433e83952fff"
+      },
+      {
+        "queryId": "ent-reco-002",
+        "maxJaccard": 0.09205021,
+        "segmentId": "src-reco-cd433e83952fff"
+      },
+      {
+        "queryId": "ent-reco-003",
+        "maxJaccard": 0.11111111,
+        "segmentId": "mh-100486f67823-00"
+      },
+      {
+        "queryId": "ent-reco-004",
+        "maxJaccard": 0.13186813,
+        "segmentId": "hp-043a679bf7e6-5004"
+      },
+      {
+        "queryId": "ent-reco-005",
+        "maxJaccard": 0.08547009,
+        "segmentId": "src-reco-cd433e83952fff"
+      },
+      {
+        "queryId": "ent-reco-006",
+        "maxJaccard": 0.09195402,
+        "segmentId": "src-reco-029d4630e24f19"
+      },
+      {
+        "queryId": "ent-reco-007",
+        "maxJaccard": 0.11627907,
+        "segmentId": "hp-b4c2ff347e9f-6002"
+      },
+      {
+        "queryId": "ent-reco-008",
+        "maxJaccard": 0.10648148,
+        "segmentId": "src-reco-4c19d819de4bfc"
+      },
+      {
+        "queryId": "ent-reco-009",
+        "maxJaccard": 0.11764706,
+        "segmentId": "hp-7b45ce72942a-2002"
+      },
+      {
+        "queryId": "ent-reco-010",
+        "maxJaccard": 0.10759494,
+        "segmentId": "hp-b40020a65447-03"
+      },
+      {
+        "queryId": "ent-reco-011",
+        "maxJaccard": 0.08461538,
+        "segmentId": "hp-361d17548a92-4002"
+      },
+      {
+        "queryId": "ent-reco-012",
+        "maxJaccard": 0.08411215,
+        "segmentId": "src-reco-060cc3b852d281"
+      },
+      {
+        "queryId": "ent-reco-013",
+        "maxJaccard": 0.13106796,
+        "segmentId": "src-reco-7a936205cab109"
+      },
+      {
+        "queryId": "ent-reco-014",
+        "maxJaccard": 0.10267857,
+        "segmentId": "src-reco-2ce3a169bbc238"
+      },
+      {
+        "queryId": "ent-reco-015",
+        "maxJaccard": 0.12062257,
+        "segmentId": "src-reco-029d4630e24f19"
+      },
+      {
+        "queryId": "ent-reco-016",
+        "maxJaccard": 0.09574468,
+        "segmentId": "hp-3b4c781cc132-9002"
+      },
+      {
+        "queryId": "ent-reco-017",
+        "maxJaccard": 0.12087912,
+        "segmentId": "hp-e37ab4c3da7b-6003"
+      },
+      {
+        "queryId": "ent-reco-018",
+        "maxJaccard": 0.13592233,
+        "segmentId": "hp-59d26f3c03fd-7006"
+      },
+      {
+        "queryId": "ent-reco-019",
+        "maxJaccard": 0.09271523,
+        "segmentId": "hp-c53563a5d55d-00"
+      },
+      {
+        "queryId": "ent-reco-020",
+        "maxJaccard": 0.10162602,
+        "segmentId": "src-reco-c73e806504c629"
+      },
+      {
+        "queryId": "ent-reco-021",
+        "maxJaccard": 0.10828025,
+        "segmentId": "src-reco-c511fc0e86271f"
+      },
+      {
+        "queryId": "ent-reco-022",
+        "maxJaccard": 0.0974359,
+        "segmentId": "hp-4a34d9796f70-2005"
+      },
+      {
+        "queryId": "ent-reco-023",
+        "maxJaccard": 0.10909091,
+        "segmentId": "hp-8118ae193757-2005"
+      },
+      {
+        "queryId": "ent-reco-024",
+        "maxJaccard": 0.08394161,
+        "segmentId": "src-reco-5ddd1b2b322d6a"
+      },
+      {
+        "queryId": "ent-reco-025",
+        "maxJaccard": 0.10434783,
+        "segmentId": "hp-df6e44e0a540-2003"
+      },
+      {
+        "queryId": "ent-reco-026",
+        "maxJaccard": 0.08805031,
+        "segmentId": "src-reco-9d303d071b58f2"
+      },
+      {
+        "queryId": "ent-reco-027",
+        "maxJaccard": 0.09411765,
+        "segmentId": "src-reco-9d303d071b58f2"
+      },
+      {
+        "queryId": "ent-reco-028",
+        "maxJaccard": 0.09433962,
+        "segmentId": "src-topo-6c9ba6f2582ee6"
+      },
+      {
+        "queryId": "ent-reco-029",
+        "maxJaccard": 0.0989011,
+        "segmentId": "hp-3bb19cc0ce7e-4002"
+      },
+      {
+        "queryId": "ent-reco-030",
+        "maxJaccard": 0.12820513,
+        "segmentId": "src-topo-6c9ba6f2582ee6"
+      },
+      {
+        "queryId": "ent-reco-031",
+        "maxJaccard": 0.09615385,
+        "segmentId": "hp-6c9e6e6a5695-8001"
+      },
+      {
+        "queryId": "ent-reco-032",
+        "maxJaccard": 0.08730159,
+        "segmentId": "hp-2a6461bb1b83-4010"
+      },
+      {
+        "queryId": "ent-reco-033",
+        "maxJaccard": 0.1147541,
+        "segmentId": "hp-d4418eea6317-2002"
+      },
+      {
+        "queryId": "ent-reco-034",
+        "maxJaccard": 0.13934426,
+        "segmentId": "hp-924443cc4c17-7002"
+      },
+      {
+        "queryId": "ent-reco-035",
+        "maxJaccard": 0.15238095,
+        "segmentId": "hp-8118ae193757-2005"
+      },
+      {
+        "queryId": "ent-reco-036",
+        "maxJaccard": 0.11458333,
+        "segmentId": "hp-bcdf91b78bee-2003"
+      },
+      {
+        "queryId": "ent-reco-037",
+        "maxJaccard": 0.09166667,
+        "segmentId": "hp-2a6461bb1b83-4010"
+      },
+      {
+        "queryId": "ent-reco-038",
+        "maxJaccard": 0.10619469,
+        "segmentId": "hp-c131f1b7b53c-7007"
+      },
+      {
+        "queryId": "ent-reco-039",
+        "maxJaccard": 0.12105263,
+        "segmentId": "src-reco-2628c7220613eb"
+      },
+      {
+        "queryId": "ent-topo-000",
+        "maxJaccard": 0.2,
+        "segmentId": "src-conf-471a0792ceb3db"
+      },
+      {
+        "queryId": "ent-topo-001",
+        "maxJaccard": 0.1552795,
+        "segmentId": "src-topo-3365b6503bedfb"
+      },
+      {
+        "queryId": "ent-topo-002",
+        "maxJaccard": 0.13186813,
+        "segmentId": "src-conf-471a0792ceb3db"
+      },
+      {
+        "queryId": "ent-topo-003",
+        "maxJaccard": 0.1627907,
+        "segmentId": "src-topo-b1eefe86abe4a4"
+      },
+      {
+        "queryId": "ent-topo-004",
+        "maxJaccard": 0.16239316,
+        "segmentId": "src-topo-23d45513d3f845"
+      },
+      {
+        "queryId": "ent-topo-005",
+        "maxJaccard": 0.22413793,
+        "segmentId": "src-topo-23d45513d3f845"
+      },
+      {
+        "queryId": "ent-topo-006",
+        "maxJaccard": 0.15079365,
+        "segmentId": "src-topo-23d45513d3f845"
+      },
+      {
+        "queryId": "ent-topo-007",
+        "maxJaccard": 0.13533835,
+        "segmentId": "src-topo-b168e50ab96b63"
+      },
+      {
+        "queryId": "ent-topo-008",
+        "maxJaccard": 0.15492958,
+        "segmentId": "src-topo-2f72aed0ddb78c"
+      },
+      {
+        "queryId": "ent-topo-009",
+        "maxJaccard": 0.14673913,
+        "segmentId": "src-conf-471a0792ceb3db"
+      },
+      {
+        "queryId": "ent-topo-010",
+        "maxJaccard": 0.22222222,
+        "segmentId": "src-topo-18eb4c749a4551"
+      },
+      {
+        "queryId": "ent-topo-011",
+        "maxJaccard": 0.15702479,
+        "segmentId": "src-topo-6b8e9a9fbe69ad"
+      },
+      {
+        "queryId": "ent-topo-012",
+        "maxJaccard": 0.16296296,
+        "segmentId": "src-topo-6b8e9a9fbe69ad"
+      },
+      {
+        "queryId": "ent-topo-013",
+        "maxJaccard": 0.19463087,
+        "segmentId": "src-topo-8f6f32709e769b"
+      },
+      {
+        "queryId": "ent-topo-014",
+        "maxJaccard": 0.1328125,
+        "segmentId": "src-topo-55221f9b74a89a"
+      },
+      {
+        "queryId": "ent-topo-015",
+        "maxJaccard": 0.1242236,
+        "segmentId": "src-topo-8f6f32709e769b"
+      },
+      {
+        "queryId": "ent-topo-016",
+        "maxJaccard": 0.1328125,
+        "segmentId": "src-topo-6b8e9a9fbe69ad"
+      },
+      {
+        "queryId": "ent-topo-017",
+        "maxJaccard": 0.13636364,
+        "segmentId": "src-topo-df341ad2a44a76"
+      },
+      {
+        "queryId": "ent-topo-018",
+        "maxJaccard": 0.14,
+        "segmentId": "src-topo-198255c66979a5"
+      },
+      {
+        "queryId": "ent-topo-019",
+        "maxJaccard": 0.11764706,
+        "segmentId": "src-topo-2fc8a71aa1e694"
+      },
+      {
+        "queryId": "ent-topo-020",
+        "maxJaccard": 0.12269939,
+        "segmentId": "src-topo-df341ad2a44a76"
+      },
+      {
+        "queryId": "ent-topo-021",
+        "maxJaccard": 0.1483871,
+        "segmentId": "src-topo-2fc8a71aa1e694"
+      },
+      {
+        "queryId": "ent-topo-022",
+        "maxJaccard": 0.14465409,
+        "segmentId": "src-topo-2fc8a71aa1e694"
+      },
+      {
+        "queryId": "ent-topo-023",
+        "maxJaccard": 0.17123288,
+        "segmentId": "src-topo-2f72aed0ddb78c"
+      },
+      {
+        "queryId": "ent-topo-024",
+        "maxJaccard": 0.17919075,
+        "segmentId": "src-topo-4145681f126677"
+      },
+      {
+        "queryId": "ent-topo-025",
+        "maxJaccard": 0.15923567,
+        "segmentId": "src-topo-f2bfe45a8ebab9"
+      },
+      {
+        "queryId": "ent-topo-026",
+        "maxJaccard": 0.16993464,
+        "segmentId": "src-topo-f2bfe45a8ebab9"
+      },
+      {
+        "queryId": "ent-topo-027",
+        "maxJaccard": 0.11538462,
+        "segmentId": "src-topo-8eff5ea542d08a"
+      },
+      {
+        "queryId": "ent-topo-028",
+        "maxJaccard": 0.11363636,
+        "segmentId": "src-topo-0e4fd761559434"
+      },
+      {
+        "queryId": "ent-topo-029",
+        "maxJaccard": 0.12149533,
+        "segmentId": "hp-002c4019ddb6-8009"
+      },
+      {
+        "queryId": "ent-topo-030",
+        "maxJaccard": 0.10152284,
+        "segmentId": "src-topo-c03b8b2c43763c"
+      },
+      {
+        "queryId": "ent-topo-031",
+        "maxJaccard": 0.09659091,
+        "segmentId": "src-topo-f2bfe45a8ebab9"
+      },
+      {
+        "queryId": "ent-topo-032",
+        "maxJaccard": 0.09815951,
+        "segmentId": "hp-d66da5a5aec2-2003"
+      },
+      {
+        "queryId": "ent-topo-033",
+        "maxJaccard": 0.11688312,
+        "segmentId": "hp-351dcb72a44b-1001"
+      },
+      {
+        "queryId": "ent-topo-034",
+        "maxJaccard": 0.12025316,
+        "segmentId": "src-reco-9d303d071b58f2"
+      },
+      {
+        "queryId": "ent-topo-035",
+        "maxJaccard": 0.11711712,
+        "segmentId": "hp-fd5e94af467a-9004"
+      },
+      {
+        "queryId": "ent-topo-036",
+        "maxJaccard": 0.10179641,
+        "segmentId": "src-reco-9d303d071b58f2"
+      },
+      {
+        "queryId": "ent-topo-037",
+        "maxJaccard": 0.11403509,
+        "segmentId": "hp-4c7e624ffbc9-3004"
+      },
+      {
+        "queryId": "ent-topo-038",
+        "maxJaccard": 0.13636364,
+        "segmentId": "hp-966ef6c082f1-3001"
+      },
+      {
+        "queryId": "ent-topo-039",
+        "maxJaccard": 0.16463415,
+        "segmentId": "src-topo-df341ad2a44a76"
+      },
+      {
+        "queryId": "hp-5a70eee85542994082a3e3f0",
+        "maxJaccard": 0.48175182,
+        "segmentId": "hp-c46826049c35-4006"
+      },
+      {
+        "queryId": "hp-5a70f0a75542994082a3e403",
+        "maxJaccard": 0.28448276,
+        "segmentId": "hp-cba7460e1795-7000"
+      },
+      {
+        "queryId": "hp-5a70f0e75542994082a3e408",
+        "maxJaccard": 0.21243523,
+        "segmentId": "hp-c17c019aeb98-1001"
+      },
+      {
+        "queryId": "hp-5a70f11a5542994082a3e40b",
+        "maxJaccard": 0.18439716,
+        "segmentId": "hp-4d53a80dcb20-00"
+      },
+      {
+        "queryId": "hp-5a70f1685542994082a3e40f",
+        "maxJaccard": 0.36363636,
+        "segmentId": "hp-9856c3add8bf-2000"
+      },
+      {
+        "queryId": "hp-5a70f39c5542994082a3e429",
+        "maxJaccard": 0.31372549,
+        "segmentId": "hp-5ed5b5530161-1000"
+      },
+      {
+        "queryId": "hp-5a70f4695542994082a3e435",
+        "maxJaccard": 0.24137931,
+        "segmentId": "hp-ab4f1c1e7976-03"
+      },
+      {
+        "queryId": "hp-5a70f4c45542994082a3e437",
+        "maxJaccard": 0.27192982,
+        "segmentId": "hp-2f550b9f1769-8000"
+      },
+      {
+        "queryId": "hp-5a70f6425542994082a3e44c",
+        "maxJaccard": 0.29457364,
+        "segmentId": "hp-e993b3ab1558-7000"
+      },
+      {
+        "queryId": "hp-5a70f9335542994082a3e46a",
+        "maxJaccard": 0.2254902,
+        "segmentId": "hp-eb706df1b4b0-01"
+      },
+      {
+        "queryId": "hp-5a70ff335542994082a3e49c",
+        "maxJaccard": 0.29605263,
+        "segmentId": "hp-90d3d3301546-9001"
+      },
+      {
+        "queryId": "hp-5a7100435542994082a3e4a3",
+        "maxJaccard": 0.14049587,
+        "segmentId": "hp-1e1f240539e1-6000"
+      },
+      {
+        "queryId": "hp-5a7103b35542994082a3e4c0",
+        "maxJaccard": 0.20175439,
+        "segmentId": "hp-1147612c4105-5000"
+      },
+      {
+        "queryId": "hp-5a7108fa5542994082a3e4ef",
+        "maxJaccard": 0.28888889,
+        "segmentId": "hp-2f1da6f5e90c-4003"
+      },
+      {
+        "queryId": "hp-5a71095e5542994082a3e4f3",
+        "maxJaccard": 0.22307692,
+        "segmentId": "hp-2998e6697d54-2000"
+      },
+      {
+        "queryId": "hp-5a7109e95542994082a3e4fa",
+        "maxJaccard": 0.29710145,
+        "segmentId": "hp-0e069ee7c63e-8001"
+      },
+      {
+        "queryId": "hp-5a710a1e5542994082a3e4fd",
+        "maxJaccard": 0.38235294,
+        "segmentId": "hp-67135cba528d-2001"
+      },
+      {
+        "queryId": "hp-5a710a915542994082a3e504",
+        "maxJaccard": 0.16022099,
+        "segmentId": "hp-b7f3845b838d-3000"
+      },
+      {
+        "queryId": "hp-5a710bb15542994082a3e50d",
+        "maxJaccard": 0.26363636,
+        "segmentId": "hp-729f48866879-4000"
+      },
+      {
+        "queryId": "hp-5a710d155542994082a3e520",
+        "maxJaccard": 0.5037037,
+        "segmentId": "hp-ad644942da7c-5000"
+      },
+      {
+        "queryId": "hp-5a71148b5542994082a3e567",
+        "maxJaccard": 0.23762376,
+        "segmentId": "hp-aa436d6cdded-7005"
+      },
+      {
+        "queryId": "hp-5a7115475542994082a3e56d",
+        "maxJaccard": 0.19379845,
+        "segmentId": "hp-0d0426ea1c41-6001"
+      },
+      {
+        "queryId": "hp-5a71166d5542994082a3e576",
+        "maxJaccard": 0.17708333,
+        "segmentId": "hp-c354b9bb8275-5001"
+      },
+      {
+        "queryId": "hp-5a7119095542994082a3e589",
+        "maxJaccard": 0.35114504,
+        "segmentId": "hp-221851e61354-1000"
+      },
+      {
+        "queryId": "hp-5a7119f75542994082a3e58e",
+        "maxJaccard": 0.21167883,
+        "segmentId": "hp-cd74e213b424-1001"
+      },
+      {
+        "queryId": "hp-5a711bb55542994082a3e597",
+        "maxJaccard": 0.3006993,
+        "segmentId": "hp-7f3ad97ba83d-5000"
+      },
+      {
+        "queryId": "hp-5a711c535542994082a3e59b",
+        "maxJaccard": 0.32638889,
+        "segmentId": "hp-6c8eb5c9a9c9-8000"
+      },
+      {
+        "queryId": "hp-5a711cb45542994082a3e59f",
+        "maxJaccard": 0.31496063,
+        "segmentId": "hp-19cc722a2f8a-01"
+      },
+      {
+        "queryId": "hp-5a711ef85542994082a3e5ac",
+        "maxJaccard": 0.22340426,
+        "segmentId": "hp-ae898be27739-6000"
+      },
+      {
+        "queryId": "hp-5a71214d5542994082a3e5b9",
+        "maxJaccard": 0.34090909,
+        "segmentId": "hp-3688d16039f9-6004"
+      },
+      {
+        "queryId": "hp-5a71224f5542994082a3e5c1",
+        "maxJaccard": 0.3,
+        "segmentId": "hp-779146c88063-1000"
+      },
+      {
+        "queryId": "hp-5a71231a5542994082a3e5c4",
+        "maxJaccard": 0.16666667,
+        "segmentId": "hp-7302b3f4b349-9001"
+      },
+      {
+        "queryId": "hp-5a7125165542994082a3e5d0",
+        "maxJaccard": 0.40909091,
+        "segmentId": "hp-6f428b2c9be3-7000"
+      },
+      {
+        "queryId": "hp-5a7125b95542994082a3e5d5",
+        "maxJaccard": 0.26666667,
+        "segmentId": "hp-1f76a10987a9-2001"
+      },
+      {
+        "queryId": "hp-5a71278c5542994082a3e5e2",
+        "maxJaccard": 0.17924528,
+        "segmentId": "hp-c354f220f7ab-7002"
+      },
+      {
+        "queryId": "hp-5a7128b05542994082a3e5f2",
+        "maxJaccard": 0.16666667,
+        "segmentId": "hp-08d525598865-4001"
+      },
+      {
+        "queryId": "hp-5a7129685542994082a3e5fa",
+        "maxJaccard": 0.51818182,
+        "segmentId": "hp-b71f19d87e44-8002"
+      },
+      {
+        "queryId": "hp-5a71299e5542994082a3e5fe",
+        "maxJaccard": 0.23931624,
+        "segmentId": "hp-83d957123790-6000"
+      },
+      {
+        "queryId": "hp-5a712af15542994082a3e614",
+        "maxJaccard": 0.16901408,
+        "segmentId": "hp-3c9df0fdea8b-1000"
+      },
+      {
+        "queryId": "hp-5a712beb5542994082a3e61c",
+        "maxJaccard": 0.20987654,
+        "segmentId": "hp-3d1649e7aa08-3000"
+      },
+      {
+        "queryId": "hp-5a712c4b5542994082a3e622",
+        "maxJaccard": 0.22900763,
+        "segmentId": "hp-e2f04609391b-7000"
+      },
+      {
+        "queryId": "hp-5a712e895542994082a3e636",
+        "maxJaccard": 0.32044199,
+        "segmentId": "hp-e00d32e86ec4-8003"
+      },
+      {
+        "queryId": "hp-5a712fca5542994082a3e641",
+        "maxJaccard": 0.23770492,
+        "segmentId": "hp-83e261f1c860-2000"
+      },
+      {
+        "queryId": "hp-5a7130365542994082a3e645",
+        "maxJaccard": 0.18644068,
+        "segmentId": "hp-4c55e1048bce-5001"
+      },
+      {
+        "queryId": "hp-5a7131565542994082a3e64f",
+        "maxJaccard": 0.13333333,
+        "segmentId": "hp-3f69a3071772-1000"
+      },
+      {
+        "queryId": "hp-5a7133565542994082a3e65c",
+        "maxJaccard": 0.26851852,
+        "segmentId": "hp-84adb3c8c379-5000"
+      },
+      {
+        "queryId": "hp-5a7133fa5542994082a3e660",
+        "maxJaccard": 0.32191781,
+        "segmentId": "hp-e03dd1c1c324-7000"
+      },
+      {
+        "queryId": "hp-5a7136e25542994082a3e67e",
+        "maxJaccard": 0.14018692,
+        "segmentId": "hp-fbcc48846177-00"
+      },
+      {
+        "queryId": "hp-5a7137dc5542994082a3e68a",
+        "maxJaccard": 0.21052632,
+        "segmentId": "hp-151e0cb87ed9-2001"
+      },
+      {
+        "queryId": "hp-5a71380c5542994082a3e68b",
+        "maxJaccard": 0.23762376,
+        "segmentId": "hp-709f21eda91d-00"
+      },
+      {
+        "queryId": "mh-comparison-000",
+        "maxJaccard": 0.15358362,
+        "segmentId": "mh-5f9f68650f4b-00"
+      },
+      {
+        "queryId": "mh-comparison-001",
+        "maxJaccard": 0.1496063,
+        "segmentId": "mh-e099df73332f-00"
+      },
+      {
+        "queryId": "mh-comparison-002",
+        "maxJaccard": 0.16723549,
+        "segmentId": "mh-73f254468b85-01"
+      },
+      {
+        "queryId": "mh-comparison-003",
+        "maxJaccard": 0.15,
+        "segmentId": "mh-08ab63b8f98e-00"
+      },
+      {
+        "queryId": "mh-comparison-004",
+        "maxJaccard": 0.10661765,
+        "segmentId": "mh-3ac4f7adea20-01"
+      },
+      {
+        "queryId": "mh-comparison-005",
+        "maxJaccard": 0.14079422,
+        "segmentId": "mh-109b098f8d51-02"
+      },
+      {
+        "queryId": "mh-comparison-006",
+        "maxJaccard": 0.1752988,
+        "segmentId": "mh-1fc41ae2985d-00"
+      },
+      {
+        "queryId": "mh-comparison-007",
+        "maxJaccard": 0.23247232,
+        "segmentId": "mh-93cbb7654d79-01"
+      },
+      {
+        "queryId": "mh-comparison-008",
+        "maxJaccard": 0.31351351,
+        "segmentId": "mh-7767e701dafb-00"
+      },
+      {
+        "queryId": "mh-comparison-009",
+        "maxJaccard": 0.28178694,
+        "segmentId": "mh-01248779cd10-01"
+      },
+      {
+        "queryId": "mh-comparison-010",
+        "maxJaccard": 0.19665272,
+        "segmentId": "mh-918a57b602dd-00"
+      },
+      {
+        "queryId": "mh-comparison-011",
+        "maxJaccard": 0.13468013,
+        "segmentId": "mh-3ac4f7adea20-01"
+      },
+      {
+        "queryId": "mh-comparison-012",
+        "maxJaccard": 0.1433121,
+        "segmentId": "mh-a796a0e5d681-00"
+      },
+      {
+        "queryId": "mh-comparison-013",
+        "maxJaccard": 0.12686567,
+        "segmentId": "mh-459e906f29e0-00"
+      },
+      {
+        "queryId": "mh-comparison-014",
+        "maxJaccard": 0.14246575,
+        "segmentId": "mh-a72b67978870-01"
+      },
+      {
+        "queryId": "mh-comparison-015",
+        "maxJaccard": 0.19666667,
+        "segmentId": "mh-6e3d1a2b3439-01"
+      },
+      {
+        "queryId": "mh-comparison-016",
+        "maxJaccard": 0.12315271,
+        "segmentId": "hp-b4b6ae6addf4-01"
+      },
+      {
+        "queryId": "mh-comparison-017",
+        "maxJaccard": 0.15662651,
+        "segmentId": "mh-93cbb7654d79-01"
+      },
+      {
+        "queryId": "mh-comparison-018",
+        "maxJaccard": 0.15564202,
+        "segmentId": "mh-a517314e1d63-00"
+      },
+      {
+        "queryId": "mh-comparison-019",
+        "maxJaccard": 0.25581395,
+        "segmentId": "mh-c83df614043f-01"
+      },
+      {
+        "queryId": "mh-comparison-020",
+        "maxJaccard": 0.14130435,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-comparison-021",
+        "maxJaccard": 0.18103448,
+        "segmentId": "mh-5f4242417fcb-00"
+      },
+      {
+        "queryId": "mh-comparison-022",
+        "maxJaccard": 0.2,
+        "segmentId": "mh-7b742c6e5604-00"
+      },
+      {
+        "queryId": "mh-comparison-023",
+        "maxJaccard": 0.28138528,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-comparison-024",
+        "maxJaccard": 0.13488372,
+        "segmentId": "mh-505a7d8e20b2-01"
+      },
+      {
+        "queryId": "mh-comparison-025",
+        "maxJaccard": 0.12301587,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-comparison-026",
+        "maxJaccard": 0.24899598,
+        "segmentId": "mh-2d347ea57a7b-00"
+      },
+      {
+        "queryId": "mh-comparison-027",
+        "maxJaccard": 0.15044248,
+        "segmentId": "mh-100486f67823-00"
+      },
+      {
+        "queryId": "mh-comparison-028",
+        "maxJaccard": 0.11594203,
+        "segmentId": "hp-02c54693184d-8006"
+      },
+      {
+        "queryId": "mh-comparison-029",
+        "maxJaccard": 0.18770227,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-comparison-030",
+        "maxJaccard": 0.28340081,
+        "segmentId": "mh-6347f9338477-00"
+      },
+      {
+        "queryId": "mh-comparison-031",
+        "maxJaccard": 0.19918699,
+        "segmentId": "mh-7b742c6e5604-00"
+      },
+      {
+        "queryId": "mh-comparison-032",
+        "maxJaccard": 0.21161826,
+        "segmentId": "mh-0a8d1d799848-00"
+      },
+      {
+        "queryId": "mh-comparison-033",
+        "maxJaccard": 0.11111111,
+        "segmentId": "mh-2e64c1013eb3-01"
+      },
+      {
+        "queryId": "mh-comparison-034",
+        "maxJaccard": 0.17821782,
+        "segmentId": "mh-10d477a19787-00"
+      },
+      {
+        "queryId": "mh-comparison-035",
+        "maxJaccard": 0.10989011,
+        "segmentId": "hp-c448e6759112-6006"
+      },
+      {
+        "queryId": "mh-comparison-036",
+        "maxJaccard": 0.15533981,
+        "segmentId": "mh-b22f3f8552b2-00"
+      },
+      {
+        "queryId": "mh-comparison-037",
+        "maxJaccard": 0.1441048,
+        "segmentId": "mh-11dbc0f888f1-01"
+      },
+      {
+        "queryId": "mh-comparison-038",
+        "maxJaccard": 0.16883117,
+        "segmentId": "mh-95d8210a2210-00"
+      },
+      {
+        "queryId": "mh-comparison-039",
+        "maxJaccard": 0.18300654,
+        "segmentId": "mh-4eac18322f48-01"
+      },
+      {
+        "queryId": "mh-comparison-040",
+        "maxJaccard": 0.15129151,
+        "segmentId": "mh-3ac4f7adea20-01"
+      },
+      {
+        "queryId": "mh-comparison-041",
+        "maxJaccard": 0.19188192,
+        "segmentId": "mh-424ed1480363-00"
+      },
+      {
+        "queryId": "mh-comparison-042",
+        "maxJaccard": 0.17318436,
+        "segmentId": "mh-bb4c4d2e0422-00"
+      },
+      {
+        "queryId": "mh-comparison-043",
+        "maxJaccard": 0.11453744,
+        "segmentId": "mh-1dc2ed7b2564-00"
+      },
+      {
+        "queryId": "mh-comparison-044",
+        "maxJaccard": 0.20748299,
+        "segmentId": "mh-0be50a797883-01"
+      },
+      {
+        "queryId": "mh-comparison-045",
+        "maxJaccard": 0.125,
+        "segmentId": "mh-3be7c66e6131-01"
+      },
+      {
+        "queryId": "mh-comparison-046",
+        "maxJaccard": 0.16,
+        "segmentId": "mh-b2eee59a56c6-00"
+      },
+      {
+        "queryId": "mh-comparison-047",
+        "maxJaccard": 0.17518248,
+        "segmentId": "mh-ab783775f56a-00"
+      },
+      {
+        "queryId": "mh-comparison-048",
+        "maxJaccard": 0.12181303,
+        "segmentId": "hp-ecd151987c3a-4002"
+      },
+      {
+        "queryId": "mh-comparison-049",
+        "maxJaccard": 0.1641791,
+        "segmentId": "mh-265821b0acde-00"
+      },
+      {
+        "queryId": "mh-inference-000",
+        "maxJaccard": 0.14285714,
+        "segmentId": "mh-b91048dce016-02"
+      },
+      {
+        "queryId": "mh-inference-001",
+        "maxJaccard": 0.18971061,
+        "segmentId": "mh-1cee8b570fd1-03"
+      },
+      {
+        "queryId": "mh-inference-002",
+        "maxJaccard": 0.17150396,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-003",
+        "maxJaccard": 0.13125,
+        "segmentId": "mh-404ff49fd733-00"
+      },
+      {
+        "queryId": "mh-inference-004",
+        "maxJaccard": 0.14,
+        "segmentId": "hp-403ae7a3c00c-9004"
+      },
+      {
+        "queryId": "mh-inference-005",
+        "maxJaccard": 0.1505102,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-006",
+        "maxJaccard": 0.14748201,
+        "segmentId": "mh-91d5f0808c56-03"
+      },
+      {
+        "queryId": "mh-inference-007",
+        "maxJaccard": 0.18981481,
+        "segmentId": "mh-c06af9eace17-00"
+      },
+      {
+        "queryId": "mh-inference-008",
+        "maxJaccard": 0.13498623,
+        "segmentId": "mh-26d74b9970af-00"
+      },
+      {
+        "queryId": "mh-inference-009",
+        "maxJaccard": 0.1417004,
+        "segmentId": "mh-02389fbe8420-01"
+      },
+      {
+        "queryId": "mh-inference-010",
+        "maxJaccard": 0.13777778,
+        "segmentId": "mh-08f66c2d7566-02"
+      },
+      {
+        "queryId": "mh-inference-011",
+        "maxJaccard": 0.13888889,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-012",
+        "maxJaccard": 0.1530343,
+        "segmentId": "mh-3df2c1bec576-01"
+      },
+      {
+        "queryId": "mh-inference-013",
+        "maxJaccard": 0.14732143,
+        "segmentId": "hp-403ae7a3c00c-9004"
+      },
+      {
+        "queryId": "mh-inference-014",
+        "maxJaccard": 0.15830116,
+        "segmentId": "mh-2966d39747da-02"
+      },
+      {
+        "queryId": "mh-inference-015",
+        "maxJaccard": 0.1382716,
+        "segmentId": "hp-ecd151987c3a-4002"
+      },
+      {
+        "queryId": "mh-inference-016",
+        "maxJaccard": 0.15430267,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-017",
+        "maxJaccard": 0.14369501,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-018",
+        "maxJaccard": 0.15748031,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-inference-019",
+        "maxJaccard": 0.14552239,
+        "segmentId": "mh-5f3e1616059b-01"
+      },
+      {
+        "queryId": "mh-inference-020",
+        "maxJaccard": 0.16524217,
+        "segmentId": "mh-1cf3a62129da-00"
+      },
+      {
+        "queryId": "mh-inference-021",
+        "maxJaccard": 0.11049724,
+        "segmentId": "hp-9bf7bce58ff0-9002"
+      },
+      {
+        "queryId": "mh-inference-022",
+        "maxJaccard": 0.13043478,
+        "segmentId": "mh-f31d4dad4dd0-00"
+      },
+      {
+        "queryId": "mh-inference-023",
+        "maxJaccard": 0.17940199,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-inference-024",
+        "maxJaccard": 0.14613181,
+        "segmentId": "mh-3df2c1bec576-01"
+      },
+      {
+        "queryId": "mh-inference-025",
+        "maxJaccard": 0.1408046,
+        "segmentId": "mh-3ae8ae83406f-00"
+      },
+      {
+        "queryId": "mh-inference-026",
+        "maxJaccard": 0.12137203,
+        "segmentId": "mh-a72b67978870-01"
+      },
+      {
+        "queryId": "mh-inference-027",
+        "maxJaccard": 0.15017065,
+        "segmentId": "mh-3df2c1bec576-01"
+      },
+      {
+        "queryId": "mh-inference-028",
+        "maxJaccard": 0.1331058,
+        "segmentId": "mh-0fb77a4c66a1-00"
+      },
+      {
+        "queryId": "mh-inference-029",
+        "maxJaccard": 0.1314433,
+        "segmentId": "mh-a72b67978870-01"
+      },
+      {
+        "queryId": "mh-inference-030",
+        "maxJaccard": 0.18835616,
+        "segmentId": "mh-2966d39747da-02"
+      },
+      {
+        "queryId": "mh-inference-031",
+        "maxJaccard": 0.11111111,
+        "segmentId": "mh-0d5a9ae85cf0-00"
+      },
+      {
+        "queryId": "mh-inference-032",
+        "maxJaccard": 0.10948905,
+        "segmentId": "mh-0d5a9ae85cf0-00"
+      },
+      {
+        "queryId": "mh-inference-033",
+        "maxJaccard": 0.12238806,
+        "segmentId": "mh-441e14c28c99-01"
+      },
+      {
+        "queryId": "mh-inference-034",
+        "maxJaccard": 0.14516129,
+        "segmentId": "mh-2640c70a3534-02"
+      },
+      {
+        "queryId": "mh-inference-035",
+        "maxJaccard": 0.13399504,
+        "segmentId": "mh-8a743df15553-00"
+      },
+      {
+        "queryId": "mh-inference-036",
+        "maxJaccard": 0.2,
+        "segmentId": "mh-dc318c907098-00"
+      },
+      {
+        "queryId": "mh-inference-037",
+        "maxJaccard": 0.19090909,
+        "segmentId": "mh-6e3d1a2b3439-01"
+      },
+      {
+        "queryId": "mh-inference-038",
+        "maxJaccard": 0.11455108,
+        "segmentId": "mh-3ae8ae83406f-00"
+      },
+      {
+        "queryId": "mh-inference-039",
+        "maxJaccard": 0.14699793,
+        "segmentId": "hp-44b346373f1f-7001"
+      },
+      {
+        "queryId": "mh-inference-040",
+        "maxJaccard": 0.18018018,
+        "segmentId": "mh-5a78a5cd0d2d-01"
+      },
+      {
+        "queryId": "mh-inference-041",
+        "maxJaccard": 0.1507431,
+        "segmentId": "hp-403ae7a3c00c-9004"
+      },
+      {
+        "queryId": "mh-inference-042",
+        "maxJaccard": 0.1509434,
+        "segmentId": "mh-01047ab75f71-02"
+      },
+      {
+        "queryId": "mh-inference-043",
+        "maxJaccard": 0.14090909,
+        "segmentId": "hp-9d6c4068c078-3001"
+      },
+      {
+        "queryId": "mh-inference-044",
+        "maxJaccard": 0.115727,
+        "segmentId": "mh-1016d464c2f3-03"
+      },
+      {
+        "queryId": "mh-inference-045",
+        "maxJaccard": 0.14285714,
+        "segmentId": "mh-abfb96ec3162-03"
+      },
+      {
+        "queryId": "mh-inference-046",
+        "maxJaccard": 0.1496063,
+        "segmentId": "mh-1016d464c2f3-03"
+      },
+      {
+        "queryId": "mh-inference-047",
+        "maxJaccard": 0.14028777,
+        "segmentId": "mh-eae4133b1fc3-01"
+      },
+      {
+        "queryId": "mh-inference-048",
+        "maxJaccard": 0.17222222,
+        "segmentId": "mh-5f4242417fcb-00"
+      },
+      {
+        "queryId": "mh-inference-049",
+        "maxJaccard": 0.17563739,
+        "segmentId": "mh-2b466a1d6b91-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe14c",
+        "maxJaccard": 0.06976744,
+        "segmentId": "split-3315909a1437-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe14d",
+        "maxJaccard": 0.025,
+        "segmentId": "split-3638efabab5b-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe156",
+        "maxJaccard": 0.0458221,
+        "segmentId": "split-34dae5159cd5-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe164",
+        "maxJaccard": 0.0295858,
+        "segmentId": "split-63d5fccf6fb2-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe17a",
+        "maxJaccard": 0.01891892,
+        "segmentId": "split-c33f142e9e4a-02"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe187",
+        "maxJaccard": 0.03141361,
+        "segmentId": "split-3d0f7ceb1e10-02"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe190",
+        "maxJaccard": 0.01373626,
+        "segmentId": "split-3f7be532ad03-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe1e6",
+        "maxJaccard": 0.00589971,
+        "segmentId": "split-85747661ea7a-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe1f2",
+        "maxJaccard": 0.00460829,
+        "segmentId": "src-reco-0779993fec358f"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe20e",
+        "maxJaccard": 0.03943662,
+        "segmentId": "split-aadcbc822e86-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe21b",
+        "maxJaccard": 0.01949861,
+        "segmentId": "split-1a63dd828565-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe237",
+        "maxJaccard": 0.0080429,
+        "segmentId": "split-37684a55854d-01"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe249",
+        "maxJaccard": 0.05671642,
+        "segmentId": "split-248d717aefd5-02"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe25b",
+        "maxJaccard": 0.03494624,
+        "segmentId": "split-168f42ad4507-00"
+      },
+      {
+        "queryId": "split-questanswer_2docs-64fa9b27b82641eb8ecbe264",
+        "maxJaccard": 0.02358491,
+        "segmentId": "split-0207d7a0338e-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe14c",
+        "maxJaccard": 0.04692082,
+        "segmentId": "split-3315909a1437-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe14d",
+        "maxJaccard": 0.02325581,
+        "segmentId": "split-98181a6b02fe-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe156",
+        "maxJaccard": 0.03342618,
+        "segmentId": "split-34dae5159cd5-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe164",
+        "maxJaccard": 0.03283582,
+        "segmentId": "split-f041f57a2412-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe17a",
+        "maxJaccard": 0.03194103,
+        "segmentId": "split-5f6d442b16f9-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe187",
+        "maxJaccard": 0.03225806,
+        "segmentId": "split-2f40135c558a-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe190",
+        "maxJaccard": 0.00986842,
+        "segmentId": "split-dee8af35b940-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe1e6",
+        "maxJaccard": 0.00761421,
+        "segmentId": "split-2cf4397466a3-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe1f2",
+        "maxJaccard": 0.00852273,
+        "segmentId": "split-927a45aa495e-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe20e",
+        "maxJaccard": 0.02046784,
+        "segmentId": "split-aadcbc822e86-01"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe21b",
+        "maxJaccard": 0.0028169,
+        "segmentId": "split-bb042ba0feaf-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe237",
+        "maxJaccard": 0.00727273,
+        "segmentId": "split-0a1c45940bcc-00"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe249",
+        "maxJaccard": 0.09638554,
+        "segmentId": "split-248d717aefd5-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe25b",
+        "maxJaccard": 0.03282828,
+        "segmentId": "split-348da0b47285-02"
+      },
+      {
+        "queryId": "split-questanswer_3docs-64fa9b27b82641eb8ecbe264",
+        "maxJaccard": 0.01382488,
+        "segmentId": "split-f74b0a5a0c48-02"
+      }
+    ]
+  },
+  "arithmeticConsistency": {
+    "passed": true,
+    "errors": []
+  },
+  "environment": {
+    "python": "3.14.7 | packaged by Anaconda, Inc. | (main, Aug 14 2026, 10:13:42) [Clang 20.1.8 ]",
+    "interpreter": "/Users/achilles/Documents/许子祺/Agent/.venv/bin/python"
+  }
+}
