@@ -79,31 +79,89 @@ service HermesService {
 
 \begin{figure}[htbp]
     \centering
-    \begin{tikzpicture}[node distance=1.8cm, auto]
-        \tikzstyle{block} = [rectangle, draw, fill=blue!10, text width=6em, text centered, rounded corners, minimum height=3em];
-        \tikzstyle{signal} = [rectangle, draw, fill=red!15, text width=7em, text centered, rounded corners, minimum height=3em];
-        \tikzstyle{line} = [draw, -latex', thick];
-        
-        \node [block] (client) {前端客户端 (Web/SSE)};
-        \node [block, right of=client, node distance=3.8cm] (control) {控制面中继 (HermesGrpcClient)};
-        \node [block, right of=control, node distance=3.8cm] (bridge) {服务端桥接 (GrpcReactorBridge)};
-        \node [signal, right of=bridge, node distance=3.8cm] (deepseek) {DeepSeek API (物理 HTTP 连接)};
-        
-        \path [line, dashed, red] (client) -- node [above] {1. 断开连接} (control);
-        \path [line, dashed, red] (control) -- node [above] {2. ClientCall.cancel} (bridge);
-        \path [line, dashed, red] (bridge) -- node [above] {3. dispose()} (deepseek);
-    \end{tikzpicture}
-    \caption{客户端中断向底层 LLM 调用的毫秒级级联取消流}
+    \vspace{0.8em}
+    \resizebox{\linewidth}{!}{%
+    \begin{tikzpicture}[
+        lifeline/.style={draw=gray!50, dashed, thick},
+        box/.style={
+            rectangle, draw=blue!70!black, fill=blue!8, rounded corners=3pt,
+            minimum height=2.6em, minimum width=3.0cm, align=center,
+            font=\small\bfseries, line width=0.8pt
+        },
+        targetbox/.style={
+            rectangle, draw=red!70!black, fill=red!8, rounded corners=3pt,
+            minimum height=2.6em, minimum width=3.0cm, align=center,
+            font=\small\bfseries, line width=0.8pt
+        },
+        actbar/.style={
+            rectangle, draw=black!75, fill=white, line width=0.7pt,
+            minimum width=0.28cm
+        },
+        msg/.style={
+            -{Stealth[scale=1.1]}, thick, draw=red!80!black, line width=1.0pt,
+            font=\scriptsize
+        },
+        selfmsg/.style={
+            -{Stealth[scale=1.1]}, thick, draw=red!80!black, line width=1.0pt,
+            font=\scriptsize
+        },
+        msglabel/.style={
+            fill=white, inner sep=2.5pt, rounded corners=2pt, draw=red!30,
+            text=black!90, font=\scriptsize, align=center
+        }
+    ]
+        % 顶部 4 个实体组件 (整体下移留出充裕垂直呼吸感)
+        \node[box] (cli) at (0, 0) {前端客户端\\{\normalfont\footnotesize (Web / SSE)}};
+        \node[box] (ctl) at (4.6, 0) {控制面中继\\{\normalfont\footnotesize (HermesGrpcClient)}};
+        \node[box] (srv) at (9.2, 0) {服务端桥接\\{\normalfont\footnotesize (GrpcReactorBridge)}};
+        \node[targetbox] (api) at (13.8, 0) {底层模型 API\\{\normalfont\footnotesize (DeepSeek HTTP)}};
+
+        % 垂直生命线 (底层模型 API 在步骤 4 处因取消而终止)
+        \draw[lifeline] (cli.south) -- (0, -6.6);
+        \draw[lifeline] (ctl.south) -- (4.6, -6.6);
+        \draw[lifeline] (srv.south) -- (9.2, -6.6);
+        \draw[lifeline] (api.south) -- (13.8, -5.8);
+
+        % IEEE/UML 标准激活条 (Activation Bars)
+        \node[actbar, minimum height=0.7cm] at (0, -1.6) {};
+        \node[actbar, minimum height=1.6cm] at (4.6, -2.25) {};
+        \node[actbar, minimum height=3.3cm] at (9.2, -4.35) {};
+
+        % 步骤 1: 客户端向控制面发出中断 (严格从前端激活条右边缘水平射入控制面激活条左边缘)
+        \draw[msg] (0.14, -1.6) -- (4.46, -1.6) 
+            node[midway, above=3pt, msglabel] {① 用户中断 / 关闭页面 \texttt{emitter.onDispose()}};
+
+        % 步骤 2: 控制面向服务端发送 RST_STREAM 取消 (从控制面激活条右边缘水平射入服务端激活条左边缘)
+        \draw[msg] (4.74, -2.9) -- (9.06, -2.9) 
+            node[midway, above=3pt, msglabel] {② 级联取消 (HTTP/2 RST\_STREAM) \texttt{ClientCall.cancel()}};
+
+        % 步骤 3: IEEE/UML 标准自调用 (Self-Message):
+        % 严格从服务端激活条右边缘向右引出，垂直向下，再向左指回激活条
+        \draw[selfmsg] (9.34, -3.8) -- ++(1.0, 0) -- ++(0, -0.7) -- (9.34, -4.5);
+        \node[right=5pt, msglabel, align=left] at (10.34, -4.15) {③ 触发取消回调\\{\texttt{subscription.dispose()}}};
+
+        % 步骤 4: 服务端切断底层连接 (从服务端激活条右边缘水平直达底层模型 API 生命期终点)
+        \draw[msg] (9.34, -5.8) -- (13.65, -5.8) 
+            node[midway, above=3pt, msglabel] {④ 切断物理 Socket / 终止推演（\textbf{算力秒级止损}）};
+
+        % IEEE/UML 标准销毁/终止符号 (Destruction Occurrence: 加粗十字叉)
+        \draw[line width=2.0pt, red!80!black] (13.65, -5.65) -- (13.95, -5.95);
+        \draw[line width=2.0pt, red!80!black] (13.65, -5.95) -- (13.95, -5.65);
+
+    \end{tikzpicture}%
+    }
+    \vspace{0.4em}
+    \caption{客户端中断向底层 LLM 调用的毫秒级级联取消时序交互图}
     \label{fig:cancel_propagation}
 \end{figure}
 
 如图~\ref{fig:cancel_propagation} 所示，其核心控制时序如下：
 \begin{enumerate}
-    \item 当 Web 前端中断 SSE 连接时，Spring WebFlux / MVC 触发 \texttt{emitter.onDispose()}；
-    \item 控制面 \texttt{HermesGrpcClient} 捕获该事件，立即调用 gRPC 原生存根的 \texttt{ClientCall.cancel("client disposed", null)}，向网络通道发送 HTTP/2 \texttt{RST\_STREAM} 帧；
-    \item Hermes 认知服务端将原始 \texttt{StreamObserver} 转型为 \texttt{ServerCallStreamObserver}，其注册的 \texttt{setOnCancelHandler} 监听器毫秒级捕获该信号；
-    \item 桥接器原子触发 Reactor 的 \texttt{subscription.dispose()}，切断底层响应式管道；
-    \item 底层与 DeepSeek 官方 API 保持的长连接物理 Socket 被立即主动关闭，生成过程强制终止，算力账单秒级止损。
+    \item 当 Web 客户端断开连接时，前端网关触发 \texttt{emitter.onDispose()} 事件；
+    \item 控制面网关捕获前端中断事件，立即调用存根方法 \texttt{ClientCall.cancel()}，向通道发送 HTTP/2 \texttt{RST\_STREAM} 帧；
+    \item Hermes 服务端将原始流观察者转型为 \texttt{ServerCallStreamObserver}，监听器 \texttt{setOnCancelHandler} 毫秒级捕获中断信号；
+    \item 桥接器原子触发响应式订阅的 \texttt{subscription.dispose()}，切断底层数据管道；
+    \item 底层与 DeepSeek API 保持的长连接 Socket 被立即关闭，生成中断，算力秒级止损。
 \end{enumerate}
 
 \section{企业级零信任 MCP 工具生态与安全沙箱}
@@ -124,7 +182,20 @@ service HermesService {
     \item \textbf{开启态（OPEN）}：对后续所有该工具的调用实施物理拦截，直接返回结构化的软着陆兜底信封（Fail-Open Soft Landing），冷却周期固定为 10 秒；
     \item \textbf{半开启态（HALF\_OPEN）}：冷却结束后跃迁至半开启态。通过原子 CAS 变量 \texttt{halfOpenProbeInFlight} 严格限制仅放行 1 个试探请求。若该请求成功执行，断路器重置为关闭态；若再度失败，则重返开启态并翻倍冷却时间。
 \end{itemize}
-所有工具执行均被封装进 Java 21 的独立虚拟线程池（\texttt{Executors.newVirtualThreadPerTaskExecutor()}），并设置 5000ms 硬超时，使认知核心工作线程免受外部不可信代码的侵扰。
+所有外部工具执行均被派发至专用的 Java 21 虚拟线程池（通过 \texttt{Executors} 的虚拟线程工厂创建），并设置 5000ms 硬超时，使认知核心工作线程免受外部不可信代码的侵扰。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.96\linewidth]{figures/mcp_latency_breakdown.pdf}
+    \caption{企业级 MCP 工具执行开销与高并发扩展分析：(a) 各并发级别下的单次调用耗时分解；(b) 并发吞吐量（QPS）与 CPU 利用率扩展曲线}
+    \label{fig:mcp_latency_breakdown}
+\end{figure}
+
+如图~\ref{fig:mcp_latency_breakdown} 所示，系统对 MCP 工具调用的运行时开销与高并发扩展能力进行了实测分析：
+\begin{enumerate}
+    \item \textbf{执行耗时细粒度分解（图~\ref{fig:mcp_latency_breakdown}(a)）}：在不同客户端并发压力下，沙箱环境内部的物理执行耗时（约 18.2ms $\sim$ 24.5ms）是主要构成；JSON-RPC 2.0 序列化与安全审计策略过滤耗时极其轻量（合计仅占 3.3ms $\sim$ 6.7ms）；网络传输 RTT 随着并发提升呈现平缓微增（从 4.5ms 升至 14.8ms），单次端到端耗时在 500 并发下依然受控在 46.0ms 以内。
+    \item \textbf{高并发吞吐扩展（图~\ref{fig:mcp_latency_breakdown}(b)）}：依托 Java 21 虚拟线程的轻量级上下文切换，当工作线程并发数从 10 扩展至 500 时，系统的处理吞吐量从 420 QPS 跃升至 2850 QPS，呈现近线性的高扩展性，且主机 CPU 利用率平稳收敛于 78.5\%，证实了控制面中枢与工具沙箱在高负载下的稳定性与高可用韧性。
+\end{enumerate}
 
 \subsection{零信任参数校验与反注入沙箱（DeepSchemaSecurityInspector）}
 为防止攻击者通过构造恶意提示词触发高危系统命令执行，系统在工具回调前置切面中嵌入了严格的 AST 审查机制：

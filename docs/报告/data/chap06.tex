@@ -1,0 +1,89 @@
+% !TeX root = ../thuthesis-example.tex
+
+\chapter{DAG 工作流编排与人机协同审批}
+
+在工业级复杂业务中，单次前馈推理无法满足长链条业务规则、跨系统协同以及高风险操作的安全合规要求。本章系统论述 Knowledge Hub 基于有向无环图（DAG）的分布式工作流引擎、六大多态节点元模型、基于不可变 HAMT 的状态快照树与时间旅行机制，以及基于定界延续（Delimited Continuation）的人机协同审批（HITL）闭环。
+
+\section{工作流 DAG 元模型与六大多态节点系统}
+
+系统在底层将业务逻辑抽象为参数化 DAG 拓扑图，设计了覆盖认知推理、循环控制、博弈决策及人工介入的六大多态节点元模型体系：
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{工作流多态节点元模型体系与运行时语义特征}
+\label{tab:dag_node_types}
+\begin{tabularx}{\textwidth}{p{4.0cm}lX}
+\toprule
+\textbf{节点类型枚举} & \textbf{拓扑图元标识} & \textbf{语义职责与运行时特征} \\
+\midrule
+\texttt{TASK} & 任务节点 & 执行确定性的文本转换、格式映射、提示词组装与数据抽取。 \\
+\texttt{STATE\_GRAPH\_LOOP} & 状态循环节点 & 允许局部有界状态回环，设定最大迭代次数 $M_{\text{loop}} \le 10$，防止死循环。 \\
+\texttt{SWARM\_HANDOFF} & 蜂群交接节点 & 多智能体自主交接路由，基于 1536 维语义向量匹配意图并转移执行上下文。 \\
+\texttt{DEBATE\_ARENA} & 辩论裁决节点 & 驱动多个具有异构温度参数或不同人设的模型进行多轮博弈并多数表决。 \\
+\texttt{HITL\_APPROVAL} & 审批挂起节点 & 阻断执行流，冻结上下文并释放工作线程，等待外部人工签名或参数修补。 \\
+\texttt{MCP\_TOOL\_CALL} & 工具调用节点 & 遵循 MCP 协议标准调用外部 API，受虚拟线程三态断路器与沙箱管控。 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{拓扑分层并行调度与动态递归剪枝}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth,height=0.75\textheight,keepaspectratio]{"figures/有向无环图 (DAG) 工作流图计算与路由算法.pdf"}
+    \caption{有向无环图 (DAG) 拓扑分层并行与路由执行算法}
+    \label{fig:dag_algorithm_flow}
+\end{figure}
+
+如图~\ref{fig:dag_algorithm_flow} 所示，工作流执行引擎在启动时首先基于 Kahn 算法进行环路检测与拓扑排序。
+
+\subsection{BFS 分层并发分组调度}
+传统工作流引擎多按拓扑序逐节点串行执行，导致相互独立的计算分支产生不必要的等待。系统通过广度优先搜索（BFS）将 DAG 划分为多个层级并行组（Parallel Groups）：
+\begin{enumerate}
+    \item 计算每个节点的入度（In-degree），将所有入度为 0 的就绪节点划归为第一组 $G_1$；
+    \item 组内节点通过 \texttt{CompletableFuture.supplyAsync(..., executorService)} 进行物理多线程并发派发；
+    \item 某一阶段的所有节点全部执行收敛后，将其所有后继依赖边的入度计数减 1，入度归零的新节点自动归集为下一组 $G_{k+1}$。
+\end{enumerate}
+该机制使得无依赖的知识库检索、并行多工具查询与异步数据处理能够以最大硬件并行度运行。
+
+\subsection{动态递归剪枝（Dynamic Recursive Pruning）}
+当流程流转至条件分支节点（Condition Gate）时，决策算子根据上游变量求值选定满足条件的唯一分支。未被选中的无效下游节点若依然被拓扑调度器遍历，不仅浪费计算资源，更可能引发脏数据写入。
+系统在 \texttt{DagUtils.computePrunedNodes} 中实现了递归剪枝算法：一旦某分支被判定为失效，引擎以此节点为根节点，沿有向边深度优先遍历所有仅依赖该失效节点的后继拓扑子图，将其全量加入 \texttt{prunedNodes} 集合。在后续轮次中，命中剪枝集合的节点被原子标记为 \texttt{SKIPPED}，其对应的物理任务被直接绕过，实现了计算资源的零浪费（Zero-Waste）。
+
+\section{基于不可变 HAMT 的状态快照树与时间旅行}
+
+在分布式智能体工作流执行过程中，如何以极低的空间开销保存每一步的全局变量状态，并支持用户在任意历史节点“时光倒流”（Time Travel）甚至分叉衍生出新的子流程，是工业级工作流画布的核心技术壁垒。
+
+\subsection{Hash Array Mapped Trie（HAMT）数据结构设计}
+系统借鉴 Phil Bagwell\cite{Bagwell2001HAMT}的理想哈希树理论，落地了分支因子 $B=32$ 的持久化压缩前缀树（HAMT）：
+\begin{itemize}
+    \item \textbf{5 比特位分片检索}：采用 32 位哈希值，每 5 个二进制比特位（$2^5 = 32$）对应一阶树深，树的最大深度严格有界于 $\lceil 32 / 5 \rceil = 7$ 层；
+    \item \textbf{位图索引压缩（Bitmap Indexed Node）}：内部节点不使用固定容量为 32 的稀疏指针数组，而是使用一个 32 位的整型位图（Bitmap）记录有效子节点的位置，配合 CPU 原生的 \texttt{popcount}（Hamming Weight）指令在紧凑数组中计算真实偏移量，极大压缩了空指针的内存浪费；
+    \item \textbf{路径复制算子（Path Copying）}：当更新某一变量时，系统不修改原树的任何节点，而是仅沿根节点到该叶子节点的对数级路径（最多 7 个节点）重新构建新节点，其余庞大的未变更子树全部通过指针结构共享（Structural Sharing）。单步快照增量物理内存严格有界于 $O(\Delta_V)$。
+\end{itemize}
+
+\subsection{无反向时间污染的时间旅行与分叉调试}
+所有历史快照节点在生成后全量执行深度固化（\texttt{Object.freeze}），杜绝反向时间污染（Anti-Retroactive Contamination）。
+当工程师在可视化调试界面选中历史某一步的断点并修改变量输入时，时间旅行分叉引擎（TimeTravelForkEngine）以 $O(1)$ 常数时间基于历史快照根指针派生独立的分叉批次（Fork Branch），在画布上绘制出一条虚线分支并行推进，而原始的主基线执行记录完全保持纯净不受任何污染。
+
+\section{人机协同审批（HITL）与定界延续状态机}
+
+对于诸如数据库 DROP TABLE、转账操作、远程系统重启等破坏性工具调用，系统强制挂载 \texttt{HITL\_APPROVAL} 拦截节点。
+
+\subsection{非阻塞定界延续机制（Delimited Continuation）}
+传统工作流系统常采用阻塞调用线程等待人工审核（如 \texttt{future.get(24, TimeUnit.HOURS)}），极易引发生产线程池全量耗尽。根据引理~\ref{lem:delimited_continuation}，本系统采用了非阻塞定界延续设计：
+当工作流执行至审批节点时，执行器立即将当前所有的上下文变量写入不可变快照，构造状态为 \texttt{SUSPENDED} 的终态凭据（包含唯一的 \texttt{approvalKey}、挂起时间戳与候选入参），**并立即将底层物理工作线程安全归还线程池，整个挂起过程物理阻塞耗时为 0 毫秒**。
+
+\subsection{PostgreSQL CAS 乐观锁安全唤醒状态机}
+为了防止分布式集群环境下多位管理员同时点击审批导致同一工作流被重复唤醒调度，系统在 PostgreSQL 的 \texttt{dag\_checkpoints} 表上落地了原子条件 CAS 更新：
+\begin{verbatim}
+UPDATE dag_checkpoints
+SET version = version + 1, status = 'RUNNING', human_input = ?
+WHERE runtime_id = ? AND version = ? AND status = 'SUSPENDED';
+\end{verbatim}
+只有当数据库返回受影响行数恰好为 1 时，当前节点才被授予唤醒恢复执行权；若返回 0 则表明已被并发抢占，立即终止调度。该机制在数据库底层彻底解决了分布式竞态条件。
+
+\subsection{现场变量热补丁（Hotpatch Override）与密码学存证凭单}
+审批人员在审核挂起工单时，不仅可以执行“批准（Approve）”或“拒绝（Reject）”，更可利用在线参数编辑器对模型生成的潜在危险入参进行现场修补（Hotpatch Override）。
+系统在提交放行前，自动将审核人签名、修改前后的差分补丁、父节点哈希通过纯纯正散列算法计算唯一的 SHA-256 存证凭单（Cryptographic Receipt），并持久化到逆向 SAGA 补偿审计日志中，达成了全流程的不可篡改与合规可审计。

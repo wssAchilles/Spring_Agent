@@ -16,35 +16,19 @@
 
 % 高等数学与符号宏包
 \usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{mathtools}
-
-% 定理类环境宏包
 \usepackage{amsthm}
 
-% 学术环境声明
-\theoremstyle{definition}
-\newtheorem{definition}{定义}[chapter]
-\newtheorem{axiom}{公理}[chapter]
-\newtheorem{example}{例}[chapter]
-
-\theoremstyle{plain}
-\newtheorem{theorem}{定理}[chapter]
-\newtheorem{lemma}[theorem]{引理}
-\newtheorem{proposition}[theorem]{命题}
-\newtheorem{corollary}[theorem]{推论}
-
-\theoremstyle{remark}
-\newtheorem{remark}{注}[chapter]
-
-% 算法环境中文定制
+% 算法环境宏包及定制
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \makeatletter
 \AtBeginDocument{%
   \renewcommand{\algorithmicrequire}{\textbf{输入:}}%
   \renewcommand{\algorithmicensure}{\textbf{输出:}}%
+  \floatname{algorithm}{算法}%
 }
 \makeatother
-\floatname{algorithm}{算法}
 
 % 表格加脚注
 \usepackage{threeparttable}
@@ -52,16 +36,10 @@
 % 表格中支持跨行
 \usepackage{multirow}
 
-% 固定宽度的表格。
-% \usepackage{tabularx}
-
 % 跨页表格
 \usepackage{longtable}
 \usepackage{tabularx}
 \usepackage{booktabs}  % 提供了 \toprule, \midrule, \bottomrule
-% 算法
-\usepackage{algorithm}
-\usepackage{algpseudocode}
 \usepackage{listings}
 %代码字体
 \DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{10} % for bold
@@ -82,6 +60,9 @@
 \bibliographystyle{thuthesis-numeric}
 \usepackage{titlesec}
 \usepackage{tikz}
+\usetikzlibrary{arrows,arrows.meta,positioning,shapes.geometric}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 
 % 让 \paragraph 参与编号（段级别=4）
 \setcounter{secnumdepth}{4}
@@ -102,9 +83,14 @@
 {}                                % 标题前置代码
 
 % 调整段前段后间距（可按需修改）
-\titlespacing*{\paragraph}
-{0pt}{3.25ex plus 1ex minus .2ex}{1ex plus .2ex}
 \usepackage{indentfirst}  % 首行缩进
+
+% 优化中英混排与代码标识符断行，消除 Overfull / Underfull \hbox
+\emergencystretch=3em
+\tolerance=2000
+\hfuzz=1.5pt
+\vfuzz=1.5pt
+\hbadness=3000
 
 % 著者-出版年制
 % \usepackage{natbib}

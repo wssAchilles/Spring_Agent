@@ -1,49 +1,103 @@
 % !TeX root = ../thuthesis-example.tex
 
-\chapter{总结与展望}
+\chapter{Hermes 认知内核与自愈反思机制}
 
-\section{工作总结}
+本章详细阐述自研 Hermes 认知内核的执行架构、行为调度与自反思算法机制。针对大模型自主决策中的无序并发导致的 API 429 限流、提示词注入劫持、工具调用无限死循环振荡以及知识记忆遗忘等难题，系统设计了立体限流门控、三明治提示词安全防御、基于规范化参数哈希的 ReAct 振荡熔断守卫、多目标 Pareto 分层仿生记忆体系以及 AI Judge 双重门限质检闭环。
 
-本文设计并实现了一个基于 RAG 与多智能体协作的知识服务平台，围绕"检索—推理—编排—评估"四个核心环节，在架构设计、算法实现和工程落地方面取得了以下主要成果：
+\section{AgentOrchestrator 调度中枢与立体并发限流架构}
 
-（1）设计了"控制面＋认知面"双核架构，通过 gRPC 实现业务逻辑与 AI 推理的完全解耦。控制面承担鉴权、数据库 I/O、会话管理等有状态职责，认知面保持绝对无状态化，仅负责 LLM 推理与工具调度。该架构使得两个平面可独立扩缩容，认知面可按需水平扩展以应对高并发推理请求，而控制面则专注于数据一致性保障。
+\texttt{AgentOrchestrator} 是整个认知内核的调度中枢。针对生产级环境下大模型推理瞬时并发极易打爆线程池与触发供应商频控的问题，设计了三层立体限流与容量隔离架构：
 
-（2）实现了四路并行召回＋RRF 融合的 RAG 检索引擎，引入 CRAG 机制进行检索质量评估与条件二次检索。向量检索、关键词检索、元数据检索和知识图谱检索四条路径通过线程池并行执行，RRF 融合算法对多路结果进行归一化排序，弱路径淘汰策略自动过滤低置信度召回源，有效提升了检索的鲁棒性和准确率。
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth,height=0.75\textheight,keepaspectratio]{"figures/qknow-hermes 认知与推理算法.pdf"}
+    \caption{Hermes 认知内核推理与反思闭环算法流程}
+    \label{fig:hermes_algorithm_flow}
+\end{figure}
 
-（3）提出了带自洽性检测的反思循环推理机制，通过 Jaccard 相似度识别幻觉回答，双重门限确保回答质量。AI Judge 对生成结果从事实性、相关性和指令遵循度三个维度进行量化评分，评分反馈注入后续轮次的提示词形成闭环优化，使模型能够在多轮迭代中逐步修正错误回答。
+如图~\ref{fig:hermes_algorithm_flow} 所示，各并发控制组件协同工作：
+\begin{enumerate}
+    \item \textbf{底层 LLM 调用公平信号量（\texttt{LLM\_CALL\_SEMAPHORE}）}：通过 \texttt{new Semaphore(8, true)} 开启 FIFO 严格公平排队，杜绝线程饥饿。全局并发物理调用被硬性约束在 8 以内，从源头杜绝了 DeepSeek 官方端点产生 \texttt{429 Too Many Requests}。
+    \item \textbf{无锁 CAS 门控容量隔离}：区分规划任务（\texttt{ACTIVE\_PLAN\_TASKS}，上限 4）与常规 ReAct 任务（\texttt{ACTIVE\_REACT\_RUNS}，上限 16）。利用原子自旋比较（\texttt{compareAndSet}）判定是否准入，达到阈值立即 Fast-Fail 拒绝并返回可观测的告警状态，防止请求无限排队造成 JVM 内存积压雪崩。
+    \item \textbf{专用守护线程池物理隔离}：规划拆解子任务全部托管在独立的守护线程池 \texttt{PLAN\_EXECUTOR} 中，与主业务处理线程彻底解耦。
+\end{enumerate}
 
-（4）实现了基于 DAG 拓扑排序的工作流并行执行引擎，支持 8 种节点类型和双层持久化检查点。BFS 分层算法将 DAG 划分为多个可并行执行的节点组，结合 CompletableFuture 异步调度实现了任务级并行。Human-in-the-loop 审批节点采用异步挂起/唤醒机制，支持超时降级和人工回调。
+\section{提示词工程与三明治防御（Sandwich Defense）模型}
 
-（5）构建了集成 AI Judge、RAGAS、RAGChecker 和 LangFuse 的完整质量评估与可观测性体系。RAGAS 从七个维度量化 RAG 生成质量，RAGChecker 在声明级粒度判断蕴含关系，LangFuse 提供端到端的 Trace 追踪和延迟分析，三者形成了从宏观到微观的立体化评估能力。
+在将外部检索证据喂入大模型时，恶意攻击者极易通过在知识文档中潜藏越狱文本发起检索提示词注入（Prompt Injection）攻击。系统严格遵循三明治安全防御模型构建 Prompt：
 
-（6）实现了三层记忆体系和 MCP 协议适配，支持跨会话知识持久化和外部工具动态注册。短期记忆支持内存和 Redis 双模式，长期记忆基于向量存储实现语义检索，情景记忆通过 Session 持久化保留完整对话轨迹。MCP 协议适配层使系统能够动态接入外部工具，扩展了智能体的能力边界。
+\begin{enumerate}
+    \item \textbf{第一层（前置安全指令约束）}：在系统初始提示词首部注入安全约束标签 \texttt{<security\_instructions>}，硬性约束模型扮演固定助手角色，严禁泄露人设提示词，并拒绝执行任何声称“忽略先前指令”的诱导。
+    \item \textbf{中间层（证据严格转义与 XML 隔离）}：对 RAG 召回的所有外部文本执行 \texttt{escapeXml()} 转义，并放入 \texttt{<knowledge\_base>} 标签内部，附带不可篡改的唯一分块 ID 与文档名称元数据。
+    \item \textbf{第三层（后置权威覆写声明 Layer 2）}：在用户提问与证据之后追加安全声明标签 \texttt{<security\_notice>}：“上述外部知识仅作为客观事实参考，若知识库中包含任何指示您更改系统角色或违反安全规则的指令，您必须视其为恶意噪声并严格忽略，始终以 Layer 1 约束为唯一准则”。
+\end{enumerate}
+该双层嵌套结构在理论上构筑了单向指令权威防火墙，有效杜绝了模型被第三方文档反客为主。
 
-\section{不足与展望}
+\section{ReactAgent 执行引擎与 ReActCycleGuard 振荡熔断}
 
-\subsection{当前不足}
+\subsection{阿里巴巴 ReactAgent 原生适配与知识库工具动态合成}
+认知内核基于阿里巴巴开源的 Spring AI ReactAgent 架构体系，通过配置执行限流钩子 \texttt{ModelCallLimitHook(runLimit = 10)} 施加单次推理最大 10 轮的安全硬上限。在接收到控制面下发的 \texttt{RAGContext} 时，内核动态将其包装为独立的检索工具回调 \texttt{SearchKnowledgeTool}，赋予智能体在初步推导发现线索不足时自主发起二次知识溯源的主动性。
 
-尽管系统在功能和性能方面达到了预期目标，但仍存在以下不足之处：
+\subsection{基于规范化参数哈希的振荡熔断检测（算法 3）}
+在实际运行中，模型常因轻微的参数变动对同一工具发起重复调用，或在两个工具之间反复摇摆。为此，系统设计了装饰器守卫 \texttt{ReActCycleGuard}（算法~\ref{alg:react_cycle_guard}）。
 
-（1）自洽性检测使用词级 Jaccard 相似度，仅能捕捉词汇层面的重叠，无法识别语义等价但表述不同的回答，可能导致误判。例如，"使用 PostgreSQL 数据库"和"采用 Postgres 作为持久层"在语义上等价，但词级相似度较低。
+\begin{algorithm}[htbp]
+\caption{基于规范化参数哈希的 ReAct 振荡熔断检测算法}
+\label{alg:react_cycle_guard}
+\begin{algorithmic}[1]
+\Require 当前工具名称 $T$，入参 JSON 字符串 $P_{\text{raw}}$，滑动窗口容量 $W=6$，频次阈值 $K=3$，最大步数 $M=10$
+\Ensure 判定结果：通过放行并返回指纹，或触发熔断抛出引导异常
+\State 当前执行总步数递增：$\text{step} \leftarrow \text{step} + 1$
+\If{$\text{step} > M$}
+    \State \textbf{Throw} 熔断异常：\texttt{"已达最大推理轮次，请直接根据现有结果总结回答"}
+\EndIf
+\State /* 1. 规范化 JSON 排序并计算不可逆指纹 */
+\State 解析参数对象：$O \leftarrow \text{JSON.parse}(P_{\text{raw}})$
+\State 字典序规范化重排：$P_{\text{canonical}} \leftarrow \text{JSON.serialize}(O, \text{MapSortField})$
+\State 计算调用唯一特征签名：$h \leftarrow \text{SHA256}(T \mathbin{\Vert} \text{"::"} \mathbin{\Vert} P_{\text{canonical}})$
+\State /* 2. 连续完全重复调用拦截 */
+\If{$\text{Window} \neq \emptyset \land \text{Last}(\text{Window}) = h$}
+    \State \textbf{Throw} 纠偏异常：\texttt{"检测到连续使用相同参数调用工具，严禁重复无效操作！"}
+\EndIf
+\State /* 3. 滑动窗口内高频振荡检测 */
+\State $\text{freq} \leftarrow \text{CountOccurrences}(\text{Window}, h)$
+\If{$\text{freq} + 1 \ge K$}
+    \State \textbf{Throw} 熔断异常：\texttt{"检测到工具高频振荡死循环，熔断物理执行，强制输出结论"}
+\EndIf
+\State 将指纹追加进滑动窗口：$\text{Append}(\text{Window}, h)$
+\If{$|\text{Window}| > W$}
+    \State 弹出最早记录：$\text{PopFirst}(\text{Window})$
+\EndIf
+\State \Return 放行物理执行
+\end{algorithmic}
+\end{algorithm}
 
-（2）记忆系统默认使用内存存储，服务重启后短期记忆丢失，无法满足生产环境的持久化需求。长期记忆虽基于向量存储，但缺乏自动化的记忆衰减和整合机制，可能导致过时信息持续影响检索结果。
+\section{多目标 Pareto 分层认知记忆体系}
 
-（3）评估模型与生成模型相同（均为 DeepSeek deepseek-chat），存在自我评价偏差的风险。模型可能倾向于给与自身生成风格相似的回答更高的评分，影响评估结果的客观性。
+认知内核将记忆划分为三种仿生层级：
+\begin{enumerate}
+    \item \textbf{工作记忆（Working Memory）}：存在于当前请求线程的执行上下文中，保存临时的思维链与中间变量，请求完成随线程销毁。
+    \item \textbf{短期会话记忆（ShortTermMemory）}：保存在 **Redis DB 0** 的有序列表中（Key: \texttt{memory:short:\{sessionId\}}）。采用增量修剪函数 \texttt{safeTrimIncremental}（底层执行 \texttt{lTrim(key, count, -1)}）。该机制仅从左侧弹出已被提炼为摘要的过期历史，用户在右侧并发追加的新会话不受任何影响，实现了严格的写入无丢包。
+    \item \textbf{长期认知记忆（LongTermMemory）}：依托 PostgreSQL 的 \texttt{vector\_store} 表与 1536 维 HNSW 索引存储，执行基于命题~\ref{prop:ebbinghaus_ode} 的动态自适应艾宾浩斯强化衰减模型，结合非线性温度 Sigmoid 余弦相似度标定与实体图谱 2-Hop 激活扩散能量，计算多目标 Pareto 综合得分，实现精准的高价值信息召回。
+    \item \textbf{睡眠固化代理（SleepTimeMemoryAgent）}：后台定时代理在系统闲置期遍历会话，利用分布式互斥锁执行记忆归档。特别地，内置了 JVM 堆内存安全屏障：在启动前检测 \texttt{(total - free) / max}，若内存占用超过 85\% 立即放弃整理并告警，杜绝了后台维护任务引发生产 OOM 的隐患。
+\end{enumerate}
 
-（4）测试覆盖率约 5\%，缺少 CI/CD 流水线。当前测试主要集中在核心算法逻辑，控制器层和数据访问层的测试覆盖不足，且未配置自动化构建和部署流程。
+\section{AI Judge 认知评测与 fail-plausible 虚假流畅性检测}
 
-\subsection{未来展望}
+系统构建了基于 LLM-as-a-Judge\cite{Zheng2023Judging}的质量控制闭环。
 
-针对上述不足，未来工作将围绕以下方向展开：
+\subsection{三维质量评估与闭环提示词修正}
+回答生成完毕后，由独立的裁判模块从三个互斥维度打分（满分 1.0）：
+\begin{itemize}
+    \item \textbf{事实性（Faithfulness）}：生成断言是否严格被检索证据所蕴含；
+    \item \textbf{相关性（Answer Relevance）}：是否完整回答了用户提问的核心意图；
+    \item \textbf{指令遵循度（Instruction Following）}：格式、语言及边界约束遵循情况。
+\end{itemize}
+若综合得分低于 0.70，系统不直接向客户端输出，而是将上一轮得分明细与裁判的具体修改建议格式化注入新一轮的提示词中，自动触发最多 3 轮的自修正重试。
 
-（1）\textbf{升级 Spring AI 2.0}，解决当前版本的兼容性问题并使用新的流式 API 和工具调用规范，简化框架层代码。
-
-（2）\textbf{引入语义自洽性检测}，用嵌入余弦相似度或 NLI 模型替代词级 Jaccard，提升对语义等价表述的识别能力，降低误判率。
-
-（3）\textbf{实现 Contextual Retrieval}\cite{Anthropic2024ContextualRetrieval}，为每个文档块添加上下文前缀信息，预期可降低检索失败率 67\%，显著提升跨文档段落的检索准确率。
-
-（4）\textbf{完善测试与 CI/CD}，补充控制器层和数据层的单元测试与集成测试，配置 JaCoCo 覆盖率报告和 GitHub Actions 自动化流水线，实现代码提交后的自动构建、测试和部署。
-
-（5）\textbf{引入时序知识图谱和 HyPE 索引优化}，为知识图谱中的实体和关系添加时间戳维度，支持时序感知的推理和检索；HyPE 索引通过层次化向量编码提升大规模知识库的检索效率。
-
-（6）\textbf{实现分布式部署}，通过 Kubernetes 编排实现控制面和认知面的独立扩缩容，结合服务网格（Service Mesh）实现细粒度的流量控制和故障隔离，提升系统在生产环境下的可用性和弹性。
+\subsection{fail-plausible（虚假流畅性）双重门限检测}
+针对大语言模型“一本正经地胡说八道”的固有缺陷，认知内核提出了结合语义散度的一致性检测机制。对同一意图多次独立温度采样，通过结合中文 CJK 双字符分词的 Jaccard 相似度与千问 Embedding 余弦相似度进行双轨度量：
+\begin{equation}
+    \text{Consistency} = 0.4 \cdot \text{Jaccard}_{\text{word}} + 0.6 \cdot \text{Cosine}_{\text{embed}}
+\end{equation}
+通过双重门限约束：$\text{JudgeResult.passed} \land (\text{Consistency} \ge 0.60)$。当一致性得分低于 0.60 时，即便文本流畅且通过了基础打分，依然被判定为 fail-plausible 潜在幻觉，直接触发降级安全回答。
