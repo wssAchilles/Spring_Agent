@@ -104,3 +104,4 @@ backend/.venv/models/
 models/
 gurobi.lic
 article
+scripts/eval_suite/__pycache__
