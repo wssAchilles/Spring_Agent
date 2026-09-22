@@ -246,3 +246,55 @@ limitations
 2. **彻底禁止使用过时本地知识**：严禁凭借过往训练记忆、历史知识库或过时经验对 DeepSeek 的模型命名、参数结构、上下文窗口或能力边界做主观臆断（例如：严禁使用已被官方弃用或非官方标准的模型名称与参数组合）。
 3. **参数结构与协议严格对齐**：所有与 DeepSeek API 交互的请求体（如 `model`、`messages`、`thinking: {"type": ...}`、`stream`、`tools`、`response_format` 等）及响应解析逻辑，必须与官方文档中声明的最新 JSON Schema 保持绝对一致，确保代码库达到极轻量、零侵入与零误差兼容。
 
+## 十一、ESWA 顶刊大修多智能体交叉评审工作流铁律 (ESWA Multi-Agent Review & Cross-Validation Workflow Iron Rule)
+
+任何 Agent 在收到大修完成的输出结果（如新版 PDF、编译验收报告、实验结果更新等）并被要求“作为资深 ESWA 审稿人/副主编给出下一轮大修意见”时，**必须且只能强制执行本多智能体专业分工与交叉验证工作流**，绝不允许由单一 Agent 凭借泛化经验草率作答：
+
+### 11.1 触发前置与执行总则
+1. **触发时机**：用户或上游 Agent 提交阶段性论文修改成果（包含编译通过的 PDF、LaTeX 源文件与支撑数据），并请求评审、提出审改意见或评估手稿状态时。
+2. **严禁单体直出**：主 Agent 严禁直接输出笼统套话，必须立即并发派发或顺序执行三名专业审稿人角色，分别调取对应的 ESWA 顶刊标杆文献（记录于 `article/ESWA_GOLD_STANDARD_RESEARCH.md`）与底层实验资产进行深度对齐。
+
+### 11.2 三方专业审稿智能体分工与职责定义
+所有评审必须严格按照以下三方专业维度分别完成独立审计：
+
+1. **智能体甲：ESWA 理论与形式化建模专审员 (Methodology & Formal Theory Specialist)**
+   - **理论对齐标杆**：精读 ESWA 近期神经符号知识库与规则推理论文（如 Sequeda et al. 2025, Shi et al. 2026）。
+   - **审查核心范围**：
+     - Introduction 的神经符号五元组形式化映射 $\mathcal{M} = \langle \mathcal{KB}, \mathcal{IE}, \mathcal{WM}, \mathcal{EF}, \mathcal{HI} \rangle$；
+     - Section 3 形式化模型（定义、命题、引理）：严查 Definition 3.1 的载荷区间与算法分块脱节、Definition 3.2 的单句退化解与装饰性优化目标；
+     - Lemma 3.2（重复工具调用有界拒绝）：严格审查局部致密性条件（Locally-Dense Repetition），严查长周期交错死循环反例；
+     - Algorithm 3 状态机时序：严查在窗口淘汰前判定阈值所导致的“$W+1$ 幽灵计数”漏洞；
+     - Lemma 3.1（断点恢复）：严查获胜者崩溃后的租约超时（Lease/Heartbeat TTL）活性自愈机制。
+
+2. **智能体乙：ESWA 实证与数据呈现专审员 (Empirical & Data Specialist)**
+   - **实证对齐标杆**：精读 ESWA 旗舰 RAG 与问答评测论文（如 CATS-RAG 2026, DriveLegal 2026, TDR2A 2026）。
+   - **审查核心范围**：
+     - **法医级数据真实性审计（Forensic Data Audit）**：严格比对 `eval_results_300_v2.jsonl`、`eval_summary_300.csv` 与手稿中所有表格数据，严防任何旧版 v1 归档数据残留（如敏感性表格中的历史异常高召回率）；
+     - **题型实测与推荐路由的实证断层**：严格比对 Table 6（题型细分准确率）与 Table 7/8（路由决策表），若某一模型在某题型上实测得分为零，严禁直接声称为 Preferred Path，必须明确将其定性为“生产架构目标假设”而非离线实测结论；
+     - **图文引用闭环（0 悬空图表）**：逐一检索 `Figure 4, 5, 6` 及 `Table 11, 12, ...`，严查正文未引用（Orphan Floats）或错位引用的严重排版失误；
+     - **统计检验与帕累托前沿深度**：深度解读 Friedman/Wilcoxon/Nemenyi CD 图揭示的统计等价团（Cliques）与零膨胀中位数现象，量化剖析帕累托前沿的多目标权衡（Pareto Dominance）。
+
+3. **智能体丙：ESWA 工业应用与管理决策专审员 (Applied Systems & Managerial Auditor)**
+   - **决策对齐标杆**：精读 ESWA 工业专家系统、运维决策支持系统（AIOps / DSS）与软件工程实证规范。
+   - **审查核心范围**：
+     - **微观案例推理闭环**：Section 9 HikariCP 案例严禁黑盒叙事，必须明确写出配置漂移键值（`maximumPoolSize`）、监控告警指标异动（连接池饱和与 P99 暴涨）、图谱两跳因果链、只读降级与高危写操作 JMX 的人机仲裁边界；
+     - **战略财务模型与管理杠杆**：推导 NPV $\ge 0$ 的数学临界盈亏平衡条件（Breakeven Iso-quant），揭示系统“高固定投入、高经营杠杆”的管理学规律，反思多级缓存面临的“陈旧配置误导”风险与组织自动化偏置；
+     - **效度威胁的主动防御规程**：Section 10 严禁使用“未来我们承诺”的期票语态，必须形式化定义“预注册专家评测规程（Pre-registered Protocol）”，给出 5 级量表评分锚点与分歧裁决机制；显式正面防御 DeepSeek 同族自评偏置，将其定性为消融实验间的相对比较标尺；
+     - **Conclusion 系统工程升华**：必须采用“创新贡献总结—实证管理启示—边界未来演进”标准三段式重构。
+
+### 11.3 多智能体交叉验证与对齐裁决协议 (Cross-Validation Protocol)
+1. **交叉数据流核验**：三方智能体输出独立纪要后，主审 Agent 必须对齐三方结论，重点检查：
+   - 理论引理的参数假设（如窗口大小 $W$）是否与实验代码和伪代码绝对一致；
+   - 实验评测中的全零与负面表现，是否在管理启示与路由建议中得到了合理解耦；
+   - 案例中的时序与数字，是否能严格代入财务模型并实现公式级闭环。
+2. **输出规范**：评审结论必须整合为结构化报告，包含总体裁定、四大核心大修方向、微观改写清单、以及针对编写 Agent 的 JIT 按需查阅指南。
+
+### 11.4 编写 Agent 的 JIT 即时技能翻书规范 (JIT Skill Ingestion Protocol)
+为防止编写 Agent 在大修执行时产生注意力稀释与遗忘，强制其在润色不同章节时，**仅且只能单点读取 `/research-paper-writing` 下的指定文件**：
+- 润色 Section 1 & 4 专家系统架构与五元组时 $\rightarrow$ 仅查阅 `references/introduction.md`；
+- 推导 Section 3 & 5 形式化引理、状态机与算法时 $\rightarrow$ 仅查阅 `references/method.md`；
+- 撰写 Section 6 & 8 题型细分、路由表与统计检验时 $\rightarrow$ 仅查阅 `references/experiments.md`；
+- 撰写 Section 9 工业案例、财务方程与 Section 10 效度防御时 $\rightarrow$ 仅查阅 `references/paper-review.md`；
+- 全文段落连贯性与 Known-to-New 信息流推进时 $\rightarrow$ 仅查阅 `references/does-my-writing-flow-source.md`。
+
+

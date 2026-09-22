@@ -103,3 +103,4 @@ backend/.venv/models/
 /models/
 models/
 gurobi.lic
+article
