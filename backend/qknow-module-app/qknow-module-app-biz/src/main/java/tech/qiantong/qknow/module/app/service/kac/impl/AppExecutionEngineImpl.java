@@ -382,7 +382,15 @@ public class AppExecutionEngineImpl implements IAppExecutionEngine {
         sb.append("> **状态**: 成功完成 | **引擎**: Knowledge Hub AI-Native 运行时\n\n");
 
         sb.append("### 一、核心输入要点解析\n");
-        inputs.forEach((k, v) -> sb.append("- **").append(k).append("**: ").append(v).append("\n"));
+        if (inputs != null && !inputs.isEmpty()) {
+            inputs.forEach((k, v) -> {
+                if (StrUtil.isNotBlank(k) && !"undefined".equalsIgnoreCase(k) && !"null".equalsIgnoreCase(k) && v != null) {
+                    sb.append("- **").append(k).append("**: ").append(v).append("\n");
+                }
+            });
+        } else {
+            sb.append("- **业务需求**: 标准业务执行指令\n");
+        }
         sb.append("\n");
 
         sb.append("### 二、结构化推理与生成输出\n");

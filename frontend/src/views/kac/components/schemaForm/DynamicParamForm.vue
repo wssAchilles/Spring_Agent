@@ -142,13 +142,45 @@ const emit = defineEmits(["update:modelValue"]);
 
 const schemaList = computed(() => {
   if (!props.schema) return [];
-  if (Array.isArray(props.schema)) return props.schema;
-  try {
-    const parsed = JSON.parse(props.schema);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+  let list = [];
+  if (Array.isArray(props.schema)) {
+    list = props.schema;
+  } else {
+    try {
+      const parsed = JSON.parse(props.schema);
+      list = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
+
+  // 核心归一化：支持 field / name / key 映射，大写类型对齐，标准化 options 选项
+  return list.map((item, index) => {
+    const field = item.field || item.name || item.key || `param_${index + 1}`;
+    const rawType = (item.type || "STRING").toUpperCase();
+    const label = item.label || item.title || field;
+
+    let normalizedOptions = [];
+    if (Array.isArray(item.options)) {
+      normalizedOptions = item.options.map((opt) => {
+        if (typeof opt === "object" && opt !== null) {
+          return {
+            label: opt.label !== undefined ? String(opt.label) : String(opt.value),
+            value: opt.value !== undefined ? opt.value : opt.label,
+          };
+        }
+        return { label: String(opt), value: opt };
+      });
+    }
+
+    return {
+      ...item,
+      field,
+      label,
+      type: rawType,
+      options: normalizedOptions,
+    };
+  });
 });
 
 const formData = computed({

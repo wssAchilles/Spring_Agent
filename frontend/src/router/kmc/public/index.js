@@ -20,6 +20,13 @@ export default [
         component: Layout,
         children: [
             {
+                path: 'recall',
+                component: () => import('@/views/kmc/knowledgeBase/components/recall.vue'),
+                name: 'Recall',
+                meta: { title: '召回测试', activeMenu: '/kmc/:kbId/recall' },
+                hidden: true
+            },
+            {
                 path: 'recallLog',
                 component: () => import('@/views/kmc/knowledgeBase/components/recallLog.vue'),
                 name: 'recallLog',
