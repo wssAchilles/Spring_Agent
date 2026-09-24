@@ -34,7 +34,22 @@ public enum DebateConsensusStatus {
     /**
      * 超出最大轮次或看门狗硬超时终止 (Terminated by Watchdog)
      */
-    TERMINATED_BY_WATCHDOG("看门狗硬超时终止", false);
+    TERMINATED_BY_WATCHDOG("看门狗硬超时终止", false),
+
+    /**
+     * 达到弱纳什均衡提前收敛 (Nash Equilibrium Reached)
+     */
+    NASH_EQUILIBRIUM_REACHED("纳什均衡达成", true),
+
+    /**
+     * 死锁自愈后由仲裁者终审裁决 (Deadlock Healed & Arbitrated)
+     */
+    DEADLOCK_HEALED_ARBITRATED("死锁自愈终审裁决", true),
+
+    /**
+     * 探测到谄媚合谋并注入反事实破局 (Sycophancy Broken)
+     */
+    SYCOPHANCY_COLLUSION_BROKEN("反事实合谋破局", true);
 
     private final String description;
     private final boolean resolved;

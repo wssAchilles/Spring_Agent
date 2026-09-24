@@ -34,7 +34,27 @@ public enum AgentRoleNicheType {
     /**
      * 终审裁决与纳什均衡仲裁专家 (Arbitrator)
      */
-    ARBITRATOR("终审仲裁专家", "负责多方冲突裁决、香农熵监控与收敛平衡");
+    ARBITRATOR("终审仲裁专家", "负责多方冲突裁决、香农熵监控与收敛平衡"),
+
+    /**
+     * 业务代表专家 (Business)
+     */
+    BUSINESS("业务代表专家", "负责业务利益诉求、交付时效与核心产出价值主张"),
+
+    /**
+     * 风险控制专家 (Risk Control)
+     */
+    RISK_CONTROL("风险控制专家", "负责合规风险识别、财务资金安全与风险控制红线"),
+
+    /**
+     * 法务合规专家 (Legal Compliance)
+     */
+    LEGAL("法务合规专家", "负责法律条款审核、合规边界防御与违约责任审查"),
+
+    /**
+     * 技术架构专家 (Architecture)
+     */
+    ARCHITECTURE("技术架构专家", "负责技术可行性评估、系统稳定性与架构演进审查");
 
     private final String title;
     private final String description;
