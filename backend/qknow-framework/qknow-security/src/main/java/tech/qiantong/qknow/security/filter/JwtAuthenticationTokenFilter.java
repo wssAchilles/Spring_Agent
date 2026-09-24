@@ -41,4 +41,13 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter
         }
         chain.doFilter(request, response);
     }
+
+    /**
+     * 确保在异步派发 (DispatcherType.ASYNC) 时继续执行此过滤器，
+     * 解决 SSE / Reactive 流式传输时 SecurityContext 丢失导致的 401 认证拦截问题。
+     */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
 }
