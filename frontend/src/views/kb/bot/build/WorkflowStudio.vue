@@ -60,6 +60,12 @@
         <button class="action-btn" @click="toggleTracePanel">
           {{ showTracePanel ? '收起调试中枢' : '展开调试中枢' }}
         </button>
+        <button class="action-btn" @click="simulateDualTrackStream" title="Phase 134: 模拟 SSE 双轨 Token 与拓扑流光垂直同步">
+          模拟双轨流
+        </button>
+        <button class="action-btn warning" @click="simulateHitlSuspension" title="Phase 134: 模拟人机协同高危写操作抽屉挂起">
+          模拟 HITL 审批
+        </button>
         <button class="action-btn primary" @click="onSaveWorkflow">
           保存并签署
         </button>
@@ -211,6 +217,22 @@
         @span-click="onTraceSpanClick"
       />
     </section>
+
+    <!-- Phase 134: 单色钛金毛玻璃人机协同决策抽屉 (HITL Metacenter) -->
+    <HitlTitaniumCausticDrawer
+      :visible="hitlDrawerVisible"
+      :workflow-id="currentAst?.workflowId || 'wf_visual_studio_01'"
+      :node-id="hitlActiveNodeId"
+      :step-index="hitlStepIndex"
+      :branch-id="activeBranchId || 'main'"
+      operator-id="admin_auditor"
+      :original-params="hitlOriginalParams"
+      :candidate-params="hitlCandidateParams"
+      :reasoning-content="hitlReasoningContent"
+      @approved="onHitlApproved"
+      @rejected="onHitlRejected"
+      @close="hitlDrawerVisible = false"
+    />
   </div>
 </template>
 
@@ -228,10 +250,16 @@ import { SugiyamaLayoutEngine } from './components/layout/SugiyamaLayoutEngine';
 import { TimeTravelForkEngine, type StepSnapshot } from './components/debug/engine/TimeTravelForkEngine';
 import TraceWaterfall from './components/trace/TraceWaterfall.vue';
 import type { RawTraceSpan } from '@/views/kd/observability/engine/WaterfallVirtualTimelineEngine';
+import { StreamingDualTrackSyncScheduler } from './components/canvas/engine/StreamingDualTrackSyncScheduler';
+import { TimeTravelBranchForkController } from './components/debug/engine/TimeTravelBranchForkController';
+import HitlTitaniumCausticDrawer from './components/hitl/HitlTitaniumCausticDrawer.vue';
+import type { HitlFrontendAuditReceipt } from './components/hitl/receipt/HitlFrontendAuditReceipt';
 
 const syncEngine = new DslCanvasBiDirectionalSyncEngine();
 const layoutEngine = new SugiyamaLayoutEngine();
 const forkEngine = new TimeTravelForkEngine();
+const dualTrackScheduler = new StreamingDualTrackSyncScheduler();
+const timeTravelBranchController = new TimeTravelBranchForkController();
 const { fitView } = useVueFlow();
 
 const viewMode = ref<'SPLIT' | 'CANVAS' | 'CODE'>('SPLIT');
@@ -242,6 +270,28 @@ const activeNodeId = ref<string>('');
 const activeBranchId = ref<string>('');
 const diagnostics = ref<MarkerDiagnostic[]>([]);
 const currentAst = ref<DslWorkflowAst | null>(null);
+
+// Phase 134: HITL 抽屉交互状态
+const hitlDrawerVisible = ref<boolean>(false);
+const hitlActiveNodeId = ref<string>('node_hitl_01');
+const hitlStepIndex = ref<number>(4);
+const hitlOriginalParams = ref<Record<string, unknown>>({
+  transferAmount: 500000.0,
+  targetAccount: "6222021000987654321",
+  currency: "CNY",
+  traceId: "trace_hitl_001",
+  timeout: 30
+});
+const hitlCandidateParams = ref<Record<string, unknown>>({
+  transferAmount: 850000.0, // 变异破坏性写操作参数
+  targetAccount: "6222021000987654321",
+  currency: "CNY",
+  traceId: "trace_hitl_001",
+  timeout: 30
+});
+const hitlReasoningContent = ref<string>(
+  "已完成前置风控模型与图谱关联分析，发现当前大额调增指令存在潜在信用敞口，故挂起工单等待人工二次核验。"
+);
 
 const flowNodes = ref<any[]>([]);
 const flowEdges = ref<any[]>([]);
@@ -481,6 +531,73 @@ function triggerForkExecution() {
   );
 
   activeBranchId.value = branch.branchId;
+
+  // 同步在持久化分支树控制器中记录
+  timeTravelBranchController.recordSnapshot(
+    forkStep,
+    activeNodeId.value,
+    { mutated: true, mockMode: 'ACTIVE' },
+    '分叉快照执行完毕',
+    'COMPLETED',
+    branch.branchId
+  );
+}
+
+/**
+ * Phase 134: 模拟 SSE 双轨 Token 与拓扑流光垂直同步调度
+ */
+function simulateDualTrackStream() {
+  const targetNodeId = activeNodeId.value || 'node_task_01';
+  dualTrackScheduler.start();
+
+  // 模拟以 100 tokens/s 推入 10 个离散双轨帧
+  for (let i = 0; i < 10; i++) {
+    dualTrackScheduler.pushStreamFrame({
+      sequenceId: 1000 + i,
+      timestamp: Date.now() + i * 10,
+      type: 'TOKEN',
+      nodeId: targetNodeId,
+      payload: { tokenDelta: `[Token_${i}] ` }
+    });
+    dualTrackScheduler.pushStreamFrame({
+      sequenceId: 1000 + i,
+      timestamp: Date.now() + i * 10,
+      type: 'TOPOLOGY_EVENT',
+      nodeId: targetNodeId,
+      payload: { nodeState: 'RUNNING', edgePulseActive: true }
+    });
+  }
+
+  // 触发一次批量刷新
+  const batch = dualTrackScheduler.flushSyncNow();
+  console.log(`[Phase 134] 双轨流式刷新批次 #${batch.batchId} 耗时: ${batch.flushDurationMs}ms, 时差: ${batch.maxVisualDisparityMs}ms`);
+}
+
+/**
+ * Phase 134: 模拟人机协同高危操作抽屉挂起
+ */
+function simulateHitlSuspension() {
+  hitlActiveNodeId.value = activeNodeId.value || 'node_hitl_01';
+  hitlDrawerVisible.value = true;
+}
+
+function onHitlApproved(payload: { receipt: HitlFrontendAuditReceipt; finalParams: Record<string, unknown> }) {
+  console.log('[Phase 134] HITL 审批放行凭单已生成:', payload.receipt.receiptId, '验真:', payload.receipt.verifySignature());
+  hitlDrawerVisible.value = false;
+
+  // 记录恢复快照
+  timeTravelBranchController.recordSnapshot(
+    hitlStepIndex.value + 1,
+    hitlActiveNodeId.value,
+    payload.finalParams,
+    '审批放行恢复执行',
+    'COMPLETED'
+  );
+}
+
+function onHitlRejected(payload: { receipt: HitlFrontendAuditReceipt; reason: string }) {
+  console.log('[Phase 134] HITL 审批否决凭单已生成:', payload.receipt.receiptId, '原因:', payload.reason);
+  hitlDrawerVisible.value = false;
 }
 
 function addNode(type: 'TASK' | 'STATE_GRAPH_LOOP' | 'SWARM_HANDOFF' | 'DEBATE_ARENA' | 'HITL_APPROVAL' | 'MCP_TOOL_CALL') {
