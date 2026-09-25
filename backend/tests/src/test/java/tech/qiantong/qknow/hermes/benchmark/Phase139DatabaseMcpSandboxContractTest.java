@@ -146,6 +146,9 @@ public class Phase139DatabaseMcpSandboxContractTest {
         String txId = "TX-PAYMENT-SYNC-001";
         txAligner.beginTransaction(txId);
 
+        // 预热消除首次类加载抖动
+        txAligner.recordInsert(txId, "t_warmup", "id", "0", "INSERT");
+
         // 1. 记录 INSERT 操作
         long start = System.nanoTime();
         UndoLogEntry insertUndo = txAligner.recordInsert(
