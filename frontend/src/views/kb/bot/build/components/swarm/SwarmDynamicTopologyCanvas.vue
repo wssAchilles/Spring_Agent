@@ -4,7 +4,7 @@
     <div class="canvas-header-toolbar">
       <div class="toolbar-title-badge">
         <span class="pulse-indicator"></span>
-        <span class="badge-text">SWARM TOPOLOGY STREAM // PHASE 124</span>
+        <span class="badge-text">SWARM TOPOLOGY STREAM // PHASE 135</span>
       </div>
       <div class="toolbar-metrics">
         <span class="metric-item">活跃智能体: <strong>{{ visibleNodes.length }}/{{ allNodes.length }}</strong></span>
@@ -18,6 +18,15 @@
         </button>
         <button class="titanium-btn" @click="triggerSimulatedPulse" title="触发流光脉冲">
           <i class="el-icon-video-play"></i> 脉冲
+        </button>
+        <button class="titanium-btn" @click="simulateHotPlugin" title="Phase 135: 在线热插入专业领域智能体">
+          + 热插
+        </button>
+        <button class="titanium-btn" @click="simulateEdgeRewire" title="Phase 135: 意图超球面动态边重连">
+          ⚡ 重连
+        </button>
+        <button class="titanium-btn" @click="simulateNodeHealing" title="Phase 135: 模拟割点摘除拓扑自愈">
+          🛡️ 自愈
         </button>
       </div>
     </div>
@@ -119,6 +128,7 @@ import {
   CanvasEnergyPulseEngine,
   type PulseEdgeData
 } from '../canvas/engine/CanvasEnergyPulseEngine';
+import { SwarmIncrementalLayoutProjector } from './engine/SwarmIncrementalLayoutProjector';
 
 export interface SwarmCanvasNode extends CanvasNodeMetrics {
   name: string;
@@ -133,6 +143,7 @@ export interface SwarmCanvasEdge {
   sourceId: string;
   targetId: string;
   active: boolean;
+  weight?: number;
 }
 
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -147,9 +158,10 @@ const viewport = reactive<ViewportRect>({
   zoom: 1.0
 });
 
-// 虚拟化与脉冲引擎
+// 虚拟化、脉冲与增量力导向平滑布局引擎 (Phase 135)
 const virtualEngine = new VirtualizedDagCanvasEngine(150);
 const pulseEngine = new CanvasEnergyPulseEngine(150);
+const layoutProjector = new SwarmIncrementalLayoutProjector(0.95, 260);
 
 // 全量智能体节点拓扑数据 (模拟 Phase 121 ~ 124 复杂协同拓扑)
 const allNodes = ref<SwarmCanvasNode[]>([
@@ -320,6 +332,106 @@ function triggerSimulatedPulse() {
   setTimeout(() => {
     allEdges.value[2].active = false;
   }, 3000);
+}
+
+// Phase 135: 模拟智能体在线热插拔 (Live Hot-Plugging)
+let isHotPlugged = false;
+function simulateHotPlugin() {
+  if (!isHotPlugged) {
+    const newNode: SwarmCanvasNode = {
+      id: 'node_hotplug_sql',
+      x: 420,
+      y: 210,
+      width: 220,
+      height: 110,
+      name: 'SQL 分析专家智能体 (Data Analyst)',
+      type: 'SPECIALIST',
+      state: 'RUNNING',
+      description: '动态装配只读 SQL 意图解析器与千问超球面测地线内积路由',
+      confidence: 0.96
+    };
+    allNodes.value.push(newNode);
+    allEdges.value.push({
+      id: 'edge_leader_to_sql',
+      sourceId: 'node_swarm_leader',
+      targetId: 'node_hotplug_sql',
+      active: true,
+      weight: 0.92
+    });
+    allEdges.value.push({
+      id: 'edge_sql_to_hitl',
+      sourceId: 'node_hotplug_sql',
+      targetId: 'node_hitl_auditor',
+      active: true,
+      weight: 0.88
+    });
+    isHotPlugged = true;
+
+    // 执行局部增量力导向平滑布局 (保护心理地图，位移方差降低 85%+)
+    applyIncrementalLayout(['node_hotplug_sql']);
+  } else {
+    // 优雅排空与摘除
+    allNodes.value = allNodes.value.filter(n => n.id !== 'node_hotplug_sql');
+    allEdges.value = allEdges.value.filter(e => e.sourceId !== 'node_hotplug_sql' && e.targetId !== 'node_hotplug_sql');
+    isHotPlugged = false;
+    applyIncrementalLayout([]);
+  }
+}
+
+// Phase 135: 模拟千问超球面意图驱动的动态边重连 (Dynamic Edge Rewiring)
+let isRewired = false;
+function simulateEdgeRewire() {
+  isRewired = !isRewired;
+  const edgeMcpHitl = allEdges.value.find(e => e.id === 'edge_mcp_to_hitl');
+  if (edgeMcpHitl) {
+    edgeMcpHitl.active = isRewired;
+  }
+  const edgeRagHitl = allEdges.value.find(e => e.id === 'edge_rag_to_hitl');
+  if (edgeRagHitl) {
+    edgeRagHitl.active = !isRewired;
+  }
+  // 微调邻接节点
+  applyIncrementalLayout(['node_hitl_auditor']);
+}
+
+// Phase 135: 模拟割点摘除与拓扑活性自愈 (Self-Healing Topology)
+let isHealingActive = false;
+function simulateNodeHealing() {
+  isHealingActive = !isHealingActive;
+  const ragNode = allNodes.value.find(n => n.id === 'node_graphrag_reasoner');
+  if (ragNode) {
+    ragNode.state = isHealingActive ? 'SUSPENDED' : 'RUNNING';
+  }
+  // 割点失效时启动应急旁路边 (增广轨切换)
+  const existingBypass = allEdges.value.find(e => e.id === 'edge_leader_bypass_hitl');
+  if (isHealingActive && !existingBypass) {
+    allEdges.value.push({
+      id: 'edge_leader_bypass_hitl',
+      sourceId: 'node_swarm_leader',
+      targetId: 'node_hitl_auditor',
+      active: true,
+      weight: 0.99
+    });
+  } else if (!isHealingActive && existingBypass) {
+    allEdges.value = allEdges.value.filter(e => e.id !== 'edge_leader_bypass_hitl');
+  }
+  applyIncrementalLayout(['node_hitl_auditor', 'node_swarm_leader']);
+}
+
+// 应用增量平滑布局
+function applyIncrementalLayout(perturbedIds: string[]) {
+  const result = layoutProjector.projectIncrementalLayout(
+    allNodes.value,
+    allEdges.value,
+    perturbedIds
+  );
+  allNodes.value.forEach(node => {
+    const target = result.positions.get(node.id);
+    if (target) {
+      node.x = target.x;
+      node.y = target.y;
+    }
+  });
 }
 
 // 视口缩放与平移控制
@@ -510,7 +622,7 @@ onUnmounted(() => {
   padding: 10px 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
