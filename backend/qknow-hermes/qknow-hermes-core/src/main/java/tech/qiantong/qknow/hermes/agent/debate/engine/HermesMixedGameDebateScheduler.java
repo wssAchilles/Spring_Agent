@@ -1,6 +1,7 @@
 package tech.qiantong.qknow.hermes.agent.debate.engine;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.agent.debate.dto.AgentRoleNicheType;
 import tech.qiantong.qknow.hermes.agent.debate.dto.DebateConsensusStatus;
 import tech.qiantong.qknow.hermes.agent.debate.dto.MultiAgentConsensusReceipt;
@@ -21,6 +22,7 @@ import java.util.concurrent.*;
  * @version 1.0
  */
 @Slf4j
+@Component
 public class HermesMixedGameDebateScheduler {
 
     public static final int T_MAX = 5;

@@ -3,7 +3,7 @@
     <GuideTip tip-id="kmc/kmcDocument.list" />
     <el-container>
       <!-- 左侧可调整的部分 -->
-      <DeptTree class="glass-card"
+      <DeptTree
         ref="deptTreeRef"
         :deptOptions="KcOptions"
         :leftWidth="leftWidth"

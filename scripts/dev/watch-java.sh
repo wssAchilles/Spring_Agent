@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -u
+export JAVA_HOME="/Users/achilles/.sdkman/candidates/java/21.0.5-tem"
+export PATH="$JAVA_HOME/bin:$PATH"
 
 if [[ $# -lt 4 ]]; then
   echo "用法: $0 <service> <watch-root> <maven-project-list> <jar-path> [KEY=VALUE ...]" >&2

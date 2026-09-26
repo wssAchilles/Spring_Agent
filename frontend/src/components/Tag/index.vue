@@ -39,7 +39,7 @@ const props = defineProps({
   size: {
     type: String,
     default: "",
-    validator: (value) => ["large", "small"].includes(value),
+    validator: (value) => ["", "default", "large", "small"].includes(value),
   },
   // 标签样式类型：pill-圆角标签，rect-直角标签
   styleType: {

@@ -732,8 +732,11 @@ function setupPresets(app) {
       {
         label: "北美站点外观专利侵权预警",
         inputs: {
+          targetMarket: "Amazon US",
           targetPlatform: "Amazon US & TikTok Shop US",
+          productCategory: "一款自带磁吸无线充电支架的桌面多功能音箱，外观轮廓与USPTO既有专利高度近似，需评估被下架封店风险概率，并提出局部外观规避设计方案。",
           productFeatures: "一款自带磁吸无线充电支架的桌面多功能音箱，外观轮廓与USPTO既有专利高度近似",
+          language: "en-US",
           query: "检索知识库中的海外知识产权判例，评估被下架封店风险概率，并提出局部外观规避设计方案。",
         },
       },
@@ -768,7 +771,40 @@ function getPresetSnippet(inputs) {
 }
 
 function applyPreset(preset) {
-  formInputs.value = { ...formInputs.value, ...preset.inputs };
+  const merged = { ...preset.inputs };
+
+  // 若当前应用配置了结构化 Schema，执行字段别名智能适配
+  if (currentApp.value?.inputSchema) {
+    try {
+      const rawSchema = typeof currentApp.value.inputSchema === 'string'
+        ? JSON.parse(currentApp.value.inputSchema)
+        : currentApp.value.inputSchema;
+      const schemaList = Array.isArray(rawSchema)
+        ? rawSchema
+        : (rawSchema?.fields || rawSchema?.properties || []);
+
+      schemaList.forEach(item => {
+        const fieldKey = item.field || item.name || item.key;
+        if (!fieldKey) return;
+        if (!merged[fieldKey]) {
+          const lk = fieldKey.toLowerCase();
+          if (lk.includes('market') || lk.includes('platform')) {
+            merged[fieldKey] = preset.inputs.targetMarket || preset.inputs.targetPlatform || (item.options?.[0]?.value || item.options?.[0]);
+          } else if (lk.includes('category') || lk.includes('product') || lk.includes('feature')) {
+            merged[fieldKey] = preset.inputs.productCategory || preset.inputs.productFeatures || preset.inputs.query;
+          } else if (lk.includes('lang')) {
+            merged[fieldKey] = preset.inputs.language || (item.options?.[0]?.value || item.options?.[0] || 'en-US');
+          } else if (lk.includes('query') || lk.includes('prompt') || lk.includes('text') || lk.includes('desc')) {
+            merged[fieldKey] = preset.inputs.query || Object.values(preset.inputs)[0] || '';
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('解析动态 Schema 失败', e);
+    }
+  }
+
+  formInputs.value = { ...formInputs.value, ...merged };
   ElMessage.success(`已代入「${preset.label}」示范参数`);
   nextTick(() => {
     runnerBodyRef.value?.scrollTo({ top: 0, behavior: "smooth" });

@@ -1,6 +1,7 @@
 package tech.qiantong.qknow.hermes.agent.debate.engine;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.agent.debate.dto.AgentRoleNicheType;
 import tech.qiantong.qknow.hermes.agent.debate.engine.NashConfidenceWeightedJudge.ArgumentTurn;
 
@@ -18,6 +19,7 @@ import java.util.*;
  * @version 1.0
  */
 @Slf4j
+@Component
 public class DebateDeadlockSelfHealingGovernor {
 
     public static final double SYCOPHANCY_COLLUSION_THRESHOLD = 0.85;

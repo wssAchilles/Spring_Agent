@@ -217,21 +217,35 @@ function hasTitle(title) {
 }
 
 function handleMenuClick(onlyOneChild) {
-  const menuPath = resolvePath(onlyOneChild.path, onlyOneChild.query);
-  if (!menuPath) return;
+  const menuTarget = resolvePath(onlyOneChild.path, onlyOneChild.query);
+  if (!menuTarget) return;
 
   // 从当前路由获取所有 params
   const { params } = route;
 
+  let rawPath = "";
+  let rawQuery = null;
+
+  if (typeof menuTarget === "object" && menuTarget !== null) {
+    rawPath = menuTarget.path || "";
+    rawQuery = menuTarget.query || null;
+  } else {
+    rawPath = String(menuTarget);
+  }
+
   // 替换路径中所有 :param 形式的参数
-  const targetPath = menuPath.replace(/:(\w+)/g, (match, key) => {
+  const targetPath = rawPath.replace(/:(\w+)/g, (match, key) => {
     if (params && params.hasOwnProperty(key)) {
       return params[key];
     }
     return match; // 没有对应参数就保留原样
   });
 
-  router.push(targetPath);
+  if (rawQuery) {
+    router.push({ path: targetPath, query: rawQuery });
+  } else {
+    router.push(targetPath);
+  }
 }
 </script>
 

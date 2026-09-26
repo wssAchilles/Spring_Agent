@@ -162,9 +162,9 @@ service.interceptors.response.use(res => {
     // 请求失败或被取消，成对从挂起池中移除并解除引用
     cancelManager.removePending(error.config)
 
-    // 若是主动取消的请求（路由切换或重复提交打断），静默吞掉，不弹出错误提示
+    // 若是主动取消的请求（路由切换或重复提交打断），静默吞掉，不弹出错误提示并返回挂起 Promise 消除控制台未捕获异常
     if (axios.isCancel(error) || error?.name === 'CanceledError' || error?.message?.includes('Request canceled') || error?.message?.includes('canceled')) {
-      return Promise.reject(error)
+      return new Promise(() => {});
     }
 
     console.log('err' + error)

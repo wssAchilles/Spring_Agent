@@ -2,7 +2,9 @@
 set -eo pipefail
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-sdk use java 21.0.5-tem
+sdk use java 21.0.5-tem || true
+export JAVA_HOME="/Users/achilles/.sdkman/candidates/java/21.0.5-tem"
+export PATH="$JAVA_HOME/bin:$PATH"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/dev/common.sh"

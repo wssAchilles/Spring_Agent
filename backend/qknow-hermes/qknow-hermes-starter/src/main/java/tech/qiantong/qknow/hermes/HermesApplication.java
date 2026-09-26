@@ -14,7 +14,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Slf4j
 @SpringBootApplication
 @EnableScheduling
-@ComponentScan(basePackages = {"tech.qiantong.qknow.hermes", "tech.qiantong.qknow.redis"})
+@ComponentScan(basePackages = {
+    "tech.qiantong.qknow.hermes",
+    "tech.qiantong.qknow.redis",
+    "tech.qiantong.qknow.ai.deepseek"
+})
 public class HermesApplication {
 
     public static void main(String[] args) {
