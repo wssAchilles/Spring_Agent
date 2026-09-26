@@ -18,7 +18,7 @@ print_service() {
   if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
     state="running"
   fi
-  printf '%-10s %-8s supervisor=%-8s child=%-8s port=%s\n' "$service" "$state" "${pid:--}" "${child:--}" "$port"
+  printf '%-12s %-8s supervisor=%-8s child=%-8s port=%s\n' "$service" "$state" "${pid:--}" "${child:--}" "$port"
 }
 
 print_postgres() {
@@ -53,13 +53,26 @@ print_postgres() {
     fi
   fi
 
-  printf '%-10s %-8s host=%s port=%s db=%s user=%s\n' postgres "$state" "$host" "$port" "$database" "$user"
+  printf '%-12s %-8s host=%s port=%s db=%s user=%s\n' postgres "$state" "$host" "$port" "$database" "$user"
 }
 
-print_service frontend 80
-print_service backend 8099
-print_service hermes 9090
+print_redis() {
+  local host="127.0.0.1"
+  local port="6379"
+  local state="stopped"
+  if lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+    state="running"
+  fi
+  printf '%-12s %-8s host=%s port=%s\n' redis "$state" "$host" "$port"
+}
+
+echo "=== Knowledge Hub 微服务集群状态 ==="
+print_service frontend "5173"
+print_service backend "8099"
+print_service hermes "9090 (gRPC) / 8081 (HTTP)"
 print_postgres
+print_redis
 
 echo
+echo "=== Neo4j 容器状态 ==="
 docker compose -f "$PROJECT_DIR/docker-compose.yml" ps neo4j

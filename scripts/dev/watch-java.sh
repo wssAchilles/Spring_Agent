@@ -68,7 +68,7 @@ while true; do
       else
         stop_child
         echo "[$(date '+%F %T')] $SERVICE 启动 $JAR_PATH"
-        env "${ENV_ARGS[@]}" java -Djava.net.useSystemProxies=true -jar "$JAR_PATH" &
+        env "${ENV_ARGS[@]}" java --enable-preview -Djava.net.useSystemProxies=true -jar "$JAR_PATH" &
         CHILD_PID=$!
         echo "$CHILD_PID" > "$(service_child_pid_file "$SERVICE")"
         LAST_HASH="$(source_hash)"
