@@ -80,50 +80,66 @@
           <el-row :gutter="20">
             <el-col :span="24">
               <!-- 知识库 -->
-              <el-form-item label="知识库">
-                <el-button v-ripple class="glass-btn" size="small" @click="handleAddKnowledge" plain>
-                  <i class="iconfont-mini icon-upload-cloud-line mr5"></i>导入知识库</el-button>
-                <el-button v-ripple class="glass-btn" size="small" @click="handlePreviewRecall" plain v-if="form.knowledges && form.knowledges.length > 0">
-                  <i class="iconfont-mini icon-eye-line mr5"></i>召回预览</el-button>
+              <el-form-item label="知识库" class="resource-form-item">
+                <div class="resource-action-row">
+                  <el-button v-ripple class="glass-btn" size="small" @click="handleAddKnowledge" plain>
+                    <i class="iconfont-mini icon-upload-cloud-line mr5"></i>导入知识库
+                  </el-button>
+                  <el-button v-ripple class="glass-btn" size="small" @click="handlePreviewRecall" plain v-if="form.knowledges && form.knowledges.length > 0">
+                    <i class="iconfont-mini icon-eye-line mr5"></i>召回预览
+                  </el-button>
+                </div>
+                <div v-if="form.knowledges && form.knowledges.length > 0" class="resource-table-box">
+                  <el-table :data="form.knowledges" size="small" :show-header="true" style="width: 100%">
+                    <el-table-column prop="name" label="知识库名称" min-width="190" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <div class="resource-name-cell">
+                          <i class="iconfont-mini icon-file-list-2-line mr5"></i>
+                          <span class="cell-text">{{ row.name }}</span>
+                        </div>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="90" align="center" fixed="right">
+                      <template #default="{ $index }">
+                        <el-button v-ripple class="action-del-btn" type="danger" link size="small" @click="handleDeleteKnowledge($index)">
+                          删除
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
               </el-form-item>
-              <div style="margin: 0 0 10px 80px">
-                <el-table class="glass-card" :data="form.knowledges" border style="width: 100%">
-                  <el-table-column prop="name" label="知识库名称">
-                    <template #default="{ row }">
-                      {{ row.name }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="操作" width="80" align="center">
-                    <template #default="{ $index }">
-                      <el-button v-ripple class="glass-btn" size="small" @click="handleDeleteKnowledge($index)">删除</el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </div>
-
             </el-col>
           </el-row>
           <el-row :gutter="20">
             <el-col :span="24">
               <!-- 工具 -->
-              <el-form-item label="工具">
-                <el-button v-ripple class="glass-btn" size="small" @click="handleAddTool" plain>
-                  <i class="iconfont-mini icon-upload-cloud-line mr5"></i>导入工具</el-button>
+              <el-form-item label="工具" class="resource-form-item">
+                <div class="resource-action-row">
+                  <el-button v-ripple class="glass-btn" size="small" @click="handleAddTool" plain>
+                    <i class="iconfont-mini icon-upload-cloud-line mr5"></i>导入工具
+                  </el-button>
+                </div>
+                <div v-if="form.tools && form.tools.length > 0" class="resource-table-box">
+                  <el-table :data="form.tools" size="small" :show-header="true" style="width: 100%">
+                    <el-table-column prop="name" label="工具名称" min-width="190" show-overflow-tooltip>
+                      <template #default="{ row }">
+                        <div class="resource-name-cell">
+                          <i class="iconfont-mini icon-function-line mr5"></i>
+                          <span class="cell-text">{{ row.name }}</span>
+                        </div>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="90" align="center" fixed="right">
+                      <template #default="{ $index }">
+                        <el-button v-ripple class="action-del-btn" type="danger" link size="small" @click="handleDeleteTool($index)">
+                          删除
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
               </el-form-item>
-              <div style="margin: 0 0 10px 80px">
-                <el-table class="glass-card" :data="form.tools" border style="width: 100%">
-                  <el-table-column prop="name" label="工具名称">
-                    <template #default="{ row }">
-                      {{ row.name }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="操作" width="80" align="center">
-                    <template #default="{ $index }">
-                      <el-button v-ripple class="glass-btn" size="small" @click="handleDeleteTool($index)">删除</el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </div>
             </el-col>
           </el-row>
         </el-form>
@@ -911,6 +927,101 @@ watch(
       &:focus {
         border-color: var(--glass-text-primary, #18181b);
         box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+      }
+    }
+
+    .resource-form-item {
+      margin-bottom: 20px;
+
+      :deep(.el-form-item__content) {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .resource-action-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .resource-table-box {
+        width: 100%;
+        background: var(--glass-surface-overlay, rgba(255, 255, 255, 0.5));
+        border: 1px solid var(--glass-card-border, rgba(0, 0, 0, 0.08));
+        border-radius: 10px;
+        overflow: hidden;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+        :deep(.el-table) {
+          background: transparent !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          --el-table-border-color: rgba(0, 0, 0, 0.06);
+          --el-table-header-bg-color: rgba(0, 0, 0, 0.025);
+          --el-table-row-hover-bg-color: rgba(0, 122, 255, 0.04);
+
+          .el-table__inner-wrapper {
+            border-radius: 10px;
+          }
+
+          th.el-table__cell {
+            background: rgba(0, 0, 0, 0.025) !important;
+            font-size: 12px;
+            font-weight: 590;
+            letter-spacing: -0.01em;
+            color: var(--glass-text-secondary, #71717a);
+            padding: 6px 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+          }
+
+          td.el-table__cell {
+            padding: 7px 12px;
+            font-size: 13px;
+            color: var(--glass-text-primary, #18181b);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+          }
+
+          .el-table__row:last-child td.el-table__cell {
+            border-bottom: none;
+          }
+
+          .resource-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow: hidden;
+
+            i {
+              font-size: 14px;
+              color: var(--el-color-primary, #007aff);
+              flex-shrink: 0;
+            }
+
+            .cell-text {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              font-weight: 500;
+            }
+          }
+
+          .action-del-btn {
+            padding: 2px 6px;
+            font-size: 12px;
+            color: #ef4444;
+            transition: all 0.15s ease;
+
+            &:hover {
+              color: #dc2626;
+              background: rgba(239, 68, 68, 0.08);
+              border-radius: 4px;
+            }
+          }
+        }
       }
     }
   }
