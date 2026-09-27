@@ -1846,7 +1846,9 @@ function smartFitView(options = {}) {
   nextTick(() => {
     try {
       fitView({
-        padding: 0.16,
+        padding: 0.12,
+        minZoom: 0.52,
+        maxZoom: 1.0,
         includeHiddenNodes: false,
         duration: 400,
         ...options,
@@ -1891,10 +1893,12 @@ function autoLayoutGraph() {
     rootIds = [startNode ? startNode.id : nodeIds[0]];
   }
 
-  // 3. BFS 分层，计算每个节点的最大深度，确保前置节点在后置节点左边
+  // 3. BFS 分层与泳道识别（双泳道水平轨道锁定法则）
   const depthMap = {};
+  const laneMap = {}; // 0: 中轴线, -1: 上泳道(深度证据主航道), 1: 下泳道(快速兜底副航道)
   rootIds.forEach((id) => {
     depthMap[id] = 0;
+    laneMap[id] = 0;
   });
 
   const queue = [...rootIds];
@@ -1902,57 +1906,65 @@ function autoLayoutGraph() {
   while (queue.length > 0) {
     const currId = queue.shift();
     const currDepth = depthMap[currId];
+    const currLane = laneMap[currId] || 0;
     visitedCount[currId] = (visitedCount[currId] || 0) + 1;
-    if (visitedCount[currId] > 20) continue;
+    if (visitedCount[currId] > 30) continue;
 
     const neighbors = adj[currId] || [];
-    for (const neighborId of neighbors) {
+    if (neighbors.length === 1) {
+      const neighborId = neighbors[0];
       const targetDepth = currDepth + 1;
       if (
         depthMap[neighborId] === undefined ||
         targetDepth > depthMap[neighborId]
       ) {
         depthMap[neighborId] = targetDepth;
-        queue.push(neighborId);
       }
+      if (laneMap[neighborId] === undefined) {
+        laneMap[neighborId] = currLane;
+      }
+      queue.push(neighborId);
+    } else if (neighbors.length > 1) {
+      // 分支扩散：分配不同泳道
+      neighbors.forEach((neighborId, idx) => {
+        const targetDepth = currDepth + 1;
+        if (
+          depthMap[neighborId] === undefined ||
+          targetDepth > depthMap[neighborId]
+        ) {
+          depthMap[neighborId] = targetDepth;
+        }
+        if (laneMap[neighborId] === undefined) {
+          laneMap[neighborId] = idx === 0 ? -1 : (idx === 1 ? 1 : idx);
+        }
+        queue.push(neighborId);
+      });
     }
   }
 
   // 处理可能孤立的未连线节点
   nodeIds.forEach((id) => {
-    if (depthMap[id] === undefined) {
-      depthMap[id] = 0;
-    }
+    if (depthMap[id] === undefined) depthMap[id] = 0;
+    if (laneMap[id] === undefined) laneMap[id] = 0;
   });
 
-  // 4. 按深度分组
-  const layers = {};
-  nodeIds.forEach((id) => {
-    const d = depthMap[id];
-    if (!layers[d]) {
-      layers[d] = [];
-    }
-    layers[d].push(id);
-  });
-
-  // 5. 坐标计算：黄金比例对称排布
+  // 4. 坐标计算：黄金比例双泳道锁定排布
   const colSpacing = 360; // 列间距（卡片宽 280px + 间隙 80px）
-  const rowSpacing = 220; // 行间距
   const startX = 80;
-  const centerY = 280;
+  const centerY = 300;
+  const laneOffset = 130; // 泳道垂直偏移量（上泳道 170px，下泳道 430px）
 
   const newNodes = nodes.value.map((node) => {
     const depth = depthMap[node.id] || 0;
-    const layer = layers[depth] || [node.id];
-    const indexInLayer = layer.indexOf(node.id);
-    const totalInLayer = layer.length;
-
-    // 垂直对称居中
-    const layerTotalHeight = (totalInLayer - 1) * rowSpacing;
-    const startY = centerY - layerTotalHeight / 2;
+    const lane = laneMap[node.id] || 0;
 
     const x = startX + depth * colSpacing;
-    const y = Math.round(startY + indexInLayer * rowSpacing);
+    let y = centerY;
+    if (lane < 0) {
+      y = centerY - laneOffset; // 上泳道深度主航道
+    } else if (lane > 0) {
+      y = centerY + laneOffset; // 下泳道快速兜底
+    }
 
     return {
       ...node,
