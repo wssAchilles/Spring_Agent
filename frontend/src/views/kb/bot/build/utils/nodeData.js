@@ -210,6 +210,21 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
     segmentMaps: [...(parentContext.segmentMaps || []), localSegmentMap],
   };
 
+  // 建立 condition 节点与其 cases id 的映射，防止旧数据或未带前缀的 sourceHandle 错配
+  const conditionCasesMap = new Map();
+  normalizedNodes.forEach((node) => {
+    if (node?.type === "condition") {
+      const cases = node?.data?.config?.cases || [];
+      if (Array.isArray(cases)) {
+        cases.forEach((c) => {
+          if (c?.id) {
+            conditionCasesMap.set(`${node.id}##${c.id}`, `condition-case-${c.id}`);
+          }
+        });
+      }
+    }
+  });
+
   const normalizedEdgeList = rawEdges.map((edge) => {
     if (!isPlainObject(edge)) {
       return edge;
@@ -217,11 +232,22 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
 
     const rawSource = `${edge.source || ""}`.trim();
     const rawTarget = `${edge.target || ""}`.trim();
+    const resolvedSource = rawSource ? resolveNodeId(rawSource, [localNodeIdMap]) : rawSource;
+    const resolvedTarget = rawTarget ? resolveNodeId(rawTarget, [localNodeIdMap]) : rawTarget;
+
+    let sourceHandle = edge.sourceHandle;
+    if (sourceHandle && !sourceHandle.startsWith("condition-case-")) {
+      const candidateKey = `${resolvedSource}##${sourceHandle}`;
+      if (conditionCasesMap.has(candidateKey)) {
+        sourceHandle = conditionCasesMap.get(candidateKey);
+      }
+    }
 
     return {
       ...edge,
-      source: rawSource ? resolveNodeId(rawSource, [localNodeIdMap]) : rawSource,
-      target: rawTarget ? resolveNodeId(rawTarget, [localNodeIdMap]) : rawTarget,
+      source: resolvedSource,
+      target: resolvedTarget,
+      sourceHandle,
     };
   });
 
