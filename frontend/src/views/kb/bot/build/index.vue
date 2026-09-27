@@ -305,6 +305,126 @@
             </div>
           </template>
 
+          <template #node-knowledge="props">
+            <div
+              class="custom-node knowledge-node"
+              :class="{ selected: selectedNode?.id === props.id }"
+            >
+              <button
+                type="button"
+                class="node-delete-btn"
+                @click.stop.prevent="handleOuterNodeDelete(props.id)"
+                @pointerdown.stop.prevent
+              >
+                <el-icon><Delete /></el-icon>
+              </button>
+              <div class="node-top">
+                <span class="node-type-label">知识检索</span>
+              </div>
+              <div class="node-body">
+                <div class="node-header">
+                  <div class="node-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="node-svg">
+                      <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zm-2-5h-8v-2h8v2zm-4 4h-4v-2h4v2zm4-8h-8V5h8v2z"/>
+                    </svg>
+                  </div>
+                  <div class="node-title">
+                    {{ getNodeLabel(props.data, "知识检索") }}
+                  </div>
+                </div>
+                <div
+                  class="node-subtitle"
+                  v-if="getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案')"
+                >
+                  {{ getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案') }}
+                </div>
+              </div>
+              <Handle
+                type="target"
+                :position="Position.Left"
+                class="handle"
+                :class="
+                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
+                "
+              />
+              <Handle
+                type="source"
+                :position="Position.Right"
+                :connectable-start="false"
+                class="handle node-source-handle"
+              />
+              <div
+                class="node-add-btn"
+                @click.stop.prevent
+                @pointerdown.stop.prevent="
+                  onSourceActionPointerDown($event, props.id)
+                "
+              >
+                <el-icon><Plus /></el-icon>
+              </div>
+            </div>
+          </template>
+
+          <template #node-knowledge-retrieval="props">
+            <div
+              class="custom-node knowledge-node"
+              :class="{ selected: selectedNode?.id === props.id }"
+            >
+              <button
+                type="button"
+                class="node-delete-btn"
+                @click.stop.prevent="handleOuterNodeDelete(props.id)"
+                @pointerdown.stop.prevent
+              >
+                <el-icon><Delete /></el-icon>
+              </button>
+              <div class="node-top">
+                <span class="node-type-label">知识检索</span>
+              </div>
+              <div class="node-body">
+                <div class="node-header">
+                  <div class="node-icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="currentColor" class="node-svg">
+                      <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zm-2-5h-8v-2h8v2zm-4 4h-4v-2h4v2zm4-8h-8V5h8v2z"/>
+                    </svg>
+                  </div>
+                  <div class="node-title">
+                    {{ getNodeLabel(props.data, "知识检索") }}
+                  </div>
+                </div>
+                <div
+                  class="node-subtitle"
+                  v-if="getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案')"
+                >
+                  {{ getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案') }}
+                </div>
+              </div>
+              <Handle
+                type="target"
+                :position="Position.Left"
+                class="handle"
+                :class="
+                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
+                "
+              />
+              <Handle
+                type="source"
+                :position="Position.Right"
+                :connectable-start="false"
+                class="handle node-source-handle"
+              />
+              <div
+                class="node-add-btn"
+                @click.stop.prevent
+                @pointerdown.stop.prevent="
+                  onSourceActionPointerDown($event, props.id)
+                "
+              >
+                <el-icon><Plus /></el-icon>
+              </div>
+            </div>
+          </template>
+
           <template #node-tool="props">
             <div
               class="custom-node tool-node"
@@ -1208,7 +1328,7 @@ const ADD_NODE_MENU_HEADER_HEIGHT = 48;
 const ADD_NODE_MENU_TAB_HEIGHT = 44;
 const ADD_NODE_MENU_ITEM_HEIGHT = 56;
 const ADD_NODE_MENU_LIST_PADDING = 16;
-const ENABLED_ADDABLE_NODE_TYPES = new Set(["llm", "reply"]);
+const ENABLED_ADDABLE_NODE_TYPES = new Set(["llm", "reply", "knowledge-retrieval", "knowledge"]);
 const TOOL_NODE_TYPE = "tool";
 const DEFAULT_TOOL_MENU_ICON = "🧰";
 
@@ -4511,6 +4631,42 @@ function getDefaultNodeData(nodeType) {
       description: "",
       outputs: [],
     }),
+    knowledge: {
+      label: "知识库检索",
+      description: "在选定的知识库中检索与问题最相关的文档切片",
+      config: {
+        label: "知识库检索：常州工学院总评方案",
+        knowledgeBaseId: 7,
+        knowledgeBaseName: "常州工学院总评方案",
+        query: "{{ start_1.query }}",
+        topK: 5,
+      },
+      input: [
+        { name: "query", label: "检索词", type: "string" }
+      ],
+      output: [
+        { variableKey: "text", variableLabel: "召回内容", valueType: "string", path: "text" },
+        { variableKey: "context", variableLabel: "知识切片", valueType: "string", path: "context" }
+      ],
+    },
+    "knowledge-retrieval": {
+      label: "知识库检索",
+      description: "在选定的知识库中检索与问题最相关的文档切片",
+      config: {
+        label: "知识库检索：常州工学院总评方案",
+        knowledgeBaseId: 7,
+        knowledgeBaseName: "常州工学院总评方案",
+        query: "{{ start_1.query }}",
+        topK: 5,
+      },
+      input: [
+        { name: "query", label: "检索词", type: "string" }
+      ],
+      output: [
+        { variableKey: "text", variableLabel: "召回内容", valueType: "string", path: "text" },
+        { variableKey: "context", variableLabel: "知识切片", valueType: "string", path: "context" }
+      ],
+    },
   };
 
   return cloneNodeData(defaults[nodeType] || { label: "新节点" });
@@ -5950,6 +6106,13 @@ function exportFlow() {
   .reply-node-preview-more {
     font-size: 11px;
     color: #6b7280;
+  }
+}
+
+.knowledge-node {
+  .node-icon-wrapper {
+    background-color: #e0f2fe;
+    color: #0284c7;
   }
 }
 

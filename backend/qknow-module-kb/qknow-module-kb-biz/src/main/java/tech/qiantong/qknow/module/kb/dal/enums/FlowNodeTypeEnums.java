@@ -10,6 +10,7 @@ public enum FlowNodeTypeEnums {
     LLM(2, "llm"),
     REPLY(3, "reply"),
     CONDITION(4, "condition"),
+    KNOWLEDGE(5, "knowledge"),
     ;
 
     private final Integer code;
@@ -27,8 +28,15 @@ public enum FlowNodeTypeEnums {
      * @return 节点类型
      */
     public static FlowNodeTypeEnums getByName(String name) {
+        if (name == null) {
+            return null;
+        }
+        String cleanName = name.trim().toLowerCase();
+        if ("knowledge-retrieval".equals(cleanName) || "knowledge".equals(cleanName)) {
+            return KNOWLEDGE;
+        }
         for (FlowNodeTypeEnums value : FlowNodeTypeEnums.values()) {
-            if (Objects.equals(value.name, name)) {
+            if (Objects.equals(value.name, cleanName)) {
                 return value;
             }
         }
@@ -42,6 +50,12 @@ public enum FlowNodeTypeEnums {
      * @return 节点类型
      */
     public static FlowNodeTypeEnums getByCode(Integer code) {
+        if (code == null) {
+            return null;
+        }
+        if (code == 5 || code == 6) {
+            return KNOWLEDGE;
+        }
         for (FlowNodeTypeEnums value : FlowNodeTypeEnums.values()) {
             if (Objects.equals(value.code, code)) {
                 return value;

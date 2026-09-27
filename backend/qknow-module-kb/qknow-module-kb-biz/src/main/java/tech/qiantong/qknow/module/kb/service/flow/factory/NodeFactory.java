@@ -10,9 +10,11 @@ import tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowNodeDO;
 import tech.qiantong.qknow.module.kb.dal.enums.FlowNodeTypeEnums;
 import tech.qiantong.qknow.module.kb.service.flow.bo.BaseNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.ConditionNodeBO;
+import tech.qiantong.qknow.module.kb.service.flow.bo.KnowledgeNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.LLMNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.ReplyNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.StartNodeBO;
+import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
 
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +28,9 @@ public class NodeFactory {
 
     @Resource
     private IAiModelApiService aiModelService;
+
+    @Resource
+    private IKmcApiService kmcApiService;
 
     /**
      * 根据节点定义创建节点实例
@@ -48,25 +53,7 @@ public class NodeFactory {
             case LLM -> new LLMNodeBO(nodeDefinition, edgeList, aiModelService);
             case REPLY -> new ReplyNodeBO(nodeDefinition, edgeList);
             case CONDITION -> new ConditionNodeBO(nodeDefinition, edgeList);
-
-//            case IF:
-//                return new IFNode(nodeDefinition, edges);
-//
-//            case OUTPUT:
-//                return new OutputNode(nodeDefinition, edges);
-//
-//            // 预留扩展
-//            case HTTP:
-//                // return new HTTPNode(nodeDefinition, edges);
-//                throw new UnsupportedOperationException("HTTP 节点暂未实现");
-//
-//            case CODE:
-//                // return new CodeNode(nodeDefinition, edges);
-//                throw new UnsupportedOperationException("代码执行节点暂未实现");
-//
-//            case KNOWLEDGE:
-//                // return new KnowledgeNode(nodeDefinition, edges);
-//                throw new UnsupportedOperationException("知识库检索节点暂未实现");
+            case KNOWLEDGE -> new KnowledgeNodeBO(nodeDefinition, edgeList, kmcApiService);
 
             default -> throw new ServiceException("不支持的节点类型：" + nodeType);
         };
