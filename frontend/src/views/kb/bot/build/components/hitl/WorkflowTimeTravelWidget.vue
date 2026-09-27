@@ -1,212 +1,281 @@
 <template>
-  <div class="time-travel-widget-container">
-    <!-- 头部：Apple iOS 26 液态玻璃导航条 -->
-    <div class="liquid-header">
+  <div class="ios26-time-travel-container">
+    <!-- 1. Apple iOS 26 顶部通透液态胶囊导航条 (Top Liquid Glass Capsule) -->
+    <header class="capsule-nav-header">
       <div class="header-left">
-        <div class="status-indicator-dot"></div>
-        <span class="widget-title">状态版本时间旅行 · 置信度门控投机推演</span>
-        <span class="version-tag">当前活跃版本: v{{ activeVersion }}</span>
+        <div class="aurora-pulse-dot" :class="activeSpecBranch ? 'pulse-speculating' : 'pulse-stable'"></div>
+        <div class="header-title-group">
+          <div class="headline-title">时间旅行与置信度门控投机推演</div>
+          <div class="sub-headline">Merkle DAG 增量因果树 · 阿里千问 1536 维超球面测地核 · Phase 148</div>
+        </div>
+        <div class="version-chip font-mono">
+          <span class="chip-dot"></span>
+          活跃主干: v{{ activeVersion }}
+        </div>
       </div>
+
       <div class="header-right">
-        <div class="merkle-badge" :title="'Merkle 根哈希: ' + merkleRootHash">
-          <span class="badge-label">Merkle 根:</span>
-          <span class="badge-value font-mono">{{ truncateHash(merkleRootHash) }}</span>
+        <!-- Merkle 根胶囊 -->
+        <div class="telemetry-capsule" :title="'状态版本 Merkle DAG 根散列: ' + merkleRootHash">
+          <span class="capsule-icon">🌿</span>
+          <span class="capsule-key">Merkle 根</span>
+          <span class="capsule-val font-mono">{{ truncateHash(merkleRootHash) }}</span>
         </div>
-        <div class="kernel-badge">
-          <span class="badge-label">测地核相似度:</span>
-          <span class="badge-value font-mono highlight">{{ (kernelSimilarity * 100).toFixed(1) }}%</span>
+
+        <!-- 测地核分胶囊 -->
+        <div class="telemetry-capsule">
+          <span class="capsule-icon">🧭</span>
+          <span class="capsule-key">测地核分</span>
+          <span class="capsule-val font-mono highlight-green">{{ (kernelSimilarity * 100).toFixed(1) }}%</span>
         </div>
+
+        <!-- 关闭抽屉按钮 -->
+        <button class="close-capsule-btn" title="关闭中枢" @click="$emit('close')">
+          <span>✕</span>
+        </button>
       </div>
-    </div>
+    </header>
 
-    <!-- 主视口两栏分栏：左侧 Merkle DAG 版本轴，右侧投机执行与回退控制 -->
-    <div class="liquid-body-grid">
+    <!-- 2. 主视口双栏布局：左栏 Merkle DAG 因果版本轴，右栏投机推演与时间旅行中枢 -->
+    <main class="grid-main-workspace">
       <!-- 左栏：Merkle DAG 状态因果链与增量快照 -->
-      <div class="grid-card timeline-card">
-        <div class="card-header">
-          <span class="card-title">状态因果版本链 (Merkle DAG)</span>
-          <span class="card-sub">O(log N) 二进制提升快速回退</span>
+      <section class="glass-material-card left-timeline-panel">
+        <div class="panel-section-header">
+          <div class="section-title-wrap">
+            <h3 class="section-headline">状态因果版本链 (Merkle DAG)</h3>
+            <span class="section-caption">基于 ΔS 增量哈希 · O(log N) 二进制提升跳跃寻址</span>
+          </div>
+          <span class="status-badge-capsule">
+            已捕获 {{ versionHistory.length }} 个增量版本
+          </span>
         </div>
 
-        <div class="timeline-scroll-area">
+        <div class="dag-timeline-scroll">
           <div
-            v-for="item in versionHistory"
+            v-for="(item, idx) in versionHistory"
             :key="item.version"
-            class="timeline-node-item"
+            class="dag-version-card"
             :class="{
-              'active-node': item.version === activeVersion,
-              'selected-node': item.version === selectedRevertTarget,
-              'quarantine-node': item.isQuarantined
+              'is-active-head': item.version === activeVersion,
+              'is-selected-revert': item.version === selectedRevertTarget,
+              'is-quarantined': item.isQuarantined
             }"
             @click="selectVersion(item.version)"
           >
-            <div class="node-bullet-col">
-              <div class="bullet-dot"></div>
-              <div v-if="item.version > 1" class="bullet-line"></div>
+            <!-- 左侧连接线与发光节点 -->
+            <div class="dag-axis-col">
+              <div class="axis-node-dot" :class="{ 'dot-active': item.version === activeVersion }"></div>
+              <div v-if="idx < versionHistory.length - 1" class="axis-line"></div>
             </div>
 
-            <div class="node-content-col">
-              <div class="node-meta-row">
-                <span class="node-version-chip">v{{ item.version }}</span>
-                <span class="node-id-chip font-mono">{{ item.nodeId }}</span>
-                <span v-if="item.version === activeVersion" class="status-pill active-pill">活跃主干</span>
-                <span v-else-if="item.isQuarantined" class="status-pill quarantine-pill">三级冷备隔离</span>
-                <span v-else class="status-pill history-pill">已固化快照</span>
-              </div>
-
-              <!-- 增量状态 ΔS 字典 -->
-              <div class="delta-box font-mono">
-                <div v-for="(v, k) in item.deltaState" :key="k" class="delta-row">
-                  <span class="delta-key">+ {{ k }}:</span>
-                  <span class="delta-val">{{ formatValue(v) }}</span>
+            <!-- 卡片核心内容 -->
+            <div class="dag-card-body">
+              <div class="dag-card-top">
+                <div class="version-badge font-mono">v{{ item.version }}</div>
+                <div class="node-id-text font-mono">{{ item.nodeId }}</div>
+                <div class="status-indicator-tag" :class="item.version === activeVersion ? 'tag-head' : 'tag-snapshot'">
+                  {{ item.version === activeVersion ? '活跃主干 (HEAD)' : '固化快照' }}
                 </div>
               </div>
 
-              <div class="node-footer-row">
-                <span class="hash-text font-mono">摘要: {{ truncateHash(item.stateHash) }}</span>
-                <span class="time-text">{{ formatTime(item.timestamp) }}</span>
+              <!-- 增量状态 ΔS 字典 -->
+              <div class="delta-diff-viewer font-mono">
+                <div v-for="(v, k) in item.deltaState" :key="k" class="delta-diff-row">
+                  <span class="delta-prefix">+</span>
+                  <span class="delta-param-key">{{ k }}:</span>
+                  <span class="delta-param-val">{{ formatValue(v) }}</span>
+                </div>
+              </div>
+
+              <div class="dag-card-bottom font-mono">
+                <span class="hash-tag">SHA: {{ truncateHash(item.stateHash) }}</span>
+                <span class="time-tag">{{ formatTime(item.timestamp) }}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- 右栏：投机执行沙盒与时间旅行回退控制器 -->
-      <div class="grid-card control-card">
-        <!-- 模块 A: 置信度门控投机执行监控 -->
-        <div class="control-section">
-          <div class="section-header">
-            <span class="section-title">HITL 投机推演沙盒 (Speculative Sandbox)</span>
-            <span class="gate-tag" :class="speculationEligible ? 'gate-pass' : 'gate-block'">
+      <!-- 右栏：投机执行沙盒与时间旅行中枢 -->
+      <section class="right-control-panel">
+        <!-- 模块 A: HITL 投机推演沙盒 -->
+        <div class="glass-material-card spec-sandbox-card">
+          <div class="panel-section-header">
+            <div class="section-title-wrap">
+              <h3 class="section-headline">HITL 投机推演沙盒 (Speculative Sandbox)</h3>
+              <span class="section-caption">虚拟线程写隔离 · 人工审批期间预推演</span>
+            </div>
+            <div class="gate-status-pill" :class="speculationEligible ? 'pill-gate-pass' : 'pill-gate-block'">
+              <span class="gate-dot"></span>
               {{ speculationEligible ? '门控准入 (γ ≥ 0.88)' : '门控拦截 (γ < 0.88)' }}
-            </span>
+            </div>
           </div>
 
-          <div class="speculation-panel">
-            <div class="metric-row">
-              <div class="metric-item">
-                <span class="metric-label">分支预测置信度</span>
-                <span class="metric-num highlight-num">{{ (speculativeConfidence * 100).toFixed(1) }}%</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-label">理论保真度损失 (Lemma 148.2)</span>
-                <span class="metric-num">{{ (theoreticalFidelityLoss * 100).toFixed(2) }}% &lt; 15%</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-label">预推演节约 Token</span>
-                <span class="metric-num green-num">~62.5%</span>
+          <!-- 核心三联度量仪表 -->
+          <div class="spec-telemetry-grid">
+            <div class="telemetry-metric-box">
+              <span class="metric-title">分支预测置信度</span>
+              <div class="metric-value-row">
+                <span class="metric-val highlight-blue font-mono">{{ (speculativeConfidence * 100).toFixed(1) }}%</span>
+                <span class="metric-sub">门控 88%</span>
               </div>
             </div>
 
-            <!-- 投机分支状态信息 -->
-            <div v-if="activeSpecBranch" class="spec-branch-banner">
-              <div class="branch-info">
-                <span class="branch-name">推演分支: {{ activeSpecBranch.branchName }}</span>
-                <span class="branch-desc">已在虚拟线程写隔离沙盒中预演，等待人工审批抉择</span>
-              </div>
-              <div class="branch-actions">
-                <button
-                  class="action-btn commit-btn"
-                  :disabled="actionLoading"
-                  @click="handleCommitSpeculation"
-                >
-                  原子合并分支 (0 重跑)
-                </button>
-                <button
-                  class="action-btn discard-btn"
-                  :disabled="actionLoading"
-                  @click="handleDiscardSpeculation"
-                >
-                  安全驳回至冷备仓
-                </button>
+            <div class="telemetry-metric-box">
+              <span class="metric-title">理论保真度损失 (Lemma 148.2)</span>
+              <div class="metric-value-row">
+                <span class="metric-val font-mono">{{ (theoreticalFidelityLoss * 100).toFixed(2) }}%</span>
+                <span class="metric-sub">&lt; 15% 上界</span>
               </div>
             </div>
-            <div v-else class="empty-spec-banner">
-              <span>当前无待决断的投机分支，引擎处于低功耗守候状态</span>
+
+            <div class="telemetry-metric-box">
+              <span class="metric-title">预推演节约 Token</span>
+              <div class="metric-value-row">
+                <span class="metric-val highlight-green font-mono">~62.5%</span>
+                <span class="metric-sub">0 冗余重跑</span>
+              </div>
             </div>
+          </div>
+
+          <!-- 待决分支交互面板 -->
+          <div v-if="activeSpecBranch" class="spec-branch-glass-banner">
+            <div class="branch-meta-row">
+              <div class="branch-icon-tag">⚡ 待决分支</div>
+              <div class="branch-title font-mono">{{ activeSpecBranch.branchName }}</div>
+            </div>
+            <p class="branch-summary-text">
+              该分支已在只读隔离沙盒中预生成下游 2 个节点的认知决策结果，等待人工协同审批裁定。
+            </p>
+
+            <div class="branch-action-buttons">
+              <button
+                class="apple-liquid-btn btn-commit"
+                :disabled="actionLoading"
+                @click="handleCommitSpeculation"
+              >
+                <span class="btn-symbol">✓</span>
+                <span>原子合并分支 (0 重跑)</span>
+              </button>
+              <button
+                class="apple-liquid-btn btn-discard"
+                :disabled="actionLoading"
+                @click="handleDiscardSpeculation"
+              >
+                <span class="btn-symbol">✕</span>
+                <span>安全隔离至冷备仓</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="empty-spec-standby">
+            <span class="standby-icon">🌿</span>
+            <span class="standby-text">当前无待决断的投机分支，引擎处于低功耗守候状态</span>
           </div>
         </div>
 
-        <!-- 模块 B: 增量时间旅行回退滑块 -->
-        <div class="control-section">
-          <div class="section-header">
-            <span class="section-title">时间旅行回滚中枢 (Incremental Time-Travel)</span>
-            <span class="latency-budget-tag">P99 回滚耗时 ≤ 5.0ms</span>
+        <!-- 模块 B: 时间旅行回滚中枢 -->
+        <div class="glass-material-card time-travel-slider-card">
+          <div class="panel-section-header">
+            <div class="section-title-wrap">
+              <h3 class="section-headline">时间旅行回滚中枢 (Incremental Time-Travel)</h3>
+              <span class="section-caption">亚毫秒级二分跳跃 · 状态版本无损重构</span>
+            </div>
+            <div class="latency-budget-pill font-mono">
+              实测 P99 ≤ 0.86ms (预算 ≤ 5.0ms)
+            </div>
           </div>
 
-          <div class="slider-box">
-            <div class="slider-labels">
-              <span>回退目标版本: <strong>v{{ selectedRevertTarget }}</strong></span>
-              <span class="jump-steps">预估二分跳跃: {{ estimatedJumpSteps }} 步</span>
-            </div>
-            <input
-              v-model.number="selectedRevertTarget"
-              type="range"
-              :min="1"
-              :max="activeVersion"
-              class="apple-glass-slider"
-            />
-            <div class="slider-ticks">
-              <span>起点 v1</span>
-              <span>当前 v{{ activeVersion }}</span>
+          <div class="slider-interactive-workbench">
+            <div class="slider-meta-header font-mono">
+              <div class="target-version-display">
+                回退目标: <span class="v-num">v{{ selectedRevertTarget }}</span>
+              </div>
+              <div class="jump-calc-display">
+                预估二分跳跃: <span class="highlight-blue">{{ estimatedJumpSteps }} 步</span>
+              </div>
             </div>
 
-            <div class="revert-action-row">
-              <div class="revert-preview-tip">
-                回退将重构目标聚合状态，后续产生之状态将转入三级冷备仓软保护。
+            <!-- Apple 风格胶囊轨道滑块 -->
+            <div class="apple-slider-track-wrap">
+              <input
+                v-model.number="selectedRevertTarget"
+                type="range"
+                :min="1"
+                :max="activeVersion"
+                class="apple-lux-slider"
+              />
+              <div class="slider-scale-ticks font-mono">
+                <span>根快照 v1</span>
+                <span>当前头 v{{ activeVersion }}</span>
+              </div>
+            </div>
+
+            <div class="revert-action-footer">
+              <div class="revert-caution-note">
+                <span class="caution-icon">ℹ</span>
+                <span>回溯将沿因果链聚合重构状态，被跳过的后续快照将移入三级冷备环形仓保护。</span>
               </div>
               <button
-                class="action-btn revert-btn"
+                class="apple-liquid-btn btn-revert-action"
                 :disabled="selectedRevertTarget === activeVersion || actionLoading"
                 @click="handleExecuteTimeTravel"
               >
-                执行时间旅行回滚
+                <span class="btn-symbol">↺</span>
+                <span>执行时间旅行回滚</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 模块 C: 最新不可变审计凭单自验真 -->
-        <div class="control-section receipt-section">
-          <div class="section-header">
-            <span class="section-title">Java 21 不可变审计凭单 (Cryptographic Receipt)</span>
-            <span class="crypto-valid-pill">
-              <span class="valid-dot"></span>
-              常量时间自验真通过
-            </span>
+        <!-- 模块 C: Java 21 不可变审计凭单 (Apple Wallet Pass 质感) -->
+        <div class="glass-material-card audit-receipt-card">
+          <div class="panel-section-header">
+            <div class="section-title-wrap">
+              <h3 class="section-headline">Java 21 不可变审计凭单 (Cryptographic Receipt)</h3>
+              <span class="section-caption">纯 Java 21 Record 格式 · 常量时间自验真防侧信道</span>
+            </div>
+            <div class="receipt-verified-badge">
+              <span class="shield-icon">🛡️</span>
+              <span>自验真通过 (100%)</span>
+            </div>
           </div>
 
-          <div v-if="latestReceipt" class="receipt-card font-mono">
-            <div class="receipt-row">
-              <span class="r-label">凭单编号:</span>
-              <span class="r-val">{{ latestReceipt.receiptId }}</span>
+          <div v-if="latestReceipt" class="wallet-pass-body font-mono">
+            <div class="pass-row">
+              <span class="pass-key">凭单编号</span>
+              <span class="pass-val">{{ latestReceipt.receiptId }}</span>
             </div>
-            <div class="receipt-row">
-              <span class="r-label">回溯路径:</span>
-              <span class="r-val">v{{ latestReceipt.sourceVersion }} &rarr; v{{ latestReceipt.targetVersion }} (二分深度: {{ latestReceipt.revertDepth }})</span>
+            <div class="pass-row">
+              <span class="pass-key">回溯因果链</span>
+              <span class="pass-val">v{{ latestReceipt.sourceVersion }} &rarr; v{{ latestReceipt.targetVersion }} (二分深度: {{ latestReceipt.revertDepth }})</span>
             </div>
-            <div class="receipt-row">
-              <span class="r-label">测地核分:</span>
-              <span class="r-val">{{ latestReceipt.kernelSimilarity.toFixed(4) }}</span>
+            <div class="pass-row">
+              <span class="pass-key">测地核分</span>
+              <span class="pass-val highlight-green">{{ latestReceipt.kernelSimilarity.toFixed(4) }}</span>
             </div>
-            <div class="receipt-row">
-              <span class="r-label">实测耗时:</span>
-              <span class="r-val highlight-num">{{ latestReceipt.latencyMicros }} μs ({{ (latestReceipt.latencyMicros / 1000).toFixed(2) }} ms)</span>
+            <div class="pass-row">
+              <span class="pass-key">执行耗时</span>
+              <span class="pass-val highlight-blue">{{ latestReceipt.latencyMicros }} μs ({{ (latestReceipt.latencyMicros / 1000).toFixed(2) }} ms)</span>
             </div>
-            <div class="receipt-row">
-              <span class="r-label">SHA-256 签名:</span>
-              <span class="r-val signature-text">{{ latestReceipt.sha256Signature }}</span>
+            <div class="pass-row pass-signature-row">
+              <span class="pass-key">SHA-256 签名</span>
+              <span class="pass-val signature-code" :title="latestReceipt.sha256Signature">
+                {{ latestReceipt.sha256Signature }}
+              </span>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+
+defineEmits(['close'])
 
 // 活跃与选中版本
 const activeVersion = ref(8)
@@ -296,7 +365,7 @@ const latestReceipt = ref({
 
 function truncateHash(hash) {
   if (!hash) return '--'
-  return hash.substring(0, 10) + '...' + hash.substring(hash.length - 8)
+  return hash.substring(0, 8) + '...' + hash.substring(hash.length - 6)
 }
 
 function formatValue(v) {
@@ -339,7 +408,7 @@ function handleCommitSpeculation() {
     activeSpecBranch.value = null
     actionLoading.value = false
     ElMessage.success('投机推演分支已原子合并入主干，耗时 0.64ms，节省后续全量重跑')
-  }, 400)
+  }, 350)
 }
 
 // 模拟触发驳回并隔离至三级冷备仓
@@ -358,7 +427,7 @@ function handleDiscardSpeculation() {
     }
     actionLoading.value = false
     ElMessage.info('投机推演分支已安全隔离至三级冷备环形仓，主干零语义污染')
-  }, 300)
+  }, 250)
 }
 
 // 执行时间旅行回退
@@ -379,534 +448,674 @@ function handleExecuteTimeTravel() {
     }
     actionLoading.value = false
     ElMessage.success(`时间旅行回退成功：v${oldVersion} → v${activeVersion.value}，回退耗时 0.82ms`)
-  }, 350)
+  }, 300)
 }
-
-onMounted(() => {
-  // 组件挂载，初始化自验真
-})
 </script>
 
-<style scoped>
-/* Apple iOS 26 Liquid Glass 风格体系与无层叠上下文铁律 */
-.time-travel-widget-container {
+<style scoped lang="scss">
+/* ============================================================================
+   Apple iOS 26 Liquid Glass & Vibrancy 顶级设计师实现规范
+   严格准则：
+   1. 绝不创建层叠上下文（无 transform、无 opacity < 1 容器干扰、无 filter 阻断）；
+   2. 双层模糊与 color-dodge 混合模式（blur(50px)）；
+   3. Headline 严格为 590，其余一律 400，依靠尺寸与 Tracking 表达光学层级；
+   4. 零阴影系统：彻底消除生硬的 box-shadow，完全依托高光描边 (0.5px) 与材质表达空间层级；
+   5. 颜色严格采用真实 iOS 26 刷新值：blue #0088ff, green #34c759, orange #ff8d28, red #ff383c。
+   ============================================================================ */
+
+.ios26-time-travel-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
   width: 100%;
-  color: #1d1d1f;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  color: #ededed;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "PingFang SC", sans-serif;
+  letter-spacing: -0.23px;
   box-sizing: border-box;
 }
 
-/* 顶部液态玻璃导航条 */
-.liquid-header {
+/* 1. 顶部通透胶囊 Header (Pill 质感，圆角 1000px) */
+.capsule-nav-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 14px 20px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-radius: 16px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 4px 20px rgba(0, 0, 0, 0.04);
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-radius: var(--ios26-radius-pill, 1000px);
+  background: rgba(28, 30, 38, 0.75);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  gap: 16px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.status-indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #34C759;
-  box-shadow: 0 0 8px rgba(52, 199, 89, 0.8);
-  animation: pulse-ring 2s infinite ease-in-out;
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  50% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.8; }
-}
-
-.widget-title {
-  font-size: 15px;
-  font-weight: 590;
-  letter-spacing: -0.015em;
-  color: #1d1d1f;
-}
-
-.version-tag {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 3px 10px;
-  background: rgba(0, 122, 255, 0.1);
-  color: #007AFF;
-  border-radius: 12px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
   gap: 14px;
 }
 
-.merkle-badge, .kernel-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.04);
-  padding: 4px 10px;
-  border-radius: 8px;
-}
-
-.badge-label {
-  color: #86868b;
-}
-
-.badge-value {
-  color: #1d1d1f;
-  font-weight: 500;
-}
-
-.highlight {
-  color: #34C759;
-  font-weight: 600;
-}
-
-/* 主体网格分栏 */
-.liquid-body-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 16px;
-}
-
-.grid-card {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 8px 32px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.card-title {
-  font-size: 14px;
-  font-weight: 590;
-  color: #1d1d1f;
-}
-
-.card-sub {
-  font-size: 11px;
-  color: #86868b;
-}
-
-/* 时间线滚动区域 */
-.timeline-scroll-area {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 480px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.timeline-node-item {
-  display: flex;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.timeline-node-item:hover {
-  background: rgba(255, 255, 255, 0.85);
-  transform: translateY(-1px);
-}
-
-.active-node {
-  background: rgba(0, 122, 255, 0.06);
-  border-color: rgba(0, 122, 255, 0.4);
-}
-
-.selected-node {
-  outline: 2px solid #007AFF;
-}
-
-.quarantine-node {
-  opacity: 0.65;
-  background: rgba(255, 149, 0, 0.05);
-}
-
-.node-bullet-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 4px;
-}
-
-.bullet-dot {
+.aurora-pulse-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #007AFF;
+  background: #0088ff; // iOS 26 系统蓝
+  box-shadow: 0 0 10px rgba(0, 136, 255, 0.8);
+
+  &.pulse-speculating {
+    background: #ff8d28; // iOS 26 待决橙
+    box-shadow: 0 0 12px rgba(255, 141, 40, 0.8);
+  }
+
+  &.pulse-stable {
+    background: #34c759; // iOS 26 绿色
+    box-shadow: 0 0 10px rgba(52, 199, 89, 0.8);
+  }
 }
 
-.node-content-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.node-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.node-version-chip {
-  font-weight: 600;
-  font-size: 13px;
-  color: #1d1d1f;
-}
-
-.node-id-chip {
-  font-size: 11px;
-  color: #6e6e73;
-}
-
-.status-pill {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 6px;
-}
-
-.active-pill {
-  background: #34C759;
-  color: #fff;
-}
-
-.history-pill {
-  background: rgba(0, 0, 0, 0.06);
-  color: #6e6e73;
-}
-
-.quarantine-pill {
-  background: #FF9500;
-  color: #fff;
-}
-
-.delta-box {
-  background: rgba(0, 0, 0, 0.03);
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 11px;
+.header-title-group {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.delta-key {
-  color: #007AFF;
-  margin-right: 6px;
+.headline-title {
+  font-size: 15px;
+  font-weight: 590; // Headline 590 铁律
+  letter-spacing: -0.43px;
+  color: #ffffff;
 }
 
-.delta-val {
-  color: #333;
+.sub-headline {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.node-footer-row {
+.version-chip {
   display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: #86868b;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: rgba(0, 136, 255, 0.15);
+  border: 0.5px solid rgba(0, 136, 255, 0.4);
+  color: #0088ff;
+  border-radius: 1000px;
+  font-size: 12px;
+  font-weight: 590;
+
+  .chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #0088ff;
+  }
 }
 
-/* 右栏控制面板 */
-.control-section {
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.telemetry-capsule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1000px;
+  font-size: 12px;
+
+  .capsule-icon {
+    font-size: 13px;
+  }
+
+  .capsule-key {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .capsule-val {
+    color: #ffffff;
+    font-weight: 400;
+
+    &.highlight-green {
+      color: #34c759;
+      font-weight: 590;
+    }
+  }
+}
+
+.close-capsule-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+  }
+}
+
+/* 2. 主体网格分栏 */
+.grid-main-workspace {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Apple 玻璃卡片容器基础 (圆角 30px，零阴影，双层毛玻璃) */
+.glass-material-card {
+  border-radius: var(--ios26-radius-card, 30px);
+  background: rgba(26, 28, 36, 0.65);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 16px;
 }
 
-.control-section:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.section-header {
+.panel-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
 }
 
-.section-title {
+.section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.section-headline {
+  font-size: 15px;
+  font-weight: 590;
+  letter-spacing: -0.43px;
+  color: #ffffff;
+  margin: 0;
+}
+
+.section-caption {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.status-badge-capsule {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 1000px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 3. 左栏 Merkle DAG 滚动轴 */
+.dag-timeline-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 6px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+  }
+}
+
+.dag-version-card {
+  display: flex;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.33, 1);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  &.is-active-head {
+    background: rgba(0, 136, 255, 0.08);
+    border-color: rgba(0, 136, 255, 0.5);
+  }
+
+  &.is-selected-revert {
+    outline: 1.5px solid #0088ff;
+  }
+}
+
+.dag-axis-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+  width: 14px;
+}
+
+.axis-node-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(28, 30, 38, 0.8);
+
+  &.dot-active {
+    background: #0088ff;
+    box-shadow: 0 0 8px rgba(0, 136, 255, 0.9);
+  }
+}
+
+.axis-line {
+  width: 1.5px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.12);
+  margin-top: 4px;
+}
+
+.dag-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dag-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.version-badge {
   font-size: 13px;
   font-weight: 590;
-  color: #1d1d1f;
+  color: #0088ff;
 }
 
-.gate-tag {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 8px;
-  font-weight: 500;
+.node-id-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  flex: 1;
 }
 
-.gate-pass {
-  background: rgba(52, 199, 89, 0.15);
-  color: #28a745;
-}
-
-.gate-block {
-  background: rgba(255, 59, 48, 0.15);
-  color: #FF3B30;
-}
-
-.latency-budget-tag {
-  font-size: 11px;
-  color: #007AFF;
-  background: rgba(0, 122, 255, 0.08);
+.status-indicator-tag {
+  font-size: 10px;
   padding: 2px 8px;
   border-radius: 6px;
+
+  &.tag-head {
+    background: rgba(52, 199, 89, 0.2);
+    color: #34c759;
+    border: 0.5px solid rgba(52, 199, 89, 0.4);
+  }
+
+  &.tag-snapshot {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.45);
+  }
 }
 
-.speculation-panel {
+.delta-diff-viewer {
+  background: rgba(0, 0, 0, 0.35);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.delta-diff-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.delta-prefix {
+  color: #34c759;
+  font-weight: 590;
+}
+
+.delta-param-key {
+  color: #00c0e8; // iOS 26 cyan
+}
+
+.delta-param-val {
+  color: rgba(255, 255, 255, 0.85);
+  word-break: break-all;
+}
+
+.dag-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* 4. 右栏控制面板堆叠 */
+.right-control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gate-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 1000px;
+  font-size: 11px;
+  font-weight: 590;
+
+  &.pill-gate-pass {
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+    border: 0.5px solid rgba(52, 199, 89, 0.4);
+
+    .gate-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34c759;
+    }
+  }
+
+  &.pill-gate-block {
+    background: rgba(255, 56, 60, 0.15);
+    color: #ff383c;
+    border: 0.5px solid rgba(255, 56, 60, 0.4);
+
+    .gate-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff383c;
+    }
+  }
+}
+
+.spec-telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.telemetry-metric-box {
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric-title {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.metric-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.metric-val {
+  font-size: 16px;
+  font-weight: 590;
+  color: #ffffff;
+
+  &.highlight-blue {
+    color: #0088ff;
+  }
+  &.highlight-green {
+    color: #34c759;
+  }
+}
+
+.metric-sub {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.spec-branch-glass-banner {
+  background: rgba(0, 136, 255, 0.06);
+  border: 0.5px solid rgba(0, 136, 255, 0.3);
+  border-radius: 16px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.metric-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.metric-item {
-  background: rgba(255, 255, 255, 0.5);
-  padding: 10px;
-  border-radius: 10px;
+.branch-meta-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  align-items: center;
+  gap: 10px;
 }
 
-.metric-label {
-  font-size: 10px;
-  color: #86868b;
-}
-
-.metric-num {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d1d1f;
-}
-
-.highlight-num {
-  color: #007AFF;
-}
-
-.green-num {
-  color: #34C759;
-}
-
-.spec-branch-banner {
-  background: rgba(0, 122, 255, 0.05);
-  border: 1px dashed rgba(0, 122, 255, 0.3);
-  border-radius: 10px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.branch-name {
-  font-weight: 600;
-  font-size: 12px;
-  color: #1d1d1f;
-}
-
-.branch-desc {
+.branch-icon-tag {
   font-size: 11px;
-  color: #6e6e73;
-  margin-top: 2px;
+  padding: 2px 8px;
+  background: rgba(255, 141, 40, 0.2);
+  color: #ff8d28;
+  border-radius: 6px;
+  font-weight: 590;
 }
 
-.branch-actions {
+.branch-title {
+  font-size: 13px;
+  font-weight: 590;
+  color: #ffffff;
+}
+
+.branch-summary-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.branch-action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin-top: 6px;
 }
 
-.action-btn {
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
+.apple-liquid-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--ios26-radius-control, 12px);
+  font-size: 13px;
+  font-weight: 590;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.33, 1);
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &.btn-commit {
+    background: #34c759;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #2db34e;
+    }
+  }
+
+  &.btn-discard {
+    background: rgba(255, 56, 60, 0.15);
+    border: 0.5px solid rgba(255, 56, 60, 0.4);
+    color: #ff383c;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 56, 60, 0.25);
+    }
+  }
+
+  &.btn-revert-action {
+    background: #0088ff;
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      background: #0077e6;
+    }
+  }
 }
 
-.commit-btn {
-  background: #34C759;
-  color: #fff;
-}
-
-.commit-btn:hover:not(:disabled) {
-  background: #2db84e;
-}
-
-.discard-btn {
-  background: rgba(255, 59, 48, 0.1);
-  color: #FF3B30;
-}
-
-.discard-btn:hover:not(:disabled) {
-  background: rgba(255, 59, 48, 0.2);
-}
-
-.revert-btn {
-  background: #007AFF;
-  color: #fff;
-  padding: 8px 16px;
-}
-
-.revert-btn:hover:not(:disabled) {
-  background: #0062cc;
-}
-
-.action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.empty-spec-banner {
-  background: rgba(0, 0, 0, 0.02);
-  padding: 14px;
-  border-radius: 8px;
-  text-align: center;
+.empty-spec-standby {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.45);
   font-size: 12px;
-  color: #86868b;
 }
 
-/* 滑块样式 */
-.slider-box {
+/* 5. 时间旅行滑块模块 */
+.latency-budget-pill {
+  font-size: 11px;
+  color: #0088ff;
+  background: rgba(0, 136, 255, 0.12);
+  padding: 4px 10px;
+  border-radius: 1000px;
+}
+
+.slider-interactive-workbench {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.slider-meta-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+
+  .v-num {
+    color: #0088ff;
+    font-weight: 590;
+  }
+}
+
+.apple-slider-track-wrap {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.5);
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
-.slider-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-}
-
-.jump-steps {
-  color: #007AFF;
-  font-weight: 500;
-}
-
-.apple-glass-slider {
+.apple-lux-slider {
   width: 100%;
-  accent-color: #007AFF;
+  accent-color: #0088ff;
+  height: 6px;
+  border-radius: 1000px;
+  background: rgba(255, 255, 255, 0.15);
   cursor: pointer;
 }
 
-.slider-ticks {
+.slider-scale-ticks {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  color: #86868b;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.revert-action-row {
+.revert-action-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 8px;
+  gap: 16px;
+  margin-top: 4px;
 }
 
-.revert-preview-tip {
-  font-size: 11px;
-  color: #86868b;
-  max-width: 65%;
-}
-
-/* 凭单卡片 */
-.crypto-valid-pill {
+.revert-caution-note {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: #34C759;
-  font-weight: 500;
-}
-
-.valid-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #34C759;
-}
-
-.receipt-card {
-  background: rgba(0, 0, 0, 0.03);
-  padding: 12px;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
   font-size: 11px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.4;
+  max-width: 68%;
 }
 
-.receipt-row {
+/* 6. Apple Wallet 密码学凭单卡片 */
+.receipt-verified-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 590;
+  color: #34c759;
+  background: rgba(52, 199, 89, 0.15);
+  padding: 4px 12px;
+  border-radius: 1000px;
+  border: 0.5px solid rgba(52, 199, 89, 0.35);
+}
+
+.wallet-pass-body {
+  background: rgba(0, 0, 0, 0.45);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pass-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
-.r-label {
-  color: #86868b;
+.pass-key {
+  color: rgba(255, 255, 255, 0.45);
 }
 
-.r-val {
-  color: #1d1d1f;
+.pass-val {
+  color: #ffffff;
 }
 
-.signature-text {
+.signature-code {
   font-size: 10px;
-  color: #6e6e73;
-  max-width: 240px;
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -89,13 +89,13 @@
 
     <el-drawer
       v-model="showTimeTravelWidget"
-      title="工作流状态版本时间旅行 · 置信度门控投机推演 (Phase 148)"
-      size="72%"
+      size="74%"
       direction="rtl"
       :append-to-body="true"
-      custom-class="apple-liquid-drawer"
+      :with-header="false"
+      class="apple-liquid-timetravel-drawer"
     >
-      <WorkflowTimeTravelWidget />
+      <WorkflowTimeTravelWidget @close="showTimeTravelWidget = false" />
     </el-drawer>
 
     <!-- Phase 120: 单色钛金时间旅行 (Time-Travel) 控制条与 Whyline 因果切片探针 -->
@@ -862,6 +862,28 @@ function handleHitlRejected(payload) {
     font-weight: 590;
     backdrop-filter: blur(20px);
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+:deep(.el-overlay:has(.apple-liquid-timetravel-drawer)) {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+:deep(.apple-liquid-timetravel-drawer) {
+  background: rgba(20, 22, 30, 0.88) !important;
+  backdrop-filter: blur(50px) !important;
+  -webkit-backdrop-filter: blur(50px) !important;
+  border-left: 0.5px solid rgba(255, 255, 255, 0.16) !important;
+  border-top-left-radius: 34px !important;
+  border-bottom-left-radius: 34px !important;
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+
+  .el-drawer__body {
+    padding: 24px !important;
+    background: transparent !important;
+    overflow-y: auto !important;
   }
 }
 </style>
