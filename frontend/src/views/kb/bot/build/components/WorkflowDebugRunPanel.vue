@@ -73,6 +73,31 @@
       </div>
     </div>
 
+    <!-- Phase 148: Apple iOS 26 Liquid Glass 风格工作流时间旅行与置信度门控投机推演中枢 -->
+    <div class="workflow-debug-run-panel__timetravel-btn-row">
+      <el-button
+        type="primary"
+        plain
+        size="small"
+        class="apple-liquid-btn"
+        @click="showTimeTravelWidget = true"
+      >
+        <i class="el-icon-timer"></i>
+        打开 Merkle DAG 时间旅行与投机推演中枢 (Phase 148)
+      </el-button>
+    </div>
+
+    <el-drawer
+      v-model="showTimeTravelWidget"
+      title="工作流状态版本时间旅行 · 置信度门控投机推演 (Phase 148)"
+      size="72%"
+      direction="rtl"
+      :append-to-body="true"
+      custom-class="apple-liquid-drawer"
+    >
+      <WorkflowTimeTravelWidget />
+    </el-drawer>
+
     <!-- Phase 120: 单色钛金时间旅行 (Time-Travel) 控制条与 Whyline 因果切片探针 -->
     <div v-if="historicalSnapshots.length > 1" class="workflow-debug-run-panel__time-travel">
       <div class="time-travel-header">
@@ -148,12 +173,16 @@ import hljs from "highlight.js";
 import "highlight.js/styles/xcode.min.css";
 import DebugOverflowTooltipLabel from "./DebugOverflowTooltipLabel.vue";
 import HitlApprovalMetacenter from "./debug/HitlApprovalMetacenter.vue";
+import WorkflowTimeTravelWidget from "./hitl/WorkflowTimeTravelWidget.vue";
 import { TimeTravelForkEngine } from "./debug/engine/TimeTravelForkEngine";
 import { PersistentSnapshotManager } from "./debug/engine/PersistentSnapshotTree";
 
 const conversationInAbortController = ref(); // 对话进行中 abort 控制器(控制 stream 对话)
 const forkEngine = new TimeTravelForkEngine();
 const snapshotManager = new PersistentSnapshotManager();
+
+// Phase 148 响应式状态: Merkle DAG 时间旅行与投机推演抽屉
+const showTimeTravelWidget = ref(false);
 
 // Phase 120 响应式状态: 时间旅行、Whyline 探针与 HITL 审批中枢
 const hitlDrawerVisible = ref(false);
@@ -820,5 +849,19 @@ function handleHitlRejected(payload) {
 .event-node-card.is-selected {
   outline: 1px solid #3b82f6;
   box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
+}
+
+.workflow-debug-run-panel__timetravel-btn-row {
+  margin: 10px 0;
+  display: flex;
+  justify-content: flex-end;
+
+  .apple-liquid-btn {
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 590;
+    backdrop-filter: blur(20px);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
 </style>
