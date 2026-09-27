@@ -148,6 +148,7 @@
 | **系统操作与安全审计日志** | `/system/log/operlog` | **PASSED** | `verification_system_operlog.png` | 完整记录 bot 流程、定时任务、agent 配置等所有关键操作毫秒级审计记录 |
 | **神经符号可解释性与 Merkle 验真** | `/audit/explainability` | **PASSED** | `verification_audit_explainability_merkle.png` | 8 节点因果溯源 DAG、沙普利贡献度与 RFC 6962 密码学存证验真 |
 | **白盒代码原生智能体工作台** | `/kb/bot/codeNative?id=3` | **PASSED** | `verification_bot_code_native.png` | Monaco/CodeMirror 在线代码编辑器完备挂载，支持 DSL 代码级编排 |
+| **工作流增量时间旅行与投机推演 (Phase 148)** | `/kb/bot/processflow?id=3` 调试抽屉 | **PASSED** | `verification_phase148_workflow_time_travel_initial.png`<br>`verification_phase148_workflow_speculation_commit.png`<br>`verification_phase148_workflow_time_travel_revert.png` | 状态版本 Merkle DAG 增量链、原子合并、冷备隔离与毫秒级时间旅行回退无损执行，Apple iOS 26 Liquid Glass 风格通过复检 |
 | **后端 Java 21 核心自动化契约测试** | `tests` 模块 | **PASSED** | Maven surefire report | `Phase123HierarchicalGraphRagContractTest` (8/8 pass)<br>`MultiAgentDebateReceiptTest` (3/3 pass)<br>`AgentRagContextPreferenceTest` (2/2 pass) |
 
 ---
