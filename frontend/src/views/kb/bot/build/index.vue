@@ -20,6 +20,26 @@
         </span>
       </div>
       <div class="toolbar-actions">
+        <el-button
+          v-ripple
+          class="glass-btn custom-btn-padding"
+          plain
+          @click="autoLayoutGraph"
+          @mousedown="(e) => e.preventDefault()"
+        >
+          <el-icon><Compass /></el-icon>
+          整齐排版
+        </el-button>
+        <el-button
+          v-ripple
+          class="glass-btn custom-btn-padding"
+          plain
+          @click="smartFitView"
+          @mousedown="(e) => e.preventDefault()"
+        >
+          <el-icon><Aim /></el-icon>
+          自适应
+        </el-button>
         <el-button v-ripple
           class="glass-btn custom-btn-padding"
           plain
@@ -51,12 +71,12 @@
         <VueFlow
           v-model:nodes="nodes"
           v-model:edges="edges"
-          :fit-view-on-init="false"
+          :fit-view-on-init="true"
           :snap-to-grid="true"
           :snap-grid="[20, 20]"
-          :default-zoom="0.2"
-          :min-zoom="0.1"
-          :max-zoom="2"
+          :default-zoom="0.85"
+          :min-zoom="0.25"
+          :max-zoom="1.6"
           :default-edge-options="defaultEdgeOptions"
           :connection-line-type="ConnectionLineType.Bezier"
           @node-click="onNodeClick"
@@ -1134,7 +1154,7 @@ import {
 } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { Controls } from "@vue-flow/controls";
-import { Close, Delete, Operation, Plus } from "@element-plus/icons-vue";
+import { Close, Delete, Operation, Plus, Compass, Aim } from "@element-plus/icons-vue";
 import { getChatModelDict } from "@/api/ai/myModel/myModel.js";
 import { getFlow, submitFlow } from "@/api/kb/bot/flow.js";
 import { getBot, copyBot } from "@/api/kb/bot/bot";
@@ -1185,6 +1205,9 @@ const {
   updateConnection,
   endConnection,
   updateNodeInternals,
+  fitView,
+  zoomTo,
+  setCenter,
   vueFlowRef,
 } = useVueFlow();
 
@@ -1192,14 +1215,14 @@ const {
 const defaultEdgeOptions = {
   type: "default",
   style: {
-    stroke: "#999",
+    stroke: "#94a3b8",
     strokeWidth: 2,
   },
   markerEnd: {
     type: "arrowclosed",
-    width: 12,
-    height: 12,
-    color: "#999",
+    width: 14,
+    height: 14,
+    color: "#94a3b8",
   },
 };
 const loading = ref(false);
@@ -1819,6 +1842,137 @@ function getModelList() {
   });
 }
 
+function smartFitView(options = {}) {
+  nextTick(() => {
+    try {
+      fitView({
+        padding: 0.16,
+        includeHiddenNodes: false,
+        duration: 400,
+        ...options,
+      });
+    } catch (err) {
+      console.warn("fitView 执行警告:", err);
+    }
+  });
+}
+
+function autoLayoutGraph() {
+  if (!nodes.value || nodes.value.length === 0) {
+    return;
+  }
+
+  // 1. 构建节点邻接表与入度表
+  const nodeIds = nodes.value.map((n) => n.id);
+  const inDegree = {};
+  const adj = {};
+  nodeIds.forEach((id) => {
+    inDegree[id] = 0;
+    adj[id] = [];
+  });
+
+  const validEdges = (edges.value || []).filter(
+    (e) => nodeIds.includes(e.source) && nodeIds.includes(e.target)
+  );
+
+  validEdges.forEach((edge) => {
+    if (adj[edge.source]) {
+      adj[edge.source].push(edge.target);
+    }
+    if (inDegree[edge.target] !== undefined) {
+      inDegree[edge.target]++;
+    }
+  });
+
+  // 2. 找到根节点（入度为 0 的节点，优先 start 节点）
+  let rootIds = nodeIds.filter((id) => inDegree[id] === 0);
+  if (rootIds.length === 0) {
+    const startNode = nodes.value.find((n) => n.type === "start");
+    rootIds = [startNode ? startNode.id : nodeIds[0]];
+  }
+
+  // 3. BFS 分层，计算每个节点的最大深度，确保前置节点在后置节点左边
+  const depthMap = {};
+  rootIds.forEach((id) => {
+    depthMap[id] = 0;
+  });
+
+  const queue = [...rootIds];
+  const visitedCount = {};
+  while (queue.length > 0) {
+    const currId = queue.shift();
+    const currDepth = depthMap[currId];
+    visitedCount[currId] = (visitedCount[currId] || 0) + 1;
+    if (visitedCount[currId] > 20) continue;
+
+    const neighbors = adj[currId] || [];
+    for (const neighborId of neighbors) {
+      const targetDepth = currDepth + 1;
+      if (
+        depthMap[neighborId] === undefined ||
+        targetDepth > depthMap[neighborId]
+      ) {
+        depthMap[neighborId] = targetDepth;
+        queue.push(neighborId);
+      }
+    }
+  }
+
+  // 处理可能孤立的未连线节点
+  nodeIds.forEach((id) => {
+    if (depthMap[id] === undefined) {
+      depthMap[id] = 0;
+    }
+  });
+
+  // 4. 按深度分组
+  const layers = {};
+  nodeIds.forEach((id) => {
+    const d = depthMap[id];
+    if (!layers[d]) {
+      layers[d] = [];
+    }
+    layers[d].push(id);
+  });
+
+  // 5. 坐标计算：黄金比例对称排布
+  const colSpacing = 360; // 列间距（卡片宽 280px + 间隙 80px）
+  const rowSpacing = 220; // 行间距
+  const startX = 80;
+  const centerY = 280;
+
+  const newNodes = nodes.value.map((node) => {
+    const depth = depthMap[node.id] || 0;
+    const layer = layers[depth] || [node.id];
+    const indexInLayer = layer.indexOf(node.id);
+    const totalInLayer = layer.length;
+
+    // 垂直对称居中
+    const layerTotalHeight = (totalInLayer - 1) * rowSpacing;
+    const startY = centerY - layerTotalHeight / 2;
+
+    const x = startX + depth * colSpacing;
+    const y = Math.round(startY + indexInLayer * rowSpacing);
+
+    return {
+      ...node,
+      position: { x, y },
+    };
+  });
+
+  nodes.value = newNodes;
+
+  // 通知 VueFlow 节点内部尺寸和 handle 更新，并自适应居中视口
+  nextTick(() => {
+    nodeIds.forEach((id) => {
+      try {
+        updateNodeInternals(id);
+      } catch (e) {}
+    });
+    smartFitView({ duration: 500 });
+  });
+}
+
 function getFlowData(id) {
   // loading.value = true;
   getFlow(id).then((res) => {
@@ -1843,6 +1997,10 @@ function getFlowData(id) {
     ) {
       edges.value = normalizedFlow.edges;
     }
+    // 数据就绪后平滑居中自适应
+    nextTick(() => {
+      smartFitView({ duration: 350 });
+    });
     // loading.value = false;
   });
 }
@@ -5756,19 +5914,23 @@ function exportFlow() {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: #f9fafb;
-  --el-border-radius-base: 0;
-  --el-border-radius-small: 0;
-  --el-border-radius-round: 0;
+  background-color: #f8fafc;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
 }
 
 .toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background-color: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+  z-index: 10;
 
   .toolbar-left {
     display: flex;
@@ -5778,32 +5940,54 @@ function exportFlow() {
     .toolbar-title {
       display: flex;
       align-items: center;
-      font-size: 20px;
-      font-weight: 600;
-      color: #111827;
-      .title{
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 590;
+      color: #0f172a;
+      letter-spacing: -0.015em;
+
+      .title {
         max-width: 500px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .el-tag {
-        margin-left: 10px;
+        margin-left: 6px;
+        border-radius: 6px;
+        font-weight: 590;
       }
       .internally {
         display: flex;
         align-items: center;
         font-size: 12px;
-        color: red;
+        color: #ef4444;
         margin-left: 8px;
-        font-weight: normal;
+        font-weight: 400;
       }
     }
   }
 
   .toolbar-actions {
     display: flex;
+    align-items: center;
     gap: 8px;
+
+    .glass-btn {
+      border-radius: 10px;
+      font-weight: 590;
+      font-size: 13px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      }
+    }
+
     .fhbtn {
       .svg-icon {
         font-size: 12px;
@@ -5841,57 +6025,64 @@ function exportFlow() {
 .flow-wrapper {
   flex: 1;
   position: relative;
-  background-color: #f9fafb;
+  background: radial-gradient(circle at 50% 50%, #fbfcfd 0%, #f1f5f9 100%);
 }
 
 .custom-node {
-  min-width: 200px;
-  max-width: 280px;
-  background-color: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
+  width: 280px;
+  min-width: 280px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow:
+    0 4px 20px -2px rgba(15, 23, 42, 0.06),
+    0 10px 25px -4px rgba(15, 23, 42, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  user-select: none;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 8px 30px -4px rgba(15, 23, 42, 0.09),
+      0 16px 36px -6px rgba(15, 23, 42, 0.06),
+      0 0 0 1px rgba(0, 0, 0, 0.06),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+  }
 
   &.selected {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    border-color: rgba(0, 136, 255, 0.85);
+    box-shadow:
+      0 0 0 2px rgba(0, 136, 255, 0.25),
+      0 12px 32px -4px rgba(0, 136, 255, 0.16),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
   }
 
   .node-top {
-    padding: 4px 12px;
-    border-bottom: 1px solid #f3f4f6;
+    padding: 6px 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
     .node-type-label {
       font-size: 11px;
-      font-weight: 500;
-      color: #6b7280;
+      font-weight: 590;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
   }
 
   .node-body {
-    padding: 12px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-
-    .node-icon-wrapper {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 4px;
-
-      .node-svg {
-        width: 18px;
-        height: 18px;
-      }
-    }
+    gap: 10px;
 
     .node-header {
       display: flex;
@@ -5899,31 +6090,40 @@ function exportFlow() {
       gap: 10px;
 
       .node-icon-wrapper {
-        margin-bottom: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 0;
+
+        .node-svg {
+          width: 18px;
+          height: 18px;
+        }
       }
 
       .node-title {
         min-width: 0;
+        font-size: 14px;
+        font-weight: 590;
+        color: #0f172a;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        letter-spacing: -0.01em;
       }
-    }
-
-    .node-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #111827;
     }
 
     .node-subtitle {
       font-size: 12px;
-      color: #6b7280;
-      background-color: #f3f4f6;
-      padding: 4px 8px;
-      border-radius: 4px;
+      color: #64748b;
+      background-color: rgba(241, 245, 249, 0.85);
+      padding: 3px 8px;
+      border-radius: 6px;
       display: inline-block;
+      font-weight: 400;
     }
 
     .node-preview {
@@ -6027,9 +6227,16 @@ function exportFlow() {
 }
 
 .start-node {
+  .node-top {
+    background: linear-gradient(90deg, rgba(0, 136, 255, 0.08) 0%, transparent 100%);
+    .node-type-label {
+      color: #0088ff;
+    }
+  }
+
   .node-icon-wrapper {
-    background-color: #dbeafe;
-    color: #3b82f6;
+    background-color: rgba(0, 136, 255, 0.12);
+    color: #0088ff;
   }
 
   .node-body {
@@ -6055,8 +6262,8 @@ function exportFlow() {
   .start-node-field-name {
     min-width: 0;
     font-size: 12px;
-    color: #3b82f6;
-    font-weight: 500;
+    color: #0088ff;
+    font-weight: 590;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6064,31 +6271,40 @@ function exportFlow() {
 
   .start-node-field-type {
     flex-shrink: 0;
-    font-size: 12px;
-    color: #6b7280;
-    background-color: #eef2ff;
+    font-size: 11px;
+    color: #64748b;
+    background-color: rgba(0, 136, 255, 0.08);
     padding: 2px 6px;
     border-radius: 999px;
+    font-weight: 590;
   }
 
   .start-node-field-more {
     font-size: 11px;
-    color: #6b7280;
+    color: #64748b;
   }
 
   .start-node-empty {
-    padding: 2px 8px;
-    border: 1px dashed #cbd5e1;
-    border-radius: 10px;
+    padding: 4px 8px;
+    border: 1px dashed rgba(203, 213, 225, 0.8);
+    border-radius: 8px;
     font-size: 12px;
-    color: #6b7280;
-    background-color: #f8fafc;
+    color: #94a3b8;
+    background-color: rgba(248, 250, 252, 0.6);
   }
 }
 
 .llm-node {
+  .node-top {
+    background: linear-gradient(90deg, rgba(97, 85, 245, 0.08) 0%, transparent 100%);
+    .node-type-label {
+      color: #6155f5;
+    }
+  }
+
   .node-icon-wrapper {
-    background-color: #dbeafe;
+    background-color: rgba(97, 85, 245, 0.12);
+    color: #6155f5;
   }
 
   .llm-node-svg {
@@ -6098,42 +6314,70 @@ function exportFlow() {
 }
 
 .reply-node {
+  .node-top {
+    background: linear-gradient(90deg, rgba(22, 163, 74, 0.08) 0%, transparent 100%);
+    .node-type-label {
+      color: #16a34a;
+    }
+  }
+
   .node-icon-wrapper {
-    background-color: #ffedd5;
-    color: #f97316;
+    background-color: rgba(22, 163, 74, 0.12);
+    color: #16a34a;
   }
 
   .reply-node-preview-more {
     font-size: 11px;
-    color: #6b7280;
+    color: #64748b;
   }
 }
 
 .knowledge-node {
+  .node-top {
+    background: linear-gradient(90deg, rgba(0, 151, 167, 0.08) 0%, transparent 100%);
+    .node-type-label {
+      color: #0097a7;
+    }
+  }
+
   .node-icon-wrapper {
-    background-color: #e0f2fe;
-    color: #0284c7;
+    background-color: rgba(0, 151, 167, 0.12);
+    color: #0097a7;
   }
 }
 
 .tool-node {
+  .node-top {
+    background: linear-gradient(90deg, rgba(203, 48, 224, 0.08) 0%, transparent 100%);
+    .node-type-label {
+      color: #cb30e0;
+    }
+  }
+
   .node-icon-wrapper {
-    background-color: #ede9fe;
-    color: #7c3aed;
+    background-color: rgba(203, 48, 224, 0.12);
+    color: #cb30e0;
   }
 
   .tool-node-preview-more {
     font-size: 11px;
-    color: #6b7280;
+    color: #64748b;
   }
 }
 
 .condition-node {
-  min-width: 260px;
+  min-width: 280px;
+
+  .node-top {
+    background: linear-gradient(90deg, rgba(255, 141, 40, 0.08) 0%, transparent 100%);
+    .node-type-label {
+      color: #ff8d28;
+    }
+  }
 
   .node-icon-wrapper {
-    background-color: #fef3c7;
-    color: #f59e0b;
+    background-color: rgba(255, 141, 40, 0.12);
+    color: #ff8d28;
     margin-bottom: 0;
   }
 
@@ -6342,21 +6586,24 @@ function exportFlow() {
 .handle {
   width: 10px;
   height: 10px;
-  background-color: #3b82f6;
-  border: 2px solid #fff;
+  background-color: #ffffff;
+  border: 2px solid #0088ff;
   border-radius: 50%;
-  transition: all 0.2s;
+  box-shadow: 0 0 0 2px rgba(0, 136, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &.handle-drop-target {
-    background-color: #2563eb;
-    border-color: #dbeafe;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    background-color: #0088ff;
+    border-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(0, 136, 255, 0.35);
+    transform: scale(1.25);
   }
 
   &:hover {
-    background-color: #2563eb;
-    transform: scale(1.3);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    background-color: #0088ff;
+    border-color: #ffffff;
+    transform: scale(1.35);
+    box-shadow: 0 0 0 3px rgba(0, 136, 255, 0.3);
   }
 }
 
