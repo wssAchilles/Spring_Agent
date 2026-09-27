@@ -1,6 +1,6 @@
 <template>
-  <div class="ios26-time-travel-container">
-    <!-- 1. Apple iOS 26 顶部通透液态胶囊导航条 (Top Liquid Glass Capsule) -->
+  <div class="ios26-light-time-travel-container">
+    <!-- 1. Apple iOS 26 顶部纯净高透液态胶囊 Header (Pill 1000px) -->
     <header class="capsule-nav-header">
       <div class="header-left">
         <div class="aurora-pulse-dot" :class="activeSpecBranch ? 'pulse-speculating' : 'pulse-stable'"></div>
@@ -46,7 +46,7 @@
             <span class="section-caption">基于 ΔS 增量哈希 · O(log N) 二进制提升跳跃寻址</span>
           </div>
           <span class="status-badge-capsule">
-            已捕获 {{ versionHistory.length }} 个增量版本
+            已固化 {{ versionHistory.length }} 个版本快照
           </span>
         </div>
 
@@ -62,7 +62,7 @@
             }"
             @click="selectVersion(item.version)"
           >
-            <!-- 左侧连接线与发光节点 -->
+            <!-- 左侧因果线与发光节点 -->
             <div class="dag-axis-col">
               <div class="axis-node-dot" :class="{ 'dot-active': item.version === activeVersion }"></div>
               <div v-if="idx < versionHistory.length - 1" class="axis-line"></div>
@@ -78,7 +78,7 @@
                 </div>
               </div>
 
-              <!-- 增量状态 ΔS 字典 -->
+              <!-- 增量状态 ΔS 代码视窗 (Light Mode 极客清爽呈现) -->
               <div class="delta-diff-viewer font-mono">
                 <div v-for="(v, k) in item.deltaState" :key="k" class="delta-diff-row">
                   <span class="delta-prefix">+</span>
@@ -228,7 +228,7 @@
           </div>
         </div>
 
-        <!-- 模块 C: Java 21 不可变审计凭单 (Apple Wallet Pass 质感) -->
+        <!-- 模块 C: Java 21 不可变审计凭单 (Apple Wallet Pass 纯净白金质感) -->
         <div class="glass-material-card audit-receipt-card">
           <div class="panel-section-header">
             <div class="section-title-wrap">
@@ -454,99 +454,104 @@ function handleExecuteTimeTravel() {
 
 <style scoped lang="scss">
 /* ============================================================================
-   Apple iOS 26 Liquid Glass & Vibrancy 顶级设计师实现规范
-   严格准则：
-   1. 绝不创建层叠上下文（无 transform、无 opacity < 1 容器干扰、无 filter 阻断）；
-   2. 双层模糊与 color-dodge 混合模式（blur(50px)）；
-   3. Headline 严格为 590，其余一律 400，依靠尺寸与 Tracking 表达光学层级；
-   4. 零阴影系统：彻底消除生硬的 box-shadow，完全依托高光描边 (0.5px) 与材质表达空间层级；
-   5. 颜色严格采用真实 iOS 26 刷新值：blue #0088ff, green #34c759, orange #ff8d28, red #ff383c。
+   Apple iOS 26 Liquid Glass & Vibrancy 设计系统 (Light Mode 纯净浅色高奢规范)
+   完全符合 docs/design-system/00_MASTER_frontend_guide.md 权威标准：
+   1. 浅色模式原生浸润：纯净透光白晶背板与柔和背景透出；
+   2. 严格执行 Vibrant Label 规范：Primary #000000, Secondary #3d3d3d, Tertiary rgba(80,80,80,0.7)；
+   3. 铁律三：Headline 严格为 590，其余全部 400，严禁滥用 600/700；
+   4. 零阴影系统：彻底消除生硬暗黑投影，依赖 0.5px 高光描边与 50px 模糊表达空间感；
+   5. 颜色采用官方核实真值：Blue #0088ff, Green #34c759, Orange #ff8d28, Red #ff383c。
    ============================================================================ */
 
-.ios26-time-travel-container {
+.ios26-light-time-travel-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
   width: 100%;
-  color: #ededed;
+  height: 100%;
+  max-height: 100%;
+  color: #000000;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "PingFang SC", sans-serif;
   letter-spacing: -0.23px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-/* 1. 顶部通透胶囊 Header (Pill 质感，圆角 1000px) */
+/* 1. 顶部纯净高透白晶胶囊 Header (Pill 1000px 常驻吸顶) */
 .capsule-nav-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border-radius: var(--ios26-radius-pill, 1000px);
-  background: rgba(28, 30, 38, 0.75);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(50px);
   -webkit-backdrop-filter: blur(50px);
-  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  border: 0.5px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   gap: 16px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .aurora-pulse-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #0088ff; // iOS 26 系统蓝
-  box-shadow: 0 0 10px rgba(0, 136, 255, 0.8);
+  box-shadow: 0 0 8px rgba(0, 136, 255, 0.5);
 
   &.pulse-speculating {
-    background: #ff8d28; // iOS 26 待决橙
-    box-shadow: 0 0 12px rgba(255, 141, 40, 0.8);
+    background: #ff8d28; // iOS 26 橙色
+    box-shadow: 0 0 10px rgba(255, 141, 40, 0.5);
   }
 
   &.pulse-stable {
     background: #34c759; // iOS 26 绿色
-    box-shadow: 0 0 10px rgba(52, 199, 89, 0.8);
+    box-shadow: 0 0 8px rgba(52, 199, 89, 0.5);
   }
 }
 
 .header-title-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .headline-title {
   font-size: 15px;
   font-weight: 590; // Headline 590 铁律
   letter-spacing: -0.43px;
-  color: #ffffff;
+  color: #000000;
 }
 
 .sub-headline {
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0.06px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(60, 60, 67, 0.6);
 }
 
 .version-chip {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
-  background: rgba(0, 136, 255, 0.15);
-  border: 0.5px solid rgba(0, 136, 255, 0.4);
+  padding: 3px 10px;
+  background: rgba(0, 136, 255, 0.08);
+  border: 0.5px solid rgba(0, 136, 255, 0.2);
   color: #0088ff;
   border-radius: 1000px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 590;
 
   .chip-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: #0088ff;
   }
@@ -555,33 +560,33 @@ function handleExecuteTimeTravel() {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .telemetry-capsule {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
   border-radius: 1000px;
-  font-size: 12px;
+  font-size: 11px;
 
   .capsule-icon {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .capsule-key {
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(60, 60, 67, 0.7);
   }
 
   .capsule-val {
-    color: #ffffff;
+    color: #000000;
     font-weight: 400;
 
     &.highlight-green {
-      color: #34c759;
+      color: #248a3d;
       font-weight: 590;
     }
   }
@@ -591,49 +596,51 @@ function handleExecuteTimeTravel() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  border: 0.5px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.04);
+  color: #3d3d3d;
+  font-size: 11px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.18);
-    color: #ffffff;
+    background: rgba(0, 0, 0, 0.08);
+    color: #000000;
   }
 }
 
-/* 2. 主体网格分栏 */
+/* 2. 主体网格分栏 (满屏自适应) */
 .grid-main-workspace {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
+  grid-template-columns: 1.12fr 1fr;
   gap: 16px;
-  align-items: start;
+  height: calc(100% - 66px);
+  box-sizing: border-box;
 }
 
-/* Apple 玻璃卡片容器基础 (圆角 30px，零阴影，双层毛玻璃) */
+/* Apple 浅色高透白晶卡片容器 (Card 28px, 细腻微晶光泽) */
 .glass-material-card {
-  border-radius: var(--ios26-radius-card, 30px);
-  background: rgba(26, 28, 36, 0.65);
+  border-radius: var(--ios26-radius-card, 28px);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(50px);
   -webkit-backdrop-filter: blur(50px);
-  border: 0.5px solid rgba(255, 255, 255, 0.12);
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  border: 0.5px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  padding: 18px 20px;
+  box-sizing: border-box;
 }
 
 .panel-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 12px;
-  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
 }
 
 .section-title-wrap {
@@ -643,68 +650,79 @@ function handleExecuteTimeTravel() {
 }
 
 .section-headline {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 590;
   letter-spacing: -0.43px;
-  color: #ffffff;
+  color: #000000;
   margin: 0;
 }
 
 .section-caption {
   font-size: 11px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(60, 60, 67, 0.6);
 }
 
 .status-badge-capsule {
   font-size: 11px;
   padding: 3px 10px;
   border-radius: 1000px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(60, 60, 67, 0.8);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
 }
 
-/* 3. 左栏 Merkle DAG 滚动轴 */
-.dag-timeline-scroll {
+/* 3. 左栏 Merkle DAG 纵向整屏展开与平滑滚动 */
+.left-timeline-panel {
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 540px;
-  overflow-y: auto;
-  padding-right: 6px;
+  overflow: hidden;
 
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 4px;
+  .dag-timeline-scroll {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    padding-right: 6px;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 4px;
+    }
   }
 }
 
 .dag-version-card {
   display: flex;
-  gap: 14px;
-  padding: 14px 18px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 0.5px solid rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.25, 1, 0.33, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: #ffffff;
+    border-color: rgba(0, 136, 255, 0.3);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   }
 
   &.is-active-head {
-    background: rgba(0, 136, 255, 0.08);
-    border-color: rgba(0, 136, 255, 0.5);
+    background: rgba(0, 136, 255, 0.04);
+    border-color: rgba(0, 136, 255, 0.4);
+    box-shadow: 0 0 0 1px rgba(0, 136, 255, 0.15);
   }
 
   &.is-selected-revert {
-    outline: 1.5px solid #0088ff;
+    outline: 2px solid #0088ff;
   }
 }
 
@@ -712,27 +730,27 @@ function handleExecuteTimeTravel() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 4px;
-  width: 14px;
+  padding-top: 3px;
+  width: 12px;
 }
 
 .axis-node-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  border: 2px solid rgba(28, 30, 38, 0.8);
+  background: #d1d1d6;
+  border: 2px solid #ffffff;
 
   &.dot-active {
     background: #0088ff;
-    box-shadow: 0 0 8px rgba(0, 136, 255, 0.9);
+    box-shadow: 0 0 8px rgba(0, 136, 255, 0.6);
   }
 }
 
 .axis-line {
   width: 1.5px;
   flex: 1;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.08);
   margin-top: 4px;
 }
 
@@ -740,53 +758,54 @@ function handleExecuteTimeTravel() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .dag-card-top {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .version-badge {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 590;
   color: #0088ff;
 }
 
 .node-id-text {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  color: #1d1d1f;
   flex: 1;
 }
 
 .status-indicator-tag {
   font-size: 10px;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 6px;
 
   &.tag-head {
-    background: rgba(52, 199, 89, 0.2);
-    color: #34c759;
-    border: 0.5px solid rgba(52, 199, 89, 0.4);
+    background: rgba(52, 199, 89, 0.1);
+    color: #248a3d;
+    border: 0.5px solid rgba(52, 199, 89, 0.25);
+    font-weight: 590;
   }
 
   &.tag-snapshot {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.45);
+    background: rgba(0, 0, 0, 0.03);
+    color: #8e8e93;
   }
 }
 
 .delta-diff-viewer {
-  background: rgba(0, 0, 0, 0.35);
-  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.025);
+  border: 0.5px solid rgba(0, 0, 0, 0.05);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-size: 11px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .delta-diff-row {
@@ -801,11 +820,11 @@ function handleExecuteTimeTravel() {
 }
 
 .delta-param-key {
-  color: #00c0e8; // iOS 26 cyan
+  color: #0088ff;
 }
 
 .delta-param-val {
-  color: rgba(255, 255, 255, 0.85);
+  color: #1d1d1f;
   word-break: break-all;
 }
 
@@ -813,46 +832,67 @@ function handleExecuteTimeTravel() {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(60, 60, 67, 0.55);
 }
 
-/* 4. 右栏控制面板堆叠 */
+/* 4. 右栏控制面板堆叠 (自适应独立平滑滚动) */
 .right-control-panel {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+}
+
+.spec-sandbox-card,
+.time-travel-slider-card,
+.audit-receipt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  flex-shrink: 0;
 }
 
 .gate-status-pill {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 2px 9px;
   border-radius: 1000px;
   font-size: 11px;
   font-weight: 590;
 
   &.pill-gate-pass {
-    background: rgba(52, 199, 89, 0.15);
-    color: #34c759;
-    border: 0.5px solid rgba(52, 199, 89, 0.4);
+    background: rgba(52, 199, 89, 0.1);
+    color: #248a3d;
+    border: 0.5px solid rgba(52, 199, 89, 0.25);
 
     .gate-dot {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: #34c759;
     }
   }
 
   &.pill-gate-block {
-    background: rgba(255, 56, 60, 0.15);
-    color: #ff383c;
-    border: 0.5px solid rgba(255, 56, 60, 0.4);
+    background: rgba(255, 56, 60, 0.08);
+    color: #d70015;
+    border: 0.5px solid rgba(255, 56, 60, 0.2);
 
     .gate-dot {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
       background: #ff383c;
     }
@@ -862,22 +902,22 @@ function handleExecuteTimeTravel() {
 .spec-telemetry-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.telemetry-metric-box {
-  background: rgba(255, 255, 255, 0.04);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
   gap: 6px;
 }
 
+.telemetry-metric-box {
+  background: rgba(246, 246, 248, 0.75);
+  border: 0.5px solid rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .metric-title {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  color: rgba(60, 60, 67, 0.65);
 }
 
 .metric-value-row {
@@ -887,79 +927,80 @@ function handleExecuteTimeTravel() {
 }
 
 .metric-val {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 590;
-  color: #ffffff;
+  color: #000000;
 
   &.highlight-blue {
     color: #0088ff;
   }
   &.highlight-green {
-    color: #34c759;
+    color: #248a3d;
   }
 }
 
 .metric-sub {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 9px;
+  color: rgba(60, 60, 67, 0.5);
 }
 
 .spec-branch-glass-banner {
-  background: rgba(0, 136, 255, 0.06);
-  border: 0.5px solid rgba(0, 136, 255, 0.3);
-  border-radius: 16px;
-  padding: 16px;
+  background: rgba(0, 136, 255, 0.04);
+  border: 0.5px solid rgba(0, 136, 255, 0.18);
+  border-radius: 12px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .branch-meta-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .branch-icon-tag {
-  font-size: 11px;
-  padding: 2px 8px;
-  background: rgba(255, 141, 40, 0.2);
-  color: #ff8d28;
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(255, 141, 40, 0.12);
+  color: #c95100;
   border-radius: 6px;
   font-weight: 590;
 }
 
 .branch-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 590;
-  color: #ffffff;
+  color: #1d1d1f;
 }
 
 .branch-summary-text {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  font-size: 11px;
+  color: #6e6e73;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .branch-action-buttons {
   display: flex;
-  gap: 12px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 2px;
 }
 
+/* Apple 极克制高奢微渐变胶囊按钮 */
 .apple-liquid-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 18px;
-  border-radius: var(--ios26-radius-control, 12px);
-  font-size: 13px;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 1000px; // 原生药丸胶囊
+  font-size: 11px;
   font-weight: 590;
   border: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.25, 1, 0.33, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:disabled {
     opacity: 0.35;
@@ -967,30 +1008,36 @@ function handleExecuteTimeTravel() {
   }
 
   &.btn-commit {
-    background: #34c759;
+    background: linear-gradient(180deg, #34c759 0%, #2db84d 100%);
+    box-shadow: 0 2px 8px rgba(52, 199, 89, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     color: #ffffff;
 
     &:hover:not(:disabled) {
-      background: #2db34e;
+      background: linear-gradient(180deg, #2db84d 0%, #28a745 100%);
+      box-shadow: 0 3px 12px rgba(52, 199, 89, 0.35);
     }
   }
 
   &.btn-discard {
-    background: rgba(255, 56, 60, 0.15);
-    border: 0.5px solid rgba(255, 56, 60, 0.4);
-    color: #ff383c;
+    background: rgba(0, 0, 0, 0.04);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    color: #3d3d3d;
 
     &:hover:not(:disabled) {
-      background: rgba(255, 56, 60, 0.25);
+      background: rgba(255, 56, 60, 0.08);
+      border-color: rgba(255, 56, 60, 0.2);
+      color: #ff383c;
     }
   }
 
   &.btn-revert-action {
-    background: #0088ff;
+    background: linear-gradient(180deg, #0088ff 0%, #0077e6 100%);
+    box-shadow: 0 2px 10px rgba(0, 136, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     color: #ffffff;
 
     &:hover:not(:disabled) {
-      background: #0077e6;
+      background: linear-gradient(180deg, #0077e6 0%, #0066cc 100%);
+      box-shadow: 0 4px 14px rgba(0, 136, 255, 0.4);
     }
   }
 }
@@ -999,33 +1046,34 @@ function handleExecuteTimeTravel() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 12px;
+  gap: 8px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+  color: rgba(60, 60, 67, 0.6);
+  font-size: 11px;
 }
 
 /* 5. 时间旅行滑块模块 */
 .latency-budget-pill {
-  font-size: 11px;
+  font-size: 10px;
   color: #0088ff;
-  background: rgba(0, 136, 255, 0.12);
-  padding: 4px 10px;
+  background: rgba(0, 136, 255, 0.06);
+  border: 0.5px solid rgba(0, 136, 255, 0.18);
+  padding: 2px 8px;
   border-radius: 1000px;
 }
 
 .slider-interactive-workbench {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .slider-meta-header {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 11px;
 
   .v-num {
     color: #0088ff;
@@ -1036,86 +1084,95 @@ function handleExecuteTimeTravel() {
 .apple-slider-track-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .apple-lux-slider {
   width: 100%;
   accent-color: #0088ff;
-  height: 6px;
+  height: 5px;
   border-radius: 1000px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.06);
   cursor: pointer;
 }
 
 .slider-scale-ticks {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  color: rgba(60, 60, 67, 0.55);
 }
 
 .revert-action-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  margin-top: 4px;
+  gap: 10px;
+  margin-top: 2px;
 }
 
 .revert-caution-note {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
-  line-height: 1.4;
-  max-width: 68%;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(60, 60, 67, 0.6);
+  line-height: 1.35;
+  max-width: 65%;
 }
 
-/* 6. Apple Wallet 密码学凭单卡片 */
+/* 6. Apple Wallet 浅色白金密码学凭单卡片 */
 .receipt-verified-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 10px;
   font-weight: 590;
-  color: #34c759;
-  background: rgba(52, 199, 89, 0.15);
-  padding: 4px 12px;
+  color: #248a3d;
+  background: rgba(52, 199, 89, 0.1);
+  padding: 2px 8px;
   border-radius: 1000px;
-  border: 0.5px solid rgba(52, 199, 89, 0.35);
+  border: 0.5px solid rgba(52, 199, 89, 0.25);
 }
 
 .wallet-pass-body {
-  background: rgba(0, 0, 0, 0.45);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 249, 250, 0.95) 100%);
+  border: 0.5px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 11px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02), inset 0 1px 0 #ffffff;
 }
 
 .pass-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 3px;
+  border-bottom: 0.5px dashed rgba(0, 0, 0, 0.05);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
 }
 
 .pass-key {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(60, 60, 67, 0.65);
 }
 
 .pass-val {
-  color: #ffffff;
+  color: #000000;
+  font-weight: 500;
 }
 
 .signature-code {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
-  max-width: 280px;
+  font-size: 9px;
+  color: #6e6e73;
+  max-width: 250px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

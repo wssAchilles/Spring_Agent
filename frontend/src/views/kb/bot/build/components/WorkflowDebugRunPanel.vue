@@ -866,24 +866,33 @@ function handleHitlRejected(payload) {
 }
 
 :deep(.el-overlay:has(.apple-liquid-timetravel-drawer)) {
-  background-color: rgba(0, 0, 0, 0.45) !important;
+  background-color: rgba(0, 0, 0, 0.12) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
 }
 
 :deep(.apple-liquid-timetravel-drawer) {
-  background: rgba(20, 22, 30, 0.88) !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  background: rgba(242, 242, 247, 0.88) !important;
   backdrop-filter: blur(50px) !important;
   -webkit-backdrop-filter: blur(50px) !important;
-  border-left: 0.5px solid rgba(255, 255, 255, 0.16) !important;
-  border-top-left-radius: 34px !important;
-  border-bottom-left-radius: 34px !important;
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+  border-left: 0.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-top-left-radius: 32px !important;
+  border-bottom-left-radius: 32px !important;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.05), inset 1px 0 0 rgba(255, 255, 255, 0.9) !important;
 
   .el-drawer__body {
-    padding: 24px !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    padding: 20px 24px !important;
+    box-sizing: border-box !important;
     background: transparent !important;
-    overflow-y: auto !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 }
 </style>
