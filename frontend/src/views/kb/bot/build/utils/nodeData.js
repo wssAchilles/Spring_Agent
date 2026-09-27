@@ -214,11 +214,35 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
   const conditionCasesMap = new Map();
   normalizedNodes.forEach((node) => {
     if (node?.type === "condition") {
-      const cases = node?.data?.config?.cases || [];
-      if (Array.isArray(cases)) {
+      const cases = node?.data?.config?.cases || node?.data?.cases || [];
+      if (Array.isArray(cases) && cases.length) {
         cases.forEach((c) => {
           if (c?.id) {
-            conditionCasesMap.set(`${node.id}##${c.id}`, `condition-case-${c.id}`);
+            const rawId = `${c.id}`;
+            const cleanId = rawId.replace(/^case[_-]/, "");
+            const canonicalHandle = c.targetHandle || `condition-case-${cleanId}`;
+            conditionCasesMap.set(`${node.id}##${rawId}`, canonicalHandle);
+            conditionCasesMap.set(`${node.id}##${cleanId}`, canonicalHandle);
+            conditionCasesMap.set(`${node.id}##condition-case-${rawId}`, canonicalHandle);
+            conditionCasesMap.set(`${node.id}##condition-case-${cleanId}`, canonicalHandle);
+            if (c.targetHandle) {
+              conditionCasesMap.set(`${node.id}##${c.targetHandle}`, canonicalHandle);
+            }
+          }
+        });
+      }
+      const conditions = node?.data?.config?.conditions || node?.data?.conditions || [];
+      if (Array.isArray(conditions)) {
+        conditions.forEach((c, idx) => {
+          const rawId = `${c.id || (c.targetHandle ? c.targetHandle.replace(/^condition-case-/, "") : `case-${idx + 1}`)}`;
+          const cleanId = rawId.replace(/^case[_-]/, "");
+          const canonicalHandle = c.targetHandle || `condition-case-${cleanId}`;
+          conditionCasesMap.set(`${node.id}##${rawId}`, canonicalHandle);
+          conditionCasesMap.set(`${node.id}##${cleanId}`, canonicalHandle);
+          conditionCasesMap.set(`${node.id}##condition-case-${rawId}`, canonicalHandle);
+          conditionCasesMap.set(`${node.id}##condition-case-${cleanId}`, canonicalHandle);
+          if (c.targetHandle) {
+            conditionCasesMap.set(`${node.id}##${c.targetHandle}`, canonicalHandle);
           }
         });
       }
@@ -236,10 +260,16 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
     const resolvedTarget = rawTarget ? resolveNodeId(rawTarget, [localNodeIdMap]) : rawTarget;
 
     let sourceHandle = edge.sourceHandle;
-    if (sourceHandle && !sourceHandle.startsWith("condition-case-")) {
+    if (sourceHandle) {
       const candidateKey = `${resolvedSource}##${sourceHandle}`;
       if (conditionCasesMap.has(candidateKey)) {
         sourceHandle = conditionCasesMap.get(candidateKey);
+      } else if (!sourceHandle.startsWith("condition-case-")) {
+        // 尝试添加前缀
+        const candidateKeyWithPrefix = `${resolvedSource}##condition-case-${sourceHandle}`;
+        if (conditionCasesMap.has(candidateKeyWithPrefix)) {
+          sourceHandle = conditionCasesMap.get(candidateKeyWithPrefix);
+        }
       }
     }
 

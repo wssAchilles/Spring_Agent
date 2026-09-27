@@ -592,7 +592,7 @@
                       <div class="condition-branch-action">
                         <Handle
                           type="source"
-                          :id="getConditionHandleId(caseItem.id)"
+                          :id="getConditionHandleId(caseItem)"
                           :position="Position.Right"
                           :connectable-start="false"
                           class="handle condition-branch-handle"
@@ -604,7 +604,7 @@
                             onSourceActionPointerDown(
                               $event,
                               props.id,
-                              getConditionHandleId(caseItem.id)
+                              getConditionHandleId(caseItem)
                             )
                           "
                         >
@@ -2300,26 +2300,76 @@ function createConditionCase(isElse = false, overrides = {}) {
 }
 
 function normalizeConditionData(data = {}) {
-  const rawCases = Array.isArray(getNodeConfigValue(data, "cases", null))
+  let rawCases = Array.isArray(getNodeConfigValue(data, "cases", null))
     ? getNodeConfigValue(data, "cases", [])
     : Array.isArray(data.cases)
     ? data.cases
     : [];
-  const normalizedCases = rawCases.filter(Boolean).map((item) => ({
-    id: item.id || buildCaseId(item.isElse ? "else" : "case"),
-    expression: item.expression || "",
-    isElse: Boolean(item.isElse),
-  }));
+
+  // 若无 cases，尝试从后端的 conditions 字段适配
+  if (!rawCases.length) {
+    const rawConditions = Array.isArray(getNodeConfigValue(data, "conditions", null))
+      ? getNodeConfigValue(data, "conditions", [])
+      : Array.isArray(data.conditions)
+      ? data.conditions
+      : [];
+    if (rawConditions.length) {
+      rawCases = rawConditions.map((item, idx) => {
+        let cid = item.id;
+        if (item.targetHandle) {
+          cid = item.targetHandle.replace(/^condition-case-/, "");
+        }
+        if (!cid) {
+          cid = idx === rawConditions.length - 1 ? "fast" : `case-${idx + 1}`;
+        }
+        if (cid && /^case[_-]([a-zA-Z0-9]+)$/.test(cid)) {
+          cid = cid.replace(/^case[_-]/, "");
+        }
+        const cleanTargetHandle = item.targetHandle || `condition-case-${cid}`;
+        return {
+          id: cid,
+          targetHandle: cleanTargetHandle,
+          expression: item.expression || "",
+          label: item.label || "",
+          isElse: Boolean(
+            item.isElse ||
+            cid.includes("else") ||
+            cid.includes("fast") ||
+            (idx === rawConditions.length - 1 && (!item.conditions || item.conditions.length === 0))
+          ),
+        };
+      });
+    }
+  }
+
+  const normalizedCases = rawCases.filter(Boolean).map((item, idx) => {
+    let cid = item.id;
+    if (item.targetHandle) {
+      cid = item.targetHandle.replace(/^condition-case-/, "");
+    }
+    if (cid && /^case[_-]([a-zA-Z0-9]+)$/.test(cid)) {
+      cid = cid.replace(/^case[_-]/, "");
+    }
+    const finalId = cid || (item.isElse ? "else" : `case-${idx + 1}`);
+    const cleanTargetHandle = item.targetHandle || `condition-case-${finalId}`;
+    return {
+      id: finalId,
+      targetHandle: cleanTargetHandle,
+      expression: item.expression || "",
+      label: item.label || "",
+      isElse: Boolean(item.isElse),
+    };
+  });
 
   const branchCases = normalizedCases.filter((item) => !item.isElse);
   if (!branchCases.length) {
     branchCases.push(
-      createConditionCase(false, { expression: data.expression || "" })
+      createConditionCase(false, { id: "deep", targetHandle: "condition-case-deep", expression: data.expression || "" })
     );
   }
 
   const elseCase =
-    normalizedCases.find((item) => item.isElse) || createConditionCase(true);
+    normalizedCases.find((item) => item.isElse) || createConditionCase(true, { id: "fast", targetHandle: "condition-case-fast" });
 
   return createStructuredNodeData({
     input: getNodeInput(data),
@@ -2329,6 +2379,7 @@ function normalizeConditionData(data = {}) {
         "config",
         "output",
         "cases",
+        "conditions",
         "expression",
         "label",
       ]),
@@ -3634,13 +3685,27 @@ function getConditionBranchLabel(index, total) {
   return "ELIF";
 }
 
-function getConditionHandleId(caseId) {
-  return `condition-case-${caseId}`;
+function getConditionHandleId(caseItemOrId) {
+  if (!caseItemOrId) return "condition-case-default";
+  let target = "";
+  if (typeof caseItemOrId === "object") {
+    target = caseItemOrId.targetHandle || caseItemOrId.id || "";
+  } else {
+    target = String(caseItemOrId);
+  }
+  if (!target) return "condition-case-default";
+  if (target.startsWith("condition-case-")) {
+    return target;
+  }
+  if (/^case[_-]([a-zA-Z0-9]+)$/.test(target)) {
+    target = target.replace(/^case[_-]/, "");
+  }
+  return `condition-case-${target}`;
 }
 
 function getConditionDefaultSourceHandle(data = {}) {
   const firstCase = getConditionCases(data)[0];
-  return firstCase ? getConditionHandleId(firstCase.id) : null;
+  return firstCase ? getConditionHandleId(firstCase) : null;
 }
 
 function getNodeTypeLabel(nodeType) {
