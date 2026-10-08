@@ -33,28 +33,23 @@ public class StateGraphScheduler {
     private final NodeSelfHealingRouter selfHealingRouter;
     @Getter
     private final BatchIterationSubgraphEngine iterationEngine;
-    @Getter
-    private final StateGraphHypersphereProjector hypersphereProjector;
 
     public StateGraphScheduler() {
         this(new StateGraphValidator(),
                 new ConvergenceLoopGuard(50),
                 new NodeSelfHealingRouter(3, 10, 2000),
-                new BatchIterationSubgraphEngine(1024, 16),
-                new StateGraphHypersphereProjector(1536));
+                new BatchIterationSubgraphEngine(1024, 16));
     }
 
     public StateGraphScheduler(
             StateGraphValidator validator,
             ConvergenceLoopGuard loopGuard,
             NodeSelfHealingRouter selfHealingRouter,
-            BatchIterationSubgraphEngine iterationEngine,
-            StateGraphHypersphereProjector hypersphereProjector) {
+            BatchIterationSubgraphEngine iterationEngine) {
         this.validator = validator != null ? validator : new StateGraphValidator();
         this.loopGuard = loopGuard != null ? loopGuard : new ConvergenceLoopGuard(50);
         this.selfHealingRouter = selfHealingRouter != null ? selfHealingRouter : new NodeSelfHealingRouter();
         this.iterationEngine = iterationEngine != null ? iterationEngine : new BatchIterationSubgraphEngine();
-        this.hypersphereProjector = hypersphereProjector != null ? hypersphereProjector : new StateGraphHypersphereProjector();
     }
 
     /**
@@ -148,11 +143,7 @@ public class StateGraphScheduler {
         long durationNs = System.nanoTime() - startNano;
         long latencyUs = durationNs / 1000L;
 
-        // 3. 千问 1536 维超球面流形快照投影
-        double[] stateVector = hypersphereProjector.projectState(context);
-        context.setHypersphereStateVector(stateVector);
-
-        // 4. 生成不可变自签名执行凭单
+        // 3. 生成不可变自签名执行凭单
         Map<String, Integer> loopCountMap = new HashMap<>();
         context.getLoopCounters().forEach((k, v) -> loopCountMap.put(k, v.get()));
 

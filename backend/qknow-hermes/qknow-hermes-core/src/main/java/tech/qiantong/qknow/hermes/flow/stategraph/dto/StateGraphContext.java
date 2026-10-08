@@ -29,9 +29,6 @@ public class StateGraphContext {
     @Setter
     private RuntimeContextBO runtimeContext;
 
-    @Setter
-    private double[] hypersphereStateVector;
-
     public StateGraphContext(String executionId, String flowId, int totalRetryBudget) {
         this.executionId = executionId;
         this.flowId = flowId;
