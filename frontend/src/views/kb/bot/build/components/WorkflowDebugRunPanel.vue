@@ -43,15 +43,15 @@
       </el-row>
     </el-form>
 
-    <!-- UI/UX Pro Max: DAG 实时流式事件与两阶段 MCP 工具裁剪透明化观测看板 -->
+    <!-- 工作流执行可观测与事件流水 -->
     <div v-if="dagExecutionEvents.length || running" class="workflow-debug-run-panel__observability">
       <div class="observability-header">
         <div class="observability-title">
           <span class="pulse-indicator" :class="{ active: running }"></span>
-          <span>Hermes 实时流式事件与工具路由可观测</span>
+          <span>工作流实时执行流水</span>
         </div>
-        <div v-if="pruningMetric.pruningRate" class="observability-badge">
-          工具裁剪率: {{ pruningMetric.pruningRate }}%
+        <div v-if="running" class="observability-badge">
+          执行中
         </div>
       </div>
 
@@ -255,12 +255,6 @@ const formData = ref({});
 const resultText = ref("");
 const running = ref(false);
 const dagExecutionEvents = ref([]);
-const pruningMetric = ref({
-  totalTools: 0,
-  stageOneCount: 0,
-  finalCount: 0,
-  pruningRate: ""
-});
 
 watch(
   () => props.fields,
@@ -341,44 +335,33 @@ async function handleRun() {
   running.value = true;
   dagExecutionEvents.value = [
     {
-      eventId: "evt_intent",
-      nodeId: "intent_detector",
-      nodeType: "INTENT",
+      eventId: "evt_start",
+      nodeId: "flow_start",
+      nodeType: "START",
       status: "RUNNING",
-      latencyMicros: 28000,
-      payloadSummary: "正在识别用户意图与参数槽位提取..."
+      latencyMicros: 0,
+      payloadSummary: "工作流开始执行..."
     }
   ];
   snapshotManager.clear();
-  snapshotManager.recordStep(0, "intent_detector", "INTENT", { status: "RUNNING" });
+  snapshotManager.recordStep(0, "flow_start", "START", { status: "RUNNING" });
   historicalSnapshots.value = snapshotManager.getAllSnapshots();
   currentTimeStep.value = 0;
-
-  pruningMetric.value = {
-    totalTools: 512,
-    stageOneCount: 10,
-    finalCount: 3,
-    pruningRate: "99.4"
-  };
 
   try {
     emit("run", payload);
     console.log(payload);
-    // executeFlow(payload);
 
     await ProcessFlow.executeFlowStream(
       payload.flow,
       payload.input,
       conversationInAbortController.value,
       async (res) => {
-        // const { code, msg, data } = JSON.parse(res.data);
-
         const outer = JSON.parse(res.data.replace(/^data:/, ""));
         const inner = JSON.parse(outer.data);
-        console.log(outer.code);
 
         if (outer.code !== 200) {
-          message.alert(`对话异常! ${msg}`);
+          message.alert(`对话异常! ${outer.msg || ''}`);
           return;
         }
         if (inner.text) {
@@ -386,28 +369,19 @@ async function handleRun() {
           if (dagExecutionEvents.value.length === 1) {
             dagExecutionEvents.value[0].status = "SUCCEEDED";
             dagExecutionEvents.value.push({
-              eventId: "evt_two_stage_mcp",
-              nodeId: "two_stage_tool_router",
-              nodeType: "TOOL",
-              status: "SUCCEEDED",
-              latencyMicros: 112000,
-              payloadSummary: "两阶段流形裁剪完成: 512 候选 -> Top-10 初筛 -> Top-3 精确匹配"
-            });
-            dagExecutionEvents.value.push({
-              eventId: "evt_reasoning",
-              nodeId: "cognitive_reasoner",
-              nodeType: "REASONING",
+              eventId: "evt_stream",
+              nodeId: "flow_stream_execution",
+              nodeType: "EXECUTE",
               status: "RUNNING",
-              latencyMicros: 64000,
-              payloadSummary: "DeepSeek 认知内核流式推理输出中..."
+              latencyMicros: 0,
+              payloadSummary: "工作流流式响应中..."
             });
 
-            // 实时录制快照树
-            snapshotManager.recordStep(1, "two_stage_tool_router", "TOOL", { status: "SUCCEEDED" });
-            snapshotManager.recordStep(2, "cognitive_reasoner", "REASONING", { status: "RUNNING" });
+            // 实时录制快照步进
+            snapshotManager.recordStep(1, "flow_stream_execution", "EXECUTE", { status: "RUNNING" });
             historicalSnapshots.value = snapshotManager.getAllSnapshots();
             currentTimeStep.value = historicalSnapshots.value.length - 1;
-            selectEventForWhyline(dagExecutionEvents.value[2]);
+            selectEventForWhyline(dagExecutionEvents.value[1]);
           }
         }
       },
