@@ -23,23 +23,39 @@ public class DagUtils {
      * @throws IllegalStateException 如果存在环
      */
     public static List<String> topologicalSort(List<KbFlowNodeDO> nodes, List<KbFlowEdgeDO> edges) {
+        List<String> nodeUuids = nodes != null ? nodes.stream().map(KbFlowNodeDO::getUuid).toList() : Collections.emptyList();
+        List<Map.Entry<String, String>> edgePairs = edges != null ? edges.stream().map(e -> Map.entry(e.getSourceNodeUuid(), e.getTargetNodeUuid())).toList() : Collections.emptyList();
+        return topologicalSortUuids(nodeUuids, edgePairs);
+    }
+
+    /**
+     * 拓扑排序通用实现 (Kahn 算法)
+     *
+     * @param nodeUuids 节点 UUID 集合
+     * @param edgePairs 边的 (sourceUuid, targetUuid) 键值对集合
+     * @return 拓扑排序后的节点 UUID 列表
+     * @throws IllegalStateException 如果存在环
+     */
+    public static List<String> topologicalSortUuids(Collection<String> nodeUuids, Collection<Map.Entry<String, String>> edgePairs) {
         // 构建邻接表和入度表
         Map<String, Set<String>> adjacency = new LinkedHashMap<>();
         Map<String, Integer> inDegree = new LinkedHashMap<>();
 
         // 初始化所有节点
-        for (KbFlowNodeDO node : nodes) {
-            adjacency.put(node.getUuid(), new LinkedHashSet<>());
-            inDegree.put(node.getUuid(), 0);
+        for (String uuid : nodeUuids) {
+            adjacency.put(uuid, new LinkedHashSet<>());
+            inDegree.put(uuid, 0);
         }
 
         // 构建边
-        for (KbFlowEdgeDO edge : edges) {
-            String source = edge.getSourceNodeUuid();
-            String target = edge.getTargetNodeUuid();
-            if (adjacency.containsKey(source) && adjacency.containsKey(target)) {
-                adjacency.get(source).add(target);
-                inDegree.put(target, inDegree.get(target) + 1);
+        if (edgePairs != null) {
+            for (Map.Entry<String, String> edge : edgePairs) {
+                String source = edge.getKey();
+                String target = edge.getValue();
+                if (adjacency.containsKey(source) && adjacency.containsKey(target)) {
+                    adjacency.get(source).add(target);
+                    inDegree.put(target, inDegree.get(target) + 1);
+                }
             }
         }
 
@@ -66,7 +82,7 @@ public class DagUtils {
         }
 
         // 检测环
-        if (sorted.size() != nodes.size()) {
+        if (sorted.size() != nodeUuids.size()) {
             Set<String> cycleNodes = new HashSet<>(inDegree.keySet());
             cycleNodes.removeAll(sorted);
             throw new IllegalStateException("DAG 中存在环，涉及节点: " + cycleNodes);
@@ -88,6 +104,18 @@ public class DagUtils {
     }
 
     /**
+     * 检测 DAG 是否存在环 (通用 UUID 形式)
+     */
+    public static boolean hasCycleUuids(Collection<String> nodeUuids, Collection<Map.Entry<String, String>> edgePairs) {
+        try {
+            topologicalSortUuids(nodeUuids, edgePairs);
+            return false;
+        } catch (IllegalStateException e) {
+            return true;
+        }
+    }
+
+    /**
      * 获取并行执行分组
      * 同一组的节点可以并行执行，不同组之间有依赖关系
      *
@@ -96,21 +124,36 @@ public class DagUtils {
      * @return 分组列表，每组包含可以并行执行的节点 UUID
      */
     public static List<List<String>> getParallelGroups(List<KbFlowNodeDO> nodes, List<KbFlowEdgeDO> edges) {
+        List<String> nodeUuids = nodes != null ? nodes.stream().map(KbFlowNodeDO::getUuid).toList() : Collections.emptyList();
+        List<Map.Entry<String, String>> edgePairs = edges != null ? edges.stream().map(e -> Map.entry(e.getSourceNodeUuid(), e.getTargetNodeUuid())).toList() : Collections.emptyList();
+        return getParallelGroupsUuids(nodeUuids, edgePairs);
+    }
+
+    /**
+     * 获取并行执行分组通用实现
+     *
+     * @param nodeUuids 节点 UUID 集合
+     * @param edgePairs 边的键值对集合
+     * @return 分组列表
+     */
+    public static List<List<String>> getParallelGroupsUuids(Collection<String> nodeUuids, Collection<Map.Entry<String, String>> edgePairs) {
         // 构建入度表
         Map<String, Integer> inDegree = new LinkedHashMap<>();
         Map<String, Set<String>> adjacency = new LinkedHashMap<>();
 
-        for (KbFlowNodeDO node : nodes) {
-            adjacency.put(node.getUuid(), new LinkedHashSet<>());
-            inDegree.put(node.getUuid(), 0);
+        for (String uuid : nodeUuids) {
+            adjacency.put(uuid, new LinkedHashSet<>());
+            inDegree.put(uuid, 0);
         }
 
-        for (KbFlowEdgeDO edge : edges) {
-            String source = edge.getSourceNodeUuid();
-            String target = edge.getTargetNodeUuid();
-            if (adjacency.containsKey(source) && adjacency.containsKey(target)) {
-                adjacency.get(source).add(target);
-                inDegree.put(target, inDegree.get(target) + 1);
+        if (edgePairs != null) {
+            for (Map.Entry<String, String> edge : edgePairs) {
+                String source = edge.getKey();
+                String target = edge.getValue();
+                if (adjacency.containsKey(source) && adjacency.containsKey(target)) {
+                    adjacency.get(source).add(target);
+                    inDegree.put(target, inDegree.get(target) + 1);
+                }
             }
         }
 
@@ -168,6 +211,17 @@ public class DagUtils {
     }
 
     /**
+     * 获取节点的后继节点 (通用形式)
+     */
+    public static Set<String> getSuccessorsUuids(String nodeUuid, Collection<Map.Entry<String, String>> edgePairs) {
+        if (edgePairs == null) return Collections.emptySet();
+        return edgePairs.stream()
+                .filter(e -> Objects.equals(e.getKey(), nodeUuid))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toSet());
+    }
+
+    /**
      * 递归计算条件分支未命中时应剪枝（SKIPPED）的下游节点集合
      *
      * @param conditionNodeUuid 条件节点 UUID
@@ -178,10 +232,20 @@ public class DagUtils {
     public static Set<String> computePrunedNodes(String conditionNodeUuid,
                                                 List<String> selectedNextNodeIds,
                                                 List<KbFlowEdgeDO> edges) {
+        List<Map.Entry<String, String>> edgePairs = edges != null ? edges.stream().map(e -> Map.entry(e.getSourceNodeUuid(), e.getTargetNodeUuid())).toList() : Collections.emptyList();
+        return computePrunedNodesUuids(conditionNodeUuid, selectedNextNodeIds, edgePairs);
+    }
+
+    /**
+     * 递归计算条件分支未命中时应剪枝（SKIPPED）的下游节点集合 (通用形式)
+     */
+    public static Set<String> computePrunedNodesUuids(String conditionNodeUuid,
+                                                     List<String> selectedNextNodeIds,
+                                                     Collection<Map.Entry<String, String>> edgePairs) {
         Set<String> selectedSet = selectedNextNodeIds != null ? new HashSet<>(selectedNextNodeIds) : Collections.emptySet();
 
         // 1. 获取条件节点的所有直接后继节点
-        Set<String> allDirectSuccessors = getSuccessors(conditionNodeUuid, edges);
+        Set<String> allDirectSuccessors = getSuccessorsUuids(conditionNodeUuid, edgePairs);
 
         // 2. 未选中的直接后继节点作为剪枝根
         Set<String> unselectedDirectSuccessors = new HashSet<>(allDirectSuccessors);
@@ -198,7 +262,7 @@ public class DagUtils {
         while (!queue.isEmpty()) {
             String current = queue.poll();
             if (prunedNodes.add(current)) {
-                Set<String> nextSuccessors = getSuccessors(current, edges);
+                Set<String> nextSuccessors = getSuccessorsUuids(current, edgePairs);
                 for (String next : nextSuccessors) {
                     if (!selectedSet.contains(next)) {
                         queue.offer(next);

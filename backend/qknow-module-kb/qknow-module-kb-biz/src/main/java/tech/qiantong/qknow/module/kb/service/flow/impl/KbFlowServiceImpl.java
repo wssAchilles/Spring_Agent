@@ -35,9 +35,14 @@ import tech.qiantong.qknow.module.kb.service.flow.bo.NodeRunResultBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO;
 import tech.qiantong.qknow.module.kb.service.flow.factory.NodeFactory;
 import tech.qiantong.qknow.module.kb.service.runtime.IKbRuntimeService;
+import tech.qiantong.qknow.hermes.flow.dag.DagUtils;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -58,6 +63,9 @@ public class KbFlowServiceImpl implements IKbFlowService {
     private IKbRuntimeService runtimeService;
     @Resource
     private NodeFactory nodeFactory;
+
+    private final ExecutorService dagExecutorService = Executors.newFixedThreadPool(
+            Math.min(Runtime.getRuntime().availableProcessors(), 8));
 
     /**
      * 根据 BotId 查询流程
@@ -269,67 +277,14 @@ public class KbFlowServiceImpl implements IKbFlowService {
      * @param flowBO 流程运行对象
      * @return 执行结果
      */
+    /**
+     * 执行流程
+     *
+     * @param flowBO 流程运行对象
+     * @return 执行结果
+     */
     public KbRuntimeRespVO executeFlow(KbFlowBO flowBO, RuntimeContextBO runtimeContext) {
-        log.info("{}", runtimeContext);
-        // 校验工作流
-        validateWorkflow(flowBO);
-        // 找到开始节点
-        KbFlowNodeDO startNode = findStartNode(flowBO.getNodeList());
-        // 将节点列表转为map，方便后期使用，key 是 uuid，value 是节点对象
-        Map<String, KbFlowNodeDO> nodeMap = flowBO.getNodeList().stream()
-                .collect(Collectors.toMap(KbFlowNodeDO::getUuid, node -> node, (existing, replacement) -> replacement));
-        runtimeContext.setNodeMap(nodeMap);
-        Queue<String> nodeQueue = new LinkedList<>();// 等待执行节点的Uuid
-        Set<String> executedNodes = ConcurrentHashMap.newKeySet();// 已经执行过的节点
-        nodeQueue.offer(startNode.getUuid());
-        int step = 1;
-        while (!nodeQueue.isEmpty()) {
-            String nodeUuid = nodeQueue.poll();
-            // 跳过已执行的节点（避免循环）
-            if (executedNodes.contains(nodeUuid)) {
-                log.debug("节点 {} 已执行过，跳过", nodeUuid);
-                continue;
-            }
-            KbFlowNodeDO currentNodeDef = nodeMap.get(nodeUuid);
-            // 创建节点实例
-            BaseNodeBO node = nodeFactory.createNode(currentNodeDef, flowBO.getEdgeList());
-            // 执行节点
-            NodeRunResultBO nodeResult = node.execute(runtimeContext);
-            // 标记为已执行
-            executedNodes.add(nodeUuid);
-            nodeResult.setStep(step++);
-
-            runtimeService.saveRuntimeNode(nodeResult, runtimeContext);
-
-            // 如果执行失败，终止工作流
-            if (Objects.equals(RuntimeStatusEnums.ERROR.getCode(), nodeResult.getStatus())) {
-                log.error("节点执行失败：{}, 错误：{}", currentNodeDef.getName(), nodeResult.getErrorMessage());
-                // 更新运行状态
-                runtimeService.saveRunError(runtimeContext.getRuntimeDO());
-                return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
-            }
-
-            // 将下一个节点加入队列
-            List<String> nextNodeIdList = nodeResult.getNextNodeIds();
-            if (CollUtil.isNotEmpty(nextNodeIdList)) {
-                log.debug("添加下一个节点到队列：{}", nextNodeIdList);
-                for (String nextNodeUuId : nextNodeIdList) {
-                    // 检查节点是否存在
-                    boolean exists = nodeMap.containsKey(nextNodeUuId);
-                    if (exists) {
-                        nodeQueue.offer(nextNodeUuId);
-                    } else {
-                        log.warn("下一个节点不存在：{}", nextNodeUuId);
-                    }
-                }
-            }
-        }
-
-        // 修改 运行实例状态
-        runtimeService.saveRunSuccess(runtimeContext.getRuntimeDO());
-        log.info("========== 工作流执行完成：{} ==========", flowBO.getBotId());
-        // 更新运行状态
-        return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
+        return executeDagPipeline(flowBO, runtimeContext, false);
     }
 
     /**
@@ -339,60 +294,168 @@ public class KbFlowServiceImpl implements IKbFlowService {
      * @return 执行结果
      */
     public KbRuntimeRespVO textExecuteFlow(KbFlowBO flowBO, RuntimeContextBO runtimeContext) {
-        log.info("{}", runtimeContext);
-        // 校验工作流
+        return executeDagPipeline(flowBO, runtimeContext, true);
+    }
+
+    /**
+     * DAG 工作流现代执行调度管道
+     * 具备：环路快速检测、拓扑分层 Kahn 排序、多分支并发异步执行、条件分支动态递归剪枝、汇聚节点依赖完备保障
+     *
+     * @param flowBO 流程定义
+     * @param runtimeContext 运行时上下文
+     * @param isTestMode 是否为测试/调试模式
+     * @return 运行响应结果
+     */
+    private KbRuntimeRespVO executeDagPipeline(KbFlowBO flowBO, RuntimeContextBO runtimeContext, boolean isTestMode) {
+        log.info("[DAG 调度器] 开始执行工作流, botId={}, isTestMode={}", flowBO.getBotId(), isTestMode);
+        // 校验工作流基本结构
         validateWorkflow(flowBO);
-        // 找到开始节点
-        KbFlowNodeDO startNode = findStartNode(flowBO.getNodeList());
-        // 将节点列表转为map，方便后期使用，key 是 uuid，value 是节点对象
-        Map<String, KbFlowNodeDO> nodeMap = flowBO.getNodeList().stream()
-                .collect(Collectors.toMap(KbFlowNodeDO::getUuid, node -> node, (existing, replacement) -> replacement));
+
+        List<KbFlowNodeDO> flowNodes = flowBO.getNodeList();
+        List<KbFlowEdgeDO> flowEdges = flowBO.getEdgeList() != null ? flowBO.getEdgeList() : Collections.emptyList();
+
+        List<String> nodeUuids = flowNodes.stream().map(KbFlowNodeDO::getUuid).toList();
+        List<Map.Entry<String, String>> edgePairs = flowEdges.stream()
+                .map(e -> Map.entry(e.getSourceNodeUuid(), e.getTargetNodeUuid()))
+                .toList();
+
+        // 1. 验证 DAG 是否存在环路死锁
+        if (DagUtils.hasCycleUuids(nodeUuids, edgePairs)) {
+            log.error("[DAG 调度器] 工作流存在环路死锁，拒绝执行, botId={}", flowBO.getBotId());
+            throw new ServiceException("工作流存在环路死锁，无法执行");
+        }
+
+        // 2. 获取拓扑并行分组 (BFS 拓扑分层)
+        List<List<String>> parallelGroups = DagUtils.getParallelGroupsUuids(nodeUuids, edgePairs);
+        log.info("[DAG 调度器] 工作流共 {} 个节点, 划分为 {} 个拓扑执行层", flowNodes.size(), parallelGroups.size());
+
+        Map<String, KbFlowNodeDO> nodeMap = flowNodes.stream()
+                .collect(Collectors.toMap(KbFlowNodeDO::getUuid, n -> n, (existing, replacement) -> replacement));
         runtimeContext.setNodeMap(nodeMap);
-        Queue<String> nodeQueue = new LinkedList<>();// 等待执行节点的Uuid
-        Set<String> executedNodes = ConcurrentHashMap.newKeySet();// 已经执行过的节点
-        nodeQueue.offer(startNode.getUuid());
-        int step = 1;
-        while (!nodeQueue.isEmpty()) {
-            String nodeUuid = nodeQueue.poll();
-            // 跳过已执行的节点（避免循环）
-            if (executedNodes.contains(nodeUuid)) {
-                log.debug("节点 {} 已执行过，跳过", nodeUuid);
-                continue;
-            }
-            KbFlowNodeDO currentNodeDef = nodeMap.get(nodeUuid);
-            // 创建节点实例
-            BaseNodeBO node = nodeFactory.createNode(currentNodeDef, flowBO.getEdgeList());
-            // 执行节点
-            NodeRunResultBO nodeResult = node.execute(runtimeContext);
-            // 标记为已执行
-            executedNodes.add(nodeUuid);
-            nodeResult.setStep(step++);
 
-            // 如果执行失败，终止工作流
-            if (Objects.equals(RuntimeStatusEnums.ERROR.getCode(), nodeResult.getStatus())) {
-                log.error("节点执行失败：{}, 错误：{}", currentNodeDef.getName(), nodeResult.getErrorMessage());
-                runtimeContext.getRuntimeDO().setOutput(nodeResult.getErrorMessage());
-                return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
-            }
+        // 维护动态剪枝集合（被条件分支未命中剔除的下游节点集合）
+        Set<String> prunedNodes = ConcurrentHashMap.newKeySet();
+        // 维护节点执行结果映射
+        Map<String, NodeRunResultBO> resultMap = new ConcurrentHashMap<>();
+        AtomicInteger stepCounter = new AtomicInteger(1);
 
-            // 将下一个节点加入队列
-            List<String> nextNodeIdList = nodeResult.getNextNodeIds();
-            if (CollUtil.isNotEmpty(nextNodeIdList)) {
-                log.debug("添加下一个节点到队列：{}", nextNodeIdList);
-                for (String nextNodeUuId : nextNodeIdList) {
-                    // 检查节点是否存在
-                    boolean exists = nodeMap.containsKey(nextNodeUuId);
-                    if (exists) {
-                        nodeQueue.offer(nextNodeUuId);
+        for (int groupIndex = 0; groupIndex < parallelGroups.size(); groupIndex++) {
+            List<String> group = parallelGroups.get(groupIndex);
+            log.info("[DAG 调度器] 调度第 {}/{} 层，包含 {} 个节点: {}", groupIndex + 1, parallelGroups.size(), group.size(), group);
+
+            if (group.size() == 1) {
+                // 单节点顺序执行
+                String nodeUuid = group.get(0);
+                NodeRunResultBO nodeResult = executeSingleDagNode(nodeUuid, nodeMap, flowEdges, edgePairs, runtimeContext, prunedNodes, stepCounter, isTestMode);
+                resultMap.put(nodeUuid, nodeResult);
+
+                if (Objects.equals(RuntimeStatusEnums.ERROR.getCode(), nodeResult.getStatus())) {
+                    log.error("[DAG 调度器] 节点执行失败，终止工作流: node={}, error={}", nodeResult.getNodeName(), nodeResult.getErrorMessage());
+                    if (!isTestMode) {
+                        runtimeService.saveRunError(runtimeContext.getRuntimeDO());
                     } else {
-                        log.warn("下一个节点不存在：{}", nextNodeUuId);
+                        runtimeContext.getRuntimeDO().setOutput(nodeResult.getErrorMessage());
                     }
+                    return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
+                }
+            } else {
+                // 多节点并行执行 (CompletableFuture 异步并发)
+                List<CompletableFuture<NodeRunResultBO>> futures = new ArrayList<>();
+                for (String nodeUuid : group) {
+                    futures.add(CompletableFuture.supplyAsync(
+                            () -> executeSingleDagNode(nodeUuid, nodeMap, flowEdges, edgePairs, runtimeContext, prunedNodes, stepCounter, isTestMode),
+                            dagExecutorService
+                    ));
+                }
+
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+                boolean hasError = false;
+                NodeRunResultBO failedResult = null;
+                for (CompletableFuture<NodeRunResultBO> future : futures) {
+                    try {
+                        NodeRunResultBO r = future.get();
+                        resultMap.put(r.getNodeUuid(), r);
+                        if (Objects.equals(RuntimeStatusEnums.ERROR.getCode(), r.getStatus())) {
+                            hasError = true;
+                            failedResult = r;
+                        }
+                    } catch (Exception e) {
+                        log.error("[DAG 调度器] 并行执行节点异常", e);
+                        hasError = true;
+                    }
+                }
+
+                if (hasError) {
+                    log.error("[DAG 调度器] 并行执行层中存在失败节点，终止工作流");
+                    if (!isTestMode) {
+                        runtimeService.saveRunError(runtimeContext.getRuntimeDO());
+                    } else if (failedResult != null) {
+                        runtimeContext.getRuntimeDO().setOutput(failedResult.getErrorMessage());
+                    }
+                    return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
                 }
             }
         }
-        log.info("========== 工作流执行完成：{} ==========", flowBO.getBotId());
-        // 更新运行状态
+
+        if (!isTestMode) {
+            runtimeService.saveRunSuccess(runtimeContext.getRuntimeDO());
+        }
+        log.info("[DAG 调度器] ========== 工作流执行顺利完成：botId={} ==========", flowBO.getBotId());
         return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
+    }
+
+    /**
+     * 单个 DAG 节点调度执行（含剪枝判定与后继分支动态剪枝分析）
+     */
+    private NodeRunResultBO executeSingleDagNode(String nodeUuid,
+                                                Map<String, KbFlowNodeDO> nodeMap,
+                                                List<KbFlowEdgeDO> flowEdges,
+                                                List<Map.Entry<String, String>> edgePairs,
+                                                RuntimeContextBO runtimeContext,
+                                                Set<String> prunedNodes,
+                                                AtomicInteger stepCounter,
+                                                boolean isTestMode) {
+        KbFlowNodeDO currentNodeDef = nodeMap.get(nodeUuid);
+        String nodeName = currentNodeDef != null ? currentNodeDef.getName() : nodeUuid;
+
+        // 1. 若当前节点已被条件分支剪除，则不提交物理执行，生成 SKIPPED 结果
+        if (prunedNodes.contains(nodeUuid)) {
+            log.info("[DAG 调度器] 节点处于未命中条件分支，跳过物理执行并标记为 SKIPPED: uuid={}, name={}", nodeUuid, nodeName);
+            NodeRunResultBO skipped = new NodeRunResultBO();
+            skipped.setNodeUuid(nodeUuid);
+            skipped.setNodeName(nodeName);
+            skipped.setStatus(RuntimeStatusEnums.SKIPPED.getCode());
+            skipped.setStep(stepCounter.getAndIncrement());
+            skipped.setOutput(Map.of("status", "SKIPPED", "reason", "pruned_by_condition"));
+            if (!isTestMode) {
+                runtimeService.saveRuntimeNode(skipped, runtimeContext);
+            }
+            return skipped;
+        }
+
+        // 2. 正常物理执行
+        BaseNodeBO node = nodeFactory.createNode(currentNodeDef, flowEdges);
+        NodeRunResultBO nodeResult;
+        synchronized (runtimeContext.getVariables()) {
+            nodeResult = node.execute(runtimeContext);
+        }
+        nodeResult.setStep(stepCounter.getAndIncrement());
+
+        if (!isTestMode) {
+            runtimeService.saveRuntimeNode(nodeResult, runtimeContext);
+        }
+
+        // 3. 若为条件网关节点（产出了选中的后继分支），递归计算未选中的后继子图并加入剪枝集合
+        if (nodeResult.getNextNodeIds() != null) {
+            Set<String> newlyPruned = DagUtils.computePrunedNodesUuids(nodeUuid, nodeResult.getNextNodeIds(), edgePairs);
+            if (!newlyPruned.isEmpty()) {
+                log.info("[DAG 调度器] 条件节点 [{}] 触发分支剪枝，剪除下游 {} 个节点: {}", nodeName, newlyPruned.size(), newlyPruned);
+                prunedNodes.addAll(newlyPruned);
+            }
+        }
+
+        return nodeResult;
     }
 
     /**

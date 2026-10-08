@@ -6,7 +6,9 @@ package tech.qiantong.qknow.module.kb.dal.enums;
 public enum RuntimeStatusEnums {
     RUNNING(0),
     SUCCESS(1),
-    ERROR(2);
+    ERROR(2),
+    SUSPENDED(3),
+    SKIPPED(4);
 
     private final Integer code;
 
