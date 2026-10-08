@@ -11,6 +11,7 @@ public enum FlowNodeTypeEnums {
     REPLY(3, "reply"),
     CONDITION(4, "condition"),
     KNOWLEDGE(5, "knowledge"),
+    TOOL(7, "tool"),
     ;
 
     private final Integer code;

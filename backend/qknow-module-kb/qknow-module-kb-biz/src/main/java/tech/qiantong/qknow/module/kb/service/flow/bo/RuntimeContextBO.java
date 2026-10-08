@@ -15,10 +15,13 @@ import tech.qiantong.qknow.module.kb.dal.enums.BotTypeEnums;
 import java.util.List;
 import java.util.Map;
 
+import lombok.NoArgsConstructor;
+
 /**
  * 流程运行时上下文对象
  */
 @Data
+@NoArgsConstructor
 public class RuntimeContextBO {
 
     /**

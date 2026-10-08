@@ -16,6 +16,10 @@ import tech.qiantong.qknow.module.kb.service.flow.bo.ReplyNodeBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.StartNodeBO;
 import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO;
+import tech.qiantong.qknow.module.kb.tool.mcp.McpToolAdapter;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -31,6 +35,9 @@ public class NodeFactory {
 
     @Resource
     private IKmcApiService kmcApiService;
+
+    @Autowired(required = false)
+    private McpToolAdapter mcpToolAdapter;
 
     /**
      * 根据节点定义创建节点实例
@@ -54,6 +61,7 @@ public class NodeFactory {
             case REPLY -> new ReplyNodeBO(nodeDefinition, edgeList);
             case CONDITION -> new ConditionNodeBO(nodeDefinition, edgeList);
             case KNOWLEDGE -> new KnowledgeNodeBO(nodeDefinition, edgeList, kmcApiService);
+            case TOOL -> new ToolNodeBO(nodeDefinition, edgeList, mcpToolAdapter);
 
             default -> throw new ServiceException("不支持的节点类型：" + nodeType);
         };
