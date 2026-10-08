@@ -1193,7 +1193,99 @@ import {
   setNodeConfigValue,
   setNodeInput,
   setNodeOutput,
-} from "./utils/nodeData";
+} from "./utils/nodeData.js";
+import {
+  TOOL_NODE_TYPE,
+  LOOP_OUTER_TARGET_HANDLE_ID,
+  LOOP_OUTER_SOURCE_HANDLE_ID,
+  CHATFLOW_DEFAULT_START_FIELD_ID,
+  CHATFLOW_LEGACY_DEFAULT_START_FIELD_ID,
+  START_FIELD_NAME_PATTERN,
+  startFieldTypeOptions,
+  buildGeneratedId,
+  buildNodeId,
+  buildCaseId,
+  buildStartFieldId,
+  buildReplyOutputId,
+  buildToolOutputId,
+  buildLlmMessageId,
+  buildLoopStepId,
+  createEdgeId,
+  normalizeLoopPath,
+  areLoopPathsEqual,
+  normalizeModelProviderValue,
+  getNodeTypeLabel,
+  getStartFieldTypeMeta,
+  createStartField,
+  createChatflowDefaultStartField,
+  isReadonlyStartField,
+  isChatflowDefaultStartField,
+  normalizeStartField,
+  normalizeStartFields as rawNormalizeStartFields,
+  normalizeStartNodeData as rawNormalizeStartNodeData,
+  getStartFields as rawGetStartFields,
+  getStartFieldValueTypeLabel,
+  getStartFieldDisplayLabel,
+  getStartFieldPreview as rawGetStartFieldPreview,
+  getStartFieldOverflowCount as rawGetStartFieldOverflowCount,
+  createConditionCase,
+  normalizeConditionData,
+  getConditionCases,
+  getConditionCaseLabel,
+  getConditionBranchLabel,
+  getConditionHandleId,
+  getConditionDefaultSourceHandle,
+  createReplyOutput,
+  normalizeReplyOutput,
+  getReplyNodeLabel,
+  buildReplyPreviewReferenceSegment,
+  buildReplyPreviewVariableReferenceKey,
+  getReplyPreviewVariableFallbackLabel,
+  getReplyPreviewText,
+  normalizeReplyNodeData,
+  getReplyContent,
+  getReplyOutputs,
+  getReplyContextVariables,
+  getReplyNodePreviewItems as rawGetReplyNodePreviewItems,
+  getReplyNodePreviewList as rawGetReplyNodePreviewList,
+  getReplyNodePreviewOverflowCount as rawGetReplyNodePreviewOverflowCount,
+  getReplyNodePreviewSegments as rawGetReplyNodePreviewSegments,
+  createToolOutput,
+  normalizeToolOutput,
+  buildDefaultToolOutputs,
+  normalizeToolNodeData,
+  getToolOutputs,
+  getToolContextVariables,
+  getToolNodeLabel,
+  getToolNodeSubtitle,
+  getToolNodePreviewList,
+  getToolNodePreviewOverflowCount,
+  normalizeLlmMessageRole,
+  createLlmMessage,
+  normalizeLlmOutputItem,
+  buildLlmOutputItems,
+  normalizeLlmNodeData as rawNormalizeLlmNodeData,
+  getLlmOutputs as rawGetLlmOutputs,
+  createLoopFlowEdge,
+  createLoopEntryNode,
+  createLoopFlowNodeData as rawCreateLoopFlowNodeData,
+  createLoopFlowNode as rawCreateLoopFlowNode,
+  normalizeLoopFlowNode as rawNormalizeLoopFlowNode,
+  buildLoopNodesFromLegacySteps as rawBuildLoopNodesFromLegacySteps,
+  buildLoopEdgesFromNodes,
+  normalizeLoopData as rawNormalizeLoopData,
+  getLoopNodes,
+  getLoopEdges,
+  getLoopCanvasLayout,
+  getLoopCanvasNodeSize,
+  getLoopCanvasMetrics,
+  getLoopNodeStyle,
+  getLoopEditorSurfaceStyle,
+  getDefaultSourceHandleId,
+  getDefaultTargetHandleId,
+  normalizeNodeData as rawNormalizeNodeData,
+} from "./utils/workflowHelpers.js";
+import { computeAutoLayout } from "./utils/workflowLayout.js";
 const router = useRouter();
 const {
   addEdges,
@@ -1235,7 +1327,7 @@ const nodes = ref([
     id: "start_1",
     type: "start",
     position: { x: 100, y: 200 },
-    data: normalizeStartNodeData({ label: "开始" }),
+    data: rawNormalizeStartNodeData({ label: "开始" }),
   },
 ]);
 
@@ -1259,14 +1351,6 @@ const rules = reactive({
 // 工作流id
 const botId = ref(null);
 const flowName = ref(null);
-let conditionCaseSeed = 0;
-let edgeSeed = 0;
-let nodeSeed = 0;
-let loopStepSeed = 0;
-let startFieldSeed = 0;
-let llmMessageSeed = 0;
-let replyOutputSeed = 0;
-let toolOutputSeed = 0;
 const startFieldDialogVisible = ref(false);
 const startFieldDialogMode = ref("create");
 const startFieldDialogFormRef = ref(null);
@@ -1342,8 +1426,6 @@ const sourceActionDragThreshold = 6;
 const dragHoverTargetId = ref(null);
 const addMenuOpenAt = ref(0);
 const addMenuDismissGuardMs = 220;
-const LOOP_OUTER_TARGET_HANDLE_ID = "loop-node-target";
-const LOOP_OUTER_SOURCE_HANDLE_ID = "loop-node-source";
 const ADD_NODE_MENU_MARGIN = 16;
 const ADD_NODE_MENU_VERTICAL_OFFSET = 120;
 const ADD_NODE_MENU_ESTIMATED_WIDTH = 252;
@@ -1352,7 +1434,6 @@ const ADD_NODE_MENU_TAB_HEIGHT = 44;
 const ADD_NODE_MENU_ITEM_HEIGHT = 56;
 const ADD_NODE_MENU_LIST_PADDING = 16;
 const ENABLED_ADDABLE_NODE_TYPES = new Set(["llm", "reply", "knowledge-retrieval", "knowledge"]);
-const TOOL_NODE_TYPE = "tool";
 const DEFAULT_TOOL_MENU_ICON = "🧰";
 
 // 可添加的节点类型
@@ -1601,24 +1682,6 @@ function handleAddMenuItemClick(menuItem = {}) {
   addNodeAndConnect(menuItem?.type || "");
 }
 
-const startFieldTypeOptions = [
-  {
-    value: "text",
-    label: "文本",
-    valueType: "string",
-    icon: "T",
-    defaultMaxLength: 48,
-    supportsMaxLength: true,
-  },
-  {
-    value: "paragraph",
-    label: "段落",
-    valueType: "string",
-    icon: "P",
-    defaultMaxLength: 200,
-    supportsMaxLength: true,
-  },
-];
 function routerView() {
   // todo 根据类型进行判断
   if (workflowType.value == 0){// 工作流
@@ -1864,160 +1927,12 @@ function autoLayoutGraph() {
     return;
   }
 
-  // 1. 构建节点邻接表与入度表
-  const nodeIds = nodes.value.map((n) => n.id);
-  const nodeMap = new Map();
-  nodes.value.forEach((n) => nodeMap.set(n.id, n));
+  nodes.value = computeAutoLayout(nodes.value, edges.value);
 
-  const inDegree = {};
-  const adjEdges = {};
-  nodeIds.forEach((id) => {
-    inDegree[id] = 0;
-    adjEdges[id] = [];
-  });
-
-  const validEdges = (edges.value || []).filter(
-    (e) => nodeIds.includes(e.source) && nodeIds.includes(e.target)
-  );
-
-  validEdges.forEach((edge) => {
-    if (adjEdges[edge.source]) {
-      adjEdges[edge.source].push(edge);
-    }
-    if (inDegree[edge.target] !== undefined) {
-      inDegree[edge.target]++;
-    }
-  });
-
-  // 获取分支 handle 的垂直物理顺序权重（从上到下 0, 1, 2...）
-  function getBranchVerticalOrder(sourceNode, handleId) {
-    if (!sourceNode || !handleId) return 999;
-    if (sourceNode.type === "condition") {
-      const cases = getConditionCases(sourceNode.data);
-      for (let i = 0; i < cases.length; i++) {
-        const c = cases[i];
-        const hId = getConditionHandleId(c);
-        if (
-          hId === handleId ||
-          c.id === handleId ||
-          c.targetHandle === handleId ||
-          `condition-case-${c.id}` === handleId
-        ) {
-          return i;
-        }
-      }
-      if (handleId.includes("else") || handleId.includes("fast")) return 1;
-      if (handleId.includes("if") || handleId.includes("deep") || handleId.includes("case-1")) return 0;
-    }
-    return 999;
-  }
-
-  // 2. 找到根节点（入度为 0 的节点，优先 start 节点）
-  let rootIds = nodeIds.filter((id) => inDegree[id] === 0);
-  if (rootIds.length === 0) {
-    const startNode = nodes.value.find((n) => n.type === "start");
-    rootIds = [startNode ? startNode.id : nodeIds[0]];
-  }
-
-  // 3. BFS 分层与泳道识别（双泳道水平轨道锁定法则）
-  const depthMap = {};
-  const laneMap = {}; // 0: 中轴线, -1: 上泳道(深度证据主航道), 1: 下泳道(快速兜底副航道)
-  rootIds.forEach((id) => {
-    depthMap[id] = 0;
-    laneMap[id] = 0;
-  });
-
-  const queue = [...rootIds];
-  const visitedCount = {};
-  while (queue.length > 0) {
-    const currId = queue.shift();
-    const currDepth = depthMap[currId];
-    const currLane = laneMap[currId] || 0;
-    visitedCount[currId] = (visitedCount[currId] || 0) + 1;
-    if (visitedCount[currId] > 30) continue;
-
-    const outEdges = adjEdges[currId] || [];
-    if (outEdges.length > 1) {
-      // 关键核心：出边按 Handle 的物理垂直顺序升序排序
-      // 确保上面第 0 个分支永远连向上泳道，下面第 1 个分支永远连向下泳道，消除任何交叉
-      outEdges.sort((a, b) => {
-        const ordA = getBranchVerticalOrder(nodeMap.get(currId), a.sourceHandle);
-        const ordB = getBranchVerticalOrder(nodeMap.get(currId), b.sourceHandle);
-        return ordA - ordB;
-      });
-    }
-
-    if (outEdges.length === 1) {
-      const neighborId = outEdges[0].target;
-      const targetDepth = currDepth + 1;
-      if (
-        depthMap[neighborId] === undefined ||
-        targetDepth > depthMap[neighborId]
-      ) {
-        depthMap[neighborId] = targetDepth;
-      }
-      if (laneMap[neighborId] === undefined) {
-        laneMap[neighborId] = currLane;
-      }
-      queue.push(neighborId);
-    } else if (outEdges.length > 1) {
-      // 分支扩散：严格按垂直 Handle 顺序对应分配不同泳道
-      outEdges.forEach((edge, idx) => {
-        const neighborId = edge.target;
-        const targetDepth = currDepth + 1;
-        if (
-          depthMap[neighborId] === undefined ||
-          targetDepth > depthMap[neighborId]
-        ) {
-          depthMap[neighborId] = targetDepth;
-        }
-        if (laneMap[neighborId] === undefined) {
-          // idx 0 对应最上方 Handle -> 锁定上泳道 (-1)
-          // idx 1 对应下方 Handle -> 锁定下泳道 (1)
-          laneMap[neighborId] = idx === 0 ? -1 : (idx === 1 ? 1 : idx);
-        }
-        queue.push(neighborId);
-      });
-    }
-  }
-
-  // 处理可能孤立的未连线节点
-  nodeIds.forEach((id) => {
-    if (depthMap[id] === undefined) depthMap[id] = 0;
-    if (laneMap[id] === undefined) laneMap[id] = 0;
-  });
-
-  // 4. 坐标计算：黄金比例双泳道锁定排布
-  const colSpacing = 360; // 列间距（卡片宽 280px + 间隙 80px）
-  const startX = 80;
-  const centerY = 300;
-  const laneOffset = 130; // 泳道垂直偏移量（上泳道 170px，下泳道 430px）
-
-  const newNodes = nodes.value.map((node) => {
-    const depth = depthMap[node.id] || 0;
-    const lane = laneMap[node.id] || 0;
-
-    const x = startX + depth * colSpacing;
-    let y = centerY;
-    if (lane < 0) {
-      y = centerY - laneOffset; // 上泳道深度主航道
-    } else if (lane > 0) {
-      y = centerY + laneOffset; // 下泳道快速兜底
-    }
-
-    return {
-      ...node,
-      position: { x, y },
-    };
-  });
-
-  nodes.value = newNodes;
-
-  // 通知 VueFlow 节点内部尺寸和 handle 更新，并自适应居中视口
   nextTick(() => {
-    nodeIds.forEach((id) => {
+    (nodes.value || []).forEach((n) => {
       try {
-        updateNodeInternals(id);
+        updateNodeInternals(n.id);
       } catch (e) {}
     });
     smartFitView({ duration: 500 });
@@ -2176,9 +2091,6 @@ const startFieldDialogTitle = computed(() =>
 const startFieldDraftTypeMeta = computed(() =>
   getStartFieldTypeMeta(startFieldDraft.value.type)
 );
-const START_FIELD_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_.]*$/;
-const CHATFLOW_DEFAULT_START_FIELD_ID = "chatflow-default-query-field";
-const CHATFLOW_LEGACY_DEFAULT_START_FIELD_ID = "chatflow-default-user-field";
 
 function findDuplicatedStartField(fieldName = "", currentFieldId = "") {
   if (selectedNode.value?.type !== "start") {
@@ -2269,20 +2181,6 @@ const startFieldDialogRules = {
   ],
 };
 
-function normalizeLoopPath(loopPath = []) {
-  return Array.isArray(loopPath) ? loopPath.filter(Boolean) : [];
-}
-
-function areLoopPathsEqual(leftPath = [], rightPath = []) {
-  const left = normalizeLoopPath(leftPath);
-  const right = normalizeLoopPath(rightPath);
-
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  return left.every((item, index) => item === right[index]);
-}
 
 function getSelectedLoopNodeId(loopPath = []) {
   if (selectedNode.value?.scope !== "loop-inner") {
@@ -2312,275 +2210,16 @@ function refreshNodeHandleLayout(nodeIds = []) {
   });
 }
 
-function buildGeneratedId(prefix = "node", seed = 0) {
-  return normalizeTemplateReferenceSegment(
-    `${prefix}_${Date.now()}_${seed}`,
-    prefix
-  );
-}
-
-function buildNodeId(prefix = "node") {
-  nodeSeed += 1;
-  return buildGeneratedId(prefix, nodeSeed);
-}
-
-function buildCaseId(prefix = "case") {
-  conditionCaseSeed += 1;
-  return `${prefix}-${Date.now()}-${conditionCaseSeed}`;
-}
-
-function createConditionCase(isElse = false, overrides = {}) {
-  return {
-    id: buildCaseId(isElse ? "else" : "case"),
-    expression: "",
-    isElse,
-    ...overrides,
-  };
-}
-
-function normalizeConditionData(data = {}) {
-  let rawCases = Array.isArray(getNodeConfigValue(data, "cases", null))
-    ? getNodeConfigValue(data, "cases", [])
-    : Array.isArray(data.cases)
-    ? data.cases
-    : [];
-
-  // 若无 cases，尝试从后端的 conditions 字段适配
-  if (!rawCases.length) {
-    const rawConditions = Array.isArray(getNodeConfigValue(data, "conditions", null))
-      ? getNodeConfigValue(data, "conditions", [])
-      : Array.isArray(data.conditions)
-      ? data.conditions
-      : [];
-    if (rawConditions.length) {
-      rawCases = rawConditions.map((item, idx) => {
-        let cid = item.id;
-        if (item.targetHandle) {
-          cid = item.targetHandle.replace(/^condition-case-/, "");
-        }
-        if (!cid) {
-          cid = idx === rawConditions.length - 1 ? "fast" : `case-${idx + 1}`;
-        }
-        if (cid && /^case[_-]([a-zA-Z0-9]+)$/.test(cid)) {
-          cid = cid.replace(/^case[_-]/, "");
-        }
-        const cleanTargetHandle = item.targetHandle || `condition-case-${cid}`;
-        return {
-          id: cid,
-          targetHandle: cleanTargetHandle,
-          expression: item.expression || "",
-          label: item.label || "",
-          isElse: Boolean(
-            item.isElse ||
-            cid.includes("else") ||
-            cid.includes("fast") ||
-            (idx === rawConditions.length - 1 && (!item.conditions || item.conditions.length === 0))
-          ),
-        };
-      });
-    }
-  }
-
-  const normalizedCases = rawCases.filter(Boolean).map((item, idx) => {
-    let cid = item.id;
-    if (item.targetHandle) {
-      cid = item.targetHandle.replace(/^condition-case-/, "");
-    }
-    if (cid && /^case[_-]([a-zA-Z0-9]+)$/.test(cid)) {
-      cid = cid.replace(/^case[_-]/, "");
-    }
-    const finalId = cid || (item.isElse ? "else" : `case-${idx + 1}`);
-    const cleanTargetHandle = item.targetHandle || `condition-case-${finalId}`;
-    return {
-      id: finalId,
-      targetHandle: cleanTargetHandle,
-      expression: item.expression || "",
-      label: item.label || "",
-      isElse: Boolean(item.isElse),
-    };
-  });
-
-  const branchCases = normalizedCases.filter((item) => !item.isElse);
-  if (!branchCases.length) {
-    branchCases.push(
-      createConditionCase(false, { id: "deep", targetHandle: "condition-case-deep", expression: data.expression || "" })
-    );
-  }
-
-  const elseCase =
-    normalizedCases.find((item) => item.isElse) || createConditionCase(true, { id: "fast", targetHandle: "condition-case-fast" });
-
-  return createStructuredNodeData({
-    input: getNodeInput(data),
-    config: {
-      ...omitObjectKeys(data, [
-        "input",
-        "config",
-        "output",
-        "cases",
-        "conditions",
-        "expression",
-        "label",
-      ]),
-      ...getNodeConfig(data),
-      label: getNodeLabel(data, "条件分支"),
-      cases: [...branchCases, elseCase],
-    },
-    output: getNodeOutput(data),
-  });
-}
-
-function buildStartFieldId(prefix = "start-field") {
-  startFieldSeed += 1;
-  return `${prefix}-${Date.now()}-${startFieldSeed}`;
-}
-
-function getStartFieldTypeMeta(type = "text") {
-  return (
-    startFieldTypeOptions.find((item) => item.value === type) ||
-    startFieldTypeOptions[0]
-  );
-}
-
-function createStartField(overrides = {}) {
-  const meta = getStartFieldTypeMeta(overrides.type);
-  const normalizedMaxLength = Number(overrides.maxLength);
-
-  return {
-    id: overrides.id || buildStartFieldId(meta.value),
-    type: meta.value,
-    name: overrides.name || "",
-    label: overrides.label || "",
-    maxLength: meta.supportsMaxLength
-      ? Number.isFinite(normalizedMaxLength) && normalizedMaxLength > 0
-        ? normalizedMaxLength
-        : meta.defaultMaxLength
-      : null,
-    defaultValue:
-      overrides.defaultValue === undefined || overrides.defaultValue === null
-        ? ""
-        : `${overrides.defaultValue}`,
-    required:
-      overrides.required === undefined ? true : Boolean(overrides.required),
-    readonly: Boolean(overrides.readonly),
-  };
-}
-
-function createChatflowDefaultStartField(overrides = {}) {
-  return createStartField({
-    ...overrides,
-    id: CHATFLOW_DEFAULT_START_FIELD_ID,
-    type: "text",
-    name: "query",
-    label: "用户",
-    maxLength: 48,
-    defaultValue: "",
-    required: true,
-    readonly: true,
-  });
-}
-
-function isReadonlyStartField(field = {}) {
-  return Boolean(field?.readonly);
-}
-
-function isChatflowDefaultStartField(field = {}) {
-  const fieldId = `${field?.id || ""}`.trim();
-  const fieldName = `${field?.name || ""}`.trim().toLowerCase();
-
-  return (
-    fieldId === CHATFLOW_DEFAULT_START_FIELD_ID ||
-    fieldId === CHATFLOW_LEGACY_DEFAULT_START_FIELD_ID ||
-    fieldName === "query" ||
-    fieldName === "user"
-  );
-}
-
-function normalizeStartField(field = {}) {
-  const meta = getStartFieldTypeMeta(field.type);
-  const nextField = createStartField(field);
-
-  return {
-    ...nextField,
-    name: nextField.name.trim(),
-    label: nextField.label.trim(),
-    maxLength: meta.supportsMaxLength
-      ? Number(nextField.maxLength) > 0
-        ? Number(nextField.maxLength)
-        : meta.defaultMaxLength
-      : null,
-  };
-}
-
 function normalizeStartFields(fields = []) {
-  const normalizedFields = (Array.isArray(fields) ? fields : [])
-    .filter(Boolean)
-    .map((field) => normalizeStartField(field));
-
-  if (!isChatflowWorkflowMode()) {
-    return normalizedFields;
-  }
-
-  const customFields = [];
-  let defaultFieldSource = null;
-
-  normalizedFields.forEach((field) => {
-    if (isChatflowDefaultStartField(field)) {
-      if (!defaultFieldSource) {
-        defaultFieldSource = field;
-      }
-
-      return;
-    }
-
-    customFields.push(field);
-  });
-
-  return [
-    createChatflowDefaultStartField(defaultFieldSource || {}),
-    ...customFields,
-  ];
+  return rawNormalizeStartFields(fields, isChatflowWorkflow.value);
 }
 
 function normalizeStartNodeData(data = {}) {
-  const structuredInput = getNodeInput(data);
-  const rawFields = structuredInput.length
-    ? structuredInput
-    : Array.isArray(data.fields)
-    ? data.fields
-    : Array.isArray(data.inputFields)
-    ? data.inputFields
-    : [];
-  const config = {
-    ...omitObjectKeys(data, [
-      "input",
-      "config",
-      "output",
-      "fields",
-      "inputFields",
-    ]),
-    ...getNodeConfig(data),
-    label: getNodeLabel(data, "开始"),
-    description: getNodeDescription(data),
-  };
-
-  return createStructuredNodeData({
-    input: normalizeStartFields(rawFields),
-    config,
-    output: getNodeOutput(data),
-  });
+  return rawNormalizeStartNodeData(data, isChatflowWorkflow.value);
 }
 
 function getStartFields(data = {}) {
-  return getNodeInput(normalizeStartNodeData(data));
-}
-
-function getStartFieldValueTypeLabel(type = "text") {
-  return getStartFieldTypeMeta(type).valueType;
-}
-
-function getStartFieldDisplayLabel(field = {}) {
-  return field.label || field.name || "未命名字段";
+  return rawGetStartFields(data, isChatflowWorkflow.value);
 }
 
 function buildContextSourceNodeId(nodeId = "", graphPath = []) {
@@ -2993,108 +2632,11 @@ function getSelectedReplyContextState() {
 }
 
 function getStartFieldPreview(data = {}, limit = 3) {
-  return getStartFields(data).slice(0, limit);
+  return rawGetStartFieldPreview(data, limit, isChatflowWorkflow.value);
 }
 
 function getStartFieldOverflowCount(data = {}, limit = 3) {
-  return Math.max(0, getStartFields(data).length - limit);
-}
-
-function buildReplyOutputId(prefix = "reply-output") {
-  replyOutputSeed += 1;
-  return `${prefix}-${Date.now()}-${replyOutputSeed}`;
-}
-
-function createReplyOutput(overrides = {}) {
-  const binding =
-    overrides.binding && typeof overrides.binding === "object"
-      ? overrides.binding
-      : {};
-
-  return {
-    id: overrides.id || buildReplyOutputId(),
-    name: `${overrides.name || overrides.variableName || ""}`,
-    sourceNodeId: `${overrides.sourceNodeId || binding.sourceNodeId || ""}`,
-    sourceNodeLabel: `${
-      overrides.sourceNodeLabel || binding.sourceNodeLabel || ""
-    }`,
-    sourceNodeType: `${
-      overrides.sourceNodeType || binding.sourceNodeType || ""
-    }`,
-    variableKey: `${overrides.variableKey || binding.variableKey || ""}`,
-    variableLabel: `${
-      overrides.variableLabel ||
-      binding.variableLabel ||
-      overrides.variableKey ||
-      binding.variableKey ||
-      ""
-    }`,
-    valueType: `${overrides.valueType || binding.valueType || ""}`,
-    path: `${
-      overrides.path ||
-      binding.path ||
-      overrides.variableKey ||
-      binding.variableKey ||
-      ""
-    }`,
-  };
-}
-
-function normalizeReplyOutput(output = {}) {
-  const nextOutput = createReplyOutput(output);
-
-  return {
-    ...nextOutput,
-    name: nextOutput.name.trim(),
-    sourceNodeId: nextOutput.sourceNodeId.trim(),
-    sourceNodeLabel: nextOutput.sourceNodeLabel.trim(),
-    sourceNodeType: nextOutput.sourceNodeType.trim(),
-    variableKey: nextOutput.variableKey.trim(),
-    variableLabel: (nextOutput.variableLabel || nextOutput.variableKey).trim(),
-    valueType: nextOutput.valueType.trim(),
-    path: (nextOutput.path || nextOutput.variableKey).trim(),
-  };
-}
-
-function getReplyNodeLabel(data = {}, fallback = "输出") {
-  const label = `${getNodeLabel(data, "") || ""}`.trim();
-
-  if (!label || label === "直接回复" || label === "直接回复") {
-    return fallback;
-  }
-
-  return label;
-}
-
-function buildReplyPreviewReferenceSegment(value = "", fallback = "node") {
-  const normalized = `${value || ""}`
-    .trim()
-    .replace(/[^A-Za-z0-9_]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-  const nextValue = normalized || fallback;
-
-  return /^[0-9]/.test(nextValue) ? `node_${nextValue}` : nextValue;
-}
-
-function buildReplyPreviewVariableReferenceKey(
-  sourceSegment = "",
-  variablePath = ""
-) {
-  return `${sourceSegment || ""}::${variablePath || ""}`;
-}
-
-function getReplyPreviewVariableFallbackLabel(
-  variablePath = "",
-  sourceSegment = ""
-) {
-  const normalizedPath = `${variablePath || ""}`.trim();
-
-  if (!normalizedPath) {
-    return `${sourceSegment || ""}`.trim();
-  }
-
-  const pathSegments = normalizedPath.split(".").filter(Boolean);
-  return pathSegments[pathSegments.length - 1] || normalizedPath;
+  return rawGetStartFieldOverflowCount(data, limit, isChatflowWorkflow.value);
 }
 
 function getReplyPreviewVariableOptionMap(nodeId = "") {
@@ -3141,1014 +2683,71 @@ function getReplyPreviewVariableOptionMap(nodeId = "") {
 }
 
 function getReplyNodePreviewSegments(data = {}, nodeId = "") {
-  if (!isChatflowWorkflow.value) {
-    return [];
-  }
-
-  const content = `${getReplyContent(data) || ""}`;
-
-  if (!content.trim()) {
-    return [];
-  }
-
-  const optionMap = getReplyPreviewVariableOptionMap(nodeId);
-  const variablePattern = /\{\{\s*([A-Za-z0-9_]+)\.([A-Za-z0-9_.]+)\s*\}\}/g;
-  const segments = [];
-  let lastIndex = 0;
-  let match = variablePattern.exec(content);
-
-  while (match) {
-    const [rawValue, sourceSegment, variablePath] = match;
-
-    if (match.index > lastIndex) {
-      segments.push({
-        type: "text",
-        value: content.slice(lastIndex, match.index),
-      });
-    }
-
-    const binding = optionMap.get(
-      buildReplyPreviewVariableReferenceKey(sourceSegment, variablePath)
-    );
-
-    segments.push({
-      type: "variable",
-      rawValue,
-      display:
-        binding?.variableLabel ||
-        binding?.variableKey ||
-        getReplyPreviewVariableFallbackLabel(variablePath, sourceSegment),
-    });
-
-    lastIndex = match.index + rawValue.length;
-    match = variablePattern.exec(content);
-  }
-
-  if (lastIndex < content.length) {
-    segments.push({
-      type: "text",
-      value: content.slice(lastIndex),
-    });
-  }
-
-  return segments.length ? segments : [{ type: "text", value: content }];
-}
-
-function getReplyPreviewText(content = "", limit = 30) {
-  const normalizedContent = `${content || ""}`.replace(/\s+/g, " ").trim();
-
-  if (!normalizedContent) {
-    return "";
-  }
-
-  return normalizedContent.length > limit
-    ? `${normalizedContent.slice(0, limit)}...`
-    : normalizedContent;
-}
-
-function normalizeReplyNodeData(data = {}) {
-  const structuredOutput = getNodeOutput(data);
-  const rawOutputs = structuredOutput.length
-    ? structuredOutput
-    : Array.isArray(data.outputs)
-    ? data.outputs
-    : Array.isArray(data.outputVariables)
-    ? data.outputVariables
-    : [];
-  const config = {
-    ...omitObjectKeys(data, [
-      "input",
-      "config",
-      "output",
-      "outputs",
-      "outputVariables",
-      "content",
-      "description",
-      "label",
-    ]),
-    ...getNodeConfig(data),
-    label: getReplyNodeLabel(data),
-    description: getNodeDescription(data),
-    content:
-      typeof getNodeConfigValue(data, "content", "") === "string"
-        ? getNodeConfigValue(data, "content", "")
-        : "",
-  };
-
-  return createStructuredNodeData({
-    input: getNodeInput(data),
-    config,
-    output: rawOutputs
-      .filter(Boolean)
-      .map((output) => normalizeReplyOutput(output)),
-  });
-}
-
-function getReplyContent(data = {}) {
-  return `${
-    getNodeConfigValue(normalizeReplyNodeData(data), "content", "") || ""
-  }`;
-}
-
-function getReplyOutputs(data = {}) {
-  return getNodeOutput(normalizeReplyNodeData(data));
-}
-
-function getReplyContextVariables(data = {}) {
-  return getReplyOutputs(data)
-    .map((output) => {
-      const outputName = `${output.name || ""}`.trim();
-
-      if (!outputName) {
-        return null;
-      }
-
-      return {
-        variableKey: outputName,
-        variableLabel: outputName,
-        valueType: `${output.valueType || ""}`.trim(),
-        path: outputName,
-      };
-    })
-    .filter(Boolean);
+  return rawGetReplyNodePreviewSegments(
+    data,
+    nodeId,
+    getReplyPreviewVariableOptionMap(nodeId),
+    isChatflowWorkflow.value
+  );
 }
 
 function getReplyNodePreviewItems(data = {}) {
-  if (isChatflowWorkflow.value) {
-    return getReplyPreviewText(getReplyContent(data));
-  }
-
-  const replyOutputs = getReplyOutputs(data);
-
-  if (replyOutputs.length) {
-    const firstOutput = replyOutputs[0];
-    const variableKey = `${
-      firstOutput.variableLabel || firstOutput.variableKey || ""
-    }`.trim();
-
-    if (variableKey) {
-      return variableKey;
-    }
-
-    if (firstOutput.name) {
-      return firstOutput.name;
-    }
-  }
-
-  const legacyContent = `${getReplyContent(data) || ""}`.trim();
-  return legacyContent ? `@${legacyContent}` : "";
+  return rawGetReplyNodePreviewItems(data, isChatflowWorkflow.value);
 }
 
 function getReplyNodePreviewList(data = {}, limit = null) {
-  let previewList = [];
-
-  if (isChatflowWorkflow.value) {
-    const replyPreviewText = getReplyPreviewText(getReplyContent(data));
-
-    previewList = replyPreviewText ? [replyPreviewText] : [];
-  } else {
-    const replyOutputs = getReplyOutputs(data);
-
-    if (replyOutputs.length) {
-      previewList = replyOutputs
-        .map((output) => {
-          const variableKey = `${
-            output.variableLabel || output.variableKey || ""
-          }`.trim();
-
-          if (variableKey) {
-            return variableKey;
-          }
-
-          return `${output.name || ""}`.trim();
-        })
-        .filter(Boolean);
-    } else {
-      const legacyPreviewText = `${
-        getReplyNodePreviewItems(data) || ""
-      }`.trim();
-      previewList = legacyPreviewText ? [legacyPreviewText] : [];
-    }
-  }
-
-  if (Number.isFinite(limit)) {
-    return previewList.slice(0, Math.max(0, Math.floor(limit)));
-  }
-
-  return previewList;
+  return rawGetReplyNodePreviewList(data, limit, isChatflowWorkflow.value);
 }
 
 function getReplyNodePreviewOverflowCount(data = {}, limit = 3) {
-  return Math.max(0, getReplyNodePreviewList(data).length - limit);
-}
-
-function buildToolOutputId(prefix = "tool-output") {
-  toolOutputSeed += 1;
-  return `${prefix}-${Date.now()}-${toolOutputSeed}`;
-}
-
-function createToolOutput(overrides = {}) {
-  const variableKey =
-    `${overrides.variableKey || overrides.path || "result"}`.trim() || "result";
-
-  return {
-    id: overrides.id || buildToolOutputId(),
-    variableKey,
-    variableLabel:
-      `${overrides.variableLabel || variableKey}`.trim() || variableKey,
-    valueType: `${overrides.valueType || "string"}`.trim() || "string",
-    path: `${overrides.path || variableKey}`.trim() || variableKey,
-  };
-}
-
-function normalizeToolOutput(output = {}) {
-  const nextOutput = createToolOutput(output);
-
-  return {
-    ...nextOutput,
-    variableKey: nextOutput.variableKey.trim() || "result",
-    variableLabel:
-      (nextOutput.variableLabel || nextOutput.variableKey).trim() ||
-      nextOutput.variableKey,
-    valueType: nextOutput.valueType.trim() || "string",
-    path:
-      (nextOutput.path || nextOutput.variableKey).trim() ||
-      nextOutput.variableKey,
-  };
-}
-
-function buildDefaultToolOutputs() {
-  return [
-    normalizeToolOutput({
-      variableKey: "result",
-      variableLabel: "result",
-      valueType: "string",
-      path: "result",
-    }),
-  ];
-}
-
-function normalizeToolNodeData(data = {}) {
-  const structuredOutput = getNodeOutput(data);
-  const hasExplicitOutput =
-    structuredOutput.length > 0 ||
-    Array.isArray(data.output) ||
-    Array.isArray(data.outputs) ||
-    Array.isArray(data.outputVariables);
-  const rawOutputs = structuredOutput.length
-    ? structuredOutput
-    : Array.isArray(data.output)
-    ? data.output
-    : Array.isArray(data.outputs)
-    ? data.outputs
-    : Array.isArray(data.outputVariables)
-    ? data.outputVariables
-    : [];
-  const config = {
-    ...omitObjectKeys(data, [
-      "input",
-      "config",
-      "output",
-      "outputs",
-      "outputVariables",
-      "label",
-      "description",
-      "toolId",
-      "toolName",
-      "toolDescription",
-      "toolSource",
-      "toolIcon",
-    ]),
-    ...getNodeConfig(data),
-    label:
-      getNodeLabel(data, getNodeConfigValue(data, "toolName", "工具")) ||
-      "工具",
-    description:
-      getNodeDescription(data) ||
-      `${getNodeConfigValue(data, "toolDescription", "") || ""}`.trim(),
-    toolId: `${getNodeConfigValue(data, "toolId", "") || ""}`.trim(),
-    toolName:
-      `${
-        getNodeConfigValue(data, "toolName", getNodeLabel(data, "工具")) || ""
-      }`.trim() || "工具",
-    toolDescription: `${
-      getNodeConfigValue(data, "toolDescription", "") || ""
-    }`.trim(),
-    toolSource: `${getNodeConfigValue(data, "toolSource", "") || ""}`.trim(),
-    toolIcon: `${getNodeConfigValue(data, "toolIcon", "") || ""}`.trim(),
-  };
-
-  return createStructuredNodeData({
-    input: getNodeInput(data),
-    config,
-    output: hasExplicitOutput
-      ? rawOutputs.filter(Boolean).map((item) => normalizeToolOutput(item))
-      : buildDefaultToolOutputs(),
-  });
-}
-
-function getToolOutputs(data = {}) {
-  return getNodeOutput(normalizeToolNodeData(data));
-}
-
-function getToolContextVariables(data = {}) {
-  return getToolOutputs(data)
-    .map((output) => {
-      const variableKey = `${output.variableKey || output.path || ""}`.trim();
-
-      if (!variableKey) {
-        return null;
-      }
-
-      return {
-        variableKey,
-        variableLabel: `${
-          output.variableLabel || output.variableKey || variableKey
-        }`.trim(),
-        valueType: `${output.valueType || ""}`.trim() || "string",
-        path: `${output.path || variableKey}`.trim() || variableKey,
-      };
-    })
-    .filter(Boolean);
-}
-
-function getToolNodeLabel(data = {}, fallback = "工具") {
-  return (
-    `${
-      getNodeLabel(data, getNodeConfigValue(data, "toolName", fallback)) || ""
-    }`.trim() || fallback
-  );
-}
-
-function getToolNodeSubtitle(data = {}) {
-  const toolSource = `${
-    getNodeConfigValue(data, "toolSource", "") || ""
-  }`.trim();
-  return toolSource;
-}
-
-function getToolNodePreviewList(data = {}, limit = null) {
-  const previewList = getToolOutputs(data)
-    .map((output) => {
-      const variableLabel = `${
-        output.variableLabel || output.variableKey || output.path || ""
-      }`.trim();
-
-      return variableLabel;
-    })
-    .filter(Boolean);
-
-  if (Number.isFinite(limit)) {
-    return previewList.slice(0, Math.max(0, Math.floor(limit)));
-  }
-
-  return previewList;
-}
-
-function getToolNodePreviewOverflowCount(data = {}, limit = 3) {
-  return Math.max(0, getToolNodePreviewList(data).length - limit);
-}
-
-function buildLlmMessageId(prefix = "llm-message") {
-  llmMessageSeed += 1;
-  return `${prefix}-${Date.now()}-${llmMessageSeed}`;
-}
-
-function normalizeLlmMessageRole(role = "user") {
-  const normalizedRole = String(role || "").toLowerCase();
-  return normalizedRole === "assistant" ? "assistant" : "user";
-}
-
-function createLlmMessage(overrides = {}) {
-  return {
-    id: overrides.id || buildLlmMessageId(),
-    role: normalizeLlmMessageRole(overrides.role),
-    content: overrides.content || "",
-  };
-}
-
-function normalizeLlmOutputItem(output = {}) {
-  return {
-    variableKey:
-      `${output.variableKey || output.path || "text"}`.trim() || "text",
-    variableLabel:
-      `${
-        output.variableLabel || output.variableKey || output.path || "text"
-      }`.trim() || "text",
-    valueType: `${output.valueType || ""}`.trim(),
-    path: `${output.path || output.variableKey || "text"}`.trim() || "text",
-  };
-}
-
-function buildLlmOutputItems(config = {}) {
-  const outputs = [
-    {
-      variableKey: "text",
-      variableLabel: "text",
-      valueType: "string",
-      path: "text",
-    },
-  ];
-
-  if (config.reasoningTagEnabled) {
-    outputs.push({
-      variableKey: "reasoning_content",
-      variableLabel: "reasoning_content",
-      valueType: "string",
-      path: "reasoning_content",
-    });
-  }
-
-  if (
-    Boolean(config.structuredOutputEnabled) ||
-    config.responseFormat === "json_object"
-  ) {
-    outputs.push({
-      variableKey: "json",
-      variableLabel: "json",
-      valueType: "object",
-      path: "json",
-    });
-  }
-
-  return outputs.map((item) => normalizeLlmOutputItem(item));
+  return rawGetReplyNodePreviewOverflowCount(data, limit, isChatflowWorkflow.value);
 }
 
 function normalizeLlmNodeData(data = {}) {
-  const structuredInput = getNodeInput(data);
-  const rawMessages = structuredInput.length
-    ? structuredInput
-    : Array.isArray(data.messages)
-    ? data.messages
-    : [];
-  const normalizeNumber = (value, fallback) => {
-    const nextValue = Number(value);
-    return Number.isFinite(nextValue) ? nextValue : fallback;
-  };
-  const defaultModelConfig = getDefaultLlmModelConfig();
-  const configuredModel = `${
-    getNodeConfigValue(data, "model", "") || ""
-  }`.trim();
-  const configuredProvider = normalizeModelProviderValue(
-    getNodeConfigValue(data, "provider", "")
-  );
-  const config = {
-    ...omitObjectKeys(data, [
-      "input",
-      "config",
-      "output",
-      "messages",
-      "contextVariables",
-      "label",
-      "description",
-      "provider",
-      "model",
-      "prompt",
-      "temperature",
-      "maxTokens",
-      "topP",
-      "logprobs",
-      "topLogprobs",
-      "frequencyPenalty",
-      "responseFormat",
-      "stopSequences",
-      "memoryEnabled",
-      "visionEnabled",
-      "reasoningTagEnabled",
-      "structuredOutputEnabled",
-      "retryEnabled",
-      "errorStrategy",
-    ]),
-    ...getNodeConfig(data),
-    label: getNodeLabel(data, "LLM"),
-    description: getNodeDescription(data),
-    provider: configuredModel
-      ? configuredProvider
-      : normalizeModelProviderValue(defaultModelConfig.provider),
-    model: configuredModel || defaultModelConfig.model,
-    prompt: getNodeConfigValue(data, "prompt", ""),
-    temperature: normalizeNumber(getNodeConfigValue(data, "temperature", 1), 1),
-    maxTokens: Math.max(
-      1,
-      Math.round(
-        normalizeNumber(getNodeConfigValue(data, "maxTokens", 4096), 4096)
-      )
-    ),
-    topP: normalizeNumber(getNodeConfigValue(data, "topP", 1), 1),
-    logprobs: Boolean(getNodeConfigValue(data, "logprobs", false)),
-    topLogprobs: Math.max(
-      0,
-      Math.round(normalizeNumber(getNodeConfigValue(data, "topLogprobs", 0), 0))
-    ),
-    frequencyPenalty: normalizeNumber(
-      getNodeConfigValue(data, "frequencyPenalty", 0),
-      0
-    ),
-    responseFormat:
-      typeof getNodeConfigValue(data, "responseFormat", "") === "string"
-        ? getNodeConfigValue(data, "responseFormat", "")
-        : "",
-    stopSequences:
-      typeof getNodeConfigValue(data, "stopSequences", "") === "string"
-        ? getNodeConfigValue(data, "stopSequences", "")
-        : "",
-    memoryEnabled: Boolean(getNodeConfigValue(data, "memoryEnabled", false)),
-    visionEnabled: Boolean(getNodeConfigValue(data, "visionEnabled", false)),
-    reasoningTagEnabled: Boolean(
-      getNodeConfigValue(data, "reasoningTagEnabled", false)
-    ),
-    structuredOutputEnabled: Boolean(
-      getNodeConfigValue(data, "structuredOutputEnabled", false)
-    ),
-    retryEnabled: Boolean(getNodeConfigValue(data, "retryEnabled", false)),
-    errorStrategy: getNodeConfigValue(data, "errorStrategy", "none") || "none",
-  };
-  const structuredOutput = getNodeOutput(data);
-
-  return createStructuredNodeData({
-    input: rawMessages
-      .filter(Boolean)
-      .map((message) => createLlmMessage(message)),
-    config,
-    output: structuredOutput.length
-      ? structuredOutput
-          .filter(Boolean)
-          .map((item) => normalizeLlmOutputItem(item))
-      : buildLlmOutputItems(config),
-  });
+  return rawNormalizeLlmNodeData(data, getDefaultLlmModelConfig());
 }
 
 function getLlmOutputs(data = {}) {
-  return getNodeOutput(normalizeLlmNodeData(data));
+  return rawGetLlmOutputs(data, getDefaultLlmModelConfig());
 }
 
 function normalizeNodeData(type, data = {}) {
-  if (type === "start") {
-    return normalizeStartNodeData(data);
-  }
-
-  if (type === "llm") {
-    return normalizeLlmNodeData(data);
-  }
-
-  if (type === TOOL_NODE_TYPE) {
-    return normalizeToolNodeData(data);
-  }
-
-  if (type === "condition") {
-    return normalizeConditionData(data);
-  }
-
-  if (type === "reply") {
-    return normalizeReplyNodeData(data);
-  }
-
-  if (type === "loop") {
-    return normalizeLoopData(data);
-  }
-
-  return data;
-}
-
-function getConditionCases(data = {}) {
-  return getNodeConfigValue(normalizeConditionData(data), "cases", []);
-}
-
-function getConditionCaseLabel(index) {
-  return `CASE ${index + 1}`;
-}
-
-function getConditionBranchLabel(index, total) {
-  if (index === 0) return "IF";
-  if (index === total - 1) return "ELSE";
-  return "ELIF";
-}
-
-function getConditionHandleId(caseItemOrId) {
-  if (!caseItemOrId) return "condition-case-default";
-  let target = "";
-  if (typeof caseItemOrId === "object") {
-    target = caseItemOrId.targetHandle || caseItemOrId.id || "";
-  } else {
-    target = String(caseItemOrId);
-  }
-  if (!target) return "condition-case-default";
-  if (target.startsWith("condition-case-")) {
-    return target;
-  }
-  if (/^case[_-]([a-zA-Z0-9]+)$/.test(target)) {
-    target = target.replace(/^case[_-]/, "");
-  }
-  return `condition-case-${target}`;
-}
-
-function getConditionDefaultSourceHandle(data = {}) {
-  const firstCase = getConditionCases(data)[0];
-  return firstCase ? getConditionHandleId(firstCase) : null;
-}
-
-function getNodeTypeLabel(nodeType) {
-  const labels = {
-    start: "开始",
-    llm: "LLM",
-    reply: "回复",
-    tool: "工具",
-    condition: "条件分支",
-    loop: "循环",
-  };
-
-  return labels[nodeType] || "节点";
-}
-
-function buildLoopStepId(prefix = "loop-node") {
-  loopStepSeed += 1;
-  return buildGeneratedId(prefix, loopStepSeed);
-}
-
-function createLoopFlowEdge(connection) {
-  return {
-    ...connection,
-    id:
-      connection.id ||
-      createEdgeId(
-        connection.source,
-        connection.target,
-        connection.sourceHandle,
-        connection.targetHandle
-      ),
-    type: "default",
-  };
-}
-
-function createLoopEntryNode(overrides = {}) {
-  return {
-    id: "loop-entry",
-    type: "loop-start",
-    position: overrides.position || { x: 24, y: 46 },
-    draggable: false,
-    selectable: false,
-    ...overrides,
-    data: createStructuredNodeData({
-      config: {
-        label: getNodeLabel(overrides.data, "开始"),
-      },
-    }),
-  };
+  return rawNormalizeNodeData(
+    type,
+    data,
+    isChatflowWorkflow.value,
+    getDefaultLlmModelConfig()
+  );
 }
 
 function createLoopFlowNodeData(nodeType = "llm", index = 0, overrides = {}) {
-  if (nodeType === "condition") {
-    return normalizeConditionData({
-      label: overrides.label || `条件分支 ${index + 1}`,
-      ...overrides,
-    });
-  }
-
-  if (nodeType === "reply") {
-    return normalizeReplyNodeData({
-      label: overrides.label || `回复 ${index + 1}`,
-      output: [],
-      ...overrides,
-    });
-  }
-
-  if (nodeType === "loop") {
-    return normalizeLoopData({
-      label: overrides.label || `循环 ${index + 1}`,
-      description: getNodeDescription(overrides),
-      ...overrides,
-    });
-  }
-
-  const defaultModelConfig = getDefaultLlmModelConfig();
-  return normalizeLlmNodeData({
-    label: overrides.label || `LLM ${index + 1}`,
-    ...defaultModelConfig,
-    description: getNodeDescription(overrides),
-    prompt: "",
-    ...overrides,
-  });
+  return rawCreateLoopFlowNodeData(
+    nodeType,
+    index,
+    overrides,
+    getDefaultLlmModelConfig()
+  );
 }
 
 function createLoopFlowNode(nodeType = "llm", index = 0, overrides = {}) {
-  return {
-    id: overrides.id || buildLoopStepId(nodeType),
-    type: nodeType,
-    position: overrides.position || { x: 124 + index * 188, y: 42 },
-    data: createLoopFlowNodeData(nodeType, index, overrides.data || {}),
-    ...overrides,
-  };
+  return rawCreateLoopFlowNode(
+    nodeType,
+    index,
+    overrides,
+    getDefaultLlmModelConfig()
+  );
 }
 
 function normalizeLoopFlowNode(node, index = 0) {
-  if (!node || node.type === "loop-start" || node.id === "loop-entry") {
-    return createLoopEntryNode(node || {});
-  }
-
-  const nextType = node.type || "llm";
-  const nextNode = {
-    id: node.id || buildLoopStepId(nextType),
-    type: nextType,
-    position: node.position || { x: 124 + index * 188, y: 42 },
-    data: cloneNodeData(node.data || {}),
-  };
-
-  if (nextType === "condition") {
-    nextNode.data = normalizeConditionData(nextNode.data);
-    nextNode.data = setNodeConfigValue(
-      nextNode.data,
-      "label",
-      getNodeLabel(nextNode.data, `条件分支 ${index + 1}`)
-    );
-    return nextNode;
-  }
-
-  if (nextType === "loop") {
-    nextNode.data = normalizeLoopData(nextNode.data);
-    nextNode.data = setNodeConfigValue(
-      nextNode.data,
-      "label",
-      getNodeLabel(nextNode.data, `循环 ${index + 1}`)
-    );
-    return nextNode;
-  }
-
-  if (nextType === "reply") {
-    nextNode.data = normalizeReplyNodeData({
-      label: getReplyNodeLabel(nextNode.data, `输出 ${index + 1}`),
-      ...nextNode.data,
-    });
-    return nextNode;
-  }
-
-  const defaultModelConfig = getDefaultLlmModelConfig();
-  nextNode.data = normalizeLlmNodeData({
-    label: getNodeLabel(nextNode.data, `LLM ${index + 1}`),
-    provider: getNodeConfigValue(
-      nextNode.data,
-      "provider",
-      defaultModelConfig.provider
-    ),
-    model: getNodeConfigValue(nextNode.data, "model", defaultModelConfig.model),
-    description: getNodeDescription(nextNode.data),
-    prompt: getNodeConfigValue(nextNode.data, "prompt", ""),
-    ...nextNode.data,
-  });
-  return nextNode;
+  return rawNormalizeLoopFlowNode(node, index, getDefaultLlmModelConfig());
 }
 
 function buildLoopNodesFromLegacySteps(steps = []) {
-  return [
-    createLoopEntryNode(),
-    ...steps.map((step, index) =>
-      normalizeLoopFlowNode(
-        createLoopFlowNode(step.type || "llm", index, {
-          data: createLoopFlowNodeData(step.type || "llm", index, {
-            label:
-              step.label ||
-              `${getNodeTypeLabel(step.type || "llm")} ${index + 1}`,
-          }),
-        }),
-        index
-      )
-    ),
-  ];
-}
-
-function buildLoopEdgesFromNodes(loopNodes = []) {
-  const sequence = loopNodes.filter(Boolean);
-  const nextEdges = [];
-
-  for (let index = 0; index < sequence.length - 1; index += 1) {
-    const currentNode = sequence[index];
-    const targetNode = sequence[index + 1];
-    const connection = {
-      source: currentNode.id,
-      target: targetNode.id,
-    };
-
-    if (currentNode.type === "condition") {
-      connection.sourceHandle = getConditionDefaultSourceHandle(
-        currentNode.data
-      );
-    }
-
-    nextEdges.push(createLoopFlowEdge(connection));
-  }
-
-  return nextEdges;
+  return rawBuildLoopNodesFromLegacySteps(steps, getDefaultLlmModelConfig());
 }
 
 function normalizeLoopData(data = {}) {
-  const legacySteps = Array.isArray(data?.steps)
-    ? data.steps
-    : Array.isArray(getNodeConfigValue(data, "steps", null))
-    ? getNodeConfigValue(data, "steps", [])
-    : [];
-  const rawLoopNodes = Array.isArray(
-    getNodeConfigValue(data, "loopNodes", null)
-  )
-    ? getNodeConfigValue(data, "loopNodes", [])
-    : Array.isArray(data.loopNodes)
-    ? data.loopNodes
-    : [];
-  const rawLoopEdges = Array.isArray(
-    getNodeConfigValue(data, "loopEdges", null)
-  )
-    ? getNodeConfigValue(data, "loopEdges", [])
-    : Array.isArray(data.loopEdges)
-    ? data.loopEdges
-    : [];
-  let nextLoopNodes = Array.isArray(rawLoopNodes)
-    ? cloneNodeData(rawLoopNodes)
-    : [];
-  let nextLoopEdges = Array.isArray(rawLoopEdges)
-    ? cloneNodeData(rawLoopEdges)
-    : [];
-
-  if (
-    !nextLoopNodes.length &&
-    Array.isArray(legacySteps) &&
-    legacySteps.length
-  ) {
-    nextLoopNodes = buildLoopNodesFromLegacySteps(legacySteps);
-    nextLoopEdges = buildLoopEdgesFromNodes(nextLoopNodes);
-  }
-
-  const entryNode = nextLoopNodes.find(
-    (node) => node?.type === "loop-start" || node?.id === "loop-entry"
-  );
-  const bodyNodes = nextLoopNodes
-    .filter((node) => node && node.id !== (entryNode?.id || "loop-entry"))
-    .map((node, index) => normalizeLoopFlowNode(node, index));
-  const normalizedLoopNodes = [
-    normalizeLoopFlowNode(entryNode, 0),
-    ...bodyNodes,
-  ];
-  const loopNodeIds = new Set(normalizedLoopNodes.map((node) => node.id));
-  const normalizedLoopEdges = nextLoopEdges
-    .filter(
-      (edge) =>
-        edge && loopNodeIds.has(edge.source) && loopNodeIds.has(edge.target)
-    )
-    .map((edge) => createLoopFlowEdge(edge));
-  const maxIterations = Number(getNodeConfigValue(data, "maxIterations", 10));
-
-  return createStructuredNodeData({
-    input: getNodeInput(data),
-    config: {
-      ...omitObjectKeys(data, [
-        "input",
-        "config",
-        "output",
-        "steps",
-        "loopNodes",
-        "loopEdges",
-        "label",
-        "description",
-        "itemAlias",
-        "maxIterations",
-      ]),
-      ...getNodeConfig(data),
-      label: getNodeLabel(data, "循环"),
-      description: getNodeDescription(data),
-      itemAlias: getNodeConfigValue(data, "itemAlias", "item") || "item",
-      maxIterations:
-        Number.isFinite(maxIterations) && maxIterations > 0
-          ? maxIterations
-          : 10,
-      loopNodes: normalizedLoopNodes,
-      loopEdges: normalizedLoopEdges,
-    },
-    output: getNodeOutput(data),
-  });
-}
-
-function getLoopNodes(data = {}) {
-  return getNodeConfigValue(normalizeLoopData(data), "loopNodes", []);
-}
-
-function getLoopEdges(data = {}) {
-  return getNodeConfigValue(normalizeLoopData(data), "loopEdges", []);
-}
-
-function getLoopCanvasLayout(compactMode = true) {
-  return compactMode
-    ? {
-        minWidth: 292,
-        minHeight: 118,
-        paddingTop: 18,
-        paddingRight: 26,
-        paddingBottom: 18,
-        paddingLeft: 18,
-      }
-    : {
-        minWidth: 680,
-        minHeight: 300,
-        paddingTop: 30,
-        paddingRight: 52,
-        paddingBottom: 34,
-        paddingLeft: 34,
-      };
-}
-
-function getLoopCanvasNodeSize(node, compactMode = true) {
-  if (node?.type === "loop-start" || node?.id === "loop-entry") {
-    return compactMode ? { width: 36, height: 36 } : { width: 150, height: 56 };
-  }
-
-  if (node?.type === "condition") {
-    const caseCount = Math.max(2, getConditionCases(node?.data).length);
-    return {
-      width: 260,
-      height: 93 + caseCount * 32,
-    };
-  }
-
-  if (node?.type === "reply") {
-    return { width: 200, height: 112 };
-  }
-
-  if (node?.type === "loop") {
-    const metrics = getLoopCanvasMetrics(node?.data || {}, true);
-    return {
-      width: metrics.width + 32,
-      height: metrics.height + 60,
-    };
-  }
-
-  return { width: 200, height: 112 };
-}
-
-function getLoopCanvasMetrics(data = {}, compactMode = true) {
-  const layout = getLoopCanvasLayout(compactMode);
-  const loopNodes = getLoopNodes(data);
-
-  let maxRight = layout.paddingLeft;
-  let maxBottom = layout.paddingTop;
-
-  loopNodes.forEach((node) => {
-    const size = getLoopCanvasNodeSize(node, compactMode);
-    const positionX = Number(node?.position?.x) || 0;
-    const positionY = Number(node?.position?.y) || 0;
-
-    maxRight = Math.max(maxRight, positionX + size.width);
-    maxBottom = Math.max(maxBottom, positionY + size.height);
-  });
-
-  return {
-    width: Math.max(layout.minWidth, Math.ceil(maxRight + layout.paddingRight)),
-    height: Math.max(
-      layout.minHeight,
-      Math.ceil(maxBottom + layout.paddingBottom)
-    ),
-  };
-}
-
-function getLoopNodeStyle(data = {}) {
-  const metrics = getLoopCanvasMetrics(data, true);
-
-  return {
-    width: `${metrics.width + 32}px`,
-    height: `${metrics.height + 60}px`,
-  };
-}
-
-function getLoopEditorSurfaceStyle(data = {}) {
-  const metrics = getLoopCanvasMetrics(data, true);
-
-  return {
-    width: `${metrics.width}px`,
-    height: `${metrics.height}px`,
-  };
-}
-
-function getDefaultSourceHandleId(node) {
-  if (!node) {
-    return undefined;
-  }
-
-  if (node.type === "condition") {
-    return getConditionDefaultSourceHandle(node.data);
-  }
-
-  if (node.type === "loop") {
-    return LOOP_OUTER_SOURCE_HANDLE_ID;
-  }
-
-  return undefined;
-}
-
-function getDefaultTargetHandleId(node) {
-  if (!node) {
-    return undefined;
-  }
-
-  if (node.type === "loop") {
-    return LOOP_OUTER_TARGET_HANDLE_ID;
-  }
-
-  return undefined;
+  return rawNormalizeLoopData(data, getDefaultLlmModelConfig());
 }
 
 function normalizeLoopExternalEdges(nodeIds = []) {
