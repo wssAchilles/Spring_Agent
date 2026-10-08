@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tech.qiantong.qknow.common.core.domain.CommonResult;
-import tech.qiantong.qknow.module.kb.tool.mcp.McpToolAdapter;
+import tech.qiantong.qknow.hermes.tool.mcp.McpToolAdapter;
 import tech.qiantong.qknow.module.kmc.api.rag.RagFallbackMonitor;
 
 import javax.sql.DataSource;

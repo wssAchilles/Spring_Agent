@@ -125,12 +125,17 @@ public class HermesGrpcClient {
             StreamingChunk chunk = event.getChunk();
             KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();
             message.setType(MessageTypeEnums.ROBOT.code);
-            message.setContent(chunk.getText());
+            if (chunk.getIsThinking() || (chunk.getReasoningContent() != null && !chunk.getReasoningContent().isEmpty())) {
+                message.setEventType("thinking");
+                message.setContent(chunk.getReasoningContent());
+            } else {
+                message.setContent(chunk.getText());
+                if (chunk.getText() != null && !chunk.getText().isBlank()) {
+                    emittedText.set(true);
+                }
+            }
             message.setCreateTime(DateUtils.getNowDate());
             sendRespVO.setReceive(message);
-            if (chunk.getText() != null && !chunk.getText().isBlank()) {
-                emittedText.set(true);
-            }
         } else if (event.hasToolInvoked()) {
             ToolInvoked tool = event.getToolInvoked();
             KbChatMessageSendRespVO.Message message = new KbChatMessageSendRespVO.Message();

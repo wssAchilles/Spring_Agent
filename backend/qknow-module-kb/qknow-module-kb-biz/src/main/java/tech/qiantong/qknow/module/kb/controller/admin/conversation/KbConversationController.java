@@ -136,6 +136,8 @@ public class KbConversationController extends BaseController {
                                 assistantStatus.set(receive.getContent() + "，正在生成回答");
                             } else if ("tool_call".equals(eventType)) {
                                 assistantStatus.set(receive.getContent());
+                            } else if ("thinking".equals(eventType)) {
+                                assistantStatus.set("思考中");
                             } else {
                                 assistantContent.append(receive.getContent());
                                 assistantStatus.set(assistantContent.toString());

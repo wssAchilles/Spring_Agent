@@ -18,7 +18,7 @@ import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO;
-import tech.qiantong.qknow.module.kb.tool.mcp.McpToolAdapter;
+import tech.qiantong.qknow.hermes.tool.mcp.McpToolAdapter;
 
 import java.util.List;
 import java.util.Objects;

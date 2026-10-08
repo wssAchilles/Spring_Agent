@@ -49,16 +49,27 @@ public abstract class BaseNodeBO {
      * 准备输入数据（根据 inputMapping 从上下文中获取）
      */
     protected Map<String, Object> prepareInput(RuntimeContextBO context) {
-        JSONObject contextVariables = context.getVariables();
+        if (nodeDefinition == null || StrUtil.isBlank(nodeDefinition.getInput())) {
+            return new java.util.HashMap<>();
+        }
+        JSONObject contextVariables = context != null ? context.getVariables() : null;
         JSONArray inputJsonDefArray = JSONArray.parseArray(nodeDefinition.getInput());
+        if (inputJsonDefArray == null || inputJsonDefArray.isEmpty()) {
+            return new java.util.HashMap<>();
+        }
         Map<String, Object> inputData = new java.util.HashMap<>(inputJsonDefArray.size());
         for (int i = 0; i < inputJsonDefArray.size(); i++) {
             JSONObject inputJsonDef = inputJsonDefArray.getJSONObject(i);
-            String inputName = inputJsonDef.getString("name");
-            if (StrUtil.isBlank(inputName)){
+            if (inputJsonDef == null) {
                 continue;
             }
-            inputData.put(inputName, contextVariables.get(inputName));
+            String inputName = inputJsonDef.getString("name");
+            if (StrUtil.isBlank(inputName)) {
+                continue;
+            }
+            if (contextVariables != null) {
+                inputData.put(inputName, contextVariables.get(inputName));
+            }
         }
 
         return inputData;
@@ -73,7 +84,11 @@ public abstract class BaseNodeBO {
             return;
         }
         JSONObject contextVariables = context.getVariables();
-        contextVariables.putAll(resultData);
+        if (contextVariables != null) {
+            synchronized (contextVariables) {
+                contextVariables.putAll(resultData);
+            }
+        }
     }
 
     /**

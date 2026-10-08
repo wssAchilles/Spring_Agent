@@ -13,13 +13,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * MCP 工具适配器
+ * MCP 工具适配器 (已废弃：请统一使用 tech.qiantong.qknow.hermes.tool.mcp.McpToolAdapter)
  * 将外部 MCP Server 的工具转换为 Spring AI FunctionToolCallback
- *
- * MCP (Model Context Protocol) 是一种标准协议，用于连接 LLM 与外部工具/数据源
  */
 @Slf4j
-@Component
+@Deprecated
 public class McpToolAdapter {
 
     private final Map<String, McpServerConfig> serverConfigs = new ConcurrentHashMap<>();

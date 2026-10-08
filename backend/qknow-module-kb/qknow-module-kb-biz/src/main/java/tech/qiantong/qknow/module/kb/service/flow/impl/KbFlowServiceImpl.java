@@ -434,12 +434,9 @@ public class KbFlowServiceImpl implements IKbFlowService {
             return skipped;
         }
 
-        // 2. 正常物理执行
+        // 2. 正常物理执行 (无锁并行化，各虚拟线程独立运行 node.execute)
         BaseNodeBO node = nodeFactory.createNode(currentNodeDef, flowEdges);
-        NodeRunResultBO nodeResult;
-        synchronized (runtimeContext.getVariables()) {
-            nodeResult = node.execute(runtimeContext);
-        }
+        NodeRunResultBO nodeResult = node.execute(runtimeContext);
         nodeResult.setStep(stepCounter.getAndIncrement());
 
         if (!isTestMode) {

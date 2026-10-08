@@ -86,6 +86,8 @@ message StreamingChunk {
   string text = 1;
   string user_question = 2;
   google.protobuf.Timestamp create_time = 3;
+  string reasoning_content = 4;
+  bool is_thinking = 5;
 }
 
 message ModelFinished {

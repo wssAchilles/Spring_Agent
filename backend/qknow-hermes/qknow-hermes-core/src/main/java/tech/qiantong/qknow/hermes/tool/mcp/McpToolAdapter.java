@@ -247,6 +247,64 @@ public class McpToolAdapter {
     }
 
     /**
+     * 执行 MCP 工具物理调用并返回结构化 JSON 结果 (内嵌虚拟线程断路器隔离)
+     *
+     * @param toolCodeOrName 工具标识（支持 "mcp.serverName.toolName"、"serverName.toolName" 或 "toolName"）
+     * @param arguments      调用参数键值对
+     * @return 包含结果或错误信息的 JSON 字符串
+     */
+    public String executeTool(String toolCodeOrName, Map<String, Object> arguments) {
+        if (toolCodeOrName == null || toolCodeOrName.isBlank()) {
+            return "{\"error\": \"Tool name cannot be empty\"}";
+        }
+        String serverName;
+        String toolName;
+        if (isMcpTool(toolCodeOrName)) {
+            String[] parts = parseMcpToolName(toolCodeOrName);
+            if (parts == null || parts.length < 2) {
+                return "{\"error\": \"Invalid MCP tool code: " + toolCodeOrName + "\"}";
+            }
+            serverName = parts[0];
+            toolName = parts[1];
+        } else if (toolCodeOrName.contains(".")) {
+            String[] parts = toolCodeOrName.split("\\.", 2);
+            serverName = parts[0];
+            toolName = parts[1];
+        } else {
+            // 单一工具名：尝试在已注册的 clients 中查找包含该工具的 server
+            String matchedServer = null;
+            for (Map.Entry<String, McpClient> entry : clients.entrySet()) {
+                try {
+                    List<JSONObject> tools = entry.getValue().listTools();
+                    if (tools != null && tools.stream().anyMatch(t -> toolCodeOrName.equals(t.getString("name")))) {
+                        matchedServer = entry.getKey();
+                        break;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            if (matchedServer != null) {
+                serverName = matchedServer;
+                toolName = toolCodeOrName;
+            } else {
+                return "{\"error\": \"No connected MCP server found for tool: " + toolCodeOrName + "\"}";
+            }
+        }
+
+        String fullToolCode = "mcp." + serverName + "." + toolName;
+        return circuitBreaker.executeWithIsolation(fullToolCode, () -> {
+            McpClient client = getClient(serverName);
+            if (client == null) {
+                log.warn("MCP 客户端未连接: {}", serverName);
+                return "{\"error\": \"MCP 工具 " + serverName + "." + toolName + " 未连接\"}";
+            }
+            Map<String, Object> args = arguments != null ? arguments : Map.of();
+            JSONObject result = client.callTool(toolName, args);
+            return result != null ? result.toJSONString() : "{}";
+        }, getToolTimeoutMillis());
+    }
+
+    /**
      * 创建 MCP 工具的 FunctionToolCallback
      */
     public FunctionToolCallback<McpToolRequest, String> createMcpToolCallback(
