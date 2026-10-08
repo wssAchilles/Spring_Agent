@@ -260,16 +260,36 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
     const resolvedTarget = rawTarget ? resolveNodeId(rawTarget, [localNodeIdMap]) : rawTarget;
 
     let sourceHandle = edge.sourceHandle;
+    const sourceNode = normalizedNodes.find((n) => n.id === resolvedSource);
+    const isConditionSource = sourceNode?.type === "condition";
+
     if (sourceHandle) {
       const candidateKey = `${resolvedSource}##${sourceHandle}`;
       if (conditionCasesMap.has(candidateKey)) {
         sourceHandle = conditionCasesMap.get(candidateKey);
       } else if (!sourceHandle.startsWith("condition-case-")) {
-        // 尝试添加前缀
         const candidateKeyWithPrefix = `${resolvedSource}##condition-case-${sourceHandle}`;
         if (conditionCasesMap.has(candidateKeyWithPrefix)) {
           sourceHandle = conditionCasesMap.get(candidateKeyWithPrefix);
         }
+      }
+    } else if (isConditionSource) {
+      // 若 condition 出边缺失 sourceHandle，根据目标节点语义与分支顺序自愈
+      const cases = sourceNode?.data?.config?.cases || sourceNode?.data?.cases || [];
+      const lowerTarget = resolvedTarget.toLowerCase();
+      if (lowerTarget.includes("fast") || lowerTarget.includes("reply_fast")) {
+        const fastCase = cases.find((c) => `${c.id}`.includes("fast") || c.isElse);
+        if (fastCase) {
+          sourceHandle = fastCase.targetHandle || `condition-case-${fastCase.id}`;
+        }
+      } else if (lowerTarget.includes("hyde") || lowerTarget.includes("deep") || lowerTarget.includes("knowledge")) {
+        const deepCase = cases.find((c) => !c.isElse || `${c.id}`.includes("deep"));
+        if (deepCase) {
+          sourceHandle = deepCase.targetHandle || `condition-case-${deepCase.id}`;
+        }
+      }
+      if (!sourceHandle && cases.length > 0) {
+        sourceHandle = cases[0].targetHandle || `condition-case-${cases[0].id || "1"}`;
       }
     }
 

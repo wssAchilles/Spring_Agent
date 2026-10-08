@@ -1866,11 +1866,14 @@ function autoLayoutGraph() {
 
   // 1. 构建节点邻接表与入度表
   const nodeIds = nodes.value.map((n) => n.id);
+  const nodeMap = new Map();
+  nodes.value.forEach((n) => nodeMap.set(n.id, n));
+
   const inDegree = {};
-  const adj = {};
+  const adjEdges = {};
   nodeIds.forEach((id) => {
     inDegree[id] = 0;
-    adj[id] = [];
+    adjEdges[id] = [];
   });
 
   const validEdges = (edges.value || []).filter(
@@ -1878,13 +1881,36 @@ function autoLayoutGraph() {
   );
 
   validEdges.forEach((edge) => {
-    if (adj[edge.source]) {
-      adj[edge.source].push(edge.target);
+    if (adjEdges[edge.source]) {
+      adjEdges[edge.source].push(edge);
     }
     if (inDegree[edge.target] !== undefined) {
       inDegree[edge.target]++;
     }
   });
+
+  // 获取分支 handle 的垂直物理顺序权重（从上到下 0, 1, 2...）
+  function getBranchVerticalOrder(sourceNode, handleId) {
+    if (!sourceNode || !handleId) return 999;
+    if (sourceNode.type === "condition") {
+      const cases = getConditionCases(sourceNode.data);
+      for (let i = 0; i < cases.length; i++) {
+        const c = cases[i];
+        const hId = getConditionHandleId(c);
+        if (
+          hId === handleId ||
+          c.id === handleId ||
+          c.targetHandle === handleId ||
+          `condition-case-${c.id}` === handleId
+        ) {
+          return i;
+        }
+      }
+      if (handleId.includes("else") || handleId.includes("fast")) return 1;
+      if (handleId.includes("if") || handleId.includes("deep") || handleId.includes("case-1")) return 0;
+    }
+    return 999;
+  }
 
   // 2. 找到根节点（入度为 0 的节点，优先 start 节点）
   let rootIds = nodeIds.filter((id) => inDegree[id] === 0);
@@ -1910,9 +1936,19 @@ function autoLayoutGraph() {
     visitedCount[currId] = (visitedCount[currId] || 0) + 1;
     if (visitedCount[currId] > 30) continue;
 
-    const neighbors = adj[currId] || [];
-    if (neighbors.length === 1) {
-      const neighborId = neighbors[0];
+    const outEdges = adjEdges[currId] || [];
+    if (outEdges.length > 1) {
+      // 关键核心：出边按 Handle 的物理垂直顺序升序排序
+      // 确保上面第 0 个分支永远连向上泳道，下面第 1 个分支永远连向下泳道，消除任何交叉
+      outEdges.sort((a, b) => {
+        const ordA = getBranchVerticalOrder(nodeMap.get(currId), a.sourceHandle);
+        const ordB = getBranchVerticalOrder(nodeMap.get(currId), b.sourceHandle);
+        return ordA - ordB;
+      });
+    }
+
+    if (outEdges.length === 1) {
+      const neighborId = outEdges[0].target;
       const targetDepth = currDepth + 1;
       if (
         depthMap[neighborId] === undefined ||
@@ -1924,9 +1960,10 @@ function autoLayoutGraph() {
         laneMap[neighborId] = currLane;
       }
       queue.push(neighborId);
-    } else if (neighbors.length > 1) {
-      // 分支扩散：分配不同泳道
-      neighbors.forEach((neighborId, idx) => {
+    } else if (outEdges.length > 1) {
+      // 分支扩散：严格按垂直 Handle 顺序对应分配不同泳道
+      outEdges.forEach((edge, idx) => {
+        const neighborId = edge.target;
         const targetDepth = currDepth + 1;
         if (
           depthMap[neighborId] === undefined ||
@@ -1935,6 +1972,8 @@ function autoLayoutGraph() {
           depthMap[neighborId] = targetDepth;
         }
         if (laneMap[neighborId] === undefined) {
+          // idx 0 对应最上方 Handle -> 锁定上泳道 (-1)
+          // idx 1 对应下方 Handle -> 锁定下泳道 (1)
           laneMap[neighborId] = idx === 0 ? -1 : (idx === 1 ? 1 : idx);
         }
         queue.push(neighborId);
