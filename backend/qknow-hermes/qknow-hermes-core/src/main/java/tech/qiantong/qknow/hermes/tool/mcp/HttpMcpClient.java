@@ -11,13 +11,16 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 /**
  * MCP HTTP 客户端 — Streamable HTTP Transport
  * 参考：MCP Java SDK v2.0.0（3.5k⭐）
- * 参考：MCP 规范 2025-03-26
+ * 参考：MCP 规范 2024-11 / 2025-03
  *
- * 通过 HTTP POST 发送 JSON-RPC 2.0 消息到 MCP Server。
+ * 支持通过 HTTP POST 发送 JSON-RPC 2.0 消息到 MCP Server，
+ * 并支持通过 HTTP GET SSE 建立双向长连接，处理服务端通知与 Sampling 反向推理调用。
  */
 @Slf4j
 public class HttpMcpClient implements McpClient {
@@ -27,6 +30,12 @@ public class HttpMcpClient implements McpClient {
     private final Map<String, String> customHeaders;
     private final HttpClient httpClient;
     private String sessionId;
+
+    private volatile McpSamplingHandler samplingHandler;
+    private final List<Consumer<JSONObject>> eventListeners = new CopyOnWriteArrayList<>();
+    private volatile boolean sseConnected = false;
+    private volatile String ssePostEndpoint = null;
+    private volatile Thread sseListenerThread;
 
     public HttpMcpClient(String baseUrl) {
         this(baseUrl, null, Collections.emptyMap());
@@ -39,6 +48,131 @@ public class HttpMcpClient implements McpClient {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
+    }
+
+    public void setSamplingHandler(McpSamplingHandler samplingHandler) {
+        this.samplingHandler = samplingHandler;
+    }
+
+    public void addEventListener(Consumer<JSONObject> listener) {
+        if (listener != null) {
+            this.eventListeners.add(listener);
+        }
+    }
+
+    public boolean isSseConnected() {
+        return sseConnected;
+    }
+
+    public String getSsePostEndpoint() {
+        return ssePostEndpoint;
+    }
+
+    /**
+     * 建立真实的 HTTP GET SSE 长连接通道
+     */
+    public synchronized void connectSse(String ssePath) {
+        if (sseConnected) {
+            return;
+        }
+
+        String fullSseUrl = baseUrl + (ssePath != null ? (ssePath.startsWith("/") ? ssePath : "/" + ssePath) : "/sse");
+        log.info("MCP 正在建立 HTTP GET SSE 长连接: {}", fullSseUrl);
+
+        sseListenerThread = Thread.ofVirtual().name("mcp-sse-listener-" + baseUrl).start(() -> {
+            try {
+                HttpRequest.Builder builder = HttpRequest.newBuilder()
+                        .uri(URI.create(fullSseUrl))
+                        .header("Accept", "text/event-stream")
+                        .GET();
+                applyHeaders(builder);
+
+                httpClient.send(builder.build(), HttpResponse.BodyHandlers.fromLineSubscriber(new java.util.concurrent.Flow.Subscriber<String>() {
+                    private java.util.concurrent.Flow.Subscription subscription;
+                    private String currentEvent = "message";
+
+                    @Override
+                    public void onSubscribe(java.util.concurrent.Flow.Subscription sub) {
+                        this.subscription = sub;
+                        sseConnected = true;
+                        sub.request(1);
+                    }
+
+                    @Override
+                    public void onNext(String line) {
+                        try {
+                            if (line.startsWith("event:")) {
+                                currentEvent = line.substring(6).trim();
+                            } else if (line.startsWith("data:")) {
+                                String data = line.substring(5).trim();
+                                if ("endpoint".equals(currentEvent)) {
+                                    ssePostEndpoint = data.startsWith("http") ? data : (baseUrl + (data.startsWith("/") ? data : "/" + data));
+                                    log.info("MCP SSE 接收到 POST 目标端点: {}", ssePostEndpoint);
+                                } else {
+                                    handleIncomingSseMessage(data);
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.debug("解析 SSE 事件行异常", e);
+                        } finally {
+                            subscription.request(1);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+                        log.warn("MCP SSE 连接异常: {}", throwable.getMessage());
+                        sseConnected = false;
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        log.info("MCP SSE 连接已完成关闭");
+                        sseConnected = false;
+                    }
+                }));
+            } catch (Exception e) {
+                log.warn("建立 MCP SSE 失败: {}", e.getMessage());
+                sseConnected = false;
+            }
+        });
+    }
+
+    /**
+     * 处理服务端推过来的 JSON-RPC 事件 (支持 Sampling 反向生成)
+     */
+    private void handleIncomingSseMessage(String data) {
+        if (data == null || data.isBlank()) return;
+        try {
+            JSONObject json = JSON.parseObject(data);
+            String method = json.getString("method");
+
+            // 1. 若为 sampling/createMessage 原语，委托 samplingHandler 自动反向生成并响应
+            if ("sampling/createMessage".equals(method) && samplingHandler != null) {
+                String id = json.getString("id");
+                JSONObject params = json.getJSONObject("params");
+                JSONObject responseResult = samplingHandler.handleSamplingRequest(params);
+
+                if (id != null) {
+                    JSONObject rpcResponse = new JSONObject();
+                    rpcResponse.put("jsonrpc", "2.0");
+                    rpcResponse.put("id", id);
+                    rpcResponse.put("result", responseResult);
+                    sendNotification("notifications/message", rpcResponse);
+                }
+            }
+
+            // 2. 广播至所有事件监听器
+            for (Consumer<JSONObject> listener : eventListeners) {
+                try {
+                    listener.accept(json);
+                } catch (Exception ex) {
+                    log.debug("分发 MCP SSE 监听器异常", ex);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("解析 MCP SSE 数据包异常", e);
+        }
     }
 
     public String getBaseUrl() {

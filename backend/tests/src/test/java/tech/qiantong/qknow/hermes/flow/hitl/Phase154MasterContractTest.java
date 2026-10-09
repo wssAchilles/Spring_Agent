@@ -224,4 +224,120 @@ public class Phase154MasterContractTest {
         double expectedEucSq = 2.0 * (1.0 - cosine);
         assertEquals(expectedEucSq, eucSq, 1e-6, "超球面单位向量必须精确满足 d_Euc^2 = 2 * (1 - cos(theta))");
     }
+
+    @Test
+    @DisplayName("契约 7：OpenAPI 3.0 动态网关 — 零代码解析 Swagger 规范并生成标准 MCP Tools")
+    void test07_DynamicOpenApiMcpBridgeSpecParsingAndToolGeneration() {
+        String mockOpenApiSpec = """
+                {
+                  "openapi": "3.0.1",
+                  "info": { "title": "Enterprise CRM API", "version": "1.0.0" },
+                  "paths": {
+                    "/api/v1/users/{userId}": {
+                      "get": {
+                        "operationId": "getUserDetail",
+                        "summary": "获取用户详情",
+                        "parameters": [
+                          { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } },
+                          { "name": "includeOrders", "in": "query", "required": false, "schema": { "type": "boolean" } }
+                        ]
+                      }
+                    },
+                    "/api/v1/orders": {
+                      "post": {
+                        "operationId": "createOrder",
+                        "summary": "创建企业订单",
+                        "requestBody": {
+                          "content": {
+                            "application/json": {
+                              "schema": {
+                                "type": "object",
+                                "required": ["orderId", "amount"],
+                                "properties": {
+                                  "orderId": { "type": "string" },
+                                  "amount": { "type": "number" }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        tech.qiantong.qknow.hermes.tool.mcp.DynamicOpenApiMcpBridge bridge =
+                new tech.qiantong.qknow.hermes.tool.mcp.DynamicOpenApiMcpBridge("https://api.enterprise.corp");
+
+        var tools = bridge.registerOpenApiSpec(mockOpenApiSpec);
+        assertEquals(2, tools.size(), "必须精准解析出 2 个标准 MCP 工具");
+
+        var getTool = tools.stream().filter(t -> t.getString("name").contains("getUserDetail")).findFirst().orElse(null);
+        assertNotNull(getTool, "getUserDetail 工具必须成功注册");
+        assertEquals("获取用户详情", getTool.getString("description"));
+
+        var postTool = tools.stream().filter(t -> t.getString("name").contains("createOrder")).findFirst().orElse(null);
+        assertNotNull(postTool, "createOrder 工具必须成功注册");
+        com.alibaba.fastjson2.JSONObject schema = postTool.getJSONObject("inputSchema");
+        assertNotNull(schema);
+        com.alibaba.fastjson2.JSONArray required = schema.getJSONArray("required");
+        assertTrue(required.contains("orderId") && required.contains("amount"), "必须包含必填参数校验");
+    }
+
+    @Test
+    @DisplayName("契约 8：Anthropic MCP Sampling 反向推理处理器 — 规范化解析与生成")
+    void test08_McpSamplingHandlerMessageGeneration() {
+        tech.qiantong.qknow.hermes.tool.mcp.McpSamplingHandler handler =
+                new tech.qiantong.qknow.hermes.tool.mcp.McpSamplingHandler(null);
+
+        com.alibaba.fastjson2.JSONObject requestParams = new com.alibaba.fastjson2.JSONObject();
+        requestParams.put("systemPrompt", "你是一个专业企业助手");
+        com.alibaba.fastjson2.JSONArray messages = new com.alibaba.fastjson2.JSONArray();
+        com.alibaba.fastjson2.JSONObject uMsg = new com.alibaba.fastjson2.JSONObject();
+        uMsg.put("role", "user");
+        uMsg.put("content", com.alibaba.fastjson2.JSONObject.of("type", "text", "text", "总结该任务"));
+        messages.add(uMsg);
+        requestParams.put("messages", messages);
+
+        com.alibaba.fastjson2.JSONObject response = handler.handleSamplingRequest(requestParams);
+        assertNotNull(response);
+        assertEquals("assistant", response.getString("role"));
+        assertEquals("deepseek-flash", response.getString("model"));
+        assertNotNull(response.getJSONObject("content"));
+        assertEquals("endTurn", response.getString("stopReason"));
+    }
+
+    @Test
+    @DisplayName("契约 9：ToolNodeBO 高危工具人机协同审批 (HITL) 门禁 — 未授权严格挂起，放行后正常执行")
+    void test09_ToolNodeHighRiskHitlInterceptionAndApprovalResume() {
+        tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowNodeDO nodeDef =
+                new tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowNodeDO();
+        nodeDef.setUuid("tool_node_dangerous_001");
+        nodeDef.setName("delete_user_data"); // 命名包含高危操作 delete
+        nodeDef.setConfig("{\"toolCode\":\"delete_user_data\"}");
+
+        tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO toolNode =
+                new tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO(nodeDef, List.of(), null);
+
+        // 1. 首次调用：无审批授权，必须被拦截并返回 SUSPENDED 挂起
+        tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO unapprovedContext =
+                new tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO();
+        unapprovedContext.setVariables(new com.alibaba.fastjson2.JSONObject());
+
+        tech.qiantong.qknow.module.kb.service.flow.bo.NodeRunResultBO suspendedResult = toolNode.execute(unapprovedContext);
+        assertNotNull(suspendedResult);
+        assertEquals(RuntimeStatusEnums.SUSPENDED.getCode(), suspendedResult.getStatus(), "高危工具在未审批前必须严格返回 SUSPENDED");
+
+        // 2. 二次调用：注入人工审批放行标记 APPROVED
+        tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO approvedContext =
+                new tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO();
+        com.alibaba.fastjson2.JSONObject approvedVars = new com.alibaba.fastjson2.JSONObject();
+        approvedVars.put("approvalResult", "APPROVED");
+        approvedContext.setVariables(approvedVars);
+
+        tech.qiantong.qknow.module.kb.service.flow.bo.NodeRunResultBO approvedResult = toolNode.execute(approvedContext);
+        assertNotNull(approvedResult);
+        assertEquals(RuntimeStatusEnums.SUCCESS.getCode(), approvedResult.getStatus(), "人工放行后高危工具门禁解除并正常执行");
+    }
 }

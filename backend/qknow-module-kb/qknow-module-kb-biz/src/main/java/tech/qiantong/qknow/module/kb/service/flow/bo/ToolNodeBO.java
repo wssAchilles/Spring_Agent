@@ -78,6 +78,46 @@ public class ToolNodeBO extends BaseNodeBO {
             return breakerResult;
         }
 
+        // 1.5 敏感高危工具人机协同审批 (HITL) 门禁
+        boolean requireApproval = false;
+        String approvalReason = "调用高危工具需要人工审批";
+        if (nodeDef != null && StrUtil.isNotBlank(nodeDef.getConfig())) {
+            try {
+                JSONObject configJson = JSONObject.parseObject(nodeDef.getConfig());
+                if (configJson.getBooleanValue("requireApproval", false)) {
+                    requireApproval = true;
+                    if (configJson.containsKey("reason")) {
+                        approvalReason = configJson.getString("reason");
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        String lowerTool = targetTool.toLowerCase();
+        if (lowerTool.contains("delete") || lowerTool.contains("drop") || lowerTool.contains("rm_rf")
+                || lowerTool.contains("shutdown") || lowerTool.contains("transfer") || lowerTool.contains("execute_command")) {
+            requireApproval = true;
+            approvalReason = "检测到高危破坏性操作 [" + targetTool + "]，触发系统强制风控审批";
+        }
+
+        boolean alreadyApproved = false;
+        if (context != null && context.getVariables() != null) {
+            String appResult = context.getVariables().getString("approvalResult");
+            if ("APPROVED".equalsIgnoreCase(appResult) || context.getVariables().getBooleanValue("approvalApproved", false)) {
+                alreadyApproved = true;
+            }
+        }
+
+        if (requireApproval && !alreadyApproved) {
+            log.info("[ToolNode] 命中高危工具审批门禁: tool={}, 挂起工作流等待人工确认", targetTool);
+            Map<String, Object> suspendPayload = new HashMap<>();
+            suspendPayload.put("status", "SUSPENDED");
+            suspendPayload.put("tool", targetTool);
+            suspendPayload.put("reason", approvalReason);
+            suspendPayload.put("input", inputData);
+            suspendPayload.put("suspendedAt", System.currentTimeMillis());
+            return NodeRunResultBO.suspended(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName, suspendPayload);
+        }
+
         // 2. 真实物理调用 MCP 工具或回退
         Map<String, Object> output = new HashMap<>();
         try {
