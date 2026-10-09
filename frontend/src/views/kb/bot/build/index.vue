@@ -1222,7 +1222,6 @@ import {
   createEdgeId,
   normalizeLoopPath,
   areLoopPathsEqual,
-  normalizeModelProviderValue,
   getNodeTypeLabel,
   getStartFieldTypeMeta,
   createStartField,

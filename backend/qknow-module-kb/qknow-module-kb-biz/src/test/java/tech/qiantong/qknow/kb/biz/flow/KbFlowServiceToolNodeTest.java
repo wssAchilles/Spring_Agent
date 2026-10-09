@@ -38,7 +38,7 @@ public class KbFlowServiceToolNodeTest {
         assertNotNull(result);
         assertEquals(RuntimeStatusEnums.SUCCESS.getCode(), result.getStatus());
         assertEquals("SUCCESS", result.getOutput().get("status"));
-        assertTrue(result.getOutput().get("result").toString().contains("weather_query"));
+        assertEquals("weather_query", result.getOutput().get("tool"));
     }
 
     @Test
