@@ -46,6 +46,28 @@ public class DeepSeekCausalThinkingAligner {
             List<Map<String, Object>> chatHistory,
             boolean hasTools
     ) {
+        return alignThinkingAndBuildPayload(steinerNodes, steinerEdges, userQuery, chatHistory, hasTools, "deepseek-flash");
+    }
+
+    /**
+     * 将 Steiner 因果骨架投影为 Kahn 拓扑排序因果命题链，并对齐 DeepSeek 参数化思考协议（支持动态模型指定）
+     *
+     * @param steinerNodes 剪枝保留的 Steiner 节点
+     * @param steinerEdges 剪枝保留的 Steiner 边
+     * @param userQuery    用户原始查询
+     * @param chatHistory  既有多轮对话历史
+     * @param hasTools     本次调用是否挂载工具 (tools)
+     * @param modelName    动态指定的官方模型名称或逻辑别名
+     * @return 对齐后的 DeepSeek 请求体与因果元数据
+     */
+    public AlignedThinkingPayload alignThinkingAndBuildPayload(
+            List<SteinerCausalSubgraphPruner.GraphNode> steinerNodes,
+            List<SteinerCausalSubgraphPruner.GraphEdge> steinerEdges,
+            String userQuery,
+            List<Map<String, Object>> chatHistory,
+            boolean hasTools,
+            String modelName
+    ) {
         // 1. Kahn 算法拓扑排序
         List<String> topoOrder = computeKahnTopologicalOrder(steinerNodes, steinerEdges);
 
@@ -59,8 +81,9 @@ public class DeepSeekCausalThinkingAligner {
         List<Map<String, Object>> alignedMessages = prepareAlignedMessages(chatHistory, scaffoldBlock, userQuery, hasTools);
 
         // 5. 组装符合官方规范的完整 JSON 请求体
+        String targetModel = (modelName != null && !modelName.isBlank()) ? modelName.trim() : "deepseek-flash";
         Map<String, Object> requestBody = new LinkedHashMap<>();
-        requestBody.put("model", "deepseek-chat");
+        requestBody.put("model", targetModel);
         requestBody.put("messages", alignedMessages);
         requestBody.put("thinking", Map.of("type", "enabled"));
         requestBody.put("stream", true);

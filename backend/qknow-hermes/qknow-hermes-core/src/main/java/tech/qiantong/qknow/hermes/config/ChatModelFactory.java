@@ -26,11 +26,21 @@ public class ChatModelFactory {
     @jakarta.annotation.Resource
     private org.springframework.core.env.Environment environment;
 
+    @jakarta.annotation.Resource
+    private ModelNameResolver modelNameResolver;
+
+    private ModelNameResolver getModelNameResolver() {
+        if (modelNameResolver == null) {
+            modelNameResolver = new ModelNameResolver();
+        }
+        return modelNameResolver;
+    }
+
     private final ConcurrentHashMap<String, ChatModel> cache = new ConcurrentHashMap<>();
 
     private String resolveApiKey(String apiKey, String platform) {
         if (apiKey != null && apiKey.contains("placeholder")) {
-            String upperPlatform = platform.toUpperCase().replace("-", "_");
+            String upperPlatform = platform != null ? platform.toUpperCase().replace("-", "_") : "";
             String envKey1 = "HERMES_" + upperPlatform + "_API_KEY";
             String envKey2 = upperPlatform + "_API_KEY";
             String envValue = environment.getProperty(envKey1);
@@ -50,14 +60,15 @@ public class ChatModelFactory {
 
     public ChatModel getChatModel(String platform, String baseUrl, String apiKey, String modelName, Double temperature) {
         String resolvedApiKey = resolveApiKey(apiKey, platform);
-        String cacheKey = buildCacheKey(platform, baseUrl, resolvedApiKey, modelName, temperature);
+        String resolvedModel = getModelNameResolver().resolve(platform, modelName);
+        String cacheKey = buildCacheKey(platform, baseUrl, resolvedApiKey, resolvedModel, temperature);
         return cache.computeIfAbsent(cacheKey, k ->
                 switch (AiPlatformEnum.validatePlatform(platform)) {
-                    case OPENAI -> getOpenAiChatModel(baseUrl, resolvedApiKey, modelName, temperature);
-                    case TONG_YI -> getDashScopeChatModel(resolvedApiKey, modelName);
-                    case OLLAMA -> getOllamaChatModel(baseUrl, modelName);
-                    case DEEP_SEEK -> getDeepSeekCompatibleChatModel(baseUrl, resolvedApiKey, modelName, temperature);
-                    default -> getOpenAiChatModel(baseUrl, resolvedApiKey, modelName, temperature);
+                    case OPENAI -> getOpenAiChatModel(baseUrl, resolvedApiKey, resolvedModel, temperature);
+                    case TONG_YI -> getDashScopeChatModel(resolvedApiKey, resolvedModel);
+                    case OLLAMA -> getOllamaChatModel(baseUrl, resolvedModel);
+                    case DEEP_SEEK -> getDeepSeekCompatibleChatModel(baseUrl, resolvedApiKey, resolvedModel, temperature);
+                    default -> getOpenAiChatModel(baseUrl, resolvedApiKey, resolvedModel, temperature);
                 }
         );
     }

@@ -187,7 +187,14 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         body.put("model", targetModel);
         body.put("messages", messages);
         body.put("stream", stream);
-        if (targetTemperature != null) {
+        boolean isThinkingEnabled = false;
+        if (body.containsKey("thinking")) {
+            Object thinkingObj = body.get("thinking");
+            if (thinkingObj instanceof Map<?, ?> tm && "enabled".equals(tm.get("type"))) {
+                isThinkingEnabled = true;
+            }
+        }
+        if (targetTemperature != null && !isThinkingEnabled) {
             body.put("temperature", targetTemperature);
         }
         if (stream) {
