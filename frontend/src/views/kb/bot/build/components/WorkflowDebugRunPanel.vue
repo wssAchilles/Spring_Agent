@@ -153,6 +153,28 @@
       @rejected="handleHitlRejected"
     />
 
+    <!-- Phase P3: DeepSeek 思考链深度融合与独立折叠面板 (Apple Liquid Glass) -->
+    <div v-if="thinkingContent || isThinkingInProgress" class="workflow-debug-run-panel__thinking">
+      <div class="thinking-header" @click="thinkingExpanded = !thinkingExpanded">
+        <div class="thinking-title">
+          <span class="thinking-icon-sparkle">🧠</span>
+          <span>DeepSeek 深度推理思维链</span>
+          <span v-if="isThinkingInProgress" class="thinking-live-badge">思考中...</span>
+          <span v-else class="thinking-done-badge">已完成 ({{ thinkingLength }} 字)</span>
+        </div>
+        <el-icon class="thinking-toggle-icon" :class="{ 'is-expanded': thinkingExpanded }">
+          <ArrowRight />
+        </el-icon>
+      </div>
+
+      <el-collapse-transition>
+        <div v-show="thinkingExpanded" class="thinking-body font-mono">
+          <div class="thinking-content" v-html="thinkingContentMd"></div>
+          <span v-if="isThinkingInProgress" class="thinking-cursor"></span>
+        </div>
+      </el-collapse-transition>
+    </div>
+
     <div class="workflow-debug-run-panel__result">
       <div class="workflow-debug-run-panel__result-title">
         <span class="blue-bar"></span>输出结果
@@ -167,6 +189,7 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
+import { ArrowRight } from "@element-plus/icons-vue";
 import { ProcessFlow } from "@/api/kb/bot/flow.js";
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
@@ -180,6 +203,9 @@ import { PersistentSnapshotManager } from "./debug/engine/PersistentSnapshotTree
 const conversationInAbortController = ref(); // 对话进行中 abort 控制器(控制 stream 对话)
 const forkEngine = new TimeTravelForkEngine();
 const snapshotManager = new PersistentSnapshotManager();
+
+// Phase P3: DeepSeek 思考链响应式状态
+const thinkingExpanded = ref(true);
 
 // Phase 148 响应式状态: Merkle DAG 时间旅行与投机推演抽屉
 const showTimeTravelWidget = ref(false);
@@ -206,30 +232,67 @@ const md = new MarkdownIt({
     return ``;
   },
 });
-const resultTextMd = computed(() => {
+
+// Phase P3: 响应式解析 DeepSeek 思考链与回答正文
+const parsedContent = computed(() => {
+  const content = resultText.value || "";
   const startTag = "<think>";
   const endTag = "</think>";
-  const content = resultText.value;
 
-  // 如果没有 <think> 标签，直接渲染全部内容
   const startIndex = content.indexOf(startTag);
   if (startIndex === -1) {
-    return md.render(content);
+    return {
+      thinking: "",
+      answer: content,
+      isThinking: false
+    };
   }
 
-  // 有 <think>，则提取 </think> 之后的内容
   const afterStart = content.substring(startIndex + startTag.length);
   const endIndex = afterStart.indexOf(endTag);
 
-  let remainingContent = "";
-  if (endIndex !== -1) {
-    // 提取 </think> 之后的部分
-    remainingContent = afterStart.substring(endIndex + endTag.length);
+  if (endIndex === -1) {
+    // 尚未闭合，正在思考中
+    return {
+      thinking: afterStart,
+      answer: "",
+      isThinking: true
+    };
   } else {
-    // 没有闭合标签，可能还在思考中？可以返回空或原内容，按需处理
-    remainingContent = ""; // 或者保留 afterStart，看产品需求
+    // 思考已闭合
+    const thinkPart = afterStart.substring(0, endIndex);
+    const answerPart = afterStart.substring(endIndex + endTag.length);
+    return {
+      thinking: thinkPart,
+      answer: answerPart,
+      isThinking: false
+    };
   }
-  return md.render(remainingContent);
+});
+
+const isThinkingInProgress = computed(() => parsedContent.value.isThinking && running.value);
+const thinkingContent = computed(() => parsedContent.value.thinking);
+const thinkingLength = computed(() => (parsedContent.value.thinking || "").length);
+
+const thinkingContentMd = computed(() => {
+  const t = parsedContent.value.thinking;
+  if (!t) return "";
+  return md.render(t);
+});
+
+const resultTextMd = computed(() => {
+  const ans = parsedContent.value.answer;
+  if (!ans) return "";
+
+  // 渲染 Markdown
+  let rendered = md.render(ans);
+
+  // 增强引文角标 [^k] 为具有 Apple iOS 26 质感的胶囊标签
+  rendered = rendered.replace(/\[\^(\d+)\]/g, (match, p1) => {
+    return `<span class="apple-citation-pill" title="知识库权威切片依据 [^${p1}]">[^${p1}]</span>`;
+  });
+
+  return rendered;
 });
 const props = defineProps({
   fields: {
@@ -867,6 +930,135 @@ function handleHitlRejected(payload) {
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
+  }
+}
+
+/* Phase P3: DeepSeek 思考链独立折叠面板 (Apple Liquid Glass) */
+.workflow-debug-run-panel__thinking {
+  margin-top: 14px;
+  background: rgba(241, 245, 249, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.25s ease;
+
+  .thinking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.8);
+    }
+  }
+
+  .thinking-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 590;
+    color: #1e293b;
+  }
+
+  .thinking-icon-sparkle {
+    font-size: 14px;
+  }
+
+  .thinking-live-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    animation: pulse-thinking 1.5s infinite;
+  }
+
+  .thinking-done-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(100, 116, 139, 0.1);
+    color: #64748b;
+  }
+
+  .thinking-toggle-icon {
+    font-size: 12px;
+    color: #94a3b8;
+    transition: transform 0.25s ease;
+
+    &.is-expanded {
+      transform: rotate(90deg);
+    }
+  }
+
+  .thinking-body {
+    padding: 12px 14px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #475569;
+    max-height: 280px;
+    overflow-y: auto;
+    background: rgba(248, 250, 252, 0.5);
+  }
+
+  .thinking-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .thinking-cursor {
+    display: inline-block;
+    width: 6px;
+    height: 12px;
+    background: #059669;
+    margin-left: 4px;
+    vertical-align: middle;
+    animation: blink-cursor 1s infinite;
+  }
+}
+
+@keyframes pulse-thinking {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.97); }
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Phase P3: Apple iOS 26 质感引文角标胶囊 */
+:deep(.apple-citation-pill) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 1px 5px;
+  margin: 0 2px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  vertical-align: baseline;
+
+  &:hover {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
   }
 }
 </style>

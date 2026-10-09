@@ -955,6 +955,14 @@
               @removeOutput="removeToolOutput"
             />
 
+            <KnowledgeNodeConfigForm
+              v-else-if="selectedNode?.type === 'knowledge'"
+              :node="selectedNode?.data"
+              :description="getNodeDescription(selectedNode?.data)"
+              @updateField="handleSelectedNodeFieldUpdate"
+              @updateConfig="handleSelectedKnowledgeConfigUpdate"
+            />
+
             <ConditionNodeConfigForm
               v-else-if="selectedNode?.type === 'condition'"
               :cases="selectedConditionCases"
@@ -1171,6 +1179,7 @@ import ReplyNodeConfigForm from "./components/nodeConfig/ReplyNodeConfigForm.vue
 import ConditionNodeConfigForm from "./components/nodeConfig/ConditionNodeConfigForm.vue";
 import LoopNodeConfigForm from "./components/nodeConfig/LoopNodeConfigForm.vue";
 import ToolNodeConfigForm from "./components/nodeConfig/ToolNodeConfigForm.vue";
+import KnowledgeNodeConfigForm from "./components/nodeConfig/KnowledgeNodeConfigForm.vue";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import "@vue-flow/controls/dist/style.css";
@@ -4413,6 +4422,14 @@ function handleSelectedReplyContentUpdate(value = "") {
     "content",
     `${value || ""}`
   );
+  syncSelectedNodeData();
+}
+
+function handleSelectedKnowledgeConfigUpdate(patch = {}) {
+  if (!selectedNode.value || !patch) {
+    return;
+  }
+  selectedNode.value.data = mergeNodeConfig(selectedNode.value.data, patch);
   syncSelectedNodeData();
 }
 
