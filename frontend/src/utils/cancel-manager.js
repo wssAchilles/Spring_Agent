@@ -1,15 +1,3 @@
-/*
- * Copyright © 2026 Qiantong Technology Co., Ltd.
- * qKnow Knowledge Platform
- *
- * License:
- * Released under the Apache License, Version 2.0.
- *
- * 许可协议：
- * 本项目基于 Apache License 2.0 开源协议发布，
- * 允许在遵守协议的前提下进行商用、修改和分发。
- */
-
 /**
  * 前端请求生命周期管理器 (CancelManager)
  * 采用 W3C DOM AbortController 标准与 Map 结构，实现成对生命周期管理：

@@ -1,10 +1,3 @@
-<!--
- * Copyright © 2026 Qiantong Technology Co., Ltd.
- * qKnow Knowledge Platform
- *
- * 神经符号可解释性拓扑与密码学存证大屏容器 (Explainability & Audit Dashboard)
- * 聚合全链路 8 阶段因果有向无环图、RFC 6962 客户端离线验真与安全护栏态势感知
- -->
 <template>
   <div class="explainability-dashboard" ref="dashboardRef">
     <!-- 顶部统一钛金毛玻璃导航栏 (Level 3 Glass) -->

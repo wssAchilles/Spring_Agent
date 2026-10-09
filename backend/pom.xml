@@ -1,49 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Copyright © 2026 Qiantong Technology Co., Ltd.
-  qKnow Knowledge Platform
-   *
-  License:
-  Released under the Apache License, Version 2.0.
-  You may use, modify, and distribute this software for commercial purposes
-  under the terms of the License.
-   *
-  Special Notice:
-  All derivative versions are strictly prohibited from modifying or removing
-  the default system logo and copyright information.
-  For brand customization, please apply for brand customization authorization via official channels.
-   *
-  More information: https://qknow.qiantong.tech/business.html
-   *
-  ============================================================================
-   *
-  版权所有 © 2026 江苏千桐科技有限公司
-  qKnow 知识平台（开源版）
-   *
-  许可协议：
-  本项目基于 Apache License 2.0 开源协议发布，
-  允许在遵守协议的前提下进行商用、修改和分发。
-   *
-  特别说明：
-  所有衍生版本不得修改或移除系统默认的 LOGO 和版权信息；
-  如需定制品牌，请通过官方渠道申请品牌定制授权。
-   *
-  更多信息请访问：https://qknow.qiantong.tech/business.html
--->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project 
+    xmlns="http://maven.apache.org/POM/4.0.0"
+         
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-
+    <modelVersion>4.0.0</modelVersion>
     <groupId>tech.qiantong</groupId>
     <artifactId>qKnow</artifactId>
     <version>2.2.1</version>
-
     <name>qknow</name>
     <url>https://qiantong.tech</url>
     <description>千知平台</description>
-
     <properties>
         <qknow.version>2.2.1</qknow.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -68,7 +35,6 @@
         <springAi.version>1.1.0</springAi.version>
         <springAiAlibaba.version>1.1.2.2</springAiAlibaba.version>
         <grpc.version>1.84.0</grpc.version>
-
         <!-- Docker 镜像构建配置 -->
         <docker.hub>crpi-kf13onfj0v8f6jax.cn-shanghai.personal.cr.aliyuncs.com/qiantongkeji</docker.hub>
         <!-- 镜像仓库名：默认使用模块名称（module name） -->
@@ -82,11 +48,9 @@
         <!-- 是否跳过镜像推送（默认跳过，避免误将测试镜像推送至镜像仓库） -->
         <docker.push.skip>true</docker.push.skip>
     </properties>
-
     <!-- 依赖声明 -->
     <dependencyManagement>
         <dependencies>
-
             <!-- SpringFramework的依赖配置-->
             <dependency>
                 <groupId>org.springframework</groupId>
@@ -95,7 +59,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <!-- SpringSecurity的依赖配置-->
             <dependency>
                 <groupId>org.springframework.security</groupId>
@@ -104,7 +67,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <!-- SpringBoot的依赖配置-->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -113,7 +75,6 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <!-- gRPC BOM 统一版本依赖管理 -->
             <dependency>
                 <groupId>io.grpc</groupId>
@@ -122,41 +83,35 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson-annotations.version}</version>
             </dependency>
-
             <!-- 阿里数据库连接池 -->
             <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>druid-spring-boot-3-starter</artifactId>
                 <version>${druid.version}</version>
             </dependency>
-
             <!-- 解析客户端操作系统、浏览器等 -->
             <dependency>
                 <groupId>eu.bitwalker</groupId>
                 <artifactId>UserAgentUtils</artifactId>
                 <version>${bitwalker.version}</version>
             </dependency>
-
             <!-- pagehelper 分页插件 -->
             <dependency>
                 <groupId>com.github.pagehelper</groupId>
                 <artifactId>pagehelper-spring-boot-starter</artifactId>
                 <version>${pagehelper.boot.version}</version>
             </dependency>
-
             <!-- 获取系统信息 -->
             <dependency>
                 <groupId>com.github.oshi</groupId>
                 <artifactId>oshi-core</artifactId>
                 <version>${oshi.version}</version>
             </dependency>
-
             <!-- JNA 统一锁定 5.18.1，彻底解决 oshi-core 6.9.1 与 elasticsearch 传递依赖的 5.10.0 版本冲突导致的 Memory.close() NoSuchMethodError -->
             <dependency>
                 <groupId>net.java.dev.jna</groupId>
@@ -168,94 +123,80 @@
                 <artifactId>jna-platform</artifactId>
                 <version>${jna.version}</version>
             </dependency>
-
             <!-- io常用工具类 -->
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons.io.version}</version>
             </dependency>
-
             <!-- excel工具 -->
             <dependency>
                 <groupId>org.apache.poi</groupId>
                 <artifactId>poi-ooxml</artifactId>
                 <version>${poi.version}</version>
             </dependency>
-
             <!-- velocity代码生成使用模板 -->
             <dependency>
                 <groupId>org.apache.velocity</groupId>
                 <artifactId>velocity-engine-core</artifactId>
                 <version>${velocity.version}</version>
             </dependency>
-
             <!-- 阿里JSON解析器 -->
             <dependency>
                 <groupId>com.alibaba.fastjson2</groupId>
                 <artifactId>fastjson2</artifactId>
                 <version>${fastjson.version}</version>
             </dependency>
-
             <!-- Token生成与解析-->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt</artifactId>
                 <version>${jwt.version}</version>
             </dependency>
-
             <!-- 验证码 -->
             <dependency>
                 <groupId>pro.fessional</groupId>
                 <artifactId>kaptcha</artifactId>
                 <version>${kaptcha.version}</version>
             </dependency>
-
             <!-- PostgreSQL JDBC Driver -->
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>42.7.4</version>
             </dependency>
-
             <!-- 定时任务-->
             <dependency>
                 <groupId>tech.qiantong</groupId>
                 <artifactId>qknow-quartz</artifactId>
                 <version>${qknow.version}</version>
             </dependency>
-
             <!-- 代码生成-->
             <dependency>
                 <groupId>tech.qiantong</groupId>
                 <artifactId>qknow-generator</artifactId>
                 <version>${qknow.version}</version>
             </dependency>
-
             <!-- 核心模块-->
             <dependency>
                 <groupId>tech.qiantong</groupId>
                 <artifactId>qknow-framework</artifactId>
                 <version>${qknow.version}</version>
             </dependency>
-
             <!-- 系统模块-->
             <dependency>
                 <groupId>tech.qiantong</groupId>
                 <artifactId>qknow-module-system</artifactId>
                 <version>${qknow.version}</version>
             </dependency>
-
             <!-- 通用工具-->
             <dependency>
                 <groupId>tech.qiantong</groupId>
                 <artifactId>qknow-common</artifactId>
                 <version>${qknow.version}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
-
     <modules>
         <module>qknow-framework</module>
         <module>qknow-module-ai</module>
@@ -272,7 +213,6 @@
         <module>tests</module>
     </modules>
     <packaging>pom</packaging>
-
     <build>
         <plugins>
             <plugin>
@@ -318,7 +258,6 @@
             </plugin>
         </plugins>
     </build>
-
     <repositories>
         <repository>
             <id>aliyun-public</id>
@@ -337,8 +276,6 @@
             </releases>
         </repository>
     </repositories>
-
-
     <pluginRepositories>
         <pluginRepository>
             <id>public</id>
@@ -352,5 +289,4 @@
             </snapshots>
         </pluginRepository>
     </pluginRepositories>
-
 </project>

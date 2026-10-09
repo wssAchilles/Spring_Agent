@@ -1,11 +1,3 @@
-/*
- * Copyright © 2026 Qiantong Technology Co., Ltd.
- * qKnow Knowledge Platform
- *
- * License:
- * Released under the Apache License, Version 2.0.
- */
-
 /**
  * v-track 用户行为轨迹与可观测性埋点指令
  * 支持参数形如: v-track="{ type: 'preview', documentId: id }"
