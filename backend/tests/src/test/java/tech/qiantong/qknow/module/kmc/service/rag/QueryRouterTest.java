@@ -52,7 +52,7 @@ class QueryRouterTest {
         QueryRouter.QueryRouterConfig config = new QueryRouter.QueryRouterConfig();
         assertTrue(config.isEnabled());
         assertEquals("DeepSeek", config.getPlatform());
-        assertEquals("deepseek-chat", config.getModelName());
+        assertEquals("deepseek-flash", config.getModelName());
         assertEquals("manual-v1", config.getPromptVersion());
     }
 

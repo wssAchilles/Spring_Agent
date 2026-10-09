@@ -40,7 +40,7 @@ class HyPEIndexerTest {
         HyPEIndexer.HyPEConfig config = new HyPEIndexer.HyPEConfig();
         assertFalse(config.isEnabled());
         assertEquals("DeepSeek", config.getPlatform());
-        assertEquals("deepseek-chat", config.getModelName());
+        assertEquals("deepseek-flash", config.getModelName());
         assertEquals(3, config.getQuestionCount());
         assertEquals(2000, config.getMaxChunkChars());
     }

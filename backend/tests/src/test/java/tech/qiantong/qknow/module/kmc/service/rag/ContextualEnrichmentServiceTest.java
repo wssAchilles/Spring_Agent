@@ -35,7 +35,7 @@ class ContextualEnrichmentServiceTest {
         ContextualEnrichmentService.ContextualConfig config = new ContextualEnrichmentService.ContextualConfig();
         assertFalse(config.isEnabled());
         assertEquals("DeepSeek", config.getPlatform());
-        assertEquals("deepseek-chat", config.getModelName());
+        assertEquals("deepseek-flash", config.getModelName());
         assertEquals(8000, config.getMaxDocChars());
         assertEquals(3, config.getMaxConcurrent());
     }

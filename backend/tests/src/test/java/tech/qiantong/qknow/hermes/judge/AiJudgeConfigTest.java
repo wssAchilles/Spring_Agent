@@ -21,7 +21,7 @@ class AiJudgeConfigTest {
         assertEquals("deepseek", config.getPlatform());
         assertNull(config.getBaseUrl());
         assertNull(config.getApiKey());
-        assertEquals("deepseek-chat", config.getModelName());
+        assertEquals("deepseek-flash", config.getModelName());
         assertEquals(0.7, config.getThreshold());
     }
 
@@ -82,7 +82,7 @@ class AiJudgeConfigTest {
         AssistantMessage assistantMessage = new AssistantMessage(
                 "{\"factuality\":0.6,\"relevance\":0.5,\"instruction\":0.4,\"feedback\":\"needs improvement\"}");
 
-        when(factory.getChatModel(eq("deepseek"), isNull(), isNull(), eq("deepseek-chat")))
+        when(factory.getChatModel(eq("deepseek"), isNull(), isNull(), eq("deepseek-flash")))
                 .thenReturn(chatModel);
         when(chatModel.call(any(Prompt.class))).thenReturn(chatResponse);
         when(chatResponse.getResult()).thenReturn(generation);
@@ -92,7 +92,7 @@ class AiJudgeConfigTest {
         AiJudgeService service = new AiJudgeService(factory, config);
         JudgeResult result = service.judge("test query", "context", "answer");
 
-        verify(factory).getChatModel("deepseek", null, null, "deepseek-chat");
+        verify(factory).getChatModel("deepseek", null, null, "deepseek-flash");
         assertNotNull(result);
         assertFalse(result.isPassed());
     }
