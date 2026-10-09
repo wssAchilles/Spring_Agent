@@ -74,8 +74,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
     @Autowired(required = false)
     private DagCheckpointManager dagCheckpointManager;
 
-    private final ExecutorService dagExecutorService = Executors.newFixedThreadPool(
-            Math.min(Runtime.getRuntime().availableProcessors(), 8));
+    private final ExecutorService dagExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
      * 根据 BotId 查询流程
@@ -384,6 +383,18 @@ public class KbFlowServiceImpl implements IKbFlowService {
                     }
                     return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
                 }
+
+                if (Objects.equals(RuntimeStatusEnums.SUSPENDED.getCode(), nodeResult.getStatus())) {
+                    log.info("[DAG 调度器] 节点触发人机协同审批挂起 (SUSPENDED): node={}, 保存断点并暂停执行", nodeResult.getNodeName());
+                    runtimeContext.getRuntimeDO().setStatus(RuntimeStatusEnums.SUSPENDED.getCode());
+                    if (!isTestMode) {
+                        runtimeService.updateById(runtimeContext.getRuntimeDO());
+                        saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
+                    } else {
+                        runtimeContext.getRuntimeDO().setOutput("工作流已挂起，等待人工审批");
+                    }
+                    return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
+                }
             } else {
                 // 多节点并行执行 (CompletableFuture 异步并发)
                 List<CompletableFuture<NodeRunResultBO>> futures = new ArrayList<>();
@@ -403,6 +414,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
                 boolean hasError = false;
+                boolean hasSuspended = false;
                 NodeRunResultBO failedResult = null;
                 for (CompletableFuture<NodeRunResultBO> future : futures) {
                     try {
@@ -411,6 +423,8 @@ public class KbFlowServiceImpl implements IKbFlowService {
                         if (Objects.equals(RuntimeStatusEnums.ERROR.getCode(), r.getStatus())) {
                             hasError = true;
                             failedResult = r;
+                        } else if (Objects.equals(RuntimeStatusEnums.SUSPENDED.getCode(), r.getStatus())) {
+                            hasSuspended = true;
                         }
                     } catch (Exception e) {
                         log.error("[DAG 调度器] 并行执行节点异常", e);
@@ -425,6 +439,18 @@ public class KbFlowServiceImpl implements IKbFlowService {
                         saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
                     } else if (failedResult != null) {
                         runtimeContext.getRuntimeDO().setOutput(failedResult.getErrorMessage());
+                    }
+                    return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
+                }
+
+                if (hasSuspended) {
+                    log.info("[DAG 调度器] 并行执行层中存在挂起节点 (SUSPENDED)，保存断点并暂停执行");
+                    runtimeContext.getRuntimeDO().setStatus(RuntimeStatusEnums.SUSPENDED.getCode());
+                    if (!isTestMode) {
+                        runtimeService.updateById(runtimeContext.getRuntimeDO());
+                        saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
+                    } else {
+                        runtimeContext.getRuntimeDO().setOutput("工作流已挂起，等待人工审批");
                     }
                     return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
                 }
@@ -503,6 +529,13 @@ public class KbFlowServiceImpl implements IKbFlowService {
         }
 
         KbFlowBO flowBO = KbFlowConvert.toFlowBO(flowVO);
+
+        // 若存在挂起节点，先通过 CAS 乐观锁原子唤醒挂起检查点并注入人工审批变量
+        dagCheckpointManager.wakeSuspendedWithLock(String.valueOf(runtimeId), humanInput);
+        checkpoint = dagCheckpointManager.loadCheckpoint(String.valueOf(runtimeId));
+        if (checkpoint == null) {
+            throw new ServiceException("恢复唤醒后未找到有效检查点：runtimeId=" + runtimeId);
+        }
 
         // 恢复上下文变量并合并人工审批/额外输入
         Map<String, Object> vars = dagCheckpointManager.restoreVariables(checkpoint);

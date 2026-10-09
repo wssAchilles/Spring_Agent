@@ -109,3 +109,13 @@ export const ProcessChstFlow = {
         );
     }
 };
+
+// 断点续跑工作流 (基于 Checkpoint 恢复挂起节点)
+export function resumeFlow(data) {
+    return request({
+        url: '/kb/flow/resumeFlow',
+        method: 'post',
+        data: data
+    });
+}
+

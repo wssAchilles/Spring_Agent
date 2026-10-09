@@ -190,7 +190,8 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { ArrowRight } from "@element-plus/icons-vue";
-import { ProcessFlow } from "@/api/kb/bot/flow.js";
+import { ElMessage } from "element-plus";
+import { ProcessFlow, resumeFlow } from "@/api/kb/bot/flow.js";
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
 import "highlight.js/styles/xcode.min.css";
@@ -542,7 +543,7 @@ function handleTimeTravelChange(stepIndex) {
 }
 
 /** HITL 审批中枢确认放行回调 */
-function handleHitlApproved(payload) {
+async function handleHitlApproved(payload) {
   console.log('✅ [HITL] 审批通过并注入热修改:', payload);
   if (dagExecutionEvents.value.length > 0) {
     dagExecutionEvents.value.push({
@@ -551,8 +552,20 @@ function handleHitlApproved(payload) {
       nodeType: 'HITL_RESUMED',
       status: 'SUCCEEDED',
       latencyMicros: 15000,
-      payloadSummary: `人机热修改已放行, SHA-256: ${payload.hotPatchHash.substring(0, 12)}...`
+      payloadSummary: `人机热修改已放行, SHA-256: ${payload.hotPatchHash ? payload.hotPatchHash.substring(0, 12) : ''}...`
     });
+  }
+  if (payload.runtimeId) {
+    try {
+      await resumeFlow({
+        runtimeId: payload.runtimeId,
+        humanInput: payload.variables || {}
+      });
+      ElMessage.success("审批通过，工作流已成功接续执行");
+    } catch (err) {
+      console.error("恢复工作流失败", err);
+      ElMessage.error("恢复工作流执行失败: " + (err.message || '未知错误'));
+    }
   }
 }
 
