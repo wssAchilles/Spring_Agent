@@ -44,7 +44,7 @@
       <div class="knowledge-form-item mt10">
         <div class="knowledge-item-label">
           <span>检索查询词 (Query)</span>
-          <span class="knowledge-subtip">支持常量或变量引用如 {{ '{{start.query}}' }}</span>
+          <span class="knowledge-subtip">支持常量或变量引用如 &#123;&#123;start.query&#125;&#125;</span>
         </div>
         <el-input
           v-model="queryText"

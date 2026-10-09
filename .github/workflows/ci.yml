@@ -102,7 +102,6 @@ jobs:
         run: |
           mvn -B -ntp -f backend/pom.xml -pl tests -am test \
             -Dsurefire.rerunFailingTestsCount=2 \
-            -Dsurefire.failIfNoSpecifiedTests=false \
             -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
 
       - name: Upload Surefire Reports on Failure
