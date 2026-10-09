@@ -340,4 +340,133 @@ public class Phase154MasterContractTest {
         assertNotNull(approvedResult);
         assertEquals(RuntimeStatusEnums.SUCCESS.getCode(), approvedResult.getStatus(), "人工放行后高危工具门禁解除并正常执行");
     }
+
+    @Test
+    @DisplayName("契约 10：ContextualIngestionChunkProcessor 入库语境化生成与 64-token 上下文缓存对齐")
+    void test10_ContextualIngestionChunkProcessingAndCacheAlignment() {
+        tech.qiantong.qknow.module.kmc.service.ContextualIngestionChunkProcessor processor =
+                new tech.qiantong.qknow.module.kmc.service.ContextualIngestionChunkProcessor();
+
+        // 1. 无模型时的 Fail-open 降级
+        var fallbackChunk = processor.processChunk("chk_001", "这是孤立的正文段落", "整篇文档摘要", null);
+        assertNotNull(fallbackChunk);
+        assertEquals("这是孤立的正文段落", fallbackChunk.enrichedText());
+        assertFalse(fallbackChunk.cachingAligned(), "无模型时应降级并标记未对齐");
+
+        // 2. 模拟真实大模型返回前置语境
+        org.springframework.ai.chat.model.ChatModel mockChatModel = prompt -> {
+            var res = new org.springframework.ai.chat.model.ChatResponse(List.of(
+                    new org.springframework.ai.chat.model.Generation(
+                            new org.springframework.ai.chat.messages.AssistantMessage("本段落来自企业知识库架构说明，主要阐述切片存储设计。")
+                    )
+            ));
+            return res;
+        };
+
+        var enriched = processor.processChunk("chk_002", "切片数据被写入分布式数据库中。", "系统架构文档", mockChatModel);
+        assertNotNull(enriched);
+        assertTrue(enriched.cachingAligned());
+        assertTrue(enriched.enrichedText().startsWith("本段落来自企业知识库架构说明"));
+        assertTrue(enriched.enrichedText().contains("切片数据被写入分布式数据库中。"));
+
+        // 3. 批量并发虚拟线程处理
+        var batch = List.of(
+                org.apache.commons.lang3.tuple.Pair.of("chk_003", "段落 A"),
+                org.apache.commons.lang3.tuple.Pair.of("chk_004", "段落 B")
+        );
+        var batchResult = processor.batchProcessChunks(batch, "系统概要", mockChatModel);
+        assertEquals(2, batchResult.size());
+        assertEquals("chk_003", batchResult.get(0).chunkId());
+        assertEquals("chk_004", batchResult.get(1).chunkId());
+    }
+
+    @Test
+    @DisplayName("契约 11：ParentChildTreeChunkingService 两级切片生成与命中小切片向上父切片保序聚合")
+    void test11_ParentChildTreeChunkingAndDeduplicatedRecall() {
+        tech.qiantong.qknow.module.kmc.service.ParentChildTreeChunkingService treeService =
+                new tech.qiantong.qknow.module.kmc.service.ParentChildTreeChunkingService();
+
+        // 模拟 1200 字符的文档内容
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 60; i++) {
+            sb.append("这是第 ").append(i).append(" 句包含关键企业知识内容的测试文字。");
+        }
+        String docText = sb.toString();
+
+        // 设定父切片 500 字，重叠 50 字；子切片 150 字，重叠 20 字
+        var bundle = treeService.createHierarchicalChunks("doc_phase154", docText, 500, 50, 150, 20);
+        assertNotNull(bundle);
+        assertFalse(bundle.parentChunks().isEmpty(), "父切片不应为空");
+        assertFalse(bundle.childChunks().isEmpty(), "子切片不应为空");
+        assertTrue(bundle.childChunks().size() > bundle.parentChunks().size(), "子切片数量应明显多于父切片");
+
+        // 验证命中了同一 Parent 下的不同 Child 时，向上解包聚合去重
+        Map<String, tech.qiantong.qknow.module.kmc.service.ParentChildTreeChunkingService.ParentChunk> parentMap = new HashMap<>();
+        for (var p : bundle.parentChunks()) {
+            parentMap.put(p.parentId(), p);
+        }
+        Map<String, tech.qiantong.qknow.module.kmc.service.ParentChildTreeChunkingService.ChildChunk> childMap = new HashMap<>();
+        for (var c : bundle.childChunks()) {
+            childMap.put(c.childId(), c);
+        }
+
+        // 模拟检索命中了属于同一个 parent 的两个 child (如 doc_phase154_p0_c0 与 doc_phase154_p0_c1)
+        List<String> hitChildIds = List.of(bundle.childChunks().get(0).childId(), bundle.childChunks().get(1).childId());
+        var resolvedParents = treeService.resolveParentsForMatchedChildren(hitChildIds, parentMap, childMap);
+
+        assertEquals(1, resolvedParents.size(), "同一父节点下的多个子切片命中时必须聚合去重为一个父切片");
+        assertEquals("doc_phase154_p0", resolvedParents.get(0).parentId());
+    }
+
+    @Test
+    @DisplayName("契约 12：AdaptiveHypersphericalRrfGovernor 意图熵自适应加权与千问 1536 维超球面 RRF 融合重排")
+    void test12_AdaptiveHypersphericalRrfRerankAndIntegrityVerification() {
+        tech.qiantong.qknow.module.kb.service.agent.retrieval.AdaptiveHypersphericalRrfGovernor governor =
+                new tech.qiantong.qknow.module.kb.service.agent.retrieval.AdaptiveHypersphericalRrfGovernor();
+
+        // 1. 验证意图语义熵动态加权
+        double lowEntropyAlpha = governor.computeAdaptiveAlpha("ERR_404_NOT_FOUND");
+        assertEquals(0.25, lowEntropyAlpha, 1e-4, "特定错误代码等低熵查询应自适应偏向 Sparse 全文匹配");
+
+        double highEntropyAlpha = governor.computeAdaptiveAlpha("请问在超大规模分布式集群中，如何利用虚拟线程实现长程多智能体编排？");
+        assertEquals(0.75, highEntropyAlpha, 1e-4, "复杂自然语言长问句应自适应偏向 Dense 超球面向量语义匹配");
+
+        // 2. 构造阿里千问 1536 维超球面单位向量 (L2 norm = 1.0)
+        float[] validHypersphericalVec = new float[1536];
+        float val = (float) (1.0 / Math.sqrt(1536));
+        for (int i = 0; i < 1536; i++) {
+            validHypersphericalVec[i] = val;
+        }
+        assertTrue(governor.validateHypersphericalNorm(validHypersphericalVec), "必须严格满足 ||v||_2 = 1.0 超球面几何约束");
+
+        // 3. 执行自适应重排并生成审计凭单
+        tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult r1 =
+                new tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult();
+        r1.setId("doc_chunk_01");
+        r1.setContent("分布式工作流执行器配置");
+
+        tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult r2 =
+                new tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult();
+        r2.setId("doc_chunk_02");
+        r2.setContent("错误代码 ERR_404 故障排查手册");
+
+        Map<String, float[]> chunkVectors = Map.of("doc_chunk_01", validHypersphericalVec);
+
+        var rerankResult = governor.executeAdaptiveRerank(
+                "请问分布式工作流执行器如何配置？",
+                List.of(r1),
+                List.of(r2),
+                validHypersphericalVec,
+                chunkVectors,
+                5
+        );
+
+        assertNotNull(rerankResult);
+        assertFalse(rerankResult.getKey().isEmpty());
+        var receipt = rerankResult.getValue();
+        assertNotNull(receipt);
+        assertTrue(receipt.verifyIntegrity(), "自适应重排不可变凭单 SHA-256 常量时间自验真必须通过");
+        assertEquals(0.75, receipt.adaptiveAlpha(), 1e-4);
+    }
 }
+
