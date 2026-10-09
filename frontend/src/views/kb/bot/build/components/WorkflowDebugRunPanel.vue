@@ -205,8 +205,9 @@ const conversationInAbortController = ref(); // 对话进行中 abort 控制器(
 const forkEngine = new TimeTravelForkEngine();
 const snapshotManager = new PersistentSnapshotManager();
 
-// Phase P3: DeepSeek 思考链响应式状态
+// Phase P3 & Phase 154: DeepSeek 官方思考链响应式状态 (支持双轨流式: 独立 reasoning_content 字段与内嵌 <think> 标签)
 const thinkingExpanded = ref(true);
+const explicitReasoning = ref("");
 
 // Phase 148 响应式状态: Merkle DAG 时间旅行与投机推演抽屉
 const showTimeTravelWidget = ref(false);
@@ -230,11 +231,10 @@ const md = new MarkdownIt({
         }</code></pre>`;
       } catch (__) {}
     }
-    return ``;
-  },
+  }
 });
 
-// Phase P3: 响应式解析 DeepSeek 思考链与回答正文
+// Phase P3 & Phase 154: 响应式解析 DeepSeek 双轨思考链与回答正文
 const parsedContent = computed(() => {
   const content = resultText.value || "";
   const startTag = "<think>";
@@ -243,9 +243,9 @@ const parsedContent = computed(() => {
   const startIndex = content.indexOf(startTag);
   if (startIndex === -1) {
     return {
-      thinking: "",
+      thinking: explicitReasoning.value || "",
       answer: content,
-      isThinking: false
+      isThinking: Boolean(explicitReasoning.value && !content)
     };
   }
 
@@ -254,29 +254,31 @@ const parsedContent = computed(() => {
 
   if (endIndex === -1) {
     // 尚未闭合，正在思考中
+    const mergedThink = explicitReasoning.value ? (explicitReasoning.value + "\n" + afterStart) : afterStart;
     return {
-      thinking: afterStart,
+      thinking: mergedThink,
       answer: "",
       isThinking: true
     };
   } else {
     // 思考已闭合
     const thinkPart = afterStart.substring(0, endIndex);
+    const mergedThink = explicitReasoning.value ? (explicitReasoning.value + "\n" + thinkPart) : thinkPart;
     const answerPart = afterStart.substring(endIndex + endTag.length);
     return {
-      thinking: thinkPart,
+      thinking: mergedThink,
       answer: answerPart,
       isThinking: false
     };
   }
 });
 
-const isThinkingInProgress = computed(() => parsedContent.value.isThinking && running.value);
 const thinkingContent = computed(() => parsedContent.value.thinking);
-const thinkingLength = computed(() => (parsedContent.value.thinking || "").length);
+const isThinkingInProgress = computed(() => (parsedContent.value.isThinking || Boolean(explicitReasoning.value && !resultText.value)) && running.value);
+const thinkingLength = computed(() => (thinkingContent.value || "").length);
 
 const thinkingContentMd = computed(() => {
-  const t = parsedContent.value.thinking;
+  const t = thinkingContent.value;
   if (!t) return "";
   return md.render(t);
 });
@@ -381,6 +383,7 @@ function buildInputValues() {
 
 async function handleRun() {
   resultText.value = "";
+  explicitReasoning.value = "";
   const payload = {
     input: buildInputValues(),
     flow: props.workflowData,
@@ -422,12 +425,42 @@ async function handleRun() {
       conversationInAbortController.value,
       async (res) => {
         const outer = JSON.parse(res.data.replace(/^data:/, ""));
-        const inner = JSON.parse(outer.data);
+        const inner = typeof outer.data === "string" ? JSON.parse(outer.data) : (outer.data || {});
 
         if (outer.code !== 200) {
-          message.alert(`对话异常! ${outer.msg || ''}`);
+          ElMessage.error(`对话异常! ${outer.msg || ''}`);
           return;
         }
+
+        // 1. 真实拦截 HITL 审批挂起事件
+        if (inner.status === 'SUSPENDED' || inner.type === 'SUSPENDED' || outer.status === 'SUSPENDED') {
+          console.warn('⚠️ [HITL] 捕获到后端安全审批挂起事件:', inner);
+          hitlActiveTicket.value = {
+            ticketId: inner.ticketId || `TICKET-${Date.now().toString().slice(-6)}`,
+            runtimeId: inner.runtimeId || outer.runtimeId || payload.flow?.id,
+            workflowId: props.workflowData?.id || "workflow_active",
+            nodeId: inner.nodeId || "hitl_gate",
+            nodeName: inner.nodeName || "高危操作与风控审批门禁",
+            riskLevel: inner.riskLevel || "CRITICAL",
+            contextSummary: inner.reason || "工作流执行触发高危工具或审批节点门禁，流程已安全挂起等待人工放行。",
+            inputData: inner.data || inner.variables || {},
+            suggestedDecision: "APPROVE_OR_REVISE"
+          };
+          hitlDrawerVisible.value = true;
+          if (dagExecutionEvents.value.length > 0) {
+            const current = dagExecutionEvents.value[dagExecutionEvents.value.length - 1];
+            current.status = "SUSPENDED";
+            current.payloadSummary = `[HITL 挂起等待审批]: ${inner.reason || '等待人工核准放行'}`;
+          }
+          return;
+        }
+
+        // 2. 双轨流式思维链：支持独立 reasoning_content 字段
+        if (inner.reasoning || inner.reasoning_content) {
+          explicitReasoning.value += (inner.reasoning || inner.reasoning_content);
+        }
+
+        // 3. 正常文本输出流式追加
         if (inner.text) {
           resultText.value += inner.text; // 实时追加
           if (dagExecutionEvents.value.length === 1) {
