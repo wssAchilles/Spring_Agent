@@ -1219,7 +1219,6 @@ import {
   buildToolOutputId,
   buildLlmMessageId,
   buildLoopStepId,
-  createEdgeId,
   normalizeLoopPath,
   areLoopPathsEqual,
   getNodeTypeLabel,

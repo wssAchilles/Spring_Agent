@@ -33,6 +33,14 @@ public class AdaptiveRoleEvolutionGovernor {
             { 0.05, 0.05, 0.05, 0.20, 1.00 }  // ARBITRATOR
     };
 
+    private static final AgentRoleNicheType[] CORE_NICHES = {
+            AgentRoleNicheType.ANALYST,
+            AgentRoleNicheType.CODER,
+            AgentRoleNicheType.REVIEWER,
+            AgentRoleNicheType.CRITIC,
+            AgentRoleNicheType.ARBITRATOR
+    };
+
     /**
      * 智能体当前被分配的生态位角色映射 (agentId -> AgentRoleNicheType)
      */
@@ -84,14 +92,16 @@ public class AdaptiveRoleEvolutionGovernor {
             skills = new float[]{ 0.2f, 0.2f, 0.2f, 0.2f, 0.2f };
         }
 
-        // 统计当前各种角色的实际种群数量 N_j
-        int[] population = new int[5];
+        // 统计当前五大核心角色的实际种群数量 N_j
+        int[] population = new int[CORE_NICHES.length];
         for (AgentRoleNicheType role : agentRoles.values()) {
-            population[role.ordinal()]++;
+            if (role != null && role.ordinal() < CORE_NICHES.length) {
+                population[role.ordinal()]++;
+            }
         }
 
         // 计算 Lotka-Volterra 净增长适应度: f_i = r_i * (1 - sum(alpha_ij * N_j) / K_i)
-        AgentRoleNicheType[] niches = AgentRoleNicheType.values();
+        AgentRoleNicheType[] niches = CORE_NICHES;
         double bestFitness = -Double.MAX_VALUE;
         AgentRoleNicheType selected = AgentRoleNicheType.CODER;
 
@@ -99,7 +109,7 @@ public class AdaptiveRoleEvolutionGovernor {
             AgentRoleNicheType niche = niches[i];
             double k_i = nicheCapacities.getOrDefault(niche, 2.0);
             double competitionSum = 0.0;
-            for (int j = 0; j < 5; j++) {
+            for (int j = 0; j < niches.length; j++) {
                 competitionSum += COMPETITION_MATRIX[i][j] * population[j];
             }
             double r_i = Math.max(0.01, skills[i]);

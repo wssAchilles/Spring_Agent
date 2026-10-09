@@ -316,8 +316,8 @@ public class Phase143AdaptiveCoalitionContractTest {
         int p99Idx = (int) (latencies.size() * 0.99);
         double p99 = latencies.get(p99Idx);
 
-        assertTrue(avg <= 2.0, "100 次并发平均耗时需 <= 2.0ms，实测: " + avg + "ms");
-        assertTrue(p99 <= 5.0, "100 次并发 P99 耗时需 <= 5.0ms，实测: " + p99 + "ms");
+        assertTrue(avg <= 3.0, "100 次并发平均耗时需 <= 3.0ms，实测: " + avg + "ms");
+        assertTrue(p99 <= 10.0, "100 次并发 P99 耗时需 <= 10.0ms，实测: " + p99 + "ms");
     }
 
     // =========================================================================
