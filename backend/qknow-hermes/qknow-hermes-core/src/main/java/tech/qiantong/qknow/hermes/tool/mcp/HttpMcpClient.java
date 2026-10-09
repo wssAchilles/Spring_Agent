@@ -10,10 +10,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * MCP HTTP 客户端 — Streamable HTTP Transport
@@ -26,14 +23,34 @@ import java.util.UUID;
 public class HttpMcpClient implements McpClient {
 
     private final String baseUrl;
+    private final String apiKey;
+    private final Map<String, String> customHeaders;
     private final HttpClient httpClient;
     private String sessionId;
 
     public HttpMcpClient(String baseUrl) {
+        this(baseUrl, null, Collections.emptyMap());
+    }
+
+    public HttpMcpClient(String baseUrl, String apiKey, Map<String, String> headers) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        this.apiKey = apiKey;
+        this.customHeaders = headers != null ? new HashMap<>(headers) : new HashMap<>();
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public Map<String, String> getCustomHeaders() {
+        return Collections.unmodifiableMap(customHeaders);
     }
 
     @Override
@@ -97,11 +114,13 @@ public class HttpMcpClient implements McpClient {
             }
 
             HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/mcp"))
+                    .uri(resolveEndpointUri())
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json, text/event-stream")
                     .POST(HttpRequest.BodyPublishers.ofString(request.toJSONString()))
                     .timeout(Duration.ofSeconds(30));
+
+            applyHeaders(builder);
 
             if (sessionId != null) {
                 builder.header("mcp-session-id", sessionId);
@@ -140,10 +159,12 @@ public class HttpMcpClient implements McpClient {
             }
 
             HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + "/mcp"))
+                    .uri(resolveEndpointUri())
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(notification.toJSONString()))
                     .timeout(Duration.ofSeconds(10));
+
+            applyHeaders(builder);
 
             if (sessionId != null) {
                 builder.header("mcp-session-id", sessionId);
@@ -153,5 +174,21 @@ public class HttpMcpClient implements McpClient {
         } catch (Exception e) {
             log.debug("MCP notification failed: {}", method, e);
         }
+    }
+
+    private void applyHeaders(HttpRequest.Builder builder) {
+        if (apiKey != null && !apiKey.isBlank() && !customHeaders.containsKey("Authorization")) {
+            builder.header("Authorization", "Bearer " + apiKey);
+        }
+        for (Map.Entry<String, String> header : customHeaders.entrySet()) {
+            builder.header(header.getKey(), header.getValue());
+        }
+    }
+
+    private URI resolveEndpointUri() {
+        if (baseUrl.contains("/mcp") || baseUrl.contains("/sse") || baseUrl.contains("/api")) {
+            return URI.create(baseUrl);
+        }
+        return URI.create(baseUrl + "/mcp");
     }
 }

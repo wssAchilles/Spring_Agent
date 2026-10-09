@@ -106,4 +106,13 @@ public class KbFlowController extends BaseController {
         return flowService.testExecuteChatFlow(kbFlowVO, input,messageList);
     }
 
+    @Operation(summary = "断点续跑流程 (基于 Checkpoint 恢复崩溃或挂起节点)")
+    @Log(title = "bot流程", businessType = BusinessType.UPDATE)
+    @PostMapping("/resumeFlow")
+    public CommonResult<KbRuntimeRespVO> resumeFlow(@RequestBody JSONObject jsonObject) {
+        Long runtimeId = jsonObject.getLong("runtimeId");
+        JSONObject humanInput = jsonObject.getJSONObject("humanInput");
+        return CommonResult.success(flowService.resumeFlow(runtimeId, humanInput != null ? humanInput : java.util.Collections.emptyMap()));
+    }
+
 }

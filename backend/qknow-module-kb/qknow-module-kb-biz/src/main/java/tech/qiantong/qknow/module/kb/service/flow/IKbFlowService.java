@@ -85,4 +85,13 @@ public interface IKbFlowService {
      * @return 执行结果
      */
     Flux<CommonResult<String>> executeChatFlow(KbFlowVO flowVO, JSONObject input, List<Message> messageList);
+
+    /**
+     * 断点续跑工作流 (基于 Checkpoint 恢复崩溃或挂起的工作流并接续拓扑执行)
+     *
+     * @param runtimeId  工作流运行实例 ID
+     * @param humanInput 人工协同审批或额外变量（可选）
+     * @return 执行结果
+     */
+    KbRuntimeRespVO resumeFlow(Long runtimeId, java.util.Map<String, Object> humanInput);
 }

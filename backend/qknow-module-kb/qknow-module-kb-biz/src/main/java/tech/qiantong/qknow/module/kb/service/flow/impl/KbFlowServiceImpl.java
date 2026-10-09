@@ -22,6 +22,7 @@ import tech.qiantong.qknow.module.kb.controller.admin.runtime.vo.KbRuntimeRespVO
 import tech.qiantong.qknow.module.kb.convert.flow.KbFlowConvert;
 import tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowEdgeDO;
 import tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowNodeDO;
+import tech.qiantong.qknow.module.kb.dal.dataobject.runtime.KbRuntimeDO;
 import tech.qiantong.qknow.module.kb.dal.enums.BotExecuteModeEnum;
 import tech.qiantong.qknow.module.kb.dal.enums.BotTypeEnums;
 import tech.qiantong.qknow.module.kb.dal.enums.FlowNodeTypeEnums;
@@ -35,7 +36,11 @@ import tech.qiantong.qknow.module.kb.service.flow.bo.NodeRunResultBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO;
 import tech.qiantong.qknow.module.kb.service.flow.factory.NodeFactory;
 import tech.qiantong.qknow.module.kb.service.runtime.IKbRuntimeService;
+import tech.qiantong.qknow.module.kb.service.bot.IKbBotService;
+import tech.qiantong.qknow.module.kb.dal.dataobject.bot.KbBotDO;
 import tech.qiantong.qknow.hermes.flow.dag.DagUtils;
+import tech.qiantong.qknow.hermes.flow.dag.DagCheckpointManager;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -62,7 +67,12 @@ public class KbFlowServiceImpl implements IKbFlowService {
     @Resource
     private IKbRuntimeService runtimeService;
     @Resource
+    private IKbBotService botService;
+    @Resource
     private NodeFactory nodeFactory;
+
+    @Autowired(required = false)
+    private DagCheckpointManager dagCheckpointManager;
 
     private final ExecutorService dagExecutorService = Executors.newFixedThreadPool(
             Math.min(Runtime.getRuntime().availableProcessors(), 8));
@@ -298,8 +308,8 @@ public class KbFlowServiceImpl implements IKbFlowService {
     }
 
     /**
-     * DAG 工作流现代执行调度管道
-     * 具备：环路快速检测、拓扑分层 Kahn 排序、多分支并发异步执行、条件分支动态递归剪枝、汇聚节点依赖完备保障
+     * DAG 工作流现代执行调度管道 (支持全新执行或从断点接续)
+     * 具备：环路快速检测、拓扑分层 Kahn 排序、多分支并发异步执行、条件分支动态递归剪枝、汇聚节点依赖完备保障与不可变 Checkpoint 持久化
      *
      * @param flowBO 流程定义
      * @param runtimeContext 运行时上下文
@@ -307,7 +317,15 @@ public class KbFlowServiceImpl implements IKbFlowService {
      * @return 运行响应结果
      */
     private KbRuntimeRespVO executeDagPipeline(KbFlowBO flowBO, RuntimeContextBO runtimeContext, boolean isTestMode) {
-        log.info("[DAG 调度器] 开始执行工作流, botId={}, isTestMode={}", flowBO.getBotId(), isTestMode);
+        return executeDagPipelineWithResume(flowBO, runtimeContext, isTestMode, 0, new ConcurrentHashMap<>());
+    }
+
+    private KbRuntimeRespVO executeDagPipelineWithResume(KbFlowBO flowBO,
+                                                         RuntimeContextBO runtimeContext,
+                                                         boolean isTestMode,
+                                                         int startGroupIndex,
+                                                         Map<String, NodeRunResultBO> initialResultMap) {
+        log.info("[DAG 调度器] 开始执行工作流, botId={}, isTestMode={}, startGroupIndex={}", flowBO.getBotId(), isTestMode, startGroupIndex);
         // 校验工作流基本结构
         validateWorkflow(flowBO);
 
@@ -335,24 +353,32 @@ public class KbFlowServiceImpl implements IKbFlowService {
 
         // 维护动态剪枝集合（被条件分支未命中剔除的下游节点集合）
         Set<String> prunedNodes = ConcurrentHashMap.newKeySet();
-        // 维护节点执行结果映射
-        Map<String, NodeRunResultBO> resultMap = new ConcurrentHashMap<>();
-        AtomicInteger stepCounter = new AtomicInteger(1);
+        // 维护节点执行结果映射 (初始装载断点已完成结果)
+        Map<String, NodeRunResultBO> resultMap = new ConcurrentHashMap<>(initialResultMap);
+        AtomicInteger stepCounter = new AtomicInteger(initialResultMap.size() + 1);
 
-        for (int groupIndex = 0; groupIndex < parallelGroups.size(); groupIndex++) {
+        for (int groupIndex = startGroupIndex; groupIndex < parallelGroups.size(); groupIndex++) {
             List<String> group = parallelGroups.get(groupIndex);
             log.info("[DAG 调度器] 调度第 {}/{} 层，包含 {} 个节点: {}", groupIndex + 1, parallelGroups.size(), group.size(), group);
 
             if (group.size() == 1) {
                 // 单节点顺序执行
                 String nodeUuid = group.get(0);
-                NodeRunResultBO nodeResult = executeSingleDagNode(nodeUuid, nodeMap, flowEdges, edgePairs, runtimeContext, prunedNodes, stepCounter, isTestMode);
-                resultMap.put(nodeUuid, nodeResult);
+                NodeRunResultBO existing = resultMap.get(nodeUuid);
+                NodeRunResultBO nodeResult;
+                if (existing != null && Objects.equals(RuntimeStatusEnums.SUCCESS.getCode(), existing.getStatus())) {
+                    nodeResult = existing;
+                    log.info("[DAG 调度器] 节点 [{}] 命中断点缓存，跳过重复执行", nodeUuid);
+                } else {
+                    nodeResult = executeSingleDagNode(nodeUuid, nodeMap, flowEdges, edgePairs, runtimeContext, prunedNodes, stepCounter, isTestMode);
+                    resultMap.put(nodeUuid, nodeResult);
+                }
 
                 if (Objects.equals(RuntimeStatusEnums.ERROR.getCode(), nodeResult.getStatus())) {
                     log.error("[DAG 调度器] 节点执行失败，终止工作流: node={}, error={}", nodeResult.getNodeName(), nodeResult.getErrorMessage());
                     if (!isTestMode) {
                         runtimeService.saveRunError(runtimeContext.getRuntimeDO());
+                        saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
                     } else {
                         runtimeContext.getRuntimeDO().setOutput(nodeResult.getErrorMessage());
                     }
@@ -362,10 +388,16 @@ public class KbFlowServiceImpl implements IKbFlowService {
                 // 多节点并行执行 (CompletableFuture 异步并发)
                 List<CompletableFuture<NodeRunResultBO>> futures = new ArrayList<>();
                 for (String nodeUuid : group) {
-                    futures.add(CompletableFuture.supplyAsync(
-                            () -> executeSingleDagNode(nodeUuid, nodeMap, flowEdges, edgePairs, runtimeContext, prunedNodes, stepCounter, isTestMode),
-                            dagExecutorService
-                    ));
+                    NodeRunResultBO existing = resultMap.get(nodeUuid);
+                    if (existing != null && Objects.equals(RuntimeStatusEnums.SUCCESS.getCode(), existing.getStatus())) {
+                        log.info("[DAG 调度器] 并行节点 [{}] 命中断点缓存，跳过重复执行", nodeUuid);
+                        futures.add(CompletableFuture.completedFuture(existing));
+                    } else {
+                        futures.add(CompletableFuture.supplyAsync(
+                                () -> executeSingleDagNode(nodeUuid, nodeMap, flowEdges, edgePairs, runtimeContext, prunedNodes, stepCounter, isTestMode),
+                                dagExecutorService
+                        ));
+                    }
                 }
 
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -390,19 +422,141 @@ public class KbFlowServiceImpl implements IKbFlowService {
                     log.error("[DAG 调度器] 并行执行层中存在失败节点，终止工作流");
                     if (!isTestMode) {
                         runtimeService.saveRunError(runtimeContext.getRuntimeDO());
+                        saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
                     } else if (failedResult != null) {
                         runtimeContext.getRuntimeDO().setOutput(failedResult.getErrorMessage());
                     }
                     return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
                 }
             }
+
+            // 本层执行成功，持久化当前层检查点 (Checkpointing)
+            if (!isTestMode) {
+                saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
+            }
         }
 
         if (!isTestMode) {
             runtimeService.saveRunSuccess(runtimeContext.getRuntimeDO());
+            if (dagCheckpointManager != null && runtimeContext.getRuntimeDO() != null && runtimeContext.getRuntimeDO().getId() != null) {
+                dagCheckpointManager.deleteCheckpoint(String.valueOf(runtimeContext.getRuntimeDO().getId()));
+            }
         }
         log.info("[DAG 调度器] ========== 工作流执行顺利完成：botId={} ==========", flowBO.getBotId());
         return BeanUtils.toBean(runtimeContext.getRuntimeDO(), KbRuntimeRespVO.class);
+    }
+
+    private void saveDagCheckpoint(RuntimeContextBO runtimeContext, KbFlowBO flowBO, int groupIndex, Map<String, NodeRunResultBO> resultMap) {
+        if (dagCheckpointManager != null && runtimeContext.getRuntimeDO() != null && runtimeContext.getRuntimeDO().getId() != null) {
+            try {
+                String runtimeId = String.valueOf(runtimeContext.getRuntimeDO().getId());
+                String flowId = String.valueOf(flowBO.getBotId());
+                Map<String, Object> vars = runtimeContext.getVariables() != null ? runtimeContext.getVariables() : Collections.emptyMap();
+
+                Map<String, tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO> hermesResults = new LinkedHashMap<>();
+                for (Map.Entry<String, NodeRunResultBO> entry : resultMap.entrySet()) {
+                    NodeRunResultBO r = entry.getValue();
+                    tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO hr = new tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO();
+                    hr.setNodeUuid(r.getNodeUuid());
+                    hr.setNodeName(r.getNodeName());
+                    hr.setStatus(r.getStatus());
+                    hr.setOutput(r.getOutput());
+                    hr.setInput(r.getInput());
+                    hr.setStep(r.getStep());
+                    hr.setErrorMessage(r.getErrorMessage());
+                    hr.setDuration(r.getDuration());
+                    hr.setNextNodeIds(r.getNextNodeIds());
+                    hermesResults.put(entry.getKey(), hr);
+                }
+
+                dagCheckpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, hermesResults, vars);
+                log.debug("[DAG 检查点] 已持久化第 {} 层检查点：runtimeId={}", groupIndex + 1, runtimeId);
+            } catch (Exception e) {
+                log.warn("[DAG 检查点] 保存检查点异常: {}", e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public KbRuntimeRespVO resumeFlow(Long runtimeId, Map<String, Object> humanInput) {
+        if (runtimeId == null) {
+            throw new ServiceException("runtimeId 不能为空");
+        }
+        if (dagCheckpointManager == null) {
+            throw new ServiceException("未配置检查点管理器，无法恢复执行");
+        }
+
+        DagCheckpointManager.DagCheckpoint checkpoint = dagCheckpointManager.loadCheckpoint(String.valueOf(runtimeId));
+        if (checkpoint == null) {
+            throw new ServiceException("未找到可恢复的工作流检查点：runtimeId=" + runtimeId);
+        }
+
+        KbRuntimeDO runtimeDO = runtimeService.getById(runtimeId);
+        if (runtimeDO == null) {
+            throw new ServiceException("未找到工作流运行实例：runtimeId=" + runtimeId);
+        }
+
+        Long botId = runtimeDO.getBotId();
+        KbFlowVO flowVO = queryFlow(botId);
+        if (flowVO == null) {
+            throw new ServiceException("未找到 Bot 工作流定义：botId=" + botId);
+        }
+
+        KbFlowBO flowBO = KbFlowConvert.toFlowBO(flowVO);
+
+        // 恢复上下文变量并合并人工审批/额外输入
+        Map<String, Object> vars = dagCheckpointManager.restoreVariables(checkpoint);
+        if (vars == null) {
+            vars = new HashMap<>();
+        }
+        if (humanInput != null && !humanInput.isEmpty()) {
+            vars.putAll(humanInput);
+        }
+        JSONObject variablesJson = new JSONObject(vars);
+
+        RuntimeContextBO runtimeContext = new RuntimeContextBO();
+        runtimeContext.setRuntimeDO(runtimeDO);
+        runtimeContext.setVariables(variablesJson);
+        runtimeContext.setExecuteMode(BotExecuteModeEnum.BLOCK);
+        KbBotDO botDO = botService != null ? botService.getById(botId) : null;
+        BotTypeEnums botType = BotTypeEnums.WORK_FLOW;
+        if (botDO != null && botDO.getType() != null) {
+            BotTypeEnums resolved = BotTypeEnums.get(botDO.getType());
+            if (resolved != null) {
+                botType = resolved;
+            }
+        }
+        runtimeContext.setBotType(botType);
+
+        // 恢复已完成的节点执行结果
+        Map<String, tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO> hermesResults = dagCheckpointManager.restoreCompletedResults(checkpoint);
+        Map<String, NodeRunResultBO> initialResultMap = new ConcurrentHashMap<>();
+        if (hermesResults != null) {
+            for (Map.Entry<String, tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO> entry : hermesResults.entrySet()) {
+                tech.qiantong.qknow.hermes.flow.bo.NodeRunResultBO hr = entry.getValue();
+                NodeRunResultBO r = new NodeRunResultBO();
+                r.setNodeUuid(hr.getNodeUuid());
+                r.setNodeName(hr.getNodeName());
+                r.setStatus(hr.getStatus());
+                r.setOutput(hr.getOutput());
+                r.setInput(hr.getInput());
+                r.setStep(hr.getStep());
+                r.setErrorMessage(hr.getErrorMessage());
+                r.setDuration(hr.getDuration());
+                r.setNextNodeIds(hr.getNextNodeIds());
+                initialResultMap.put(entry.getKey(), r);
+            }
+        }
+
+        int startGroupIndex = checkpoint.getGroupIndex() + 1;
+        log.info("[DAG 调度器] 恢复执行工作流：runtimeId={}, botId={}, 从第 {} 层继续执行, 已完成节点数={}",
+                runtimeId, botId, startGroupIndex + 1, initialResultMap.size());
+
+        // 更新状态为运行中
+        runtimeDO.setStatus(RuntimeStatusEnums.RUNNING.getCode());
+        runtimeService.updateById(runtimeDO);
+
+        return executeDagPipelineWithResume(flowBO, runtimeContext, false, startGroupIndex, initialResultMap);
     }
 
     /**

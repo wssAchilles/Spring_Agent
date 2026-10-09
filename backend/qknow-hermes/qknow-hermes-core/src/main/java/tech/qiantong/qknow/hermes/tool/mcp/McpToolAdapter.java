@@ -27,6 +27,7 @@ public class McpToolAdapter {
     private final Map<String, McpServerConfig> serverConfigs = new ConcurrentHashMap<>();
     private final Map<String, FunctionToolCallback<?, ?>> mcpTools = new ConcurrentHashMap<>();
     private final Map<String, McpClient> clients = new ConcurrentHashMap<>();
+    private final Map<String, JSONObject> toolSchemas = new ConcurrentHashMap<>();
 
     private final McpToolSemanticRetriever semanticRetriever;
     private final McpVirtualThreadCircuitBreaker circuitBreaker;
@@ -106,7 +107,7 @@ public class McpToolAdapter {
         try {
             // 获取或创建客户端并初始化
             McpClient client = getClient(config.getName());
-            if (client == null && config.getCommand() != null && !config.getCommand().isEmpty()) {
+            if (client == null && ((config.getCommand() != null && !config.getCommand().isEmpty()) || (config.getUrl() != null && !config.getUrl().isBlank()))) {
                 client = createClient(config);
                 clients.put(config.getName(), client);
             }
@@ -118,9 +119,14 @@ public class McpToolAdapter {
                 for (JSONObject toolDef : toolDefs) {
                     String toolName = toolDef.getString("name");
                     String description = toolDef.getString("description");
-                    Map<String, Object> inputSchema = toolDef.getJSONObject("inputSchema");
+                    JSONObject schemaJson = toolDef.getJSONObject("inputSchema");
+                    Map<String, Object> inputSchema = schemaJson;
                     String fullKey = config.getName() + "." + toolName;
                     String toolCode = "mcp." + fullKey;
+
+                    if (schemaJson != null) {
+                        toolSchemas.put(toolCode, schemaJson);
+                    }
 
                     FunctionToolCallback<McpToolRequest, String> callback =
                             createMcpToolCallback(config.getName(), toolName, description);
@@ -140,9 +146,12 @@ public class McpToolAdapter {
     }
 
     /**
-     * 根据配置创建 stdio MCP 客户端。
+     * 根据配置创建 MCP 客户端 (支持本地 stdio 与远程网络 HTTP/SSE 双模)
      */
     protected McpClient createClient(McpServerConfig config) {
+        if (config.getUrl() != null && !config.getUrl().isBlank()) {
+            return new HttpMcpClient(config.getUrl(), config.getApiKey(), config.getHeaders());
+        }
         return new StdioMcpClient(config.getCommand(), config.getEnvironment());
     }
 
@@ -179,6 +188,7 @@ public class McpToolAdapter {
         });
 
         for (String code : removedCodes) {
+            toolSchemas.remove(code);
             semanticRetriever.removeTool(code);
             circuitBreaker.reset(code);
         }
@@ -292,6 +302,17 @@ public class McpToolAdapter {
         }
 
         String fullToolCode = "mcp." + serverName + "." + toolName;
+
+        // 前置 Schema 校验拦截
+        JSONObject schema = toolSchemas.get(fullToolCode);
+        if (schema != null) {
+            McpSchemaValidator.ValidationResult valRes = McpSchemaValidator.validate(schema, arguments);
+            if (!valRes.valid()) {
+                log.warn("[MCP 网关] 工具 {} 前置参数校验失败: {}", fullToolCode, valRes.errorMessage());
+                return "{\"error\": \"参数校验失败: " + valRes.errorMessage() + "\"}";
+            }
+        }
+
         return circuitBreaker.executeWithIsolation(fullToolCode, () -> {
             McpClient client = getClient(serverName);
             if (client == null) {
@@ -302,6 +323,13 @@ public class McpToolAdapter {
             JSONObject result = client.callTool(toolName, args);
             return result != null ? result.toJSONString() : "{}";
         }, getToolTimeoutMillis());
+    }
+
+    /**
+     * 获取指定工具已缓存的 inputSchema
+     */
+    public JSONObject getToolSchema(String toolCode) {
+        return toolSchemas.get(toolCode);
     }
 
     /**
@@ -344,6 +372,18 @@ public class McpToolAdapter {
 
         @Override
         public String apply(McpToolRequest request) {
+            Map<String, Object> arguments = (request != null && request.getParams() != null) ? request.getParams() : Map.of();
+
+            // 前置 Schema 参数校验
+            JSONObject schema = adapter.getToolSchema(toolCode);
+            if (schema != null) {
+                McpSchemaValidator.ValidationResult valRes = McpSchemaValidator.validate(schema, arguments);
+                if (!valRes.valid()) {
+                    log.warn("[MCP 网关] 工具 {} 前置参数校验失败: {}", toolCode, valRes.errorMessage());
+                    return "{\"error\": \"参数校验失败: " + valRes.errorMessage() + "\"}";
+                }
+            }
+
             // 通过 Java 21 虚拟线程三态断路器隔离执行调用
             return adapter.getCircuitBreaker().executeWithIsolation(toolCode, () -> {
                 McpClient client = adapter.getClient(serverName);
@@ -352,7 +392,6 @@ public class McpToolAdapter {
                     return "{\"error\": \"MCP 工具 " + serverName + "." + toolName + " 未连接\"}";
                 }
 
-                Map<String, Object> arguments = request.getParams() != null ? request.getParams() : Map.of();
                 JSONObject result = client.callTool(toolName, arguments);
                 return result != null ? result.toJSONString() : "{}";
             }, adapter.getToolTimeoutMillis());
