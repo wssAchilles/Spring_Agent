@@ -39,6 +39,9 @@ public class NodeFactory {
     @Autowired(required = false)
     private McpToolAdapter mcpToolAdapter;
 
+    @Autowired(required = false)
+    private tech.qiantong.qknow.module.kb.service.agent.retrieval.MultiKnowledgeConcurrentRetriever concurrentRetriever;
+
     /**
      * 根据节点定义创建节点实例
      *
@@ -60,7 +63,7 @@ public class NodeFactory {
             case LLM -> new LLMNodeBO(nodeDefinition, edgeList, aiModelService);
             case REPLY -> new ReplyNodeBO(nodeDefinition, edgeList);
             case CONDITION -> new ConditionNodeBO(nodeDefinition, edgeList);
-            case KNOWLEDGE -> new KnowledgeNodeBO(nodeDefinition, edgeList, kmcApiService);
+            case KNOWLEDGE -> new KnowledgeNodeBO(nodeDefinition, edgeList, kmcApiService, concurrentRetriever);
             case TOOL -> new ToolNodeBO(nodeDefinition, edgeList, mcpToolAdapter);
 
             default -> throw new ServiceException("不支持的节点类型：" + nodeType);

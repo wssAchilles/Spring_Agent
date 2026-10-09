@@ -10,6 +10,7 @@ import tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowNodeDO;
 import tech.qiantong.qknow.module.kmc.api.service.IKmcApiService;
 import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +24,18 @@ import java.util.Map;
 public class KnowledgeNodeBO extends BaseNodeBO {
 
     private final IKmcApiService kmcApiService;
+    private final tech.qiantong.qknow.module.kb.service.agent.retrieval.MultiKnowledgeConcurrentRetriever concurrentRetriever;
 
     public KnowledgeNodeBO(KbFlowNodeDO nodeDefinition, List<KbFlowEdgeDO> edgeList, IKmcApiService kmcApiService) {
+        this(nodeDefinition, edgeList, kmcApiService, null);
+    }
+
+    public KnowledgeNodeBO(KbFlowNodeDO nodeDefinition, List<KbFlowEdgeDO> edgeList,
+                           IKmcApiService kmcApiService,
+                           tech.qiantong.qknow.module.kb.service.agent.retrieval.MultiKnowledgeConcurrentRetriever concurrentRetriever) {
         super(nodeDefinition, edgeList);
         this.kmcApiService = kmcApiService;
+        this.concurrentRetriever = concurrentRetriever;
     }
 
     @Override
@@ -36,25 +45,34 @@ public class KnowledgeNodeBO extends BaseNodeBO {
                 ? JSONObject.parseObject(nodeDefinition.getConfig())
                 : new JSONObject();
 
-        // 1. 获取知识库 ID (优先从 config 读取，其次 inputData，若未指定则默认为 7L)
-        Long knowledgeBaseId = null;
+        // 1. 获取知识库 ID 列表 (支持单库与多库配置)
+        List<Long> kbIds = new ArrayList<>();
+        if (configJson.containsKey("knowledgeBaseIds")) {
+            JSONArray arr = configJson.getJSONArray("knowledgeBaseIds");
+            if (arr != null) {
+                for (int i = 0; i < arr.size(); i++) {
+                    Long id = arr.getLong(i);
+                    if (id != null) kbIds.add(id);
+                }
+            }
+        }
         if (configJson.containsKey("knowledgeBaseId")) {
-            knowledgeBaseId = configJson.getLong("knowledgeBaseId");
+            kbIds.add(configJson.getLong("knowledgeBaseId"));
         } else if (configJson.containsKey("knowledgeId")) {
-            knowledgeBaseId = configJson.getLong("knowledgeId");
+            kbIds.add(configJson.getLong("knowledgeId"));
         } else if (inputData.containsKey("knowledgeBaseId")) {
             Object kbVal = inputData.get("knowledgeBaseId");
             if (kbVal instanceof Number) {
-                knowledgeBaseId = ((Number) kbVal).longValue();
+                kbIds.add(((Number) kbVal).longValue());
             } else if (kbVal != null && StrUtil.isNotBlank(kbVal.toString())) {
                 try {
-                    knowledgeBaseId = Long.parseLong(kbVal.toString());
+                    kbIds.add(Long.parseLong(kbVal.toString()));
                 } catch (Exception ignored) {
                 }
             }
         }
-        if (knowledgeBaseId == null) {
-            knowledgeBaseId = 7L; // 默认使用常州工学院总评方案知识库
+        if (kbIds.isEmpty()) {
+            kbIds.add(7L); // 默认使用常州工学院总评方案知识库
         }
 
         // 2. 获取检索查询词 query (优先支持变量替换 format)
@@ -76,8 +94,8 @@ public class KnowledgeNodeBO extends BaseNodeBO {
             query = super.format(query, context);
         }
 
-        log.info("执行知识库检索节点: uuid={}, name={}, knowledgeBaseId={}, query={}",
-                nodeDefinition.getUuid(), nodeDefinition.getName(), knowledgeBaseId, query);
+        log.info("执行知识库检索节点: uuid={}, name={}, kbIds={}, query={}",
+                nodeDefinition.getUuid(), nodeDefinition.getName(), kbIds, query);
 
         if (StrUtil.isBlank(query)) {
             log.warn("知识库检索节点查询词为空: uuid={}", nodeDefinition.getUuid());
@@ -90,8 +108,24 @@ public class KnowledgeNodeBO extends BaseNodeBO {
         }
 
         try {
-            // 3. 调用知识库服务召回切片
-            List<RetrieveResult> results = kmcApiService.recallTest(knowledgeBaseId, query);
+            // 3. 调用知识库服务召回切片 (优先使用并发检索器)
+            List<RetrieveResult> results;
+            if (concurrentRetriever != null) {
+                var recallRes = concurrentRetriever.retrieveConcurrently(kbIds, query);
+                results = recallRes.mergedChunks();
+            } else if (kbIds.size() == 1) {
+                results = kmcApiService.recallTest(kbIds.get(0), query);
+            } else {
+                results = new ArrayList<>();
+                for (Long kid : kbIds) {
+                    try {
+                        List<RetrieveResult> part = kmcApiService.recallTest(kid, query);
+                        if (part != null) results.addAll(part);
+                    } catch (Exception ex) {
+                        log.warn("知识库 {} 检索异常: {}", kid, ex.getMessage());
+                    }
+                }
+            }
 
             StringBuilder contentBuilder = new StringBuilder();
             if (CollUtil.isNotEmpty(results)) {
