@@ -3,7 +3,7 @@
     <!-- 顶栏：标题与不可变凭单自验真徽标 -->
     <header class="dashboard-header">
       <div class="header-left">
-        <span class="ios26-pill-badge">Phase 156 Enterprise Sovereign</span>
+        <span class="ios26-pill-badge">企业集群控制台 · Sovereign Cluster</span>
         <h2 class="dashboard-title">企业级多智能体编排与全双工 RAG 观测中枢</h2>
       </div>
       <div class="header-right">
@@ -147,17 +147,18 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
 </script>
 
 <style scoped>
-/* 严格贯彻 Apple iOS 26 Liquid Glass 规范 */
+/* 严格贯彻 Apple iOS 26 Liquid Glass 规范 (自适应高对比度液态毛玻璃) */
 .phase156-swarm-dashboard {
   position: relative;
   width: 100%;
   padding: 24px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f5f5f7;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.04);
+  color: #1d1d1f;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   box-sizing: border-box;
 }
@@ -176,9 +177,9 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
   font-size: 11px;
   font-weight: 590;
   letter-spacing: -0.015em;
-  color: #2997ff;
-  background: rgba(41, 151, 255, 0.12);
-  border: 1px solid rgba(41, 151, 255, 0.28);
+  color: #0071e3;
+  background: rgba(0, 113, 227, 0.1);
+  border: 1px solid rgba(0, 113, 227, 0.22);
   border-radius: 999px;
   margin-bottom: 8px;
 }
@@ -188,7 +189,7 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
   font-size: 20px;
   font-weight: 590;
   letter-spacing: -0.02em;
-  color: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .receipt-verifier {
@@ -197,8 +198,8 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
   gap: 8px;
   padding: 6px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 12px;
   font-weight: 590;
 }
@@ -211,11 +212,11 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
 }
 
 .receipt-verifier.verified .verifier-dot {
-  background: #30d158;
+  background: #28cd41;
 }
 
 .receipt-verifier.verified .verifier-text {
-  color: #30d158;
+  color: #1e8235;
 }
 
 /* 四大支柱卡片网格 */
@@ -235,10 +236,11 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
 .glass-card {
   padding: 18px 20px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -248,7 +250,7 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
   font-size: 13px;
   font-weight: 590;
   letter-spacing: -0.015em;
-  color: #a1a1a6;
+  color: #6e6e73;
   text-transform: uppercase;
 }
 
@@ -268,7 +270,7 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
   font-size: 24px;
   font-weight: 590;
   letter-spacing: -0.025em;
-  color: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .text-accent {
@@ -332,7 +334,7 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
 }
 
 .footer-spec {
-  color: #f5f5f7;
+  color: #1d1d1f;
 }
 
 .footer-divider {

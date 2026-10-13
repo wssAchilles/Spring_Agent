@@ -6,7 +6,7 @@
         <div class="aurora-pulse-dot" :class="activeSpecBranch ? 'pulse-speculating' : 'pulse-stable'"></div>
         <div class="header-title-group">
           <div class="headline-title">时间旅行与置信度门控投机推演</div>
-          <div class="sub-headline">Merkle DAG 增量因果树 · 阿里千问 1536 维超球面测地核 · Phase 148</div>
+          <div class="sub-headline">Merkle DAG 增量因果树 · 超球面测地状态回溯</div>
         </div>
         <div class="version-chip font-mono">
           <span class="chip-dot"></span>

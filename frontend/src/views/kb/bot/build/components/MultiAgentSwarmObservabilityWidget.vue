@@ -4,7 +4,7 @@
     <div class="widget-header">
       <div class="widget-title">
         <span class="icon-sparkle">🌐</span>
-        <span class="title-text">Phase 155 多智能体协同与认知基础设施监控中枢</span>
+        <span class="title-text">多智能体协同与认知基础设施监控中枢</span>
       </div>
       <div class="status-capsule">
         <span class="dot-indicator"></span>

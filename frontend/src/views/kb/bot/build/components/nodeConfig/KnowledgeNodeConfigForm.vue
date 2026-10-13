@@ -94,7 +94,7 @@
       </div>
     </div>
 
-    <!-- 3. Phase P2 企业级算法与 Token 预算高级面板 -->
+    <!-- 3. 企业级算法与 Token 预算高级面板 -->
     <div class="knowledge-config-section">
       <div
         class="knowledge-advanced-toggle"

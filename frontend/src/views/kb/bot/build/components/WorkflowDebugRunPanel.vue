@@ -73,8 +73,8 @@
       </div>
     </div>
 
-    <!-- Phase 148: Apple iOS 26 Liquid Glass 风格工作流时间旅行与置信度门控投机推演中枢 -->
-    <div class="workflow-debug-run-panel__timetravel-btn-row">
+    <!-- 工作流高级可观测性与时间旅行工具栏 (Apple iOS 26 Liquid Glass 风格) -->
+    <div class="workflow-debug-run-panel__timetravel-btn-row" style="display: flex; flex-direction: column; gap: 8px;">
       <el-button
         type="primary"
         plain
@@ -83,7 +83,27 @@
         @click="showTimeTravelWidget = true"
       >
         <i class="el-icon-timer"></i>
-        打开 Merkle DAG 时间旅行与投机推演中枢 (Phase 148)
+        状态版本快照与时间旅行回溯
+      </el-button>
+      <el-button
+        type="primary"
+        plain
+        size="small"
+        class="apple-liquid-btn"
+        @click="showSwarmCognitiveWidget = true"
+      >
+        <i class="el-icon-cpu"></i>
+        智能体协同流转与上下文缓存监控
+      </el-button>
+      <el-button
+        type="primary"
+        plain
+        size="small"
+        class="apple-liquid-btn"
+        @click="showEnterpriseObservabilityWidget = true"
+      >
+        <i class="el-icon-data-analysis"></i>
+        企业多智能体协同与全双工 RAG 观测
       </el-button>
     </div>
 
@@ -96,6 +116,28 @@
       class="apple-liquid-timetravel-drawer"
     >
       <WorkflowTimeTravelWidget @close="showTimeTravelWidget = false" />
+    </el-drawer>
+
+    <el-drawer
+      v-model="showSwarmCognitiveWidget"
+      size="76%"
+      direction="rtl"
+      :append-to-body="true"
+      :with-header="false"
+      class="apple-liquid-timetravel-drawer"
+    >
+      <MultiAgentSwarmObservabilityWidget @close="showSwarmCognitiveWidget = false" />
+    </el-drawer>
+
+    <el-drawer
+      v-model="showEnterpriseObservabilityWidget"
+      size="76%"
+      direction="rtl"
+      :append-to-body="true"
+      :with-header="false"
+      class="apple-liquid-timetravel-drawer"
+    >
+      <EnterpriseSwarmObservabilityWidget @close="showEnterpriseObservabilityWidget = false" />
     </el-drawer>
 
     <!-- Phase 120: 单色钛金时间旅行 (Time-Travel) 控制条与 Whyline 因果切片探针 -->
@@ -198,12 +240,18 @@ import "highlight.js/styles/xcode.min.css";
 import DebugOverflowTooltipLabel from "./DebugOverflowTooltipLabel.vue";
 import HitlApprovalMetacenter from "./debug/HitlApprovalMetacenter.vue";
 import WorkflowTimeTravelWidget from "./hitl/WorkflowTimeTravelWidget.vue";
+import MultiAgentSwarmObservabilityWidget from "./MultiAgentSwarmObservabilityWidget.vue";
+import EnterpriseSwarmObservabilityWidget from "./EnterpriseSwarmObservabilityWidget.vue";
 import { TimeTravelForkEngine } from "./debug/engine/TimeTravelForkEngine";
 import { PersistentSnapshotManager } from "./debug/engine/PersistentSnapshotTree";
 
 const conversationInAbortController = ref(); // 对话进行中 abort 控制器(控制 stream 对话)
 const forkEngine = new TimeTravelForkEngine();
 const snapshotManager = new PersistentSnapshotManager();
+
+// 多智能体协同流转与企业观测看板状态
+const showSwarmCognitiveWidget = ref(false);
+const showEnterpriseObservabilityWidget = ref(false);
 
 // Phase P3 & Phase 154: DeepSeek 官方思考链响应式状态 (支持双轨流式: 独立 reasoning_content 字段与内嵌 <think> 标签)
 const thinkingExpanded = ref(true);
