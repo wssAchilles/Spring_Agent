@@ -17,14 +17,16 @@ permissions:
 
 jobs:
   # ============================================================================
-  # 阶段 1：智能变更路径侦测中心（识别本次提交影响的工程组件）
+  # 阶段 1：智能变更路径侦测中心（精细化识别各技术栈组件变更）
   # ============================================================================
   detect-changes:
     name: Detect Changed Components
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
+      hermes: ${{ steps.filter.outputs.hermes }}
       backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      experiment: ${{ steps.filter.outputs.experiment }}
       workflows: ${{ steps.filter.outputs.workflows }}
     steps:
       - name: Checkout Code
@@ -35,15 +37,89 @@ jobs:
         id: filter
         with:
           filters: |
-            frontend:
-              - 'frontend/**'
+            hermes:
+              - 'backend/qknow-hermes/**'
+              - 'backend/qknow-mcp/**'
             backend:
               - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            experiment:
+              - 'experiment/**'
             workflows:
               - '.github/workflows/**'
 
   # ============================================================================
-  # 阶段 2（轨道 A）：前端质量门禁（Vue 3 + Vite 5 静态检查与生产构建）
+  # 阶段 2（极速一级门禁）：Hermes 智能体核心契约测试 (47 项关键契约 / 纯内存 / 4.5s)
+  # ============================================================================
+  hermes-core-gate:
+    name: Hermes Agent Core (47 Contract Tests)
+    needs: detect-changes
+    if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.hermes == 'true' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Run Hermes Agent Core Contract Tests (Fail-Fast Gate)
+        env:
+          MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -Dfile.encoding=UTF-8'
+        run: |
+          mvn -B -ntp -f backend/pom.xml -pl qknow-hermes/qknow-hermes-core test \
+            -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
+
+      - name: Upload Hermes Surefire Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hermes-surefire-reports
+          path: backend/qknow-hermes/qknow-hermes-core/target/surefire-reports
+          if-no-files-found: ignore
+
+  # ============================================================================
+  # 阶段 3（轨道 A）：全量业务集成测试门禁 (Java 21 + Maven Reactor 级联单测)
+  # ============================================================================
+  backend-integration-gate:
+    name: Backend Integration (Reactor Tests)
+    needs: detect-changes
+    if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Run Maven Reactor Integration Tests
+        env:
+          MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -Dfile.encoding=UTF-8'
+        run: |
+          mvn -B -ntp -f backend/pom.xml -pl tests -am test \
+            -Dsurefire.rerunFailingTestsCount=2 \
+            -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
+
+      - name: Upload Surefire Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-surefire-reports
+          path: backend/tests/target/surefire-reports
+          if-no-files-found: ignore
+
+  # ============================================================================
+  # 阶段 3（轨道 B）：前端质量门禁（Vue 3 + Vite 5 + Node 22 LTS 生产构建）
   # ============================================================================
   frontend-gate:
     name: Frontend Quality (ESLint & Production Build)
@@ -57,10 +133,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20 (LTS)
+      - name: Setup Node.js 22 (LTS)
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -78,61 +154,53 @@ jobs:
         run: npm run build:prod
 
   # ============================================================================
-  # 阶段 2（轨道 B）：后端质量门禁（Java 21 + Maven Reactor 1258+ 项全量单测）
+  # 阶段 3（轨道 C）：科研实验资产与消融配置合规门禁 (Python 3.11 + YAML)
   # ============================================================================
-  backend-gate:
-    name: Backend Quality (Java 21 & Reactor Tests)
+  experiment-gate:
+    name: Experiment Asset & Schema Validation
     needs: detect-changes
-    if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.workflows == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.experiment == 'true' || needs.detect-changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Java 21 (Temurin)
-        uses: actions/setup-java@v5
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
+          python-version: '3.11'
 
-      - name: Run Maven Reactor Tests
-        env:
-          MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -Dfile.encoding=UTF-8'
+      - name: Verify Python Script Compilation & YAML Config
         run: |
-          mvn -B -ntp -f backend/pom.xml -pl tests -am test \
-            -Dsurefire.rerunFailingTestsCount=2 \
-            -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
-
-      - name: Upload Surefire Reports on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports
-          path: backend/tests/target/surefire-reports
-          if-no-files-found: ignore
+          python -m py_compile experiment/runner.py experiment/stats_analyzer.py
+          python -c "import yaml; yaml.safe_load(open('experiment/eval_config.yaml'))"
+          echo "✅ 科研实验脚本语法编译与 eval_config.yaml 解析通过"
 
   # ============================================================================
-  # 阶段 3：全流程质量门禁聚合判定与 Step Summary 看板输出
+  # 阶段 4：全流程质量门禁聚合判定与 Step Summary 看板输出
   # ============================================================================
   quality-gate-status:
     name: Overall Quality Gate
-    needs: [detect-changes, frontend-gate, backend-gate]
+    needs: [detect-changes, hermes-core-gate, backend-integration-gate, frontend-gate, experiment-gate]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Consolidate Quality Gate Results
         run: |
+          HERMES_RES="${{ needs.hermes-core-gate.result }}"
+          BACKEND_RES="${{ needs.backend-integration-gate.result }}"
           FRONTEND_RES="${{ needs.frontend-gate.result }}"
-          BACKEND_RES="${{ needs.backend-gate.result }}"
+          EXPERIMENT_RES="${{ needs.experiment-gate.result }}"
 
           echo "=========================================="
           echo "Quality Gate Execution Summary:"
-          echo "Frontend Gate: $FRONTEND_RES"
-          echo "Backend Gate:  $BACKEND_RES"
+          echo "Hermes Core Gate:      $HERMES_RES"
+          echo "Backend Reactor Gate:  $BACKEND_RES"
+          echo "Frontend Gate:         $FRONTEND_RES"
+          echo "Experiment Gate:       $EXPERIMENT_RES"
           echo "=========================================="
 
-          for res in "$FRONTEND_RES" "$BACKEND_RES"; do
+          for res in "$HERMES_RES" "$BACKEND_RES" "$FRONTEND_RES" "$EXPERIMENT_RES"; do
             if [ "$res" = "failure" ] || [ "$res" = "cancelled" ]; then
               echo "::error::One or more essential quality gates failed or were cancelled."
               exit 1
@@ -144,8 +212,10 @@ jobs:
       - name: Publish Quality Dashboard to Summary
         if: always()
         run: |
+          HERMES_RES="${{ needs.hermes-core-gate.result }}"
+          BACKEND_RES="${{ needs.backend-integration-gate.result }}"
           FRONTEND_RES="${{ needs.frontend-gate.result }}"
-          BACKEND_RES="${{ needs.backend-gate.result }}"
+          EXPERIMENT_RES="${{ needs.experiment-gate.result }}"
 
           format_status() {
             case "$1" in
@@ -161,8 +231,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 门禁检查轨道 | 涉及工程技术栈 | 门禁执行状态 |" >> $GITHUB_STEP_SUMMARY
           echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
-          echo "| 前端代码规范与构建 | Vue 3 + Vite 5 + ESLint 9 | $(format_status "$FRONTEND_RES") |" >> $GITHUB_STEP_SUMMARY
-          echo "| 后端微服务与契约单测 | Java 21 + Maven Reactor (1258+ Tests) | $(format_status "$BACKEND_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "| 智能体核心契约 (Hermes Agent Core) | Java 21 + 47 项生产级契约单测 (沙箱/记忆/MCTS/DyLAN) | $(format_status "$HERMES_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "| 后端微服务与系统集成 (Backend Integration) | Java 21 + Maven Reactor (1258+ 集成单测) | $(format_status "$BACKEND_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "| 前端代码规范与构建 (Frontend Web) | Vue 3 + Vite 5 + Node 22 (LTS) | $(format_status "$FRONTEND_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "| 科研实验资产与配置 (Experiment Pipeline) | Python 3.11 + YAML Schema 语法校验 | $(format_status "$EXPERIMENT_RES") |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> 💡 **提示**：当仅提交文档或非代码资产时，代码测试轨道将自动优雅跳过，实现秒级交付。" >> $GITHUB_STEP_SUMMARY
-
+          echo "> 💡 **设计说明**：Hermes 智能体核心契约采用纯内存虚拟线程架构，具备 4.5 秒极速 Fail-Fast 阻断能力；其他轨道并行执行，兼顾极速反馈与全量安全性。" >> $GITHUB_STEP_SUMMARY
