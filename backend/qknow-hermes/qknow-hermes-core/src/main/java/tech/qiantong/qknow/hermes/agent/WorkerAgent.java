@@ -146,18 +146,27 @@ public class WorkerAgent extends BaseAgent {
      * 创建 ReactAgent（兼容默认工具集，public 以便测试跨包 mock）
      */
     public ReactAgent createReactAgent() {
-        return createReactAgent(this.tools);
+        return ReactAgent.builder()
+                .name(getName())
+                .model(chatModel)
+                .systemPrompt(systemPrompt)
+                .tools(this.tools)
+                .resolver(resolver)
+                .build();
     }
 
     /**
      * 基于动态工具集创建当次 ReactAgent 实例
      */
     public ReactAgent createReactAgent(List<ToolCallback> activeTools) {
+        if (activeTools == null || activeTools == this.tools || activeTools.equals(this.tools)) {
+            return createReactAgent();
+        }
         return ReactAgent.builder()
                 .name(getName())
                 .model(chatModel)
                 .systemPrompt(systemPrompt)
-                .tools(activeTools != null ? activeTools : List.of())
+                .tools(activeTools)
                 .resolver(resolver)
                 .build();
     }

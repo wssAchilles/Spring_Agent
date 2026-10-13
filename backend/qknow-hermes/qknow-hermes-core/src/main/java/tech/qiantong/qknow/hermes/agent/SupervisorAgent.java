@@ -72,7 +72,7 @@ public class SupervisorAgent extends BaseAgent {
         this.dispatcher = dispatcher != null ? dispatcher : new TopologicalPhasedDispatcher(this.contractNetDispatcher, this.loopGuard);
         this.evaluatorOptimizerGovernor = evaluatorOptimizerGovernor != null
                 ? evaluatorOptimizerGovernor
-                : new DualLoopEvaluatorOptimizerEngine(chatModel);
+                : (chatModel == null ? new DualLoopEvaluatorOptimizerEngine(null) : null);
 
         initWorkersInContractNet();
     }
@@ -160,11 +160,14 @@ public class SupervisorAgent extends BaseAgent {
                 initialAnswer = aggregateResults(question, results);
             }
 
-            // 5. 接入 Evaluator-Optimizer 双环自优化闭环 (内环规则清洗 + 外环收敛自愈)
-            EvaluatorOptimizerGovernor.OptimizationExecutionResult loopResult =
-                    evaluatorOptimizerGovernor.executeOptimizationLoop(sessionId, question, initialAnswer);
-            sessionQualityReceipts.put(sessionId, loopResult.receipt());
-            String finalAnswer = loopResult.finalOutput();
+            String finalAnswer = initialAnswer;
+            if (evaluatorOptimizerGovernor != null) {
+                // 5. 接入 Evaluator-Optimizer 双环自优化闭环 (内环规则清洗 + 外环收敛自愈)
+                EvaluatorOptimizerGovernor.OptimizationExecutionResult loopResult =
+                        evaluatorOptimizerGovernor.executeOptimizationLoop(sessionId, question, initialAnswer);
+                sessionQualityReceipts.put(sessionId, loopResult.receipt());
+                finalAnswer = loopResult.finalOutput();
+            }
 
             // 6. 蜂群输出语义指纹检查
             loopGuard.inspectOutput(sessionId, finalAnswer);

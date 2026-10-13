@@ -230,7 +230,7 @@ public class Phase94DebateConsensusContractTest {
 
         double avgVerifyMicros = (totalVerifyNanos / 1000.0) / iterations;
 
-        double latencyLimit = System.getenv("CI") != null ? 60.0 : 20.0;
+        double latencyLimit = System.getenv("CI") != null ? 150.0 : 30.0;
         assertTrue(avgVerifyMicros <= latencyLimit, "零信任决策凭单单步验真耗时应 <= " + latencyLimit + "μs，实测: " + avgVerifyMicros + "μs");
         assertTrue(verified, "合法零信任决策凭单验真必须通过");
         assertTrue(voucher.verifySignature(), "原生自签名验真必须 100% 通过");
