@@ -54,6 +54,10 @@ public class HttpMcpClient implements McpClient {
         this.samplingHandler = samplingHandler;
     }
 
+    public McpSamplingHandler getSamplingHandler() {
+        return samplingHandler;
+    }
+
     public void addEventListener(Consumer<JSONObject> listener) {
         if (listener != null) {
             this.eventListeners.add(listener);
@@ -320,6 +324,9 @@ public class HttpMcpClient implements McpClient {
     }
 
     private URI resolveEndpointUri() {
+        if (ssePostEndpoint != null && !ssePostEndpoint.isBlank()) {
+            return URI.create(ssePostEndpoint);
+        }
         if (baseUrl.contains("/mcp") || baseUrl.contains("/sse") || baseUrl.contains("/api")) {
             return URI.create(baseUrl);
         }

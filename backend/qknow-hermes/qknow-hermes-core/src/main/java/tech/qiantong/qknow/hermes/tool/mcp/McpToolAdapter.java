@@ -58,6 +58,17 @@ public class McpToolAdapter {
         return circuitBreaker;
     }
 
+    @Autowired(required = false)
+    private McpSamplingHandler samplingHandler;
+
+    public McpSamplingHandler getSamplingHandler() {
+        return samplingHandler;
+    }
+
+    public void setSamplingHandler(McpSamplingHandler samplingHandler) {
+        this.samplingHandler = samplingHandler;
+    }
+
     public long getToolTimeoutMillis() {
         return toolTimeoutMillis;
     }
@@ -112,6 +123,14 @@ public class McpToolAdapter {
                 clients.put(config.getName(), client);
             }
             if (client != null) {
+                // 如果是 HTTP MCP Client，真实绑定 Sampling 采样反向生成器并建立 SSE 长连接
+                if (client instanceof HttpMcpClient httpClient) {
+                    if (this.samplingHandler != null) {
+                        httpClient.setSamplingHandler(this.samplingHandler);
+                    }
+                    httpClient.connectSse("/sse");
+                }
+
                 client.initialize();
 
                 // 发现工具
@@ -150,7 +169,11 @@ public class McpToolAdapter {
      */
     protected McpClient createClient(McpServerConfig config) {
         if (config.getUrl() != null && !config.getUrl().isBlank()) {
-            return new HttpMcpClient(config.getUrl(), config.getApiKey(), config.getHeaders());
+            HttpMcpClient httpClient = new HttpMcpClient(config.getUrl(), config.getApiKey(), config.getHeaders());
+            if (this.samplingHandler != null) {
+                httpClient.setSamplingHandler(this.samplingHandler);
+            }
+            return httpClient;
         }
         return new StdioMcpClient(config.getCommand(), config.getEnvironment());
     }
@@ -208,6 +231,13 @@ public class McpToolAdapter {
      */
     public Map<String, FunctionToolCallback<?, ?>> getMcpTools() {
         return Collections.unmodifiableMap(mcpTools);
+    }
+
+    /**
+     * 获取所有 MCP 工具的原始 Schema 定义
+     */
+    public Map<String, JSONObject> getToolSchemas() {
+        return Collections.unmodifiableMap(toolSchemas);
     }
 
     /**

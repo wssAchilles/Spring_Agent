@@ -2,96 +2,89 @@ package tech.qiantong.qknow.hermes.tool.mcp.governance;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
- * 密码学工具投影存证凭单 (Java 21 Record)
- * 记录每次意图驱动的工具投影决策、Schema 压缩率与断路器状态快照，使用 SHA-256 自签名保证防篡改与合规可审计
+ * MCP 工具两阶段超球面动态投影与安全剪枝不可变存证凭单
+ * 严格遵循纯 Java 21 Record 不可变性规范与常量时间防侧信道标准
  */
 public record McpToolProjectionReceipt(
-        String queryHash,
-        List<String> projectedTools,
-        int totalRegisteredTools,
+        String receiptId,
+        String queryText,
+        List<String> projectedToolCodes,
+        int totalPoolSize,
         int projectedCount,
-        double compressionRatio,
-        Map<String, String> circuitBreakerStates,
-        Instant timestamp,
-        String signature
+        double tokenCompressionRatio,
+        Map<String, String> circuitStates,
+        long timestampEpochMs,
+        String sha256Signature
 ) {
-    /**
-     * 工厂方法：构建不可变存证凭单并生成密码学自签名
-     *
-     * @param userQuery            用户查询或上下文意图文本
-     * @param projectedTools       经由超球面检索选中的工具标识列表
-     * @param totalRegisteredTools 当前注册的总工具数
-     * @param compressionRatio     Token 压缩率
-     * @param circuitBreakerStates 当前选中工具的断路器状态映射
-     * @return 不可变存证凭单
-     */
-    public static McpToolProjectionReceipt create(
-            String userQuery,
-            List<String> projectedTools,
-            int totalRegisteredTools,
-            double compressionRatio,
-            Map<String, String> circuitBreakerStates
-    ) {
-        Instant now = Instant.now();
-        String qHash = sha256(userQuery != null ? userQuery : "");
-        List<String> safeTools = projectedTools != null ? List.copyOf(projectedTools) : List.of();
-        Map<String, String> safeStates = circuitBreakerStates != null ? Map.copyOf(circuitBreakerStates) : Map.of();
+    public McpToolProjectionReceipt {
+        projectedToolCodes = List.copyOf(projectedToolCodes != null ? projectedToolCodes : List.of());
+        circuitStates = Map.copyOf(circuitStates != null ? circuitStates : Map.of());
+    }
 
-        String rawContent = String.join("|",
-                qHash,
-                String.join(",", safeTools),
-                String.valueOf(totalRegisteredTools),
-                String.valueOf(safeTools.size()),
-                String.format("%.4f", compressionRatio),
-                safeStates.toString(),
-                now.toString()
-        );
-        String sig = sha256(rawContent);
+    public static McpToolProjectionReceipt create(
+            String queryText,
+            List<String> projectedToolCodes,
+            int totalPoolSize,
+            double tokenCompressionRatio,
+            Map<String, String> circuitStates
+    ) {
+        String id = UUID.randomUUID().toString();
+        long now = System.currentTimeMillis();
+        List<String> safeTools = projectedToolCodes != null ? List.copyOf(projectedToolCodes) : List.of();
+        Map<String, String> safeCircuits = circuitStates != null ? Map.copyOf(circuitStates) : Map.of();
+
+        String sig = calculateSignature(id, queryText, safeTools, totalPoolSize, safeTools.size(), tokenCompressionRatio, now);
 
         return new McpToolProjectionReceipt(
-                qHash,
+                id,
+                queryText != null ? queryText : "",
                 safeTools,
-                totalRegisteredTools,
+                totalPoolSize,
                 safeTools.size(),
-                compressionRatio,
-                safeStates,
+                tokenCompressionRatio,
+                safeCircuits,
                 now,
                 sig
         );
     }
 
-    /**
-     * 校验凭单签名的有效性
-     *
-     * @return 签名是否匹配
-     */
-    public boolean verifySignature() {
-        String rawContent = String.join("|",
-                queryHash,
-                String.join(",", projectedTools),
-                String.valueOf(totalRegisteredTools),
-                String.valueOf(projectedCount),
-                String.format("%.4f", compressionRatio),
-                circuitBreakerStates.toString(),
-                timestamp.toString()
-        );
-        return sha256(rawContent).equals(signature);
-    }
-
-    private static String sha256(String input) {
+    private static String calculateSignature(
+            String id, String query, List<String> tools,
+            int poolSize, int count, double ratio, long ts
+    ) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 算法不可用", e);
+            String payload = id + "|" + (query != null ? query : "") + "|" + String.join(",", tools) + "|" +
+                    poolSize + "|" + count + "|" + String.format("%.4f", ratio) + "|" + ts;
+            byte[] hash = digest.digest(payload.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("SHA-256 散列计算失败", e);
         }
+    }
+
+    /**
+     * 基于 MessageDigest.isEqual 的常量时间自验真方法，杜绝时序侧信道分析攻击
+     */
+    public boolean verifySignature() {
+        if (sha256Signature == null || sha256Signature.isBlank()) {
+            return false;
+        }
+        String expected = calculateSignature(
+                receiptId, queryText, projectedToolCodes,
+                totalPoolSize, projectedCount, tokenCompressionRatio, timestampEpochMs
+        );
+        byte[] expectedBytes = expected.getBytes(StandardCharsets.UTF_8);
+        byte[] actualBytes = sha256Signature.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
 }

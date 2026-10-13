@@ -3,6 +3,10 @@ package tech.qiantong.qknow.hermes.tool.mcp;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import tech.qiantong.qknow.mcp.client.transport.StdioEnterpriseTransport;
+import tech.qiantong.qknow.mcp.core.protocol.JsonRpcResponse;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -12,20 +16,25 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 基于标准输入输出传输的 MCP JSON-RPC 客户端。
+ * 基于企业级标准输入输出传输底座 (StdioEnterpriseTransport) 的 MCP JSON-RPC 客户端。
+ * 具备双 Java 21 虚拟线程分别排空 stdout/stderr、滑动信用窗口背压控制 (W_max = 16) 与进程树递归强杀特性。
  */
+@Slf4j
 public class StdioMcpClient implements McpClient {
 
     private static final String PROTOCOL_VERSION = "2024-11-05";
 
     private final List<String> command;
     private final Map<String, String> environment;
+    private final StdioEnterpriseTransport enterpriseTransport;
     private final AtomicLong requestIds = new AtomicLong();
 
+    // 针对内存 Reader/Writer 测试的兼容字段 (Fallback 模式)
     private Process process;
     private BufferedReader reader;
     private BufferedWriter writer;
@@ -36,19 +45,56 @@ public class StdioMcpClient implements McpClient {
         }
         this.command = List.copyOf(command);
         this.environment = environment == null ? Map.of() : Map.copyOf(environment);
+        this.enterpriseTransport = new StdioEnterpriseTransport(
+                UUID.randomUUID().toString(),
+                this.command,
+                this.environment,
+                null,
+                16,
+                5000,
+                new ObjectMapper()
+        );
     }
 
+    // 包内可见构造函数：供单测中使用 mock 流时作为 fallback 兼容
     StdioMcpClient(BufferedReader reader, BufferedWriter writer) {
         this.command = List.of();
         this.environment = Map.of();
+        this.enterpriseTransport = null;
         this.reader = reader;
         this.writer = writer;
     }
 
     @Override
     public synchronized void initialize() throws McpException {
-        ensureConnected();
+        if (enterpriseTransport != null) {
+            try {
+                enterpriseTransport.start();
+                Map<String, Object> clientInfo = Map.of("name", "qknow-hermes", "version", "2.2.1");
+                Map<String, Object> params = Map.of(
+                        "protocolVersion", PROTOCOL_VERSION,
+                        "capabilities", Map.of(),
+                        "clientInfo", clientInfo
+                );
+                JsonRpcResponse response = enterpriseTransport.sendRequest("initialize", params)
+                        .get(10, TimeUnit.SECONDS);
+                if (response.error() != null) {
+                    throw new McpException("MCP 初始化被服务端拒绝: " + response.error().message());
+                }
+                enterpriseTransport.sendNotification("notifications/initialized", Map.of())
+                        .get(5, TimeUnit.SECONDS);
+                return;
+            } catch (Exception e) {
+                disconnect();
+                if (e instanceof McpException mcpException) {
+                    throw mcpException;
+                }
+                throw new McpException("MCP 企业级 stdio 服务初始化失败: " + e.getMessage(), e);
+            }
+        }
 
+        // Fallback 兼容流读写
+        ensureFallbackConnected();
         JSONObject clientInfo = new JSONObject();
         clientInfo.put("name", "qknow-hermes");
         clientInfo.put("version", "2.2.1");
@@ -56,27 +102,74 @@ public class StdioMcpClient implements McpClient {
         params.put("protocolVersion", PROTOCOL_VERSION);
         params.put("capabilities", new JSONObject());
         params.put("clientInfo", clientInfo);
-        sendRequest("initialize", params);
-        sendNotification("notifications/initialized", new JSONObject());
+        sendFallbackRequest("initialize", params);
+        sendFallbackNotification("notifications/initialized", new JSONObject());
     }
 
     @Override
     public synchronized List<JSONObject> listTools() throws McpException {
-        JSONObject result = sendRequest("tools/list", new JSONObject());
+        if (enterpriseTransport != null) {
+            try {
+                JsonRpcResponse response = enterpriseTransport.sendRequest("tools/list", Map.of())
+                        .get(10, TimeUnit.SECONDS);
+                if (response.error() != null) {
+                    throw new McpException("MCP 请求失败: " + response.error().message());
+                }
+                Object resultObj = response.result();
+                if (resultObj == null) {
+                    return List.of();
+                }
+                JSONObject resultJson = JSON.parseObject(JSON.toJSONString(resultObj));
+                JSONArray tools = resultJson.getJSONArray("tools");
+                return tools == null ? List.of() : tools.toJavaList(JSONObject.class);
+            } catch (Exception e) {
+                if (e instanceof McpException mcpException) {
+                    throw mcpException;
+                }
+                throw new McpException("读取 MCP 工具列表失败: " + e.getMessage(), e);
+            }
+        }
+
+        JSONObject result = sendFallbackRequest("tools/list", new JSONObject());
         JSONArray tools = result.getJSONArray("tools");
         return tools == null ? List.of() : tools.toJavaList(JSONObject.class);
     }
 
     @Override
     public synchronized JSONObject callTool(String toolName, Map<String, Object> arguments) throws McpException {
+        if (enterpriseTransport != null) {
+            try {
+                Map<String, Object> params = Map.of(
+                        "name", toolName,
+                        "arguments", arguments == null ? Map.of() : arguments
+                );
+                JsonRpcResponse response = enterpriseTransport.sendRequest("tools/call", params)
+                        .get(30, TimeUnit.SECONDS);
+                if (response.error() != null) {
+                    throw new McpException("MCP 请求失败: " + response.error().message());
+                }
+                Object resultObj = response.result();
+                return resultObj == null ? new JSONObject() : JSON.parseObject(JSON.toJSONString(resultObj));
+            } catch (Exception e) {
+                if (e instanceof McpException mcpException) {
+                    throw mcpException;
+                }
+                throw new McpException("调用 MCP 工具失败: " + toolName, e);
+            }
+        }
+
         JSONObject params = new JSONObject();
         params.put("name", toolName);
         params.put("arguments", arguments == null ? Map.of() : arguments);
-        return sendRequest("tools/call", params);
+        return sendFallbackRequest("tools/call", params);
     }
 
     @Override
     public synchronized void disconnect() {
+        if (enterpriseTransport != null) {
+            enterpriseTransport.close();
+        }
+
         closeQuietly(writer);
         closeQuietly(reader);
         writer = null;
@@ -98,10 +191,15 @@ public class StdioMcpClient implements McpClient {
 
     @Override
     public boolean isConnected() {
+        if (enterpriseTransport != null) {
+            return enterpriseTransport.isConnected();
+        }
         return process != null && process.isAlive() && writer != null && reader != null;
     }
 
-    private void ensureConnected() {
+    // ---------------------- Fallback 兼容模式辅助实现 ----------------------
+
+    private void ensureFallbackConnected() {
         if (reader != null && writer != null) {
             return;
         }
@@ -119,12 +217,12 @@ public class StdioMcpClient implements McpClient {
         }
     }
 
-    private JSONObject sendRequest(String method, JSONObject params) {
-        ensureConnected();
+    private JSONObject sendFallbackRequest(String method, JSONObject params) {
+        ensureFallbackConnected();
         long id = requestIds.incrementAndGet();
         JSONObject request = baseMessage(method, params);
         request.put("id", id);
-        writeMessage(request);
+        writeFallbackMessage(request);
 
         try {
             String line;
@@ -149,8 +247,8 @@ public class StdioMcpClient implements McpClient {
         }
     }
 
-    private void sendNotification(String method, JSONObject params) {
-        writeMessage(baseMessage(method, params));
+    private void sendFallbackNotification(String method, JSONObject params) {
+        writeFallbackMessage(baseMessage(method, params));
     }
 
     private JSONObject baseMessage(String method, JSONObject params) {
@@ -161,7 +259,7 @@ public class StdioMcpClient implements McpClient {
         return message;
     }
 
-    private void writeMessage(JSONObject message) {
+    private void writeFallbackMessage(JSONObject message) {
         try {
             writer.write(message.toJSONString());
             writer.newLine();
@@ -178,7 +276,7 @@ public class StdioMcpClient implements McpClient {
         try {
             closeable.close();
         } catch (Exception ignored) {
-            // disconnect is best-effort
+            // 优雅关闭尽力而为
         }
     }
 }
