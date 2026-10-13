@@ -16,14 +16,19 @@ import tech.qiantong.qknow.hermes.agent.blackboard.SharedBlackboard;
 import tech.qiantong.qknow.hermes.agent.dag.HierarchicalTaskPlanner;
 import tech.qiantong.qknow.hermes.agent.dag.PhasedExecutionPlan;
 import tech.qiantong.qknow.hermes.agent.dag.TopologicalPhasedDispatcher;
+import tech.qiantong.qknow.hermes.agent.governor.DualLoopQualityReceipt;
+import tech.qiantong.qknow.hermes.agent.governor.EvaluatorOptimizerGovernor;
+import tech.qiantong.qknow.hermes.agent.governor.impl.DualLoopEvaluatorOptimizerEngine;
 import tech.qiantong.qknow.hermes.agent.guard.SwarmLoopGuard;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * 工业级蜂群主管智能体 (SupervisorAgent)
- * 负责分层任务意图分解 (HTN/DAG)、拓扑阶段调度推进、动态合同网竞标分派、共享黑板协作与最终答复收敛
+ * 负责分层任务意图分解 (HTN/DAG)、拓扑阶段调度推进、动态合同网竞标分派、共享黑板协作、
+ * 以及基于 Evaluator-Optimizer 双环自优化的最终答复闭环收敛。
  */
 @Slf4j
 public class SupervisorAgent extends BaseAgent {
@@ -39,6 +44,10 @@ public class SupervisorAgent extends BaseAgent {
     private final ContractNetDispatcher contractNetDispatcher;
     private final SharedBlackboard blackboard;
     private final SwarmLoopGuard loopGuard;
+    private final EvaluatorOptimizerGovernor evaluatorOptimizerGovernor;
+
+    // 会话最近双环质检凭单映射
+    private final Map<String, DualLoopQualityReceipt> sessionQualityReceipts = new ConcurrentHashMap<>();
 
     /**
      * 完整依赖注入构造函数
@@ -49,7 +58,8 @@ public class SupervisorAgent extends BaseAgent {
                            TopologicalPhasedDispatcher dispatcher,
                            ContractNetDispatcher contractNetDispatcher,
                            SharedBlackboard blackboard,
-                           SwarmLoopGuard loopGuard) {
+                           SwarmLoopGuard loopGuard,
+                           EvaluatorOptimizerGovernor evaluatorOptimizerGovernor) {
         super(name, description);
         this.systemPrompt = systemPrompt;
         this.tools = tools != null ? List.copyOf(tools) : List.of();
@@ -60,8 +70,22 @@ public class SupervisorAgent extends BaseAgent {
         this.blackboard = blackboard != null ? blackboard : new SharedBlackboard();
         this.contractNetDispatcher = contractNetDispatcher != null ? contractNetDispatcher : new ContractNetDispatcher();
         this.dispatcher = dispatcher != null ? dispatcher : new TopologicalPhasedDispatcher(this.contractNetDispatcher, this.loopGuard);
+        this.evaluatorOptimizerGovernor = evaluatorOptimizerGovernor != null
+                ? evaluatorOptimizerGovernor
+                : new DualLoopEvaluatorOptimizerEngine(chatModel);
 
         initWorkersInContractNet();
+    }
+
+    public SupervisorAgent(String name, String description, String systemPrompt,
+                           List<ToolCallback> tools, ChatModel chatModel, List<? extends BaseAgent> workers,
+                           HierarchicalTaskPlanner planner,
+                           TopologicalPhasedDispatcher dispatcher,
+                           ContractNetDispatcher contractNetDispatcher,
+                           SharedBlackboard blackboard,
+                           SwarmLoopGuard loopGuard) {
+        this(name, description, systemPrompt, tools, chatModel, workers, planner, dispatcher,
+                contractNetDispatcher, blackboard, loopGuard, null);
     }
 
     /**
@@ -69,7 +93,11 @@ public class SupervisorAgent extends BaseAgent {
      */
     public SupervisorAgent(String name, String description, String systemPrompt,
                            List<ToolCallback> tools, ChatModel chatModel, List<WorkerAgent> workers) {
-        this(name, description, systemPrompt, tools, chatModel, workers, null, null, null, null, null);
+        this(name, description, systemPrompt, tools, chatModel, workers, null, null, null, null, null, null);
+    }
+
+    public Optional<DualLoopQualityReceipt> getLastQualityReceipt(String sessionId) {
+        return Optional.ofNullable(sessionQualityReceipts.get(sessionId));
     }
 
     private void initWorkersInContractNet() {
@@ -112,26 +140,33 @@ public class SupervisorAgent extends BaseAgent {
             // 1. 用 LLM 进行分层任务意图分解与 Kahn 算法拓扑分层
             PhasedExecutionPlan plan = planner.plan(question);
 
+            String initialAnswer;
             if (plan == null || plan.isEmpty()) {
                 log.warn("[SupervisorAgent] 分解计划为空，直接使用 ChatModel 单步回答");
-                return chatModel.call(new Prompt(List.of(
+                initialAnswer = chatModel != null ? chatModel.call(new Prompt(List.of(
                         new SystemMessage(systemPrompt != null ? systemPrompt : ""),
                         new UserMessage(question)
-                ))).getResult().getOutput().getText();
+                ))).getResult().getOutput().getText() : "处理计划为空且无可用对话模型";
+            } else {
+                // 2. 拓扑分层推进调度并写入黑板
+                dispatcher.dispatch(sessionId, plan, blackboard);
+
+                // 3. 从黑板汇总全阶段事实产出
+                Map<String, BlackboardEntry> factsSnapshot = blackboard.getFactSnapshot();
+                Map<String, String> results = new LinkedHashMap<>();
+                factsSnapshot.forEach((key, entry) -> results.put(key, entry.value()));
+
+                // 4. 用 LLM 初步聚合所有 Worker 的黑板结果
+                initialAnswer = aggregateResults(question, results);
             }
 
-            // 2. 拓扑分层推进调度并写入黑板
-            dispatcher.dispatch(sessionId, plan, blackboard);
+            // 5. 接入 Evaluator-Optimizer 双环自优化闭环 (内环规则清洗 + 外环收敛自愈)
+            EvaluatorOptimizerGovernor.OptimizationExecutionResult loopResult =
+                    evaluatorOptimizerGovernor.executeOptimizationLoop(sessionId, question, initialAnswer);
+            sessionQualityReceipts.put(sessionId, loopResult.receipt());
+            String finalAnswer = loopResult.finalOutput();
 
-            // 3. 从黑板汇总全阶段事实产出
-            Map<String, BlackboardEntry> factsSnapshot = blackboard.getFactSnapshot();
-            Map<String, String> results = new LinkedHashMap<>();
-            factsSnapshot.forEach((key, entry) -> results.put(key, entry.value()));
-
-            // 4. 用 LLM 聚合所有 Worker 的黑板结果
-            String finalAnswer = aggregateResults(question, results);
-
-            // 5. 蜂群输出语义指纹检查
+            // 6. 蜂群输出语义指纹检查
             loopGuard.inspectOutput(sessionId, finalAnswer);
 
             return finalAnswer;
@@ -144,9 +179,15 @@ public class SupervisorAgent extends BaseAgent {
     }
 
     /**
-     * 用 LLM 聚合所有 Worker 的黑板产出
+     * 初步聚合所有 Worker 的黑板产出
      */
     private String aggregateResults(String originalQuestion, Map<String, String> workerResults) {
+        if (chatModel == null) {
+            StringBuilder sb = new StringBuilder("## 汇总执行结果\n");
+            workerResults.forEach((k, v) -> sb.append("- **").append(k).append("**: ").append(v).append("\n"));
+            return sb.toString();
+        }
+
         StringBuilder contextBuilder = new StringBuilder();
         for (Map.Entry<String, String> entry : workerResults.entrySet()) {
             contextBuilder.append("## 任务 [").append(entry.getKey()).append("] 产出结果\n");

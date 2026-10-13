@@ -3,6 +3,7 @@ package tech.qiantong.qknow.hermes.agent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import tech.qiantong.qknow.hermes.tool.discovery.ToolDiscoveryService;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,24 +11,35 @@ import java.util.stream.Collectors;
 
 /**
  * 智能体注册中心
- * 管理所有 Agent 的注册、查找和生命周期
+ * 管理所有 Agent 的注册、查找与动态工具生命周期装配
  */
 @Slf4j
 public class AgentRegistry {
 
     private final Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
+    private final ToolDiscoveryService toolDiscoveryService;
 
     /**
      * 构造函数 - 使用 ToolCallbackResolver
      */
     public AgentRegistry(Object config, ToolCallbackResolver resolver) {
-        initDefaultAgents(resolver);
+        this(config, resolver, null);
     }
 
     /**
      * 构造函数 - 使用 ChatModel
      */
     public AgentRegistry(Object config, ChatModel chatModel) {
+        this(config, chatModel, null);
+    }
+
+    public AgentRegistry(Object config, ToolCallbackResolver resolver, ToolDiscoveryService toolDiscoveryService) {
+        this.toolDiscoveryService = toolDiscoveryService;
+        initDefaultAgents(resolver);
+    }
+
+    public AgentRegistry(Object config, ChatModel chatModel, ToolDiscoveryService toolDiscoveryService) {
+        this.toolDiscoveryService = toolDiscoveryService;
         initDefaultAgents(chatModel);
     }
 
@@ -46,13 +58,13 @@ public class AgentRegistry {
 
         WorkerAgent ragAgent = new WorkerAgent(
                 "RAGAgent", "知识库检索智能体", "你是一个 RAG 检索智能体",
-                List.of(), chatModel, resolver);
+                List.of(), chatModel, resolver, toolDiscoveryService);
         WorkerAgent searchAgent = new WorkerAgent(
                 "SearchAgent", "搜索智能体", "你是一个搜索智能体",
-                List.of(), chatModel, resolver);
+                List.of(), chatModel, resolver, toolDiscoveryService);
         WorkerAgent codeAgent = new WorkerAgent(
                 "CodeAgent", "代码智能体", "你是一个代码智能体",
-                List.of(), chatModel, resolver);
+                List.of(), chatModel, resolver, toolDiscoveryService);
 
         agents.put(ragAgent.getName(), ragAgent);
         agents.put(searchAgent.getName(), searchAgent);
