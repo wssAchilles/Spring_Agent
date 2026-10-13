@@ -72,7 +72,7 @@ jobs:
         env:
           MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -Dfile.encoding=UTF-8'
         run: |
-          mvn -B -ntp -f backend/pom.xml -pl qknow-hermes/qknow-hermes-core test \
+          mvn -B -ntp -f backend/pom.xml -pl qknow-hermes/qknow-hermes-core -am test \
             -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
 
       - name: Upload Hermes Surefire Reports on Failure
@@ -172,6 +172,7 @@ jobs:
 
       - name: Verify Python Script Compilation & YAML Config
         run: |
+          pip install pyyaml
           python -m py_compile experiment/runner.py experiment/stats_analyzer.py
           python -c "import yaml; yaml.safe_load(open('experiment/eval_config.yaml'))"
           echo "✅ 科研实验脚本语法编译与 eval_config.yaml 解析通过"
