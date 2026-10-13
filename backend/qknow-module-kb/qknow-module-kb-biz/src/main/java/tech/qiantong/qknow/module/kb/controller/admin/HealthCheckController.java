@@ -25,7 +25,7 @@ public class HealthCheckController {
     @Resource
     private DataSource dataSource;
 
-    @Resource
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     private McpToolAdapter mcpToolAdapter;
 
     @Operation(summary = "系统健康检查 (类似 claw doctor)")
@@ -66,6 +66,12 @@ public class HealthCheckController {
 
     private Map<String, Object> checkMcp() {
         Map<String, Object> mcp = new HashMap<>();
+        if (mcpToolAdapter == null) {
+            mcp.put("servers", 0);
+            mcp.put("tools", 0);
+            mcp.put("details", java.util.List.of());
+            return mcp;
+        }
         var configs = mcpToolAdapter.getServerConfigs();
         mcp.put("servers", configs.size());
         mcp.put("tools", mcpToolAdapter.getMcpTools().size());

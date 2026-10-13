@@ -146,6 +146,18 @@
             <version>${qknow.version}</version>
         </dependency>
 
+        <!-- Enterprise MCP Core & Client -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-mcp-core</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-mcp-client</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
