@@ -61,14 +61,19 @@ public record StateGraphExecutionReceipt(
     }
 
     /**
-     * 校验自签名完整性
+     * 校验自签名完整性 (基于 MessageDigest.isEqual 常量时间比对，杜绝时序侧信道攻击)
      */
     public boolean verifyIntegrity() {
+        if (sha256Signature == null) {
+            return false;
+        }
         String rawData = computeRawData(
                 executionId, flowId, totalSupersteps,
                 completedNodeUuids.size(), activeNodeUuids.size(),
                 hasDegradedBreak, hasSelfHealed, executionLatencyUs, timestamp);
-        return computeSha256(rawData).equalsIgnoreCase(sha256Signature);
+        byte[] expectedBytes = computeSha256(rawData).toLowerCase().getBytes(StandardCharsets.UTF_8);
+        byte[] actualBytes = sha256Signature.toLowerCase().getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
 
     private static String computeRawData(

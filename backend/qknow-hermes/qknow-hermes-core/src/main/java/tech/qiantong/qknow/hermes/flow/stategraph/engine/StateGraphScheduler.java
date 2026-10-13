@@ -11,6 +11,8 @@ import tech.qiantong.qknow.hermes.flow.stategraph.enums.StateGraphEdgeType;
 import tech.qiantong.qknow.hermes.flow.stategraph.model.StateGraph;
 import tech.qiantong.qknow.hermes.flow.stategraph.model.StateGraphEdge;
 import tech.qiantong.qknow.hermes.flow.stategraph.model.StateGraphNode;
+import tech.qiantong.qknow.hermes.flow.stategraph.checkpoint.DurableStateGraphCheckpointer;
+import tech.qiantong.qknow.hermes.flow.stategraph.checkpoint.WalDurableStateGraphCheckpointer;
 import tech.qiantong.qknow.hermes.flow.stategraph.validator.StateGraphValidator;
 
 import java.util.*;
@@ -19,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 状态图核心超步调度器 (StateGraphScheduler)
- * 基于 Google Pregel 同步超步模型推进，集成收敛门禁、局部自愈与批处理子图引擎
+ * 基于 Google Pregel 同步超步模型推进，集成收敛门禁、局部自愈、虚拟线程并发屏障与 WAL 检查点持久化
  */
 @Slf4j
 @Component
@@ -33,6 +35,10 @@ public class StateGraphScheduler {
     private final NodeSelfHealingRouter selfHealingRouter;
     @Getter
     private final BatchIterationSubgraphEngine iterationEngine;
+    @Getter
+    private final VirtualThreadSuperstepExecutor superstepExecutor;
+    @Getter
+    private DurableStateGraphCheckpointer checkpointer;
 
     public StateGraphScheduler() {
         this(new StateGraphValidator(),
@@ -46,10 +52,28 @@ public class StateGraphScheduler {
             ConvergenceLoopGuard loopGuard,
             NodeSelfHealingRouter selfHealingRouter,
             BatchIterationSubgraphEngine iterationEngine) {
+        this(validator, loopGuard, selfHealingRouter, iterationEngine,
+                new VirtualThreadSuperstepExecutor(selfHealingRouter, iterationEngine), null);
+    }
+
+    public StateGraphScheduler(
+            StateGraphValidator validator,
+            ConvergenceLoopGuard loopGuard,
+            NodeSelfHealingRouter selfHealingRouter,
+            BatchIterationSubgraphEngine iterationEngine,
+            VirtualThreadSuperstepExecutor superstepExecutor,
+            DurableStateGraphCheckpointer checkpointer) {
         this.validator = validator != null ? validator : new StateGraphValidator();
         this.loopGuard = loopGuard != null ? loopGuard : new ConvergenceLoopGuard(50);
         this.selfHealingRouter = selfHealingRouter != null ? selfHealingRouter : new NodeSelfHealingRouter();
         this.iterationEngine = iterationEngine != null ? iterationEngine : new BatchIterationSubgraphEngine();
+        this.superstepExecutor = superstepExecutor != null ? superstepExecutor :
+                new VirtualThreadSuperstepExecutor(this.selfHealingRouter, this.iterationEngine);
+        this.checkpointer = checkpointer;
+    }
+
+    public void setCheckpointer(DurableStateGraphCheckpointer checkpointer) {
+        this.checkpointer = checkpointer;
     }
 
     /**
@@ -89,22 +113,17 @@ public class StateGraphScheduler {
             log.debug("[Scheduler] 执行第 [{}] 超步, 当前活跃节点数: {}", step, activeNodes.size());
             Set<String> nextActiveNodes = new LinkedHashSet<>();
 
+            // 采用 Java 21 虚拟线程超步并发屏障执行器并发调度活跃节点
+            VirtualThreadSuperstepExecutor.SuperstepExecutionResult stepResult =
+                    superstepExecutor.executeSuperstep(graph, context, activeNodes);
+
             for (String nodeUuid : activeNodes) {
-                StateGraphNode node = graph.getNode(nodeUuid);
-                if (node == null) {
-                    log.warn("[Scheduler] 节点 [{}] 不存在, 跳过", nodeUuid);
+                NodeRunResultBO result = stepResult.nodeResults().get(nodeUuid);
+                if (result == null) {
+                    log.warn("[Scheduler] 节点 [{}] 未产出执行结果，跳过出边流转", nodeUuid);
                     continue;
                 }
 
-                // 执行节点逻辑（区分普通节点与批处理子图节点）
-                NodeRunResultBO result;
-                if (node.isIterationSubgraph() && node.getSubGraph() != null) {
-                    result = executeSubgraphNode(node, context);
-                } else {
-                    result = selfHealingRouter.executeWithHealing(node, context);
-                }
-
-                context.putNodeResult(nodeUuid, result);
                 completedNodes.add(nodeUuid);
 
                 // 若发生不可恢复的节点失败且未配置 Fallback，且非容错模式，终止后续出边派发
@@ -134,6 +153,28 @@ public class StateGraphScheduler {
                         }
                         // CONVERGED_EXIT 时不回跳
                     }
+                }
+            }
+
+            // 超步完成时持久化不可变快照 (若配置了 Checkpointer)
+            if (checkpointer != null) {
+                try {
+                    long token = System.currentTimeMillis();
+                    String checksum = WalDurableStateGraphCheckpointer.computeChecksum(
+                            context.getExecutionId(), "main", step, context.getSharedState());
+                    checkpointer.saveSnapshot(new DurableStateGraphCheckpointer.SnapshotRecord(
+                            UUID.randomUUID().toString(),
+                            context.getExecutionId(),
+                            "main",
+                            step,
+                            Map.copyOf(context.getSharedState()),
+                            List.copyOf(activeNodes),
+                            token,
+                            System.currentTimeMillis(),
+                            checksum
+                    ));
+                } catch (Exception ex) {
+                    log.warn("[Scheduler] 超步快照持久化失败，跳过: {}", ex.getMessage());
                 }
             }
 
