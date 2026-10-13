@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_005",
+  "group_name": "ablation_a1_no_spectral",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 2,
+  "retrieved_entities": [
+    "GraphRAG",
+    "MultiHopReasoning",
+    "PrecisionPurity",
+    "Hub1",
+    "Hub2"
+  ],
+  "gold_entities": [
+    "GraphRAG",
+    "MultiHopReasoning",
+    "PrecisionPurity"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“比较传统向量搜索与图谱增强检索在处理跨篇章实体跳跃时的准确率差异与召回纯度。” 需要比较传统向量搜索与图谱增强检索（GraphRAG）在处理跨篇章实体跳跃时的准确率差异与召回纯度。用户提到“知识问答中枢 阿里千问 1536 维超球面空间。未剪枝图谱: GraphRAG, MultiHopReasoning, PrecisionPurity, 外围噪声节点 Hub1, Hub2, Hub3, Hub4。” 可能是指特定系统？我们需要给一个比较分析。需要中文回答。需要谨慎：没有具体实验数据，不能给精确数字。可以说明一般性差异、机制、指标定义、影响因素、可能实验设计，以及在外围噪声节点存在下GraphRAG的优势和风险。用户问“准确率差异与召回纯度”。可能期望：传统向量搜索在高维超球面近邻检索中，跨篇章实体跳跃弱，因语义相似但实体不同导致误差；GraphRAG通过实体/关系边多跳，提高跨篇章连接，准确率更高，但若未剪枝可能引入Hub噪声，降低召回纯度。可以量化估计？可提供典型区间？最好不给伪造精确数值，但可说“在受控评测中通常...” 也许用户要求比较，需要结构。\n\n我们需考虑“阿里千问 1536 维超球面空间”暗示向量嵌入是Qwen 1536维，归一化到超球面，余弦相似度。传统向量搜索：ANN over embeddings，top-k。跨篇章实体跳跃：query涉及实体A在篇章1，答案实体B在篇章2，二者无直接共现，靠语义相似度可能匹配不到B，因为向量相似度基于语义/上下文，不显式建模关系路径。Graph",
+  "usage": {
+    "prompt_tokens": 138,
+    "completion_tokens": 380,
+    "total_tokens": 518,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 138
+  },
+  "_meta": {
+    "latency_ms": 4250,
+    "calculated_cost_cny": 0.00179064,
+    "timestamp": "2026-10-11T22:16:23.845677"
+  }
+}

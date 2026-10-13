@@ -1,0 +1,31 @@
+{
+  "model": "deepseek-flash",
+  "currency": "CNY",
+  "usd_to_cny_exchange_rate": 7.20,
+  "pricing_unit": "per_million_tokens",
+  "rates": {
+    "peak": {
+      "cache_hit_input_per_million_usd": 0.003,
+      "cache_miss_input_per_million_usd": 0.150,
+      "output_per_million_usd": 0.600,
+      "cache_hit_input_cny": 0.0216,
+      "cache_miss_input_cny": 1.0800,
+      "output_cny": 4.3200
+    },
+    "off_peak": {
+      "cache_hit_input_per_million_usd": 0.0015,
+      "cache_miss_input_per_million_usd": 0.075,
+      "output_per_million_usd": 0.300,
+      "cache_hit_input_cny": 0.0108,
+      "cache_miss_input_cny": 0.5400,
+      "output_cny": 2.1600
+    }
+  },
+  "peak_hours_utc8": [
+    {"start": "09:00", "end": "12:00"},
+    {"start": "14:00", "end": "18:00"}
+  ],
+  "context_cache_quantization_tokens": 64,
+  "source_documentation": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
+  "official_specification_notes": "基于 DeepSeek 开放平台 2026 最新官方文档，上下文缓存以 64 tokens 为物理块边界对齐计费，命中享受超低边际成本。"
+}

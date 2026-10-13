@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_009",
+  "group_name": "ablation_a3_no_prefixtree",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "Hypersphere1536D",
+    "ConcentrationOfMeasure",
+    "VarianceDecay"
+  ],
+  "gold_entities": [
+    "Hypersphere1536D",
+    "ConcentrationOfMeasure",
+    "VarianceDecay"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文请求。需要推导当超球面向量维度为1536时，随机正交基底之间的余弦相似度分布方差与集中不等式。需要理解问题。用户提到“动态时间戳... 因果知识: Hypersphere1536D, ConcentrationOfMeasure, VarianceDecay”。可能想要关于高维超球面随机向量/正交基底之间余弦相似度的分布方差和集中不等式。维度1536。需要推导。\n\n需要澄清“随机正交基底之间的余弦相似度”是什么意思？可能指在 d=1536 维中，随机单位向量（从超球面均匀采样）之间的余弦相似度。随机正交基底之间？如果两个随机正交基底，它们各自的向量可能一一对应？正交基底内部向量正交。若取两个独立随机正交基（随机旋转），那么对应向量之间的内积分布？例如 Q1, Q2 均匀随机正交矩阵（Haar），则 R = Q1^T Q2 也是 Haar 随机正交矩阵。其元素（列之间）？对于固定列，q1_i 和 q2_j 的内积是 R_{ij}。Haar 正交矩阵的非对角元素/所有元素分布？单个元素方差 1/d，均值0。对于 d=1536，方差约 0.000651。集中：|cos| <= sqrt(log?)。最大成对？若比较两个随机正交基的所有 d^2 对，每对是 R_{ij}。R 的行/列正交。元素边际分布 Beta? 对于 Haar 正交矩阵，单个元素密度 (1 - x^2)^{(d-3)/2} / B(1/2",
+  "usage": {
+    "prompt_tokens": 100,
+    "completion_tokens": 350,
+    "total_tokens": 450,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 100
+  },
+  "_meta": {
+    "latency_ms": 5117,
+    "calculated_cost_cny": 0.00162,
+    "timestamp": "2026-10-11T22:18:08.433221"
+  }
+}

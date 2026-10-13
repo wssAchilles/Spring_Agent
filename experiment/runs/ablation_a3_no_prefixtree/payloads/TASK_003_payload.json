@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_003",
+  "group_name": "ablation_a3_no_prefixtree",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut"
+  ],
+  "gold_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答中文问题。需要分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀。需要理解概念：高并发 RAG，Laplacian graph spectral pruning，剥离无关连通子图，降低 token 膨胀。需要给出分析，可能包括图构建、拉普拉斯矩阵、谱聚类/Fiedler向量、谱割、连通子图、剪枝、检索上下文压缩、token膨胀。用户给因果知识: GraphLaplacian, NormalizedDiffusion, SpectralCut。可能期望解释机制。\n\n我们需要构建回答。应该先澄清：RAG 中 token 膨胀来自多路召回、chunk 重叠、重排后拼接、跨文档冗余、无关上下文。图谱谱剪枝把检索单元（chunk/实体/段落）构成图，边表示语义相似、实体共现、引用、超链接、嵌入近邻等。用拉普拉斯矩阵编码图。通过归一化拉普拉斯、扩散、谱割，找到与查询核心子图连接弱或割值高的连通分量/子图，剪掉。高并发下需要近似、预计算、缓存、增量更新。\n\n需要详细说明：\n- 构建图：节点 = chunk/文档/实体/句子；边权重 w_ij = 语义相似度、BM25、共现、引用。查询节点 q 接入若干种子。图可能包含多个连通子图。无关子图通常与查询种子只有细弱桥接或完全分离。\n- 拉普拉斯：L = D - W，归一化 L_sym = I - D^{-1/2} W D^{-",
+  "usage": {
+    "prompt_tokens": 101,
+    "completion_tokens": 350,
+    "total_tokens": 451,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 101
+  },
+  "_meta": {
+    "latency_ms": 4427,
+    "calculated_cost_cny": 0.00162108,
+    "timestamp": "2026-10-11T22:17:41.264855"
+  }
+}

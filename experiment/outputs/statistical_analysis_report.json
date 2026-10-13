@@ -1,0 +1,230 @@
+{
+  "benchmark_sample_size_per_variant": 40,
+  "num_seeds": 5,
+  "variants": {
+    "mesh_evolution": {
+      "variant_label": "Hermes Mesh Evolution (演进突破方案)",
+      "pass_at_1": {
+        "mean_pct": 95.0,
+        "std_pct": 6.12,
+        "ci_95_pct": [
+          90.0,
+          100.0
+        ]
+      },
+      "ver": {
+        "mean_pct": 100.0,
+        "std_pct": 0.0
+      },
+      "steps": {
+        "mean": 2.0,
+        "std": 0.0
+      },
+      "tokens": {
+        "mean": 3740.2,
+        "std": 174.1
+      },
+      "cost_milli_usd": {
+        "mean": 1.3526,
+        "std": 0.0322
+      },
+      "hypothesis_test": {
+        "test_type": "Paired t-test (Analytical)",
+        "p_value": 4.3e-05,
+        "significance_marker": "^{\\dagger\\dagger\\dagger}"
+      }
+    },
+    "full_method": {
+      "variant_label": "Full Hermes (前代方案)",
+      "pass_at_1": {
+        "mean_pct": 65.0,
+        "std_pct": 9.35,
+        "ci_95_pct": [
+          57.5,
+          72.5
+        ]
+      },
+      "ver": {
+        "mean_pct": 100.0,
+        "std_pct": 0.0
+      },
+      "steps": {
+        "mean": 2.0,
+        "std": 0.0
+      },
+      "tokens": {
+        "mean": 2814.6,
+        "std": 39.8
+      },
+      "cost_milli_usd": {
+        "mean": 1.2681,
+        "std": 0.0054
+      },
+      "hypothesis_test": {
+        "test_type": "Baseline Reference",
+        "p_value": 1.0,
+        "significance_marker": ""
+      }
+    },
+    "wo_reflection": {
+      "variant_label": "w/o Reflection (消融反思自纠)",
+      "pass_at_1": {
+        "mean_pct": 17.5,
+        "std_pct": 6.12,
+        "ci_95_pct": [
+          12.5,
+          22.5
+        ]
+      },
+      "ver": {
+        "mean_pct": 100.0,
+        "std_pct": 0.0
+      },
+      "steps": {
+        "mean": 2.0,
+        "std": 0.0
+      },
+      "tokens": {
+        "mean": 2758.6,
+        "std": 39.7
+      },
+      "cost_milli_usd": {
+        "mean": 1.2676,
+        "std": 0.008
+      },
+      "hypothesis_test": {
+        "test_type": "Paired t-test (Analytical)",
+        "p_value": 0.0,
+        "significance_marker": "^{\\dagger\\dagger\\dagger}"
+      }
+    },
+    "wo_working_memory": {
+      "variant_label": "w/o Working Memory (消融工作记忆)",
+      "pass_at_1": {
+        "mean_pct": 25.0,
+        "std_pct": 0.0,
+        "ci_95_pct": [
+          25.0,
+          25.0
+        ]
+      },
+      "ver": {
+        "mean_pct": 100.0,
+        "std_pct": 0.0
+      },
+      "steps": {
+        "mean": 2.0,
+        "std": 0.0
+      },
+      "tokens": {
+        "mean": 2728.6,
+        "std": 39.8
+      },
+      "cost_milli_usd": {
+        "mean": 1.263,
+        "std": 0.008
+      },
+      "hypothesis_test": {
+        "test_type": "Paired t-test (Analytical)",
+        "p_value": 4e-06,
+        "significance_marker": "^{\\dagger\\dagger\\dagger}"
+      }
+    },
+    "wo_dynamic_tools": {
+      "variant_label": "w/o Dynamic Tools (消融超球面动态工具)",
+      "pass_at_1": {
+        "mean_pct": 20.0,
+        "std_pct": 6.12,
+        "ci_95_pct": [
+          15.0,
+          25.0
+        ]
+      },
+      "ver": {
+        "mean_pct": 100.0,
+        "std_pct": 0.0
+      },
+      "steps": {
+        "mean": 2.0,
+        "std": 0.0
+      },
+      "tokens": {
+        "mean": 3648.9,
+        "std": 18.8
+      },
+      "cost_milli_usd": {
+        "mean": 1.2794,
+        "std": 0.0141
+      },
+      "hypothesis_test": {
+        "test_type": "Paired t-test (Analytical)",
+        "p_value": 0.0,
+        "significance_marker": "^{\\dagger\\dagger\\dagger}"
+      }
+    },
+    "wo_structured_planning": {
+      "variant_label": "w/o Structured Planning (消融DAG规划)",
+      "pass_at_1": {
+        "mean_pct": 12.5,
+        "std_pct": 0.0,
+        "ci_95_pct": [
+          12.5,
+          12.5
+        ]
+      },
+      "ver": {
+        "mean_pct": 100.0,
+        "std_pct": 0.0
+      },
+      "steps": {
+        "mean": 2.0,
+        "std": 0.0
+      },
+      "tokens": {
+        "mean": 2792.2,
+        "std": 46.3
+      },
+      "cost_milli_usd": {
+        "mean": 1.2654,
+        "std": 0.0235
+      },
+      "hypothesis_test": {
+        "test_type": "Paired t-test (Analytical)",
+        "p_value": 0.0,
+        "significance_marker": "^{\\dagger\\dagger\\dagger}"
+      }
+    },
+    "baseline_vanilla_react": {
+      "variant_label": "Vanilla ReAct Baseline (原生基线组)",
+      "pass_at_1": {
+        "mean_pct": 5.0,
+        "std_pct": 6.12,
+        "ci_95_pct": [
+          0.0,
+          10.0
+        ]
+      },
+      "ver": {
+        "mean_pct": 100.0,
+        "std_pct": 0.0
+      },
+      "steps": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "tokens": {
+        "mean": 1702.8,
+        "std": 8.0
+      },
+      "cost_milli_usd": {
+        "mean": 0.6411,
+        "std": 0.0123
+      },
+      "hypothesis_test": {
+        "test_type": "Paired t-test (Analytical)",
+        "p_value": 0.0,
+        "significance_marker": "^{\\dagger\\dagger\\dagger}"
+      }
+    }
+  }
+}

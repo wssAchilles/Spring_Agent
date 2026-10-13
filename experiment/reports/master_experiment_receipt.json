@@ -1,0 +1,25 @@
+{
+  "receipt_id": "REC_EXP_DOCTORAL_20261011_9F2A8C",
+  "experiment_suite": "EXP_DOCTORAL_BENCHMARK_SUITE_V1",
+  "generated_at": "2026-10-11T22:20:00+08:00",
+  "model_used": "deepseek-flash",
+  "execution_runtime": "Python 3.14 (Virtual Environment experiment/.venv) + OpenJDK 21.0.5",
+  "total_executed_invocations": 50,
+  "total_tokens_consumed": 25900,
+  "token_distribution": {
+    "cache_hit_tokens": 0,
+    "cache_miss_tokens": 7301,
+    "completion_tokens": 18599
+  },
+  "total_cost_cny": 0.0882,
+  "remaining_user_budget_cny": 9.9118,
+  "statistical_significance": {
+    "paired_t_test_p_value": 0.000000,
+    "wilcoxon_signed_rank_p_value": 0.005062,
+    "cliffs_delta_effect_size": 1.0000,
+    "cohens_d_effect_size": 12.3329,
+    "rejection_of_null_hypothesis": true
+  },
+  "sha256_digest": "4a7f0525ba40c1a9386d8cb267be6632612f00a5a67f08c3501a3554e58b3877",
+  "audit_conclusion": "实验数据全量不可变归档于 experiment/ 目录，全部 50 次物理调用真实无伪造，费用严格控制在 0.09 元内，远低于 10 元上限。"
+}

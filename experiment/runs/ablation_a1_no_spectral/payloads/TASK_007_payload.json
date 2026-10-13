@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_007",
+  "group_name": "ablation_a1_no_spectral",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 2,
+  "retrieved_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "DenseCosine",
+    "Hub1",
+    "Hub2"
+  ],
+  "gold_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "DenseCosine"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。需要理解上下文。用户说“【知识问答中枢】阿里千问 1536 维超球面空间。” 然后有一段注释 ds_prefix_align_pad... 未剪枝图谱: RRFAlgorithm, BM25Sparse, DenseCosine, 外围噪声节点 Hub1, Hub2, Hub3, Hub4。然后问题：“在多知识库联合检索时，动态自适应倒数排名融合 (RRF) 算法如何平衡向量与关键词权重？”\n\n我们需要回答。需要准确。可能涉及 RRF (Reciprocal Rank Fusion) 动态自适应，平衡向量与关键词权重。在阿里千问 1536 维超球面空间。多知识库联合检索。可能他们期望解释动态自适应 RRF，如何根据查询特征、排名分布、分数分布、知识库可靠性等调节向量和BM25权重。注意 RRF 标准是 rank-based：score = sum_i w_i/(k + rank_i(d))。动态自适应权重可以是 query-dependent: α(q) 给 dense vs sparse。如何平衡？在多知识库联合检索中，不同知识库可能异构，有不同检索器分数尺度，所以用排名融合避免分数校准问题。动态权重可以基于：查询类型（关键词实体 vs 语义意图）、稀疏/稠密候选排名一致性、分数间隔、检索器置信度、知识库质量/历史表现、RRF 贡献熵、命中率等。还可以用学习排序/门控网络，但不一定。\n\n我们需要构建答案。可能用户希望直接回答。需要包括公式、机制、步骤、注意事项。上下文提到“未剪枝图谱: RRFAlgorithm, BM25Sparse, DenseCosine, 外围噪声节点 Hub1, Hub2, Hub3, Hub4。” 这可能暗示要忽略外围噪声节点，",
+  "usage": {
+    "prompt_tokens": 142,
+    "completion_tokens": 380,
+    "total_tokens": 522,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 142
+  },
+  "_meta": {
+    "latency_ms": 3642,
+    "calculated_cost_cny": 0.00179496,
+    "timestamp": "2026-10-11T22:16:32.236987"
+  }
+}

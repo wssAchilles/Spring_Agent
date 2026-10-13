@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_007",
+  "group_name": "ablation_a3_no_prefixtree",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "DenseCosine"
+  ],
+  "gold_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "DenseCosine"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“在多知识库联合检索时，动态自适应倒数排名融合 (RRF) 算法如何平衡向量与关键词权重？” 需要解释动态自适应 RRF 如何平衡向量与关键词权重。需要理解 RRF 基础：Reciprocal Rank Fusion，分数 = sum_i w_i/(k+rank_i)，或 1/(k+rank)。动态自适应 RRF 可能根据查询、知识库、检索器表现调整权重。用户问“多知识库联合检索时，动态自适应倒数排名融合 (RRF) 算法如何平衡向量与关键词权重？”需要回答可能机制：查询分类/意图、稀疏 vs 稠密分数分布、排名统计、历史反馈、知识库先验、动态权重归一化。需要澄清 RRF 本身只用排名，不直接使用原始分数，因此平衡的是不同检索器/知识库的排名贡献权重。动态自适应通过权重调整（dense weight, sparse weight）在融合中。多知识库时还可能每个知识库有各自检索器，需考虑跨库排名不可比、分数校准、归一化、RRF 的鲁棒性。\n\n需要构建答案。可能包括：\n- 基本 RRF 公式：RRF(d)=Σ_{r∈R} w_r/(k+rank_r(d))，其中 r 是检索通道（向量/关键词），rank 是文档在通道中的排名。多知识库可用 r=(kb_i, retriever_j)，权重 w_{i,j}。\n- 动态自适应权重：w = softmax(MLP/启发式特征)，特征包括：\n  - 查询特征：长度、是否实体/术语/",
+  "usage": {
+    "prompt_tokens": 96,
+    "completion_tokens": 350,
+    "total_tokens": 446,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 96
+  },
+  "_meta": {
+    "latency_ms": 4100,
+    "calculated_cost_cny": 0.00161568,
+    "timestamp": "2026-10-11T22:17:57.737137"
+  }
+}

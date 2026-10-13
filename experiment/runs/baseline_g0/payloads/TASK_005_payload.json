@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_005",
+  "group_name": "baseline_g0",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 1,
+  "retrieved_entities": [
+    "GraphRAG",
+    "MultiHopReasoning",
+    "NoiseEntity_X"
+  ],
+  "gold_entities": [
+    "GraphRAG",
+    "MultiHopReasoning",
+    "PrecisionPurity"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。需要基于背景信息。背景给了系统时间、噪声干扰信息、相关参考事实: GraphRAG, MultiHopReasoning, PrecisionPurity。用户问：比较传统向量搜索与图谱增强检索在处理跨篇章实体跳跃时的准确率差异与召回纯度。\n\n我们需要作为基础问答系统，基于背景信息回答。背景信息其实没有提供具体数据，只有相关参考事实标签。需要谨慎：不能编造具体数值。可以说明背景信息未给出具体准确率差异和召回纯度数值；但可根据参考事实做概念性比较。需要提到传统向量搜索 vs 图谱增强检索（GraphRAG）在处理跨篇章实体跳跃时的准确率与召回纯度。可能可以解释：传统向量搜索基于语义相似度，对跨篇章实体跳跃/多跳推理容易漏掉不直接相似但通过关系链关联的实体，准确率和纯度可能受限。图谱增强检索通过实体关系图支持多跳推理（MultiHopReasoning），提升跨篇章实体跳跃的准确率，召回纯度（PrecisionPurity）可能更高，因为引入图结构约束和关系路径，减少语义相似但无关的噪声。但是背景没有具体指标，不能给数字。也许要引用相关参考事实：GraphRAG、MultiHopReasoning、PrecisionPurity。噪声信息是实体A/B/C/D，可能无关，应忽略。\n\n需要构建回答：先声明基于给定背景，无具体实验数据，不能量化准确率差异和召回纯度。然后从机制上比较：\n- 传统向量搜索：将查询和文本块嵌入到同一向量空间，按相似度召回。跨篇章实体跳跃涉及实体A在篇章1、",
+  "usage": {
+    "prompt_tokens": 124,
+    "completion_tokens": 350,
+    "total_tokens": 474,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 124
+  },
+  "_meta": {
+    "latency_ms": 3791,
+    "calculated_cost_cny": 0.0016459200000000002,
+    "timestamp": "2026-10-11T22:15:42.637393"
+  }
+}

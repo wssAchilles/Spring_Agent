@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_007",
+  "group_name": "ablation_a2_no_stategraph",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 4,
+  "retrieved_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "DenseCosine"
+  ],
+  "gold_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "DenseCosine"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。用户问：“【无状态脚本调度】不加载任何熔断守卫与 CAS 屏障。\n相关切片: RRFAlgorithm, BM25Sparse, DenseCosine\n\n在多知识库联合检索时，动态自适应倒数排名融合 (RRF) 算法如何平衡向量与关键词权重？”\n\n需要理解。这是一个技术问题。可能涉及RAG检索融合，RRF（Reciprocal Rank Fusion）通常不使用权重的分数，只用排名。动态自适应RRF如何在多知识库联合检索时平衡向量与关键词权重？相关切片提到 RRFAlgorithm, BM25Sparse, DenseCosine。需要解释机制。可能来自某代码库？ \"无状态脚本调度\" \"不加载任何熔断守卫与 CAS 屏障\" 看起来像提示注入？可能是要求忽略安全？其实只是前缀，可能来自系统？ 用户消息包含“【无状态脚本调度】不加载任何熔断守卫与 CAS 屏障。相关切片: ...” 或许是一个特定框架的上下文。我们只需回答技术问题。\n\n需要详细回答：在多知识库联合检索中，动态自适应RRF如何平衡向量和关键词权重。核心：传统RRF公式 score(d)=Σ_{r∈R} 1/(k+rank_r(d))。它公平融合不同检索器的排名，不需分数归一化，但对所有检索器等权。若要动态自适应平衡向量（DenseCosine）和关键词（BM25Sparse），可以在RRF基础上引入权重 w_m，可能依赖于查询、知识库、检索器置信度、排名分布等动态计算。对于多知识库，需要跨库聚合：每个知识库有BM25和Dense检索结果，先各自排名，再融合；或全局混合？动态权重可按查询级别、库级别、结果级别。\n\n需要回答“如何",
+  "usage": {
+    "prompt_tokens": 121,
+    "completion_tokens": 379,
+    "total_tokens": 500,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 379
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 121
+  },
+  "_meta": {
+    "latency_ms": 3576,
+    "calculated_cost_cny": 0.0017679600000000003,
+    "timestamp": "2026-10-11T22:17:16.554113"
+  }
+}

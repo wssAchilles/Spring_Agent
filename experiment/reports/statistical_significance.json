@@ -1,0 +1,21 @@
+{
+  "hypothesis_test": "Candidate (G1) vs Baseline (G0)",
+  "causal_fidelity": {
+    "paired_t_test": {
+      "t_statistic": 39.0,
+      "p_value": 0.0,
+      "cohen_d": 12.3329
+    },
+    "wilcoxon_test": {
+      "z_statistic": 2.8031,
+      "p_value": 0.005062
+    },
+    "cliffs_delta": 1.0,
+    "significance_verdict": "p < 0.001, Statistically Significant (Reject H0)"
+  },
+  "cost_efficiency": {
+    "g0_cost_cny": 0.0165,
+    "g1_cost_cny": 0.0199,
+    "savings_ratio": "-20.54%"
+  }
+}

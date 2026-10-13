@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_005",
+  "group_name": "ablation_a3_no_prefixtree",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "GraphRAG",
+    "MultiHopReasoning",
+    "PrecisionPurity"
+  ],
+  "gold_entities": [
+    "GraphRAG",
+    "MultiHopReasoning",
+    "PrecisionPurity"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“比较传统向量搜索与图谱增强检索在处理跨篇章实体跳跃时的准确率差异与召回纯度。”需要比较传统向量搜索与图谱增强检索（GraphRAG?）在处理跨篇章实体跳跃时的准确率差异与召回纯度。需要可能解释概念、机制、指标差异、影响因素、实验/经验、适用场景。需要以中文回答。需要客观，不能编造具体数字？用户问“准确率差异与召回纯度”。我们可以说明没有单一固定数值，取决于数据集、嵌入模型、图构建、检索器、LLM等。可以给出定性比较和典型趋势，可能引用经验范围？需要小心。因果知识提到 GraphRAG, MultiHopReasoning, PrecisionPurity。可能需要联系这些。应解释跨篇章实体跳跃：查询需要跨多个文档/段落，通过实体链接/关系推理连接信息。传统向量搜索基于语义相似度，独立编码chunk，top-k召回可能包含局部相关但缺少桥接实体，导致多跳失败。图谱增强检索通过实体/关系图、社区摘要、路径遍历，连接跨文档实体，支持多跳。准确率：GraphRAG在多跳/跨文档上通常更高，尤其需要显式关系、全局聚合。召回纯度：传统向量搜索可能召回语义相似但事实无关的 chunk，纯度较低；GraphRAG通过图约束、实体链接、关系路径过滤，纯度可能更高，但也可能因图噪声、错误实体链接、过度扩展引入不相关节点，降低纯度。需要区分召回纯度定义：相关文档占召回文档比例？precision at k? 纯度 = 相关/召回总数。准确率可能指最终答案准确",
+  "usage": {
+    "prompt_tokens": 91,
+    "completion_tokens": 350,
+    "total_tokens": 441,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 91
+  },
+  "_meta": {
+    "latency_ms": 3712,
+    "calculated_cost_cny": 0.00161028,
+    "timestamp": "2026-10-11T22:17:49.254707"
+  }
+}

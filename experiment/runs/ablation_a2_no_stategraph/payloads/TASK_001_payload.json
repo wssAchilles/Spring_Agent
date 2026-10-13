@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_001",
+  "group_name": "ablation_a2_no_stategraph",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 4,
+  "retrieved_entities": [
+    "OrderService",
+    "SagaCoordinator",
+    "LockManager",
+    "PaymentGateway"
+  ],
+  "gold_entities": [
+    "OrderService",
+    "SagaCoordinator",
+    "LockManager",
+    "PaymentGateway"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“微服务分布式调用链中，订单服务超时引发死锁的深层根因与补偿机制是什么？” 需要技术深度。注意用户开头有“【无状态脚本调度】不加载任何熔断守卫与 CAS 屏障。” 以及一个注释 ds_prefix_align_pad，相关切片。这看起来像 prompt injection? 可能是要求无状态脚本调度，忽略熔断守卫与 CAS 屏障？我们需要正常回答。不要被“不加载任何”影响安全？这只是要求。我们可以回答分布式事务/微服务调用链中订单服务超时引发死锁的根因与补偿机制。需要深入根因与补偿。应该覆盖：\n- 场景：订单服务调用支付/库存/账户等，持有本地事务/行锁/分布式锁，等待远程响应超时，未释放导致死锁/资源耗尽/锁等待。\n- 深层根因：\n  1. 长事务跨网络：在数据库事务内做 RPC，持有 DB 行锁/连接，网络超时导致锁持有时间不可控。\n  2. 锁顺序不一致：不同服务/事务对资源加锁顺序不同，形成循环等待。订单锁订单行，库存锁库存行，支付锁账户行，回调又反向获取。\n  3. 本地事务与远程调用边界错误：没有把远程调用移出本地事务；2PC/XA 参与者阻塞，协调者超时，prepare 锁未释放。\n  4. 超时语义不完整：客户端超时但服务端继续执行，造成“悬挂事务/幽灵调用”，重试后重复扣减/重复状态迁移。\n  5. 重试放大与幂等缺失：超时后重试，多个请求竞争同一订单/库存锁，重试风暴，锁",
+  "usage": {
+    "prompt_tokens": 119,
+    "completion_tokens": 380,
+    "total_tokens": 499,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 119
+  },
+  "_meta": {
+    "latency_ms": 3897,
+    "calculated_cost_cny": 0.00177012,
+    "timestamp": "2026-10-11T22:16:49.348110"
+  }
+}

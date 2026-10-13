@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_003",
+  "group_name": "candidate_g1",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut"
+  ],
+  "gold_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户。用户中文，要求角色 agent_planner -> agent_reviewer，严格基于上述因果事实给出收敛性决策分析：分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀？ 需要基于给定公理/因果知识切片。需要给出收敛性决策分析。我们要遵守？ 没有其它约束。需要分析。要严格基于事实：公理1 千问1536维超球面归一化约束保持余弦度量等距不变。公理2 拉普拉斯谱剪枝消除高阶噪声子图并保全因果链路。公理3 严格滑动窗口淘汰前置消除 W+1 幽灵循环振荡。公理4 多智能体委托交接遵循DAG最大5跃点收敛。因果知识切片 GraphLaplacian, NormalizedDiffusion, SpectralCut。\n\n需要分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀。要收敛性决策。可能涉及：将检索到的知识切片构图，节点=切片/文档/chunk，边=语义相似/因果引用，权重由归一化嵌入余弦决定（公理1 超球面归一化使余弦等距，所以边权稳定）。用归一化拉普拉斯算子 L_sym = I - D^{-1/2} A D^{-1/2}，谱分解。GraphLaplacian, NormalizedDiffusion。通过谱切割 SpectralCut 找图拉普拉斯小特征值对应的连通分量/低 conductance 子图。无关连通子图对应高阶噪声子图，谱剪枝移除高阶噪声子图，保留与查询因果链路的主连通子图。这样只把主连通子图 chunks 送入上下文，降低 token 膨胀。高并发时，每个查询独立构图/过滤，或者缓存图分区。严格",
+  "usage": {
+    "prompt_tokens": 245,
+    "completion_tokens": 400,
+    "total_tokens": 645,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 400
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 245
+  },
+  "_meta": {
+    "latency_ms": 3596,
+    "calculated_cost_cny": 0.0019925999999999998,
+    "timestamp": "2026-10-11T22:14:51.199382"
+  }
+}

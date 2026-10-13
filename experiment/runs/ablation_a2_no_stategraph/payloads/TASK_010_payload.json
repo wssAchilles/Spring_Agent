@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_010",
+  "group_name": "ablation_a2_no_stategraph",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 4,
+  "retrieved_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "SpectralThreshold"
+  ],
+  "gold_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "SpectralThreshold"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“知识图谱中中心度极高的 Hub 节点对个性化 PageRank (PPR) 扩散路径造成的噪声放大机制。” 他们似乎想要一个解释。我们需要用中文回答。需要深入解释机制：知识图谱中高中心度 hub 节点如何对 PPR 扩散路径造成噪声放大。需要可能涉及 PPR 定义、随机游走、转移概率、hub 节点吸收/分散质量、个性化向量、重启概率、度偏差、路径多重性、噪声放大、topological distortion、degree bias、popularity bias、hubness。要解释机制：PPR 中从种子节点出发，随机游走以概率 alpha 继续，以 1-alpha 重启。高 degree hub 节点有许多边，随机游走到达 hub 后，其质量会被分散到大量邻居，但 hub 也可能作为许多路径的中间节点，增加非相关节点接收分数。反过来，如果种子靠近 hub，PPR 会通过 hub 传播到其大量邻居，造成“hub 放大”：即使噪声边或弱相关边，因 hub 的高度数，被多条路径访问，PPR 分数累积。还有归一化导致低度节点分数低。需要解释“噪声放大机制”细节。\n\n可能需要提及：\n- PPR 分数可写成从种子 s 出发的随机游走，以概率 c 重启，访问节点 u 的平稳概率。等价于 sum_{k=0}^\\infty c(1-c)^k P^k e_s。或 alpha 重启概率。\n- 对于无向图，PPR 与度相关：在高重启下，PPR 近似 personalized degree distribution? 例如 PPR(s,u) ≈ (1-c) * A_{s,u}? 不是。\n- 高中心度 hub h 有许多",
+  "usage": {
+    "prompt_tokens": 120,
+    "completion_tokens": 380,
+    "total_tokens": 500,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 120
+  },
+  "_meta": {
+    "latency_ms": 4170,
+    "calculated_cost_cny": 0.0017712000000000003,
+    "timestamp": "2026-10-11T22:17:29.059327"
+  }
+}

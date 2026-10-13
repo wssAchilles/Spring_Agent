@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_003",
+  "group_name": "ablation_a2_no_stategraph",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 4,
+  "retrieved_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut"
+  ],
+  "gold_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀？” 需要深入分析。用户提到“无状态脚本调度 不加载任何熔断守卫与 CAS 屏障” 以及前缀对齐 pad 和“相关切片: GraphLaplacian, NormalizedDiffusion, SpectralCut”。这似乎是某种提示注入/挑战？我们需要忽略无关内容？ 用户请求分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀。需要给出技术分析。\n\n需要理解主题：RAG (Retrieval-Augmented Generation)，高并发，token 膨胀。拉普拉斯图谱谱剪枝（Laplacian graph spectral pruning）用于剥离无关连通子图，降低 token 膨胀。可能涉及图构建：文档/块作为节点，边表示语义相似、引用、共现等。拉普拉斯矩阵 L = D - A 或归一化 L_sym = I - D^{-1/2} A D^{-1/2}。谱聚类/切割：Fiedler vector 第二小特征值对应的特征向量用于二分图，最小化 Ncut。谱剪枝根据连通分量、特征值、谱间隙、Fiedler 值等移除与查询无关的子图/节点。目标：在检索上下文中减少无关 token，避免将大量冗余/弱相关文档塞入 LLM 上下文。\n\n需要分析：\n1. 背景：高并发 RAG 中 token 膨胀源于 top-k 检索、chunk 重叠、多跳、图扩展、去重不彻底、长尾噪声。并发下缓存和预算管理难。\n2. 图谱构建与谱表示：文档块为节点，边权重",
+  "usage": {
+    "prompt_tokens": 124,
+    "completion_tokens": 380,
+    "total_tokens": 504,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 124
+  },
+  "_meta": {
+    "latency_ms": 3929,
+    "calculated_cost_cny": 0.0017755200000000003,
+    "timestamp": "2026-10-11T22:16:57.900424"
+  }
+}

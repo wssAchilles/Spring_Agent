@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_009",
+  "group_name": "ablation_a2_no_stategraph",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 4,
+  "retrieved_entities": [
+    "Hypersphere1536D",
+    "ConcentrationOfMeasure",
+    "VarianceDecay"
+  ],
+  "gold_entities": [
+    "Hypersphere1536D",
+    "ConcentrationOfMeasure",
+    "VarianceDecay"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答中文。用户问：“推导当超球面向量维度为 1536 时，随机正交基底之间的余弦相似度分布方差与集中不等式。” 需要理解问题。可能是高维超球面向量，随机正交基底之间的余弦相似度分布方差与集中不等式。需要推导维度 d=1536。涉及 Hypersphere1536D, ConcentrationOfMeasure, VarianceDecay。需要给出严谨推导。\n\n我们需要解析“随机正交基底之间的余弦相似度”指什么？超球面向量维度 1536。随机正交基底之间？可能指两个独立随机单位向量之间的余弦相似度？随机正交基底？正交基底之间是矩阵？随机正交矩阵的列？如果两个随机正交基底（两组正交单位向量？）之间的余弦相似度分布？还是随机向量与固定向量？需要澄清。\n\n高维球面上，随机单位向量 x,y 独立均匀。内积/余弦相似度分布。若 d=1536，x,y 独立均匀在 S^{d-1}，则 cosθ = <x,y> 的分布。因为 x 固定，y 均匀，cosθ ~ 投影到固定方向，密度 ∝ (1-t^2)^{(d-3)/2}。方差 E[t^2]=1/d。对于 d=1536，Var=1/1536 ≈ 0.0006510417，标准差 ≈ 0.025515。集中不等式：对任意 ε>0，P(|<x,y>| ≥ ε) ≤ 2 exp(-d ε^2 / 2?) 需要精确。对于均匀球面，内积是 sub-Gaussian，尾界 P(|<x,y>| ≥ ε) ≤ 2 exp(-d ε^2 / 2) 或 2 exp(-d",
+  "usage": {
+    "prompt_tokens": 126,
+    "completion_tokens": 380,
+    "total_tokens": 506,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 126
+  },
+  "_meta": {
+    "latency_ms": 3455,
+    "calculated_cost_cny": 0.00177768,
+    "timestamp": "2026-10-11T22:17:24.582079"
+  }
+}

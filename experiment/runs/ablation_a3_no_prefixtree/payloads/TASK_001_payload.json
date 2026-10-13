@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_001",
+  "group_name": "ablation_a3_no_prefixtree",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "OrderService",
+    "SagaCoordinator",
+    "LockManager",
+    "PaymentGateway"
+  ],
+  "gold_entities": [
+    "OrderService",
+    "SagaCoordinator",
+    "LockManager",
+    "PaymentGateway"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“微服务分布式调用链中，订单服务超时引发死锁的深层根因与补偿机制是什么？” 需要深入解释。用户可能期待技术答案。我们需要从分布式系统角度：订单服务超时引发死锁的深层根因，补偿机制。涉及Saga、锁、支付网关等。我们需要构建回答。需要小心：在微服务中，订单服务超时可能导致分布式死锁/资源死锁。深层根因可能包括：同步调用链持有资源等待下游、数据库事务隔离/行锁未及时释放、服务间循环依赖、重试风暴、幂等缺失、超时与重试配置不一致、分布式锁未设置TTL/续期、Saga补偿缺失、消息队列重复消费、状态机未闭合、资源预留与两阶段提交等。补偿机制：Saga、TCC、本地消息表、事务消息、Outbox、幂等、补偿事务、超时中断、熔断、舱壁、deadline传播、重试预算、锁租约、状态机、对账、人工干预。\n\n需要可能结合“订单服务超时引发死锁”的具体场景：订单创建时锁定库存/优惠券/支付，然后调用支付，支付超时，订单事务未提交/未回滚，持有数据库行锁；库存服务也等待订单确认；支付网关重试；订单服务线程池打满；导致循环等待。深层根因：在分布式调用链中把本地事务与远程调用混合在一个事务边界内，跨服务没有全局事务协调，超时只是调用方放弃等待，但被调用方可能继续执行，资源未释放；重",
+  "usage": {
+    "prompt_tokens": 95,
+    "completion_tokens": 350,
+    "total_tokens": 445,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 95
+  },
+  "_meta": {
+    "latency_ms": 3669,
+    "calculated_cost_cny": 0.0016145999999999999,
+    "timestamp": "2026-10-11T22:17:33.034064"
+  }
+}

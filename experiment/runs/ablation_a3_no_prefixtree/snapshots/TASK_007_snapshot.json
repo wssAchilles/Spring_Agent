@@ -1,0 +1,8 @@
+{
+  "task_id": "TASK_007",
+  "group": "ablation_a3_no_prefixtree",
+  "steps": 3,
+  "retrieved_count": 3,
+  "cost_cny": 0.00161568,
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

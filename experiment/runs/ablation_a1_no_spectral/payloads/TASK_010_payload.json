@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_010",
+  "group_name": "ablation_a1_no_spectral",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 2,
+  "retrieved_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "SpectralThreshold",
+    "Hub1",
+    "Hub2"
+  ],
+  "gold_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "SpectralThreshold"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“知识图谱中中心度极高的 Hub 节点对个性化 PageRank (PPR) 扩散路径造成的噪声放大机制。” 这是知识问答。需要解释机制。可能涉及 PPR 扩散、hub 节点、噪声放大。需要深入。我们需构建回答。用户可能期望解释：在知识图谱中，高度中心节点（hub）在 PPR 中如何导致噪声放大？ 机制：随机游走转移概率偏向高度节点；PPR 中 restart 向量个性化，但从查询节点扩散时，连接到 hub 会通过高权重边/大度数聚合质量；hub 的出边被均分，若 hub 连接大量不相关节点，则随机游走把个性化质量播散到广泛噪声；入边汇聚导致 hub 成为“质量蓄水池”和“跳板”；在幂迭代中，乘以转移矩阵等价于对邻居加权求和除以度，高 degree 节点虽单条边权重小，但来自很多低相关节点的贡献使 hub 的 PPR 分数不低；hub 的分数再通过出边广播，造成噪声的二次传播；若图有向/无向，hub 与查询微弱连接也会因路径短/多路径被过度赋权；阻尼因子 alpha 太小则远距离扩散，hub 放大；alpha 大缓解？ 还有阈值剪枝/谱阈值可抑制。用户提到了“未剪枝图谱: HubNodeAttenuation, PageRank, SpectralThreshold, 外围噪声节点 Hub1...” 这看起来有元数据？ 用户的问题就是关于知识图谱中中心度极高的 Hub 节点对 PPR 扩散路径造成的噪声放大机制。需要回答机制。可能也要提到缓解：HubNodeAttenuation、SpectralThreshold、剪枝。需要组织。\n\n我们要用",
+  "usage": {
+    "prompt_tokens": 141,
+    "completion_tokens": 380,
+    "total_tokens": 521,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 141
+  },
+  "_meta": {
+    "latency_ms": 3906,
+    "calculated_cost_cny": 0.00179388,
+    "timestamp": "2026-10-11T22:16:45.143639"
+  }
+}

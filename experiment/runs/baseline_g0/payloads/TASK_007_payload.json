@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_007",
+  "group_name": "baseline_g0",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 1,
+  "retrieved_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "NoiseEntity_X"
+  ],
+  "gold_entities": [
+    "RRFAlgorithm",
+    "BM25Sparse",
+    "DenseCosine"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。需要基于背景信息。背景给系统时间、噪声干扰信息、相关参考事实：RRFAlgorithm, BM25Sparse, DenseCosine。用户问：在多知识库联合检索时，动态自适应倒数排名融合 (RRF) 算法如何平衡向量与关键词权重？需要基于背景信息回答。背景没有具体算法细节，只给相关参考事实。我们需要构建答案。要注意“动态自适应 RRF”如何平衡向量与关键词权重。可能涉及 RRF 本身基于排名倒数融合，通常公式 score = sum 1/(k+rank_i)。动态自适应可能根据各检索器表现/分数分布/查询类型调整权重。向量 DenseCosine，关键词 BM25Sparse。多知识库联合检索。需要说明平衡机制。可能背景信息有限，不能臆造？ 但作为基础问答系统，基于背景信息回答。可以提到相关参考事实：RRFAlgorithm、BM25Sparse、DenseCosine。需要谨慎，不要引入无关实体A/B/C/D？噪声干扰，不应使用。系统时间无关。可以忽略。\n\n需要回答：动态自适应 RRF 在多知识库联合检索时如何平衡向量与关键词权重。核心：将来自不同知识库的 BM25Sparse 关键词检索和 DenseCosine 向量检索结果按排名融合。经典 RRF 对每个结果集排名取倒数求和，天然弱化分数尺度差异。动态自适应则根据查询特征、检索器置信度、各知识库上的历史表现/当前分数分布，为每个检索器或每个知识库分配动态权重，然后加权 RRF：score(d)=Σ w_r * 1/(k+rank",
+  "usage": {
+    "prompt_tokens": 128,
+    "completion_tokens": 350,
+    "total_tokens": 478,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 128
+  },
+  "_meta": {
+    "latency_ms": 3431,
+    "calculated_cost_cny": 0.00165024,
+    "timestamp": "2026-10-11T22:15:50.259731"
+  }
+}

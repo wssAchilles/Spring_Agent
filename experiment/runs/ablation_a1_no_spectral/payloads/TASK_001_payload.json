@@ -1,0 +1,40 @@
+{
+  "task_id": "TASK_001",
+  "group_name": "ablation_a1_no_spectral",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 2,
+  "retrieved_entities": [
+    "OrderService",
+    "SagaCoordinator",
+    "LockManager",
+    "PaymentGateway",
+    "Hub1",
+    "Hub2"
+  ],
+  "gold_entities": [
+    "OrderService",
+    "SagaCoordinator",
+    "LockManager",
+    "PaymentGateway"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“微服务分布式调用链中，订单服务超时引发死锁的深层根因与补偿机制是什么？” 还给了背景：【知识问答中枢】阿里千问 1536 维超球面空间。 <!-- ds_prefix_align_pad... --> 未剪枝图谱: OrderService, SagaCoordinator, LockManager, PaymentGateway, 外围噪声节点 Hub1, Hub2, Hub3, Hub4。\n\n我们需要回答。需要注意可能是某种评估，期望结合提供的图谱节点，过滤噪声节点。问题是：微服务分布式调用链中，订单服务超时引发死锁的深层根因与补偿机制是什么？ 背景提到未剪枝图谱节点：OrderService, SagaCoordinator, LockManager, PaymentGateway, 外围噪声节点 Hub1-4。 可能要求基于知识图谱推理，关注 OrderService、SagaCoordinator、LockManager、PaymentGateway；忽略 Hub 噪声。要解释订单服务超时引发死锁的深层根因与补偿机制。需要深度分析。\n\n我们需要构建一个合理、技术准确的回答。涉及微服务、分布式调用链、订单服务超时、死锁、Saga 补偿、锁管理、支付网关。\n\n关键概念：\n- 订单服务超时可能因为下游支付网关慢、数据库锁、线程池耗尽、连接池耗尽、重试风暴等。\n- 死锁在分布式系统中通常不是传统数据库死锁，而是资源依赖环：OrderService 持有订单锁/本地事务等待 PaymentGateway；PaymentGateway 回调/依赖 OrderService 或 LockManager 等待订单锁释放；SagaCoordinator 等待参与者响应并重试，导致锁未释放。\n- 深层根因：\n  1. 跨服务事务边界与锁边界不一致：OrderService 在本地事务中锁",
+  "usage": {
+    "prompt_tokens": 140,
+    "completion_tokens": 380,
+    "total_tokens": 520,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 140
+  },
+  "_meta": {
+    "latency_ms": 3673,
+    "calculated_cost_cny": 0.0017928000000000002,
+    "timestamp": "2026-10-11T22:16:05.947362"
+  }
+}

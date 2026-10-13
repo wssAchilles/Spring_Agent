@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_003",
+  "group_name": "ablation_a1_no_spectral",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 2,
+  "retrieved_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut",
+    "Hub1",
+    "Hub2"
+  ],
+  "gold_entities": [
+    "GraphLaplacian",
+    "NormalizedDiffusion",
+    "SpectralCut"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。用户说“【知识问答中枢】阿里千问 1536 维超球面空间。 <!-- ds_prefix_align_pad... --> 未剪枝图谱: GraphLaplacian, NormalizedDiffusion, SpectralCut, 外围噪声节点 Hub1, Hub2, Hub3, Hub4。 分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀？”\n\n看起来这是要求分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀。可能涉及图谱、谱剪枝、RAG。需要解释。注意有“阿里千问 1536 维超球面空间”可能是背景：嵌入在超球面，相似度余弦。未剪枝图谱包含 GraphLaplacian, NormalizedDiffusion, SpectralCut，外围噪声节点 Hub1-4。需要分析拉普拉斯图谱谱剪枝。我们需要给出严谨、技术性回答。\n\n需要讨论：高并发 RAG 中，检索到大量文档/块，构成图，节点是 chunk/实体，边是语义相似/共现/引用。未剪枝图包含大量外围噪声连通子图（Hub1-4），会导致上下文 token 膨胀。谱剪枝：用图拉普拉斯 L = D - A 或归一化 L_sym = I - D^{-1/2} A D^{-1/2}，或随机游走 L_rw = I - D^{-1}A。对 L 做特征分解，小特征值对应低频/连通分量/社区，大特征值对应高频/割边/噪声。Fiedler 向量（第二小特征值）可二分图，找最小割。Spectral",
+  "usage": {
+    "prompt_tokens": 145,
+    "completion_tokens": 380,
+    "total_tokens": 525,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 145
+  },
+  "_meta": {
+    "latency_ms": 3420,
+    "calculated_cost_cny": 0.0017982000000000002,
+    "timestamp": "2026-10-11T22:16:14.483918"
+  }
+}

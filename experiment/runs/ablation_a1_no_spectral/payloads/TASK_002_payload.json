@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_002",
+  "group_name": "ablation_a1_no_spectral",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 2,
+  "retrieved_entities": [
+    "L2Normalization",
+    "CosineMetric",
+    "EuclideanSpace",
+    "Hub1",
+    "Hub2"
+  ],
+  "gold_entities": [
+    "L2Normalization",
+    "CosineMetric",
+    "EuclideanSpace"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。需要结合知识库文档？用户给了一个“知识问答中枢”标题，说“阿里千问 1536 维超球面空间。未剪枝图谱: L2Normalization, CosineMetric, EuclideanSpace, 外围噪声节点 Hub1, Hub2, Hub3, Hub4。” 然后问：结合知识库文档，分析千问 1536 维超球面归一化约束为何能够等价转化欧氏距离与余弦相似度？\n\n我们需要回答。需要理解：千问 embedding 维度 1536，经过 L2 归一化后位于单位超球面上。对于单位向量，欧氏距离和余弦相似度有单调关系：||a-b||^2 = ||a||^2 + ||b||^2 - 2 a·b = 2 - 2 cos(theta) = 2(1-cos). 因此若都归一化，欧氏距离与余弦相似度一一对应，排序等价：欧氏距离越小，余弦相似度越大。可以互相转化：cos = 1 - d^2/2；d = sqrt(2(1-cos))。在超球面半径1上，测地距离 arccos(cos) 也与二者单调。归一化约束消除向量模长影响，将内积转换为余弦相似度。对于 1536 维没有特别不同，只是高维空间，归一化后所有点位于 S^{1535} 单位超球面。检索中常用 cosine similarity 或 inner product；若库中都已 L2Normalize，则内积=余弦，欧氏距离排序等价。外围噪声节点 Hub1-Hub4 可能指未剪枝图谱中噪声/离群点，需要说明剪枝/过滤：归一化不改变方向",
+  "usage": {
+    "prompt_tokens": 146,
+    "completion_tokens": 380,
+    "total_tokens": 526,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 146
+  },
+  "_meta": {
+    "latency_ms": 4505,
+    "calculated_cost_cny": 0.00179928,
+    "timestamp": "2026-10-11T22:16:10.759712"
+  }
+}

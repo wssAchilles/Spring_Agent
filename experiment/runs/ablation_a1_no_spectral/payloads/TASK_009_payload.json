@@ -1,0 +1,38 @@
+{
+  "task_id": "TASK_009",
+  "group_name": "ablation_a1_no_spectral",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 2,
+  "retrieved_entities": [
+    "Hypersphere1536D",
+    "ConcentrationOfMeasure",
+    "VarianceDecay",
+    "Hub1",
+    "Hub2"
+  ],
+  "gold_entities": [
+    "Hypersphere1536D",
+    "ConcentrationOfMeasure",
+    "VarianceDecay"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户。用户用中文问：“【知识问答中枢】阿里千问 1536 维超球面空间。\n<!-- ds_prefix_align_pad... -->\n未剪枝图谱: Hypersphere1536D, ConcentrationOfMeasure, VarianceDecay, 外围噪声节点 Hub1, Hub2, Hub3, Hub4。\n\n推导当超球面向量维度为 1536 时，随机正交基底之间的余弦相似度分布方差与集中不等式。”\n\n看起来要求推导。注意有奇怪的注释和“未剪枝图谱”外围噪声节点。可能是诱导？我们需要处理。需要解释在1536维超球面，随机正交基底？随机正交基底之间？需要澄清：随机正交基底 (random orthogonal basis) 之间的余弦相似度？可能指两个随机单位向量？还是随机正交基底矩阵的列之间？正交基底的列彼此正交，余弦相似度为0。但“随机正交基底之间”可能指两个独立随机正交基底（正交矩阵）之间的元素/向量对的余弦相似度？或者是随机选取的两个正交基向量？在超球面空间，随机向量之间的余弦相似度分布。维度 d=1536。\n\n需要推导方差和集中不等式。我们需给出数学推导。\n\n核心：若 x,y ~ Uniform(S^{d-1}) 独立，则 cos θ = x·y。分布：密度与 (1-t^2)^{(d-3)/2}，Beta。均值0，方差 1/d。当 d=1536，Var=1/1536 ≈ 0.0006510417，标准差≈0.025514. 集中不等式：对 t>0, P(|x·y| ≥ t) ≤ 2 exp(-d t^2/2)？ 有精确的 Levy 引理。对于球面",
+  "usage": {
+    "prompt_tokens": 147,
+    "completion_tokens": 380,
+    "total_tokens": 527,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 380
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 147
+  },
+  "_meta": {
+    "latency_ms": 4101,
+    "calculated_cost_cny": 0.0018003600000000002,
+    "timestamp": "2026-10-11T22:16:40.929242"
+  }
+}

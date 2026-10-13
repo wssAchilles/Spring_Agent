@@ -106,3 +106,6 @@ gurobi.lic
 article
 scripts/eval_suite/__pycache__
 .experiments
+.venv/
+__pycache__/
+*.pyc

@@ -1,0 +1,265 @@
+{
+  "error_distribution_by_variant": {
+    "mesh_evolution": {
+      "total_failures": 2,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 2,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "PR-01_GOAL_DRIFT": 2
+      }
+    },
+    "full_method": {
+      "total_failures": 14,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 14,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "PR-01_GOAL_DRIFT": 14
+      }
+    },
+    "wo_reflection": {
+      "total_failures": 33,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 33,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "PR-02_PREMATURE_HALTING": 33
+      }
+    },
+    "wo_working_memory": {
+      "total_failures": 30,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 0,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 30
+      },
+      "by_code": {
+        "CA-02_LOST_IN_THE_MIDDLE": 30
+      }
+    },
+    "wo_dynamic_tools": {
+      "total_failures": 32,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 0,
+        "Level 2: Tool & Grounding": 32,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "TG-02_TOOL_MISSELECTION": 32
+      }
+    },
+    "wo_structured_planning": {
+      "total_failures": 35,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 35,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "PR-03_INFINITE_LOOP": 2,
+        "PR-01_GOAL_DRIFT": 33
+      }
+    },
+    "baseline_vanilla_react": {
+      "total_failures": 38,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 38,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "PR-01_GOAL_DRIFT": 37,
+        "PR-03_INFINITE_LOOP": 1
+      }
+    }
+  },
+  "sankey_diagram_data": {
+    "nodes": [
+      {
+        "id": 0,
+        "name": "mesh_evolution"
+      },
+      {
+        "id": 1,
+        "name": "Level 1: Planning & Reasoning"
+      },
+      {
+        "id": 2,
+        "name": "PR-01_GOAL_DRIFT"
+      },
+      {
+        "id": 3,
+        "name": "full_method"
+      },
+      {
+        "id": 4,
+        "name": "wo_reflection"
+      },
+      {
+        "id": 5,
+        "name": "PR-02_PREMATURE_HALTING"
+      },
+      {
+        "id": 6,
+        "name": "wo_working_memory"
+      },
+      {
+        "id": 7,
+        "name": "Level 3: Context & Attention"
+      },
+      {
+        "id": 8,
+        "name": "CA-02_LOST_IN_THE_MIDDLE"
+      },
+      {
+        "id": 9,
+        "name": "wo_dynamic_tools"
+      },
+      {
+        "id": 10,
+        "name": "Level 2: Tool & Grounding"
+      },
+      {
+        "id": 11,
+        "name": "TG-02_TOOL_MISSELECTION"
+      },
+      {
+        "id": 12,
+        "name": "wo_structured_planning"
+      },
+      {
+        "id": 13,
+        "name": "PR-03_INFINITE_LOOP"
+      },
+      {
+        "id": 14,
+        "name": "baseline_vanilla_react"
+      }
+    ],
+    "links": [
+      {
+        "source": 0,
+        "target": 1,
+        "value": 2
+      },
+      {
+        "source": 1,
+        "target": 2,
+        "value": 86
+      },
+      {
+        "source": 3,
+        "target": 1,
+        "value": 14
+      },
+      {
+        "source": 4,
+        "target": 1,
+        "value": 33
+      },
+      {
+        "source": 1,
+        "target": 5,
+        "value": 33
+      },
+      {
+        "source": 6,
+        "target": 7,
+        "value": 30
+      },
+      {
+        "source": 7,
+        "target": 8,
+        "value": 30
+      },
+      {
+        "source": 9,
+        "target": 10,
+        "value": 32
+      },
+      {
+        "source": 10,
+        "target": 11,
+        "value": 32
+      },
+      {
+        "source": 12,
+        "target": 1,
+        "value": 35
+      },
+      {
+        "source": 1,
+        "target": 13,
+        "value": 3
+      },
+      {
+        "source": 14,
+        "target": 1,
+        "value": 38
+      }
+    ]
+  },
+  "pareto_frontier_analysis": {
+    "description": "基于 (Unit Cost USD, Pass@1) 空间的最优非支配前沿分析",
+    "pareto_optimal_variants": [
+      {
+        "variant": "mesh_evolution",
+        "unit_cost_usd": 0.001353,
+        "unit_cost_cny": 0.009739,
+        "pass_at_1": 95.0,
+        "is_pareto_optimal": true
+      },
+      {
+        "variant": "full_method",
+        "unit_cost_usd": 0.001268,
+        "unit_cost_cny": 0.00913,
+        "pass_at_1": 65.0,
+        "is_pareto_optimal": true
+      },
+      {
+        "variant": "wo_working_memory",
+        "unit_cost_usd": 0.001263,
+        "unit_cost_cny": 0.009094,
+        "pass_at_1": 25.0,
+        "is_pareto_optimal": true
+      },
+      {
+        "variant": "baseline_vanilla_react",
+        "unit_cost_usd": 0.000641,
+        "unit_cost_cny": 0.004616,
+        "pass_at_1": 5.0,
+        "is_pareto_optimal": true
+      }
+    ],
+    "dominated_variants": [
+      {
+        "variant": "wo_reflection",
+        "unit_cost_usd": 0.001268,
+        "unit_cost_cny": 0.009127,
+        "pass_at_1": 17.5,
+        "is_pareto_optimal": false
+      },
+      {
+        "variant": "wo_dynamic_tools",
+        "unit_cost_usd": 0.001279,
+        "unit_cost_cny": 0.009212,
+        "pass_at_1": 20.0,
+        "is_pareto_optimal": false
+      },
+      {
+        "variant": "wo_structured_planning",
+        "unit_cost_usd": 0.001265,
+        "unit_cost_cny": 0.009111,
+        "pass_at_1": 12.5,
+        "is_pareto_optimal": false
+      }
+    ]
+  }
+}

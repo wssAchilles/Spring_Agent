@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_010",
+  "group_name": "baseline_g0",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 1,
+  "retrieved_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "NoiseEntity_X"
+  ],
+  "gold_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "SpectralThreshold"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。需要基于背景信息回答。用户问：“知识图谱中中心度极高的 Hub 节点对个性化 PageRank (PPR) 扩散路径造成的噪声放大机制。” 背景给了系统时间、噪声干扰信息、相关参考事实: HubNodeAttenuation, PageRank, SpectralThreshold。需要基础问答系统，基于背景信息回答。我们需要解释机制。可能涉及 PPR 扩散中 hub 节点中心度极高导致噪声放大。需要结合背景中的参考事实。也许要提到 HubNodeAttenuation 衰减、PageRank、SpectralThreshold。要基于背景信息，不要编造太多？我们可以构造答案：在知识图谱上做个性化 PageRank 时，从种子节点出发，随机游走按边权重/度进行转移。Hub 节点连接广泛，接收大量概率质量。如果它被噪声边/泛化关系污染，则来自种子的质量经过 hub 后重新广播到许多不相关节点。由于 PPR 的转移概率常为 1/deg，高度 hub 虽单步到某邻居概率低，但总可达邻居多，造成“扇出”扩散。同时 hub 的稳态 PageRank 高，使其在迭代中占主导，PPR 向量尾部变重。HubNodeAttenuation 可能是对 hub 传播的抑制/衰减因子，用于降低 hub 对扩散的影响。SpectralThreshold 可能用于谱阈值截断，过滤低于阈值的特征/边，控制噪声放大。需要解释机制步骤：1 种子质量进入 hub；2 hub 高中心度导致大量出边，噪声边和正常边同时被激活；3 迭代中",
+  "usage": {
+    "prompt_tokens": 127,
+    "completion_tokens": 350,
+    "total_tokens": 477,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 127
+  },
+  "_meta": {
+    "latency_ms": 3733,
+    "calculated_cost_cny": 0.00164916,
+    "timestamp": "2026-10-11T22:16:01.971341"
+  }
+}

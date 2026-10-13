@@ -1,0 +1,11 @@
+{
+  "user_account_balance_cny": 11.00,
+  "hard_budget_cap_cny": 8.00,
+  "soft_warning_threshold_cny": 6.50,
+  "max_allowed_spending_cny": 10.00,
+  "max_total_invocations": 1200,
+  "max_tokens_per_request": 16384,
+  "circuit_breaker_action": "TERMINATE_EXPERIMENT_AND_DUMP_RECEIPT",
+  "concurrency_limit": 4,
+  "timeout_seconds_per_call": 30
+}

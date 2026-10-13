@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_010",
+  "group_name": "ablation_a3_no_prefixtree",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "SpectralThreshold"
+  ],
+  "gold_entities": [
+    "HubNodeAttenuation",
+    "PageRank",
+    "SpectralThreshold"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题。用户：“知识图谱中中心度极高的 Hub 节点对个性化 PageRank (PPR) 扩散路径造成的噪声放大机制。” 似乎要求解释/分析机制。需要给出深入解释。我们需用中文回答。需要探讨知识图谱中高中心度 Hub 节点如何影响 PPR 扩散路径，导致噪声放大。可能涉及 PPR 定义、随机游走、Hub 节点吸收概率、质量集中、传播路径污染、topological bias、smoothing/oversmoothing? 以及机制：高 degree/centrality hub 在 PPR 的跳转/重启中，作为中间节点提高到达概率，虽然边权归一化可降低单边转移概率，但许多路径汇聚导致总概率高。对个性化：源节点个性化向量偏向种子。PPR 解 r = α s + (1-α) r W? 或 r = (1-α)s + α rW? 需准确定义。PageRank: p = α s + (1-α) P^T p? Personalized: π = α s + (1-α) π W，其中 W 行随机? 随机游走从当前节点以 (1-α) 继续，α 重启到种子。Hub 节点被许多路径访问，累计概率大。噪声放大机制：1) 度不均导致概率质量向 hub 聚集：即使 hub 与种子弱相关，因连接多，成为许多游走的中间站；2) 多重路径冗余：hub 到很多节点，PPR 分数通过 hub 传播，导致语义不相关节点获得高分；3) ",
+  "usage": {
+    "prompt_tokens": 95,
+    "completion_tokens": 350,
+    "total_tokens": 445,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 95
+  },
+  "_meta": {
+    "latency_ms": 4277,
+    "calculated_cost_cny": 0.0016145999999999999,
+    "timestamp": "2026-10-11T22:18:13.017412"
+  }
+}

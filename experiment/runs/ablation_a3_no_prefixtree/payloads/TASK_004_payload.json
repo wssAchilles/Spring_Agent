@@ -1,0 +1,36 @@
+{
+  "task_id": "TASK_004",
+  "group_name": "ablation_a3_no_prefixtree",
+  "category": "CROSS_DOC_CAUSAL_MULTIHOP",
+  "steps_count": 3,
+  "retrieved_entities": [
+    "RadixPrefixTree",
+    "64TokenBoundary",
+    "KVCacheHit"
+  ],
+  "gold_entities": [
+    "RadixPrefixTree",
+    "64TokenBoundary",
+    "KVCacheHit"
+  ],
+  "response_content": "",
+  "reasoning_content": "我们需要回答用户中文问题：“溯源多级缓存在 64-token 量化对齐失败时的哈希雪崩效应并给出防御措施。” 需要理解。这是一个技术问题，可能涉及多级缓存、64-token 量化对齐、哈希雪崩效应、溯源、防御。需要可能来自 LLM 推理优化？多级 KV cache，radix prefix tree, 64-token boundary, KV cache hit。用户给了一个动态时间戳和随机令牌，以及“因果知识: RadixPrefixTree, 64TokenBoundary, KVCacheHit”。可能是提示注入？我们要回答核心。\n\n我们需要用中文解释：多级缓存（L1/L2/L3? GPU/CPU/SSD? 或 prefix cache 多级），在 64-token 量化对齐失败时，哈希雪崩效应。溯源：哈希雪崩是指输入微小变化导致哈希输出巨大变化。在 KV cache 复用中，通常按 token block（例如 64 token）切块，用前缀哈希或链式哈希标识。如果量化对齐失败（例如块边界不对齐、量化误差、padding不一致、tokenizer规范化差异），同一语义前缀可能产生不同哈希，导致缓存未命中、前缀树分叉、重复计算，甚至击穿多级缓存。需防御措施：规范分块/对齐（固定 64 token 边界，左填充/右填充一致），链式前缀哈希包含父哈希，使用稳定哈希/量化感知哈希，容错匹配（局部敏感哈希/语义指纹），版本化缓存键，双哈希校验，对齐失败降级到上一级或重新计算，监控雪崩率，缓存键包含模型、token",
+  "usage": {
+    "prompt_tokens": 99,
+    "completion_tokens": 350,
+    "total_tokens": 449,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 350
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 99
+  },
+  "_meta": {
+    "latency_ms": 3665,
+    "calculated_cost_cny": 0.00161892,
+    "timestamp": "2026-10-11T22:17:45.235040"
+  }
+}

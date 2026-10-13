@@ -1,0 +1,124 @@
+# ==============================================================================
+# Hermes 自主智能体顶刊级自动化科研实验全局配置文件
+# (Hermes Autonomous Agent Evaluation Configuration Specification)
+# 严格遵循 EXPERIMENT_SKILL.md 规程设计，严禁随意放宽评测门禁
+# ==============================================================================
+
+environment:
+  # Java 21 隔离运行环境路径（SDKMAN 管理，严禁污染宿主环境）
+  java_home: "/Users/achilles/.sdkman/candidates/java/21.0.5-tem"
+  # Hermes gRPC 核心网关配置
+  grpc_host: "127.0.0.1"
+  grpc_port: 50051
+  # 沙箱幂等隔离机制：会话回滚与状态隔离
+  sandbox_mode: "session_rollback"
+  # 单任务执行最大硬超时时间（秒）
+  timeout_seconds: 60
+  # ReAct 单轮最大步数硬门禁（防止非受控死循环）
+  max_react_steps: 10
+
+models:
+  # 官方活跃主干生成模型（严格遵循 DeepSeek 官方规约）
+  generation_model: "deepseek-flash"
+  # 思考模式（通过 extra_body 开启，严禁传 temperature）
+  enable_thinking: true
+  # 阿里千问 1536 维超球面单位向量模型
+  embedding_model: "qwen-embedding-1536d"
+  vector_dimension: 1536
+  hyperspherical_geometry_constraint: "unit_sphere_l2_norm_1.0"
+
+# 统计学多元随机种子空间（学术界顶刊 5+ 种子硬性规范）
+seeds:
+  - 42
+  - 1024
+  - 2024
+  - 3407
+  - 777
+
+# 正交单变量消融实验矩阵（7 大核心实验变体：含全新网格演进突破方案）
+ablation_matrix:
+  V0_mesh_evolution:
+    code: "mesh_evolution"
+    description: "演进突破方案 (Hermes Mesh Evolution): 融合网格权责移交、状态图守卫、确定性数学沙盒与64-token前缀树缓存"
+    mesh_handoff_enabled: true
+    state_guard_enabled: true
+    math_sandbox_enabled: true
+    canonical_cache_enabled: true
+    planning_enabled: true
+    reflection_enabled: true
+    working_memory_enabled: true
+    dynamic_tools_enabled: true
+    cycle_guard_enabled: true
+
+  V1_full_method:
+    code: "full_method"
+    description: "完整方案 (Full Hermes): 全量认知决策、记忆压缩与动态工具激活"
+    planning_enabled: true
+    reflection_enabled: true
+    working_memory_enabled: true
+    dynamic_tools_enabled: true
+    cycle_guard_enabled: true
+
+  V2_wo_reflection:
+    code: "wo_reflection"
+    description: "消融反思迭代: 关闭双层 AI Judge 验证与自愈重试"
+    planning_enabled: true
+    reflection_enabled: false
+    working_memory_enabled: true
+    dynamic_tools_enabled: true
+    cycle_guard_enabled: true
+
+  V3_wo_working_memory:
+    code: "wo_working_memory"
+    description: "消融工作记忆: 退化为单轮上下文，禁用四级队列自适应压缩"
+    planning_enabled: true
+    reflection_enabled: true
+    working_memory_enabled: false
+    dynamic_tools_enabled: true
+    cycle_guard_enabled: true
+
+  V4_wo_dynamic_tools:
+    code: "wo_dynamic_tools"
+    description: "消融动态工具: 静态注入全量工具 Schema，绕过超球面 MIPS 检索"
+    planning_enabled: true
+    reflection_enabled: true
+    working_memory_enabled: true
+    dynamic_tools_enabled: false
+    cycle_guard_enabled: true
+
+  V5_wo_structured_planning:
+    code: "wo_structured_planning"
+    description: "消融结构化规划: 关闭分层 DAG 拓扑分解，直接贪心 ReAct"
+    planning_enabled: false
+    reflection_enabled: true
+    working_memory_enabled: true
+    dynamic_tools_enabled: true
+    cycle_guard_enabled: true
+
+  V6_baseline_vanilla_react:
+    code: "baseline_vanilla_react"
+    description: "原生基线组: 纯原生单步 ReAct 循环，无反思/无记忆/无动态工具/无规划"
+    planning_enabled: false
+    reflection_enabled: false
+    working_memory_enabled: false
+    dynamic_tools_enabled: false
+    cycle_guard_enabled: true
+
+# 统计学显著性验证推断参数
+statistics:
+  bootstrap_iterations: 10000
+  confidence_level: 0.95
+  significance_threshold_alpha: 0.05
+  significance_threshold_alpha2: 0.01
+  significance_threshold_alpha3: 0.001
+
+# 成本预算与熔断守卫（严格控制在用户 10 元人民币额度以内）
+cost_budget:
+  hard_budget_cap_cny: 8.00
+  soft_warning_threshold_cny: 6.50
+  deepseek_official_pricing:
+    # 官方价格：单位为元/百万 Tokens
+    cache_hit_input_cny: 0.108
+    cache_miss_input_cny: 1.080
+    output_cny: 4.320
+    usd_to_cny_exchange_rate: 7.20

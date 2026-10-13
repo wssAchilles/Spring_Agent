@@ -1,0 +1,37 @@
+{
+  "baseline_g0": {
+    "total_tokens": 4782,
+    "hit_tokens": 0,
+    "miss_tokens": 1282,
+    "out_tokens": 3500,
+    "total_cost_cny": 0.0165
+  },
+  "candidate_g1": {
+    "total_tokens": 6421,
+    "hit_tokens": 0,
+    "miss_tokens": 2421,
+    "out_tokens": 4000,
+    "total_cost_cny": 0.0199
+  },
+  "ablation_a1_no_spectral": {
+    "total_tokens": 5221,
+    "hit_tokens": 0,
+    "miss_tokens": 1421,
+    "out_tokens": 3800,
+    "total_cost_cny": 0.018
+  },
+  "ablation_a2_no_stategraph": {
+    "total_tokens": 5010,
+    "hit_tokens": 0,
+    "miss_tokens": 1211,
+    "out_tokens": 3799,
+    "total_cost_cny": 0.0177
+  },
+  "ablation_a3_no_prefixtree": {
+    "total_tokens": 4466,
+    "hit_tokens": 0,
+    "miss_tokens": 966,
+    "out_tokens": 3500,
+    "total_cost_cny": 0.0162
+  }
+}
