@@ -87,4 +87,54 @@ public record McpToolProjectionReceipt(
         byte[] actualBytes = sha256Signature.getBytes(StandardCharsets.UTF_8);
         return MessageDigest.isEqual(expectedBytes, actualBytes);
     }
+
+    /**
+     * 向后兼容历史构造函数（兼容存量测试与外部引用）
+     */
+    public McpToolProjectionReceipt(
+            String queryHash,
+            List<String> projectedTools,
+            int totalRegisteredTools,
+            int projectedCount,
+            double compressionRatio,
+            Map<String, String> circuitBreakerStates,
+            java.time.Instant timestamp,
+            String signature
+    ) {
+        this(
+                queryHash != null ? queryHash : UUID.randomUUID().toString(),
+                queryHash != null ? queryHash : "",
+                projectedTools,
+                totalRegisteredTools,
+                projectedCount,
+                compressionRatio,
+                circuitBreakerStates,
+                timestamp != null ? timestamp.toEpochMilli() : System.currentTimeMillis(),
+                signature
+        );
+    }
+
+    public String signature() {
+        return sha256Signature;
+    }
+
+    public int totalRegisteredTools() {
+        return totalPoolSize;
+    }
+
+    public double compressionRatio() {
+        return tokenCompressionRatio;
+    }
+
+    public Map<String, String> circuitBreakerStates() {
+        return circuitStates;
+    }
+
+    public String queryHash() {
+        return receiptId;
+    }
+
+    public java.time.Instant timestamp() {
+        return java.time.Instant.ofEpochMilli(timestampEpochMs);
+    }
 }
