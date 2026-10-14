@@ -1,17 +1,20 @@
 # ==============================================================================
 # Hermes 自主智能体顶刊级自动化科研实验全局配置文件
 # (Hermes Autonomous Agent Evaluation Configuration Specification)
-# 严格遵循 EXPERIMENT_SKILL.md 规程设计，严禁随意放宽评测门禁
+# 严格遵循 AGENTS.md 规程设计，严禁随意放宽评测门禁与作弊阈值
 # ==============================================================================
 
 environment:
   # Java 21 隔离运行环境路径（SDKMAN 管理，严禁污染宿主环境）
   java_home: "/Users/achilles/.sdkman/candidates/java/21.0.5-tem"
+  java_bin: "/Users/achilles/.sdkman/candidates/java/21.0.5-tem/bin/java"
+  classpath_cache_file: "backend/qknow-hermes/qknow-hermes-core/target/test-cp.txt"
+  probe_runner_class: "tech.qiantong.qknow.hermes.benchmark.HermesBenchmarkProbeRunner"
   # Hermes gRPC 核心网关配置
   grpc_host: "127.0.0.1"
   grpc_port: 50051
   # 沙箱幂等隔离机制：会话回滚与状态隔离
-  sandbox_mode: "session_rollback"
+  sandbox_mode: "physical_probe"
   # 单任务执行最大硬超时时间（秒）
   timeout_seconds: 60
   # ReAct 单轮最大步数硬门禁（防止非受控死循环）
@@ -35,74 +38,77 @@ seeds:
   - 3407
   - 777
 
-# 正交单变量消融实验矩阵（7 大核心实验变体：含全新网格演进突破方案）
+# 正交单变量消融实验矩阵（7 大核心生产资产消融组）
 ablation_matrix:
-  V0_mesh_evolution:
-    code: "mesh_evolution"
-    description: "演进突破方案 (Hermes Mesh Evolution): 融合网格权责移交、状态图守卫、确定性数学沙盒与64-token前缀树缓存"
-    mesh_handoff_enabled: true
-    state_guard_enabled: true
-    math_sandbox_enabled: true
-    canonical_cache_enabled: true
-    planning_enabled: true
-    reflection_enabled: true
-    working_memory_enabled: true
-    dynamic_tools_enabled: true
-    cycle_guard_enabled: true
+  V1_full_hermes:
+    code: "full_hermes"
+    description: "完整生产方案: 六大资产全量激活 (Colbert SIMD + 自适应 RRF + 推测性 RAG + GraphRAG 社区树 + MCTS/DyLAN + 企业沙箱)"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
 
-  V1_full_method:
-    code: "full_method"
-    description: "完整方案 (Full Hermes): 全量认知决策、记忆压缩与动态工具激活"
-    planning_enabled: true
-    reflection_enabled: true
-    working_memory_enabled: true
-    dynamic_tools_enabled: true
-    cycle_guard_enabled: true
+  V2_wo_colbert_simd:
+    code: "wo_colbert_simd"
+    description: "消融 ColBERT 晚期交互: 关闭 ColbertNative Panama SIMD 精排，退化为单一稠密向量点积"
+    colbert_simd_enabled: false
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
 
-  V2_wo_reflection:
-    code: "wo_reflection"
-    description: "消融反思迭代: 关闭双层 AI Judge 验证与自愈重试"
-    planning_enabled: true
-    reflection_enabled: false
-    working_memory_enabled: true
-    dynamic_tools_enabled: true
-    cycle_guard_enabled: true
+  V3_wo_speculative_rag:
+    code: "wo_speculative_rag"
+    description: "消融推测性 RAG 并行草稿: 关闭分片并行推演，退化为一次性长文档单步生成，验证中间迷失"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: false
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
 
-  V3_wo_working_memory:
-    code: "wo_working_memory"
-    description: "消融工作记忆: 退化为单轮上下文，禁用四级队列自适应压缩"
-    planning_enabled: true
-    reflection_enabled: true
-    working_memory_enabled: false
-    dynamic_tools_enabled: true
-    cycle_guard_enabled: true
+  V4_wo_graphrag_tree:
+    code: "wo_graphrag_tree"
+    description: "消融 GraphRAG 分层社区树: 关闭 Leiden 分层社区索引，退化为扁平切块，验证全局概括覆盖度"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: false
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
 
-  V4_wo_dynamic_tools:
-    code: "wo_dynamic_tools"
-    description: "消融动态工具: 静态注入全量工具 Schema，绕过超球面 MIPS 检索"
-    planning_enabled: true
-    reflection_enabled: true
-    working_memory_enabled: true
-    dynamic_tools_enabled: false
-    cycle_guard_enabled: true
+  V5_wo_mcts_dynamic_roles:
+    code: "wo_mcts_dynamic_roles"
+    description: "消融 MCTS 树规划与夏普利涌现: 关闭树搜索前瞻与角色剪枝，退化为单 Agent 贪心 ReAct"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: false
+    mcts_dynamic_roles_enabled: false
+    sandbox_reflexion_enabled: true
 
-  V5_wo_structured_planning:
-    code: "wo_structured_planning"
-    description: "消融结构化规划: 关闭分层 DAG 拓扑分解，直接贪心 ReAct"
-    planning_enabled: false
-    reflection_enabled: true
-    working_memory_enabled: true
-    dynamic_tools_enabled: true
-    cycle_guard_enabled: true
+  V6_wo_sandbox_reflexion:
+    code: "wo_sandbox_reflexion"
+    description: "消融企业沙箱与反思记忆: 关闭进程看门狗强杀与 Reflexion 先验提取，验证死循环与重复踩坑"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: false
 
-  V6_baseline_vanilla_react:
+  V7_baseline_vanilla_react:
     code: "baseline_vanilla_react"
-    description: "原生基线组: 纯原生单步 ReAct 循环，无反思/无记忆/无动态工具/无规划"
-    planning_enabled: false
-    reflection_enabled: false
-    working_memory_enabled: false
-    dynamic_tools_enabled: false
-    cycle_guard_enabled: true
+    description: "原生基线组: 纯原生单步贪心 ReAct，无 SIMD / 无草稿分片 / 无社区树 / 无沙箱防御"
+    colbert_simd_enabled: false
+    speculative_rag_enabled: false
+    graphrag_tree_enabled: false
+    hybrid_rrf_enabled: false
+    mcts_dynamic_roles_enabled: false
+    sandbox_reflexion_enabled: false
 
 # 统计学显著性验证推断参数
 statistics:
@@ -112,7 +118,7 @@ statistics:
   significance_threshold_alpha2: 0.01
   significance_threshold_alpha3: 0.001
 
-# 成本预算与熔断守卫（严格控制在用户 10 元人民币额度以内）
+# 成本预算与熔断守卫（严格控制在用户 8.00 元人民币额度以内）
 cost_budget:
   hard_budget_cap_cny: 8.00
   soft_warning_threshold_cny: 6.50

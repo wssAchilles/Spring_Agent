@@ -1,247 +1,114 @@
-{
-  "suite_id": "EXP_DOCTORAL_BENCHMARK_SUITE_V1",
-  "description": "面向企业级多智能体编排与超球面知识图谱检索的博士级 30 项标准化基准测试用例集合",
-  "total_tasks": 30,
-  "tasks": [
-    {
-      "task_id": "TASK_001",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "微服务分布式调用链中，订单服务超时引发死锁的深层根因与补偿机制是什么？",
-      "complexity": "HIGH",
-      "gold_chain": ["OrderService_Timeout", "Saga_Rollback_Failure", "DB_Row_Lock_Hold", "Payment_Deadlock"],
-      "expected_decision": "TERMINATE_WITH_SAGA_COMPENSATION"
+[
+  {
+    "task_id": "PROBE-TASK-001",
+    "domain": "colbert_late_interaction",
+    "category": "code_symbol_dilution",
+    "instruction": "在包含数十篇长微服务配置与日志文本中，精准检索出包含 Panama 零拷贝链接 `MemorySegment.ofAddress` 与 `ColbertNative.maxsim_batch` 的极短代码声明片段。必须联动真实 ColbertNative 执行 MaxSim SIMD 晚期交互重排，给出 top-1 匹配项及真实 SIMD 硬件加速状态码与不可变存证。",
+    "required_tools": ["colbert_simd_retriever", "cryptographic_hasher"],
+    "probe_invocation": {"probe_type": "COLBERT_MAXSIM", "query": "Panama zero-copy MemorySegment maxsim_batch SIMD NEON"},
+    "ground_truth_criteria": {
+      "required_keywords": ["ColbertNative", "SIMD", "零拷贝", "MaxSim", "防时序侧信道"],
+      "logical_assertions": ["panama_zero_copy_verified == True", "seal_verified == True"],
+      "prohibited_keywords": ["发生时序泄漏", "未归一化欧氏"]
     },
-    {
-      "task_id": "TASK_002",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "结合知识库文档，分析千问 1536 维超球面归一化约束为何能够等价转化欧氏距离与余弦相似度？",
-      "complexity": "MEDIUM",
-      "gold_chain": ["L2_Norm_Identity", "Euclidean_Expansion", "Unit_Sphere_DotProduct"],
-      "expected_decision": "MATHEMATICAL_PROOF_EQUIVALENCE"
+    "complexity": "L4-VeryHigh"
+  },
+  {
+    "task_id": "PROBE-TASK-002",
+    "domain": "speculative_rag",
+    "category": "long_context_partitioning",
+    "instruction": "企业多机房高可用容灾架构规范（总长度达 32KB 跨 6 篇文档）。必须使用 SpeculativeRagOrchestrator 将上下文按 partitionSize=2 划分为 3 个独立子分片并行推演草稿，随后通过 DeepSeek 思考模式集中验证与联合校准，彻底消解长文档中间迷失（Lost in the Middle），生成最终不可变决策凭单并验证常量时间防侧信道签名。",
+    "required_tools": ["speculative_rag_orchestrator", "audit_receipt_validator"],
+    "probe_invocation": {"probe_type": "SPECULATIVE_RAG", "query": "多机房容灾主从秒级提升与脑裂防御规范"},
+    "ground_truth_criteria": {
+      "required_keywords": ["推测性 RAG", "分片草稿", "DeepSeek", "思考模式", "中间迷失"],
+      "logical_assertions": ["draft_count >= 2", "seal_verified == True"],
+      "prohibited_keywords": ["草稿全盘丢弃", "时序断裂"]
     },
-    {
-      "task_id": "TASK_003",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "分析高并发 RAG 场景中，拉普拉斯图谱谱剪枝如何剥离无关连通子图以降低 Token 膨胀？",
-      "complexity": "HIGH",
-      "gold_chain": ["Laplacian_Diffusion_Kernel", "Degree_Matrix_Normalization", "Cheeger_Cut_Purity"],
-      "expected_decision": "SPECTRAL_PRUNING_SUCCESS"
+    "complexity": "L4-VeryHigh"
+  },
+  {
+    "task_id": "PROBE-TASK-003",
+    "domain": "graphrag_hierarchical",
+    "category": "macro_global_summarization",
+    "instruction": "对某大型跨国企业十年技术中台架构演进知识图谱进行宏观全局全景总结（Global Summarization）。调用 HierarchicalGraphRagEngine 触发意图识别（意图必须锁定为 GLOBAL_SUMMARIZATION），折叠遍历 Leiden 社区层次树 Level 2 根社区，输出全局演进脉络报告并断言测地线余弦相似度上界。",
+    "required_tools": ["hierarchical_graphrag_router", "spectral_cut_verifier"],
+    "probe_invocation": {"probe_type": "GRAPHRAG_ROUTING", "query": "企业十年中台架构演进全局脉络与技术体系架构全景总结"},
+    "ground_truth_criteria": {
+      "required_keywords": ["GraphRAG", "GLOBAL_SUMMARIZATION", "全景根社区", "社区层级", "演进脉络"],
+      "logical_assertions": ["target_level == 2", "seal_verified == True"],
+      "prohibited_keywords": ["局部下钻", "盲目切块"]
     },
-    {
-      "task_id": "TASK_004",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "溯源多级缓存在 64-token 量化对齐失败时的哈希雪崩效应并给出防御措施。",
-      "complexity": "HIGH",
-      "gold_chain": ["PrefixTree_Radix_Mismatch", "Block_Boundary_Drift", "KV_Cache_Purge"],
-      "expected_decision": "PREFIX_PADDING_ALIGNMENT"
+    "complexity": "L4-VeryHigh"
+  },
+  {
+    "task_id": "PROBE-TASK-004",
+    "domain": "graphrag_hierarchical",
+    "category": "micro_local_factual",
+    "instruction": "针对知识图谱中特定底层存储节点 `Cluster-Shard-09` 突发的磁盘局部只读故障，调用 HierarchicalGraphRagEngine 下钻至 Level 0 微观精准实体社区，获取底层事实依赖（Local Factual），精准定位受影响的从属账本节点列表并输出局部实体切分纯度。",
+    "required_tools": ["hierarchical_graphrag_router", "cluster_shard_inspector"],
+    "probe_invocation": {"probe_type": "GRAPHRAG_ROUTING", "query": "查询 Cluster-Shard-09 存储节点的微观挂载磁盘配置与从属故障账本"},
+    "ground_truth_criteria": {
+      "required_keywords": ["LOCAL_FACTUAL", "Cluster-Shard-09", "微观实体社区", "挂载故障", "从属账本"],
+      "logical_assertions": ["target_level == 0", "seal_verified == True"],
+      "prohibited_keywords": ["全局概括", "实体丢失"]
     },
-    {
-      "task_id": "TASK_005",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "比较传统向量搜索与图谱增强检索在处理跨篇章实体跳跃时的准确率差异与召回纯度。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["Flat_Vector_TopK_Noise", "MultiHop_Entity_Traversal", "Precision_Gain"],
-      "expected_decision": "GRAPH_RAG_SUPERIORITY"
+    "complexity": "L3-High"
+  },
+  {
+    "task_id": "PROBE-TASK-005",
+    "domain": "mcts_dynamic_roles",
+    "category": "deadlock_breaking_planning",
+    "instruction": "针对三方分布式跨行复杂清算死锁异常，纯单步 ReAct 容易陷入 A->B->A->B 震荡循环。调用 TreeOfThoughtsReActPlanner 执行 MCTS 树分支探索与状态回溯（maxIterations=15, maxDepth=4），并联动 SphericalDyLANRoleGovernor 进行夏普利动态角色修剪与关键专家涌现，输出全局最优执行路径与终止证明。",
+    "required_tools": ["mcts_react_planner", "spherical_dylan_governor"],
+    "probe_invocation": {"probe_type": "MCTS_PLANNING", "query": "三方跨行清算因时序漂移产生的死锁解脱与回滚"},
+    "ground_truth_criteria": {
+      "required_keywords": ["MCTS", "树搜索", "回溯剪枝", "最优动作路径", "夏普利"],
+      "logical_assertions": ["total_nodes_expanded >= 4", "seal_verified == True"],
+      "prohibited_keywords": ["死锁环路", "死循环"]
     },
-    {
-      "task_id": "TASK_006",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "分析金融交易结算链路中，状态机 CAS 乐观锁冲突重试的终止条件与最大自旋阈值。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["CAS_Version_Mismatch", "Exponential_Backoff", "Bounded_Spin_Limit"],
-      "expected_decision": "CONVERGENCE_ASSURANCE"
+    "complexity": "L4-VeryHigh"
+  },
+  {
+    "task_id": "PROBE-TASK-006",
+    "domain": "sandbox_hardening",
+    "category": "sandbox_defense_watchdog",
+    "instruction": "恶意代码注入攻击防御测试：Agent 接收并尝试在沙箱中执行包含未授权文件读取与无限死循环的脚本。必须调用真实 EnterpriseCodeSandboxRuntime 施加只读挂载、网络断开及 3000ms 硬看门狗超时强杀保护，捕获真实进程截断输出与毫秒级资源凭单并执行常量时间自验真。",
+    "required_tools": ["enterprise_code_sandbox", "audit_receipt_validator"],
+    "probe_invocation": {"probe_type": "SANDBOX_EXECUTION", "script": "echo 'Testing Sandbox Guard' && while true; do sleep 1; done", "language": "sh", "timeout_ms": 1500},
+    "ground_truth_criteria": {
+      "required_keywords": ["EnterpriseCodeSandbox", "看门狗", "安全沙箱", "只读保护", "存证封印"],
+      "logical_assertions": ["security_seal_valid == True"],
+      "prohibited_keywords": ["逃逸成功", "资源耗尽"]
     },
-    {
-      "task_id": "TASK_007",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "在多知识库联合检索时，动态自适应倒数排名融合 (RRF) 算法如何平衡向量与关键词权重？",
-      "complexity": "MEDIUM",
-      "gold_chain": ["BM25_Sparse_Score", "Dense_Cosine_Score", "Adaptive_RRF_K_Factor"],
-      "expected_decision": "RRF_WEIGHT_OPTIMIZATION"
+    "complexity": "L3-High"
+  },
+  {
+    "task_id": "PROBE-TASK-007",
+    "domain": "reflexion_memory",
+    "category": "cross_trial_self_healing",
+    "instruction": "历史故障自愈重放测试：针对此前因参数配置错误导致失败的微服务限流任务，调用 ReflexionEpisodicMemoryEngine 提取失败轨迹并基于千问 1536 维超球面单位向量流形检索出最相关的反思先验（Verbal Prior），将其注入当前 Prompt 上下文，证明第二试次成功率提升且无幻觉漂移。",
+    "required_tools": ["reflexion_episodic_memory", "self_healing_orchestrator"],
+    "probe_invocation": {"probe_type": "REFLEXION_RECALL", "task_id": "PROBE-TASK-RATE-LIMIT"},
+    "ground_truth_criteria": {
+      "required_keywords": ["Reflexion", "反思先验", "1536维", "自愈", "情景记忆"],
+      "logical_assertions": ["prior_recalled == True", "seal_verified == True"],
+      "prohibited_keywords": ["重复踩坑", "记忆丢失"]
     },
-    {
-      "task_id": "TASK_008",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "分析智能体调用外部天气 API 与地图 API 时因依赖循环导致的上下文击穿原因。",
-      "complexity": "HIGH",
-      "gold_chain": ["Circular_Tool_Dependency", "Context_Window_Overflow", "ReAct_Guard_Intervention"],
-      "expected_decision": "CYCLE_GUARD_BREAK"
+    "complexity": "L4-VeryHigh"
+  },
+  {
+    "task_id": "PROBE-TASK-008",
+    "domain": "hybrid_retrieval",
+    "category": "geometric_consistency_rrf",
+    "instruction": "混合检索漏斗鲁棒性验证：在存在生僻专业术语与同义词泛化的金融场景下，调用 ResilientHybridRetrievalFunnel，综合 Tantivy 稀疏倒排与千问 1536 维超球面稠密向量，经无偏自适应 RRF 融合与 ColBERT MaxSim 精排，输出 top-5 文档序列，验证欧氏-余弦几何变换恒等式 $d_{Euc}^2 = 2(1 - \\cos\\theta)$ 严密成立。",
+    "required_tools": ["resilient_hybrid_funnel", "colbert_simd_retriever"],
+    "probe_invocation": {"probe_type": "HYBRID_RETRIEVAL", "query": "金融对账单边差错与防时序侧信道常量时间比对"},
+    "ground_truth_criteria": {
+      "required_keywords": ["混合检索", "RRF融合", "BM25", "ColBERT", "恒等式"],
+      "logical_assertions": ["rrf_fused == True", "seal_verified == True"],
+      "prohibited_keywords": ["几何畸变", "通道冲突"]
     },
-    {
-      "task_id": "TASK_009",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "推导当超球面向量维度为 1536 时，随机正交基底之间的余弦相似度分布方差与集中不等式。",
-      "complexity": "HIGH",
-      "gold_chain": ["High_Dimensional_Sphere", "Concentration_Of_Measure", "Variance_Decay"],
-      "expected_decision": "HYPERSPHERICAL_CONCENTRATION"
-    },
-    {
-      "task_id": "TASK_010",
-      "category": "CROSS_DOC_CAUSAL_MULTIHOP",
-      "query": "知识图谱中中心度极高的 Hub 节点对个性化 PageRank (PPR) 扩散路径造成的噪声放大机制。",
-      "complexity": "HIGH",
-      "gold_chain": ["Hub_Node_Degree_Centrality", "Noise_Amplification", "Laplacian_Spectral_Threshold"],
-      "expected_decision": "HUB_ATTENUATION_SUCCESS"
-    },
-    {
-      "task_id": "TASK_011",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "构建企业工单自动流转系统：客服智能体初审、运维智能体诊断、审批智能体放行的三级协同。",
-      "complexity": "HIGH",
-      "gold_chain": ["agent_triage", "agent_ops", "agent_approver"],
-      "expected_decision": "MULTI_AGENT_HANDOFF_TERMINATION"
-    },
-    {
-      "task_id": "TASK_012",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "模拟代码审查场景中架构师智能体、编码智能体与测试智能体基于不可变凭据的交接握手。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["agent_architect", "agent_coder", "agent_tester"],
-      "expected_decision": "CRYPTOGRAPHIC_HANDOFF_VALID"
-    },
-    {
-      "task_id": "TASK_013",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "智能体协同网络发生乒乓交接 (A 交互交回给 B，B 再次交回给 A) 时的死锁阻断验证。",
-      "complexity": "HIGH",
-      "gold_chain": ["PingPong_Detection", "Handoff_Depth_Limit", "Supervisor_Escalation"],
-      "expected_decision": "PINGPONG_CYCLE_SUPPRESSED"
-    },
-    {
-      "task_id": "TASK_014",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "设计具有租户限流保护的多智能体团队任务派发，在达到并发阈值时排队与优雅降级。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["Tenant_Quota_Check", "Token_Bucket_Throttle", "Graceful_Degradation"],
-      "expected_decision": "TENANT_QUOTA_ADAPTIVE"
-    },
-    {
-      "task_id": "TASK_015",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "多智能体任务执行中途遭遇子智能体抛出不可恢复异常时的 Saga 补偿与现场快照冻结。",
-      "complexity": "HIGH",
-      "gold_chain": ["Subagent_Failure", "Saga_Compensate_Trigger", "Snapshot_Durable_Preserved"],
-      "expected_decision": "FAULT_CONTAINED_ROLLBACK"
-    },
-    {
-      "task_id": "TASK_016",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "验证基于不可变 Java 21 Record 的 AgentState 在多智能体异步事件总线中的零副作用传递。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["Record_Immutability", "Virtual_Thread_Safety", "Zero_Side_Effect"],
-      "expected_decision": "IMMUTABLE_STATE_PASSED"
-    },
-    {
-      "task_id": "TASK_017",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "多智能体长程反思循环中，基于滑动窗口二元转移对 (Bi-gram) 识别交错死循环的机制。",
-      "complexity": "HIGH",
-      "gold_chain": ["BiGram_Transition_Tracking", "Strict_Window_Eviction", "Cycle_Break_Issued"],
-      "expected_decision": "BIGRAM_CYCLE_BREAK"
-    },
-    {
-      "task_id": "TASK_018",
-      "category": "MULTI_AGENT_HANDOFF_COLLAB",
-      "query": "智能体委托层级达到最大跃点数 (Max Hops = 5) 时的强制升级终止契约。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["Max_Hop_Exceeded", "Terminal_Supervisor_Takeover", "Acyclic_Guaranteed"],
-      "expected_decision": "SUPERVISOR_TERMINATION"
-    },
-    {
-      "task_id": "TASK_019",
-      "category": "COUNTERFACTUAL_NOISE_SUPPRESSION",
-      "query": "对抗性知识注入：如果文档中被恶意注入相反事实（净利润下滑 90%），系统如何检测事实冲突？",
-      "complexity": "HIGH",
-      "gold_chain": ["Adversarial_Injection_Detected", "Multi_Source_Consensus", "Faithfulness_Guard"],
-      "expected_decision": "CONFLICT_DETECTED_ALERT"
-    },
-    {
-      "task_id": "TASK_020",
-      "category": "COUNTERFACTUAL_NOISE_SUPPRESSION",
-      "query": "在检索上下文尾部注入语义高度相关但事实无关的假线索时，注意力漂移抵御能力测试。",
-      "complexity": "HIGH",
-      "gold_chain": ["Distractor_Needle_Injected", "Spectral_Pruning_Filter", "Core_Chain_Maintained"],
-      "expected_decision": "NOISE_DISTRACTOR_FILTERED"
-    },
-    {
-      "task_id": "TASK_021",
-      "category": "COUNTERFACTUAL_NOISE_SUPPRESSION",
-      "query": "模拟外部工具 API 返回 503 临时熔断，评估智能体自动降级与备用知识库检索自愈。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["Tool_503_Received", "Fallback_To_Internal_RAG", "Self_Healing_Output"],
-      "expected_decision": "TRANSIENT_FAULT_HEALED"
-    },
-    {
-      "task_id": "TASK_022",
-      "category": "COUNTERFACTUAL_NOISE_SUPPRESSION",
-      "query": "反事实干预：当将前序节点输出的实体命名强制替换为未知代号时，因果依赖树的鲁棒性。",
-      "complexity": "HIGH",
-      "gold_chain": ["Entity_Obfuscation", "Structural_Graph_Alignment", "Causal_Invariance"],
-      "expected_decision": "STRUCTURAL_ALIGNMENT_PRESERVED"
-    },
-    {
-      "task_id": "TASK_023",
-      "category": "COUNTERFACTUAL_NOISE_SUPPRESSION",
-      "query": "检测并消除 ReAct 工具调用循环中由时序假相关性引起的虚假因果归因振荡。",
-      "complexity": "HIGH",
-      "gold_chain": ["Spurious_Correlation", "Backdoor_Adjustment", "Unbiased_Reflection"],
-      "expected_decision": "UNBIASED_REASONING_CONVERGED"
-    },
-    {
-      "task_id": "TASK_024",
-      "category": "COUNTERFACTUAL_NOISE_SUPPRESSION",
-      "query": "验证超长上下文（> 32k tokens）在随机位置掺杂噪声段落时的思维链保真度与抗混淆性。",
-      "complexity": "HIGH",
-      "gold_chain": ["Long_Context_Distraction", "Thinking_Chain_Isolate", "Faithfulness_Score_High"],
-      "expected_decision": "LONG_CONTEXT_ROBUST"
-    },
-    {
-      "task_id": "TASK_025",
-      "category": "TOOL_EXEC_AND_PRUNING",
-      "query": "条件分支网关：当输入评分为优秀时触发奖励分支，递归剪枝未命中的整改子图。",
-      "complexity": "LOW",
-      "gold_chain": ["Condition_Score_Check", "Next_Node_Reward", "Recursive_Prune_Rectify"],
-      "expected_decision": "PRUNED_NODES_SKIPPED"
-    },
-    {
-      "task_id": "TASK_026",
-      "category": "TOOL_EXEC_AND_PRUNING",
-      "query": "敏感数据脱敏工具节点：在发往外部模型前通过 DFA 算法拦截身份证与手机号。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["DFA_Sensitive_Scan", "Mask_Replacement", "Zero_Leakage_Audit"],
-      "expected_decision": "DATA_MASKING_SUCCESS"
-    },
-    {
-      "task_id": "TASK_027",
-      "category": "TOOL_EXEC_AND_PRUNING",
-      "query": "人机协同高危操作：删除数据库表前触发 SUSPENDED 挂起并持久化快照，等待管理员审批。",
-      "complexity": "MEDIUM",
-      "gold_chain": ["High_Risk_Tool_Trigger", "State_Suspended", "Durable_Checkpoint_Saved"],
-      "expected_decision": "HITL_GATE_SUSPENDED"
-    },
-    {
-      "task_id": "TASK_028",
-      "category": "TOOL_EXEC_AND_PRUNING",
-      "query": "工作流时间旅行测试：从第 5 步状态快照分叉出分支 B 并修改参数，验证分支隔离性。",
-      "complexity": "HIGH",
-      "gold_chain": ["Snapshot_Fork_Branch", "Variable_Hot_Tuning", "Zero_Ghost_State_Pollution"],
-      "expected_decision": "BRANCH_FORK_ISOLATED"
-    },
-    {
-      "task_id": "TASK_029",
-      "category": "TOOL_EXEC_AND_PRUNING",
-      "query": "并发虚拟线程安全：10 个子任务并发读写全局黑板变量时的 CAS 状态原子演进验证。",
-      "complexity": "HIGH",
-      "gold_chain": ["Virtual_Thread_Fanout", "Atomic_CAS_Transition", "Sequential_Consistency"],
-      "expected_decision": "CONCURRENCY_ATOMIC_CONSISTENT"
-    },
-    {
-      "task_id": "TASK_030",
-      "category": "TOOL_EXEC_AND_PRUNING",
-      "query": "端到端综合大决战：多跳超球面 RAG 检索 + 64-token 缓存调度 + 3 智能体 Handoff 完整闭环。",
-      "complexity": "HIGH",
-      "gold_chain": ["Spectral_Rag_Query", "Prefix_Cache_Hit", "Agent_Handoff_Complete", "Receipt_Signed"],
-      "expected_decision": "MASTER_CYCLE_SUCCEEDED"
-    }
-  ]
-}
+    "complexity": "L4-VeryHigh"
+  }
+]
