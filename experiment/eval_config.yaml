@@ -38,17 +38,21 @@ seeds:
   - 3407
   - 777
 
-# 正交单变量消融实验矩阵（7 大核心生产资产消融组）
+# 正交单变量消融实验矩阵（11 大核心生产资产全正交消融组）
 ablation_matrix:
   V1_full_hermes:
     code: "full_hermes"
-    description: "完整生产方案: 六大资产全量激活 (Colbert SIMD + 自适应 RRF + 推测性 RAG + GraphRAG 社区树 + MCTS/DyLAN + 企业沙箱)"
+    description: "完整生产方案: 全量资产激活 (Colbert SIMD + 自适应 RRF + 推测性 RAG + GraphRAG 社区树 + MCTS/DyLAN + 企业沙箱 + Hoare合约网关 + 海马体双轨记忆 + 动态拓扑总线 + 双流思考预取)"
     colbert_simd_enabled: true
     speculative_rag_enabled: true
     graphrag_tree_enabled: true
     hybrid_rrf_enabled: true
     mcts_dynamic_roles_enabled: true
     sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
 
   V2_wo_colbert_simd:
     code: "wo_colbert_simd"
@@ -59,6 +63,10 @@ ablation_matrix:
     hybrid_rrf_enabled: true
     mcts_dynamic_roles_enabled: true
     sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
 
   V3_wo_speculative_rag:
     code: "wo_speculative_rag"
@@ -69,6 +77,10 @@ ablation_matrix:
     hybrid_rrf_enabled: true
     mcts_dynamic_roles_enabled: true
     sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
 
   V4_wo_graphrag_tree:
     code: "wo_graphrag_tree"
@@ -79,6 +91,10 @@ ablation_matrix:
     hybrid_rrf_enabled: true
     mcts_dynamic_roles_enabled: true
     sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
 
   V5_wo_mcts_dynamic_roles:
     code: "wo_mcts_dynamic_roles"
@@ -89,6 +105,10 @@ ablation_matrix:
     hybrid_rrf_enabled: false
     mcts_dynamic_roles_enabled: false
     sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
 
   V6_wo_sandbox_reflexion:
     code: "wo_sandbox_reflexion"
@@ -99,16 +119,80 @@ ablation_matrix:
     hybrid_rrf_enabled: true
     mcts_dynamic_roles_enabled: true
     sandbox_reflexion_enabled: false
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
 
-  V7_baseline_vanilla_react:
+  V7_wo_hoare_guard:
+    code: "wo_hoare_guard"
+    description: "消融 Hoare 逻辑合约网关: 关闭 {P} C {Q} 形式化前置守卫与 Saga 逆向补偿，退化为传统无防守工具裸调，验证参数篡改与越权"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
+    hoare_contract_enabled: false
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
+
+  V8_wo_hippocampus_sleep:
+    code: "wo_hippocampus_sleep"
+    description: "消融海马体双轨慢轨睡眠: 关闭离线慢轨睡眠整合与质心沉淀，仅保留有限在线快轨 FIFO，验证长程记忆遗忘"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: false
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: true
+
+  V9_wo_dynamic_topology:
+    code: "wo_dynamic_topology"
+    description: "消融动态拓扑稀疏激活: 关闭超球面测地大圆弧 Top-K 自组织激活与夏普利剪枝，退化为全向广播，验证 Token 爆炸与通信风暴"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: false
+    speculative_prefetch_enabled: true
+
+  V10_wo_speculative_prefetch:
+    code: "wo_speculative_prefetch"
+    description: "消融思考流双流推测引擎: 关闭 DFA 模式识别流式预取与 System 1 草稿，退化为串行思考等待，验证首包延迟 (TTFT) 恶化"
+    colbert_simd_enabled: true
+    speculative_rag_enabled: true
+    graphrag_tree_enabled: true
+    hybrid_rrf_enabled: true
+    mcts_dynamic_roles_enabled: true
+    sandbox_reflexion_enabled: true
+    hoare_contract_enabled: true
+    hippocampus_sleep_enabled: true
+    dynamic_topology_enabled: true
+    speculative_prefetch_enabled: false
+
+  V11_baseline_vanilla_react:
     code: "baseline_vanilla_react"
-    description: "原生基线组: 纯原生单步贪心 ReAct，无 SIMD / 无草稿分片 / 无社区树 / 无沙箱防御"
+    description: "原生基线组: 纯原生单步贪心 ReAct，全量企业级资产关闭"
     colbert_simd_enabled: false
     speculative_rag_enabled: false
     graphrag_tree_enabled: false
     hybrid_rrf_enabled: false
     mcts_dynamic_roles_enabled: false
     sandbox_reflexion_enabled: false
+    hoare_contract_enabled: false
+    hippocampus_sleep_enabled: false
+    dynamic_topology_enabled: false
+    speculative_prefetch_enabled: false
 
 # 统计学显著性验证推断参数
 statistics:

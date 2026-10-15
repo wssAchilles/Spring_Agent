@@ -146,7 +146,11 @@ def main():
         ("wo_graphrag_tree", "V4: w/o GraphRAG Tree (消融社区分层树)"),
         ("wo_mcts_dynamic_roles", "V5: w/o MCTS & DyLAN (消融树规划与角色流变)"),
         ("wo_sandbox_reflexion", "V6: w/o Sandbox & Reflexion (消融企业沙箱与反思记忆)"),
-        ("baseline_vanilla_react", "V7: Vanilla ReAct Baseline (原生基线组)")
+        ("wo_hoare_guard", "V7: w/o Hoare Guard (消融契约网关与Saga回滚)"),
+        ("wo_hippocampus_sleep", "V8: w/o Hippocampus Sleep (消融慢轨睡眠与质心沉淀)"),
+        ("wo_dynamic_topology", "V9: w/o Dynamic Topology (消融测地稀疏激活)"),
+        ("wo_speculative_prefetch", "V10: w/o Speculative Prefetch (消融思考流预取)"),
+        ("baseline_vanilla_react", "V11: Vanilla ReAct Baseline (原生基线组)")
     ]
 
     baseline_code = "baseline_vanilla_react"
@@ -218,7 +222,7 @@ def main():
         "\\label{tab:hermes_orthogonal_ablation}\n"
         "\\begin{tabular}{lccccc}\n"
         "\\toprule\n"
-        "\\textbf{消融实验变体} & \\textbf{Pass@1 (95\\% CI)} & \\textbf{Score (Mean $\\pm$ Std)} & \\textbf{P99 Latency (ms)} & \\textbf{Cost (¥)} & \\textbf{$p$-value vs V7} \\\\\n"
+        "\\textbf{消融实验变体} & \\textbf{Pass@1 (95\\% CI)} & \\textbf{Score (Mean $\\pm$ Std)} & \\textbf{P99 Latency (ms)} & \\textbf{Cost (¥)} & \\textbf{$p$-value vs V11} \\\\\n"
         "\\midrule\n"
         + "\n".join(latex_rows) + "\n"
         "\\bottomrule\n"

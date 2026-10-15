@@ -25,17 +25,21 @@ ERROR_TAXONOMY = {
     "Level 1: Planning & Reasoning": [
         "PR-01_GOAL_DRIFT",
         "PR-02_PREMATURE_HALTING",
-        "PR-03_INFINITE_LOOP"
+        "PR-03_INFINITE_LOOP",
+        "PR-04_PREFETCH_DESYNC"
     ],
     "Level 2: Tool & Grounding": [
         "TG-01_SCHEMA_HALLUCINATION",
         "TG-02_TOOL_MISSELECTION",
-        "TG-03_TIMEOUT_DENIED"
+        "TG-03_TIMEOUT_DENIED",
+        "TG-04_HOARE_INVARIANT_VIOLATION"
     ],
     "Level 3: Context & Attention": [
         "CA-01_CONTEXT_OVERFLOW",
         "CA-02_LOST_IN_THE_MIDDLE",
-        "CA-03_HYPERSPHERICAL_COLLAPSE"
+        "CA-03_HYPERSPHERICAL_COLLAPSE",
+        "CA-04_HIPPOCAMPUS_FORGETTING",
+        "CA-05_TOPOLOGY_BROADCAST_STORM"
     ]
 }
 
