@@ -72,6 +72,11 @@ public class HermesBenchmarkProbeRunner {
                 case "HIPPOCAMPUS_MEMORY" -> runHippocampusMemoryProbe(payload, resultMap);
                 case "DYNAMIC_SWARM_BUS" -> runDynamicSwarmBusProbe(payload, resultMap);
                 case "SPECULATIVE_PREFETCH" -> runSpeculativePrefetchProbe(payload, resultMap);
+                case "ACI_LINT_REMEDY", "GATED_SPECULATION" -> {
+                    String resp = tech.qiantong.qknow.hermes.daemon.DaemonProbeDispatcher.dispatch(payload);
+                    System.out.println(resp);
+                    System.exit(0);
+                }
                 default -> {
                     resultMap.put("status", "ERROR");
                     resultMap.put("error_message", "未知的 probe_type: " + probeType);
@@ -252,6 +257,7 @@ public class HermesBenchmarkProbeRunner {
             out.put("stdout_snippet", receipt.stdout().length() > 100 ? receipt.stdout().substring(0, 100) : receipt.stdout());
             out.put("stderr_snippet", receipt.stderr().length() > 100 ? receipt.stderr().substring(0, 100) : receipt.stderr());
             out.put("security_seal_valid", receipt.verifySecuritySeal());
+            out.put("seal_verified", receipt.verifySecuritySeal());
             out.put("sha256_seal", receipt.securitySealSha256());
         } finally {
             try {

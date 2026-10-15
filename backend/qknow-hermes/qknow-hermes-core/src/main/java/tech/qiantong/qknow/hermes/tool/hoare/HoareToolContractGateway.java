@@ -11,19 +11,34 @@ import java.util.function.Supplier;
 
 /**
  * 声明式 Hoare 逻辑工具合约执行网关
- * 贯彻形式化方法三元组 {P} C {Q}：
- * 1. 前置守卫 {P}：拦截参数幻觉与未授权状态，未通过则 100% 拒绝执行并防御短路；
+ * 贯彻形式化方法三元组 {P} C {Q} 与紧凑 ACI 自纠错闭环：
+ * 1. 前置守卫 {P}：拦截参数幻觉与未授权状态，未通过则 100% 拒绝执行并生成单步 ACI 自纠错指引；
  * 2. 受限操作 C：沙箱化调用实际业务工具；
  * 3. 后置不变量 {Q}：校验执行后系统状态转移，若违背则立即触发 Saga 逆向补偿回滚；
- * 4. 签发纯 Java 21 Record 密码学自验真凭单。
+ * 4. 签发纯 Java 21 Record 密码学自验真凭单与 ACI 观察量。
  */
 public class HoareToolContractGateway {
 
     public record ExecutionOutcome(
             boolean success,
             Object toolResult,
-            HoareContractReceipt receipt
-    ) {}
+            HoareContractReceipt receipt,
+            AciObservationReceipt aciObservation
+    ) {
+        public ExecutionOutcome(boolean success, Object toolResult, HoareContractReceipt receipt) {
+            this(success, toolResult, receipt, null);
+        }
+
+        public String getObservationText() {
+            if (aciObservation != null && aciObservation.observationText() != null && !aciObservation.observationText().isBlank()) {
+                return aciObservation.observationText();
+            }
+            if (success) {
+                return toolResult != null ? toolResult.toString() : "SUCCESS";
+            }
+            return receipt != null ? receipt.preconditionViolationReason() + " " + receipt.postconditionViolationReason() : "FAILED";
+        }
+    }
 
     private final String secretKey;
     private final Map<String, HoarePreconditionGuard> preconditionRegistry = new ConcurrentHashMap<>();
@@ -58,7 +73,7 @@ public class HoareToolContractGateway {
      * @param toolAction        实际业务工具调用逻辑
      * @param rollbackAction    违背不变量时的 Saga 补偿动作
      * @param postStateSupplier 执行后状态提供者
-     * @return ExecutionOutcome 包含最终结果与不可变审计凭单
+     * @return ExecutionOutcome 包含最终结果、不可变审计凭单与紧凑 ACI 观察凭单
      */
     public ExecutionOutcome execute(
             String toolName,
@@ -74,6 +89,7 @@ public class HoareToolContractGateway {
         Objects.requireNonNull(executionId, "executionId cannot be null");
         long timestamp = System.currentTimeMillis();
         String receiptId = "hoare_rcpt_" + UUID.randomUUID().toString().replace("-", "");
+        String aciReceiptId = "aci_rcpt_" + UUID.randomUUID().toString().replace("-", "");
 
         Map<String, Object> safeParams = inputParams == null ? Collections.emptyMap() : inputParams;
         Map<String, Object> safeCtx = systemContext == null ? Collections.emptyMap() : systemContext;
@@ -89,7 +105,16 @@ public class HoareToolContractGateway {
                 HoareContractReceipt receipt = new HoareContractReceipt(
                         receiptId, toolName, executionId, false, guardResult.violationReason(),
                         false, "Precondition failed, execution skipped", false, timestamp, sig);
-                return new ExecutionOutcome(false, null, receipt);
+
+                AciObservationReceipt aciReceipt = AciObservationReceipt.createLintFailure(
+                        aciReceiptId, toolName, executionId,
+                        guardResult.violationType(),
+                        guardResult.missingParameters(),
+                        guardResult.parameterErrors(),
+                        guardResult.suggestedRemedy(),
+                        timestamp, secretKey);
+
+                return new ExecutionOutcome(false, null, receipt, aciReceipt);
             }
         }
 
@@ -107,7 +132,16 @@ public class HoareToolContractGateway {
             HoareContractReceipt receipt = new HoareContractReceipt(
                     receiptId, toolName, executionId, true, "",
                     false, "ToolExecutionThrewException: " + e.getMessage(), true, timestamp, sig);
-            return new ExecutionOutcome(false, null, receipt);
+
+            AciObservationReceipt aciReceipt = AciObservationReceipt.createLintFailure(
+                    aciReceiptId, toolName, executionId,
+                    "TOOL_EXECUTION_EXCEPTION",
+                    Collections.emptyList(),
+                    Map.of("exception", e.getMessage() != null ? e.getMessage() : "Unknown exception"),
+                    "Tool execution crashed. Inspect parameters or fallback to alternative action.",
+                    timestamp, secretKey);
+
+            return new ExecutionOutcome(false, null, receipt, aciReceipt);
         }
 
         // 步骤 3：后置不变量 {Q} 校验
@@ -132,16 +166,32 @@ public class HoareToolContractGateway {
                 HoareContractReceipt receipt = new HoareContractReceipt(
                         receiptId, toolName, executionId, true, "",
                         false, invariantResult.violationReason(), compensated, timestamp, sig);
-                return new ExecutionOutcome(false, result, receipt);
+
+                AciObservationReceipt aciReceipt = AciObservationReceipt.createLintFailure(
+                        aciReceiptId, toolName, executionId,
+                        "POSTCONDITION_INVARIANT_VIOLATION",
+                        Collections.emptyList(),
+                        Map.of("invariantReason", invariantResult.violationReason()),
+                        "Invariant violated. State was rolled back by Saga compensator. Revise post-conditions.",
+                        timestamp, secretKey);
+
+                return new ExecutionOutcome(false, result, receipt, aciReceipt);
             }
         }
 
-        // 步骤 4：前后置全绿，签发合法执行凭单
+        // 步骤 4：前后置全绿，签发合法执行凭单与成功 ACI 凭单
         String sig = HoareContractReceipt.calculateSignature(
                 receiptId, toolName, executionId, true, true, false, timestamp, secretKey);
         HoareContractReceipt receipt = new HoareContractReceipt(
                 receiptId, toolName, executionId, true, "",
                 true, "", false, timestamp, sig);
-        return new ExecutionOutcome(true, result, receipt);
+
+        String resultStr = result != null ? result.toString() : "null";
+        AciObservationReceipt aciReceipt = AciObservationReceipt.createSuccess(
+                aciReceiptId, toolName, executionId,
+                "Tool execution successful. Result: " + resultStr,
+                timestamp, secretKey);
+
+        return new ExecutionOutcome(true, result, receipt, aciReceipt);
     }
 }
