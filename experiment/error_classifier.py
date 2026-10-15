@@ -65,16 +65,6 @@ def main():
     print("Hermes 细粒度失效模式归因与 Pareto 效率前沿分析器")
     print("=" * 80)
 
-    summary_file = os.path.join(OUTPUTS_DIR, "all_experiments_summary.json")
-    if not os.path.exists(summary_file):
-        print(f"[Error] 未找到汇总数据文件 {summary_file}，请先执行 runner.py！")
-        sys.exit(1)
-
-    with open(summary_file, "r", encoding="utf-8") as f:
-        summary_data = json.load(f)
-
-    variant_summaries = summary_data.get("summary_by_variant", {})
-
     variant_error_counts = {}
     points_costs = []
     points_success = []
@@ -91,48 +81,95 @@ def main():
             sankey_node_map[name] = idx
         return sankey_node_map[name]
 
-    for v_code in variant_summaries.keys():
-        variant_dir = os.path.join(OUTPUTS_DIR, v_code)
-        if not os.path.exists(variant_dir):
-            continue
+    traj_file = os.path.join(OUTPUTS_DIR, "trajectory.jsonl")
+    if os.path.exists(traj_file):
+        print(f"从统一轨迹文件读取评测数据: {traj_file}")
+        records_by_variant = {}
+        with open(traj_file, "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                rec = json.loads(line.strip())
+                v_code = rec.get("variant_code", "unknown")
+                records_by_variant.setdefault(v_code, []).append(rec)
 
-        variant_error_counts[v_code] = {
-            "total_failures": 0,
-            "by_level": {lvl: 0 for lvl in ERROR_TAXONOMY.keys()},
-            "by_code": {}
-        }
+        for v_code, recs in records_by_variant.items():
+            variant_error_counts[v_code] = {
+                "total_failures": 0,
+                "by_level": {lvl: 0 for lvl in ERROR_TAXONOMY.keys()},
+                "by_code": {}
+            }
+            v_success = 0
+            v_costs_usd = []
+            for rec in recs:
+                cost_usd = rec.get("cost_cny", 0.0) / 7.20
+                v_costs_usd.append(cost_usd)
+                if rec.get("success", False):
+                    v_success += 1
+                else:
+                    err_code = rec.get("failure_reason") or "PR-01_GOAL_DRIFT"
+                    variant_error_counts[v_code]["total_failures"] += 1
+                    variant_error_counts[v_code]["by_code"][err_code] = variant_error_counts[v_code]["by_code"].get(err_code, 0) + 1
+                    err_level = get_error_level(err_code)
+                    variant_error_counts[v_code]["by_level"][err_level] += 1
 
-        seed_dirs = [d for d in os.listdir(variant_dir) if d.startswith("seed_")]
-        v_success_count = 0
-        v_total_tasks = 0
-        v_costs = []
+            sr = v_success / max(1, len(recs))
+            avg_c = np.mean(v_costs_usd) if v_costs_usd else 0.0
+            points_costs.append(avg_c)
+            points_success.append(sr)
+            variant_names.append(v_code)
+    else:
+        summary_file = os.path.join(OUTPUTS_DIR, "all_experiments_summary.json")
+        if not os.path.exists(summary_file):
+            print(f"[Error] 未找到数据文件 {traj_file} 或 {summary_file}，请先执行 runner.py！")
+            sys.exit(1)
 
-        for s_dir in seed_dirs:
-            traj_file = os.path.join(variant_dir, s_dir, "trajectory.jsonl")
-            if not os.path.exists(traj_file):
+        with open(summary_file, "r", encoding="utf-8") as f:
+            summary_data = json.load(f)
+
+        variant_summaries = summary_data.get("summary_by_variant", {})
+        for v_code in variant_summaries.keys():
+            variant_dir = os.path.join(OUTPUTS_DIR, v_code)
+            if not os.path.exists(variant_dir):
                 continue
-            with open(traj_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    rec = json.loads(line.strip())
-                    v_total_tasks += 1
-                    v_costs.append(rec["total_cost_usd"])
-                    if rec["task_success"]:
-                        v_success_count += 1
-                    else:
-                        err_code = rec.get("error_type") or "PR-01_GOAL_DRIFT"
-                        variant_error_counts[v_code]["total_failures"] += 1
-                        variant_error_counts[v_code]["by_code"][err_code] = variant_error_counts[v_code]["by_code"].get(err_code, 0) + 1
-                        err_level = get_error_level(err_code)
-                        variant_error_counts[v_code]["by_level"][err_level] += 1
 
-        sr = v_success_count / max(1, v_total_tasks)
-        avg_c = np.mean(v_costs) if v_costs else 0.0
+            variant_error_counts[v_code] = {
+                "total_failures": 0,
+                "by_level": {lvl: 0 for lvl in ERROR_TAXONOMY.keys()},
+                "by_code": {}
+            }
 
-        points_costs.append(avg_c)
-        points_success.append(sr)
-        variant_names.append(v_code)
+            seed_dirs = [d for d in os.listdir(variant_dir) if d.startswith("seed_")]
+            v_success_count = 0
+            v_total_tasks = 0
+            v_costs = []
+
+            for s_dir in seed_dirs:
+                s_traj = os.path.join(variant_dir, s_dir, "trajectory.jsonl")
+                if not os.path.exists(s_traj):
+                    continue
+                with open(s_traj, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        rec = json.loads(line.strip())
+                        v_total_tasks += 1
+                        v_costs.append(rec.get("total_cost_usd", 0.0))
+                        if rec.get("task_success", False):
+                            v_success_count += 1
+                        else:
+                            err_code = rec.get("error_type") or "PR-01_GOAL_DRIFT"
+                            variant_error_counts[v_code]["total_failures"] += 1
+                            variant_error_counts[v_code]["by_code"][err_code] = variant_error_counts[v_code]["by_code"].get(err_code, 0) + 1
+                            err_level = get_error_level(err_code)
+                            variant_error_counts[v_code]["by_level"][err_level] += 1
+
+            sr = v_success_count / max(1, v_total_tasks)
+            avg_c = np.mean(v_costs) if v_costs else 0.0
+
+            points_costs.append(avg_c)
+            points_success.append(sr)
+            variant_names.append(v_code)
 
     # 构造桑基图 links: Variant -> Level -> Error Code
     level_counts = {}
