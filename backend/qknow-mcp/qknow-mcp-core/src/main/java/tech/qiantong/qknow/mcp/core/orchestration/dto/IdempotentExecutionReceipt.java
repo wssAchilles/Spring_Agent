@@ -60,13 +60,15 @@ public record IdempotentExecutionReceipt(
     }
 
     /**
-     * 验证自签名真实性
+     * 验证自签名真实性 (使用 MessageDigest.isEqual 进行常量时间比对，杜绝时序侧信道攻击)
      */
     public boolean verifySignature() {
         if (signature == null || signature.isBlank()) {
             return false;
         }
         String expected = calculateSignature(receiptId, idempotencyKey, toolId, status, payloadHash, timestamp);
-        return signature.equalsIgnoreCase(expected);
+        byte[] actualBytes = signature.getBytes(StandardCharsets.UTF_8);
+        byte[] expectedBytes = expected.getBytes(StandardCharsets.UTF_8);
+        return MessageDigest.isEqual(actualBytes, expectedBytes);
     }
 }
