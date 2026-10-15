@@ -5,6 +5,9 @@ import tech.qiantong.qknow.hermes.agent.planner.mcts.MctsSearchReceipt;
 import tech.qiantong.qknow.hermes.agent.planner.prm.StepProcessRewardEvaluator;
 import tech.qiantong.qknow.hermes.agent.planner.prm.StepProcessRewardReceipt;
 import tech.qiantong.qknow.hermes.agent.planner.prm.TestTimeBacktrackingEngine;
+import tech.qiantong.qknow.hermes.agent.skill.EnterpriseSkillRecord;
+import tech.qiantong.qknow.hermes.agent.skill.LifelongSkillBankEngine;
+import tech.qiantong.qknow.hermes.agent.skill.SkillExecutionReceipt;
 import tech.qiantong.qknow.hermes.agent.speculative.ConfidenceGatedPrefetchFilter;
 import tech.qiantong.qknow.hermes.agent.speculative.DualStreamSpeculativeEngine;
 import tech.qiantong.qknow.hermes.agent.speculative.SpeculativeDraftPrefetchReceipt;
@@ -95,6 +98,7 @@ public final class DaemonProbeDispatcher {
                 case "STEP_PRM_EVALUATION" -> runStepPrmEvaluationProbe(payload, resultMap);
                 case "TEST_TIME_BACKTRACKING" -> runTestTimeBacktrackingProbe(payload, resultMap);
                 case "TEMPORAL_CAUSAL_GRAPHRAG" -> runTemporalCausalGraphRagProbe(payload, resultMap);
+                case "SKILL_REPLAY_EXECUTION" -> runSkillReplayExecutionProbe(payload, resultMap);
                 case "DAEMON_PING" -> {
                     resultMap.put("ping", "pong");
                     resultMap.put("daemon_active", true);
@@ -878,6 +882,71 @@ public final class DaemonProbeDispatcher {
         out.put("seal_verified", sealValid);
         out.put("sha256_seal", receipt.sha256Signature());
         out.put("require_temporal_causal_graphrag_hold", causalOrderValid && noStaleInversion && sealValid && coldIsolated);
+    }
+
+    private static void runSkillReplayExecutionProbe(String payload, Map<String, Object> out) {
+        String testSecret = "HERMES_PROBE_SECRET_SKILL_2026";
+        LifelongSkillBankEngine engine = new LifelongSkillBankEngine(testSecret);
+
+        // 构造千问 1536 维超球面基准单位向量与高相似度查询向量 (cos theta >= 0.93)
+        float[] uSkill = createUnitVector(DIM, 8001);
+        float[] uQuery = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uSkill, 0.93, 8002L);
+
+        // 注册跨部门服务器调用量对账与审计宏动作技能
+        List<EnterpriseSkillRecord.MacroActionStep> steps = List.of(
+                new EnterpriseSkillRecord.MacroActionStep(1, "fetch_server_metrics",
+                        Map.of("dept", "${dept_id}", "range", "${date_range}"), "{\"records\": \"array\"}"),
+                new EnterpriseSkillRecord.MacroActionStep(2, "generate_audit_digest",
+                        Map.of("dept", "${dept_id}"), "{\"digest\": \"string\"}")
+        );
+
+        engine.harvestAndRegisterSkill(
+                "skill_audit_reconcile_01",
+                "跨部门服务器调用量对账与审计摘要",
+                "自动化提取指定部门指定日期的调用量指标并生成加密对账摘要",
+                "skill(dept_id, date_range) -> (metrics, digest)",
+                Map.of("dept_id", "部门编号", "date_range", "对账日期区间"),
+                steps,
+                "AUTH_AUDIT_VERIFIED",
+                "RECONCILE_BALANCED",
+                uSkill
+        );
+
+        String query = extractJsonField(payload, "query");
+        if (query == null || query.isBlank()) {
+            query = "请对账部门 Dept-08 的服务器调用量并输出审计摘要: dept_id=Dept-08 date_range=2026-10";
+        }
+
+        // 执行经验回放评估与受控宏动作直通执行
+        LifelongSkillBankEngine.SkillReplayOutcome outcome = engine.evaluateAndReplay(
+                "trace_probe_skill_888",
+                query,
+                uQuery,
+                (toolName, args) -> "SUCCESS_OUTPUT_FOR_" + toolName + "_WITH_" + args.get("dept")
+        );
+
+        boolean matched = outcome.matched();
+        boolean replaySuccess = outcome.replaySuccess();
+        SkillExecutionReceipt receipt = outcome.receipt();
+
+        boolean sealValid = receipt != null && receipt.verifySignature(testSecret);
+        boolean speedupValid = receipt != null && receipt.speedupRatio() >= 10.0;
+        boolean tokenSavedValid = receipt != null && receipt.estimatedTokenSaved() >= 3000;
+
+        // 验证冷备隔离：软删除后转移至冷备仓
+        engine.softDeleteSkill("skill_audit_reconcile_01");
+        boolean coldIsolated = !engine.getColdBufferSnapshot().isEmpty();
+
+        out.put("receipt_id", receipt != null ? receipt.receiptId() : "rcpt-skill-none");
+        out.put("matched_skill_id", outcome.matchedSkill() != null ? outcome.matchedSkill().skillId() : "none");
+        out.put("cosine_similarity", outcome.cosineSimilarity());
+        out.put("speedup_ratio", receipt != null ? receipt.speedupRatio() : 0.0);
+        out.put("token_saved", receipt != null ? receipt.estimatedTokenSaved() : 0);
+        out.put("replay_success", replaySuccess);
+        out.put("cold_buffer_isolated", coldIsolated);
+        out.put("seal_verified", sealValid);
+        out.put("sha256_seal", receipt != null ? receipt.signatureSha256() : "");
+        out.put("require_skill_replay_hold", matched && replaySuccess && sealValid && speedupValid && tokenSavedValid && coldIsolated);
     }
 
     private static float[] createUnitVector(int dim, int seed) {
