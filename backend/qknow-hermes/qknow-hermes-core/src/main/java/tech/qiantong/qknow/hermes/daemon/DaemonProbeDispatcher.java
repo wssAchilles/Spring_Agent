@@ -2,6 +2,9 @@ package tech.qiantong.qknow.hermes.daemon;
 
 import tech.qiantong.qknow.hermes.agent.planner.impl.DefaultTreeOfThoughtsReActPlanner;
 import tech.qiantong.qknow.hermes.agent.planner.mcts.MctsSearchReceipt;
+import tech.qiantong.qknow.hermes.agent.planner.prm.StepProcessRewardEvaluator;
+import tech.qiantong.qknow.hermes.agent.planner.prm.StepProcessRewardReceipt;
+import tech.qiantong.qknow.hermes.agent.planner.prm.TestTimeBacktrackingEngine;
 import tech.qiantong.qknow.hermes.agent.speculative.ConfidenceGatedPrefetchFilter;
 import tech.qiantong.qknow.hermes.agent.speculative.DualStreamSpeculativeEngine;
 import tech.qiantong.qknow.hermes.agent.speculative.SpeculativeDraftPrefetchReceipt;
@@ -86,6 +89,8 @@ public final class DaemonProbeDispatcher {
                 case "SPECULATIVE_PREFETCH" -> runSpeculativePrefetchProbe(payload, resultMap);
                 case "ACI_LINT_REMEDY" -> runAciLintRemedyProbe(payload, resultMap);
                 case "GATED_SPECULATION" -> runGatedSpeculationProbe(payload, resultMap);
+                case "STEP_PRM_EVALUATION" -> runStepPrmEvaluationProbe(payload, resultMap);
+                case "TEST_TIME_BACKTRACKING" -> runTestTimeBacktrackingProbe(payload, resultMap);
                 case "DAEMON_PING" -> {
                     resultMap.put("ping", "pong");
                     resultMap.put("daemon_active", true);
@@ -666,6 +671,115 @@ public final class DaemonProbeDispatcher {
         out.put("seal_verified", sealsVerified);
         out.put("sha256_seal", evalPos.receipt().signature());
         out.put("require_zero_attention_pollution_hold", posAccepted && negRejected && posHit && !negHit);
+    }
+
+    private static void runStepPrmEvaluationProbe(String payload, Map<String, Object> out) {
+        String testSecret = "HERMES_PROBE_SECRET_PRM_2026";
+        StepProcessRewardEvaluator evaluator = new StepProcessRewardEvaluator(0.60, testSecret);
+
+        // 构造意图向量与步骤向量
+        float[] uTarget = createUnitVector(DIM, 5001);
+        // 高度对齐且契约完备的优质步骤 (cos sim = 0.92)
+        float[] vGood = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uTarget, 0.92, 5001L);
+        // 偏离目标的劣质步骤 (正交或负向，cos sim <= 0.05)
+        float[] vBad = createUnitVector(DIM, 9999);
+
+        // 1. 评估优质推理步 (满足 Hoare 契约、Kahn 因果拓扑、超球面余弦 >= 0.90)
+        StepProcessRewardReceipt goodReceipt = evaluator.evaluateStep(
+                "probe_sess_prm_good",
+                1,
+                "步骤 1: 验证前置依赖已就绪，调用系统核心接口进行状态校验。因此确认执行路径合规。",
+                uTarget,
+                vGood,
+                true,
+                true,
+                0.95
+        );
+
+        // 2. 评估劣质推理步 (前置契约违规，向量偏角大，且存在逻辑矛盾词)
+        StepProcessRewardReceipt badReceipt = evaluator.evaluateStep(
+                "probe_sess_prm_bad",
+                2,
+                "步骤 2: 发现前置参数错误，计算矛盾，尝试未授权越权操作...",
+                uTarget,
+                vBad,
+                false,
+                false,
+                0.35
+        );
+
+        boolean highPassed = goodReceipt.status() == StepProcessRewardReceipt.StepEvaluationStatus.PASSED;
+        boolean lowBacktracked = badReceipt.status() == StepProcessRewardReceipt.StepEvaluationStatus.TRIGGER_BACKTRACK;
+        boolean sealsValid = goodReceipt.verifySignature(testSecret) && badReceipt.verifySignature(testSecret);
+
+        out.put("receipt_id", goodReceipt.receiptId());
+        out.put("high_score_passed", highPassed);
+        out.put("low_score_backtracked", lowBacktracked);
+        out.put("high_score_val", goodReceipt.confidenceScore());
+        out.put("low_score_val", badReceipt.confidenceScore());
+        out.put("seal_verified", sealsValid);
+        out.put("sha256_seal", goodReceipt.signatureSha256());
+        out.put("require_prm_step_gated_hold", highPassed && lowBacktracked && sealsValid);
+    }
+
+    private static void runTestTimeBacktrackingProbe(String payload, Map<String, Object> out) {
+        String testSecret = "HERMES_PROBE_SECRET_MCTS_2026";
+        StepProcessRewardEvaluator evaluator = new StepProcessRewardEvaluator(0.60, testSecret);
+        TestTimeBacktrackingEngine engine = new TestTimeBacktrackingEngine(evaluator, testSecret);
+
+        String sessionId = "sess_probe_bt_" + System.currentTimeMillis();
+        float[] uTarget = createUnitVector(DIM, 6001);
+
+        // 1. 记录 Step 0 为合法前序步骤
+        float[] vStep0 = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uTarget, 0.90, 6001L);
+        StepProcessRewardReceipt step0Receipt = evaluator.evaluateStep(
+                sessionId, 0, "步骤 0: 初始化会话上下文与安全审计环境",
+                uTarget, vStep0, true, true, 0.95
+        );
+
+        // 构造备选分支动作 (包含优质备选分支)
+        float[] vAlt1 = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uTarget, 0.91, 6002L);
+        TestTimeBacktrackingEngine.CandidateAction altAction1 = new TestTimeBacktrackingEngine.CandidateAction(
+                "action:safe_remedy_query",
+                "修正动作: 回退至前置检查点，并采用安全幂等查询重试",
+                vAlt1,
+                0.90,
+                0,
+                0.0
+        );
+
+        engine.recordPassedStep(sessionId, 0, step0Receipt.stepContent(), step0Receipt, List.of(altAction1));
+
+        // 2. 模拟 Step 1 发生逻辑幻觉导致低分，触发 TRIGGER_BACKTRACK
+        float[] vStep1 = createUnitVector(DIM, 8888);
+        StepProcessRewardReceipt failedReceipt = evaluator.evaluateStep(
+                sessionId, 1, "步骤 1: 产生幻觉逻辑并违规尝试越权",
+                uTarget, vStep1, false, false, 0.20
+        );
+
+        // 3. 执行测试时局部 MCTS 回溯验证与自愈
+        TestTimeBacktrackingEngine.BacktrackingDecisionReceipt decisionReceipt = engine.executeBacktracking(
+                sessionId,
+                1,
+                failedReceipt,
+                List.of(altAction1),
+                uTarget
+        );
+
+        boolean rollbackValid = decisionReceipt.rollbackTargetIndex() == 0;
+        boolean healed = decisionReceipt.healed() && decisionReceipt.revisedScore() >= 0.60;
+        boolean isolatedInColdBuffer = !engine.getColdBufferSnapshot().isEmpty();
+        boolean sealValid = decisionReceipt.verifySignature(testSecret);
+
+        out.put("receipt_id", decisionReceipt.receiptId());
+        out.put("backtrack_triggered", true);
+        out.put("rollback_target_index", decisionReceipt.rollbackTargetIndex());
+        out.put("healed_success", healed);
+        out.put("revised_score", decisionReceipt.revisedScore());
+        out.put("cold_buffer_isolated_count", engine.getColdBufferSnapshot().size());
+        out.put("seal_verified", sealValid);
+        out.put("sha256_seal", decisionReceipt.signatureSha256());
+        out.put("require_bounded_mcts_healed_hold", rollbackValid && healed && isolatedInColdBuffer && sealValid);
     }
 
     private static float[] createUnitVector(int dim, int seed) {

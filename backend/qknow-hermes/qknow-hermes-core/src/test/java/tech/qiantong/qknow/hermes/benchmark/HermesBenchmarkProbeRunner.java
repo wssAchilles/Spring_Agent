@@ -72,7 +72,7 @@ public class HermesBenchmarkProbeRunner {
                 case "HIPPOCAMPUS_MEMORY" -> runHippocampusMemoryProbe(payload, resultMap);
                 case "DYNAMIC_SWARM_BUS" -> runDynamicSwarmBusProbe(payload, resultMap);
                 case "SPECULATIVE_PREFETCH" -> runSpeculativePrefetchProbe(payload, resultMap);
-                case "ACI_LINT_REMEDY", "GATED_SPECULATION" -> {
+                case "ACI_LINT_REMEDY", "GATED_SPECULATION", "STEP_PRM_EVALUATION", "TEST_TIME_BACKTRACKING" -> {
                     String resp = tech.qiantong.qknow.hermes.daemon.DaemonProbeDispatcher.dispatch(payload);
                     System.out.println(resp);
                     System.exit(0);
