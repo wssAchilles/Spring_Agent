@@ -2,6 +2,7 @@ package tech.qiantong.qknow.hermes.search;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tech.qiantong.qknow.hermes.infra.offheap.ArenaOffHeapSlabPool;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -125,6 +126,59 @@ public class ColbertNative {
         } catch (Throwable t) {
             throw new RuntimeException("执行零拷贝 native maxsim_batch 发生异常", t);
         }
+    }
+
+    /**
+     * 基于堆外连续 Slab 内存池的纳秒级真零拷贝打分计算
+     * 消除全部 query 和 doc 向量的堆内存分配与数据拷贝，达成极致 0-GC 延迟
+     */
+    public static ColbertScoreReceipt computeMaxSimWithSlab(
+            ArenaOffHeapSlabPool.OffHeapSlice querySlice,
+            int queryLen,
+            ArenaOffHeapSlabPool.OffHeapSlice docsSlice,
+            int[] docLens,
+            int numDocs,
+            int dim
+    ) {
+        long startNanos = System.nanoTime();
+        if (nativeLoaded && MAXSIM_BATCH != null) {
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment docLensSegment = arena.allocateArray(ValueLayout.JAVA_INT, docLens.length);
+                MemorySegment.copy(docLens, 0, docLensSegment, ValueLayout.JAVA_INT, 0, docLens.length);
+
+                MemorySegment scoresOutSegment = arena.allocateArray(ValueLayout.JAVA_FLOAT, numDocs);
+
+                int statusCode = (int) MAXSIM_BATCH.invokeExact(
+                        querySlice.sliceSegment(), (long) queryLen,
+                        docsSlice.sliceSegment(), docLensSegment,
+                        (long) numDocs, (long) dim,
+                        scoresOutSegment
+                );
+
+                if (statusCode == 0) {
+                    float[] scores = new float[numDocs];
+                    MemorySegment.copy(scoresOutSegment, ValueLayout.JAVA_FLOAT, 0, scores, 0, numDocs);
+                    long duration = System.nanoTime() - startNanos;
+                    return ColbertScoreReceipt.create(
+                            queryLen, numDocs, dim, getArchitectureName() + "_SLAB", duration, scores
+                    );
+                }
+                log.warn("Native maxsim_batch 堆外 Slab 计算返回非零状态码: {}，降级运行", statusCode);
+            } catch (Throwable t) {
+                log.warn("执行 native maxsim_batch 堆外 Slab 计算发生异常，自动降级: {}", t.getMessage());
+            }
+        }
+
+        // 纯 Java 降级实现
+        float[] query = new float[querySlice.floatCount()];
+        querySlice.readFloats(query, 0, query.length);
+        float[] docs = new float[docsSlice.floatCount()];
+        docsSlice.readFloats(docs, 0, docs.length);
+        float[] fallbackScores = computeMaxSimJavaFallback(query, queryLen, docs, docLens, numDocs, dim);
+        long duration = System.nanoTime() - startNanos;
+        return ColbertScoreReceipt.create(
+                queryLen, numDocs, dim, "JAVA_FALLBACK_SLAB", duration, fallbackScores
+        );
     }
 
     /**
