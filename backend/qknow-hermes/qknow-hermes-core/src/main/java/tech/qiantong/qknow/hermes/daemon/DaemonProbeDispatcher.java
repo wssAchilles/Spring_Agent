@@ -18,6 +18,9 @@ import tech.qiantong.qknow.hermes.search.ColbertScoreReceipt;
 import tech.qiantong.qknow.hermes.search.graphrag.GraphRagCommunityReceipt;
 import tech.qiantong.qknow.hermes.search.graphrag.HierarchicalCommunityNode;
 import tech.qiantong.qknow.hermes.search.graphrag.HierarchicalGraphRagEngine;
+import tech.qiantong.qknow.hermes.search.graphrag.causal.TemporalCausalGraphRagEngine;
+import tech.qiantong.qknow.hermes.search.graphrag.causal.TemporalCausalTriplet;
+import tech.qiantong.qknow.hermes.search.graphrag.causal.TemporalGraphRetrievalReceipt;
 import tech.qiantong.qknow.hermes.search.hybrid.HybridRetrievalCandidate;
 import tech.qiantong.qknow.hermes.search.hybrid.HybridRetrievalReceipt;
 import tech.qiantong.qknow.hermes.search.hybrid.ResilientHybridRetrievalFunnel;
@@ -91,6 +94,7 @@ public final class DaemonProbeDispatcher {
                 case "GATED_SPECULATION" -> runGatedSpeculationProbe(payload, resultMap);
                 case "STEP_PRM_EVALUATION" -> runStepPrmEvaluationProbe(payload, resultMap);
                 case "TEST_TIME_BACKTRACKING" -> runTestTimeBacktrackingProbe(payload, resultMap);
+                case "TEMPORAL_CAUSAL_GRAPHRAG" -> runTemporalCausalGraphRagProbe(payload, resultMap);
                 case "DAEMON_PING" -> {
                     resultMap.put("ping", "pong");
                     resultMap.put("daemon_active", true);
@@ -780,6 +784,100 @@ public final class DaemonProbeDispatcher {
         out.put("seal_verified", sealValid);
         out.put("sha256_seal", decisionReceipt.signatureSha256());
         out.put("require_bounded_mcts_healed_hold", rollbackValid && healed && isolatedInColdBuffer && sealValid);
+    }
+
+    private static void runTemporalCausalGraphRagProbe(String payload, Map<String, Object> out) {
+        String testSecret = "HERMES_PROBE_SECRET_TKG_2026";
+        TemporalCausalGraphRagEngine engine = new TemporalCausalGraphRagEngine(testSecret);
+
+        long now = System.currentTimeMillis();
+        float[] uQuery = createUnitVector(DIM, 7001);
+
+        // 构造三元组 1: 当前有效的前驱原因 (与 query 高度相关，cos = 0.94)
+        float[] vT1 = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uQuery, 0.94, 7001L);
+        TemporalCausalTriplet t1 = TemporalCausalTriplet.of(
+                "triplet_node_01",
+                "OrderClusterA",
+                "triggered_failover_to",
+                "StandbyNodeB",
+                now - 10000,
+                null, // 根原因
+                now - 60000,
+                now + 3600000,
+                86400000L,
+                0.96,
+                vT1
+        );
+
+        // 构造三元组 2: 由 t1 诱发的因果后继结论 (前驱指向 t1)
+        float[] vT2 = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uQuery, 0.91, 7002L);
+        TemporalCausalTriplet t2 = TemporalCausalTriplet.of(
+                "triplet_node_02",
+                "StandbyNodeB",
+                "promoted_as_new_master_for",
+                "DataPartitionShard09",
+                now - 5000,
+                "triplet_node_01", // 因果依赖 t1
+                now - 60000,
+                now + 3600000,
+                86400000L,
+                0.94,
+                vT2
+        );
+
+        // 构造三元组 3: 历史已废弃失效事实 (7天前已失效，虽然语义相关，但 decay 极小)
+        float[] vT3 = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uQuery, 0.92, 7003L);
+        TemporalCausalTriplet t3 = TemporalCausalTriplet.of(
+                "triplet_node_03",
+                "LegacyDeprecatedNodeZ",
+                "served_as_master_for",
+                "DataPartitionShard09",
+                now - 7 * 86400000L,
+                null,
+                now - 14 * 86400000L,
+                now - 7 * 86400000L, // 7 天前已关闭
+                86400000L, // 24小时半衰期，7天衰减因子为 2^-7 ≈ 0.0078
+                0.90,
+                vT3
+        );
+
+        engine.registerTriplets(List.of(t1, t2, t3));
+
+        // 执行时间感知因果 GraphRAG 检索
+        TemporalCausalGraphRagEngine.RetrievalResult result = engine.retrieveCausalSubgraph(
+                "查询高可用集群宕机后主节点自动提升与分片挂载全因果链路",
+                uQuery,
+                now,
+                5,
+                16
+        );
+
+        TemporalGraphRetrievalReceipt receipt = result.receipt();
+        List<String> propositions = result.propositions();
+
+        // 验证拓扑因果偏序与陈旧知识过滤
+        boolean causalOrderValid = !propositions.isEmpty()
+                && propositions.get(0).contains("triplet_node_01")
+                && (propositions.size() < 2 || propositions.get(1).contains("triplet_node_02"));
+
+        // 验证陈旧知识未发生倒挂 (因果阶 1 必须是当前活跃根因，而非 Legacy 节点)
+        boolean noStaleInversion = propositions.stream().noneMatch(p -> p.contains("LegacyDeprecatedNodeZ"));
+
+        boolean sealValid = receipt.verifySignature(testSecret);
+
+        // 验证软删除与冷备仓隔离
+        engine.softDeleteTriplet("triplet_node_01");
+        boolean coldIsolated = !engine.getColdBufferSnapshot().isEmpty();
+
+        out.put("receipt_id", receipt.receiptId());
+        out.put("seed_triplet_count", receipt.seedTripletCount());
+        out.put("propositions_count", propositions.size());
+        out.put("causal_order_verified", causalOrderValid);
+        out.put("no_stale_inversion_hold", noStaleInversion);
+        out.put("cold_buffer_isolated", coldIsolated);
+        out.put("seal_verified", sealValid);
+        out.put("sha256_seal", receipt.sha256Signature());
+        out.put("require_temporal_causal_graphrag_hold", causalOrderValid && noStaleInversion && sealValid && coldIsolated);
     }
 
     private static float[] createUnitVector(int dim, int seed) {
