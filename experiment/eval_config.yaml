@@ -102,7 +102,7 @@ ablation_matrix:
     colbert_simd_enabled: true
     speculative_rag_enabled: true
     graphrag_tree_enabled: true
-    hybrid_rrf_enabled: false
+    hybrid_rrf_enabled: true
     mcts_dynamic_roles_enabled: false
     sandbox_reflexion_enabled: true
     hoare_contract_enabled: true
