@@ -1,0 +1,167 @@
+[
+  {
+    "variant_code": "full_hermes",
+    "label": "V1: Full Architecture (完整生产上限)",
+    "pass_rate_mean": 20.0,
+    "pass_rate_ci_95": [
+      10.0,
+      30.0
+    ],
+    "score_mean": 0.7008,
+    "score_std": 0.187,
+    "p99_latency_ms": 16910.68,
+    "avg_cost_cny": 0.00906,
+    "p_value_vs_baseline": 0.0,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_colbert_simd",
+    "label": "V2: w/o Colbert SIMD (消融晚期交互)",
+    "pass_rate_mean": 18.33,
+    "pass_rate_ci_95": [
+      8.33,
+      28.33
+    ],
+    "score_mean": 0.6375,
+    "score_std": 0.2602,
+    "p99_latency_ms": 17275.73,
+    "avg_cost_cny": 0.00908,
+    "p_value_vs_baseline": 0.0,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_speculative_rag",
+    "label": "V3: w/o Speculative RAG (消融推测性草稿)",
+    "pass_rate_mean": 18.33,
+    "pass_rate_ci_95": [
+      8.33,
+      28.33
+    ],
+    "score_mean": 0.66,
+    "score_std": 0.2531,
+    "p99_latency_ms": 17353.11,
+    "avg_cost_cny": 0.00908,
+    "p_value_vs_baseline": 0.0,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_graphrag_tree",
+    "label": "V4: w/o GraphRAG Tree (消融社区分层树)",
+    "pass_rate_mean": 21.82,
+    "pass_rate_ci_95": [
+      10.91,
+      32.73
+    ],
+    "score_mean": 0.6118,
+    "score_std": 0.2992,
+    "p99_latency_ms": 17738.08,
+    "avg_cost_cny": 0.00908,
+    "p_value_vs_baseline": 1e-06,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_mcts_dynamic_roles",
+    "label": "V5: w/o MCTS & DyLAN (消融树规划与角色流变)",
+    "pass_rate_mean": 20.0,
+    "pass_rate_ci_95": [
+      10.91,
+      30.91
+    ],
+    "score_mean": 0.6145,
+    "score_std": 0.2964,
+    "p99_latency_ms": 16548.32,
+    "avg_cost_cny": 0.00908,
+    "p_value_vs_baseline": 1e-06,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_sandbox_reflexion",
+    "label": "V6: w/o Sandbox & Reflexion (消融企业沙箱与反思记忆)",
+    "pass_rate_mean": 20.0,
+    "pass_rate_ci_95": [
+      10.91,
+      30.91
+    ],
+    "score_mean": 0.5009,
+    "score_std": 0.3467,
+    "p99_latency_ms": 17509.7,
+    "avg_cost_cny": 0.00908,
+    "p_value_vs_baseline": 0.008642,
+    "significance_mark": "^{\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_hoare_guard",
+    "label": "V7: w/o Hoare Guard (消融契约网关与Saga回滚)",
+    "pass_rate_mean": 23.64,
+    "pass_rate_ci_95": [
+      12.73,
+      34.55
+    ],
+    "score_mean": 0.6536,
+    "score_std": 0.2331,
+    "p99_latency_ms": 17179.05,
+    "avg_cost_cny": 0.0091,
+    "p_value_vs_baseline": 0.0,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_hippocampus_sleep",
+    "label": "V8: w/o Hippocampus Sleep (消融慢轨睡眠与质心沉淀)",
+    "pass_rate_mean": 18.18,
+    "pass_rate_ci_95": [
+      9.09,
+      29.09
+    ],
+    "score_mean": 0.6373,
+    "score_std": 0.2503,
+    "p99_latency_ms": 17063.34,
+    "avg_cost_cny": 0.00909,
+    "p_value_vs_baseline": 0.0,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_dynamic_topology",
+    "label": "V9: w/o Dynamic Topology (消融测地稀疏激活)",
+    "pass_rate_mean": 23.64,
+    "pass_rate_ci_95": [
+      12.73,
+      34.55
+    ],
+    "score_mean": 0.6591,
+    "score_std": 0.2583,
+    "p99_latency_ms": 16763.98,
+    "avg_cost_cny": 0.0091,
+    "p_value_vs_baseline": 0.0,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "wo_speculative_prefetch",
+    "label": "V10: w/o Speculative Prefetch (消融思考流预取)",
+    "pass_rate_mean": 30.91,
+    "pass_rate_ci_95": [
+      18.18,
+      43.64
+    ],
+    "score_mean": 0.6964,
+    "score_std": 0.2607,
+    "p99_latency_ms": 17838.4,
+    "avg_cost_cny": 0.0091,
+    "p_value_vs_baseline": 0.0,
+    "significance_mark": "^{\\dagger\\dagger\\dagger}"
+  },
+  {
+    "variant_code": "baseline_vanilla_react",
+    "label": "V11: Vanilla ReAct Baseline (原生基线组)",
+    "pass_rate_mean": 5.45,
+    "pass_rate_ci_95": [
+      0.0,
+      12.73
+    ],
+    "score_mean": 0.3527,
+    "score_std": 0.2561,
+    "p99_latency_ms": 16413.98,
+    "avg_cost_cny": 0.00906,
+    "p_value_vs_baseline": 1.0,
+    "significance_mark": "-"
+  }
+]

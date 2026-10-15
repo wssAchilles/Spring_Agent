@@ -1,0 +1,23 @@
+\begin{table*}[t]
+\centering
+\small
+\caption{Hermes 智能体架构在真实 Java 21 / Rust 物理探针下的正交消融评测结果 (10,000 次 Bootstrap 经验 95\% CI 与 Wilcoxon 符号秩检验)}
+\label{tab:hermes_orthogonal_ablation}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{消融实验变体} & \textbf{Pass@1 (95\% CI)} & \textbf{Score (Mean $\pm$ Std)} & \textbf{P99 Latency (ms)} & \textbf{Cost (¥)} & \textbf{$p$-value vs V11} \\
+\midrule
+V1: Full Architecture (完整生产上限) & 20.0\% [10.0, 30.0] & 0.701 $\pm$ 0.187^{\dagger\dagger\dagger} & 16910.7 & ¥0.0091 & <0.0001 \\
+V2: w/o Colbert SIMD (消融晚期交互) & 18.3\% [8.3, 28.3] & 0.637 $\pm$ 0.260^{\dagger\dagger\dagger} & 17275.7 & ¥0.0091 & <0.0001 \\
+V3: w/o Speculative RAG (消融推测性草稿) & 18.3\% [8.3, 28.3] & 0.660 $\pm$ 0.253^{\dagger\dagger\dagger} & 17353.1 & ¥0.0091 & <0.0001 \\
+V4: w/o GraphRAG Tree (消融社区分层树) & 21.8\% [10.9, 32.7] & 0.612 $\pm$ 0.299^{\dagger\dagger\dagger} & 17738.1 & ¥0.0091 & <0.0001 \\
+V5: w/o MCTS & DyLAN (消融树规划与角色流变) & 20.0\% [10.9, 30.9] & 0.615 $\pm$ 0.296^{\dagger\dagger\dagger} & 16548.3 & ¥0.0091 & <0.0001 \\
+V6: w/o Sandbox & Reflexion (消融企业沙箱与反思记忆) & 20.0\% [10.9, 30.9] & 0.501 $\pm$ 0.347^{\dagger\dagger} & 17509.7 & ¥0.0091 & 0.0086 \\
+V7: w/o Hoare Guard (消融契约网关与Saga回滚) & 23.6\% [12.7, 34.5] & 0.654 $\pm$ 0.233^{\dagger\dagger\dagger} & 17179.0 & ¥0.0091 & <0.0001 \\
+V8: w/o Hippocampus Sleep (消融慢轨睡眠与质心沉淀) & 18.2\% [9.1, 29.1] & 0.637 $\pm$ 0.250^{\dagger\dagger\dagger} & 17063.3 & ¥0.0091 & <0.0001 \\
+V9: w/o Dynamic Topology (消融测地稀疏激活) & 23.6\% [12.7, 34.5] & 0.659 $\pm$ 0.258^{\dagger\dagger\dagger} & 16764.0 & ¥0.0091 & <0.0001 \\
+V10: w/o Speculative Prefetch (消融思考流预取) & 30.9\% [18.2, 43.6] & 0.696 $\pm$ 0.261^{\dagger\dagger\dagger} & 17838.4 & ¥0.0091 & <0.0001 \\
+V11: Vanilla ReAct Baseline (原生基线组) & 5.5\% [0.0, 12.7] & 0.353 $\pm$ 0.256- & 16414.0 & ¥0.0091 & 1.0000 \\
+\bottomrule
+\end{tabular}
+\end{table*}

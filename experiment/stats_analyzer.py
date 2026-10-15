@@ -157,7 +157,8 @@ def main():
     if baseline_code not in variant_data:
         baseline_code = list(variant_data.keys())[-1]
 
-    baseline_scores = [r["score"] for r in variant_data[baseline_code]["records"]]
+    baseline_records = variant_data[baseline_code]["records"]
+    baseline_map = {(r["task_id"], r["seed"]): r["score"] for r in baseline_records}
 
     summary_rows = []
     latex_rows = []
@@ -180,11 +181,15 @@ def main():
         p99_latency = np.percentile(durations, 99) if durations else 0.0
         avg_cost = np.mean(costs) if costs else 0.0
 
-        # 假设检验 (相对于 baseline)
+        # 假设检验 (相对于 baseline 按 (task_id, seed) 严格对齐样本配对)
         if code == baseline_code:
             test_type, p_val, sig_mark = "Baseline", 1.0, "-"
         else:
-            test_type, p_val, sig_mark = perform_hypothesis_test(baseline_scores, scores)
+            cand_map = {(r["task_id"], r["seed"]): r["score"] for r in records}
+            common_keys = sorted(set(baseline_map.keys()) & set(cand_map.keys()))
+            b_aligned = [baseline_map[k] for k in common_keys]
+            c_aligned = [cand_map[k] for k in common_keys]
+            test_type, p_val, sig_mark = perform_hypothesis_test(b_aligned, c_aligned)
 
         summary_rows.append({
             "variant_code": code,

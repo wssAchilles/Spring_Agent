@@ -1,73 +1,129 @@
 {
   "error_distribution_by_variant": {
-    "mesh_evolution": {
-      "total_failures": 2,
+    "full_hermes": {
+      "total_failures": 48,
       "by_level": {
-        "Level 1: Planning & Reasoning": 2,
+        "Level 1: Planning & Reasoning": 48,
         "Level 2: Tool & Grounding": 0,
         "Level 3: Context & Attention": 0
       },
       "by_code": {
-        "PR-01_GOAL_DRIFT": 2
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 43,
+        "ASSERTION_FAILED_target_level": 5
       }
     },
-    "full_method": {
-      "total_failures": 14,
+    "wo_colbert_simd": {
+      "total_failures": 49,
       "by_level": {
-        "Level 1: Planning & Reasoning": 14,
+        "Level 1: Planning & Reasoning": 49,
         "Level 2: Tool & Grounding": 0,
         "Level 3: Context & Attention": 0
       },
       "by_code": {
-        "PR-01_GOAL_DRIFT": 14
+        "PR-01_ARCHITECTURE_ABLATED": 5,
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 34,
+        "ASSERTION_FAILED_target_level": 5,
+        "PR-03_CONTRADICTION_ASSERTED": 5
       }
     },
-    "wo_reflection": {
-      "total_failures": 33,
+    "wo_speculative_rag": {
+      "total_failures": 49,
       "by_level": {
-        "Level 1: Planning & Reasoning": 33,
+        "Level 1: Planning & Reasoning": 49,
         "Level 2: Tool & Grounding": 0,
         "Level 3: Context & Attention": 0
       },
       "by_code": {
-        "PR-02_PREMATURE_HALTING": 33
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 35,
+        "PR-01_ARCHITECTURE_ABLATED": 5,
+        "ASSERTION_FAILED_target_level": 5,
+        "PR-03_CONTRADICTION_ASSERTED": 4
       }
     },
-    "wo_working_memory": {
-      "total_failures": 30,
+    "wo_graphrag_tree": {
+      "total_failures": 43,
       "by_level": {
-        "Level 1: Planning & Reasoning": 0,
-        "Level 2: Tool & Grounding": 0,
-        "Level 3: Context & Attention": 30
-      },
-      "by_code": {
-        "CA-02_LOST_IN_THE_MIDDLE": 30
-      }
-    },
-    "wo_dynamic_tools": {
-      "total_failures": 32,
-      "by_level": {
-        "Level 1: Planning & Reasoning": 0,
-        "Level 2: Tool & Grounding": 32,
-        "Level 3: Context & Attention": 0
-      },
-      "by_code": {
-        "TG-02_TOOL_MISSELECTION": 32
-      }
-    },
-    "wo_structured_planning": {
-      "total_failures": 35,
-      "by_level": {
-        "Level 1: Planning & Reasoning": 35,
+        "Level 1: Planning & Reasoning": 43,
         "Level 2: Tool & Grounding": 0,
         "Level 3: Context & Attention": 0
       },
       "by_code": {
-        "PR-03_INFINITE_LOOP": 2,
-        "PR-01_GOAL_DRIFT": 33
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 30,
+        "PR-01_ARCHITECTURE_ABLATED": 5,
+        "PR-03_CONTRADICTION_ASSERTED": 8
       }
     },
-    "baseline_vanilla_react": {
+    "wo_mcts_dynamic_roles": {
+      "total_failures": 44,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 44,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 29,
+        "ASSERTION_FAILED_target_level": 5,
+        "PR-01_ARCHITECTURE_ABLATED": 3,
+        "PR-03_CONTRADICTION_ASSERTED": 7
+      }
+    },
+    "wo_sandbox_reflexion": {
+      "total_failures": 44,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 44,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 22,
+        "ASSERTION_FAILED_target_level": 5,
+        "PR-03_CONTRADICTION_ASSERTED": 12,
+        "PR-01_ARCHITECTURE_ABLATED": 5
+      }
+    },
+    "wo_hoare_guard": {
+      "total_failures": 42,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 42,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 31,
+        "ASSERTION_FAILED_target_level": 5,
+        "PR-03_CONTRADICTION_ASSERTED": 1,
+        "PR-01_ARCHITECTURE_ABLATED": 5
+      }
+    },
+    "wo_hippocampus_sleep": {
+      "total_failures": 45,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 45,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 32,
+        "ASSERTION_FAILED_target_level": 5,
+        "PR-01_ARCHITECTURE_ABLATED": 5,
+        "PR-03_CONTRADICTION_ASSERTED": 3
+      }
+    },
+    "wo_dynamic_topology": {
+      "total_failures": 42,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 42,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 32,
+        "ASSERTION_FAILED_target_level": 5,
+        "PR-03_CONTRADICTION_ASSERTED": 4,
+        "PR-01_ARCHITECTURE_ABLATED": 1
+      }
+    },
+    "wo_speculative_prefetch": {
       "total_failures": 38,
       "by_level": {
         "Level 1: Planning & Reasoning": 38,
@@ -75,8 +131,22 @@
         "Level 3: Context & Attention": 0
       },
       "by_code": {
-        "PR-01_GOAL_DRIFT": 37,
-        "PR-03_INFINITE_LOOP": 1
+        "ASSERTION_FAILED_target_level": 5,
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 29,
+        "PR-03_CONTRADICTION_ASSERTED": 4
+      }
+    },
+    "baseline_vanilla_react": {
+      "total_failures": 52,
+      "by_level": {
+        "Level 1: Planning & Reasoning": 52,
+        "Level 2: Tool & Grounding": 0,
+        "Level 3: Context & Attention": 0
+      },
+      "by_code": {
+        "PR-01_ARCHITECTURE_ABLATED": 39,
+        "PR-03_CONTRADICTION_ASSERTED": 6,
+        "CA-01_FAITHFULNESS_BELOW_THRESHOLD": 7
       }
     }
   },
@@ -84,7 +154,7 @@
     "nodes": [
       {
         "id": 0,
-        "name": "mesh_evolution"
+        "name": "full_hermes"
       },
       {
         "id": 1,
@@ -92,54 +162,58 @@
       },
       {
         "id": 2,
-        "name": "PR-01_GOAL_DRIFT"
+        "name": "CA-01_FAITHFULNESS_BELOW_THRESHOLD"
       },
       {
         "id": 3,
-        "name": "full_method"
+        "name": "ASSERTION_FAILED_target_level"
       },
       {
         "id": 4,
-        "name": "wo_reflection"
+        "name": "wo_colbert_simd"
       },
       {
         "id": 5,
-        "name": "PR-02_PREMATURE_HALTING"
+        "name": "PR-01_ARCHITECTURE_ABLATED"
       },
       {
         "id": 6,
-        "name": "wo_working_memory"
+        "name": "PR-03_CONTRADICTION_ASSERTED"
       },
       {
         "id": 7,
-        "name": "Level 3: Context & Attention"
+        "name": "wo_speculative_rag"
       },
       {
         "id": 8,
-        "name": "CA-02_LOST_IN_THE_MIDDLE"
+        "name": "wo_graphrag_tree"
       },
       {
         "id": 9,
-        "name": "wo_dynamic_tools"
+        "name": "wo_mcts_dynamic_roles"
       },
       {
         "id": 10,
-        "name": "Level 2: Tool & Grounding"
+        "name": "wo_sandbox_reflexion"
       },
       {
         "id": 11,
-        "name": "TG-02_TOOL_MISSELECTION"
+        "name": "wo_hoare_guard"
       },
       {
         "id": 12,
-        "name": "wo_structured_planning"
+        "name": "wo_hippocampus_sleep"
       },
       {
         "id": 13,
-        "name": "PR-03_INFINITE_LOOP"
+        "name": "wo_dynamic_topology"
       },
       {
         "id": 14,
+        "name": "wo_speculative_prefetch"
+      },
+      {
+        "id": 15,
         "name": "baseline_vanilla_react"
       }
     ],
@@ -147,62 +221,77 @@
       {
         "source": 0,
         "target": 1,
-        "value": 2
+        "value": 48
       },
       {
         "source": 1,
         "target": 2,
-        "value": 86
+        "value": 324
       },
       {
-        "source": 3,
-        "target": 1,
-        "value": 14
+        "source": 1,
+        "target": 3,
+        "value": 45
       },
       {
         "source": 4,
         "target": 1,
-        "value": 33
+        "value": 49
       },
       {
         "source": 1,
         "target": 5,
-        "value": 33
+        "value": 73
       },
       {
-        "source": 6,
-        "target": 7,
-        "value": 30
+        "source": 1,
+        "target": 6,
+        "value": 54
       },
       {
         "source": 7,
-        "target": 8,
-        "value": 30
+        "target": 1,
+        "value": 49
+      },
+      {
+        "source": 8,
+        "target": 1,
+        "value": 43
       },
       {
         "source": 9,
-        "target": 10,
-        "value": 32
+        "target": 1,
+        "value": 44
       },
       {
         "source": 10,
-        "target": 11,
-        "value": 32
+        "target": 1,
+        "value": 44
+      },
+      {
+        "source": 11,
+        "target": 1,
+        "value": 42
       },
       {
         "source": 12,
         "target": 1,
-        "value": 35
+        "value": 45
       },
       {
-        "source": 1,
-        "target": 13,
-        "value": 3
+        "source": 13,
+        "target": 1,
+        "value": 42
       },
       {
         "source": 14,
         "target": 1,
         "value": 38
+      },
+      {
+        "source": 15,
+        "target": 1,
+        "value": 52
       }
     ]
   },
@@ -210,54 +299,82 @@
     "description": "基于 (Unit Cost USD, Pass@1) 空间的最优非支配前沿分析",
     "pareto_optimal_variants": [
       {
-        "variant": "mesh_evolution",
-        "unit_cost_usd": 0.001353,
-        "unit_cost_cny": 0.009739,
-        "pass_at_1": 95.0,
+        "variant": "full_hermes",
+        "unit_cost_usd": 0.001258,
+        "unit_cost_cny": 0.009058,
+        "pass_at_1": 20.0,
         "is_pareto_optimal": true
       },
       {
-        "variant": "full_method",
-        "unit_cost_usd": 0.001268,
-        "unit_cost_cny": 0.00913,
-        "pass_at_1": 65.0,
+        "variant": "wo_graphrag_tree",
+        "unit_cost_usd": 0.001261,
+        "unit_cost_cny": 0.009081,
+        "pass_at_1": 21.82,
         "is_pareto_optimal": true
       },
       {
-        "variant": "wo_working_memory",
+        "variant": "wo_dynamic_topology",
         "unit_cost_usd": 0.001263,
-        "unit_cost_cny": 0.009094,
-        "pass_at_1": 25.0,
+        "unit_cost_cny": 0.009095,
+        "pass_at_1": 23.64,
         "is_pareto_optimal": true
       },
       {
-        "variant": "baseline_vanilla_react",
-        "unit_cost_usd": 0.000641,
-        "unit_cost_cny": 0.004616,
-        "pass_at_1": 5.0,
+        "variant": "wo_speculative_prefetch",
+        "unit_cost_usd": 0.001264,
+        "unit_cost_cny": 0.009098,
+        "pass_at_1": 30.91,
         "is_pareto_optimal": true
       }
     ],
     "dominated_variants": [
       {
-        "variant": "wo_reflection",
-        "unit_cost_usd": 0.001268,
-        "unit_cost_cny": 0.009127,
-        "pass_at_1": 17.5,
+        "variant": "wo_colbert_simd",
+        "unit_cost_usd": 0.001261,
+        "unit_cost_cny": 0.009081,
+        "pass_at_1": 18.33,
         "is_pareto_optimal": false
       },
       {
-        "variant": "wo_dynamic_tools",
-        "unit_cost_usd": 0.001279,
-        "unit_cost_cny": 0.009212,
+        "variant": "wo_speculative_rag",
+        "unit_cost_usd": 0.001262,
+        "unit_cost_cny": 0.009084,
+        "pass_at_1": 18.33,
+        "is_pareto_optimal": false
+      },
+      {
+        "variant": "wo_mcts_dynamic_roles",
+        "unit_cost_usd": 0.001262,
+        "unit_cost_cny": 0.009085,
         "pass_at_1": 20.0,
         "is_pareto_optimal": false
       },
       {
-        "variant": "wo_structured_planning",
-        "unit_cost_usd": 0.001265,
-        "unit_cost_cny": 0.009111,
-        "pass_at_1": 12.5,
+        "variant": "wo_sandbox_reflexion",
+        "unit_cost_usd": 0.001262,
+        "unit_cost_cny": 0.009084,
+        "pass_at_1": 20.0,
+        "is_pareto_optimal": false
+      },
+      {
+        "variant": "wo_hoare_guard",
+        "unit_cost_usd": 0.001264,
+        "unit_cost_cny": 0.009098,
+        "pass_at_1": 23.64,
+        "is_pareto_optimal": false
+      },
+      {
+        "variant": "wo_hippocampus_sleep",
+        "unit_cost_usd": 0.001262,
+        "unit_cost_cny": 0.00909,
+        "pass_at_1": 18.18,
+        "is_pareto_optimal": false
+      },
+      {
+        "variant": "baseline_vanilla_react",
+        "unit_cost_usd": 0.001259,
+        "unit_cost_cny": 0.009064,
+        "pass_at_1": 5.45,
         "is_pareto_optimal": false
       }
     ]
