@@ -563,6 +563,22 @@ def main():
     print("=" * 80)
     print(f"评测全量推进完毕！累计消费: ¥{GLOBAL_STATE['cumulative_cost_cny']:.4f} CNY")
     print(f"全轨迹文件保存于: {trajectory_file}")
+
+    summary_data = {
+        "timestamp": datetime.now().isoformat(),
+        "total_api_calls": GLOBAL_STATE["api_calls_count"],
+        "cumulative_tokens": GLOBAL_STATE["cumulative_tokens"],
+        "cache_hit_tokens": GLOBAL_STATE["hit_tokens"],
+        "cache_miss_tokens": GLOBAL_STATE["miss_tokens"],
+        "cache_hit_rate": GLOBAL_STATE["hit_tokens"] / max(1, GLOBAL_STATE["hit_tokens"] + GLOBAL_STATE["miss_tokens"]),
+        "completion_tokens": GLOBAL_STATE["out_tokens"],
+        "total_cost_cny": round(GLOBAL_STATE["cumulative_cost_cny"], 4),
+        "total_cost_usd": round(GLOBAL_STATE["cumulative_cost_cny"] / USD_TO_CNY, 4)
+    }
+    summary_file_path = os.path.join(OUTPUTS_DIR, "all_experiments_summary.json")
+    with open(summary_file_path, "w", encoding="utf-8") as f:
+        json.dump(summary_data, f, indent=2, ensure_ascii=False)
+    print(f"大盘总开销摘要已更新保存至: {summary_file_path}")
     print("=" * 80)
 
 if __name__ == "__main__":
