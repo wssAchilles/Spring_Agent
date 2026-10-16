@@ -374,13 +374,17 @@ function handleMouseUp() {
 
 function updateContainerSize() {
   if (canvasContainerRef.value) {
-    currentViewport.value.width = canvasContainerRef.value.clientWidth;
-    currentViewport.value.height = canvasContainerRef.value.clientHeight;
+    const w = canvasContainerRef.value.clientWidth;
+    const h = canvasContainerRef.value.clientHeight;
+    currentViewport.value.width = w > 0 ? w : (typeof window !== 'undefined' ? window.innerWidth * 0.8 : 1200);
+    currentViewport.value.height = h > 0 ? h : (typeof window !== 'undefined' ? window.innerHeight * 0.8 : 800);
   }
 }
 
 onMounted(() => {
   updateContainerSize();
+  setTimeout(updateContainerSize, 200);
+  setTimeout(updateContainerSize, 500);
   window.addEventListener('resize', updateContainerSize);
   runAnimationLoop();
 });

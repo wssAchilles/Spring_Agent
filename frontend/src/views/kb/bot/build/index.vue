@@ -49,6 +49,16 @@
         >
           复制
         </el-button>
+        <el-button
+          v-ripple
+          class="glass-btn custom-btn-padding"
+          plain
+          @click="showVirtualizedCanvasDrawer = true"
+          @mousedown="(e) => e.preventDefault()"
+        >
+          <el-icon><DataAnalysis /></el-icon>
+          虚拟化画布引擎
+        </el-button>
         <el-button v-ripple class="fhbtn glass-btn" plain @click="routerView">
           <svg-icon :iconClass="'fhs'" />返回
         </el-button>
@@ -1147,6 +1157,20 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 里程碑六：全栈 60fps 虚拟化 DAG 画布交互视窗 -->
+    <el-drawer
+      v-model="showVirtualizedCanvasDrawer"
+      size="85%"
+      direction="ltr"
+      :append-to-body="true"
+      title="全栈虚拟化因果工作流画布引擎 (VirtualizedDagCanvasEngine - 60fps)"
+      class="virtual-canvas-drawer"
+    >
+      <div style="width: 100%; height: calc(100vh - 120px); position: relative;">
+        <VirtualizedDagCanvasEngine />
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -1162,7 +1186,7 @@ import {
 } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { Controls } from "@vue-flow/controls";
-import { Close, Delete, Operation, Plus, Compass, Aim } from "@element-plus/icons-vue";
+import { Close, Delete, Operation, Plus, Compass, Aim, DataAnalysis } from "@element-plus/icons-vue";
 import { getChatModelDict } from "@/api/ai/myModel/myModel.js";
 import { getFlow, submitFlow } from "@/api/kb/bot/flow.js";
 import { getBot, copyBot } from "@/api/kb/bot/bot";
@@ -1172,6 +1196,9 @@ import LlmNodeIcon from "./components/LlmNodeIcon.vue";
 import NodeTypeIcon from "./components/NodeTypeIcon.vue";
 import WorkflowDebugRunPanel from "./components/WorkflowDebugRunPanel.vue";
 import ChatflowDebugRunPanel from "./components/ChatflowDebugRunPanel.vue";
+import VirtualizedDagCanvasEngine from "./components/canvas/VirtualizedDagCanvasEngine.vue";
+
+const showVirtualizedCanvasDrawer = ref(false);
 import StartNodeConfigForm from "./components/nodeConfig/StartNodeConfigForm.vue";
 import LlmNodeConfigForm from "./components/nodeConfig/LlmNodeConfigForm.vue";
 import ChatflowReplyNodeConfigForm from "./components/nodeConfig/ChatflowReplyNodeConfigForm.vue";

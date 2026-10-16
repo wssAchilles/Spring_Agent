@@ -8,6 +8,9 @@
         <el-button v-ripple class="glass-btn" plain @click="triggerDemoHitl">
           模拟审批
         </el-button>
+        <el-button v-ripple class="glass-btn" plain type="warning" @click="triggerFloatingHitlIsland">
+          非模态悬浮岛
+        </el-button>
         <el-button v-ripple class="glass-btn" :loading="running" @click="handleRun">
           执行
         </el-button>
@@ -195,6 +198,16 @@
       @rejected="handleHitlRejected"
     />
 
+    <!-- 里程碑六：新一代 Apple iOS 26 非模态悬浮岛审批组件 -->
+    <HitlApprovalModal
+      :visible="showFloatingHitlIsland"
+      :ticket="floatingHitlTicket"
+      @close="showFloatingHitlIsland = false"
+      @approve="onFloatingHitlApprove"
+      @hot-patch="onFloatingHitlHotPatch"
+      @reject="onFloatingHitlReject"
+    />
+
     <!-- Phase P3: DeepSeek 思考链深度融合与独立折叠面板 (Apple Liquid Glass) -->
     <div v-if="thinkingContent || isThinkingInProgress" class="workflow-debug-run-panel__thinking">
       <div class="thinking-header" @click="thinkingExpanded = !thinkingExpanded">
@@ -240,6 +253,7 @@ import "highlight.js/styles/xcode.min.css";
 import DebugOverflowTooltipLabel from "./DebugOverflowTooltipLabel.vue";
 import HitlApprovalMetacenter from "./debug/HitlApprovalMetacenter.vue";
 import WorkflowTimeTravelWidget from "./hitl/WorkflowTimeTravelWidget.vue";
+import HitlApprovalModal from "./hitl/HitlApprovalModal.vue";
 import MultiAgentSwarmObservabilityWidget from "./MultiAgentSwarmObservabilityWidget.vue";
 import EnterpriseSwarmObservabilityWidget from "./EnterpriseSwarmObservabilityWidget.vue";
 import { TimeTravelForkEngine } from "./debug/engine/TimeTravelForkEngine";
@@ -248,6 +262,41 @@ import { PersistentSnapshotManager } from "./debug/engine/PersistentSnapshotTree
 const conversationInAbortController = ref(); // 对话进行中 abort 控制器(控制 stream 对话)
 const forkEngine = new TimeTravelForkEngine();
 const snapshotManager = new PersistentSnapshotManager();
+
+// 里程碑六：新一代 Apple iOS 26 非模态悬浮岛审批状态
+const showFloatingHitlIsland = ref(false);
+const floatingHitlTicket = ref({
+  ticketId: "TICKET-HITL-ISLAND-001",
+  workflowId: "flow_causal_009",
+  nodeId: "node_mcp_database_update",
+  toolName: "DatabaseClient.executeBatchUpdate",
+  serverId: "enterprise-mcp-cluster",
+  riskLevel: "CRITICAL",
+  argumentsPayload: {
+    table: "financial_ledger_q3",
+    action: "UPDATE",
+    filter: "asset_id = 9012",
+    patchFields: { status: "VERIFIED", auditApproved: true }
+  },
+  operatorUserId: "auditor-admin",
+  reasoningContent: "该更新动作直接变更核心财务总账凭证，由于触发高危操作合约，引擎已挂起只读线程并启动非模态审批悬浮岛等待审批员裁决。"
+});
+
+function triggerFloatingHitlIsland() {
+  showFloatingHitlIsland.value = true;
+}
+function onFloatingHitlApprove(receipt) {
+  showFloatingHitlIsland.value = false;
+  ElMessage.success(`审批放行！自验真凭单: ${receipt.receiptId}`);
+}
+function onFloatingHitlHotPatch({ receipt, patchedState }) {
+  showFloatingHitlIsland.value = false;
+  ElMessage.success(`热补丁生效！生成凭单: ${receipt.receiptId}`);
+}
+function onFloatingHitlReject(receipt) {
+  showFloatingHitlIsland.value = false;
+  ElMessage.warning(`审批拒绝！存证凭单: ${receipt.receiptId}`);
+}
 
 // 多智能体协同流转与企业观测看板状态
 const showSwarmCognitiveWidget = ref(false);
