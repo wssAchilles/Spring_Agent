@@ -4068,9 +4068,11 @@ function getAddNodeMenuViewportPosition(x, y) {
   const viewportWidth = window.innerWidth || 0;
   const viewportHeight = window.innerHeight || 0;
 
-  // 动态获取画布容器的安全视口边界（绝不允许盖在顶层导航与二级工具栏之上）
-  let safeMinY = 125;
+  // 1. 动态获取画布容器与状态栏的安全视口边界（绝不允许盖在顶层工具栏之上，也绝不允许戳穿底部状态栏）
+  let safeMinY = 130;
   let safeMinX = 16;
+  let safeMaxBottom = viewportHeight - 50;
+
   const editorEl = document.querySelector(".flow-wrapper") || document.querySelector(".editor-container");
   if (editorEl) {
     const rect = editorEl.getBoundingClientRect();
@@ -4082,34 +4084,34 @@ function getAddNodeMenuViewportPosition(x, y) {
     }
   }
 
+  const statusBarEl = document.querySelector(".status-bar");
+  if (statusBarEl) {
+    const statusRect = statusBarEl.getBoundingClientRect();
+    if (statusRect.top > 0) {
+      safeMaxBottom = Math.min(safeMaxBottom, statusRect.top - 10);
+    }
+  }
+
+  // 2. 画布纵向净可用空间约束
   const menuEstimatedWidth = 260;
-  const estimatedListLength = Math.max(
-    addableNodeTypes.length,
-    toolMenuItems.value.length || 6
-  );
-  const estimatedMenuHeight = Math.min(
-    viewportHeight - safeMinY - 24,
-    ADD_NODE_MENU_HEADER_HEIGHT +
-      ADD_NODE_MENU_TAB_HEIGHT +
-      estimatedListLength * ADD_NODE_MENU_ITEM_HEIGHT +
-      ADD_NODE_MENU_LIST_PADDING
-  );
+  const maxAvailableHeight = Math.max(260, safeMaxBottom - safeMinY - 12);
+  const targetMenuHeight = Math.min(450, maxAvailableHeight);
 
   const maxX = Math.max(safeMinX, viewportWidth - menuEstimatedWidth - 20);
-  const maxY = Math.max(safeMinY, viewportHeight - estimatedMenuHeight - 20);
+  const maxY = Math.max(safeMinY, safeMaxBottom - targetMenuHeight);
 
-  // 水平方向：优先在点击点右侧微调（x + 12），若右侧溢出则弹在左侧
+  // 3. 水平方向：优先在点击点右侧（x + 12），若右侧超出视口则弹在左侧
   let finalX = x + 12;
   if (finalX > maxX) {
     finalX = Math.max(safeMinX, x - menuEstimatedWidth - 12);
   }
 
-  // 垂直方向：优先以点击点略微向上偏移（y - 30）展现，若下方超出视口则向上自适应
+  // 4. 垂直方向：优先在点击点略微向上偏移（y - 30）展现，若下方超出 safeMaxBottom 则向上自适应
   let finalY = y - 30;
-  if (finalY + estimatedMenuHeight > viewportHeight - 20) {
-    finalY = viewportHeight - estimatedMenuHeight - 20;
+  if (finalY > maxY) {
+    finalY = maxY;
   }
-  // 必须严格受到 safeMinY 限制，绝不能小于画布顶部安全边界！
+  // 必须严格受限于 safeMinY，绝不能小于画布顶部安全边界！
   finalY = Math.max(safeMinY, finalY);
 
   return {
@@ -5408,10 +5410,11 @@ function exportFlow() {
   z-index: 1000;
   min-width: 240px;
   max-width: 300px;
-  max-height: calc(100vh - 160px);
+  max-height: min(450px, calc(100vh - 250px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 
   .add-node-menu-header {
     display: flex;
@@ -5469,9 +5472,21 @@ function exportFlow() {
   .add-node-menu-list {
     padding: 8px;
     flex: 1;
-    max-height: calc(100vh - 250px);
+    max-height: min(350px, calc(100vh - 350px));
     overflow-y: auto;
     overscroll-behavior: contain;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
   }
 
   .add-node-menu-item {
