@@ -15,6 +15,20 @@
       </div>
 
       <div class="header-right">
+        <!-- 虚拟内存分页胶囊 -->
+        <div class="telemetry-capsule" title="操作系统级虚拟内存分层活跃页">
+          <span class="capsule-icon">🧠</span>
+          <span class="capsule-key">虚拟内存页</span>
+          <span class="capsule-val font-mono highlight-blue">Core 2 / Recall 6 / Archival 18</span>
+        </div>
+
+        <!-- Prompt Cache 缓存经济学胶囊 -->
+        <div class="telemetry-capsule" title="DeepSeek 上下文前缀缓存 (Prompt Cache) 命中率">
+          <span class="capsule-icon">⚡</span>
+          <span class="capsule-key">Cache 命中</span>
+          <span class="capsule-val font-mono highlight-green">{{ (promptCacheHitRate * 100).toFixed(1) }}%</span>
+        </div>
+
         <!-- Merkle 根胶囊 -->
         <div class="telemetry-capsule" :title="'状态版本 Merkle DAG 根散列: ' + merkleRootHash">
           <span class="capsule-icon">🌿</span>
@@ -73,6 +87,10 @@
               <div class="dag-card-top">
                 <div class="version-badge font-mono">v{{ item.version }}</div>
                 <div class="node-id-text font-mono">{{ item.nodeId }}</div>
+                <!-- 虚拟内存分层分页标签 (Core / Recall / Archival) -->
+                <div class="memory-paging-chip font-mono" :class="`page-${(item.memoryLayer || 'recall').toLowerCase()}`">
+                  {{ item.memoryLayer || 'RECALL' }}
+                </div>
                 <div class="status-indicator-tag" :class="item.version === activeVersion ? 'tag-head' : 'tag-snapshot'">
                   {{ item.version === activeVersion ? '活跃主干 (HEAD)' : '固化快照' }}
                 </div>
@@ -87,8 +105,24 @@
                 </div>
               </div>
 
+              <!-- DeepSeek 思考模式长思维链 (reasoning_content) 折叠面板 -->
+              <div v-if="item.reasoningContent" class="reasoning-accordion-box">
+                <div
+                  class="reasoning-header-bar"
+                  @click.stop="item.isReasoningExpanded = !item.isReasoningExpanded"
+                >
+                  <span class="reasoning-pulse-dot"></span>
+                  <span class="reasoning-title">DeepSeek 思维链 (reasoning_content)</span>
+                  <span class="reasoning-toggle-icon">{{ item.isReasoningExpanded ? '▲ 折叠' : '▼ 展开' }}</span>
+                </div>
+                <div v-if="item.isReasoningExpanded" class="reasoning-body-scroll font-mono">
+                  <p class="reasoning-text">{{ item.reasoningContent }}</p>
+                </div>
+              </div>
+
               <div class="dag-card-bottom font-mono">
                 <span class="hash-tag">SHA: {{ truncateHash(item.stateHash) }}</span>
+                <span class="cache-tag">Cache: {{ ((item.promptCacheHitRate || 0.88) * 100).toFixed(0) }}%</span>
                 <span class="time-tag">{{ formatTime(item.timestamp) }}</span>
               </div>
             </div>
@@ -284,6 +318,7 @@ const merkleRootHash = ref('c79f4a8e52d39810bb73e91a0fc239104fa281b37498c3912093
 const kernelSimilarity = ref(0.965)
 const speculativeConfidence = ref(0.94)
 const theoreticalFidelityLoss = ref(0.0125)
+const promptCacheHitRate = ref(0.894)
 const actionLoading = ref(false)
 
 // 投机门控准入
@@ -308,47 +343,67 @@ const activeSpecBranch = ref({
   }
 })
 
-// 模拟历史版本快照
+// 模拟历史版本快照 (内嵌虚拟内存分层与 DeepSeek 思考流 reasoning_content)
 const versionHistory = ref([
   {
     version: 8,
     nodeId: 'NODE_FINANCIAL_SUMMARY',
+    memoryLayer: 'CORE',
+    promptCacheHitRate: 0.94,
     stateHash: 'c79f4a8e52d39810bb73e91a0fc239104fa281b37498c3912093847e12f90a1b',
     deltaState: { reportType: '季报', approved: true },
     isQuarantined: false,
-    timestamp: Date.now() - 1000 * 30
+    timestamp: Date.now() - 1000 * 30,
+    isReasoningExpanded: false,
+    reasoningContent: '首先评估各季度财务指标的一致性。根据前置节点抽取的 14 个因果实体，图谱资产环比上升 42%，因此直接汇总为企业资产增量分析表。该操作符合审计规则，无需进一步调用外部计算器。'
   },
   {
     version: 7,
     nodeId: 'NODE_NER_EXTRACTION',
+    memoryLayer: 'RECALL',
+    promptCacheHitRate: 0.91,
     stateHash: '8b3f12e098471203984712039847120398471203984712039847120398471203',
     deltaState: { extractedEntitiesCount: 14, confidence: 0.98 },
     isQuarantined: false,
-    timestamp: Date.now() - 1000 * 90
+    timestamp: Date.now() - 1000 * 90,
+    isReasoningExpanded: false,
+    reasoningContent: '对非结构化财报文本进行因果实体抽取。已识别出主体资产规模、净利润环比与因果关系指针。置信度 0.98，写入 RecallMemory 时序快轨。'
   },
   {
     version: 6,
     nodeId: 'NODE_KG_SUBGRAPH_REASON',
+    memoryLayer: 'RECALL',
+    promptCacheHitRate: 0.88,
     stateHash: '7a12093847120398471203984712039847120398471203984712039847120398',
     deltaState: { pathCount: 5, lcaFound: true },
     isQuarantined: false,
-    timestamp: Date.now() - 1000 * 160
+    timestamp: Date.now() - 1000 * 160,
+    isReasoningExpanded: false,
+    reasoningContent: '在知识图谱中执行时间感知因果子图推理。找到最近公共祖先节点 (LCA)，并剪枝去除了 2 条历史废弃时序路径。'
   },
   {
     version: 5,
     nodeId: 'NODE_MCP_TOOL_QUERY',
+    memoryLayer: 'ARCHIVAL',
+    promptCacheHitRate: 0.85,
     stateHash: '6f01928301928301928301928301928301928301928301928301928301928301',
     deltaState: { tool: 'DatabaseClient', affectedRows: 240 },
     isQuarantined: false,
-    timestamp: Date.now() - 1000 * 240
+    timestamp: Date.now() - 1000 * 240,
+    isReasoningExpanded: false,
+    reasoningContent: '调用企业本地只读 MCP 工具 DatabaseClient 执行受限 SQL 统计。影响行数 240 行，通过 Hoare 前置合约检查。'
   },
   {
     version: 4,
     nodeId: 'NODE_USER_INTENT_DISPATCH',
+    memoryLayer: 'CORE',
+    promptCacheHitRate: 0.98,
     stateHash: '5e83910283910283910283910283910283910283910283910283910283910283',
     deltaState: { intent: 'ANALYZE_FINANCIAL_ASSET', score: 0.99 },
     isQuarantined: false,
-    timestamp: Date.now() - 1000 * 320
+    timestamp: Date.now() - 1000 * 320,
+    isReasoningExpanded: false,
+    reasoningContent: '解析用户原始意图为 ANALYZE_FINANCIAL_ASSET，匹配千问 1536 维超球面质心余弦相似度 0.99，固化至常驻 CoreMemory。'
   }
 ])
 
@@ -797,6 +852,31 @@ function handleExecuteTimeTravel() {
   }
 }
 
+.memory-paging-chip {
+  font-size: 9px;
+  font-weight: 590;
+  padding: 1px 6px;
+  border-radius: 4px;
+
+  &.page-core {
+    background: rgba(255, 141, 40, 0.1);
+    color: #c95100;
+    border: 0.5px solid rgba(255, 141, 40, 0.25);
+  }
+
+  &.page-recall {
+    background: rgba(0, 136, 255, 0.08);
+    color: #0088ff;
+    border: 0.5px solid rgba(0, 136, 255, 0.2);
+  }
+
+  &.page-archival {
+    background: rgba(175, 82, 222, 0.08);
+    color: #8944ab;
+    border: 0.5px solid rgba(175, 82, 222, 0.2);
+  }
+}
+
 .delta-diff-viewer {
   background: rgba(0, 0, 0, 0.025);
   border: 0.5px solid rgba(0, 0, 0, 0.05);
@@ -828,11 +908,75 @@ function handleExecuteTimeTravel() {
   word-break: break-all;
 }
 
+/* DeepSeek 思维链长推理视窗 */
+.reasoning-accordion-box {
+  background: rgba(0, 0, 0, 0.02);
+  border: 0.5px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 4px 0;
+}
+
+.reasoning-header-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.015);
+  font-size: 10px;
+  color: rgba(60, 60, 67, 0.75);
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.reasoning-pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #af52de;
+  box-shadow: 0 0 6px rgba(175, 82, 222, 0.5);
+}
+
+.reasoning-title {
+  flex: 1;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.reasoning-toggle-icon {
+  font-size: 9px;
+  color: #0088ff;
+}
+
+.reasoning-body-scroll {
+  padding: 6px 10px;
+  max-height: 120px;
+  overflow-y: auto;
+  border-top: 0.5px solid rgba(0, 0, 0, 0.04);
+}
+
+.reasoning-text {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #3d3d3d;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .dag-card-bottom {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
   color: rgba(60, 60, 67, 0.55);
+}
+
+.cache-tag {
+  color: #248a3d;
+  font-weight: 500;
 }
 
 /* 4. 右栏控制面板堆叠 (自适应独立平滑滚动) */
