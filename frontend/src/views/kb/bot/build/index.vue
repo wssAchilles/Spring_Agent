@@ -777,6 +777,9 @@
                 menuItem.type
               }`"
               class="add-node-menu-item"
+              :class="{
+                'is-disabled': !isAddableNodeTypeEnabled(menuItem.type || menuItem.menuType)
+              }"
               @click.stop="handleAddMenuItemClick(menuItem)"
             >
               <NodeTypeIcon
@@ -785,7 +788,13 @@
                 :fallback="menuItem.icon"
               />
               <div class="node-info">
-                <div class="node-label">{{ menuItem.label }}</div>
+                <div class="node-label">
+                  <span>{{ menuItem.label }}</span>
+                  <span
+                    v-if="!isAddableNodeTypeEnabled(menuItem.type || menuItem.menuType)"
+                    class="node-status-badge"
+                  >开发中</span>
+                </div>
                 <div class="node-desc">{{ menuItem.description }}</div>
               </div>
             </div>
@@ -1467,7 +1476,15 @@ const ADD_NODE_MENU_HEADER_HEIGHT = 48;
 const ADD_NODE_MENU_TAB_HEIGHT = 44;
 const ADD_NODE_MENU_ITEM_HEIGHT = 56;
 const ADD_NODE_MENU_LIST_PADDING = 16;
-const ENABLED_ADDABLE_NODE_TYPES = new Set(["llm", "reply", "knowledge-retrieval", "knowledge"]);
+const ENABLED_ADDABLE_NODE_TYPES = new Set([
+  "llm",
+  "reply",
+  "condition",
+  "loop",
+  "knowledge-retrieval",
+  "knowledge",
+  "tool",
+]);
 const DEFAULT_TOOL_MENU_ICON = "🧰";
 
 // 可添加的节点类型
@@ -3056,6 +3073,8 @@ function updateNodeData(nodeId, updater) {
   return nextData;
 }
 
+let edgeSeed = 0;
+
 function createEdgeId(source, target, sourceHandle, targetHandle) {
   edgeSeed += 1;
   return [
@@ -4045,6 +4064,10 @@ function shouldIgnoreAddMenuDismiss() {
 
 function showAddNodeMenu(nodeId, event, sourceHandleId = null) {
   hideAddNodeMenu();
+  drawerVisible.value = false;
+  debugRunPanelVisible.value = false;
+  selectedNode.value = null;
+
   addNodeMenuSourceId.value = nodeId;
   addNodeMenuSourceHandle.value = sourceHandleId || null;
   addNodeMenuPosition.value = getAddNodeMenuViewportPosition(
@@ -4068,10 +4091,11 @@ function getAddNodeMenuViewportPosition(x, y) {
   const viewportWidth = window.innerWidth || 0;
   const viewportHeight = window.innerHeight || 0;
 
-  // 1. 动态获取画布容器与状态栏的安全视口边界（绝不允许盖在顶层工具栏之上，也绝不允许戳穿底部状态栏）
+  // 1. 动态获取画布容器、抽屉与状态栏的安全视口边界（绝不允许盖在顶层工具栏之上，也绝不允许戳穿底部状态栏或覆盖右侧抽屉）
   let safeMinY = 130;
   let safeMinX = 16;
   let safeMaxBottom = viewportHeight - 50;
+  let safeMaxX = viewportWidth - 280;
 
   const editorEl = document.querySelector(".flow-wrapper") || document.querySelector(".editor-container");
   if (editorEl) {
@@ -4081,6 +4105,18 @@ function getAddNodeMenuViewportPosition(x, y) {
     }
     if (rect.left > 0) {
       safeMinX = Math.max(safeMinX, rect.left + 8);
+    }
+    if (rect.right > 0 && rect.right < viewportWidth) {
+      safeMaxX = Math.min(safeMaxX, rect.right - 260 - 12);
+    }
+  }
+
+  // 检查右侧是否展开了配置抽屉或调试面板
+  const drawerEl = document.querySelector(".config-drawer.open, .workflow-debug-run-panel");
+  if (drawerEl) {
+    const drawerRect = drawerEl.getBoundingClientRect();
+    if (drawerRect.left > 0 && drawerRect.width > 0 && drawerRect.left < viewportWidth) {
+      safeMaxX = Math.min(safeMaxX, drawerRect.left - 260 - 16);
     }
   }
 
@@ -4097,14 +4133,16 @@ function getAddNodeMenuViewportPosition(x, y) {
   const maxAvailableHeight = Math.max(260, safeMaxBottom - safeMinY - 12);
   const targetMenuHeight = Math.min(450, maxAvailableHeight);
 
-  const maxX = Math.max(safeMinX, viewportWidth - menuEstimatedWidth - 20);
+  const maxX = Math.max(safeMinX, safeMaxX);
   const maxY = Math.max(safeMinY, safeMaxBottom - targetMenuHeight);
 
-  // 3. 水平方向：优先在点击点右侧（x + 12），若右侧超出视口则弹在左侧
+  // 3. 水平方向：优先在点击点右侧（x + 12），若右侧超出 safeMaxX 则自适应向左翻转
   let finalX = x + 12;
   if (finalX > maxX) {
-    finalX = Math.max(safeMinX, x - menuEstimatedWidth - 12);
+    finalX = x - menuEstimatedWidth - 12;
   }
+  // 严防左侧溢出
+  finalX = Math.max(safeMinX, finalX);
 
   // 4. 垂直方向：优先在点击点略微向上偏移（y - 30）展现，若下方超出 safeMaxBottom 则向上自适应
   let finalY = y - 30;
@@ -4122,12 +4160,26 @@ function getAddNodeMenuViewportPosition(x, y) {
 
 function addNodeAndConnect(nodeType, nodeDataOverride = null) {
   if (!addNodeMenuSourceId.value) {
-    return;
+    const fallbackSource = nodes.value.find((n) => n.type === "start") || nodes.value[0];
+    if (fallbackSource) {
+      addNodeMenuSourceId.value = fallbackSource.id;
+    } else {
+      ElMessage.warning("请先在画布中添加或选中一个起始节点");
+      hideAddNodeMenu();
+      return;
+    }
   }
 
   if (!isAddableNodeTypeEnabled(nodeType)) {
+    if (nodeType === "http-request") {
+      ElMessage({
+        message: "HTTP请求已支持作为工具添加，请切换至【工具】标签直接使用",
+        type: "info",
+      });
+      return;
+    }
     ElMessage({
-      message: "正在开发中...",
+      message: "该节点功能正在建设中，敬请期待",
       type: "warning",
     });
     return;
@@ -4277,6 +4329,9 @@ function addNodeAndConnect(nodeType, nodeDataOverride = null) {
   edges.value = nextEdges;
   nextTick(() => {
     refreshNodeHandleLayout([newNode.id, sourceNode.id]);
+    selectedNode.value = newNode;
+    drawerVisible.value = true;
+    drawerMode.value = "node";
   });
   hideAddNodeMenu();
 }
@@ -4328,6 +4383,11 @@ function onEdgeClick() {
 
 // 在边上显示添加节点菜单
 function showAddNodeMenuOnEdge(edgeProps, event) {
+  hideAddNodeMenu();
+  drawerVisible.value = false;
+  debugRunPanelVisible.value = false;
+  selectedNode.value = null;
+
   let clickX = 0;
   let clickY = 0;
 
@@ -5502,6 +5562,15 @@ function exportFlow() {
       background-color: #f3f4f6;
     }
 
+    &.is-disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+
+      &:hover {
+        background-color: transparent;
+      }
+    }
+
     .node-icon {
       font-size: 20px;
       width: 32px;
@@ -5517,9 +5586,23 @@ function exportFlow() {
       flex: 1;
 
       .node-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
         font-size: 14px;
         font-weight: 500;
         color: #111827;
+
+        .node-status-badge {
+          font-size: 11px;
+          font-weight: 400;
+          padding: 1px 6px;
+          border-radius: 10px;
+          background-color: #f3f4f6;
+          color: #9ca3af;
+          border: 1px solid #e5e7eb;
+        }
       }
 
       .node-desc {
