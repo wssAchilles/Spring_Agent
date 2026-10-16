@@ -4067,30 +4067,54 @@ function hideAddNodeMenu() {
 function getAddNodeMenuViewportPosition(x, y) {
   const viewportWidth = window.innerWidth || 0;
   const viewportHeight = window.innerHeight || 0;
+
+  // 动态获取画布容器的安全视口边界（绝不允许盖在顶层导航与二级工具栏之上）
+  let safeMinY = 125;
+  let safeMinX = 16;
+  const editorEl = document.querySelector(".flow-wrapper") || document.querySelector(".editor-container");
+  if (editorEl) {
+    const rect = editorEl.getBoundingClientRect();
+    if (rect.top > 0) {
+      safeMinY = Math.max(safeMinY, rect.top + 8);
+    }
+    if (rect.left > 0) {
+      safeMinX = Math.max(safeMinX, rect.left + 8);
+    }
+  }
+
+  const menuEstimatedWidth = 260;
   const estimatedListLength = Math.max(
     addableNodeTypes.length,
     toolMenuItems.value.length || 6
   );
-  const estimatedMenuHeight =
+  const estimatedMenuHeight = Math.min(
+    viewportHeight - safeMinY - 24,
     ADD_NODE_MENU_HEADER_HEIGHT +
-    ADD_NODE_MENU_TAB_HEIGHT +
-    estimatedListLength * ADD_NODE_MENU_ITEM_HEIGHT +
-    ADD_NODE_MENU_LIST_PADDING;
-  const maxX = Math.max(
-    ADD_NODE_MENU_MARGIN,
-    viewportWidth - ADD_NODE_MENU_ESTIMATED_WIDTH - ADD_NODE_MENU_MARGIN
-  );
-  const maxY = Math.max(
-    ADD_NODE_MENU_MARGIN,
-    viewportHeight - estimatedMenuHeight - ADD_NODE_MENU_MARGIN
+      ADD_NODE_MENU_TAB_HEIGHT +
+      estimatedListLength * ADD_NODE_MENU_ITEM_HEIGHT +
+      ADD_NODE_MENU_LIST_PADDING
   );
 
+  const maxX = Math.max(safeMinX, viewportWidth - menuEstimatedWidth - 20);
+  const maxY = Math.max(safeMinY, viewportHeight - estimatedMenuHeight - 20);
+
+  // 水平方向：优先在点击点右侧微调（x + 12），若右侧溢出则弹在左侧
+  let finalX = x + 12;
+  if (finalX > maxX) {
+    finalX = Math.max(safeMinX, x - menuEstimatedWidth - 12);
+  }
+
+  // 垂直方向：优先以点击点略微向上偏移（y - 30）展现，若下方超出视口则向上自适应
+  let finalY = y - 30;
+  if (finalY + estimatedMenuHeight > viewportHeight - 20) {
+    finalY = viewportHeight - estimatedMenuHeight - 20;
+  }
+  // 必须严格受到 safeMinY 限制，绝不能小于画布顶部安全边界！
+  finalY = Math.max(safeMinY, finalY);
+
   return {
-    x: Math.min(Math.max(ADD_NODE_MENU_MARGIN, x), maxX),
-    y: Math.min(
-      Math.max(ADD_NODE_MENU_MARGIN, y - ADD_NODE_MENU_VERTICAL_OFFSET),
-      maxY
-    ),
+    x: Math.round(finalX),
+    y: Math.round(finalY),
   };
 }
 
@@ -4301,14 +4325,24 @@ function onEdgeClick() {
 }
 
 // 在边上显示添加节点菜单
-function showAddNodeMenuOnEdge(edgeProps) {
-  // 使用边中点定位，避免依赖 sourceX、sourceY、targetX、targetY 是否存在
-  const centerX = (edgeProps.sourceX + edgeProps.targetX) / 2;
-  const centerY = (edgeProps.sourceY + edgeProps.targetY) / 2;
+function showAddNodeMenuOnEdge(edgeProps, event) {
+  let clickX = 0;
+  let clickY = 0;
+
+  if (event && typeof event.clientX === "number" && typeof event.clientY === "number") {
+    clickX = event.clientX;
+    clickY = event.clientY;
+  } else {
+    // 降级保护：如果未获取到 MouseEvent，计算画布容器中心视口坐标
+    const editorEl = document.querySelector(".flow-wrapper") || document.querySelector(".editor-container");
+    const rect = editorEl?.getBoundingClientRect();
+    clickX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+    clickY = rect ? rect.top + rect.height / 3 : 200;
+  }
 
   addNodeMenuPosition.value = getAddNodeMenuViewportPosition(
-    centerX + 20,
-    centerY
+    clickX,
+    clickY
   );
 
   addNodeMenuSourceId.value = edgeProps.source;
@@ -5367,12 +5401,16 @@ function exportFlow() {
 // 添加节点菜单样式
 .add-node-menu {
   position: fixed;
-  background-color: #fff;
+  background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   z-index: 1000;
-  min-width: 220px;
-  max-height: calc(100vh - 32px);
+  min-width: 240px;
+  max-width: 300px;
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 
   .add-node-menu-header {
@@ -5384,6 +5422,7 @@ function exportFlow() {
     font-size: 14px;
     font-weight: 600;
     color: #111827;
+    flex-shrink: 0;
 
     .close-btn {
       cursor: pointer;
@@ -5401,6 +5440,7 @@ function exportFlow() {
     align-items: center;
     gap: 4px;
     padding: 8px 12px 0;
+    flex-shrink: 0;
   }
 
   .add-node-menu-tab {
@@ -5428,7 +5468,8 @@ function exportFlow() {
 
   .add-node-menu-list {
     padding: 8px;
-    max-height: calc(100vh - 140px);
+    flex: 1;
+    max-height: calc(100vh - 250px);
     overflow-y: auto;
     overscroll-behavior: contain;
   }

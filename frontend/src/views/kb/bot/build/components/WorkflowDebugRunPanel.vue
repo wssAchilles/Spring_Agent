@@ -4,15 +4,15 @@
       <div class="workflow-debug-run-panel__title">
         <span class="blue-bar"></span>输入参数
       </div>
-      <div style="display: flex; gap: 8px;">
-        <el-button v-ripple class="glass-btn" plain @click="triggerDemoHitl">
+      <div class="workflow-debug-run-panel__actions">
+        <el-button v-ripple class="glass-btn debug-action-btn" plain @click="triggerDemoHitl">
           模拟审批
         </el-button>
-        <el-button v-ripple class="glass-btn" plain type="warning" @click="triggerFloatingHitlIsland">
-          非模态悬浮岛
+        <el-button v-ripple class="glass-btn debug-action-btn" plain type="warning" @click="triggerFloatingHitlIsland">
+          悬浮审批
         </el-button>
-        <el-button v-ripple class="glass-btn" :loading="running" @click="handleRun">
-          执行
+        <el-button v-ripple class="glass-btn debug-action-btn" :loading="running" @click="handleRun">
+          调试执行
         </el-button>
       </div>
     </div>
@@ -727,26 +727,57 @@ function handleHitlRejected(payload) {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: nowrap;
 }
 
 .workflow-debug-run-panel__title,
 .workflow-debug-run-panel__result-title {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 400;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
   color: #111827;
+  white-space: nowrap;
+  flex-shrink: 0;
   .blue-bar {
     background-color: #2666fb;
-    width: 6px;
+    width: 5px;
     height: 16px;
-    // margin-right: 10px;
-    border-radius: 10px;
+    border-radius: 4px;
+    flex-shrink: 0;
   }
 
   &::before {
     content: none;
+  }
+}
+
+.workflow-debug-run-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+
+  .debug-action-btn {
+    width: 82px;
+    min-width: 82px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  :deep(.el-button + .el-button) {
+    margin-left: 0;
   }
 }
 
