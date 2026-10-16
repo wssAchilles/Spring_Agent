@@ -20,10 +20,26 @@ export function computeAutoLayout(rawNodes = [], rawEdges = [], options = {}) {
     laneOffset = 130,
   } = options;
 
-  // 1. 构建节点邻接表与入度表
-  const nodeIds = rawNodes.map((n) => n.id);
+  // 0. 隔离外部主节点与内部子节点（内部节点如 loop-entry 不参与主图拓扑排布）
+  const isOuterNode = (node) => {
+    if (!node) return false;
+    if (node.parentNode) return false;
+    if (node.id === "loop-entry" || node.id.startsWith("loop-entry")) return false;
+    if (node.type === "loop-start") return false;
+    return true;
+  };
+
+  const outerNodes = rawNodes.filter(isOuterNode);
+  const innerNodes = rawNodes.filter((n) => !isOuterNode(n));
+
+  if (outerNodes.length === 0) {
+    return rawNodes;
+  }
+
+  // 1. 构建外层主节点邻接表与入度表
+  const nodeIds = outerNodes.map((n) => n.id);
   const nodeMap = new Map();
-  rawNodes.forEach((n) => nodeMap.set(n.id, n));
+  outerNodes.forEach((n) => nodeMap.set(n.id, n));
 
   const inDegree = {};
   const adjEdges = {};
@@ -71,13 +87,13 @@ export function computeAutoLayout(rawNodes = [], rawEdges = [], options = {}) {
   // 2. 找到根节点（入度为 0 的节点，优先 start 节点）
   let rootIds = nodeIds.filter((id) => inDegree[id] === 0);
   if (rootIds.length === 0) {
-    const startNode = rawNodes.find((n) => n.type === "start");
+    const startNode = outerNodes.find((n) => n.type === "start");
     rootIds = [startNode ? startNode.id : nodeIds[0]];
   }
 
   // 3. BFS 分层与泳道识别（双泳道水平轨道锁定法则）
   const depthMap = {};
-  const laneMap = {}; // 0: 中轴线, -1: 上泳道(深度证据主航道), 1: 下泳道(快速兜底副航道)
+  const laneMap = {}; // 0: 中轴线, -1: 上泳道(分支1), 1: 下泳道(分支2)
   rootIds.forEach((id) => {
     depthMap[id] = 0;
     laneMap[id] = 0;
@@ -134,23 +150,43 @@ export function computeAutoLayout(rawNodes = [], rawEdges = [], options = {}) {
     }
   }
 
-  // 处理可能孤立的未连线节点
+  // 处理可能孤立的未连线外层节点
   nodeIds.forEach((id) => {
     if (depthMap[id] === undefined) depthMap[id] = 0;
     if (laneMap[id] === undefined) laneMap[id] = 0;
   });
 
-  // 4. 坐标计算：黄金比例双泳道锁定排布
-  return rawNodes.map((node) => {
+  // 4. 动态列宽累加排布：根据节点预估宽度自适应间隔，预留充裕平滑贝塞尔曲线空间
+  const getNodeEstimatedWidth = (n) => {
+    if (!n) return 290;
+    if (n.type === "loop") return 360;
+    if (n.type === "condition") return 300;
+    return 290;
+  };
+
+  const maxCalculatedDepth = Math.max(0, ...Object.values(depthMap));
+  const depthXMap = {};
+  depthXMap[0] = startX;
+
+  for (let d = 0; d < maxCalculatedDepth; d++) {
+    const nodesAtDepth = outerNodes.filter((n) => (depthMap[n.id] || 0) === d);
+    const maxW = Math.max(290, ...nodesAtDepth.map(getNodeEstimatedWidth));
+    // 基础间距 90px，对于循环等大卡片补充至 110px，杜绝任何回折与拉扯
+    const horizontalGap = maxW >= 340 ? 110 : 90;
+    depthXMap[d + 1] = depthXMap[d] + maxW + horizontalGap;
+  }
+
+  // 5. 坐标映射赋值
+  const layoutedOuterNodes = outerNodes.map((node) => {
     const depth = depthMap[node.id] || 0;
     const lane = laneMap[node.id] || 0;
 
-    const x = startX + depth * colSpacing;
+    const x = depthXMap[depth] !== undefined ? depthXMap[depth] : startX + depth * colSpacing;
     let y = centerY;
     if (lane < 0) {
-      y = centerY - laneOffset; // 上泳道深度主航道
+      y = centerY - laneOffset; // 上泳道分支
     } else if (lane > 0) {
-      y = centerY + laneOffset; // 下泳道快速兜底
+      y = centerY + laneOffset; // 下泳道分支
     }
 
     return {
@@ -158,4 +194,7 @@ export function computeAutoLayout(rawNodes = [], rawEdges = [], options = {}) {
       position: { x, y },
     };
   });
+
+  // 保持内部节点不变并合并返回
+  return [...layoutedOuterNodes, ...innerNodes];
 }

@@ -25,17 +25,30 @@ public class KbFlowNodeConvert {
      */
     public static KbFlowNodeDO toDO(JSONObject nodeJson) {
         KbFlowNodeDO node = new KbFlowNodeDO();
-        FlowNodeTypeEnums nodeType = FlowNodeTypeEnums.getByName(nodeJson.getString("type"));
+        String typeStr = nodeJson.getString("type");
+        FlowNodeTypeEnums nodeType = FlowNodeTypeEnums.getByName(typeStr);
+        if (nodeType == null) {
+            nodeType = FlowNodeTypeEnums.START;
+        }
         JSONObject dataJson = nodeJson.getJSONObject("data");
+        if (dataJson == null) {
+            dataJson = new JSONObject();
+        }
         JSONObject configJson = dataJson.getJSONObject("config");
-        assert nodeType != null;
+        if (configJson == null) {
+            configJson = new JSONObject();
+        }
 
         node.setUuid(nodeJson.getString("id"));
-        node.setName(configJson.getString("label"));
+        String label = configJson.getString("label");
+        if (label == null || label.isBlank()) {
+            label = nodeJson.getString("id");
+        }
+        node.setName(label);
         node.setType(nodeType.getCode());
         node.setConfig(configJson.toString());
-        node.setInput(dataJson.getJSONArray("input").toString());
-        node.setOutput(dataJson.getJSONArray("output").toString());
+        node.setInput(dataJson.getJSONArray("input") != null ? dataJson.getJSONArray("input").toString() : "[]");
+        node.setOutput(dataJson.getJSONArray("output") != null ? dataJson.getJSONArray("output").toString() : "[]");
         node.setStyle(nodeJson.toJSONString());
         return node;
     }

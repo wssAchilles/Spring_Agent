@@ -12,6 +12,7 @@ public enum FlowNodeTypeEnums {
     CONDITION(4, "condition"),
     KNOWLEDGE(5, "knowledge"),
     TOOL(7, "tool"),
+    LOOP(8, "loop"),
     ;
 
     private final Integer code;
@@ -35,6 +36,9 @@ public enum FlowNodeTypeEnums {
         String cleanName = name.trim().toLowerCase();
         if ("knowledge-retrieval".equals(cleanName) || "knowledge".equals(cleanName)) {
             return KNOWLEDGE;
+        }
+        if ("loop-start".equals(cleanName) || "loop-entry".equals(cleanName)) {
+            return START;
         }
         for (FlowNodeTypeEnums value : FlowNodeTypeEnums.values()) {
             if (Objects.equals(value.name, cleanName)) {

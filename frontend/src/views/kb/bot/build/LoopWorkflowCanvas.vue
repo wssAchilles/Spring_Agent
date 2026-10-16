@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     ref="canvasRef"
     class="loop-workflow-canvas"
@@ -35,15 +35,15 @@
       @pane-click="onPaneClick"
     >
       <template #node-loop-start="nodeProps">
-        <div class="loop-mini-start">
+        <div class="loop-mini-start" :class="{ 'is-compact': compact }">
           <div class="loop-mini-start-lock">
             <el-icon><Lock /></el-icon>
           </div>
-          <div v-if="!compact" class="loop-mini-start-text">
+          <div class="loop-mini-start-text">
             <div class="loop-mini-start-title">
-              {{ getNodeLabel(nodeProps.data, "循环开始") }}
+              {{ getNodeLabel(nodeProps.data, "循环起点") }}
             </div>
-            <div class="loop-mini-start-tip">寰幆鍏ュ彛鑺傜偣</div>
+            <div class="loop-mini-start-tip">子流程入口</div>
           </div>
           <Handle
             type="source"
@@ -54,6 +54,7 @@
           <button
             class="loop-mini-add-btn loop-mini-no-drag loop-mini-no-pan"
             type="button"
+            title="添加循环内部节点"
             @click.stop.prevent="showAddNodeMenuFromNode(nodeProps.id, $event)"
             @pointerdown.stop.prevent="
               onInnerSourceActionPointerDown($event, nodeProps.id)
@@ -304,7 +305,7 @@
             <el-icon><Delete /></el-icon>
           </button>
           <div class="node-top">
-            <span class="node-type-label">鏉′欢鍒嗘敮</span>
+            <span class="node-type-label">条件分支</span>
           </div>
           <div class="node-body">
             <div class="condition-summary">
@@ -317,7 +318,7 @@
               </div>
               <div class="condition-title-row">
                 <div class="node-title">
-                  {{ getNodeLabel(nodeProps.data, "鏉′欢鍒嗘敮") }}
+                  {{ getNodeLabel(nodeProps.data, "条件分支") }}
                 </div>
                 <span class="condition-count">{{
                   getConditionCases(nodeProps.data).length
@@ -332,7 +333,7 @@
                 class="condition-branch-row"
               >
                 <span class="condition-branch-name"
-                  >鍒嗘敮 {{ index + 1 }}</span
+                  >分支 {{ index + 1 }}</span
                 >
                 <div class="condition-branch-output">
                   <span class="condition-branch-tag">
@@ -425,7 +426,7 @@
       }"
     >
       <div class="loop-inner-add-header">
-        <span>娣诲姞鑺傜偣</span>
+        <span>添加节点</span>
         <button type="button" class="loop-inner-close" @click="hideAddNodeMenu">
           <el-icon><Close /></el-icon>
         </button>
@@ -1103,11 +1104,11 @@ function getInnerNodeLabel(nodeType, index = 0) {
   const labels = {
     llm: "LLM",
     reply: "输出",
-    condition: "鏉′欢鍒嗘敮",
-    loop: "寰幆",
+    condition: "条件分支",
+    loop: "循环",
   };
 
-  return `${labels[nodeType] || "鑺傜偣"} ${index + 1}`;
+  return `${labels[nodeType] || "节点"} ${index + 1}`;
 }
 function createLoopStartNode(overrides = {}) {
   return {
@@ -2856,24 +2857,70 @@ function getLoopReplyPreviewOverflowCount(data = {}, limit = 3) {
 }
 
 .loop-workflow-canvas.compact .loop-mini-start {
-  min-width: 36px;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border-radius: 999px;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  min-width: 136px;
+  width: auto;
+  height: 38px;
+  padding: 0 12px 0 6px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(20, 184, 166, 0.28);
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08), inset 0 1px 1px rgba(255, 255, 255, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
   .loop-mini-start-lock {
-    width: 20px;
-    height: 20px;
-    font-size: 10px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+    color: #0d9488;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.2);
   }
-}
 
-.loop-workflow-canvas.compact .loop-mini-start .loop-mini-add-btn {
-  right: -14px;
-  opacity: 1;
+  .loop-mini-start-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    text-align: left;
+  }
+
+  .loop-mini-start-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .loop-mini-start-tip {
+    font-size: 10px;
+    color: #64748b;
+    line-height: 1.1;
+  }
+
+  .loop-mini-add-btn {
+    right: -12px;
+    width: 22px;
+    height: 22px;
+    opacity: 1;
+    background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &:hover {
+      transform: translateY(-50%) scale(1.15);
+      box-shadow: 0 4px 12px rgba(13, 148, 136, 0.45);
+    }
+  }
 }
 
 .loop-mini-handle {

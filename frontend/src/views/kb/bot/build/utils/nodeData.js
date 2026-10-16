@@ -259,45 +259,81 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
     const resolvedSource = rawSource ? resolveNodeId(rawSource, [localNodeIdMap]) : rawSource;
     const resolvedTarget = rawTarget ? resolveNodeId(rawTarget, [localNodeIdMap]) : rawTarget;
 
-    let sourceHandle = edge.sourceHandle;
     const sourceNode = normalizedNodes.find((n) => n.id === resolvedSource);
+    const targetNode = normalizedNodes.find((n) => n.id === resolvedTarget);
     const isConditionSource = sourceNode?.type === "condition";
+    const isLoopSource = sourceNode?.type === "loop";
+    const isLoopTarget = targetNode?.type === "loop";
 
-    if (sourceHandle) {
-      const candidateKey = `${resolvedSource}##${sourceHandle}`;
-      if (conditionCasesMap.has(candidateKey)) {
-        sourceHandle = conditionCasesMap.get(candidateKey);
-      } else if (!sourceHandle.startsWith("condition-case-")) {
-        const candidateKeyWithPrefix = `${resolvedSource}##condition-case-${sourceHandle}`;
-        if (conditionCasesMap.has(candidateKeyWithPrefix)) {
-          sourceHandle = conditionCasesMap.get(candidateKeyWithPrefix);
-        }
-      }
+    let sourceHandle = edge.sourceHandle;
+    let targetHandle = edge.targetHandle;
+
+    if (isLoopSource) {
+      sourceHandle = "loop-node-source";
     } else if (isConditionSource) {
-      // 若 condition 出边缺失 sourceHandle，根据目标节点语义与分支顺序自愈
-      const cases = sourceNode?.data?.config?.cases || sourceNode?.data?.cases || [];
-      const lowerTarget = resolvedTarget.toLowerCase();
-      if (lowerTarget.includes("fast") || lowerTarget.includes("reply_fast")) {
-        const fastCase = cases.find((c) => `${c.id}`.includes("fast") || c.isElse);
-        if (fastCase) {
-          sourceHandle = fastCase.targetHandle || `condition-case-${fastCase.id}`;
+      if (sourceHandle) {
+        const candidateKey = `${resolvedSource}##${sourceHandle}`;
+        if (conditionCasesMap.has(candidateKey)) {
+          sourceHandle = conditionCasesMap.get(candidateKey);
+        } else if (!sourceHandle.startsWith("condition-case-")) {
+          const candidateKeyWithPrefix = `${resolvedSource}##condition-case-${sourceHandle}`;
+          if (conditionCasesMap.has(candidateKeyWithPrefix)) {
+            sourceHandle = conditionCasesMap.get(candidateKeyWithPrefix);
+          }
         }
-      } else if (lowerTarget.includes("hyde") || lowerTarget.includes("deep") || lowerTarget.includes("knowledge")) {
-        const deepCase = cases.find((c) => !c.isElse || `${c.id}`.includes("deep"));
-        if (deepCase) {
-          sourceHandle = deepCase.targetHandle || `condition-case-${deepCase.id}`;
+      } else {
+        // 若 condition 出边缺失 sourceHandle，根据目标节点语义与分支顺序自愈
+        const cases = sourceNode?.data?.config?.cases || sourceNode?.data?.cases || [];
+        const lowerTarget = resolvedTarget.toLowerCase();
+        if (lowerTarget.includes("fast") || lowerTarget.includes("reply_fast")) {
+          const fastCase = cases.find((c) => `${c.id}`.includes("fast") || c.isElse);
+          if (fastCase) {
+            sourceHandle = fastCase.targetHandle || `condition-case-${fastCase.id}`;
+          }
+        } else if (lowerTarget.includes("hyde") || lowerTarget.includes("deep") || lowerTarget.includes("knowledge")) {
+          const deepCase = cases.find((c) => !c.isElse || `${c.id}`.includes("deep"));
+          if (deepCase) {
+            sourceHandle = deepCase.targetHandle || `condition-case-${deepCase.id}`;
+          }
+        }
+        if (!sourceHandle && cases.length > 0) {
+          sourceHandle = cases[0].targetHandle || `condition-case-${cases[0].id || "1"}`;
         }
       }
-      if (!sourceHandle && cases.length > 0) {
-        sourceHandle = cases[0].targetHandle || `condition-case-${cases[0].id || "1"}`;
+    } else {
+      // 普通源节点仅具有默认 source handle (id: null)，清除无效字面量句柄名
+      if (sourceHandle === "source" || sourceHandle === "default" || sourceHandle === "right") {
+        sourceHandle = null;
       }
     }
 
+    if (isLoopTarget) {
+      targetHandle = "loop-node-target";
+    } else {
+      // 普通目标节点仅具有默认 target handle (id: null)
+      if (targetHandle === "target" || targetHandle === "default" || targetHandle === "left") {
+        targetHandle = null;
+      }
+    }
+
+    // 剔除 VueFlow 运行时注入的脏坐标与节点引用快照，防止污染持久化及渲染
+    const cleanEdge = omitObjectKeys(edge, [
+      "sourceNode",
+      "targetNode",
+      "sourceX",
+      "sourceY",
+      "targetX",
+      "targetY",
+      "sourcePosition",
+      "targetPosition",
+    ]);
+
     return {
-      ...edge,
+      ...cleanEdge,
       source: resolvedSource,
       target: resolvedTarget,
-      sourceHandle,
+      sourceHandle: sourceHandle || null,
+      targetHandle: targetHandle || null,
     };
   });
 
