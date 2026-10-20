@@ -457,17 +457,21 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
     }
 
     private boolean isFailedAnswer(String answer) {
-        if (StringUtils.isEmpty(answer)) {
+        if (StringUtils.isEmpty(answer) || answer.trim().length() < 5) {
             return true;
         }
-        // 使用正则应对大模型回答的多样性，比如“无法从知识库确认”、“没有找到相关记录”
-        return answer.matches("(?s).*(未找到|没有找到|没找到|无法找到).*") ||
-               answer.matches("(?s).*(无法.*确认|不能确认).*") ||
-               answer.matches("(?s).*(抱歉|非常抱歉).*") ||
-               answer.matches("(?s).*(未覆盖|没有覆盖).*") ||
-               answer.matches("(?s).*(未提供|没有提供).*") ||
-               answer.matches("(?s).*(不确定|无法确定).*") ||
-               answer.matches("(?s).*(不可靠|未被评估为可靠|未通过可靠性评估).*");
+        String trimmed = answer.trim();
+        // 1. 系统级报错特征拦截（错误码、异常堆栈、超时断开等）
+        if (trimmed.startsWith("ERROR:") || trimmed.startsWith("Exception:")
+                || trimmed.contains("java.lang.") || trimmed.contains("ConnectException")
+                || trimmed.contains("SocketTimeoutException") || trimmed.contains("HTTP 500")
+                || trimmed.contains("HTTP 502") || trimmed.contains("HTTP 504")) {
+            return true;
+        }
+
+        // 2. 真正的“知识库无相关内容”的标准拒答句（只匹配明确完整的拒答句意，严禁使用粗暴的 .*抱歉.* 误杀正常客气回答）
+        return trimmed.matches("(?s)^[\\s\\p{P}]*(很抱歉[，,。]?\\s*)?(在?知识库中?(暂|并)?(未|没有)找到相关(内容|信息|资料|记录)|无法从知识库确认相关(内容|信息)|根据当前知识库无法回答).*")
+                || trimmed.matches("(?s)^[\\s\\p{P}]*(未检索到相关内容|暂未找到匹配信息|没有找到符合条件的记录)[。！!]?$");
     }
 
     private Optional<SemanticCacheHitDTO> findSemanticCache(KbAgentConfigReqVO req, List<Long> knowledgeBaseIds,

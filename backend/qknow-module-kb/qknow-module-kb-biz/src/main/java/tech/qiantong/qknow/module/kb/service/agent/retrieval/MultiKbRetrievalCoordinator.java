@@ -84,9 +84,24 @@ public class MultiKbRetrievalCoordinator {
 
         long startNs = System.nanoTime();
 
-        // 1. 为每个知识库创建独立的异步 CompletableFuture 任务，并绑定单库软超时
+        final org.springframework.security.core.context.SecurityContext parentContext =
+                org.springframework.security.core.context.SecurityContextHolder.getContext();
+
+        // 1. 为每个知识库创建独立的异步 CompletableFuture 任务，透传安全上下文并绑定单库软超时
         List<CompletableFuture<SingleKbRecallResult>> futures = targetKbs.stream()
-                .map(kb -> CompletableFuture.supplyAsync(() -> executeSingleRecall(kb, question, historyTurns), multiKbExecutor)
+                .map(kb -> CompletableFuture.supplyAsync(() -> {
+                    org.springframework.security.core.context.SecurityContext childContext =
+                            org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+                    if (parentContext != null && parentContext.getAuthentication() != null) {
+                        childContext.setAuthentication(parentContext.getAuthentication());
+                    }
+                    org.springframework.security.core.context.SecurityContextHolder.setContext(childContext);
+                    try {
+                        return executeSingleRecall(kb, question, historyTurns);
+                    } finally {
+                        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                    }
+                }, multiKbExecutor)
                         .completeOnTimeout(
                                 buildTimeoutFallback(kb),
                                 singleKbTimeoutMs,

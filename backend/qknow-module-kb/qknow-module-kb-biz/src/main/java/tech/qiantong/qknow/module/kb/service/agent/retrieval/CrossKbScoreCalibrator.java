@@ -30,8 +30,8 @@ public class CrossKbScoreCalibrator {
 
     public static final int RRF_K = 60;
 
-    @Value("${qknow.rag.multi-kb.score-floor:0.40}")
-    private double scoreFloor = 0.40D;
+    @Value("${qknow.rag.multi-kb.score-floor:0.0}")
+    private double scoreFloor = 0.0D;
 
     @Value("${hermes.rag.context.max-bytes:20000}")
     private int maxGlobalContextBytes = 20000;
@@ -92,8 +92,8 @@ public class CrossKbScoreCalibrator {
             int rank = 1;
             for (RetrieveResult hit : hits) {
                 Double score = hit.getScore() != null ? hit.getScore().doubleValue() : 0.0D;
-                // 门禁：低于底线相似度直接丢弃
-                if (score < scoreFloor) {
+                // 门禁：仅当配置了正数门槛时过滤，默认 0.0D 不误杀 RRF 倒数排位得分
+                if (scoreFloor > 0.0D && score < scoreFloor) {
                     continue;
                 }
 

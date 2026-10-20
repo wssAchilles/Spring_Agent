@@ -31,6 +31,7 @@ import tech.qiantong.qknow.module.system.service.ISysRoleService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
  * @author qknow
  * @date 2025-07-22
  */
+@Slf4j
 @Tag(name = "知识库")
 @RestController
 @RequestMapping("/kmc/knowledgeBase")
@@ -173,6 +175,15 @@ public class KmcKnowledgeBaseController extends BaseController {
     @DeleteMapping("/{id}/ragCache")
     public CommonResult<Boolean> clearRagCache(@PathVariable("id") Long id) {
         tech.qiantong.qknow.common.utils.spring.SpringUtils.getBean(tech.qiantong.qknow.module.kmc.service.rag.RagCacheService.class).evictByKnowledgeBase(id);
+        try {
+            tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService semanticCacheService =
+                    tech.qiantong.qknow.common.utils.spring.SpringUtils.getBean(tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService.class);
+            if (semanticCacheService != null) {
+                semanticCacheService.evictByKnowledgeBase(id);
+            }
+        } catch (Exception e) {
+            log.warn("清除语义缓存异常: kbId={}, msg={}", id, e.getMessage());
+        }
         return CommonResult.success(true);
     }
 

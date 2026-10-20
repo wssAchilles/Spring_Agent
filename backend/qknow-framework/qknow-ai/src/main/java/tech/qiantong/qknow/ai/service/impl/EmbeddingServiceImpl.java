@@ -94,7 +94,10 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
                         .restClientBuilder(timeoutRestClientBuilder())
                         .build(),
                 MetadataMode.EMBED,
-                OpenAiEmbeddingOptions.builder().model(modelName).build());
+                OpenAiEmbeddingOptions.builder()
+                        .model(modelName)
+                        .dimensions(1536)
+                        .build());
     }
 
     private RestClient.Builder timeoutRestClientBuilder() {

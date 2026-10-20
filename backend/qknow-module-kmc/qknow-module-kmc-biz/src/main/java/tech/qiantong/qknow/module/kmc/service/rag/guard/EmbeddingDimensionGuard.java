@@ -46,10 +46,19 @@ public class EmbeddingDimensionGuard {
                     REQUIRED_DIMENSION, actual));
         }
 
+        double sumSq = 0.0;
         for (int i = 0; i < embedding.length; i++) {
             float val = embedding[i];
             if (Float.isNaN(val) || Float.isInfinite(val)) {
                 throw new IllegalArgumentException("Vector contains NaN or Infinite values at index " + i);
+            }
+            sumSq += val * val;
+        }
+        double norm = Math.sqrt(sumSq);
+        if (norm > 0 && Math.abs(norm - 1.0) > 0.05) {
+            log.warn("[EmbeddingDimensionGuard] 向量 L2 范数偏离单位超球面: norm={}, 执行保底归一化", norm);
+            for (int i = 0; i < embedding.length; i++) {
+                embedding[i] = (float) (embedding[i] / norm);
             }
         }
     }
@@ -65,11 +74,17 @@ public class EmbeddingDimensionGuard {
                     REQUIRED_DIMENSION, actual));
         }
 
+        double sumSq = 0.0;
         for (int i = 0; i < embedding.size(); i++) {
             Double val = embedding.get(i);
             if (val == null || val.isNaN() || val.isInfinite()) {
                 throw new IllegalArgumentException("Vector contains null, NaN or Infinite values at index " + i);
             }
+            sumSq += val * val;
+        }
+        double norm = Math.sqrt(sumSq);
+        if (norm > 0 && Math.abs(norm - 1.0) > 0.05) {
+            log.warn("[EmbeddingDimensionGuard] 向量 L2 范数偏离单位超球面: norm={}", norm);
         }
     }
 

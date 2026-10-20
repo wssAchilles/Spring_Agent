@@ -127,16 +127,23 @@ public class RagRetrievalService {
         info.put("simpleLightRetrieval", true);
         info.put("simpleLightTopK", simpleLightTopK);
 
-        List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
-        if (accessibleKbIds != null && !accessibleKbIds.contains(knowledgeBaseId)) {
-            if (info != null) {
-                info.put("simpleLightDenied", true);
+        Long currentUserId = null;
+        try {
+            currentUserId = SecurityUtils.getUserId();
+        } catch (Exception ignored) {
+        }
+        if (currentUserId != null) {
+            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(currentUserId);
+            if (accessibleKbIds != null && !accessibleKbIds.contains(knowledgeBaseId)) {
+                if (info != null) {
+                    info.put("simpleLightDenied", true);
+                }
+                return RagResult.builder()
+                        .context("")
+                        .sources(Collections.emptyList())
+                        .debugInfo(info != null ? info : Map.of())
+                        .build();
             }
-            return RagResult.builder()
-                    .context("")
-                    .sources(Collections.emptyList())
-                    .debugInfo(info != null ? info : Map.of())
-                    .build();
         }
 
         List<RetrievalResult> hits;
@@ -223,16 +230,23 @@ public class RagRetrievalService {
         }
 
         // 权限检查
-        List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
-        if (accessibleKbIds != null && !accessibleKbIds.contains(knowledgeBaseId)) {
-            if (ragMetricsService != null) {
-                ragMetricsService.recordZeroHit(true);
+        Long currentUserId = null;
+        try {
+            currentUserId = SecurityUtils.getUserId();
+        } catch (Exception ignored) {
+        }
+        if (currentUserId != null) {
+            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(currentUserId);
+            if (accessibleKbIds != null && !accessibleKbIds.contains(knowledgeBaseId)) {
+                if (ragMetricsService != null) {
+                    ragMetricsService.recordZeroHit(true);
+                }
+                return RagResult.builder()
+                        .context("")
+                        .sources(Collections.emptyList())
+                        .debugInfo(debugInfo != null ? debugInfo : Map.of())
+                        .build();
             }
-            return RagResult.builder()
-                    .context("")
-                    .sources(Collections.emptyList())
-                    .debugInfo(debugInfo != null ? debugInfo : Map.of())
-                    .build();
         }
 
         // Dynamic topK: 提前解析意图，通过 resolveTopK 动态调整
