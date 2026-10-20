@@ -3,6 +3,7 @@ package tech.qiantong.qknow.hermes.agent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.tool.discovery.ToolDiscoveryService;
 
 import java.util.*;
@@ -14,10 +15,18 @@ import java.util.stream.Collectors;
  * 管理所有 Agent 的注册、查找与动态工具生命周期装配
  */
 @Slf4j
+@Component
 public class AgentRegistry {
 
     private final Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
     private final ToolDiscoveryService toolDiscoveryService;
+
+    /**
+     * 默认构造函数（便于 Spring 自动装配与单测）
+     */
+    public AgentRegistry() {
+        this(null, (ChatModel) null, null);
+    }
 
     /**
      * 构造函数 - 使用 ToolCallbackResolver

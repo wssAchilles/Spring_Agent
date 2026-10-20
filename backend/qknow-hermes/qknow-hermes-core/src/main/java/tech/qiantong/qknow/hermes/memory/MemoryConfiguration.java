@@ -23,12 +23,16 @@ public class MemoryConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public EmbeddingModel embeddingModel(@org.springframework.beans.factory.annotation.Value("${spring.ai.tongyi.base-url:https://dashscope.aliyuncs.com/compatible-mode}") String baseUrl,
-                                         @org.springframework.beans.factory.annotation.Value("${TONGYI_API_KEY}") String apiKey) {
+    public EmbeddingModel embeddingModel(
+            @org.springframework.beans.factory.annotation.Value("${spring.ai.tongyi.base-url:https://dashscope.aliyuncs.com/compatible-mode}") String baseUrl,
+            @org.springframework.beans.factory.annotation.Value("${TONGYI_API_KEY:${ai.tongyi.api-key:default_dashscope_key}}") String apiKey) {
         return new org.springframework.ai.openai.OpenAiEmbeddingModel(
                 org.springframework.ai.openai.api.OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).build(),
                 org.springframework.ai.document.MetadataMode.EMBED,
-                org.springframework.ai.openai.OpenAiEmbeddingOptions.builder().model("text-embedding-v2").build());
+                org.springframework.ai.openai.OpenAiEmbeddingOptions.builder()
+                        .model("text-embedding-v3")
+                        .dimensions(1536)
+                        .build());
     }
 
     @Bean

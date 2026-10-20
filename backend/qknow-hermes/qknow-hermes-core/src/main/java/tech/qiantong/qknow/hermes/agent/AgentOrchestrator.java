@@ -268,13 +268,16 @@ public class AgentOrchestrator {
         }
 
         // 2. CRAG 检索评估（仅记录，不清空预检索内容）
-        // 控制面已做过 CRAG + 重检索 + Web fallback，此处不再二次清空
-        RetrievalEvaluation retrievalEvaluation = retrievalEvaluator.evaluate(
-                request.getQuestion(), request.getRagContextsList(), modelConfig,
-                request.hasModelCredentials() ? request.getModelCredentials() : null);
-        if (retrievalEvaluation.isIncorrect()) {
-            log.warn("CRAG 判定检索质量不足(label={}, confidence={})，保留预检索内容供 Agent 使用",
-                    retrievalEvaluation.getLabel(), retrievalEvaluation.getConfidence());
+        // 控制面已做过 CRAG + 重检索 + Web fallback，默认跳过二次阻塞评估以降低延迟
+        RetrievalEvaluation retrievalEvaluation = null;
+        if (Boolean.getBoolean("hermes.crag.secondary.enabled") && retrievalEvaluator != null) {
+            retrievalEvaluation = retrievalEvaluator.evaluate(
+                    request.getQuestion(), request.getRagContextsList(), modelConfig,
+                    request.hasModelCredentials() ? request.getModelCredentials() : null);
+            if (retrievalEvaluation.isIncorrect()) {
+                log.warn("CRAG 判定检索质量不足(label={}, confidence={})，保留预检索内容供 Agent 使用",
+                        retrievalEvaluation.getLabel(), retrievalEvaluation.getConfidence());
+            }
         }
         List<RAGContext> effectiveRagContexts = request.getRagContextsList();
 
@@ -460,7 +463,7 @@ public class AgentOrchestrator {
         final ChatModel finalAgentModel = agentModel;
         Flux<NodeOutput> stream = agent.stream(messages);
         try {
-            stream.subscribe(
+            reactor.core.Disposable streamSubscription = stream.subscribe(
                 output -> {
                     try {
                         if (output instanceof StreamingOutput streamingOutput) {
@@ -544,6 +547,12 @@ public class AgentOrchestrator {
                     emitter.complete();
                 }
             );
+            emitter.onDispose(() -> {
+                if (streamSubscription != null && !streamSubscription.isDisposed()) {
+                    streamSubscription.dispose();
+                }
+                releaseReactCapacity.run();
+            });
         } catch (RuntimeException e) {
             releaseReactCapacity.run();
             throw e;

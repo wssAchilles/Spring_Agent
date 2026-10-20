@@ -31,4 +31,17 @@ public class HermesConfiguration {
     public McpToolAdapter mcpToolAdapter() {
         return new McpToolAdapter();
     }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.flow.dag.DagCheckpointManager dagCheckpointManager() {
+        return new tech.qiantong.qknow.hermes.flow.dag.DagCheckpointManager();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public tech.qiantong.qknow.hermes.agent.AgentRegistry agentRegistry(
+            org.springframework.beans.factory.ObjectProvider<org.springframework.ai.chat.model.ChatModel> chatModelProvider) {
+        return new tech.qiantong.qknow.hermes.agent.AgentRegistry(null, chatModelProvider.getIfAvailable(), null);
+    }
 }

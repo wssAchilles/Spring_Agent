@@ -100,9 +100,14 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                 return;
             }
             try (Stream<String> lines = response.body()) {
-                lines.forEach(line -> emitStreamLine(line, sink));
+                var iterator = lines.iterator();
+                while (iterator.hasNext() && !sink.isCancelled()) {
+                    emitStreamLine(iterator.next(), sink);
+                }
             }
-            sink.complete();
+            if (!sink.isCancelled()) {
+                sink.complete();
+            }
         } catch (IOException e) {
             sink.error(new IllegalStateException("DeepSeek 流式响应解析失败", e));
         } catch (InterruptedException e) {
@@ -182,6 +187,33 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                     body.put("max_tokens", dsOptions.getMaxTokens());
                 }
             }
+            if (options instanceof org.springframework.ai.model.tool.ToolCallingChatOptions toolOptions) {
+                List<org.springframework.ai.tool.ToolCallback> callbacks = toolOptions.getToolCallbacks();
+                if (callbacks != null && !callbacks.isEmpty()) {
+                    List<Map<String, Object>> toolsList = new ArrayList<>();
+                    for (org.springframework.ai.tool.ToolCallback cb : callbacks) {
+                        if (cb != null && cb.getToolDefinition() != null) {
+                            var def = cb.getToolDefinition();
+                            Map<String, Object> funcMap = new LinkedHashMap<>();
+                            funcMap.put("name", def.name());
+                            if (def.description() != null) {
+                                funcMap.put("description", def.description());
+                            }
+                            if (def.inputSchema() != null && !def.inputSchema().isBlank()) {
+                                try {
+                                    funcMap.put("parameters", OBJECT_MAPPER.readTree(def.inputSchema()));
+                                } catch (Exception e) {
+                                    funcMap.put("parameters", Map.of("type", "object", "properties", Map.of()));
+                                }
+                            }
+                            toolsList.add(Map.of("type", "function", "function", funcMap));
+                        }
+                    }
+                    if (!toolsList.isEmpty()) {
+                        body.put("tools", toolsList);
+                    }
+                }
+            }
         }
 
         body.put("model", targetModel);
@@ -219,14 +251,18 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         if (!reasoningContent.isEmpty()) {
             metadataMap.put("reasoning_content", reasoningContent);
         }
+        List<AssistantMessage.ToolCall> toolCalls = extractToolCalls(messageNode);
         if (messageNode.has("tool_calls")) {
             metadataMap.put("tool_calls", OBJECT_MAPPER.convertValue(messageNode.get("tool_calls"), List.class));
         }
 
-        AssistantMessage assistantMessage = AssistantMessage.builder()
+        AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder()
                 .content(content)
-                .properties(metadataMap)
-                .build();
+                .properties(metadataMap);
+        if (!toolCalls.isEmpty()) {
+            assistantMessageBuilder.toolCalls(toolCalls);
+        }
+        AssistantMessage assistantMessage = assistantMessageBuilder.build();
 
         ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
                 .finishReason(finishReason)
@@ -293,14 +329,18 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         if (!reasoningContent.isEmpty()) {
             metadataMap.put("reasoning_content", reasoningContent);
         }
+        List<AssistantMessage.ToolCall> streamToolCalls = extractToolCalls(deltaNode);
         if (deltaNode.has("tool_calls")) {
             metadataMap.put("tool_calls", OBJECT_MAPPER.convertValue(deltaNode.get("tool_calls"), List.class));
         }
 
-        AssistantMessage assistantMessage = AssistantMessage.builder()
+        AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder()
                 .content(content)
-                .properties(metadataMap)
-                .build();
+                .properties(metadataMap);
+        if (!streamToolCalls.isEmpty()) {
+            assistantMessageBuilder.toolCalls(streamToolCalls);
+        }
+        AssistantMessage assistantMessage = assistantMessageBuilder.build();
 
         ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
                 .finishReason(finishReason)
@@ -353,5 +393,19 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
             return "";
         }
         return body.length() <= 500 ? body : body.substring(0, 500);
+    }
+
+    private static List<AssistantMessage.ToolCall> extractToolCalls(JsonNode node) {
+        List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
+        if (node != null && node.has("tool_calls") && node.get("tool_calls").isArray()) {
+            for (JsonNode tcNode : node.get("tool_calls")) {
+                String id = tcNode.path("id").asText("");
+                String type = tcNode.path("type").asText("function");
+                String name = tcNode.path("function").path("name").asText("");
+                String arguments = tcNode.path("function").path("arguments").asText("{}");
+                toolCalls.add(new AssistantMessage.ToolCall(id, type, name, arguments));
+            }
+        }
+        return toolCalls;
     }
 }

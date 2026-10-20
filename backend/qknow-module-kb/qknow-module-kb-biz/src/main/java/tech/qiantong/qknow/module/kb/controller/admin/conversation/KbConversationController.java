@@ -122,7 +122,7 @@ public class KbConversationController extends BaseController {
         try {
             Sinks.Many<KbChatMessageSendRespVO> sink = Sinks.many().multicast().onBackpressureBuffer();
             AtomicBoolean clientConnected = new AtomicBoolean(true);
-            agentConfigService.chatMessage(agentReq)
+            reactor.core.Disposable upstreamSub = agentConfigService.chatMessage(agentReq)
                     .subscribe(resp -> {
                         KbChatMessageSendRespVO.Message receive = resp.getReceive();
                         if (receive != null && receive.getContent() != null) {
@@ -178,7 +178,12 @@ public class KbConversationController extends BaseController {
                             sink.tryEmitComplete();
                         }
                     });
-            return sink.asFlux().doOnCancel(() -> clientConnected.set(false));
+            return sink.asFlux().doOnCancel(() -> {
+                clientConnected.set(false);
+                if (upstreamSub != null && !upstreamSub.isDisposed()) {
+                    upstreamSub.dispose();
+                }
+            });
         } catch (Exception e) {
             throw new RuntimeException("Agent 调用失败: " + e.getMessage());
         }
