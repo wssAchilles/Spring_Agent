@@ -437,6 +437,18 @@ public class GraphCommunityService {
     }
 
     public record GlobalSearchResult(String answer, List<Community> communities) {
+        public GlobalSearchResult(String answer, List<Community> communities) {
+            this.answer = answer;
+            this.communities = communities;
+        }
+
+        public String answer() {
+            return answer;
+        }
+
+        public List<Community> communities() {
+            return communities;
+        }
     }
 
     /**
