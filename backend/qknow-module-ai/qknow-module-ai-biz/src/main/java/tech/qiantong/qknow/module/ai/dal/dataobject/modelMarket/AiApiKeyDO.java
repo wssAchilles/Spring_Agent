@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import tech.qiantong.qknow.common.core.domain.BaseEntity;
 
+import tech.qiantong.qknow.mybatis.core.type.EncryptTypeHandler;
+
 /**
  * API秘钥 DO 对象 ai_api_key
  *
@@ -15,7 +17,7 @@ import tech.qiantong.qknow.common.core.domain.BaseEntity;
  * @date 2025-12-23
  */
 @Data
-@TableName(value = "ai_api_key")
+@TableName(value = "ai_api_key", autoResultMap = true)
 // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 // @KeySequence("ai_api_key_seq")
 @Builder
@@ -37,6 +39,7 @@ public class AiApiKeyDO extends BaseEntity {
     private String name;
 
     /** 秘钥 */
+    @TableField(typeHandler = EncryptTypeHandler.class)
     private String apiKey;
 
     /** 平台 */

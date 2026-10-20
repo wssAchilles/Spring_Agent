@@ -32,9 +32,18 @@ public class AiApiKeyRespVO implements Serializable {
     @Schema(description = "名称", example = "")
     private String name;
 
-    @Excel(name = "秘钥")
-    @Schema(description = "秘钥", example = "")
+    @Schema(description = "秘钥（已脱敏掩码）", example = "sk-****1234")
     private String apiKey;
+
+    public String getApiKey() {
+        if (apiKey == null || apiKey.isBlank()) {
+            return apiKey;
+        }
+        if (apiKey.length() <= 8) {
+            return "******";
+        }
+        return apiKey.substring(0, 3) + "****" + apiKey.substring(apiKey.length() - 4);
+    }
 
     @Excel(name = "平台")
     @Schema(description = "平台", example = "")

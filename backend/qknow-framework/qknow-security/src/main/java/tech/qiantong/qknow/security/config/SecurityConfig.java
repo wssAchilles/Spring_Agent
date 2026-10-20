@@ -71,6 +71,12 @@ public class SecurityConfig
     @Autowired(required = false)
     private org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
+    @org.springframework.beans.factory.annotation.Value("${flyflow.hmac.secret:${token.secret:qknow-flyflow-secret-key-2026}}")
+    private String flyflowHmacSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${flyflow.hmac.app-id:flyflow-internal}")
+    private String flyflowAppId;
+
     /**
      * 身份验证实现
      */
@@ -152,7 +158,7 @@ public class SecurityConfig
             // 添加Logout filter
             .logout(logout -> logout.logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler))
             // 添加FlyFlow内部接口HMAC鉴权filter
-            .addFilterBefore(new FlyFlowHmacAuthenticationFilter("flyflow-internal", "qknow-flyflow-secret-key-2026", redisTemplate), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new FlyFlowHmacAuthenticationFilter(flyflowAppId, flyflowHmacSecret, redisTemplate), UsernamePasswordAuthenticationFilter.class)
             // 添加JWT filter
             .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
             // 添加CORS filter

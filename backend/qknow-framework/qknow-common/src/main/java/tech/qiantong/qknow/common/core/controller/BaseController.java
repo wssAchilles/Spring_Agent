@@ -210,10 +210,27 @@ public class BaseController
     }
 
     /**
-     * 获取工作区id，该项目默认1001
+     * 获取工作区id，优先从请求头动态提取，默认保底 1001L
      */
     public Long getWorkSpaceId()
     {
+        try
+        {
+            jakarta.servlet.http.HttpServletRequest request = tech.qiantong.qknow.common.utils.ServletUtils.getRequest();
+            if (request != null)
+            {
+                String header = request.getHeader("workspace-id");
+                if (cn.hutool.core.util.StrUtil.isBlank(header)) {
+                    header = request.getHeader("X-Workspace-Id");
+                }
+                if (cn.hutool.core.util.StrUtil.isNotBlank(header)) {
+                    return Long.parseLong(header.trim());
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
         return 1001L;
     }
 }
