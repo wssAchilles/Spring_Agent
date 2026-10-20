@@ -48,7 +48,7 @@
 
 - 第一批：N1（RRF/COSINE 量纲生产接线）、N2（ToolNode 恢复 fail-close）、N3（resume 守卫 + checkpoint 状态语义）、R6（BaseController 去死代码）、P0-08（取消链路异步订阅）、P0-09（审批端鉴权/租户/变量防绕过/失败补偿）、P0-12（`query.length` 条件 + 种子 prompt 键）、P0-04 token 必填、N4（plan-solve 污染）。
 - 第二批：P0-09 审批强证明（ToolNode 校验 Redis 决策凭据）、P0-04 TLS/mTLS 支持（服务端 `grpc.server.security.*` + 客户端 Netty SSL，证书目录 `deploy/docker/certs/`）、Hermes Redis DB 与控制面对齐、Hermes 编排 env 键名/Postgres 依赖修正、生产包移除 JaCoCo/embedded-redis、CI 增加 `mvn package` 与 `docker compose config` 门禁。
-- 验证：全仓编译成功；`-pl tests -am test` **1876 tests / 0 fail**、`qknow-module-kb-biz` 35 / 0 fail、`qknow-hermes-core` 99 / 0 fail；`docker compose -f deploy/docker/docker-compose.yml config` exit 0；fat jar **407M/567 libs**，jacoco 与 embedded-redis 均已从生产包移除。
+- 验证：全仓编译成功；`-pl tests -am test` **1880 tests / 0 fail**、`qknow-module-kb-biz` 35 / 0 fail、`qknow-hermes-core` 99 / 0 fail；`docker compose -f deploy/docker/docker-compose.yml config` exit 0；fat jar **407M/567 libs**，jacoco 与 embedded-redis 均已从生产包移除。
 - 第四批：gRPC 停止下发明文 API Key（proto `ModelConfig.api_key` deprecated + `key_id`），Hermes 通过共享库本地解密，解析失败 fail-close；新增 `GrpcCredentialResolutionTest`。
 - 仍遗留：MCP3 控制面语义向量、MCP Server 端点接线、P0-15/P0-16。
 
