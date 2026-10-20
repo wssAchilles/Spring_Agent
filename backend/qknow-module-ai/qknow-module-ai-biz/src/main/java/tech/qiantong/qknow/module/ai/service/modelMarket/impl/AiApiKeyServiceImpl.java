@@ -144,14 +144,30 @@ public class AiApiKeyServiceImpl extends ServiceImpl<AiApiKeyMapper, AiApiKeyDO>
 
     }
 
+    /**
+     * 强力判定 apiKey 是否为脱敏掩码字符串 (R1 守卫)
+     * 涵盖 17 星掩码、4 星掩码 (sk-****1234)、全星掩码 (******) 等任何包含 '*' 的掩码形态
+     */
+    private boolean isMaskedApiKey(String apiKey) {
+        return StrUtil.isNotBlank(apiKey) && apiKey.contains("*");
+    }
+
     @Override
     public int updateAiApiKey(AiApiKeySaveReqVO updateReqVO) {
         // 更新API秘钥
         AiApiKeyDO updateObj = BeanUtils.toBean(updateReqVO, AiApiKeyDO.class);
-        if (StrUtil.isNotBlank(updateObj.getApiKey())
-                && updateObj.getApiKey().contains("*****************")) {
-            // 如果是加密的数据，那么就不更新这个字段了
-            updateObj.setApiKey(null);
+        if (isMaskedApiKey(updateObj.getApiKey())) {
+            // 如果是脱敏掩码数据，保留原库内真实有效密钥，跳过对 apiKey 真实密文的覆盖更新
+            if (updateObj.getId() != null) {
+                AiApiKeyDO existing = aiApiKeyMapper.selectById(updateObj.getId());
+                if (existing != null) {
+                    updateObj.setApiKey(existing.getApiKey());
+                } else {
+                    updateObj.setApiKey(null);
+                }
+            } else {
+                updateObj.setApiKey(null);
+            }
         }
         updateObj.setStatus(ApiKeyStatus.CONFIG.getCode());
         // 需要进行验证，验证不成功的话，配置失败
@@ -302,13 +318,21 @@ public class AiApiKeyServiceImpl extends ServiceImpl<AiApiKeyMapper, AiApiKeyDO>
             if (Objects.isNull(sqlDO)) {
                 continue;
             }
-            if (Objects.equals(sqlDO.getApiKey(), vo.getApiKey())
+            // 判定是否为脱敏掩码：若传入的 apiKey 包含 '*'，则保留原库内真实有效密钥，坚决不被掩码覆盖
+            boolean isMasked = isMaskedApiKey(vo.getApiKey());
+            String effectiveApiKey = isMasked ? sqlDO.getApiKey() : vo.getApiKey();
+
+            // 若名称、API地址与真实有效密钥均未变化，直接跳过无需更新
+            if (Objects.equals(sqlDO.getApiKey(), effectiveApiKey)
                     && Objects.equals(sqlDO.getName(), vo.getName())
                     && Objects.equals(sqlDO.getUrl(), vo.getUrl())) {
                 continue;
             }
-            // 需要修改的
+            // 需要修改的实体：若为掩码，强制保留原真实有效密钥
             AiApiKeyDO keyDO = BeanUtils.toBean(vo, AiApiKeyDO.class);
+            if (isMasked) {
+                keyDO.setApiKey(sqlDO.getApiKey());
+            }
             keyDO.setStatus(ApiKeyStatus.CONFIG.getCode());
             updateList.add(keyDO);
         }

@@ -33,7 +33,7 @@ public class FlyFlowHmacAuthenticationFilter extends OncePerRequestFilter {
 
     public FlyFlowHmacAuthenticationFilter(String expectedAppId, String secretKey, StringRedisTemplate redisTemplate) {
         this.expectedAppId = (expectedAppId != null && !expectedAppId.isBlank()) ? expectedAppId : "flyflow-internal";
-        this.secretKey = (secretKey != null && !secretKey.isBlank()) ? secretKey : "qknow-flyflow-secret-key-2026";
+        this.secretKey = secretKey;
         this.redisTemplate = redisTemplate;
     }
 
@@ -44,6 +44,14 @@ public class FlyFlowHmacAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         if (path == null || !path.startsWith("/flyflow/")) {
             filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (secretKey == null || secretKey.isBlank()) {
+            log.error("FlyFlow HMAC 鉴权被拒绝：服务端未配置专用的 qknow.security.flyflow.hmac-secret 密钥");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"msg\":\"FlyFlow HMAC secret key is not configured\"}");
             return;
         }
 

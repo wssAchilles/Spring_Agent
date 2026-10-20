@@ -38,9 +38,10 @@ services:
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
       DEEPSEEK_BASE_URL: https://api.deepseek.com
       DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
-      TOKEN_SECRET: ${TOKEN_SECRET:-qknow-production-jwt-token-secret-key-secure-2026}
+      TOKEN_SECRET: ${TOKEN_SECRET:?TOKEN_SECRET environment variable must be configured for production deployment}
       HERMES_GRPC_HOST: hermes
       HERMES_GRPC_PORT: 9090
+      HERMES_GRPC_AUTH_TOKEN: ${HERMES_GRPC_AUTH_TOKEN:-qknow-hermes-grpc-internal-token-2026}
     ports:
       - "${EXPOSE_BACKEND_PORT:-8099}:8099"
     volumes:
@@ -83,9 +84,11 @@ services:
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
       DEEPSEEK_BASE_URL: https://api.deepseek.com
       TONGYI_API_KEY: ${DASHSCOPE_API_KEY}
-    ports:
-      - "9090:9090"
-      - "8081:8081"
+      HERMES_GRPC_AUTH_TOKEN: ${HERMES_GRPC_AUTH_TOKEN:-qknow-hermes-grpc-internal-token-2026}
+    # 彻底关闭宿主明文 9090/8081 裸露映射，仅允许在容器内网 qknownet 相互通信 (P0-04)
+    expose:
+      - "9090"
+      - "8081"
     volumes:
       - /etc/localtime:/etc/localtime:ro
     depends_on:

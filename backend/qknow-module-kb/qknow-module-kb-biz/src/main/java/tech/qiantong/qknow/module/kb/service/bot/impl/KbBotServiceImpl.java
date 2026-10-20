@@ -67,7 +67,7 @@ public class KbBotServiceImpl extends ServiceImpl<KbBotMapper, KbBotDO> implemen
         // 原生数据库驱动：为新创建的 Bot 自动按模板初始化标准节点与连线，彻底清除前端硬编码
         if (dictType.getId() != null) {
             try {
-                flowTemplateService.initBotWorkflowByTemplate(dictType.getId(), dictType.getType(), null);
+                flowTemplateService.initBotWorkflowByTemplate(dictType.getId(), dictType.getType(), null, dictType.getWorkspaceId());
             } catch (Exception e) {
                 log.warn("[KbBotService] Failed to auto-initialize template workflow for bot: {}", dictType.getId(), e);
             }

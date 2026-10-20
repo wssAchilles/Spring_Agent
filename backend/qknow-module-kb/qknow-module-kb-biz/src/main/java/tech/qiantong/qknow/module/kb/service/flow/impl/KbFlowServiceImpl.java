@@ -400,6 +400,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
                     if (!isTestMode) {
                         runtimeService.updateById(runtimeContext.getRuntimeDO());
                         saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
+                        registerApprovalPendingIfSuspended(runtimeContext, flowBO, nodeResult);
                     } else {
                         runtimeContext.getRuntimeDO().setOutput("工作流已挂起，等待人工审批");
                     }
@@ -459,6 +460,11 @@ public class KbFlowServiceImpl implements IKbFlowService {
                     if (!isTestMode) {
                         runtimeService.updateById(runtimeContext.getRuntimeDO());
                         saveDagCheckpoint(runtimeContext, flowBO, groupIndex, resultMap);
+                        for (NodeRunResultBO r : resultMap.values()) {
+                            if (Objects.equals(RuntimeStatusEnums.SUSPENDED.getCode(), r.getStatus())) {
+                                registerApprovalPendingIfSuspended(runtimeContext, flowBO, r);
+                            }
+                        }
                     } else {
                         runtimeContext.getRuntimeDO().setOutput("工作流已挂起，等待人工审批");
                     }
@@ -541,7 +547,14 @@ public class KbFlowServiceImpl implements IKbFlowService {
         KbFlowBO flowBO = KbFlowConvert.toFlowBO(flowVO);
 
         // 若存在挂起节点，先通过 CAS 乐观锁原子唤醒挂起检查点并注入人工审批变量
-        dagCheckpointManager.wakeSuspendedWithLock(String.valueOf(runtimeId), humanInput);
+        boolean wakeSuccess = dagCheckpointManager.wakeSuspendedWithLock(String.valueOf(runtimeId), humanInput);
+        if (!wakeSuccess) {
+            log.warn("[DAG 恢复] wakeSuspendedWithLock 乐观锁校验未通过（可能并发已唤醒或非挂起态）：runtimeId={}", runtimeId);
+            if (runtimeDO.getStatus() != null && !Objects.equals(RuntimeStatusEnums.SUSPENDED.getCode(), runtimeDO.getStatus())) {
+                log.info("[DAG 恢复] 运行实例当前状态为 [{}]，直接返回当前状态避免重复重跑", runtimeDO.getStatus());
+                return BeanUtils.toBean(runtimeDO, KbRuntimeRespVO.class);
+            }
+        }
         checkpoint = dagCheckpointManager.loadCheckpoint(String.valueOf(runtimeId));
         if (checkpoint == null) {
             throw new ServiceException("恢复唤醒后未找到有效检查点：runtimeId=" + runtimeId);
@@ -762,5 +775,47 @@ public class KbFlowServiceImpl implements IKbFlowService {
             sbMap.put(key, sb);
         }
         return JSONObject.toJSONString(sbMap);
+    }
+
+    private void registerApprovalPendingIfSuspended(RuntimeContextBO runtimeContext, KbFlowBO flowBO, NodeRunResultBO nodeResult) {
+        if (runtimeContext == null || runtimeContext.getRuntimeDO() == null || nodeResult == null) {
+            return;
+        }
+        String runtimeId = String.valueOf(runtimeContext.getRuntimeDO().getId());
+        String flowId = String.valueOf(flowBO.getBotId());
+        String nodeId = nodeResult.getNodeUuid();
+        String approvalKey = flowId + ":" + runtimeId + ":" + nodeId;
+
+        String reason = "等待人工审批确认";
+        if (nodeResult.getOutput() instanceof Map<?, ?> outMap) {
+            Object r = outMap.get("reason");
+            if (r != null) {
+                reason = r.toString();
+            }
+        }
+
+        Map<String, Object> pendingData = new LinkedHashMap<>();
+        pendingData.put("approvalKey", approvalKey);
+        pendingData.put("flowId", flowId);
+        pendingData.put("requestId", runtimeId);
+        pendingData.put("nodeId", nodeId);
+        pendingData.put("nodeName", nodeResult.getNodeName());
+        pendingData.put("reason", reason);
+        pendingData.put("status", "PENDING");
+        pendingData.put("suspendedAt", System.currentTimeMillis());
+
+        try {
+            tech.qiantong.qknow.redis.service.IRedisService redisService =
+                    tech.qiantong.qknow.common.utils.spring.SpringUtils.getBean(tech.qiantong.qknow.redis.service.IRedisService.class);
+            if (redisService != null) {
+                redisService.set(tech.qiantong.qknow.hermes.flow.node.ApprovalNodeExecutor.REDIS_PENDING_PREFIX + approvalKey,
+                        com.alibaba.fastjson2.JSON.toJSONString(pendingData),
+                        tech.qiantong.qknow.hermes.flow.node.ApprovalNodeExecutor.DEFAULT_TIMEOUT_SECONDS);
+                log.info("[DAG 调度器] 生产挂起审批单已成功写入 Redis: key={}",
+                        tech.qiantong.qknow.hermes.flow.node.ApprovalNodeExecutor.REDIS_PENDING_PREFIX + approvalKey);
+            }
+        } catch (Exception e) {
+            log.warn("[DAG 调度器] 写入 Redis 审批待办异常: {}", e.getMessage());
+        }
     }
 }

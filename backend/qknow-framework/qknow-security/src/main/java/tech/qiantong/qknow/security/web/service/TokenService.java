@@ -55,6 +55,20 @@ public class TokenService
     @Autowired
     private RedisCache redisCache;
 
+    @jakarta.annotation.PostConstruct
+    public void validateTokenSecret() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("CRITICAL SECURITY ERROR: token.secret 未配置！");
+        }
+        if ("qknow-jwt-secret-key-32bytes-secure-2026".equals(secret) ||
+            "qknow-production-jwt-token-secret-key-secure-2026".equals(secret)) {
+            log.warn("================================================================================");
+            log.warn("SECURITY WARNING: token.secret 正在使用公开默认密钥！");
+            log.warn("生产环境必须通过环境变量 TOKEN_SECRET 设置独立高熵私钥，以防止 JWT 伪造！");
+            log.warn("================================================================================");
+        }
+    }
+
     /**
      * 获取用户身份信息
      *

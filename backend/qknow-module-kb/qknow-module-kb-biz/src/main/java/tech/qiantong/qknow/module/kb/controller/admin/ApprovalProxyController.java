@@ -25,6 +25,13 @@ public class ApprovalProxyController {
     @Autowired(required = false)
     private IRedisService redisService;
 
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private tech.qiantong.qknow.module.kb.service.flow.IKbFlowService flowService;
+
+    @Autowired(required = false)
+    private tech.qiantong.qknow.module.kb.service.runtime.IKbRuntimeService runtimeService;
+
     @Operation(summary = "获取待审批列表")
     @GetMapping("/pending")
     public CommonResult<List<Map<String, Object>>> getPending() {
@@ -85,7 +92,32 @@ public class ApprovalProxyController {
         String requestId = body.get("requestId");
         String nodeId = body.get("nodeId");
         boolean success = ApprovalNodeExecutor.approve(flowId, requestId, nodeId);
-        return success ? CommonResult.success(true) : CommonResult.error(404, "审批请求不存在或已处理");
+        if (!success) {
+            return CommonResult.error(404, "审批请求不存在或已处理");
+        }
+
+        // 决策闭环：若 requestId 为合法数值 runtimeId，自动唤醒推进工作流状态机
+        if (requestId != null && flowService != null) {
+            try {
+                Long runtimeId = Long.parseLong(requestId);
+                Map<String, Object> humanInput = new HashMap<>();
+                humanInput.put("approvalResult", "APPROVED");
+                humanInput.put("approvalApproved", true);
+                humanInput.put("approvalKey", flowId + ":" + requestId + ":" + nodeId);
+
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    try {
+                        flowService.resumeFlow(runtimeId, humanInput);
+                        log.info("[ApprovalProxy] 审批通过自动唤醒工作流成功: runtimeId={}", runtimeId);
+                    } catch (Exception ex) {
+                        log.error("[ApprovalProxy] 自动恢复工作流异常: runtimeId={}, error={}", runtimeId, ex.getMessage());
+                    }
+                });
+            } catch (NumberFormatException ignored) {
+                log.debug("requestId 非数值 runtimeId，跳过流程自动唤醒: {}", requestId);
+            }
+        }
+        return CommonResult.success(true);
     }
 
     @Operation(summary = "审批拒绝")
@@ -96,7 +128,25 @@ public class ApprovalProxyController {
         String nodeId = body.get("nodeId");
         String reason = body.getOrDefault("reason", "人工拒绝");
         boolean success = ApprovalNodeExecutor.reject(flowId, requestId, nodeId, reason);
-        return success ? CommonResult.success(true) : CommonResult.error(404, "审批请求不存在或已处理");
+        if (!success) {
+            return CommonResult.error(404, "审批请求不存在或已处理");
+        }
+
+        // 闭环拒绝终态：更新运行实例为 ERROR
+        if (requestId != null && runtimeService != null) {
+            try {
+                Long runtimeId = Long.parseLong(requestId);
+                tech.qiantong.qknow.module.kb.dal.dataobject.runtime.KbRuntimeDO runDO = runtimeService.getById(runtimeId);
+                if (runDO != null) {
+                    runDO.setStatus(tech.qiantong.qknow.module.kb.dal.enums.RuntimeStatusEnums.ERROR.getCode());
+                    runDO.setOutput("人工审批已拒绝: " + reason);
+                    runtimeService.updateById(runDO);
+                }
+            } catch (Exception ex) {
+                log.warn("[ApprovalProxy] 拒绝审批更新运行实例异常: {}", ex.getMessage());
+            }
+        }
+        return CommonResult.success(true);
     }
 
     @Operation(summary = "创建测试审批数据（仅 dev 环境）")

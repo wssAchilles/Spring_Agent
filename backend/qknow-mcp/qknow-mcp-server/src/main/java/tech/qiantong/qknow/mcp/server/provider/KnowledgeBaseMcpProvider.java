@@ -93,7 +93,7 @@ public class KnowledgeBaseMcpProvider {
                 return CallToolResult.error("知识库检索执行失败: " + e.getMessage());
             }
         }
-        // 本地契约模式：返回结构化检索摘要，杜绝捏造虚假相似度分数
-        return CallToolResult.text(String.format("### 知识库 [Corpus=%d] 检索召回 (Top %d)\n- 匹配查询: '%s'，满足企业级知识检索规范与契约", corpusId, topK, query));
+        // 缺乏真实知识库检索服务委托时客观报错，杜绝伪造假成功
+        return CallToolResult.error(String.format("知识库 [Corpus=%d] 底层向量检索服务未绑定或尚未就绪", corpusId));
     }
 }

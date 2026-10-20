@@ -29,12 +29,14 @@ public class Phase46McpContractTest {
     private McpClientManager clientManager;
     private McpSecurityFilterPipeline securityPipeline;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private KnowledgeBaseMcpProvider kbProvider;
 
     @BeforeEach
     void setUp() throws Exception {
         // 1. 初始化 Server 注册中心与四大业务能力导出适配器
         registry = new McpServerRegistry("qknow-enterprise-mcp", "2.2.1");
-        new KnowledgeBaseMcpProvider().registerTo(registry);
+        kbProvider = new KnowledgeBaseMcpProvider();
+        kbProvider.registerTo(registry);
         new KnowledgeGraphMcpProvider().registerTo(registry);
         new DataAgentMcpProvider().registerTo(registry);
         new CodeSandboxMcpProvider().registerTo(registry);
@@ -98,15 +100,14 @@ public class Phase46McpContractTest {
     @Test
     @DisplayName("Contract 4: 知识库超球面向量检索工具与文档 URI 资源寻址契约")
     void testKnowledgeBaseToolAndResourceContract() throws Exception {
-        // 工具调用
+        // 工具调用（未注入底层向量检索委托时客观报错，杜绝伪造假成功）
         CallToolResult result = clientManager.callTool(
             "qknow-server-01",
             "qknow_kb_search",
             Map.of("corpusId", 101, "query", "企业级知识检索规范", "topK", 3)
         );
-        assertFalse(result.isError());
-        assertTrue(result.getFirstText().contains("知识库 [Corpus=101] 检索召回"));
-        assertTrue(result.getFirstText().contains("企业级知识检索规范"));
+        assertTrue(result.isError());
+        assertTrue(result.getFirstText().contains("底层向量检索服务未绑定或尚未就绪"));
 
         // 资源读取
         JsonRpcRequest resReq = new JsonRpcRequest("res-01", "resources/read", Map.of("uri", "kb://corpus/101/doc/2048"));
@@ -123,14 +124,14 @@ public class Phase46McpContractTest {
     @Test
     @DisplayName("Contract 5: 知识图谱只读 Cypher 校验与变异写操作安全阻断契约")
     void testKnowledgeGraphSecurityContract() throws Exception {
-        // 合法只读查询
+        // 合法只读查询（未注入真实图数据库执行器委托时，客观报错）
         CallToolResult validResult = clientManager.callTool(
             "qknow-server-01",
             "qknow_kg_query",
             Map.of("cypherQuery", "MATCH (e1:Entity)-[r:CAUSES]->(e2:Entity) RETURN e1, r, e2")
         );
-        assertFalse(validResult.isError());
-        assertTrue(validResult.getFirstText().contains("拓扑因果路径已命中"));
+        assertTrue(validResult.isError());
+        assertTrue(validResult.getFirstText().contains("底层 Neo4j 图数据库连接未就绪"));
 
         // 恶意变异 Cypher 阻断
         CallToolResult attackResult = clientManager.callTool(
@@ -145,14 +146,14 @@ public class Phase46McpContractTest {
     @Test
     @DisplayName("Contract 6: 数据智能体只读 SQL、分号堆叠阻断与 LIMIT 1000 注入契约")
     void testDataAgentSecurityContract() throws Exception {
-        // 合法 SQL 自动注入 LIMIT 1000
+        // 合法 SQL 自动注入 LIMIT 1000 保护（未配置真实数据源连接时客观报错）
         CallToolResult validResult = clientManager.callTool(
             "qknow-server-01",
             "qknow_sql_query",
             Map.of("dsId", "pg-prod", "sql", "SELECT id, amount FROM orders WHERE status = 'PAID'")
         );
-        assertFalse(validResult.isError());
-        assertTrue(validResult.getFirstText().contains("LIMIT 1000"));
+        assertTrue(validResult.isError());
+        assertTrue(validResult.getFirstText().contains("未找到数据源 [pg-prod] 或底层 SQL 执行器未配置就绪"));
 
         // 恶意分号堆叠注入阻断
         CallToolResult stackedAttack = clientManager.callTool(
@@ -173,14 +174,14 @@ public class Phase46McpContractTest {
     @Test
     @DisplayName("Contract 7: 代码沙箱受限瞬态隔离执行与高危系统调用阻断契约")
     void testCodeSandboxSecurityContract() throws Exception {
-        // 正常安全计算
+        // 正常安全计算（未注入沙箱执行器委托时客观报错）
         CallToolResult safeResult = clientManager.callTool(
             "qknow-server-01",
             "qknow_sandbox_run",
             Map.of("language", "python", "code", "a = 20 + 22\nprint(f'result={a}')")
         );
-        assertFalse(safeResult.isError());
-        assertTrue(safeResult.getFirstText().contains("沙箱执行成功"));
+        assertTrue(safeResult.isError());
+        assertTrue(safeResult.getFirstText().contains("受限代码沙箱执行器未配置或环境未就绪"));
 
         // 恶意调用系统命令阻断
         CallToolResult attackResult = clientManager.callTool(
@@ -197,6 +198,11 @@ public class Phase46McpContractTest {
     void testSpringAiToolCallbackAdapterContract() throws Exception {
         List<McpTool> tools = clientManager.refreshTools("qknow-server-01");
         McpTool kbTool = tools.stream().filter(t -> t.name().equals("qknow_kb_search")).findFirst().orElseThrow();
+
+        // 为 kbProvider 配置模拟委托以验证 Spring AI 适配器链路与 16KB 截断
+        kbProvider.setSearchDelegate(params ->
+            CallToolResult.text("### 知识库 [Corpus=1] 检索召回 (Top 2)\n- 匹配查询: '测试检索'")
+        );
 
         ToolCallback adapter = new McpSpringAiToolCallbackAdapter(
             "qknow-server-01",

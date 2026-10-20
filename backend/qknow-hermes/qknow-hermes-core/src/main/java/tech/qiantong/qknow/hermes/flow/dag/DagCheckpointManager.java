@@ -32,6 +32,7 @@ public class DagCheckpointManager {
      * 内存降级缓存（用于纯内存单测或无真实 DB 环境）
      */
     private final Map<String, DagCheckpoint> inMemoryStore = new ConcurrentHashMap<>();
+    private final java.util.concurrent.atomic.AtomicBoolean tableInitialized = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     @PostConstruct
     public void init() {
@@ -82,6 +83,7 @@ public class DagCheckpointManager {
                         group_index = EXCLUDED.group_index,
                         completed_results = EXCLUDED.completed_results,
                         variables_json = EXCLUDED.variables_json,
+                        status = EXCLUDED.status,
                         version = dag_checkpoints.version + 1,
                         updated_at = CURRENT_TIMESTAMP
                     """, runtimeId, flowId, groupIndex, resultsJson, varsJson);
@@ -493,37 +495,44 @@ public class DagCheckpointManager {
     }
 
     private void ensureTableExists() {
-        if (jdbcTemplate == null) {
+        if (jdbcTemplate == null || tableInitialized.get()) {
             return;
         }
-        try {
-            jdbcTemplate.execute("""
-                    CREATE TABLE IF NOT EXISTS dag_checkpoints (
-                        runtime_id VARCHAR(255) PRIMARY KEY,
-                        flow_id VARCHAR(255) NOT NULL,
-                        group_index INT NOT NULL,
-                        completed_results TEXT,
-                        version INT NOT NULL DEFAULT 1,
-                        variables_json TEXT,
-                        status VARCHAR(64) NOT NULL DEFAULT 'SUSPENDED',
-                        compensation_log TEXT,
-                        lease_owner_id VARCHAR(128),
-                        lease_expire_at TIMESTAMP,
-                        fencing_token BIGINT NOT NULL DEFAULT 1,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                    """);
-            // 兼容既有旧表缺失列的场景
-            jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1");
-            jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS variables_json TEXT");
-            jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS status VARCHAR(64) NOT NULL DEFAULT 'SUSPENDED'");
-            jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS compensation_log TEXT");
-            jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS lease_owner_id VARCHAR(128)");
-            jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS lease_expire_at TIMESTAMP");
-            jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS fencing_token BIGINT NOT NULL DEFAULT 1");
-        } catch (Exception e) {
-            log.debug("dag_checkpoints table schema check: {}", e.getMessage());
+        synchronized (this) {
+            if (tableInitialized.get()) {
+                return;
+            }
+            try {
+                jdbcTemplate.execute("""
+                        CREATE TABLE IF NOT EXISTS dag_checkpoints (
+                            runtime_id VARCHAR(255) PRIMARY KEY,
+                            flow_id VARCHAR(255) NOT NULL,
+                            group_index INT NOT NULL,
+                            completed_results TEXT,
+                            version INT NOT NULL DEFAULT 1,
+                            variables_json TEXT,
+                            status VARCHAR(64) NOT NULL DEFAULT 'SUSPENDED',
+                            compensation_log TEXT,
+                            lease_owner_id VARCHAR(128),
+                            lease_expire_at TIMESTAMP,
+                            fencing_token BIGINT NOT NULL DEFAULT 1,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                        """);
+                // 兼容既有旧表缺失列的场景
+                jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS version INT NOT NULL DEFAULT 1");
+                jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS variables_json TEXT");
+                jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS status VARCHAR(64) NOT NULL DEFAULT 'SUSPENDED'");
+                jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS compensation_log TEXT");
+                jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS lease_owner_id VARCHAR(128)");
+                jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS lease_expire_at TIMESTAMP");
+                jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS fencing_token BIGINT NOT NULL DEFAULT 1");
+                tableInitialized.set(true);
+                log.info("dag_checkpoints 检查点数据表结构初始化/对齐成功");
+            } catch (Exception e) {
+                log.debug("dag_checkpoints table schema check: {}", e.getMessage());
+            }
         }
     }
 

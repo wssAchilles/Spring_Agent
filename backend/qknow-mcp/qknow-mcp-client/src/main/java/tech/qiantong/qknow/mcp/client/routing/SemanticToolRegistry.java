@@ -10,9 +10,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * 语义工具注册表 (SemanticToolRegistry)
  * 线程安全维护全量已注册工具的千问 1536 维超球面嵌入元数据
+ * 由 McpClientAutoConfiguration 统一管理注入，避免与 @Component 产生 BeanDefinitionOverride 冲突
  */
 @Slf4j
-@Component
 public class SemanticToolRegistry {
 
     private final List<ToolEmbeddingEntry> toolEntries = new CopyOnWriteArrayList<>();

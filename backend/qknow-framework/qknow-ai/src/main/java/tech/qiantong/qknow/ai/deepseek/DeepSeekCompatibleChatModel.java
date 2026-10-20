@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 /**
@@ -85,6 +86,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
     }
 
     private void streamResponse(Prompt prompt, FluxSink<ChatResponse> sink) {
+        StreamToolCallAccumulator accumulator = new StreamToolCallAccumulator();
         try {
             Map<String, Object> body = buildRequestBody(prompt, true);
             HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
@@ -99,20 +101,32 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                 sink.error(new IllegalStateException("DeepSeek 流式调用失败: HTTP " + response.statusCode()));
                 return;
             }
-            try (Stream<String> lines = response.body()) {
+            Stream<String> lines = response.body();
+            // 关键时序：客户端取消时立即物理关闭底层 HTTP 响应流，杜绝 token 空烧
+            sink.onDispose(() -> {
+                try {
+                    lines.close();
+                } catch (Exception ignored) {
+                }
+            });
+            try (lines) {
                 var iterator = lines.iterator();
-                while (iterator.hasNext() && !sink.isCancelled()) {
-                    emitStreamLine(iterator.next(), sink);
+                while (!sink.isCancelled() && iterator.hasNext()) {
+                    emitStreamLine(iterator.next(), sink, accumulator);
                 }
             }
             if (!sink.isCancelled()) {
                 sink.complete();
             }
         } catch (IOException e) {
-            sink.error(new IllegalStateException("DeepSeek 流式响应解析失败", e));
+            if (!sink.isCancelled()) {
+                sink.error(new IllegalStateException("DeepSeek 流式响应解析失败", e));
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            sink.error(new IllegalStateException("DeepSeek 流式调用被中断", e));
+            if (!sink.isCancelled()) {
+                sink.error(new IllegalStateException("DeepSeek 流式调用被中断", e));
+            }
         }
     }
 
@@ -125,6 +139,25 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         List<Map<String, Object>> messages = new ArrayList<>();
         if (prompt != null && prompt.getInstructions() != null) {
             for (Message message : prompt.getInstructions()) {
+                // 关键防御 1: 完美解析 Spring AI 官方 ToolResponseMessage
+                // 将框架聚合的多个 ToolResponse(id, name, responseData) 展开为 OpenAI/DeepSeek 标准的 tool 消息
+                if (message instanceof org.springframework.ai.chat.messages.ToolResponseMessage toolResponseMessage) {
+                    List<org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
+                    if (responses != null && !responses.isEmpty()) {
+                        for (org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse tr : responses) {
+                            Map<String, Object> toolMsg = new LinkedHashMap<>();
+                            toolMsg.put("role", "tool");
+                            toolMsg.put("tool_call_id", tr.id() != null ? tr.id() : "");
+                            toolMsg.put("content", tr.responseData() != null ? tr.responseData() : "");
+                            if (tr.name() != null && !tr.name().isBlank()) {
+                                toolMsg.put("name", tr.name());
+                            }
+                            messages.add(toolMsg);
+                        }
+                        continue;
+                    }
+                }
+
                 Map<String, Object> msgMap = new LinkedHashMap<>();
                 String role = toRole(message.getMessageType());
                 msgMap.put("role", role);
@@ -143,9 +176,25 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                             msgMap.put("tool_calls", toolCalls);
                         }
                     }
+                    // 关键防御 2: 若 metadata 中无 tool_calls，从 assistantMessage.getToolCalls() 标准结构生成
+                    if (!msgMap.containsKey("tool_calls") && assistantMessage.hasToolCalls()
+                            && assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
+                        List<Map<String, Object>> tcList = new ArrayList<>();
+                        for (AssistantMessage.ToolCall tc : assistantMessage.getToolCalls()) {
+                            Map<String, Object> tcMap = new LinkedHashMap<>();
+                            tcMap.put("id", tc.id());
+                            tcMap.put("type", tc.type() != null ? tc.type() : "function");
+                            tcMap.put("function", Map.of(
+                                    "name", tc.name() != null ? tc.name() : "",
+                                    "arguments", tc.arguments() != null ? tc.arguments() : "{}"
+                            ));
+                            tcList.add(tcMap);
+                        }
+                        msgMap.put("tool_calls", tcList);
+                    }
                 }
 
-                // 回传 Tool 消息的 tool_call_id
+                // 回传 Tool 消息的 tool_call_id（针对非 ToolResponseMessage 的传统/自定义 Message）
                 if (MessageType.TOOL.equals(message.getMessageType())) {
                     Map<String, Object> metadata = message.getMetadata();
                     if (metadata != null && metadata.containsKey("tool_call_id")) {
@@ -287,6 +336,10 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
     }
 
     private void emitStreamLine(String line, FluxSink<ChatResponse> sink) {
+        emitStreamLine(line, sink, null);
+    }
+
+    private void emitStreamLine(String line, FluxSink<ChatResponse> sink, StreamToolCallAccumulator accumulator) {
         if (line == null || line.isBlank() || !line.startsWith("data:")) {
             return;
         }
@@ -295,7 +348,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
             return;
         }
         try {
-            ChatResponse response = parseStreamChunk(payload);
+            ChatResponse response = parseStreamChunk(payload, accumulator);
             if (response != null) {
                 sink.next(response);
             }
@@ -310,6 +363,10 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
      * 绝不返回 null，确保思考流数据包能够实时到达前端，根除流式打字机 10~30 秒白屏假死。
      */
     public ChatResponse parseStreamChunk(String payload) throws IOException {
+        return parseStreamChunk(payload, null);
+    }
+
+    public ChatResponse parseStreamChunk(String payload, StreamToolCallAccumulator accumulator) throws IOException {
         JsonNode root = OBJECT_MAPPER.readTree(payload);
         JsonNode choice = root.path("choices").path(0);
         JsonNode deltaNode = choice.path("delta");
@@ -320,8 +377,20 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         JsonNode usageNode = root.path("usage");
         boolean hasUsage = !usageNode.isMissingNode();
 
-        // 若正文、思考片段、结束标识与用量统计均为空，方视为空片段丢弃
-        if (content.isEmpty() && reasoningContent.isEmpty() && finishReason.isEmpty() && !hasUsage) {
+        // 关键时序修复：必须在空片段守卫判定之前提取并累积 tool_calls！
+        boolean hasDeltaToolCalls = deltaNode.has("tool_calls") && deltaNode.get("tool_calls").isArray()
+                && !deltaNode.get("tool_calls").isEmpty();
+
+        List<AssistantMessage.ToolCall> streamToolCalls;
+        if (accumulator != null) {
+            streamToolCalls = accumulator.accumulate(deltaNode);
+        } else {
+            streamToolCalls = extractToolCalls(deltaNode);
+        }
+        boolean hasToolCalls = hasDeltaToolCalls || !streamToolCalls.isEmpty();
+
+        // 空片段守卫：只有当正文、思考片段、结束标识、用量统计以及工具调用均为空时，方视为空片段丢弃
+        if (content.isEmpty() && reasoningContent.isEmpty() && finishReason.isEmpty() && !hasUsage && !hasToolCalls) {
             return null;
         }
 
@@ -329,8 +398,9 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         if (!reasoningContent.isEmpty()) {
             metadataMap.put("reasoning_content", reasoningContent);
         }
-        List<AssistantMessage.ToolCall> streamToolCalls = extractToolCalls(deltaNode);
-        if (deltaNode.has("tool_calls")) {
+        if (accumulator != null && accumulator.hasToolCalls()) {
+            metadataMap.put("tool_calls", accumulator.toRawToolCallsList());
+        } else if (deltaNode.has("tool_calls")) {
             metadataMap.put("tool_calls", OBJECT_MAPPER.convertValue(deltaNode.get("tool_calls"), List.class));
         }
 
@@ -407,5 +477,83 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
             }
         }
         return toolCalls;
+    }
+
+    /**
+     * 流式响应 ToolCall 跨 Chunk 参数累加器
+     * 按 index 追踪累积状态，处理参数分块流式拼接并保留首帧的 id 和 name
+     */
+    public static class StreamToolCallAccumulator {
+        private static class ToolCallState {
+            String id = "";
+            String type = "function";
+            String name = "";
+            final StringBuilder arguments = new StringBuilder();
+        }
+
+        private final Map<Integer, ToolCallState> indexMap = new TreeMap<>();
+
+        public synchronized List<AssistantMessage.ToolCall> accumulate(JsonNode deltaNode) {
+            if (deltaNode != null && deltaNode.has("tool_calls") && deltaNode.get("tool_calls").isArray()) {
+                for (JsonNode tcNode : deltaNode.get("tool_calls")) {
+                    int index = tcNode.path("index").asInt(0);
+                    ToolCallState state = indexMap.computeIfAbsent(index, k -> new ToolCallState());
+
+                    String id = tcNode.path("id").asText(null);
+                    if (id != null && !id.isBlank()) {
+                        state.id = id;
+                    }
+                    String type = tcNode.path("type").asText(null);
+                    if (type != null && !type.isBlank()) {
+                        state.type = type;
+                    }
+                    JsonNode funcNode = tcNode.path("function");
+                    if (!funcNode.isMissingNode()) {
+                        String name = funcNode.path("name").asText(null);
+                        if (name != null && !name.isBlank()) {
+                            state.name = name;
+                        }
+                        if (funcNode.hasNonNull("arguments")) {
+                            String argPart = funcNode.path("arguments").asText("");
+                            state.arguments.append(argPart);
+                        }
+                    }
+                }
+            }
+            return getCurrentToolCalls();
+        }
+
+        public synchronized List<AssistantMessage.ToolCall> getCurrentToolCalls() {
+            List<AssistantMessage.ToolCall> result = new ArrayList<>();
+            for (ToolCallState state : indexMap.values()) {
+                String args = state.arguments.toString();
+                result.add(new AssistantMessage.ToolCall(
+                        state.id,
+                        state.type,
+                        state.name,
+                        args.isEmpty() ? "{}" : args
+                ));
+            }
+            return result;
+        }
+
+        public synchronized boolean hasToolCalls() {
+            return !indexMap.isEmpty();
+        }
+
+        public synchronized List<Map<String, Object>> toRawToolCallsList() {
+            List<Map<String, Object>> list = new ArrayList<>();
+            for (ToolCallState state : indexMap.values()) {
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("id", state.id);
+                map.put("type", state.type);
+                map.put("function", Map.of(
+                        "name", state.name,
+                        "arguments", state.arguments.toString()
+                ));
+                list.add(map);
+            }
+            return list;
+        }
     }
 }

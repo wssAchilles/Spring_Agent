@@ -27,12 +27,38 @@ public class KbFlowTemplateServiceImpl implements IKbFlowTemplateService {
 
     private final IKbFlowNodeService flowNodeService;
     private final IKbFlowEdgeService flowEdgeService;
+    private final tech.qiantong.qknow.module.kb.dal.mapper.bot.KbBotMapper botMapper;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public KbFlowVO initBotWorkflowByTemplate(Long botId, Integer workflowType, String templateKey) {
-        log.info("[WorkflowTemplate] Initializing database workflow for botId: {}, workflowType: {}, templateKey: {}",
-                botId, workflowType, templateKey);
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public KbFlowVO initBotWorkflowByTemplate(Long botId, Integer workflowType, String templateKey, Long workspaceId) {
+        log.info("[WorkflowTemplate] Initializing database workflow for botId: {}, workflowType: {}, templateKey: {}, workspaceId: {}",
+                botId, workflowType, templateKey, workspaceId);
+
+        // 多级安全解析 workspaceId：优先显式入参 -> 查 Bot 实体 -> 上下文租户 -> 保底 1001L
+        Long resolvedWorkspaceId = workspaceId;
+        if (resolvedWorkspaceId == null && botId != null && botMapper != null) {
+            try {
+                tech.qiantong.qknow.module.kb.dal.dataobject.bot.KbBotDO bot = botMapper.selectById(botId);
+                if (bot != null && bot.getWorkspaceId() != null) {
+                    resolvedWorkspaceId = bot.getWorkspaceId();
+                }
+            } catch (Exception ex) {
+                log.warn("[WorkflowTemplate] 查询 Bot 获取 workspaceId 异常: botId={}, msg={}", botId, ex.getMessage());
+            }
+        }
+        if (resolvedWorkspaceId == null) {
+            try {
+                Long deptId = tech.qiantong.qknow.common.utils.SecurityUtils.getDeptId();
+                if (deptId != null && deptId > 0) {
+                    resolvedWorkspaceId = deptId;
+                }
+            } catch (Exception ignored) {
+            }
+            if (resolvedWorkspaceId == null) {
+                resolvedWorkspaceId = 1001L;
+            }
+        }
 
         String activeKey = templateKey;
         if (activeKey == null || activeKey.isBlank()) {
@@ -48,6 +74,7 @@ public class KbFlowTemplateServiceImpl implements IKbFlowTemplateService {
         JSONObject templateDsl = buildTemplateDsl(activeKey);
         KbFlowVO flowVO = new KbFlowVO();
         flowVO.setBotId(botId);
+        flowVO.setWorkspaceId(resolvedWorkspaceId); // 严密注入 workspaceId，满足数据库 NOT NULL 约束
 
         JSONArray nodesArray = templateDsl.getJSONArray("nodes");
         List<JSONObject> nodesList = new ArrayList<>();
@@ -71,8 +98,8 @@ public class KbFlowTemplateServiceImpl implements IKbFlowTemplateService {
         flowNodeService.submitBatch(flowVO);
         flowEdgeService.submitBatch(flowVO);
 
-        log.info("[WorkflowTemplate] Successfully initialized {} nodes and {} edges for botId: {}",
-                nodesList.size(), edgesList.size(), botId);
+        log.info("[WorkflowTemplate] Successfully initialized {} nodes and {} edges for botId: {} in workspace: {}",
+                nodesList.size(), edgesList.size(), botId, resolvedWorkspaceId);
         return flowVO;
     }
 
@@ -191,6 +218,7 @@ public class KbFlowTemplateServiceImpl implements IKbFlowTemplateService {
         config.put("label", "DeepSeek 推理");
         config.put("provider", 1L);
         config.put("model", "deepseek-flash");
+        config.put("prompt", prompt);
         config.put("promptTemplate", prompt);
         config.put("temperature", 1.0);
         config.put("max_tokens", 4096);

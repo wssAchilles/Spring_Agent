@@ -130,4 +130,17 @@ public class AgentRegistry {
         registerAgent(supervisor);
         return supervisor;
     }
+
+    /**
+     * 确保默认 Worker 智能体已完成初始化装配
+     */
+    public synchronized void ensureInitialized(ChatModel chatModel, ToolCallbackResolver resolver) {
+        if (agents.isEmpty()) {
+            if (chatModel != null) {
+                initDefaultAgents(chatModel);
+            } else if (resolver != null) {
+                initDefaultAgents(resolver);
+            }
+        }
+    }
 }

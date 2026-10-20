@@ -202,4 +202,108 @@ class DeepSeekCompatibleChatModelContractTest {
         double cost = costEstimator.estimate("deepseek-flash", 1_000_000, 1_000_000);
         assertEquals(2.5, cost, 0.001, "deepseek-flash 定价应精确匹配: 0.5 + 2.0 = 2.5");
     }
+
+    @Test
+    @DisplayName("契约7: Spring AI ToolResponseMessage 正确展开并序列化为 OpenAI/DeepSeek 规约的 tool 消息")
+    void buildRequestBodyShouldExpandToolResponseMessage() {
+        org.springframework.ai.chat.messages.ToolResponseMessage toolResponseMessage =
+                org.springframework.ai.chat.messages.ToolResponseMessage.builder()
+                        .responses(List.of(
+                                new org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse("call_001", "getWeather", "晴 25度"),
+                                new org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse("call_002", "getAirQuality", "AQI 35 优")
+                        ))
+                        .build();
+
+        Prompt prompt = new Prompt(List.of(
+                new UserMessage("查询天气"),
+                AssistantMessage.builder().content("正在调用工具...").build(),
+                toolResponseMessage
+        ));
+
+        Map<String, Object> body = chatModel.buildRequestBody(prompt, false);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> messages = (List<Map<String, Object>>) body.get("messages");
+        assertNotNull(messages);
+        assertEquals(4, messages.size(), "ToolResponseMessage 中的2个 ToolResponse 必须展开为两条独立的 tool 角色消息");
+
+        Map<String, Object> tool1 = messages.get(2);
+        assertEquals("tool", tool1.get("role"));
+        assertEquals("call_001", tool1.get("tool_call_id"));
+        assertEquals("晴 25度", tool1.get("content"));
+        assertEquals("getWeather", tool1.get("name"));
+
+        Map<String, Object> tool2 = messages.get(3);
+        assertEquals("tool", tool2.get("role"));
+        assertEquals("call_002", tool2.get("tool_call_id"));
+        assertEquals("AQI 35 优", tool2.get("content"));
+        assertEquals("getAirQuality", tool2.get("name"));
+    }
+
+    @Test
+    @DisplayName("契约8: 流式 Tool-Call-Only 片段绝不被空片段守卫拦截丢弃")
+    void parseStreamChunkShouldNotDropToolCallOnlyChunks() throws IOException {
+        String toolCallChunk = """
+                {
+                  "choices": [
+                    {
+                      "index": 0,
+                      "delta": {
+                        "content": null,
+                        "tool_calls": [
+                          {
+                            "index": 0,
+                            "id": "call_stream_123",
+                            "type": "function",
+                            "function": {
+                              "name": "searchDocs",
+                              "arguments": ""
+                            }
+                          }
+                        ]
+                      },
+                      "finish_reason": null
+                    }
+                  ]
+                }
+                """;
+
+        ChatResponse response = chatModel.parseStreamChunk(toolCallChunk);
+        assertNotNull(response, "只包含 tool_calls delta 的流式 chunk 绝不能返回 null！");
+        AssistantMessage assistantMessage = (AssistantMessage) response.getResult().getOutput();
+        assertTrue(assistantMessage.hasToolCalls());
+        assertEquals(1, assistantMessage.getToolCalls().size());
+        assertEquals("call_stream_123", assistantMessage.getToolCalls().get(0).id());
+        assertEquals("searchDocs", assistantMessage.getToolCalls().get(0).name());
+    }
+
+    @Test
+    @DisplayName("契约9: 跨 Chunk 流式 ToolCalls 参数增量累积与合并拼接")
+    void streamToolCallAccumulatorShouldMergeArgumentsAcrossChunks() throws IOException {
+        DeepSeekCompatibleChatModel.StreamToolCallAccumulator accumulator =
+                new DeepSeekCompatibleChatModel.StreamToolCallAccumulator();
+
+        String chunk1 = """
+                {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_999","type":"function","function":{"name":"queryDb","arguments":""}}]}}]}
+                """;
+        String chunk2 = """
+                {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"sql\\":"}}]}}]}
+                """;
+        String chunk3 = """
+                {"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\"SELECT 1\\"}"}}]}}]}
+                """;
+
+        ChatResponse r1 = chatModel.parseStreamChunk(chunk1, accumulator);
+        assertNotNull(r1);
+        ChatResponse r2 = chatModel.parseStreamChunk(chunk2, accumulator);
+        assertNotNull(r2);
+        ChatResponse r3 = chatModel.parseStreamChunk(chunk3, accumulator);
+        assertNotNull(r3);
+
+        AssistantMessage m3 = (AssistantMessage) r3.getResult().getOutput();
+        assertTrue(m3.hasToolCalls());
+        AssistantMessage.ToolCall finalToolCall = m3.getToolCalls().get(0);
+        assertEquals("call_999", finalToolCall.id());
+        assertEquals("queryDb", finalToolCall.name());
+        assertEquals("{\"sql\":\"SELECT 1\"}", finalToolCall.arguments(), "跨 chunk arguments 必须无缝拼接完整");
+    }
 }

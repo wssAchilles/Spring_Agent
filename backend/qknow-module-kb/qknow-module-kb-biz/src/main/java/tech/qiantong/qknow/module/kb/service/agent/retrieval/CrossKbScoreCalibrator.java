@@ -100,9 +100,11 @@ public class CrossKbScoreCalibrator {
             int rank = 1;
             for (RetrieveResult hit : hits) {
                 Double score = hit.getScore() != null ? hit.getScore().doubleValue() : 0.0D;
-                // 门禁：仅对原始相似度得分（> 0.1 量级）执行底线门禁过滤；对 RRF 倒数排位量级（<= 0.1）不误杀
-                if (scoreFloor > 0.0D && score > 0.1D && score < scoreFloor) {
-                    continue;
+                boolean isRrfScore = RetrieveResult.SCORE_TYPE_RRF.equalsIgnoreCase(hit.getScoreType());
+
+                // 契约治理：RRF 排位融合得分流禁止施加原始余弦底线门禁；仅原始余弦得分流执行单调门禁
+                if (!isRrfScore && scoreFloor > 0.0D && score < scoreFloor) {
+                    continue; // 彻底剔除 score > 0.1D 魔数，恢复单调过滤
                 }
 
                 String fingerprint = calculateFingerprint(hit.getContent());

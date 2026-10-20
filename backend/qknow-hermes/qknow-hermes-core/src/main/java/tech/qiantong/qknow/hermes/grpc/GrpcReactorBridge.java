@@ -46,7 +46,19 @@ public class GrpcReactorBridge {
                     log.debug("[gRPC-Reactor] 流终态终止信号: signal={}, requestId={}", signalType, requestId);
                 });
 
-        // 2. 订阅 Flux，获取 Disposable 句柄
+        // 2. 核心枢纽：向 gRPC ServerCall 注册取消监听器，级联触发 dispose
+        // 关键时序修复：必须在 monitoredFlux.subscribe() 之前注册！
+        // 避免流上游同步执行阻塞调用线程导致取消监听器在流运行期间从未注册
+        java.util.concurrent.atomic.AtomicReference<Disposable> subscriptionRef = new java.util.concurrent.atomic.AtomicReference<>();
+        serverObserver.setOnCancelHandler(() -> {
+            log.warn("[gRPC-Server] 客户端取消请求 (RST_STREAM): requestId={}, 立即级联释放底层执行资源！", requestId);
+            Disposable sub = subscriptionRef.get();
+            if (sub != null && !sub.isDisposed()) {
+                sub.dispose();
+            }
+        });
+
+        // 3. 订阅 Flux，获取 Disposable 句柄
         Disposable subscription = monitoredFlux.subscribe(
                 item -> {
                     // 必须先检查 client 是否已经取消，避免在已取消的 channel 上写入引发异常
@@ -67,13 +79,9 @@ public class GrpcReactorBridge {
                     }
                 }
         );
-
-        // 3. 核心枢纽：向 gRPC ServerCall 注册取消监听器，级联触发 dispose
-        serverObserver.setOnCancelHandler(() -> {
-            log.warn("[gRPC-Server] 客户端取消请求 (RST_STREAM): requestId={}, 立即级联释放底层执行资源！", requestId);
-            if (!subscription.isDisposed()) {
-                subscription.dispose();
-            }
-        });
+        subscriptionRef.set(subscription);
+        if (serverObserver.isCancelled() && !subscription.isDisposed()) {
+            subscription.dispose();
+        }
     }
 }

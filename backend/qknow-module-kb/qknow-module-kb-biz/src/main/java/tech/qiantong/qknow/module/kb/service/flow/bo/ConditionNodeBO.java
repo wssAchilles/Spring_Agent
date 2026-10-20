@@ -36,8 +36,11 @@ public class ConditionNodeBO extends BaseNodeBO {
 
         log.info("执行条件节点: {}", nodeDefinition.getName());
 
-        // 获取条件列表
+        // 获取条件列表 (兼容 conditions 与 cases 数组)
         JSONArray conditions = configJson.getJSONArray("conditions");
+        if (conditions == null || conditions.isEmpty()) {
+            conditions = configJson.getJSONArray("cases");
+        }
         if (conditions == null || conditions.isEmpty()) {
             // 没有条件配置，默认走所有分支
             return NodeRunResultBO.success(nodeDefinition.getUuid(), nodeDefinition.getName(), inputData);
@@ -45,20 +48,39 @@ public class ConditionNodeBO extends BaseNodeBO {
 
         // 评估条件
         String matchedHandle = null;
+        String defaultHandle = null;
         for (int i = 0; i < conditions.size(); i++) {
             JSONObject condition = conditions.getJSONObject(i);
+            if (condition == null) {
+                continue;
+            }
             String expression = condition.getString("expression");
+            if (cn.hutool.core.util.StrUtil.isBlank(expression)) {
+                expression = condition.getString("condition");
+            }
+            String targetHandle = condition.getString("targetHandle");
+            if (cn.hutool.core.util.StrUtil.isBlank(targetHandle)) {
+                targetHandle = condition.getString("id");
+            }
 
-            if ("default".equals(expression)) {
-                matchedHandle = condition.getString("targetHandle");
+            boolean isElse = condition.getBooleanValue("isElse", false)
+                    || "default".equalsIgnoreCase(expression)
+                    || "else".equalsIgnoreCase(expression)
+                    || "兜底分支".equals(expression);
+
+            if (isElse) {
+                defaultHandle = targetHandle;
                 continue;
             }
 
             if (evaluateExpression(expression, context)) {
-                matchedHandle = condition.getString("targetHandle");
-                log.info("条件匹配: {} -> {}", expression, matchedHandle);
+                matchedHandle = targetHandle;
+                log.info("条件匹配成功: {} -> {}", expression, matchedHandle);
                 break;
             }
+        }
+        if (matchedHandle == null) {
+            matchedHandle = defaultHandle;
         }
 
         // 根据 matchedHandle 找到对应的下一个节点
@@ -98,6 +120,18 @@ public class ConditionNodeBO extends BaseNodeBO {
         try {
             // 替换变量
             String resolved = format(expression, context);
+            if (resolved.contains(".length")) {
+                JSONObject vars = context != null ? context.getVariables() : null;
+                if (vars != null) {
+                    for (String key : vars.keySet()) {
+                        if (resolved.contains(key + ".length")) {
+                            String val = vars.getString(key);
+                            int len = (val != null) ? val.length() : 0;
+                            resolved = resolved.replace(key + ".length", String.valueOf(len));
+                        }
+                    }
+                }
+            }
 
             // 解析比较操作
             if (resolved.contains("==")) {

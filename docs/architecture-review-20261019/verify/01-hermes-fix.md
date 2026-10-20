@@ -1,7 +1,7 @@
 # Hermes 修复复核报告（提交 f4ff4dda + 当前工作区真实代码）
 
-> 复核员：Hermes 修复复核员（task-7）　|　复核时间：2026-10-20
-> 复核基线：`git rev-parse HEAD` = `cb6e185c`（`build(dep): 生产依赖瘦身与测试依赖隔离治理`）**+ 工作区 8 个未提交改动**
+> 复核员：Hermes 修复复核员（task-7）　|　复核时间：2026-10-20（初稿）；更新：2026-10-20 19:1x
+> 复核基线：**复核开始时** `git rev-parse HEAD` = `cb6e185c`（`build(dep): 生产依赖瘦身与测试依赖隔离治理`）**+ 工作区 8 个未提交改动**。**复核期间基线前移**：`e4864302 fix(ci): 修复CI工作流单测断言门限与测试桩契约对齐` 把原 8 个未提交改动中的 7 个（去掉 `.serena/project.yml`，另新增 `GraphCommunityService.java`）**提交固化**；随后 `844e8a69 docs(verify): 归档多智能体架构缺陷逐项法医级验收报告` 归档含本文件在内的 6 份验收报告（当前 HEAD=`844e8a69`）。本报告已按当前 HEAD 真实代码复核：7 个被固化文件的字节与复核开始时工作区一致（逐行核对），但**分类从"工作区未提交回退"升级为"后续提交 e4864302 已正式回退"（见 §2.8）**，需 Lead 按提交级回归重新裁决。
 > 被复核提交：`f4ff4dda fix(hermes): DeepSeek工具调用协议对齐与取消链路级联治理`（6 文件）
 > 纪律声明：本轮**只读**，未修改/删除任何源码、配置、SQL、fixture；未执行 `mvn`/`gradle`/任何测试/任何服务启动（Lead 正在统一编译）。唯一写入文件为本报告。所有"运行时会怎样"的结论均标注【静态推导】或【无法静态判定】，不做运行行为臆测。
 > 重要口径：按任务要求以**当前工作区真实代码**裁决，而不是提交信息。经 `git log f4ff4dda..HEAD -- <6 文件>` 与 `git status --porcelain` 核验：**f4ff4dda 的 6 个文件在后续提交中未被再次修改、工作区也没有改动它们**，因此这 6 个文件的工作区内容 = f4ff4dda 落地结果。但工作区另外 8 个文件确实回退了其他提交的修复（见 §2.8、§3），一并裁决。
@@ -14,15 +14,16 @@
 
 | 核验项 | 命令 | 结果 |
 |---|---|---|
-| 当前 HEAD | `git log --oneline -8` | `cb6e185c` 为 HEAD；f4ff4dda 位于其后第 3 个历史位（`5d26b814`、`3898471d`、`2f0861a0` 在 f4ff4dda 之后） |
-| f4ff4dda 6 文件是否被后续提交再改 | `git log --oneline f4ff4dda..HEAD -- <6 文件>` | 6 个文件输出均为空 → **无后续提交触碰** |
-| f4ff4dda 6 文件是否被工作区再改 | `git status --porcelain` | 8 个 `M` 文件均不在 6 文件内 → **提交结果原样保留** |
-| 工作区未提交改动清单 | `git status --porcelain` / `git diff --stat` | `.serena/project.yml`、`McpEcosystemContractTest`、4 个 MCP Provider、`CrossKbScoreCalibrator`、`ToolNodeBO`，共 8 个 |
+| 当前 HEAD | `git log --oneline -5` | 复核开始：`cb6e185c`；复核期间前移到 `e4864302` → `844e8a69`（当前）。f4ff4dda 相对 `cb6e185c` 为第 4 个历史位（相对当前 HEAD 为第 6 个；`5d26b814`、`3898471d`、`2f0861a0` 均在 f4ff4dda 之后） |
+| f4ff4dda 6 文件是否被后续提交再改 | `git log --oneline f4ff4dda..HEAD -- <6 文件>` | 6 个文件输出**仍为空**（已把 `e4864302`、`844e8a69` 纳入范围复核）→ **自 f4ff4dda 后从未被改**，内容 = f4ff4dda 落地结果 |
+| f4ff4dda 6 文件是否被工作区再改 | `git status --porcelain` | 复核开始时 8 个 `M` 文件均不在 6 文件内；`.serena/project.yml` 在复核结束前已被恢复，当前唯一未提交改动为**本报告更新版本** → **提交结果原样保留** |
+| 复核开始时的未提交改动清单 | `git status --porcelain` / `git diff --stat` | `.serena/project.yml`、`McpEcosystemContractTest`、4 个 MCP Provider、`CrossKbScoreCalibrator`、`ToolNodeBO`，共 8 个 |
+| 复核期间基线漂移 | `git reflog -3`、`git show --stat e4864302`、`git show --stat 844e8a69` | `e4864302` 固化上述 7 个文件（`.serena` 除外，另加 `GraphCommunityService.java`，8 文件 63+/28-）；`844e8a69` 归档 6 份 verify 报告（1481 行）。**e4864302 未触及 f4ff4dda 的 6 个文件** |
 
 ### 0.2 阅读与取证范围
 
 1. 评审侧输入：`docs/architecture-review-20261019/00-MASTER-REVIEW.md` §3.3（P0-07/P0-08）、§4.2（P1-Mem/P1-RAG1）、`01-hermes-cognitive-core.md`（H-P0-1/H-P0-2、H-P1-2、H-P1-7、取消与超时传播章节）、`ARCHITECTURE_DEFECTS_FORENSIC_VERIFICATION_REPORT.md`（对方自证矩阵）。
-2. 提交侧：`git show f4ff4dda`（全 284 行 diff）、`git show` 各后续提交对相关文件的改动、`git diff` 全部工作区改动。
+2. 提交侧：`git show f4ff4dda`（全 284 行 diff）、`git show` 各后续提交与相关文件的改动、`git show --stat e4864302`（复核开始时的工作区改动被固化为提交）、`git show --stat 844e8a69`（本报告与另 5 份报告归档）、`git diff`（复核开始时的 8 文件未提交改动）。
 3. 生产代码：`DeepSeekCompatibleChatModel`(411 行全读)、`AgentOrchestrator`(关键段 120-600、1024-1130)、`AgentRegistry`(全读)、`MemoryConfiguration`(全读)、`MemoryManager`(全读)、`SleepTimeMemoryAgent`、`ShortTermMemory`(summarize/getContext 段)、`KbConversationController`(send 段 82-190)、`HermesGrpcClient`(全读)、`GrpcReactorBridge`(全读)、`HermesGrpcService`(全读)、`HermesConfiguration`(全读)、`HermesApplication`(全读)、`QKnowApplication`(全读)、`DagCheckpointManager`(关键段)、`ChatModelFactory`(全读)、`ToolNodeBO`/`CrossKbScoreCalibrator`/MCP Provider（工作区现状）。
 4. 框架契约（决定 P0-07/P0-08 真伪的关键）：静态阅读依赖源码 jar，不启动任何进程：
    - `~/.m2/repository/org/springframework/ai/spring-ai-model/1.1.0/...-sources.jar`（`AssistantMessage`、`ToolResponseMessage`、`ToolCallingChatOptions`、`MessageAggregator`）
@@ -64,7 +65,7 @@
 | P1-RAG1 | 双 CRAG（Hermes 每轮额外阻塞 LLM 复评） | **部分修复** | `AgentOrchestrator.java:270-281`：改为 `Boolean.getBoolean("hermes.crag.secondary.enabled")` 开关、默认 false；全仓仅此一处引用该 key | 用 **JVM 系统属性**而非 Spring 配置（`application.yml` 无效）；未实现评审建议的"控制面已评估标签/前置条件"；`RetrievalEvaluator` 仍被注入（可被 `-D` 重新打开） |
 | REG | `AgentRegistry` 加 `@Component`/无参构造；`HermesConfiguration` 加 `AgentRegistry`、`DagCheckpointManager` Bean | **装配性改动（非能力修复）** | `AgentRegistry.java:18,27-29`；`HermesConfiguration.java:35-46`；`AgentRegistry.java:50-53,83-85`（默认 3 个 WorkerAgent + `createSupervisor`） | 全仓 main 代码**除 HermesConfiguration 外无任何 AgentRegistry 消费者**（grep 仅命中定义与配置类）→ 多智能体仍未接入生产聊天链；控制面 `ChatModel` 无 `@Bean`，`getIfAvailable()` 静态推导为 null；`DagCheckpointManager` Bean 补齐后恢复功能仍受 P0-11 语义错误影响（非本任务范围） |
 
-**汇总（顶层 5 项）**：已修复 0；部分修复 4（P0-07、P0-08、P1-Mem、P1-RAG1）；未修复 1（P1-Mem 摘要逻辑；其中 P0-07 的流式与 tool 回传同为未修复子项）；装配性改动 1（AgentRegistry/HermesConfiguration，安全但无生产效果）。
+**汇总（顶层 5 项）**：已修复 0；部分修复 4（P0-07、P0-08、P1-Mem、P1-RAG1）；未修复 1（P1-Mem 摘要逻辑；其中 P0-07 的流式与 tool 回传同为未修复子项）；装配性改动 1（AgentRegistry/HermesConfiguration，安全但无生产效果）。**另需单列**：复核开始时的 7 个未提交回退改动已在复核期间被 `e4864302` 提交固化（3 类源码回退 + 1 处测试放宽 + 1 处新增改动，见 §2.8/§3 R3-R6、R9），属**提交级回归**，与 f4ff4dda 的裁决相互独立。
 
 ---
 
@@ -121,19 +122,20 @@
 - `AgentRegistry` 新增 `@Component`（`AgentRegistry.java:18`）与无参构造（`:27-29`，`this(null,(ChatModel)null,null)`）；构造链 `:50-53` → `initDefaultAgents`（`:58-85`）创建 RAG/Search/Code 三个 `WorkerAgent`，但 `createSupervisor`/`getAgent`/`getWorkers` 在**全仓 main 代码中无任何消费者**（`grep -rn "AgentRegistry"` 仅命中定义文件与 `HermesConfiguration.java:43-46`）。控制面 `QKnowApplication.java:22-27` 的 `@ComponentScan` 仍以正则排除 `tech.qiantong.qknow.hermes.*`，因此 `@Component` 只在 Hermes 服务生效；控制面靠 `HermesConfiguration.java:41-46` 显式 `@Bean`（传 `null` config、`ObjectProvider<ChatModel>.getIfAvailable()`、null toolDiscovery）。静态检索控制面模块**没有 `@Bean ChatModel` 定义**，故该 Bean 内 3 个 WorkerAgent 的 `chatModel` 静态推导为 null，且无人调用 → **安全但无实际功能**，多智能体仍未进入生产聊天链（P0-15 不因本提交改变）。
 - `HermesConfiguration.java:35-39` 新增 `DagCheckpointManager` Bean（P0-10 的方向性修复），`new` 出来的实例仍会经过容器后处理（`@Autowired(required=false) JdbcTemplate` 可注入、`@PostConstruct init()` 会执行，`DagCheckpointManager.java:29-38`）。方法体内 `ensureTableExists()` 自捕获异常（`:495-528`），不会直接炸启动；主库为 PostgreSQL（`application-dev.yml:5-6,100-106`），`ON CONFLICT`/`ADD COLUMN IF NOT EXISTS` 语法兼容。但该 Bean 的功能正确性（P0-10/P0-11）不在本复核裁决范围；且启动期执行 DDL 属新增副作用，建议在部署冒烟中确认（§4）。
 
-### 2.8 工作区回退清单（"提交修了、工作区又改回去"）
+### 2.8 回退清单（"提交修了、**后续提交**又改回去"；复核期间由工作区改动固化为 `e4864302`）
 
-以下均为**工作区现状 vs HEAD** 的逐行核对（`git diff` 为证），与 f4ff4dda 无关，但按任务要求必须指出：
+**背景修正**：复核开始时，下列前 7 个文件的改动是**未提交工作区改动**（即任务描述中的 8 个文件去掉 `.serena/project.yml`）；复核过程中 Lead 以 `e4864302`（提交信息 `fix(ci): 修复CI工作流单测断言门限与测试桩契约对齐`）将其**提交固化**，同一提交还含 `backend/qknow-module-kg/.../GraphCommunityService.java`(+12)。经逐行核对，`e4864302` 对这 7 个文件的内容与复核开始时的工作区 diff **完全一致**。因此现状已不是"工作区回退"，而是"**后续提交正式回退已在 HEAD 内的历史修复**"——比未提交回退更严重，需在提交级裁决（`git revert`/补丁 PR 才能恢复）。此外，该提交以"消除单测空指针断裂"为理由，实际技术效果是回退 3 个修复提交（`2f0861a0`/`5d26b814`/`3898471d`）的安全性与能力诚实性修复，**提交信息与内容严重不符**。
 
-| 文件 | 已被哪个提交修复 | HEAD 行为 | 工作区现状（当前行号） | 性质 |
+| 文件 | 被哪个提交修复 | 修复后（提交侧）行为 | 现状（`e4864302` 固化后，当前行号） | 性质 |
 |---|---|---|---|---|
-| `backend/qknow-module-kb/.../flow/bo/ToolNodeBO.java` | `2f0861a0`（fix(flow)） | adapter 为 null → 返回 `NodeRunResultBO.failure(...)`，不伪造成功 | `:132-135` adapter 为 null 时构造 `{"status":"SUCCESS",...,"message":"Executed in standalone mock mode"}` → 重新出现"工具节点静默成功"假成功 | **提交修复被回退（P1-Tool2 复活）** |
-| `backend/qknow-mcp/.../provider/KnowledgeBaseMcpProvider.java` 等 4 个 Provider | `5d26b814`（fix(mcp)） | 未接入真实委托时返回 `CallToolResult.error(...)`（客观报错） | `KnowledgeBaseMcpProvider.java:96-97`、`KnowledgeGraphMcpProvider.java:79-80`、`DataAgentMcpProvider.java:112-113`、`CodeSandboxMcpProvider.java:77-78` 全部改为返回 `"status=SUCCESS"` 文本（无真实执行） | **提交修复被回退（P0-MCP2 假数据复活，换了一层"契约模式"包装）** |
-| `backend/qknow-module-kb/.../retrieval/CrossKbScoreCalibrator.java` | `3898471d`（fix(rag)） | `scoreFloor` 默认 `0.0D`，不再误杀 RRF 分数 | `:33-34` 默认回退 `0.40D`；`:104` 用 `score > 0.1D` 魔法阈值区分 RRF/余弦 | **提交修复被部分回退（P0-14 复活/降级为启发式）** |
-| `backend/qknow-mcp/qknow-mcp-client/src/test/.../McpEcosystemContractTest.java` | `5d26b814` | 路由延迟断言 ≤10ms | `:176-191` 增加 3 次预热循环、断言放宽到 ≤15ms | **测试断言放宽**（违反"不得根据首次结果放宽契约阈值"的取证纪律方向） |
-| `.serena/project.yml` | 无 | — | 工具配置噪声（语言服务器列表/REPL 字段），与缺陷无关 | 无关改动，建议提交前剔除 |
+| `backend/qknow-module-kb/.../flow/bo/ToolNodeBO.java` | `2f0861a0`（fix(flow)） | adapter 为 null → 返回 `NodeRunResultBO.failure(...)`，不伪造成功 | `:132-135` adapter 为 null 时构造 `{"status":"SUCCESS",...,"message":"Executed in standalone mock mode"}` → "工具节点静默成功"假成功复活 | **已被 `e4864302` 回退（P1-Tool2 复活）** |
+| `backend/qknow-mcp/.../provider/KnowledgeBaseMcpProvider.java` 等 4 个 Provider | `5d26b814`（fix(mcp)） | 未接入真实委托时返回 `CallToolResult.error(...)`（客观报错） | `KnowledgeBaseMcpProvider.java:96-97`、`KnowledgeGraphMcpProvider.java:79-80`、`DataAgentMcpProvider.java:112-113`、`CodeSandboxMcpProvider.java:77-78` 全部改为返回 `"status=SUCCESS"` 文本（无真实执行） | **已被 `e4864302` 回退（P0-MCP2 假数据复活，换成"本地契约模式"包装）** |
+| `backend/qknow-module-kb/.../retrieval/CrossKbScoreCalibrator.java` | `3898471d`（fix(rag)） | `scoreFloor` 默认 `0.0D`，不再误杀 RRF 分数 | `:33-34` 默认回退 `0.40D`；`:104` 用 `score > 0.1D` 魔法阈值区分 RRF/余弦 | **已被 `e4864302` 部分回退（P0-14 复活/降级为启发式）** |
+| `backend/qknow-mcp/qknow-mcp-client/src/test/.../McpEcosystemContractTest.java` | `5d26b814` | 路由延迟断言 ≤10ms | `:176-191` 增加 3 次预热循环、断言放宽到 ≤15ms | **已被 `e4864302` 放宽**（违反"不得根据首次结果放宽契约阈值"的取证纪律方向） |
+| `backend/qknow-module-kg/.../GraphCommunityService.java` | （非本任务范围新增） | — | `e4864302` 新增 12 行（"补齐图谱社区搜索契约构造方法"） | 新增改动，交 KG/平台复核员交叉裁决 |
+| `.serena/project.yml` | 无 | — | 工具配置噪声（语言服务器列表/REPL 字段），未进入 `e4864302`；复核结束前已被恢复，不构成遗留 | 无关改动，建议提交前剔除 |
 
-**结论**：f4ff4dda 自身 6 文件未被回退；但同批"6 个修复提交"中的另外 3 个提交的关键修复被工作区重新改回，工作区现状不可作为"修复已交付"的证据。
+**结论**：f4ff4dda 自身 6 文件**未被回退**（`git log f4ff4dda..HEAD -- <6 文件>` 为空，`e4864302`/`844e8a69` 均未触及）；但同批"6 个修复提交"中的另外 3 个提交的关键修复已被 `e4864302` 在 HEAD 历史上正式回退。**当前工作区/HEAD 不可作为"修复已交付"的证据**；Lead 若按提交级验收，需先 `git revert e4864302` 或对其 3 类回退打补丁 PR。
 
 ---
 
@@ -143,12 +145,13 @@
 |---|---|---|---|---|
 | R1 | 请求侧已发 `tools`，但流式 tool_calls 帧被丢弃 → 模型"打算调工具"时返回空内容，用户得到兜底文案 | **新增回归风险【静态推导】** | §2.2；`:190-216` + `:323-326`；`ReactAgent.java:787-790` | 高（直接影响问答可用性，且可能比修复前更差） |
 | R2 | 取消路径不再等待上游完成 → 控制器 `subscribe` 的 `onComplete` 不触发 → assistant 消息永久停留在"思考中"，部分答案丢失 | **新增回归【高置信静态推导】** | `KbConversationController.java:125-186`（取消分支无 `updateAssistantMessage`）；`:160-179` 只在正常完成落库；无超时清理任务 | 中高（数据一致性/UX） |
-| R3 | 工作区回退 `ToolNodeBO` 假成功 | **新增回归** | §2.8；`ToolNodeBO.java:132-135`；`ToolNodeBOTest` 未覆盖 adapter=null 分支 | 高（工作流"成功"不可信） |
-| R4 | 工作区回退 4 个 MCP Provider 为伪造 SUCCESS | **新增回归** | §2.8；四个 Provider 当前行号见表；`McpToolAdapter.executeTool` 返回的"成功"无真实执行 | 高（对外能力失真，P0-MCP2 复活） |
-| R5 | 工作区回退 `scoreFloor=0.40` 并用 `score>0.1` 魔法阈值区分量纲 | **新增回归/部分回退** | `CrossKbScoreCalibrator.java:33-34,104`；RRF 分数（≈0.016~0.065）因 <0.1 不被过滤，但真实余弦分 [0.1,0.4) 会被误杀；量纲判定靠经验阈值 | 中（检索质量波动，需 RAG 复核员交叉裁决） |
-| R6 | 契约测试放宽路由延迟断言（10→15ms + 预热） | **新增回归（工程纪律）** | `McpEcosystemContractTest.java:176-191` | 中（性能契约弱化，掩盖 CI 抖动） |
+| R3 | `e4864302` 回退 `ToolNodeBO` 假成功（**已提交固化**） | **新增回归（提交级）** | §2.8；`e4864302` 后的 `ToolNodeBO.java:132-135`；`ToolNodeBOTest` 未覆盖 adapter=null 分支 | 高（工作流"成功"不可信） |
+| R4 | `e4864302` 回退 4 个 MCP Provider 为伪造 SUCCESS（**已提交固化**） | **新增回归（提交级）** | §2.8；四个 Provider 当前行号见表；`McpToolAdapter.executeTool` 返回的"成功"无真实执行 | 高（对外能力失真，P0-MCP2 复活） |
+| R5 | `e4864302` 回退 `scoreFloor=0.40` 并用 `score>0.1` 魔法阈值区分量纲（**已提交固化**） | **新增回归/部分回退（提交级）** | `CrossKbScoreCalibrator.java:33-34,104`；RRF 分数（≈0.016~0.065）因 <0.1 不被过滤，但真实余弦分 [0.1,0.4) 会被误杀；量纲判定靠经验阈值 | 中（检索质量波动，需 RAG 复核员交叉裁决） |
+| R6 | `e4864302` 内契约测试放宽路由延迟断言（10→15ms + 预热，**已提交固化**） | **新增回归（工程纪律）** | `McpEcosystemContractTest.java:176-191` | 中（性能契约弱化，掩盖 CI 抖动） |
 | R7 | f4ff4dda 无任何测试新增；既有 DeepSeek 契约测试用匿名 Message 自证 tool 回传、只断言 metadata、不覆盖 tool-only 流帧 | **测试自证风险** | `DeepSeekCompatibleChatModelContractTest.java:61-94,127-172,175-198`；`git show f4ff4dda --stat` 无测试文件 | 高（修复无门禁，后续极易再次漂移） |
 | R8 | `HermesConfiguration` 新 Bean：控制面 `AgentRegistry` 空壳（chatModel 静态推导为 null）+ `DagCheckpointManager` 启动期执行 DDL | 轻微副作用 | `HermesConfiguration.java:35-46`；`DagCheckpointManager.java:29-38,495-528`；`QKnowApplication.java:22-27` | 低（安全，但增加启动副作用与误导性装配） |
+| R9 | **提交信息与内容失真**：`e4864302` 以 `fix(ci)` 名义把回退安全/诚实性修复包装成"修复CI单测断言门限与测试桩契约对齐" | **治理风险（新增）** | `git show e4864302` 提交信息 vs 其 diff；§2.8 | 高（审计链污染；后续任何"已修复"结论都必须按 diff 而非提交信息裁决） |
 
 ---
 
@@ -175,7 +178,7 @@
 | ID | 证据位置 | 证明要点 |
 |---|---|---|
 | E01 | `git log --oneline f4ff4dda..HEAD -- <6 文件>` 输出为空 | f4ff4dda 6 文件未被后续提交修改 |
-| E02 | `git status --porcelain` 8 个 `M` 文件 | 6 文件不在其中；工作区另有 8 个未提交改动 |
+| E02 | 复核开始时 `git status --porcelain`（8 个 `M`）；复核结束时 `git status --porcelain`（仅本报告更新） | 6 文件不在其中；8 个未提交改动中的 7 个已被 `e4864302` 提交固化，`.serena/project.yml` 已恢复 |
 | E03 | `backend/qknow-framework/qknow-ai/.../deepseek/DeepSeekCompatibleChatModel.java:190-216` | `ToolCallingChatOptions.toolCallbacks → tools` 映射已实现 |
 | E04 | 同上 `:254-265`、`:398-410` | 非流式构造 `AssistantMessage.ToolCall` |
 | E05 | 同上 `:323-326` vs `:332-343` | **空片段守卫先于 tool_calls 提取 → 流式 tool 帧被整包丢弃** |
@@ -208,12 +211,14 @@
 | E32 | graph-core 1.1.2.2 `AsyncNodeActionWithConfig.java:36-47`、`NodeExecutor.java:135-160`、`GraphRunner.java:48-59`、`CompiledGraph.java:549-557,578-599` | 图执行同步阻塞、无 `subscribeOn` → 取消处理器注册滞后【静态推导】 |
 | E33 | `backend/tests/.../ai/deepseek/DeepSeekCompatibleChatModelContractTest.java:61-94,127-172,175-198` | 既有测试用匿名 Message 自证、只断言 metadata、无 tool-only 流帧用例 |
 | E34 | `backend/tests/.../hermes/grpc/GrpcCancelPropagationTest.java:94-120` | 取消测试源为 `Flux.interval`（异步），不覆盖生产同步阻塞源 |
-| E35 | `git diff`：`ToolNodeBO.java:132-135`（工作区）vs HEAD failure | ToolNodeBO 假成功回退（2f0861a0 被回退） |
-| E36 | `git diff`：`KnowledgeBaseMcpProvider.java:96-97`、`KnowledgeGraphMcpProvider.java:79-80`、`DataAgentMcpProvider.java:112-113`、`CodeSandboxMcpProvider.java:77-78`（工作区）vs HEAD `CallToolResult.error` | 4 个 Provider 假 SUCCESS 回退（5d26b814 被回退） |
-| E37 | `CrossKbScoreCalibrator.java:33-34,104`（工作区）vs HEAD 默认 0.0 | scoreFloor 0.40 回退（3898471d 被回退） |
-| E38 | `McpEcosystemContractTest.java:176-191`（工作区） | 路由延迟断言 10→15ms 放宽 |
+| E35 | `git show e4864302:...ToolNodeBO.java`（`:132-135`）vs `2f0861a0` 的 failure 行为 | ToolNodeBO 假成功回退已被 `e4864302` 提交固化（2f0861a0 被回退） |
+| E36 | `git show e4864302`：`KnowledgeBaseMcpProvider.java:96-97`、`KnowledgeGraphMcpProvider.java:79-80`、`DataAgentMcpProvider.java:112-113`、`CodeSandboxMcpProvider.java:77-78` vs `5d26b814` 的 `CallToolResult.error` | 4 个 Provider 假 SUCCESS 回退已被 `e4864302` 提交固化（5d26b814 被回退） |
+| E37 | `CrossKbScoreCalibrator.java:33-34,104`（`e4864302` 后）vs `3898471d` 默认 0.0 | scoreFloor 0.40 回退已被 `e4864302` 提交固化（3898471d 被回退） |
+| E38 | `McpEcosystemContractTest.java:176-191`（`e4864302` 后） | 路由延迟断言 10→15ms 放宽已被 `e4864302` 提交固化 |
 | E39 | `backend/pom.xml:35-36` | spring-ai 1.1.0 / spring-ai-alibaba 1.1.2.2 版本锁定 |
 | E40 | `git show f4ff4dda --stat`（6 文件、115+/21-，无测试文件） | 本次修复无测试门禁 |
+| E41 | `git show --stat e4864302`（8 文件 63+/28-）；`git log f4ff4dda..HEAD -- <6 文件>` 仍为空 | 复核开始时的 7 个未提交改动被提交固化；该提交**未触及** f4ff4dda 6 文件；提交信息（fix(ci)）与内容（回退安全/诚实性修复）不符 |
+| E42 | `git show --stat 844e8a69`（6 份 verify 报告，1481 行）；`git reflog -3` | 本报告被归档，复核期间基线由 `cb6e185c` 前移至 `844e8a69` |
 
 ---
 
@@ -224,6 +229,7 @@
 3. P1-Mem 摘要与 embedding：§1、§2.5。
 4. P1-RAG1 双 CRAG：§1、§2.6。
 5. AgentRegistry/HermesConfiguration：§1、§2.7。
-6. 工作区回退与"提交-工作区"差异：§0.1、§2.8、§3 R3-R6。
+6. 工作区回退与"提交-工作区"差异：§0.1、§2.8、§3 R3-R6/R9（复核期间被 `e4864302` 固化为提交级回退）。
 7. 未静态判定项与验证方式：§4 V1-V9。
-8. 只读与不运行测试/服务纪律：本报告头声明；本轮仅执行 `git`/`read`/`grep`/`unzip`（解压依赖 sources jar 到 /tmp 只读分析）与目录列举。
+8. 只读与不运行测试/服务纪律：本报告头声明；本轮仅执行 `git`/`read`/`grep`/`unzip`（解压依赖 sources jar 到 /tmp 只读分析）与目录列举；**未修改任何源码/配置**。
+9. 基线漂移说明：本文件初稿于复核开始时（HEAD=`cb6e185c`+8 未提交改动）完成取证，复核期间 HEAD 前移至 `844e8a69`（`e4864302` 固化原工作区改动、`844e8a69` 归档本文件）。本文件已按新 HEAD 复核：f4ff4dda 6 文件自 f4ff4dda 后从未被修改（`git log f4ff4dda..HEAD -- <6 文件>` 为空），故 §1 裁决不变；仅 §2.8 与 §3 R3-R6/R9 的"回退"性质由"工作区未提交"升级为"已提交"。由于本文件已被 `844e8a69` 归档，本更新版本需 Lead 重新提交（复核员按纪律不得执行 `git commit`）。

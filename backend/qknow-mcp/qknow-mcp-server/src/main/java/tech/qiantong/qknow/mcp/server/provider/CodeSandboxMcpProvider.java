@@ -74,7 +74,7 @@ public class CodeSandboxMcpProvider {
             }
         }
 
-        // 本地契约模式：静态安全检查通过，瞬态隔离执行完成
-        return CallToolResult.text(String.format("沙箱执行成功 [语言=%s]:\n[stdout]\n安全策略校验通过，代码完成受限执行\n[status=SUCCESS]", language));
+        // 缺乏真实执行器委托时客观报错，杜绝伪造假成功
+        return CallToolResult.error("受限代码沙箱执行器未配置或环境未就绪");
     }
 }

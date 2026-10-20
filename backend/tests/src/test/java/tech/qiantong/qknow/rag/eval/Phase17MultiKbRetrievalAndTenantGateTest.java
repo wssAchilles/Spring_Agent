@@ -196,6 +196,25 @@ class Phase17MultiKbRetrievalAndTenantGateTest {
     }
 
     @Test
+    @DisplayName("契约 2b: 跨库 RRF 强共识切片 (得分在 0.1~0.4 之间) 绝不受余弦底线门禁误杀")
+    void testRrfConsensusScoreImmuneToScoreFloor() {
+        // 模拟 10 个知识库强共识命中的切片，其分数为 RRF 倒数排位融合分 0.1639 (落入 0.10 ~ 0.40 区间)
+        RetrieveResult rrfHit = createHit(99L, 999L, "ConsensusDoc.md", "10库共识关键事实切片", 0.1639);
+        rrfHit.setScoreType(RetrieveResult.SCORE_TYPE_RRF);
+
+        MultiKbRetrievalCoordinator.SingleKbRecallResult kbConsensus = MultiKbRetrievalCoordinator.SingleKbRecallResult.builder()
+                .knowledgeId(99L)
+                .knowledgeName("多库融合流")
+                .success(true)
+                .results(List.of(rrfHit))
+                .build();
+
+        CrossKbScoreCalibrator.MergedContextResult merged = calibrator.calibrateAndAssemble(List.of(kbConsensus));
+        assertEquals(1, merged.getEmittedSegments().size(), "标有 RRF 的融合结果即便得分为 0.1639，绝不能被 0.40 余弦门限误杀");
+        assertEquals("99", merged.getEmittedSegments().get(0).getSegmentId());
+    }
+
+    @Test
     @DisplayName("契约 3: 全局 20KB (20000 字节) 统一硬预算截断与来源溯源格式")
     void testGlobal20KbBudgetTruncationAndCitationFormat() {
         // 构建超大文本段落（每个 1KB，共 30 个，总计 30KB > 20KB）

@@ -155,7 +155,13 @@ public abstract class BaseNodeBO {
      * @return 格式化后的字符串
      */
     public String format(String str, RuntimeContextBO context) {
-        JSONObject contextVariables = context.getVariables();
+        if (str == null) {
+            return "";
+        }
+        JSONObject contextVariables = context != null ? context.getVariables() : null;
+        if (contextVariables == null) {
+            contextVariables = new JSONObject();
+        }
         Pattern pattern = Pattern.compile("\\{\\{\\s*(.+?)\\s*}}");
         Matcher matcher = pattern.matcher(str);
         if (!matcher.find()) {

@@ -35,6 +35,9 @@ public class HermesGrpcClient {
     @Value("${hermes.grpc.chat-deadline-seconds:120}")
     private long chatDeadlineSeconds;
 
+    @Value("${hermes.grpc.auth.token:${HERMES_GRPC_AUTH_TOKEN:qknow-hermes-grpc-internal-token-2026}}")
+    private String hermesAuthToken;
+
     private ManagedChannel channel;
     private HermesServiceGrpc.HermesServiceStub asyncStub;
 
@@ -86,7 +89,11 @@ public class HermesGrpcClient {
                     }
                 }
             };
-            call.start(listener, new Metadata());
+            Metadata headers = new Metadata();
+            if (hermesAuthToken != null && !hermesAuthToken.isBlank()) {
+                headers.put(Metadata.Key.of("x-hermes-auth-token", Metadata.ASCII_STRING_MARSHALLER), hermesAuthToken);
+            }
+            call.start(listener, headers);
             call.request(Integer.MAX_VALUE);
             call.sendMessage(request);
             call.halfClose();

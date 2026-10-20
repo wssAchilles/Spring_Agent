@@ -83,10 +83,16 @@ public class StdioEnterpriseTransport implements EnterpriseMcpClientTransport, M
         Map<String, String> safeEnv = new HashMap<>();
         String path = System.getenv("PATH");
         if (path != null) safeEnv.put("PATH", path);
-        String home = System.getenv("HOME");
-        if (home != null) safeEnv.put("HOME", home);
+        // 关键防御：HOME 重定向到沙箱专用临时目录，严禁暴露宿主敏感凭据 (~/.ssh, ~/.npmrc)
+        String baseTmp = System.getProperty("java.io.tmpdir", "/tmp");
+        safeEnv.put("HOME", baseTmp + "/qknow-mcp-sandbox");
         String tmpdir = System.getenv("TMPDIR");
         if (tmpdir != null) safeEnv.put("TMPDIR", tmpdir);
+        // 透传网络代理白名单变量，支持企业私有内网访问
+        for (String proxyVar : java.util.List.of("HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy")) {
+            String val = System.getenv(proxyVar);
+            if (val != null) safeEnv.put(proxyVar, val);
+        }
 
         pb.environment().clear();
         pb.environment().putAll(safeEnv);

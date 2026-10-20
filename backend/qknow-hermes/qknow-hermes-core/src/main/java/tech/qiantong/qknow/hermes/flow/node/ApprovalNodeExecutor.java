@@ -101,21 +101,20 @@ public class ApprovalNodeExecutor {
             memSuccess = true;
         }
 
-        // 更新 Redis 终态
+        // 原子删除待办：若返回 true 说明抢占成功，彻底杜绝并发双成功
         boolean redisSuccess = false;
         try {
             IRedisService redisService = getRedisService();
             if (redisService != null) {
-                String pendingJson = redisService.get(REDIS_PENDING_PREFIX + key);
-                if (pendingJson != null) {
-                    redisService.delete(REDIS_PENDING_PREFIX + key);
+                boolean deleted = redisService.delete(REDIS_PENDING_PREFIX + key);
+                if (deleted) {
                     Map<String, Object> decision = new HashMap<>();
                     decision.put("approvalKey", key);
                     decision.put("decision", "APPROVED");
                     decision.put("decidedAt", System.currentTimeMillis());
                     redisService.set(REDIS_DECISION_PREFIX + key, JSON.toJSONString(decision), DECISION_RETENTION_SECONDS);
                     redisSuccess = true;
-                    log.info("Redis 审批状态已更新为 APPROVED: key={}", key);
+                    log.info("Redis 审批状态已原子更新为 APPROVED: key={}", key);
                 }
             }
         } catch (Exception e) {
@@ -137,14 +136,13 @@ public class ApprovalNodeExecutor {
             memSuccess = true;
         }
 
-        // 更新 Redis 终态
+        // 原子删除待办：若返回 true 说明抢占成功，彻底杜绝并发双成功
         boolean redisSuccess = false;
         try {
             IRedisService redisService = getRedisService();
             if (redisService != null) {
-                String pendingJson = redisService.get(REDIS_PENDING_PREFIX + key);
-                if (pendingJson != null) {
-                    redisService.delete(REDIS_PENDING_PREFIX + key);
+                boolean deleted = redisService.delete(REDIS_PENDING_PREFIX + key);
+                if (deleted) {
                     Map<String, Object> decision = new HashMap<>();
                     decision.put("approvalKey", key);
                     decision.put("decision", "REJECTED");
@@ -152,7 +150,7 @@ public class ApprovalNodeExecutor {
                     decision.put("decidedAt", System.currentTimeMillis());
                     redisService.set(REDIS_DECISION_PREFIX + key, JSON.toJSONString(decision), DECISION_RETENTION_SECONDS);
                     redisSuccess = true;
-                    log.info("Redis 审批状态已更新为 REJECTED: key={}", key);
+                    log.info("Redis 审批状态已原子更新为 REJECTED: key={}", key);
                 }
             }
         } catch (Exception e) {

@@ -85,6 +85,12 @@ public class RetrieveResult {
     /** 相似度 */
     private Double score;
 
+    public static final String SCORE_TYPE_COSINE = "COSINE";
+    public static final String SCORE_TYPE_RRF = "RRF";
+
+    /** 得分度量量纲: COSINE (余弦相似度), RRF (排位倒数融合分) */
+    private String scoreType;
+
     private String dataSourceType;
 
     private String docMetadata;

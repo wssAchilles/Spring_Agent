@@ -82,6 +82,9 @@ public class AgentOrchestrator {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private tech.qiantong.qknow.hermes.agent.metrics.AgentMetricsService agentMetricsService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private AgentRegistry agentRegistry;
+
     public void setDeepSeekCostGovernor(tech.qiantong.qknow.hermes.cost.DeepSeekCostGovernor deepSeekCostGovernor) {
         this.deepSeekCostGovernor = deepSeekCostGovernor;
     }
@@ -462,6 +465,18 @@ public class AgentOrchestrator {
         final String supervisedSystemPrompt = systemPrompt;
         final ChatModel finalAgentModel = agentModel;
         Flux<NodeOutput> stream = agent.stream(messages);
+
+        // 关键时序修复：必须在 stream.subscribe() 之前注册 onDispose！
+        // 杜绝同步阻塞执行模型下，流未结束导致 onDispose 无法注册的结构性时序失效！
+        java.util.concurrent.atomic.AtomicReference<reactor.core.Disposable> streamSubscriptionRef = new java.util.concurrent.atomic.AtomicReference<>();
+        emitter.onDispose(() -> {
+            reactor.core.Disposable sub = streamSubscriptionRef.get();
+            if (sub != null && !sub.isDisposed()) {
+                sub.dispose();
+            }
+            releaseReactCapacity.run();
+        });
+
         try {
             reactor.core.Disposable streamSubscription = stream.subscribe(
                 output -> {
@@ -547,12 +562,10 @@ public class AgentOrchestrator {
                     emitter.complete();
                 }
             );
-            emitter.onDispose(() -> {
-                if (streamSubscription != null && !streamSubscription.isDisposed()) {
-                    streamSubscription.dispose();
-                }
-                releaseReactCapacity.run();
-            });
+            streamSubscriptionRef.set(streamSubscription);
+            if (emitter.isCancelled() && !streamSubscription.isDisposed()) {
+                streamSubscription.dispose();
+            }
         } catch (RuntimeException e) {
             releaseReactCapacity.run();
             throw e;
@@ -718,7 +731,19 @@ public class AgentOrchestrator {
                         try {
                             LLM_CALL_SEMAPHORE.acquire();
                             try {
-                                WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
+                                WorkerAgent worker = null;
+                                if (agentRegistry != null) {
+                                    var opt = agentRegistry.getAgent(task.worker());
+                                    if (opt.isPresent() && opt.get() instanceof WorkerAgent wa) {
+                                        worker = wa;
+                                    }
+                                }
+                                if (worker == null) {
+                                    worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
+                                    if (agentRegistry != null) {
+                                        agentRegistry.registerAgent(worker);
+                                    }
+                                }
                                 String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
                                 return Map.entry(task.taskId(), result);
                             } finally {

@@ -86,6 +86,25 @@ public class LLMNodeBO extends BaseNodeBO {
         return NodeRunResultBO.success(nodeDefinition.getUuid(), nodeDefinition.getName(), outputData);
     }
 
+    private String resolvePrompt(JSONObject configJson) {
+        if (configJson == null) {
+            return "你是一个有帮助的人工智能助手。";
+        }
+        String prompt = configJson.getString("prompt");
+        if (cn.hutool.core.util.StrUtil.isNotBlank(prompt)) {
+            return prompt;
+        }
+        String promptTemplate = configJson.getString("promptTemplate");
+        if (cn.hutool.core.util.StrUtil.isNotBlank(promptTemplate)) {
+            return promptTemplate;
+        }
+        String systemPrompt = configJson.getString("systemPrompt");
+        if (cn.hutool.core.util.StrUtil.isNotBlank(systemPrompt)) {
+            return systemPrompt;
+        }
+        return "你是一个有帮助的人工智能助手。";
+    }
+
     /**
      * 设置大模型对话上下文
      *
@@ -96,14 +115,18 @@ public class LLMNodeBO extends BaseNodeBO {
      */
     private Message[] getMessageArray(JSONObject configJson, JSONArray inputDefArray, RuntimeContextBO context) {
         List<Message> messageList = new ArrayList<>();
-        if (inputDefArray.size() == 0) {
-            String promptFormat = configJson.getString("prompt");
-            messageList.add(new SystemMessage(super.format(promptFormat, context)));
-        } else {
-            String promptFormat = configJson.getString("prompt");
-            messageList.add(new SystemMessage(super.format(promptFormat, context)));
+        String rawPrompt = resolvePrompt(configJson);
+        String formattedPrompt = super.format(rawPrompt, context);
+        if (cn.hutool.core.util.StrUtil.isNotBlank(formattedPrompt)) {
+            messageList.add(new SystemMessage(formattedPrompt));
+        }
+
+        if (inputDefArray != null && !inputDefArray.isEmpty()) {
             for (int i = 0; i < inputDefArray.size(); i++) {
                 JSONObject inputDef = inputDefArray.getJSONObject(i);
+                if (inputDef == null) {
+                    continue;
+                }
                 String role = inputDef.getString("role");
                 String content = inputDef.getString("content");
                 if (Objects.equals(role, "assistant")) {

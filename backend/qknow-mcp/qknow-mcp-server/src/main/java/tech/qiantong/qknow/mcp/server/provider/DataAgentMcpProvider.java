@@ -109,7 +109,7 @@ public class DataAgentMcpProvider {
             }
         }
 
-        // 本地契约模式：已验证只读并注入 LIMIT 1000 保护，杜绝伪造硬编码数据行
-        return CallToolResult.text(String.format("SQL 只读安全校验通过 [数据源=%s]:\n[executedSql]\n%s\n[status=SUCCESS]", dsId, finalSql));
+        // 缺乏真实 SQL 执行器委托时客观报错，杜绝伪造假成功
+        return CallToolResult.error(String.format("未找到数据源 [%s] 或底层 SQL 执行器未配置就绪", dsId));
     }
 }

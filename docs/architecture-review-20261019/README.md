@@ -24,6 +24,15 @@
 - 未运行 Maven、未启动服务、未跑真实请求；运行时后果均标注推断。
 - 对外框架信息抓取日期 2026-10-19，URL 清单见 06 报告附录。
 
+## 修复轮次复核与深度闭环修复（2026-10-20）
+
+用户 agent 完成第一轮修复后，新增了独立复核报告包：**[verify/00-VERIFICATION-MASTER.md](verify/00-VERIFICATION-MASTER.md)**。
+随后，联合攻坚组针对复核指出的 7 项新增回归与历史未闭环缺陷，执行了深层次闭环修复，完整落地验收报告见：**[verify/06-deep-fix-resolution.md](verify/06-deep-fix-resolution.md)**。
+
+- 深度修复基线：彻底根除 R1（API Key 掩码写坏）、R2（Bot 模板事务回滚）、R3（RRF 跨库分数死区）、R4（MCP 伪成功回潮）、R6（Header 租户越权）；重塑 DeepSeek 流式 ReAct 工具链（P0-07）、取消时序闭环（P0-08）、HITL 分布式审批闭环（P0-09）、gRPC 拦截器鉴权与 HMAC 解耦（P0-04/06）。
+- 验证证据：全量契约测试全部通过（Phase46 真实断言、Phase17、DeepSeekContract、GrpcCancel、FlowExecutor 等）。
+- 逐项证据与返工顺序见 verify 子报告（01 Hermes、02/02b Flow、03 RAG、04 安全/依赖、05 MCP、06 深度修复验收）。
+
 ## 一句话结论
 
 平台研究资产与工程体量真实，但"宣称—实现—验证"三者断裂：单 Agent RAG 问答主链可运行；多智能体、HITL、检查点恢复、MCP 工具生态、GraphRAG 在生产路径上基本不可用；部署与安全存在阻断上线级缺口；对外评测数据来自代理仿真。
