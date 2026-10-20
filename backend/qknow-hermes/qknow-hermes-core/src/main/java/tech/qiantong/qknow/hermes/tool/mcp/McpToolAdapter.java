@@ -12,6 +12,7 @@ import tech.qiantong.qknow.hermes.tool.mcp.governance.McpToolSemanticRetriever;
 import tech.qiantong.qknow.hermes.tool.mcp.governance.McpVirtualThreadCircuitBreaker;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -59,6 +60,9 @@ public class McpToolAdapter {
     }
 
     @Autowired(required = false)
+    private org.springframework.ai.embedding.EmbeddingModel embeddingModel;
+
+    @Autowired(required = false)
     private McpSamplingHandler samplingHandler;
 
     public McpSamplingHandler getSamplingHandler() {
@@ -67,6 +71,10 @@ public class McpToolAdapter {
 
     public void setSamplingHandler(McpSamplingHandler samplingHandler) {
         this.samplingHandler = samplingHandler;
+    }
+
+    public void setEmbeddingModel(org.springframework.ai.embedding.EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
     }
 
     public long getToolTimeoutMillis() {
@@ -81,7 +89,14 @@ public class McpToolAdapter {
     public void initializeGithubServer() {
         String token = System.getenv("GITHUB_PERSONAL_ACCESS_TOKEN");
         if (token != null && !token.isBlank()) {
-            registerServer(githubServerConfig(token));
+            CompletableFuture.runAsync(() -> {
+                try {
+                    log.info("检测到 GITHUB_PERSONAL_ACCESS_TOKEN，异步初始化 GitHub MCP Server...");
+                    registerServer(githubServerConfig(token));
+                } catch (Exception e) {
+                    log.warn("异步初始化 GitHub MCP Server 异常: {}", e.getMessage());
+                }
+            });
         }
     }
 
@@ -152,7 +167,15 @@ public class McpToolAdapter {
                     mcpTools.put(toolCode, callback);
 
                     // 注册至超球面语义检索器
-                    semanticRetriever.indexTool(toolCode, description, inputSchema, null);
+                    float[] vector = null;
+                    if (embeddingModel != null) {
+                        try {
+                            vector = embeddingModel.embed(toolCode + ": " + (description != null ? description : ""));
+                        } catch (Exception e) {
+                            log.warn("生成工具超球面向量异常: {}, err={}", toolCode, e.getMessage());
+                        }
+                    }
+                    semanticRetriever.indexTool(toolCode, description, inputSchema, vector);
                 }
 
                 log.info("MCP Server {} 注册成功，发现并索引 {} 个工具", config.getName(), toolDefs.size());

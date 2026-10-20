@@ -40,6 +40,10 @@ public class McpServerRegistry {
     public record ResourceHandler(McpResource metadata, Function<String, ResourceContent> executor) {}
     public record PromptHandler(McpPrompt metadata, Function<Map<String, Object>, List<PromptMessage>> executor) {}
 
+    public McpServerRegistry() {
+        this("qknow-mcp-server", "2.2.1", null);
+    }
+
     public McpServerRegistry(String serverName, String serverVersion) {
         this(serverName, serverVersion, null);
     }

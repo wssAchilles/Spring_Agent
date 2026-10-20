@@ -1,5 +1,7 @@
 package tech.qiantong.qknow.mcp.server.provider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.qiantong.qknow.mcp.core.model.CallToolResult;
 import tech.qiantong.qknow.mcp.core.model.ResourceContent;
 import tech.qiantong.qknow.mcp.server.registry.McpServerRegistry;
@@ -7,17 +9,32 @@ import tech.qiantong.qknow.mcp.server.registry.McpServerRegistry;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 /**
- * 数据智能体 (Phase 35 DataAgent) 紧凑模式与只读安全 SQL 执行适配器
+ * 数据智能体 (Phase 35 DataAgent) 紧凑模式与只读安全 SQL 执行适配器 (杜绝假数据)
  */
 public class DataAgentMcpProvider {
+
+    private static final Logger log = LoggerFactory.getLogger(DataAgentMcpProvider.class);
+    private BiFunction<String, String, CallToolResult> sqlExecutorDelegate;
 
     private static final Pattern DANGEROUS_SQL = Pattern.compile(
         "\\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|EXEC|EXECUTE)\\b",
         Pattern.CASE_INSENSITIVE
     );
+
+    public DataAgentMcpProvider() {
+    }
+
+    public DataAgentMcpProvider(BiFunction<String, String, CallToolResult> sqlExecutorDelegate) {
+        this.sqlExecutorDelegate = sqlExecutorDelegate;
+    }
+
+    public void setSqlExecutorDelegate(BiFunction<String, String, CallToolResult> sqlExecutorDelegate) {
+        this.sqlExecutorDelegate = sqlExecutorDelegate;
+    }
 
     public void registerTo(McpServerRegistry registry) {
         // 1. 模式 Schema 资源
@@ -31,7 +48,7 @@ public class DataAgentMcpProvider {
                 return new ResourceContent(
                     uri,
                     "application/json",
-                    "{\"datasourceId\": \"" + dsId + "\", \"tables\": [{\"name\": \"orders\", \"columns\": [\"id\", \"amount\", \"created_at\"]}, {\"name\": \"customers\", \"columns\": [\"id\", \"name\", \"tier\"]}]}",
+                    "{\"datasourceId\": \"" + dsId + "\", \"status\": \"ACTIVE\", \"description\": \"数据源模式字典与元数据\"}",
                     null
                 );
             }
@@ -59,7 +76,7 @@ public class DataAgentMcpProvider {
 
     public CallToolResult executeSafeSql(String dsId, String sql) {
         if (sql == null || sql.isBlank()) {
-            return CallToolResult.error("SQL cannot be empty");
+            return CallToolResult.error("待执行的 SQL 不能为空");
         }
 
         // 阻断分号堆叠注入
@@ -83,6 +100,16 @@ public class DataAgentMcpProvider {
             finalSql += " LIMIT 1000";
         }
 
-        return CallToolResult.text(String.format("{\"dsId\": \"%s\", \"executedSql\": \"%s\", \"rowCount\": 2, \"data\": [{\"id\": 1, \"amount\": 1800.0}, {\"id\": 2, \"amount\": 2600.0}]}", dsId, finalSql));
+        if (sqlExecutorDelegate != null) {
+            try {
+                return sqlExecutorDelegate.apply(dsId, finalSql);
+            } catch (Exception e) {
+                log.warn("执行委托 SQL 异常: dsId={}, msg={}", dsId, e.getMessage());
+                return CallToolResult.error("SQL 执行失败: " + e.getMessage());
+            }
+        }
+
+        // 未配置真实只读数据源连接池时客观报错，绝不伪造硬编码 orders
+        return CallToolResult.error(String.format("未找到数据源 [%s] 对应的只读连接池或执行器未配置", dsId));
     }
 }

@@ -1,16 +1,33 @@
 package tech.qiantong.qknow.mcp.server.provider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.qiantong.qknow.mcp.core.model.CallToolResult;
 import tech.qiantong.qknow.mcp.core.model.ResourceContent;
 import tech.qiantong.qknow.mcp.server.registry.McpServerRegistry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
- * 知识库检索与文档资源 MCP 适配器 (唯一对齐阿里千问 1536 维超球面)
+ * 知识库检索与文档资源 MCP 适配器 (唯一对齐阿里千问 1536 维超球面，杜绝伪造得分)
  */
 public class KnowledgeBaseMcpProvider {
+
+    private static final Logger log = LoggerFactory.getLogger(KnowledgeBaseMcpProvider.class);
+    private Function<Map<String, Object>, CallToolResult> searchDelegate;
+
+    public KnowledgeBaseMcpProvider() {
+    }
+
+    public KnowledgeBaseMcpProvider(Function<Map<String, Object>, CallToolResult> searchDelegate) {
+        this.searchDelegate = searchDelegate;
+    }
+
+    public void setSearchDelegate(Function<Map<String, Object>, CallToolResult> searchDelegate) {
+        this.searchDelegate = searchDelegate;
+    }
 
     public void registerTo(McpServerRegistry registry) {
         // 1. 注册知识库超球面向量检索工具
@@ -27,6 +44,14 @@ public class KnowledgeBaseMcpProvider {
                 "required", List.of("corpusId", "query")
             ),
             params -> {
+                if (searchDelegate != null) {
+                    try {
+                        return searchDelegate.apply(params);
+                    } catch (Exception e) {
+                        log.warn("执行委托知识库检索异常: {}", e.getMessage());
+                        return CallToolResult.error("知识库检索执行失败: " + e.getMessage());
+                    }
+                }
                 Number corpusId = (Number) params.get("corpusId");
                 String query = (String) params.get("query");
                 Number topKNum = (Number) params.get("topK");
@@ -58,13 +83,9 @@ public class KnowledgeBaseMcpProvider {
 
     public CallToolResult searchKnowledge(Long corpusId, String query, int topK) {
         if (query == null || query.isBlank()) {
-            return CallToolResult.error("Query cannot be empty");
+            return CallToolResult.error("检索 Query 不能为空");
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append(String.format("### 知识库 [Corpus=%d] 检索召回 (Top %d)\n", corpusId, topK));
-        for (int i = 1; i <= Math.min(topK, 3); i++) {
-            sb.append(String.format("- 片段 %d [余弦得分 0.9%d25]: 关于 '%s' 的企业知识内容，遵循千知标准规范。\n", i, 9 - i, query));
-        }
-        return CallToolResult.text(sb.toString().trim());
+        // 未接入真实委托或离线测试时，给出明确客观的服务状态，严禁伪造假数据与捏造分数
+        return CallToolResult.error(String.format("底层知识库 [Corpus=%d] 向量检索服务未绑定或尚未就绪 (Query: '%s')", corpusId, query));
     }
 }

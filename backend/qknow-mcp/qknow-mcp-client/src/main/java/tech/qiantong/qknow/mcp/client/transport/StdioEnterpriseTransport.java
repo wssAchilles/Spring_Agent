@@ -79,6 +79,17 @@ public class StdioEnterpriseTransport implements EnterpriseMcpClientTransport, M
             return;
         }
         ProcessBuilder pb = new ProcessBuilder(command);
+        // 核心安全加固：清空宿主继承环境变量，仅继承基础系统路径白名单与显式配置环境，阻断凭据泄露
+        Map<String, String> safeEnv = new HashMap<>();
+        String path = System.getenv("PATH");
+        if (path != null) safeEnv.put("PATH", path);
+        String home = System.getenv("HOME");
+        if (home != null) safeEnv.put("HOME", home);
+        String tmpdir = System.getenv("TMPDIR");
+        if (tmpdir != null) safeEnv.put("TMPDIR", tmpdir);
+
+        pb.environment().clear();
+        pb.environment().putAll(safeEnv);
         if (!environment.isEmpty()) {
             pb.environment().putAll(environment);
         }

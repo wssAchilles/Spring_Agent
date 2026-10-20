@@ -1,20 +1,37 @@
 package tech.qiantong.qknow.mcp.server.provider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.qiantong.qknow.mcp.core.model.CallToolResult;
 import tech.qiantong.qknow.mcp.server.registry.McpServerRegistry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 
 /**
- * 代码智能体 (Phase 30 CodeSandbox) 受限沙箱执行 MCP 适配器
+ * 代码智能体 (Phase 30 CodeSandbox) 受限沙箱执行 MCP 适配器 (杜绝假数据)
  */
 public class CodeSandboxMcpProvider {
+
+    private static final Logger log = LoggerFactory.getLogger(CodeSandboxMcpProvider.class);
+    private BiFunction<String, String, CallToolResult> sandboxRunnerDelegate;
 
     private static final Pattern HIGH_RISK_SYSCALL = Pattern.compile(
         "\\b(subprocess|os\\.system|os\\.popen|sys\\.exit|eval|exec|__import__)\\b"
     );
+
+    public CodeSandboxMcpProvider() {
+    }
+
+    public CodeSandboxMcpProvider(BiFunction<String, String, CallToolResult> sandboxRunnerDelegate) {
+        this.sandboxRunnerDelegate = sandboxRunnerDelegate;
+    }
+
+    public void setSandboxRunnerDelegate(BiFunction<String, String, CallToolResult> sandboxRunnerDelegate) {
+        this.sandboxRunnerDelegate = sandboxRunnerDelegate;
+    }
 
     public void registerTo(McpServerRegistry registry) {
         registry.registerTool(
@@ -40,7 +57,7 @@ public class CodeSandboxMcpProvider {
 
     public CallToolResult runInSandbox(String language, String code) {
         if (code == null || code.isBlank()) {
-            return CallToolResult.error("Code cannot be empty");
+            return CallToolResult.error("待执行代码不能为空");
         }
 
         // 静态 AST 级别高危模块剪枝
@@ -48,7 +65,16 @@ public class CodeSandboxMcpProvider {
             throw new SecurityException("代码包含受限制的高危系统调用模块，沙箱拒绝执行");
         }
 
-        // 模拟受限瞬态沙箱执行 (Phase 30 原理)
-        return CallToolResult.text(String.format("沙箱执行成功 [语言=%s, 耗时=42ms]:\n[stdout]\n计算完成，输出结果: 42\n[status=SUCCESS]", language));
+        if (sandboxRunnerDelegate != null) {
+            try {
+                return sandboxRunnerDelegate.apply(language, code);
+            } catch (Exception e) {
+                log.warn("执行委托沙箱运行异常: lang={}, msg={}", language, e.getMessage());
+                return CallToolResult.error("沙箱执行失败: " + e.getMessage());
+            }
+        }
+
+        // 未配置受限容器或本地沙箱引擎时客观报错，绝不伪造硬编码 42
+        return CallToolResult.error(String.format("受限代码沙箱环境未就绪或未检测到可用执行运行时 (Language=%s)", language));
     }
 }

@@ -1,22 +1,39 @@
 package tech.qiantong.qknow.mcp.server.provider;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tech.qiantong.qknow.mcp.core.model.CallToolResult;
 import tech.qiantong.qknow.mcp.server.registry.McpServerRegistry;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
- * 知识图谱 Neo4j 因果拓扑只读查询 MCP 适配器
+ * 知识图谱 Neo4j 因果拓扑只读查询 MCP 适配器 (杜绝假三元组)
  */
 public class KnowledgeGraphMcpProvider {
+
+    private static final Logger log = LoggerFactory.getLogger(KnowledgeGraphMcpProvider.class);
+    private Function<String, CallToolResult> queryDelegate;
 
     private static final Pattern MUTATION_PATTERN = Pattern.compile(
         "\\b(CREATE|MERGE|DELETE|DETACH\\s+DELETE|SET|REMOVE|DROP)\\b",
         Pattern.CASE_INSENSITIVE
     );
+
+    public KnowledgeGraphMcpProvider() {
+    }
+
+    public KnowledgeGraphMcpProvider(Function<String, CallToolResult> queryDelegate) {
+        this.queryDelegate = queryDelegate;
+    }
+
+    public void setQueryDelegate(Function<String, CallToolResult> queryDelegate) {
+        this.queryDelegate = queryDelegate;
+    }
 
     public void registerTo(McpServerRegistry registry) {
         registry.registerTool(
@@ -38,7 +55,7 @@ public class KnowledgeGraphMcpProvider {
 
     public CallToolResult queryGraph(String cypherQuery) {
         if (cypherQuery == null || cypherQuery.isBlank()) {
-            return CallToolResult.error("Cypher query cannot be empty");
+            return CallToolResult.error("Cypher 查询语句不能为空");
         }
 
         // 强力阻断变异子句，确保只读安全性
@@ -50,6 +67,16 @@ public class KnowledgeGraphMcpProvider {
             throw new SecurityException("Cypher 缺少有效 RETURN 投影子句");
         }
 
-        return CallToolResult.text("MATCH (e1:Entity)-[r:CAUSES]->(e2:Entity) 拓扑因果路径已命中: [实体A] -> [导致] -> [实体B] (置信度 0.94)");
+        if (queryDelegate != null) {
+            try {
+                return queryDelegate.apply(cypherQuery);
+            } catch (Exception e) {
+                log.warn("执行委托 Cypher 查询异常: {}", e.getMessage());
+                return CallToolResult.error("执行 Cypher 图查询失败: " + e.getMessage());
+            }
+        }
+
+        // 未配置真实 Neo4j 驱动时客观报错，绝不伪造硬编码三元组
+        return CallToolResult.error("Neo4j 图数据库连接未就绪或未配置图谱驱动实例");
     }
 }
