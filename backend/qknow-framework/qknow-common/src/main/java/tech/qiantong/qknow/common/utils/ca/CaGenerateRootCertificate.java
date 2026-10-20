@@ -1,7 +1,7 @@
 package tech.qiantong.qknow.common.utils.ca;
 
 import cn.hutool.crypto.SecureUtil;
-import org.springframework.mock.web.MockMultipartFile;
+import tech.qiantong.qknow.common.utils.file.ByteArrayMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -101,7 +101,7 @@ public class CaGenerateRootCertificate {
 
             // 将生成的文件转换为 MultipartFile
             files.add(convertFileToMultipartFile(certFilePath, "rootCA.cer"));
-            files.add(new MockMultipartFile(privateKeyFilePath, privateKeyFilePath, "application/x-pem-file", pemOutputStream.toByteArray()));
+            files.add(new ByteArrayMultipartFile(privateKeyFilePath, privateKeyFilePath, "application/x-pem-file", pemOutputStream.toByteArray()));
 
             // 删除原始文件
             deleteFile(certFilePath);
@@ -119,7 +119,7 @@ public class CaGenerateRootCertificate {
     private static MultipartFile convertFileToMultipartFile(String filePath, String fileName) throws Exception {
         File file = new File(filePath);
         try (FileInputStream input = new FileInputStream(file)) {
-            return new MockMultipartFile(fileName, fileName, "application/x-x509-ca-cert", input);
+            return new ByteArrayMultipartFile(fileName, fileName, "application/x-x509-ca-cert", input.readAllBytes());
         }
     }
 

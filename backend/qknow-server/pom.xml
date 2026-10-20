@@ -192,9 +192,8 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>3.5.8</version>
                 <configuration>
-                    <!--                    <fork>true</fork> &lt;!&ndash; 如果没有该配置，devtools不会生效 &ndash;&gt;-->
-                    <!-- 排除 `tech.qiantong` 下的所有模块 -->
-                    <excludeGroupIds>tech.qiantong</excludeGroupIds>
+                    <!-- 排除 `tech.qiantong` 下的所有模块及测试库 -->
+                    <excludeGroupIds>tech.qiantong,org.junit.jupiter,org.junit.platform</excludeGroupIds>
                 </configuration>
                 <executions>
                     <execution>

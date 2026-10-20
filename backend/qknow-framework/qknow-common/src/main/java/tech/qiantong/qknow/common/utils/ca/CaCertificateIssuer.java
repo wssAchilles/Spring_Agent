@@ -15,7 +15,7 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
-import org.springframework.mock.web.MockMultipartFile;
+import tech.qiantong.qknow.common.utils.file.ByteArrayMultipartFile;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
@@ -148,7 +148,7 @@ public class CaCertificateIssuer {
             writer.write(Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(certificate.getEncoded()));
             writer.write("\n-----END CERTIFICATE-----\n");
         }
-        return new MockMultipartFile(fileName, fileName, "application/x-x509-ca-cert", outputStream.toByteArray());
+        return new ByteArrayMultipartFile(fileName, fileName, "application/x-x509-ca-cert", outputStream.toByteArray());
     }
 
     /**
@@ -165,7 +165,7 @@ public class CaCertificateIssuer {
             PemObject pemObject = new PemObject("PRIVATE KEY", privateKey.getEncoded());
             pemWriter.writeObject(pemObject);
         }
-        return new MockMultipartFile(fileName, fileName, "application/x-pem-file", outputStream.toByteArray());
+        return new ByteArrayMultipartFile(fileName, fileName, "application/x-pem-file", outputStream.toByteArray());
     }
 
     /**
