@@ -97,6 +97,8 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
       REDIS_DATABASE: 3
+      # 与控制面一致的敏感字段加密口令，用于本地解密 ai_api_key
+      TOKEN_SECRET: ${TOKEN_SECRET:?TOKEN_SECRET environment variable must be configured for production deployment}
       HERMES_GRPC_AUTH_TOKEN: ${HERMES_GRPC_AUTH_TOKEN:?HERMES_GRPC_AUTH_TOKEN environment variable must be configured for production deployment}
       # P0-04: 生产开启 TLS/mTLS；证书放入 ./certs
       HERMES_GRPC_TLS_ENABLED: ${HERMES_GRPC_TLS_ENABLED:-false}

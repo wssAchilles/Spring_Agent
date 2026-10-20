@@ -28,13 +28,18 @@ public class HermesGrpcService extends HermesServiceGrpc.HermesServiceImplBase {
     @Autowired
     private FlowExecutor flowExecutor;
 
+    @Autowired(required = false)
+    private HermesCredentialResolver credentialResolver;
+
     @Override
     public void chat(ChatRequest request, StreamObserver<ChatEvent> responseObserver) {
         log.info("收到 Chat 请求: requestId={}, botId={}, question={}",
                 request.getRequestId(), request.getBotId(), request.getQuestion());
 
         try {
-            Flux<ChatEvent> eventFlux = agentOrchestrator.chat(request)
+            // P0-04：控制面仅下发 keyId，Hermes 本地解析并解密 API Key，避免密钥随 gRPC 明文传输
+            ChatRequest effectiveRequest = credentialResolver != null ? credentialResolver.enrich(request) : request;
+            Flux<ChatEvent> eventFlux = agentOrchestrator.chat(effectiveRequest)
                     .onErrorResume(error -> {
                         log.error("Chat 流处理错误", error);
                         return Flux.just(ChatEvent.newBuilder()

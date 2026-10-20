@@ -237,7 +237,7 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         String modelName = jsonObject.getString("modelName");
         String platform = "";
         String baseUrl = "";
-        String apiKey = "";
+        Long modelKeyId = null;
 
         tech.qiantong.qknow.module.ai.api.dto.AiModelRespDTO aiModel = aiModelService.getAiModel(modelId);
         if (aiModel != null) {
@@ -246,10 +246,10 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 modelName = aiModel.getModel();
             }
             if (aiModel.getKeyId() != null) {
+                modelKeyId = aiModel.getKeyId();
                 tech.qiantong.qknow.module.ai.api.dto.AiApiKeyRespDTO apiInfo = aiModelService.getAiApiKey(aiModel.getKeyId());
                 if (apiInfo != null) {
                     baseUrl = apiInfo.getUrl();
-                    apiKey = apiInfo.getApiKey();
                 }
             }
         }
@@ -404,7 +404,9 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                         .setModelName(modelName != null ? modelName : "")
                         .setPlatform(platform != null ? platform : "")
                         .setBaseUrl(baseUrl != null ? baseUrl : "")
-                        .setApiKey(apiKey != null ? apiKey : "")
+                        // 不再下发明文 API Key：仅传 keyId，由 Hermes 从共享 DB 解析并解密 (P0-04)
+                        .setKeyId(modelKeyId != null ? modelKeyId : 0L)
+                        .setApiKey("")
                         .build())
                 .addAllRagContexts(ragContexts)
                 .addAllToolMethodIds(toolMethodIds)

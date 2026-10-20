@@ -47,7 +47,9 @@ message ModelConfig {
   string model_name = 2;
   string platform = 3;              // "openai", "dashscope", "deepseek", "ollama"
   string base_url = 4;
-  string api_key = 5;
+  // 已废弃：禁止控制面再下发明文密钥；Hermes 依据 key_id 从共享 DB 解析并解密
+  string api_key = 5 [deprecated = true];
+  int64 key_id = 6;                 // ai_api_key.id，由控制面下发、Hermes 本地解析
 }
 
 message ModelCredentials {

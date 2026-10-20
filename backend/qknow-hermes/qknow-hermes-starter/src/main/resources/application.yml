@@ -48,6 +48,13 @@ spring:
           ef-construction: 128
         ef-search: 100
 
+# 与控制面共享的敏感字段加密口令：Hermes 本地解密 ai_api_key（不得随 gRPC 下发明文密钥）
+token:
+  secret: ${TOKEN_SECRET:qknow-jwt-secret-key-32bytes-secure-2026}
+mybatis-plus:
+  encryptor:
+    password: ${MYBATIS_ENCRYPTOR_PASSWORD:${TOKEN_SECRET:qknow-jwt-secret-key-32bytes-secure-2026}}
+
 hermes:
   routing:
     tool-calling-model:

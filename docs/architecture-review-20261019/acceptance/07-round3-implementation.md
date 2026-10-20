@@ -85,3 +85,15 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 | P0-12 provider 魔数 | 移除 `provider=1` 硬编码：新增 `IAiModelApiService.getChatModelByPlatform(platform, model)`，按平台查当前环境可用 Key；LLM 节点未配置 provider 时动态解析；种子 SQL 20 处 `provider:1` 改为 `platform:"DeepSeek"`；模板/节点转换同步 | `IAiModelApiService.java`、`AiModelApiServiceImpl.java`、`LLMNodeBO.java`、`KbFlowTemplateServiceImpl.java`、`KbFlowNodeConvert.java`、`init_all_bot_workflows.sql` |
 
 验证：全量测试再次通过（1876 / 0 fail）；生产 fat jar 重新打包验证 `embedded-redis` 已被排除。
+
+## 7. 第四批：gRPC 停止下发明文 API Key
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| proto 去 apiKey | `ModelConfig.api_key` 标记 `deprecated`，新增 `key_id`；控制面只下发 keyId 且 `apiKey` 置空 | `hermes.proto`、`KbAgentConfigServiceImpl.java` |
+| Hermes 本地凭据解析 | 新增 `HermesCredentialResolver`：按 keyId 从共享 DB 读取 `ai_api_key`，用共享口令本地解密并回填；DB/口令缺失时 fail-close 拒绝空密钥调用 | `HermesCredentialResolver.java`、`HermesGrpcService.java` |
+| 加密逻辑收敛 | 新增 `SensitiveDataCipher`（qknow-common），`EncryptTypeHandler` 委托复用；Hermes 通过 `token.secret`/`mybatis-plus.encryptor.password` 注入同一口令 | `SensitiveDataCipher.java`、`EncryptTypeHandler.java`、`application.yml` |
+| 部署对齐 | compose 为 Hermes 补充必填 `TOKEN_SECRET`，确保与控制面密钥加密口令一致 | `docker-compose-qknow.yml` |
+| 回归测试 | `GrpcCredentialResolutionTest` 3 条：加密 Key 正确解密回填、DB 缺失 fail-close、显式 apiKey 兼容 | `tests/.../acceptance/GrpcCredentialResolutionTest.java` |
+
+验证：`mvn -pl tests -am clean test` **BUILD SUCCESS**（`qknow-tests 1879 / 0 fail / 8 skipped`、`kb-biz 35 / 0 fail`、`hermes-core 99 / 0 fail`）；`docker compose -f deploy/docker/docker-compose.yml config` exit 0。
