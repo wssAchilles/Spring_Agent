@@ -1020,6 +1020,8 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         result.setDocumentName(String.valueOf(metadata.get(WeaviateConstant.METADATA_FIELD_DOCUMENT_NAME)));
         Double score = document.getScore();
         result.setScore(score);
+        // legacy 检索路径返回原始向量相似度，显式标注 COSINE，供跨库门禁正确施加余弦阈值
+        result.setScoreType(RetrievalResult.SCORE_TYPE_COSINE);
         return result;
     }
 
@@ -1052,6 +1054,8 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         vo.setAnswer(r.getAnswer());
         vo.setDocumentName(resolveDocumentName(r));
         vo.setScore(r.getScore());
+        // v2 融合/重排链路均为 RRF 量纲；未显式标注时按 RRF 透传，避免跨库 0.40 余弦门禁误杀 (N1)
+        vo.setScoreType(r.getScoreType() != null ? r.getScoreType() : RetrievalResult.SCORE_TYPE_RRF);
         vo.setWordCount(r.getContent() != null ? r.getContent().length() : 0);
         vo.setSource(r.getSource());
         return vo;

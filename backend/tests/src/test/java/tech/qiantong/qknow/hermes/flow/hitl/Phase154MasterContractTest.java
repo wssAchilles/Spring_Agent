@@ -317,8 +317,16 @@ public class Phase154MasterContractTest {
         nodeDef.setName("delete_user_data"); // 命名包含高危操作 delete
         nodeDef.setConfig("{\"toolCode\":\"delete_user_data\"}");
 
+        // N2 修复：审批放行后必须有真实工具适配器执行，禁止 null 适配器伪造成功
+        tech.qiantong.qknow.hermes.tool.mcp.McpToolAdapter toolAdapter =
+                org.mockito.Mockito.mock(tech.qiantong.qknow.hermes.tool.mcp.McpToolAdapter.class);
+        org.mockito.Mockito.when(toolAdapter.executeTool(
+                        org.mockito.ArgumentMatchers.eq("delete_user_data"),
+                        org.mockito.ArgumentMatchers.anyMap()))
+                .thenReturn("{\"status\":\"SUCCESS\",\"deleted\":1}");
+
         tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO toolNode =
-                new tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO(nodeDef, List.of(), null);
+                new tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO(nodeDef, List.of(), toolAdapter);
 
         // 1. 首次调用：无审批授权，必须被拦截并返回 SUSPENDED 挂起
         tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO unapprovedContext =
@@ -334,6 +342,8 @@ public class Phase154MasterContractTest {
                 new tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO();
         com.alibaba.fastjson2.JSONObject approvedVars = new com.alibaba.fastjson2.JSONObject();
         approvedVars.put("approvalResult", "APPROVED");
+        // 审批强证明：必须携带 approvalKey；纯单元测试无 Spring 上下文时按变量兼容判定
+        approvedVars.put("approvalKey", "flow_154:rt_test_hitl_001:tool_node_dangerous_001");
         approvedContext.setVariables(approvedVars);
 
         tech.qiantong.qknow.module.kb.service.flow.bo.NodeRunResultBO approvedResult = toolNode.execute(approvedContext);

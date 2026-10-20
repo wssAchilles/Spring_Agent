@@ -36,6 +36,14 @@ public final class SpringUtils implements BeanFactoryPostProcessor, ApplicationC
     }
 
     /**
+     * 获取当前 Spring 应用上下文；未启动 Spring（纯单元测试）时返回 null。
+     */
+    public static ApplicationContext getApplicationContext()
+    {
+        return applicationContext;
+    }
+
+    /**
      * 获取对象
      *
      * @param name

@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import tech.qiantong.qknow.hermes.agent.guard.ReActCycleGuard;
+import tech.qiantong.qknow.hermes.tool.mcp.McpToolAdapter;
 import tech.qiantong.qknow.module.kb.dal.dataobject.flow.KbFlowNodeDO;
 import tech.qiantong.qknow.module.kb.dal.enums.RuntimeStatusEnums;
 import tech.qiantong.qknow.module.kb.service.flow.bo.NodeRunResultBO;
@@ -11,14 +12,24 @@ import tech.qiantong.qknow.module.kb.service.flow.bo.RuntimeContextBO;
 import tech.qiantong.qknow.module.kb.service.flow.bo.ToolNodeBO;
 
 import java.util.Collections;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
- * Tool 节点与 ReActCycleGuard 循环卫士熔断机制契约测试
+ * Tool 节点与 ReActCycleGuard 循环卫士熔断机制契约测试。
+ * N2 修复后：工具节点必须注入真实 MCP 适配器，禁止 null 适配器伪造 SUCCESS。
  */
 public class KbFlowServiceToolNodeTest {
+
+    private McpToolAdapter successAdapter() {
+        McpToolAdapter adapter = mock(McpToolAdapter.class);
+        when(adapter.executeTool(anyString(), any())).thenReturn("{\"status\":\"SUCCESS\"}");
+        return adapter;
+    }
 
     @Test
     @DisplayName("测试工具节点正常执行返回 SUCCESS")
@@ -28,7 +39,7 @@ public class KbFlowServiceToolNodeTest {
         nodeDef.setName("weather_query");
         nodeDef.setInput("[]");
 
-        ToolNodeBO toolNode = new ToolNodeBO(nodeDef, Collections.emptyList(), null);
+        ToolNodeBO toolNode = new ToolNodeBO(nodeDef, Collections.emptyList(), successAdapter());
 
         RuntimeContextBO context = new RuntimeContextBO();
         context.setVariables(new JSONObject());
@@ -51,7 +62,7 @@ public class KbFlowServiceToolNodeTest {
 
         // 共享同一个 ReActCycleGuard 实例
         ReActCycleGuard guard = new ReActCycleGuard(10, 3);
-        ToolNodeBO toolNode = new ToolNodeBO(nodeDef, Collections.emptyList(), null, guard);
+        ToolNodeBO toolNode = new ToolNodeBO(nodeDef, Collections.emptyList(), successAdapter(), guard);
 
         RuntimeContextBO context = new RuntimeContextBO();
         context.setVariables(new JSONObject());
@@ -78,7 +89,7 @@ public class KbFlowServiceToolNodeTest {
         // 窗口容量 6，单工具频次上限 3
         ReActCycleGuard guard = new ReActCycleGuard(15, 3);
 
-        ToolNodeBO toolNode = new ToolNodeBO(nodeDef, Collections.emptyList(), null, guard);
+        ToolNodeBO toolNode = new ToolNodeBO(nodeDef, Collections.emptyList(), successAdapter(), guard);
 
         RuntimeContextBO context = new RuntimeContextBO();
 

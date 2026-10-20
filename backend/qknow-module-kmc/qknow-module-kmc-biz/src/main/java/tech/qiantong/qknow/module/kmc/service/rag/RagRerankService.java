@@ -189,6 +189,7 @@ public class RagRerankService {
                 .content(result.getContent())
                 .answer(result.getAnswer())
                 .score(result.getScore())
+                .scoreType(result.getScoreType())
                 .source(result.getSource())
                 .metadata(result.getMetadata() == null
                         ? null : new LinkedHashMap<>(result.getMetadata()))

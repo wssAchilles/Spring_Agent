@@ -82,6 +82,9 @@ public class RetrieveResultRespVO {
     /** 相似度 */
     private Double score;
 
+    /** 得分量纲: RRF / COSINE */
+    private String scoreType;
+
     /** 来源 */
     private String source;
 

@@ -59,7 +59,11 @@ public class GrpcReactorBridge {
         });
 
         // 3. 订阅 Flux，获取 Disposable 句柄
-        Disposable subscription = monitoredFlux.subscribe(
+        // 关键修复 (P0-08)：调度到弹性线程池，避免阻塞式上游使 subscribe() 直到流结束才返回，
+        // 从而让 subscriptionRef 在客户端取消之前完成赋值，取消信号可真正级联 dispose。
+        Disposable subscription = monitoredFlux
+                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                .subscribe(
                 item -> {
                     // 必须先检查 client 是否已经取消，避免在已取消的 channel 上写入引发异常
                     if (!serverObserver.isCancelled()) {

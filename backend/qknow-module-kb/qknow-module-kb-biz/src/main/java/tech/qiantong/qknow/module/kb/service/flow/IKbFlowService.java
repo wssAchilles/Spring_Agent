@@ -94,4 +94,15 @@ public interface IKbFlowService {
      * @return 执行结果
      */
     KbRuntimeRespVO resumeFlow(Long runtimeId, java.util.Map<String, Object> humanInput);
+
+    /**
+     * 审批闭环专用恢复入口：仅由服务端审批代理在审批通过后调用。
+     * 外部 resumeFlow 不允许携带审批放行变量，避免客户端绕过高危工具审批门禁。
+     *
+     * @param runtimeId   运行实例
+     * @param humanInput  人工补充输入（不含审批变量）
+     * @param approvalKey 审批单键，用于审计与追溯
+     * @return 恢复后的运行实例
+     */
+    KbRuntimeRespVO resumeFlowWithApproval(Long runtimeId, java.util.Map<String, Object> humanInput, String approvalKey);
 }

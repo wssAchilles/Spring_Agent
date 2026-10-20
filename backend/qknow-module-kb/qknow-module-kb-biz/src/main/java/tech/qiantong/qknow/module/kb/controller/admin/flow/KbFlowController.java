@@ -8,6 +8,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -107,6 +108,7 @@ public class KbFlowController extends BaseController {
     }
 
     @Operation(summary = "断点续跑流程 (基于 Checkpoint 恢复崩溃或挂起节点)")
+    @PreAuthorize("@ss.hasPermi('kb:bot:bot:edit')")
     @Log(title = "bot流程", businessType = BusinessType.UPDATE)
     @PostMapping("/resumeFlow")
     public CommonResult<KbRuntimeRespVO> resumeFlow(@RequestBody JSONObject jsonObject) {

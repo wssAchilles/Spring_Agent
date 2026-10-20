@@ -371,6 +371,13 @@
             <groupId>com.aliyun.oss</groupId>
             <artifactId>aliyun-sdk-oss</artifactId>
             <version>3.17.4</version>
+            <exclusions>
+                <!-- 移除 aliyun-java-sdk-core 传递引入的 JaCoCo runtime agent（生产包不应包含） -->
+                <exclusion>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>org.jacoco.agent</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- 人大金仓驱动包 -->

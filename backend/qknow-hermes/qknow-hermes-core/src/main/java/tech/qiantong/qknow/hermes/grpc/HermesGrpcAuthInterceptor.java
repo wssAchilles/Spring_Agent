@@ -23,7 +23,7 @@ public class HermesGrpcAuthInterceptor implements ServerInterceptor {
     @Value("${hermes.grpc.auth.enabled:true}")
     private boolean authEnabled;
 
-    @Value("${hermes.grpc.auth.token:${HERMES_GRPC_AUTH_TOKEN:qknow-hermes-grpc-internal-token-2026}}")
+    @Value("${hermes.grpc.auth.token:${HERMES_GRPC_AUTH_TOKEN:}}")
     private String expectedToken;
 
     @Value("${hermes.grpc.auth.allow-loopback:true}")
@@ -39,10 +39,13 @@ public class HermesGrpcAuthInterceptor implements ServerInterceptor {
             return next.startCall(call, headers);
         }
 
-        // 1. 优先校验鉴权 Token
+        // 1. 优先校验鉴权 Token（未配置 token 时视为 fail-close，仅回环可用）
         String clientToken = headers.get(AUTH_HEADER_KEY);
         if (expectedToken != null && !expectedToken.isBlank() && expectedToken.equals(clientToken)) {
             return next.startCall(call, headers);
+        }
+        if (expectedToken == null || expectedToken.isBlank()) {
+            log.error("Hermes gRPC 鉴权密钥未配置 (HERMES_GRPC_AUTH_TOKEN)，拒绝非回环访问");
         }
 
         // 2. 校验来源地址是否为本地回环 (127.0.0.1 / ::1 / localhost)

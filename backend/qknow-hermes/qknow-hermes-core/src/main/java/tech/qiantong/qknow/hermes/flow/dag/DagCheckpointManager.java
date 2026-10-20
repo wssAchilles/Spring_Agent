@@ -83,7 +83,7 @@ public class DagCheckpointManager {
                         group_index = EXCLUDED.group_index,
                         completed_results = EXCLUDED.completed_results,
                         variables_json = EXCLUDED.variables_json,
-                        status = EXCLUDED.status,
+                        status = dag_checkpoints.status,
                         version = dag_checkpoints.version + 1,
                         updated_at = CURRENT_TIMESTAMP
                     """, runtimeId, flowId, groupIndex, resultsJson, varsJson);
@@ -270,6 +270,9 @@ public class DagCheckpointManager {
                 vars.putAll(humanInput);
             }
             saveCheckpointWithVariables(runtimeId, checkpoint.getFlowId(), checkpoint.getGroupIndex(), results, vars);
+            if (jdbcTemplate == null) {
+                checkpoint.setStatus("RUNNING");
+            }
             log.info("Suspended DAG checkpoint woken: runtimeId={}, node={}", runtimeId, result.getNodeUuid());
             return true;
         }
@@ -304,6 +307,37 @@ public class DagCheckpointManager {
             return wakeSuspended(runtimeId, humanInput);
         } catch (Exception e) {
             log.error("CAS 唤醒检查点失败: runtimeId={}, error={}", runtimeId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 显式标记检查点为挂起态。
+     * 保存检查点本身不再覆盖生命周期状态（避免每次 save 都把 RUNNING 重置回 SUSPENDED，
+     * 导致 wake 的 CAS 屏障与租约自愈失效）；只有节点真正触发挂起时才调用本方法。
+     */
+    public boolean markSuspended(String runtimeId) {
+        if (runtimeId == null) {
+            return false;
+        }
+        try {
+            if (jdbcTemplate == null) {
+                DagCheckpoint cp = inMemoryStore.get(runtimeId);
+                if (cp == null) {
+                    return false;
+                }
+                cp.setStatus("SUSPENDED");
+                return true;
+            }
+            ensureTableExists();
+            int updated = jdbcTemplate.update("""
+                    UPDATE dag_checkpoints
+                    SET status = 'SUSPENDED', version = version + 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE runtime_id = ?
+                    """, runtimeId);
+            return updated > 0;
+        } catch (Exception e) {
+            log.warn("标记检查点挂起态失败: runtimeId={}, error={}", runtimeId, e.getMessage());
             return false;
         }
     }

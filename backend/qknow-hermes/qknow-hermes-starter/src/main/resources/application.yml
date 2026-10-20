@@ -6,15 +6,30 @@ grpc:
     port: 9090
     keep-alive-time: 60s
     max-inbound-message-size: 16777216  # 16MB
+    # P0-04: 生产必须开启 TLS/mTLS，并挂载证书；开发环境默认关闭
+    security:
+      enabled: ${HERMES_GRPC_TLS_ENABLED:false}
+      certificate-chain: ${HERMES_GRPC_TLS_CERT_CHAIN:}
+      private-key: ${HERMES_GRPC_TLS_PRIVATE_KEY:}
+      trust-store: ${HERMES_GRPC_TLS_TRUST_STORE:}
+      client-auth: ${HERMES_GRPC_TLS_CLIENT_AUTH:NONE}
 
 spring:
   application:
     name: qknow-hermes
   datasource:
-    url: jdbc:postgresql://127.0.0.1:5432/ai_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: ${POSTGRESQL_URL:jdbc:postgresql://127.0.0.1:5432/ai_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
     username: ${POSTGRESQL_USERNAME:achilles}
     password: ${POSTGRESQL_PASSWORD:achilles}
     driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      # 必须与控制面使用同一 Redis DB，否则跨 JVM 审批/记忆数据不可见 (P0-09)
+      database: ${REDIS_DATABASE:3}
+      timeout: 5s
   ai:
     openai:
       api-key: ${HERMES_OPENAI_API_KEY:sk-placeholder}

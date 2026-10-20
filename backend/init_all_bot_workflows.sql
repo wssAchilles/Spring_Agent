@@ -51,10 +51,10 @@ VALUES (
 INSERT INTO kb_flow_node (workspace_id, bot_id, uuid, name, type, config, input, output, style, valid_flag, del_flag, create_by, creator_id)
 VALUES (
     1001, 9, 'llm_deep_1', '大模型推理', 2,
-    '{"label":"DeepSeek 思考链深度因果推理","provider":1,"model":"deepseek-flash","temperature":1.0,"thinking":true,"promptTemplate":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"}',
+    '{"label":"DeepSeek 思考链深度因果推理","provider":1,"model":"deepseek-flash","temperature":1.0,"thinking":true,"prompt":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"}',
     '[]',
     '[{"id":"reasoning","name":"reasoning_content","label":"深度思考链","type":"string"},{"id":"result","name":"result","label":"推理结果","type":"string"}]',
-    '{"id":"llm_deep_1","type":"llm","position":{"x":1260,"y":110},"data":{"input":[],"config":{"label":"DeepSeek 思考链深度因果推理","provider":1,"model":"deepseek-flash","temperature":1.0,"thinking":true,"promptTemplate":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"},"output":[{"id":"reasoning","name":"reasoning_content","label":"深度思考链","type":"string"},{"id":"result","name":"result","label":"推理结果","type":"string"}]}}',
+    '{"id":"llm_deep_1","type":"llm","position":{"x":1260,"y":110},"data":{"input":[],"config":{"label":"DeepSeek 思考链深度因果推理","provider":1,"model":"deepseek-flash","temperature":1.0,"thinking":true,"prompt":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"},"output":[{"id":"reasoning","name":"reasoning_content","label":"深度思考链","type":"string"},{"id":"result","name":"result","label":"推理结果","type":"string"}]}}',
     0, 0, '管理员', 1
 );
 
@@ -73,10 +73,10 @@ VALUES (
 INSERT INTO kb_flow_node (workspace_id, bot_id, uuid, name, type, config, input, output, style, valid_flag, del_flag, create_by, creator_id)
 VALUES (
     1001, 9, 'llm_fast_1', '大模型推理', 2,
-    '{"label":"轻量快速语义应答","provider":1,"model":"deepseek-flash","temperature":0.7,"thinking":false,"promptTemplate":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"}',
+    '{"label":"轻量快速语义应答","provider":1,"model":"deepseek-flash","temperature":0.7,"thinking":false,"prompt":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"}',
     '[]',
     '[{"id":"result","name":"result","label":"应答结果","type":"string"}]',
-    '{"id":"llm_fast_1","type":"llm","position":{"x":1460,"y":460},"data":{"input":[],"config":{"label":"轻量快速语义应答","provider":1,"model":"deepseek-flash","temperature":0.7,"thinking":false,"promptTemplate":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"},"output":[{"id":"result","name":"result","label":"应答结果","type":"string"}]}}',
+    '{"id":"llm_fast_1","type":"llm","position":{"x":1460,"y":460},"data":{"input":[],"config":{"label":"轻量快速语义应答","provider":1,"model":"deepseek-flash","temperature":0.7,"thinking":false,"prompt":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"},"output":[{"id":"result","name":"result","label":"应答结果","type":"string"}]}}',
     0, 0, '管理员', 1
 );
 
@@ -132,10 +132,10 @@ VALUES
  0, 0, '管理员', 1),
 
 (1001, 3, 'llm_merge_1', '大模型推理', 2,
- '{"label":"多源知识融合与交叉验真","provider":1,"model":"deepseek-flash","temperature":0.5,"promptTemplate":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"}',
+ '{"label":"多源知识融合与交叉验真","provider":1,"model":"deepseek-flash","temperature":0.5,"prompt":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"}',
  '[]',
  '[{"id":"merged_result","name":"merged_result","label":"融合答复","type":"string"}]',
- '{"id":"llm_merge_1","type":"llm","position":{"x":860,"y":260},"data":{"input":[],"config":{"label":"多源知识融合与交叉验真","provider":1,"model":"deepseek-flash","temperature":0.5,"promptTemplate":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"},"output":[{"id":"merged_result","name":"merged_result","label":"融合答复","type":"string"}]}}',
+ '{"id":"llm_merge_1","type":"llm","position":{"x":860,"y":260},"data":{"input":[],"config":{"label":"多源知识融合与交叉验真","provider":1,"model":"deepseek-flash","temperature":0.5,"prompt":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"},"output":[{"id":"merged_result","name":"merged_result","label":"融合答复","type":"string"}]}}',
  0, 0, '管理员', 1),
 
 (1001, 3, 'reply_1', '回复', 3,
@@ -177,10 +177,10 @@ VALUES
  0, 0, '管理员', 1),
 
 (1001, 4, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 提纲与要点摘要","provider":1,"model":"deepseek-flash","temperature":0.3,"promptTemplate":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"}',
+ '{"label":"DeepSeek 提纲与要点摘要","provider":1,"model":"deepseek-flash","temperature":0.3,"prompt":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"}',
  '[]',
  '[{"id":"summary","name":"summary","label":"摘要文本","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 提纲与要点摘要","provider":1,"model":"deepseek-flash","temperature":0.3,"promptTemplate":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"},"output":[{"id":"summary","name":"summary","label":"摘要文本","type":"string"}]}}',
+ '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 提纲与要点摘要","provider":1,"model":"deepseek-flash","temperature":0.3,"prompt":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"},"output":[{"id":"summary","name":"summary","label":"摘要文本","type":"string"}]}}',
  0, 0, '管理员', 1),
 
 (1001, 4, 'reply_1', '回复', 3,

@@ -120,4 +120,22 @@ class ToolNodeBOTest {
         assertEquals(RuntimeStatusEnums.ERROR.getCode(), result.getStatus());
         assertTrue(result.getErrorMessage().contains("Connection timeout"));
     }
+
+    @Test
+    @DisplayName("N2 回归防护：MCP 适配器缺失时必须 fail-close，严禁伪造 SUCCESS")
+    void testNullAdapterMustFailClosed() {
+        KbFlowNodeDO nodeDO = new KbFlowNodeDO();
+        nodeDO.setUuid("tool-node-null-adapter");
+        nodeDO.setName("weather_service");
+        nodeDO.setConfig("{\"toolCode\":\"mcp.weather.get_current\"}");
+
+        ToolNodeBO toolNode = new ToolNodeBO(nodeDO, Collections.emptyList(), null);
+        NodeRunResultBO result = toolNode.execute(createContext());
+
+        assertNotNull(result);
+        assertEquals(RuntimeStatusEnums.ERROR.getCode(), result.getStatus(),
+                "适配器缺失时工具物理上未执行，必须返回 ERROR 而不是伪 SUCCESS");
+        assertNotNull(result.getErrorMessage());
+        assertTrue(result.getErrorMessage().contains("拒绝伪造成功"));
+    }
 }

@@ -120,18 +120,8 @@ public class ConditionNodeBO extends BaseNodeBO {
         try {
             // 替换变量
             String resolved = format(expression, context);
-            if (resolved.contains(".length")) {
-                JSONObject vars = context != null ? context.getVariables() : null;
-                if (vars != null) {
-                    for (String key : vars.keySet()) {
-                        if (resolved.contains(key + ".length")) {
-                            String val = vars.getString(key);
-                            int len = (val != null) ? val.length() : 0;
-                            resolved = resolved.replace(key + ".length", String.valueOf(len));
-                        }
-                    }
-                }
-            }
+            // 支持 xxx.length 伪属性（如种子 SQL 的 query.length > 20），变量名允许省略 start_1. 前缀
+            resolved = resolveLengthOperands(resolved, context);
 
             // 解析比较操作
             if (resolved.contains("==")) {
@@ -162,7 +152,46 @@ public class ConditionNodeBO extends BaseNodeBO {
         }
     }
 
-    private boolean compare(String left, String right, String operator) {
+    private static final java.util.regex.Pattern LENGTH_OPERAND_PATTERN =
+            java.util.regex.Pattern.compile("([A-Za-z_][A-Za-z0-9_]*)\\.length");
+
+    /**
+     * 将 {@code query.length} 解析为真实变量值长度；变量名支持 fullName 与后缀匹配两种形式。
+     * 未解析到变量时按 0 处理（宁可走 else 分支，也不做字典序误判）。
+     */
+    private String resolveLengthOperands(String resolved, RuntimeContextBO context) {
+        if (resolved == null || context == null || context.getVariables() == null) {
+            return resolved;
+        }
+        JSONObject vars = context.getVariables();
+        java.util.regex.Matcher matcher = LENGTH_OPERAND_PATTERN.matcher(resolved);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String variableName = matcher.group(1);
+            String value = resolveVariableValue(vars, variableName);
+            matcher.appendReplacement(buffer,
+                    java.util.regex.Matcher.quoteReplacement(String.valueOf(value == null ? 0 : value.length())));
+        }
+        matcher.appendTail(buffer);
+        return buffer.toString();
+    }
+
+    private String resolveVariableValue(JSONObject vars, String name) {
+        if (vars.containsKey(name)) {
+            return vars.getString(name);
+        }
+        for (String key : vars.keySet()) {
+            if (key.endsWith("." + name)) {
+                return vars.getString(key);
+            }
+        }
+        return null;
+    }
+
+    private boolean compare(String leftRaw, String rightRaw, String operator) {
+        // 去除表达式中的引号字面量，避免把 'value' 当成含引号的字符串比较
+        String left = stripQuotes(leftRaw);
+        String right = stripQuotes(rightRaw);
         // 尝试数值比较
         try {
             double leftNum = Double.parseDouble(left);
@@ -189,5 +218,18 @@ public class ConditionNodeBO extends BaseNodeBO {
                 default -> false;
             };
         }
+    }
+
+    private String stripQuotes(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String value = raw.trim();
+        if (value.length() >= 2
+                && ((value.startsWith("'") && value.endsWith("'"))
+                || (value.startsWith("\"") && value.endsWith("\"")))) {
+            return value.substring(1, value.length() - 1);
+        }
+        return value;
     }
 }

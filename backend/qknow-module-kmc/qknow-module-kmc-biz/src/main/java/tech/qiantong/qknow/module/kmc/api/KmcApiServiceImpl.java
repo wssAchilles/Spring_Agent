@@ -170,6 +170,8 @@ public class KmcApiServiceImpl implements IKmcApiService {
             result.setStoppedAt(vo.getStoppedAt());
             result.setDocumentName(vo.getDocumentName());
             result.setScore(vo.getScore());
+            // 保留得分量纲标记，跨库融合据此决定是否施加余弦门禁 (N1)
+            result.setScoreType(vo.getScoreType());
             result.setRagContext(vo.getRagContext());
 
             retrieveResults.add(result);

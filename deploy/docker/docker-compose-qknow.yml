@@ -3,7 +3,6 @@
 # 涵盖: cgroups 容器内存感知、service_healthy 级联健康探针、四大异构数据底座接入
 # ============================================================================
 version: "3.8"
-
 services:
   backend:
     image: ${QKNOW_HUB:-agent}/qknow-server-ce:${QKNOW_TAG:-latest}
@@ -41,7 +40,13 @@ services:
       TOKEN_SECRET: ${TOKEN_SECRET:?TOKEN_SECRET environment variable must be configured for production deployment}
       HERMES_GRPC_HOST: hermes
       HERMES_GRPC_PORT: 9090
-      HERMES_GRPC_AUTH_TOKEN: ${HERMES_GRPC_AUTH_TOKEN:-qknow-hermes-grpc-internal-token-2026}
+      HERMES_GRPC_AUTH_TOKEN: ${HERMES_GRPC_AUTH_TOKEN:?HERMES_GRPC_AUTH_TOKEN environment variable must be configured for production deployment}
+      # P0-04: 生产建议开启 TLS（证书挂载到 ./certs）
+      HERMES_GRPC_TLS_ENABLED: ${HERMES_GRPC_TLS_ENABLED:-false}
+      HERMES_GRPC_TLS_TRUST_CERT_PATH: ${HERMES_GRPC_TLS_TRUST_CERT_PATH:-/etc/qknow/certs/ca.crt}
+      HERMES_GRPC_TLS_CLIENT_CERT_PATH: ${HERMES_GRPC_TLS_CLIENT_CERT_PATH:-/etc/qknow/certs/client.crt}
+      HERMES_GRPC_TLS_CLIENT_KEY_PATH: ${HERMES_GRPC_TLS_CLIENT_KEY_PATH:-/etc/qknow/certs/client.key}
+      REDIS_DATABASE: 3
     ports:
       - "${EXPOSE_BACKEND_PORT:-8099}:8099"
     volumes:
@@ -81,19 +86,35 @@ services:
         -XX:+UseG1GC
         -XX:+ExitOnOutOfMemoryError
         -Djava.security.egd=file:/dev/./urandom
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      DEEPSEEK_BASE_URL: https://api.deepseek.com
+      # Hermes 自身读取的模型/DB/Redis 环境变量（键名必须与 application.yml 对齐）
+      HERMES_OPENAI_API_KEY: ${DEEPSEEK_API_KEY}
+      HERMES_OPENAI_BASE_URL: https://api.deepseek.com
       TONGYI_API_KEY: ${DASHSCOPE_API_KEY}
-      HERMES_GRPC_AUTH_TOKEN: ${HERMES_GRPC_AUTH_TOKEN:-qknow-hermes-grpc-internal-token-2026}
+      POSTGRESQL_URL: ${POSTGRESQL_URL:-jdbc:postgresql://postgres:5432/ai_agent?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME:-postgres}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD:-postgres123}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+      REDIS_DATABASE: 3
+      HERMES_GRPC_AUTH_TOKEN: ${HERMES_GRPC_AUTH_TOKEN:?HERMES_GRPC_AUTH_TOKEN environment variable must be configured for production deployment}
+      # P0-04: 生产开启 TLS/mTLS；证书放入 ./certs
+      HERMES_GRPC_TLS_ENABLED: ${HERMES_GRPC_TLS_ENABLED:-false}
+      HERMES_GRPC_TLS_CERT_CHAIN: ${HERMES_GRPC_TLS_CERT_CHAIN:-file:/etc/qknow/certs/server.crt}
+      HERMES_GRPC_TLS_PRIVATE_KEY: ${HERMES_GRPC_TLS_PRIVATE_KEY:-file:/etc/qknow/certs/server.key}
+      HERMES_GRPC_TLS_TRUST_STORE: ${HERMES_GRPC_TLS_TRUST_STORE:-file:/etc/qknow/certs/ca.crt}
+      HERMES_GRPC_TLS_CLIENT_AUTH: ${HERMES_GRPC_TLS_CLIENT_AUTH:-NONE}
     # 彻底关闭宿主明文 9090/8081 裸露映射，仅允许在容器内网 qknownet 相互通信 (P0-04)
     expose:
       - "9090"
       - "8081"
     volumes:
       - /etc/localtime:/etc/localtime:ro
+      - ./certs:/etc/qknow/certs:ro
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
       - qknownet
-

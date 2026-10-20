@@ -82,9 +82,6 @@ public class AgentOrchestrator {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private tech.qiantong.qknow.hermes.agent.metrics.AgentMetricsService agentMetricsService;
 
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private AgentRegistry agentRegistry;
-
     public void setDeepSeekCostGovernor(tech.qiantong.qknow.hermes.cost.DeepSeekCostGovernor deepSeekCostGovernor) {
         this.deepSeekCostGovernor = deepSeekCostGovernor;
     }
@@ -478,7 +475,10 @@ public class AgentOrchestrator {
         });
 
         try {
-            reactor.core.Disposable streamSubscription = stream.subscribe(
+            // 关键修复 (P0-08)：把订阅调度到弹性线程池，使 subscribe() 在阻塞式模型流结束前返回，
+            // 从而 streamSubscriptionRef 能在断连发生前完成赋值，取消信号才能真正 dispose 内层订阅。
+            reactor.core.Disposable streamSubscription =
+                    stream.subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic()).subscribe(
                 output -> {
                     try {
                         if (output instanceof StreamingOutput streamingOutput) {
@@ -731,19 +731,10 @@ public class AgentOrchestrator {
                         try {
                             LLM_CALL_SEMAPHORE.acquire();
                             try {
-                                WorkerAgent worker = null;
-                                if (agentRegistry != null) {
-                                    var opt = agentRegistry.getAgent(task.worker());
-                                    if (opt.isPresent() && opt.get() instanceof WorkerAgent wa) {
-                                        worker = wa;
-                                    }
-                                }
-                                if (worker == null) {
-                                    worker = new WorkerAgent(task.worker(), "Plan task worker", systemPrompt, tools, chatModel, resolver);
-                                    if (agentRegistry != null) {
-                                        agentRegistry.registerAgent(worker);
-                                    }
-                                }
+                                // 每次 plan 任务独立构造 WorkerAgent：禁止复用注册表中的历史 worker，
+                                // 否则会沿用首个请求的 systemPrompt/tools/chatModel，造成跨请求数据与凭据污染 (N4)
+                                WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker",
+                                        systemPrompt, tools, chatModel, resolver);
                                 String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
                                 return Map.entry(task.taskId(), result);
                             } finally {

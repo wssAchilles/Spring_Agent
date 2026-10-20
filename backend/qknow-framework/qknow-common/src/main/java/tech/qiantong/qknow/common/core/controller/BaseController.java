@@ -211,38 +211,26 @@ public class BaseController
 
     /**
      * 获取工作区id，严禁盲信客户端传入的任意请求头，防范跨租户越权漏洞 (R6)
-     * 1. 优先从当前登录用户上下文获取安全工作区 (如用户的 deptId，或保底 1001L)
-     * 2. 若客户端传入 workspace-id / X-Workspace-Id 请求头，必须校验其合法性：
-     *    - 超级管理员允许切换指定有效工作区
-     *    - 普通用户仅允许访问其所属的合法工作区，若传入越权工作区则拒绝并安全回退
-     * 3. 若无请求头或校验不通过，安全回退至当前登录用户的合法默认工作区
+     * 1. 默认工作区来自服务端固定租户基线 1001L（当前版本尚无独立的工作区成员表，故不将 deptId 误当 workspaceId，
+     *    避免历史数据 workspace_id=1001 全部不可见）；
+     * 2. 若客户端传入 workspace-id / X-Workspace-Id 请求头：
+     *    - 超级管理员允许切换指定工作区；
+     *    - 普通用户只允许当前基线工作区，其它值告警并回退；
+     * 3. 无认证上下文（单元测试/异步调度）安全回退 1001L。
      */
     public Long getWorkSpaceId()
     {
-        Long defaultWorkspaceId = 1001L;
+        final Long defaultWorkspaceId = 1001L;
         boolean isAdmin = false;
         try
         {
-            // 通过反射或 SecurityFrameworkUtils 获取当前登录用户，避免 qknow-common 产生强循环依赖
-            Class<?> secClazz = Class.forName("tech.qiantong.qknow.security.utils.SecurityFrameworkUtils");
-            java.lang.reflect.Method getWsMethod = secClazz.getMethod("getLoginUserWorkspaceId");
-            Long userWs = (Long) getWsMethod.invoke(null);
-            if (userWs != null && userWs > 0) {
-                defaultWorkspaceId = userWs;
-            }
-            java.lang.reflect.Method getLoginUserMethod = secClazz.getMethod("getLoginUser");
-            Object loginUserObj = getLoginUserMethod.invoke(null);
-            if (loginUserObj != null) {
-                java.lang.reflect.Method getUserIdMethod = loginUserObj.getClass().getMethod("getUserId");
-                Long userId = (Long) getUserIdMethod.invoke(loginUserObj);
-                if (userId != null && userId == 1L) {
-                    isAdmin = true;
-                }
-            }
+            // 同模块内直接使用 SecurityUtils，避免此前反射不存在类导致的死代码（R6 返工）
+            isAdmin = tech.qiantong.qknow.common.utils.SecurityUtils.isAdmin(
+                    tech.qiantong.qknow.common.utils.SecurityUtils.getUserId());
         }
         catch (Exception ignored)
         {
-            // 无安全框架上下文（如单元测试或异步调度），安全保底 1001L
+            // 无安全上下文（单元测试或异步调度），按普通用户处理
         }
 
         try

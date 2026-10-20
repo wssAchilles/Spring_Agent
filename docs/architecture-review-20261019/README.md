@@ -33,6 +33,24 @@
 - 验证证据：全量契约测试全部通过（Phase46 真实断言、Phase17、DeepSeekContract、GrpcCancel、FlowExecutor 等）。
 - 逐项证据与返工顺序见 verify 子报告（01 Hermes、02/02b Flow、03 RAG、04 安全/依赖、05 MCP、06 深度修复验收）。
 
+## 第二轮独立验收（2026-10-20 晚）
+
+针对 `54fea59b`/`1ff190d0` 的独立复验见：**[acceptance/00-ACCEPTANCE-MASTER.md](acceptance/00-ACCEPTANCE-MASTER.md)**（5 路独立复核 + Lead 编译/全量测试/框架源码核对）。
+
+- 结论：**不通过（Request Changes）**，但修复质量显著优于前两轮。已修复 5 项（R1、R4 Provider、R5、P0-07 静态链路、P0-06），部分修复 12 项，未修复 5 项，新增回归 4 项。
+- 关键未闭环/回归：R3 因生产未接 `scoreType` 导致多库 RRF 被 0.40 门限全量误杀（比上轮更严重）；`1ff190d0` 以 `fix(ci)` 回退 ToolNode fail-close 为 mock SUCCESS，并删除 resume 幂等守卫；R6 反射目标类不存在（多租户仍常量 1001）；P0-08 取消仍存在 ref 赋值竞态；审批/恢复端点零鉴权；gRPC 仍无 TLS、proto 仍明文 apiKey。
+- 运行证据：全仓编译成功；`-pl tests -am test` 1867 项 0 失败、Hermes 核心 99 项 0 失败；但全绿部分依赖自证断言与 mock，不能作为生产闭环证据。
+- `verify/06-deep-fix-resolution.md` 中 R3/R6/R4/P0-08/P0-11/P0-12 的"已彻底根除/已闭环"表述与 HEAD 实况不符，需按 acceptance 报告更正。
+
+## 第三轮实现修复（2026-10-20 深夜，未提交）
+
+按验收报告 §5 的返工清单完成两批 P0/P1 修复，详见 **[acceptance/07-round3-implementation.md](acceptance/07-round3-implementation.md)**：
+
+- 第一批：N1（RRF/COSINE 量纲生产接线）、N2（ToolNode 恢复 fail-close）、N3（resume 守卫 + checkpoint 状态语义）、R6（BaseController 去死代码）、P0-08（取消链路异步订阅）、P0-09（审批端鉴权/租户/变量防绕过/失败补偿）、P0-12（`query.length` 条件 + 种子 prompt 键）、P0-04 token 必填、N4（plan-solve 污染）。
+- 第二批：P0-09 审批强证明（ToolNode 校验 Redis 决策凭据）、P0-04 TLS/mTLS 支持（服务端 `grpc.server.security.*` + 客户端 Netty SSL，证书目录 `deploy/docker/certs/`）、Hermes Redis DB 与控制面对齐、Hermes 编排 env 键名/Postgres 依赖修正、生产包排除 JaCoCo、CI 增加 `mvn package` 与 `docker compose config` 门禁。
+- 验证：全仓编译成功；`-pl tests -am test` **1876 tests / 0 fail**、`qknow-module-kb-biz` 35 / 0 fail、`qknow-hermes-core` 99 / 0 fail；`docker compose -f deploy/docker/docker-compose.yml config` exit 0；fat jar 418M/568 libs 且 jacoco 已移除。
+- 仍遗留：proto 去 apiKey、MCP3/Server 接线、P0-15/P0-16、`embedded-redis` 容器化隔离。
+
 ## 一句话结论
 
 平台研究资产与工程体量真实，但"宣称—实现—验证"三者断裂：单 Agent RAG 问答主链可运行；多智能体、HITL、检查点恢复、MCP 工具生态、GraphRAG 在生产路径上基本不可用；部署与安全存在阻断上线级缺口；对外评测数据来自代理仿真。

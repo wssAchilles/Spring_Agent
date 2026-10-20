@@ -118,6 +118,23 @@ jobs:
           path: backend/tests/target/surefire-reports
           if-no-files-found: ignore
 
+      - name: Validate Production Package (fat jar)
+        env:
+          MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -Dfile.encoding=UTF-8'
+        run: |
+          mvn -B -ntp -f backend/pom.xml -DskipTests package -pl qknow-server -am
+
+      - name: Validate Docker Compose Configuration
+        env:
+          TOKEN_SECRET: ci-compose-token-secret-placeholder
+          HERMES_GRPC_AUTH_TOKEN: ci-compose-grpc-token-placeholder
+          DEEPSEEK_API_KEY: ci-placeholder
+          DASHSCOPE_API_KEY: ci-placeholder
+          POSTGRESQL_PASSWORD: ci-placeholder
+          NEO4J_PASSWORD: ci-placeholder
+        run: |
+          docker compose -f deploy/docker/docker-compose.yml config > /dev/null
+
   # ============================================================================
   # 阶段 3（轨道 B）：前端质量门禁（Vue 3 + Vite 5 + Node 22 LTS 生产构建）
   # ============================================================================

@@ -102,6 +102,7 @@ public class CandidateFusionService {
                     .content(entry.getValue().getContent())
                     .answer(entry.getValue().getAnswer())
                     .score(rrfScores.getOrDefault(entry.getKey(), 0.0))
+                    .scoreType(RetrievalResult.SCORE_TYPE_RRF)
                     .source(entry.getValue().getSource())
                     .metadata(entry.getValue().getMetadata() != null ? new LinkedHashMap<>(entry.getValue().getMetadata()) : new LinkedHashMap<>())
                     .build();

@@ -35,16 +35,52 @@ public class HermesGrpcClient {
     @Value("${hermes.grpc.chat-deadline-seconds:120}")
     private long chatDeadlineSeconds;
 
-    @Value("${hermes.grpc.auth.token:${HERMES_GRPC_AUTH_TOKEN:qknow-hermes-grpc-internal-token-2026}}")
+    @Value("${hermes.grpc.auth.token:${HERMES_GRPC_AUTH_TOKEN:}}")
     private String hermesAuthToken;
+
+    @Value("${hermes.grpc.tls.enabled:${HERMES_GRPC_TLS_ENABLED:false}}")
+    private boolean grpcTlsEnabled;
+
+    @Value("${hermes.grpc.tls.trust-cert-path:${HERMES_GRPC_TLS_TRUST_CERT_PATH:}}")
+    private String grpcTrustCertPath;
+
+    @Value("${hermes.grpc.tls.client-cert-path:${HERMES_GRPC_TLS_CLIENT_CERT_PATH:}}")
+    private String grpcClientCertPath;
+
+    @Value("${hermes.grpc.tls.client-key-path:${HERMES_GRPC_TLS_CLIENT_KEY_PATH:}}")
+    private String grpcClientKeyPath;
 
     private ManagedChannel channel;
     private HermesServiceGrpc.HermesServiceStub asyncStub;
 
     @PostConstruct
     public void init() {
-        channel = ManagedChannelBuilder.forAddress(hermesHost, hermesPort)
-                .usePlaintext()
+        ManagedChannelBuilder<?> channelBuilder;
+        if (grpcTlsEnabled) {
+            // P0-04：TLS/mTLS 通道（生产必须开启，杜绝 token 与 proto 明文传输）
+            try {
+                io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder nettyBuilder =
+                        io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder.forAddress(hermesHost, hermesPort);
+                io.grpc.netty.shaded.io.netty.handler.ssl.SslContextBuilder sslBuilder =
+                        io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts.forClient();
+                if (grpcTrustCertPath != null && !grpcTrustCertPath.isBlank()) {
+                    sslBuilder.trustManager(new java.io.File(grpcTrustCertPath));
+                }
+                if (grpcClientCertPath != null && !grpcClientCertPath.isBlank()
+                        && grpcClientKeyPath != null && !grpcClientKeyPath.isBlank()) {
+                    sslBuilder.keyManager(new java.io.File(grpcClientCertPath), new java.io.File(grpcClientKeyPath));
+                }
+                nettyBuilder.sslContext(sslBuilder.build());
+                channelBuilder = nettyBuilder;
+                log.info("Hermes gRPC 客户端启用 TLS: {}:{}", hermesHost, hermesPort);
+            } catch (Exception e) {
+                throw new IllegalStateException("Hermes gRPC TLS 初始化失败: " + e.getMessage(), e);
+            }
+        } else {
+            channelBuilder = ManagedChannelBuilder.forAddress(hermesHost, hermesPort).usePlaintext();
+            log.warn("Hermes gRPC 客户端使用明文通道（仅限开发/内网测试，生产必须开启 HERMES_GRPC_TLS_ENABLED）");
+        }
+        channel = channelBuilder
                 .keepAliveTime(30, TimeUnit.SECONDS)
                 .maxInboundMessageSize(16 * 1024 * 1024)
                 .build();

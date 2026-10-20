@@ -11,6 +11,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RetrievalResult {
 
+    /** RRF 排位倒数融合得分量纲 */
+    public static final String SCORE_TYPE_RRF = "RRF";
+    /** 原始余弦/向量相似度得分量纲 */
+    public static final String SCORE_TYPE_COSINE = "COSINE";
+
     private Long segmentId;
 
     private String qmSegmentId;
@@ -26,6 +31,9 @@ public class RetrievalResult {
     private String answer;
 
     private double score;
+
+    /** 得分量纲契约: RRF / COSINE（生产链路必须显式赋值，跨库门禁据此选择是否施加余弦阈值） */
+    private String scoreType;
 
     private String source;
 

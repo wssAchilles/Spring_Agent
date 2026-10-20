@@ -99,13 +99,7 @@ public class ToolNodeBO extends BaseNodeBO {
             approvalReason = "检测到高危破坏性操作 [" + targetTool + "]，触发系统强制风控审批";
         }
 
-        boolean alreadyApproved = false;
-        if (context != null && context.getVariables() != null) {
-            String appResult = context.getVariables().getString("approvalResult");
-            if ("APPROVED".equalsIgnoreCase(appResult) || context.getVariables().getBooleanValue("approvalApproved", false)) {
-                alreadyApproved = true;
-            }
-        }
+        boolean alreadyApproved = isApprovalConfirmed(context);
 
         if (requireApproval && !alreadyApproved) {
             log.info("[ToolNode] 命中高危工具审批门禁: tool={}, 挂起工作流等待人工确认", targetTool);
@@ -130,8 +124,10 @@ public class ToolNodeBO extends BaseNodeBO {
                     return NodeRunResultBO.failure(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName, "工具调用未返回有效结果");
                 }
             } else {
-                log.debug("[ToolNode] MCP 工具适配器未初始化，回退为单体模式执行桩: tool={}", targetTool);
-                callResult = "{\"status\":\"SUCCESS\",\"tool\":\"" + targetTool + "\",\"message\":\"Executed in standalone mock mode\"}";
+                // fail-close：适配器缺失意味着工具物理上未执行，绝不能伪造 SUCCESS 让工作流继续 (N2)
+                log.error("[ToolNode] MCP 工具适配器未初始化，拒绝伪造成功执行: tool={}", targetTool);
+                return NodeRunResultBO.failure(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName,
+                        "MCP 工具适配器未初始化，拒绝伪造成功执行");
             }
 
             // 解析结果
@@ -172,6 +168,54 @@ public class ToolNodeBO extends BaseNodeBO {
         } catch (Exception e) {
             log.error("[ToolNode] 工具调用执行异常: tool=" + targetTool, e);
             return NodeRunResultBO.failure(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName, "工具执行失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 审批放行强证明：流程变量本身不可信（可被初始输入/恢复输入伪造），
+     * 必须同时存在 approvalKey 且 Redis 中存在服务端写入的 APPROVED 决策凭据；
+     * 无 Spring 上下文（纯单元测试/单机降级）时才回退到变量判定。
+     */
+    private boolean isApprovalConfirmed(RuntimeContextBO context) {
+        if (context == null || context.getVariables() == null) {
+            return false;
+        }
+        String approvalResult = context.getVariables().getString("approvalResult");
+        boolean variableSaysApproved = "APPROVED".equalsIgnoreCase(approvalResult)
+                || context.getVariables().getBooleanValue("approvalApproved", false);
+        if (!variableSaysApproved) {
+            return false;
+        }
+        String approvalKey = context.getVariables().getString("approvalKey");
+        if (approvalKey == null || approvalKey.isBlank()) {
+            log.warn("[ToolNode] 审批变量存在但缺少 approvalKey，拒绝放行，防止流程输入伪造审批");
+            return false;
+        }
+        try {
+            org.springframework.context.ApplicationContext applicationContext =
+                    tech.qiantong.qknow.common.utils.spring.SpringUtils.getApplicationContext();
+            if (applicationContext == null) {
+                // 纯单元测试/未启动 Spring 上下文，保留变量兼容路径
+                return true;
+            }
+            tech.qiantong.qknow.redis.service.IRedisService redisService =
+                    applicationContext.getBean(tech.qiantong.qknow.redis.service.IRedisService.class);
+            if (redisService == null) {
+                log.warn("[ToolNode] 无 Redis 服务，无法校验审批决策凭据，拒绝放行: approvalKey={}", approvalKey);
+                return false;
+            }
+            String decisionJson = redisService.get(
+                    tech.qiantong.qknow.hermes.flow.node.ApprovalNodeExecutor.REDIS_DECISION_PREFIX + approvalKey);
+            if (decisionJson == null || decisionJson.isBlank()) {
+                log.warn("[ToolNode] Redis 中不存在审批决策凭据，拒绝放行: approvalKey={}", approvalKey);
+                return false;
+            }
+            JSONObject decision = JSONObject.parseObject(decisionJson);
+            return "APPROVED".equalsIgnoreCase(decision.getString("decision"));
+        } catch (Exception e) {
+            log.warn("[ToolNode] 审批决策凭据校验异常，按未审批处理: approvalKey={}, error={}",
+                    approvalKey, e.getMessage());
+            return false;
         }
     }
 }

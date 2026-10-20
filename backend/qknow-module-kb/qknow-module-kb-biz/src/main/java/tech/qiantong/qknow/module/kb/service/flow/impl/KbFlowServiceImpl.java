@@ -521,6 +521,29 @@ public class KbFlowServiceImpl implements IKbFlowService {
 
     @Override
     public KbRuntimeRespVO resumeFlow(Long runtimeId, Map<String, Object> humanInput) {
+        // 外部恢复入口：人工输入不可携带审批放行变量，审批只能由服务端审批闭环注入，杜绝绕过审批门禁
+        return doResumeFlow(runtimeId, sanitizeHumanInput(humanInput));
+    }
+
+    @Override
+    public KbRuntimeRespVO resumeFlowWithApproval(Long runtimeId, Map<String, Object> humanInput, String approvalKey) {
+        Map<String, Object> trustedInput = sanitizeHumanInput(humanInput);
+        trustedInput.put("approvalResult", "APPROVED");
+        trustedInput.put("approvalApproved", true);
+        if (approvalKey != null) {
+            trustedInput.put("approvalKey", approvalKey);
+        }
+        return doResumeFlow(runtimeId, trustedInput);
+    }
+
+    private Map<String, Object> sanitizeHumanInput(Map<String, Object> humanInput) {
+        Map<String, Object> clean = humanInput == null ? new HashMap<>() : new HashMap<>(humanInput);
+        clean.remove("approvalApproved");
+        clean.remove("approvalResult");
+        return clean;
+    }
+
+    private KbRuntimeRespVO doResumeFlow(Long runtimeId, Map<String, Object> humanInput) {
         if (runtimeId == null) {
             throw new ServiceException("runtimeId 不能为空");
         }
@@ -546,8 +569,23 @@ public class KbFlowServiceImpl implements IKbFlowService {
 
         KbFlowBO flowBO = KbFlowConvert.toFlowBO(flowVO);
 
-        // 若存在挂起节点，先通过 CAS 乐观锁原子唤醒挂起检查点并注入人工审批变量
-        dagCheckpointManager.wakeSuspendedWithLock(String.valueOf(runtimeId), humanInput);
+        // 若存在挂起节点，先通过 CAS 乐观锁原子唤醒挂起检查点并注入人工审批变量；
+        // 崩溃恢复场景（检查点内无 SUSPENDED 节点）不需要唤醒，直接重放未完成层。
+        boolean checkpointHasSuspendedNode = dagCheckpointManager.hasSuspendedResult(
+                dagCheckpointManager.restoreCompletedResults(checkpoint));
+        boolean wakeSuccess = dagCheckpointManager.wakeSuspendedWithLock(String.valueOf(runtimeId), humanInput);
+        if (!wakeSuccess && checkpointHasSuspendedNode) {
+            KbRuntimeDO latest = runtimeService.getById(runtimeId);
+            if (latest != null && !Objects.equals(RuntimeStatusEnums.SUSPENDED.getCode(), latest.getStatus())) {
+                log.info("[DAG 恢复] 运行实例当前状态为 [{}]，非挂起态，直接返回避免重复执行: runtimeId={}",
+                        latest.getStatus(), runtimeId);
+                return BeanUtils.toBean(latest, KbRuntimeRespVO.class);
+            }
+            throw new ServiceException("工作流恢复冲突：检查点已被并发唤醒或状态非法，runtimeId=" + runtimeId);
+        }
+        if (!wakeSuccess) {
+            log.info("[DAG 恢复] 检查点无挂起节点，按崩溃重放路径继续执行: runtimeId={}", runtimeId);
+        }
         checkpoint = dagCheckpointManager.loadCheckpoint(String.valueOf(runtimeId));
         if (checkpoint == null) {
             throw new ServiceException("恢复唤醒后未找到有效检查点：runtimeId=" + runtimeId);
@@ -778,6 +816,13 @@ public class KbFlowServiceImpl implements IKbFlowService {
         String flowId = String.valueOf(flowBO.getBotId());
         String nodeId = nodeResult.getNodeUuid();
         String approvalKey = flowId + ":" + runtimeId + ":" + nodeId;
+
+        // 显式标记检查点挂起态：保存检查点不再覆盖生命周期状态，避免 CAS 屏障失效 (N3)
+        try {
+            dagCheckpointManager.markSuspended(runtimeId);
+        } catch (Exception e) {
+            log.warn("[DAG 调度器] 标记检查点挂起态失败: runtimeId={}, msg={}", runtimeId, e.getMessage());
+        }
 
         String reason = "等待人工审批确认";
         if (nodeResult.getOutput() instanceof Map<?, ?> outMap) {
