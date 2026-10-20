@@ -547,14 +547,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
         KbFlowBO flowBO = KbFlowConvert.toFlowBO(flowVO);
 
         // 若存在挂起节点，先通过 CAS 乐观锁原子唤醒挂起检查点并注入人工审批变量
-        boolean wakeSuccess = dagCheckpointManager.wakeSuspendedWithLock(String.valueOf(runtimeId), humanInput);
-        if (!wakeSuccess) {
-            log.warn("[DAG 恢复] wakeSuspendedWithLock 乐观锁校验未通过（可能并发已唤醒或非挂起态）：runtimeId={}", runtimeId);
-            if (runtimeDO.getStatus() != null && !Objects.equals(RuntimeStatusEnums.SUSPENDED.getCode(), runtimeDO.getStatus())) {
-                log.info("[DAG 恢复] 运行实例当前状态为 [{}]，直接返回当前状态避免重复重跑", runtimeDO.getStatus());
-                return BeanUtils.toBean(runtimeDO, KbRuntimeRespVO.class);
-            }
-        }
+        dagCheckpointManager.wakeSuspendedWithLock(String.valueOf(runtimeId), humanInput);
         checkpoint = dagCheckpointManager.loadCheckpoint(String.valueOf(runtimeId));
         if (checkpoint == null) {
             throw new ServiceException("恢复唤醒后未找到有效检查点：runtimeId=" + runtimeId);
