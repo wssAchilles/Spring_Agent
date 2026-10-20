@@ -47,8 +47,9 @@ public class LLMNodeBO extends BaseNodeBO {
         Message[] messageArray = getMessageArray(configJson, inputDefArray, context);
 
         Long provider = configJson.getLong("provider");
-        if (provider == null) {
-            provider = 1L; // 默认 DeepSeek Provider 保底
+        String platform = configJson.getString("platform");
+        if (StrUtil.isEmpty(platform)) {
+            platform = "DeepSeek"; // 生成模型基线：唯一使用 DeepSeek API
         }
         String model = configJson.getString("model");
         if (StrUtil.isEmpty(model)) {
@@ -56,15 +57,21 @@ public class LLMNodeBO extends BaseNodeBO {
         }
 
         boolean stream = isStream(context);
-        log.info("LLM 节点执行: uuid={}, name={}, provider={}, model={}, stream={}",
-                nodeDefinition.getUuid(), nodeDefinition.getName(), provider, model, stream);
+        log.info("LLM 节点执行: uuid={}, name={}, provider={}, platform={}, model={}, stream={}",
+                nodeDefinition.getUuid(), nodeDefinition.getName(), provider, platform, model, stream);
 
         StringBuilder outSb = new StringBuilder();
         ChatModel chatModel;
         try {
-            chatModel = aiModelService.getChatModel(provider, model);
+            if (provider != null && provider > 0) {
+                chatModel = aiModelService.getChatModel(provider, model);
+            } else {
+                // 未显式指定 provider 时按平台动态解析，避免种子/模板固化环境相关的 ai_api_key.id
+                chatModel = aiModelService.getChatModelByPlatform(platform, model);
+            }
         } catch (Exception e) {
-            log.error("获取 ChatModel 失败: provider={}, model={}, error={}", provider, model, e.getMessage());
+            log.error("获取 ChatModel 失败: provider={}, platform={}, model={}, error={}",
+                    provider, platform, model, e.getMessage());
             throw new ServiceException("模型配置错误: " + e.getMessage());
         }
 

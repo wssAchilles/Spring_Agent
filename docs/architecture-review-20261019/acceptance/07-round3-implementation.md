@@ -76,3 +76,12 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 - 修正 Hermes 编排环境变量与 Redis 对齐，排除生产包 JaCoCo，补 CI 打包/Compose 门禁
 - 新增 9 条验收回归测试，全量 1876 项后端测试通过
 ```
+
+## 6. 第三批（提交 b652f112 之后）
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| 依赖瘦身（embedded-redis） | `EmbeddedRedisConfig` 增加 `@Profile("dev")`；`spring-boot-maven-plugin` 将 `embedded-redis` 从生产 fat jar 排除；dev/IDE 运行仍可用 | `EmbeddedRedisConfig.java`、`qknow-server/pom.xml` |
+| P0-12 provider 魔数 | 移除 `provider=1` 硬编码：新增 `IAiModelApiService.getChatModelByPlatform(platform, model)`，按平台查当前环境可用 Key；LLM 节点未配置 provider 时动态解析；种子 SQL 20 处 `provider:1` 改为 `platform:"DeepSeek"`；模板/节点转换同步 | `IAiModelApiService.java`、`AiModelApiServiceImpl.java`、`LLMNodeBO.java`、`KbFlowTemplateServiceImpl.java`、`KbFlowNodeConvert.java`、`init_all_bot_workflows.sql` |
+
+验证：全量测试再次通过（1876 / 0 fail）；生产 fat jar 重新打包验证 `embedded-redis` 已被排除。

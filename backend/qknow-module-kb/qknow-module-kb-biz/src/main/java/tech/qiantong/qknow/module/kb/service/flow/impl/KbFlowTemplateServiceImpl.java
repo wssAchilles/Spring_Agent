@@ -208,7 +208,7 @@ public class KbFlowTemplateServiceImpl implements IKbFlowTemplateService {
     private JSONObject createLlmData(String prompt) {
         JSONObject data = new JSONObject();
         data.put("label", "DeepSeek 推理");
-        data.put("provider", 1L);
+        data.put("platform", "DeepSeek");
         data.put("model", "deepseek-flash");
         data.put("prompt", prompt);
         data.put("temperature", 1.0);
@@ -216,7 +216,7 @@ public class KbFlowTemplateServiceImpl implements IKbFlowTemplateService {
 
         JSONObject config = new JSONObject();
         config.put("label", "DeepSeek 推理");
-        config.put("provider", 1L);
+        config.put("platform", "DeepSeek");
         config.put("model", "deepseek-flash");
         config.put("prompt", prompt);
         config.put("promptTemplate", prompt);

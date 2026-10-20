@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import redis.embedded.RedisServer;
 
 import jakarta.annotation.PostConstruct;
@@ -15,9 +16,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * 嵌入式 Redis实例配置，解决本地卡顿的问题
  * 仅供本地开发测试使用，注意！！！！
+ * 仅 dev profile 生效，并从生产 fat jar 中排除 embedded-redis 依赖。
  * @author Ming
  */
 @Configuration
+@Profile("dev")
 @Slf4j
 public class EmbeddedRedisConfig {
 

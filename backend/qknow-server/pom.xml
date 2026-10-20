@@ -194,6 +194,13 @@
                 <configuration>
                     <!-- 排除 `tech.qiantong` 下的所有模块及测试库 -->
                     <excludeGroupIds>tech.qiantong,org.junit.jupiter,org.junit.platform</excludeGroupIds>
+                    <!-- 仅 dev profile 使用的嵌入式 Redis 不进入生产 fat jar -->
+                    <excludes>
+                        <exclude>
+                            <groupId>com.github.codemonstur</groupId>
+                            <artifactId>embedded-redis</artifactId>
+                        </exclude>
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>

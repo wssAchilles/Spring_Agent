@@ -15,6 +15,16 @@ public interface IAiModelApiService {
 
     ChatModel getChatModel(Long keyId, String modelName);
 
+    /**
+     * 按平台名称解析当前环境可用的 API Key 并构建 ChatModel。
+     * 用于工作流节点未显式配置 provider 的场景，避免把某个环境的 ai_api_key.id 固化成魔数。
+     *
+     * @param platform  平台名称（如 DeepSeek），为空时默认 DeepSeek
+     * @param modelName 模型名称
+     * @return ChatModel
+     */
+    ChatModel getChatModelByPlatform(String platform, String modelName);
+
     EmbeddingModel getEmbeddingModel(Long keyId, String modelName);
 
     JSONArray getModelDict(Integer type);

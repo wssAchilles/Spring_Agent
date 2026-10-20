@@ -64,6 +64,31 @@ public class AiModelApiServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO>
     }
 
     /**
+     * 按平台名称解析当前环境可用的 API Key 并构建 ChatModel。
+     * 避免工作流/种子数据把 ai_api_key.id 固化为跨环境不一致的魔数。
+     */
+    @Override
+    public ChatModel getChatModelByPlatform(String platform, String modelName) {
+        String targetPlatform = (platform == null || platform.isBlank()) ? "DeepSeek" : platform.trim();
+        List<AiApiKeyDO> keys = apiKeyMapper.selectList(Wrappers.<AiApiKeyDO>lambdaQuery());
+        AiApiKeyDO selected = keys.stream()
+                .filter(key -> key.getApiKey() != null && !key.getApiKey().isBlank())
+                .filter(key -> key.getPlatform() != null && key.getPlatform().equalsIgnoreCase(targetPlatform))
+                .findFirst()
+                .orElseGet(() -> keys.stream()
+                        .filter(key -> key.getApiKey() != null && !key.getApiKey().isBlank())
+                        .findFirst()
+                        .orElse(null));
+        if (selected == null) {
+            throw new ServiceException("未找到可用的模型 API Key 配置，平台=" + targetPlatform);
+        }
+        if (!targetPlatform.equalsIgnoreCase(selected.getPlatform())) {
+            log.warn("平台 [{}] 未配置 API Key，回退使用平台 [{}] 的可用 Key", targetPlatform, selected.getPlatform());
+        }
+        return getChatModel(selected.getId(), modelName);
+    }
+
+    /**
      * 获取具体的 embedding 模型
      *
      * @param keyId     模型平台id

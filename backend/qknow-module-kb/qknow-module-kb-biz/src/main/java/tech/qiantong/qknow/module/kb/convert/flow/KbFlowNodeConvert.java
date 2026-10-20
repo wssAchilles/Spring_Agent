@@ -44,8 +44,11 @@ public class KbFlowNodeConvert {
             }
         }
         if (nodeType == FlowNodeTypeEnums.LLM) {
-            if (!configJson.containsKey("provider") || configJson.get("provider") == null) {
-                configJson.put("provider", 1L);
+            // 未显式指定 provider 时按平台动态解析 API Key，禁止固化环境相关的 ai_api_key.id 魔数
+            if ((!configJson.containsKey("provider") || configJson.get("provider") == null)
+                    && (!configJson.containsKey("platform") || configJson.getString("platform") == null
+                    || configJson.getString("platform").isBlank())) {
+                configJson.put("platform", "DeepSeek");
             }
             if (!configJson.containsKey("model") || configJson.getString("model") == null || configJson.getString("model").isBlank()) {
                 configJson.put("model", "deepseek-flash");

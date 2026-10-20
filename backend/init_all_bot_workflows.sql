@@ -51,10 +51,10 @@ VALUES (
 INSERT INTO kb_flow_node (workspace_id, bot_id, uuid, name, type, config, input, output, style, valid_flag, del_flag, create_by, creator_id)
 VALUES (
     1001, 9, 'llm_deep_1', '大模型推理', 2,
-    '{"label":"DeepSeek 思考链深度因果推理","provider":1,"model":"deepseek-flash","temperature":1.0,"thinking":true,"prompt":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"}',
+    '{"label":"DeepSeek 思考链深度因果推理","platform":"DeepSeek","model":"deepseek-flash","temperature":1.0,"thinking":true,"prompt":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"}',
     '[]',
     '[{"id":"reasoning","name":"reasoning_content","label":"深度思考链","type":"string"},{"id":"result","name":"result","label":"推理结果","type":"string"}]',
-    '{"id":"llm_deep_1","type":"llm","position":{"x":1260,"y":110},"data":{"input":[],"config":{"label":"DeepSeek 思考链深度因果推理","provider":1,"model":"deepseek-flash","temperature":1.0,"thinking":true,"prompt":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"},"output":[{"id":"reasoning","name":"reasoning_content","label":"深度思考链","type":"string"},{"id":"result","name":"result","label":"推理结果","type":"string"}]}}',
+    '{"id":"llm_deep_1","type":"llm","position":{"x":1260,"y":110},"data":{"input":[],"config":{"label":"DeepSeek 思考链深度因果推理","platform":"DeepSeek","model":"deepseek-flash","temperature":1.0,"thinking":true,"prompt":"请基于以下知识切片进行深度长思维链因果分析：\\n{{chunks}}\\n目标问题：{{query}}"},"output":[{"id":"reasoning","name":"reasoning_content","label":"深度思考链","type":"string"},{"id":"result","name":"result","label":"推理结果","type":"string"}]}}',
     0, 0, '管理员', 1
 );
 
@@ -73,10 +73,10 @@ VALUES (
 INSERT INTO kb_flow_node (workspace_id, bot_id, uuid, name, type, config, input, output, style, valid_flag, del_flag, create_by, creator_id)
 VALUES (
     1001, 9, 'llm_fast_1', '大模型推理', 2,
-    '{"label":"轻量快速语义应答","provider":1,"model":"deepseek-flash","temperature":0.7,"thinking":false,"prompt":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"}',
+    '{"label":"轻量快速语义应答","platform":"DeepSeek","model":"deepseek-flash","temperature":0.7,"thinking":false,"prompt":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"}',
     '[]',
     '[{"id":"result","name":"result","label":"应答结果","type":"string"}]',
-    '{"id":"llm_fast_1","type":"llm","position":{"x":1460,"y":460},"data":{"input":[],"config":{"label":"轻量快速语义应答","provider":1,"model":"deepseek-flash","temperature":0.7,"thinking":false,"prompt":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"},"output":[{"id":"result","name":"result","label":"应答结果","type":"string"}]}}',
+    '{"id":"llm_fast_1","type":"llm","position":{"x":1460,"y":460},"data":{"input":[],"config":{"label":"轻量快速语义应答","platform":"DeepSeek","model":"deepseek-flash","temperature":0.7,"thinking":false,"prompt":"基于检索到的知识快速回答：\\n{{chunks}}\\n问题：{{query}}"},"output":[{"id":"result","name":"result","label":"应答结果","type":"string"}]}}',
     0, 0, '管理员', 1
 );
 
@@ -132,10 +132,10 @@ VALUES
  0, 0, '管理员', 1),
 
 (1001, 3, 'llm_merge_1', '大模型推理', 2,
- '{"label":"多源知识融合与交叉验真","provider":1,"model":"deepseek-flash","temperature":0.5,"prompt":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"}',
+ '{"label":"多源知识融合与交叉验真","platform":"DeepSeek","model":"deepseek-flash","temperature":0.5,"prompt":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"}',
  '[]',
  '[{"id":"merged_result","name":"merged_result","label":"融合答复","type":"string"}]',
- '{"id":"llm_merge_1","type":"llm","position":{"x":860,"y":260},"data":{"input":[],"config":{"label":"多源知识融合与交叉验真","provider":1,"model":"deepseek-flash","temperature":0.5,"prompt":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"},"output":[{"id":"merged_result","name":"merged_result","label":"融合答复","type":"string"}]}}',
+ '{"id":"llm_merge_1","type":"llm","position":{"x":860,"y":260},"data":{"input":[],"config":{"label":"多源知识融合与交叉验真","platform":"DeepSeek","model":"deepseek-flash","temperature":0.5,"prompt":"请综合制度切片与架构切片进行交叉对齐融合：\\n制度规范：{{chunks_rule}}\\n技术实现：{{chunks_tech}}\\n用户问题：{{query}}"},"output":[{"id":"merged_result","name":"merged_result","label":"融合答复","type":"string"}]}}',
  0, 0, '管理员', 1),
 
 (1001, 3, 'reply_1', '回复', 3,
@@ -177,10 +177,10 @@ VALUES
  0, 0, '管理员', 1),
 
 (1001, 4, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 提纲与要点摘要","provider":1,"model":"deepseek-flash","temperature":0.3,"prompt":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"}',
+ '{"label":"DeepSeek 提纲与要点摘要","platform":"DeepSeek","model":"deepseek-flash","temperature":0.3,"prompt":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"}',
  '[]',
  '[{"id":"summary","name":"summary","label":"摘要文本","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 提纲与要点摘要","provider":1,"model":"deepseek-flash","temperature":0.3,"prompt":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"},"output":[{"id":"summary","name":"summary","label":"摘要文本","type":"string"}]}}',
+ '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 提纲与要点摘要","platform":"DeepSeek","model":"deepseek-flash","temperature":0.3,"prompt":"请根据文档切片提取核心概要与关键结论：\\n{{chunks}}"},"output":[{"id":"summary","name":"summary","label":"摘要文本","type":"string"}]}}',
  0, 0, '管理员', 1),
 
 (1001, 4, 'reply_1', '回复', 3,
@@ -210,8 +210,8 @@ VALUES
  '{"label":"实习手册与工作日志库","topK":4}', '[]', '[{"id":"chunks","name":"chunks","label":"匹配条目","type":"array"}]',
  '{"id":"knowledge_1","type":"knowledge","position":{"x":460,"y":240},"data":{"input":[],"config":{"label":"实习手册与工作日志库","topK":4},"output":[{"id":"chunks","name":"chunks","label":"匹配条目","type":"array"}]}}', 0, 0, '管理员', 1),
 (1001, 1, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 实习导师建议","provider":1,"model":"deepseek-flash","temperature":0.7}', '[]', '[{"id":"result","name":"result","label":"指导建议","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 实习导师建议","provider":1,"model":"deepseek-flash","temperature":0.7},"output":[{"id":"result","name":"result","label":"指导建议","type":"string"}]}}', 0, 0, '管理员', 1),
+ '{"label":"DeepSeek 实习导师建议","platform":"DeepSeek","model":"deepseek-flash","temperature":0.7}', '[]', '[{"id":"result","name":"result","label":"指导建议","type":"string"}]',
+ '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 实习导师建议","platform":"DeepSeek","model":"deepseek-flash","temperature":0.7},"output":[{"id":"result","name":"result","label":"指导建议","type":"string"}]}}', 0, 0, '管理员', 1),
 (1001, 1, 'reply_1', '回复', 3,
  '{"label":"导师解答输出"}', '[]', '[]',
  '{"id":"reply_1","type":"reply","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"导师解答输出"},"output":[]}}', 0, 0, '管理员', 1);
@@ -238,8 +238,8 @@ VALUES
  '{"label":"工程质量规范库","topK":3}', '[]', '[{"id":"standards","name":"standards","label":"编码规约","type":"array"}]',
  '{"id":"knowledge_1","type":"knowledge","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"工程质量规范库","topK":3},"output":[{"id":"standards","name":"standards","label":"编码规约","type":"array"}]}}', 0, 0, '管理员', 1),
 (1001, 2, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 代码审查分析","provider":1,"model":"deepseek-flash","temperature":0.2}', '[]', '[{"id":"review_report","name":"review_report","label":"审查报告","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 代码审查分析","provider":1,"model":"deepseek-flash","temperature":0.2},"output":[{"id":"review_report","name":"review_report","label":"审查报告","type":"string"}]}}', 0, 0, '管理员', 1),
+ '{"label":"DeepSeek 代码审查分析","platform":"DeepSeek","model":"deepseek-flash","temperature":0.2}', '[]', '[{"id":"review_report","name":"review_report","label":"审查报告","type":"string"}]',
+ '{"id":"llm_1","type":"llm","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 代码审查分析","platform":"DeepSeek","model":"deepseek-flash","temperature":0.2},"output":[{"id":"review_report","name":"review_report","label":"审查报告","type":"string"}]}}', 0, 0, '管理员', 1),
 (1001, 2, 'reply_1', '回复', 3,
  '{"label":"审查报告输出"}', '[]', '[]',
  '{"id":"reply_1","type":"reply","position":{"x":1600,"y":240},"data":{"input":[],"config":{"label":"审查报告输出"},"output":[]}}', 0, 0, '管理员', 1);
@@ -267,8 +267,8 @@ VALUES
  '{"label":"安全只读SQL生成与执行","toolName":"safe_sql_executor","toolSource":"custom"}', '[]', '[{"id":"query_data","name":"query_data","label":"查询结果集","type":"array"}]',
  '{"id":"tool_1","type":"tool","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"安全只读SQL生成与执行","toolName":"safe_sql_executor","toolSource":"custom"},"output":[{"id":"query_data","name":"query_data","label":"查询结果集","type":"array"}]}}', 0, 0, '管理员', 1),
 (1001, 5, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 业务洞察与统计归因","provider":1,"model":"deepseek-flash","temperature":0.4}', '[]', '[{"id":"insights","name":"insights","label":"归因洞察","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 业务洞察与统计归因","provider":1,"model":"deepseek-flash","temperature":0.4},"output":[{"id":"insights","name":"insights","label":"归因洞察","type":"string"}]}}', 0, 0, '管理员', 1),
+ '{"label":"DeepSeek 业务洞察与统计归因","platform":"DeepSeek","model":"deepseek-flash","temperature":0.4}', '[]', '[{"id":"insights","name":"insights","label":"归因洞察","type":"string"}]',
+ '{"id":"llm_1","type":"llm","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 业务洞察与统计归因","platform":"DeepSeek","model":"deepseek-flash","temperature":0.4},"output":[{"id":"insights","name":"insights","label":"归因洞察","type":"string"}]}}', 0, 0, '管理员', 1),
 (1001, 5, 'reply_1', '回复', 3,
  '{"label":"指标看板与结论呈现"}', '[]', '[]',
  '{"id":"reply_1","type":"reply","position":{"x":1600,"y":240},"data":{"input":[],"config":{"label":"指标看板与结论呈现"},"output":[]}}', 0, 0, '管理员', 1);
@@ -293,8 +293,8 @@ VALUES
  '{"label":"常州工学院总评加分评审细则","topK":5}', '[]', '[{"id":"rules","name":"rules","label":"加分条款","type":"array"}]',
  '{"id":"knowledge_1","type":"knowledge","position":{"x":460,"y":240},"data":{"input":[],"config":{"label":"常州工学院总评加分评审细则","topK":5},"output":[{"id":"rules","name":"rules","label":"加分条款","type":"array"}]}}', 0, 0, '管理员', 1),
 (1001, 6, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 规则匹配与加分计算","provider":1,"model":"deepseek-flash","temperature":0.1}', '[]', '[{"id":"score_detail","name":"score_detail","label":"核算明细","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 规则匹配与加分计算","provider":1,"model":"deepseek-flash","temperature":0.1},"output":[{"id":"score_detail","name":"score_detail","label":"核算明细","type":"string"}]}}', 0, 0, '管理员', 1),
+ '{"label":"DeepSeek 规则匹配与加分计算","platform":"DeepSeek","model":"deepseek-flash","temperature":0.1}', '[]', '[{"id":"score_detail","name":"score_detail","label":"核算明细","type":"string"}]',
+ '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 规则匹配与加分计算","platform":"DeepSeek","model":"deepseek-flash","temperature":0.1},"output":[{"id":"score_detail","name":"score_detail","label":"核算明细","type":"string"}]}}', 0, 0, '管理员', 1),
 (1001, 6, 'reply_1', '回复', 3,
  '{"label":"总评加分审核报告"}', '[]', '[]',
  '{"id":"reply_1","type":"reply","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"总评加分审核报告"},"output":[]}}', 0, 0, '管理员', 1);
@@ -318,8 +318,8 @@ VALUES
  '{"label":"学生课设报告文档库","topK":4}', '[]', '[{"id":"reports","name":"reports","label":"已交报告","type":"array"}]',
  '{"id":"knowledge_1","type":"knowledge","position":{"x":460,"y":240},"data":{"input":[],"config":{"label":"学生课设报告文档库","topK":4},"output":[{"id":"reports","name":"reports","label":"已交报告","type":"array"}]}}', 0, 0, '管理员', 1),
 (1001, 7, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 报告完整性与质量核验","provider":1,"model":"deepseek-flash","temperature":0.3}', '[]', '[{"id":"progress_report","name":"progress_report","label":"进度评估","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 报告完整性与质量核验","provider":1,"model":"deepseek-flash","temperature":0.3},"output":[{"id":"progress_report","name":"progress_report","label":"进度评估","type":"string"}]}}', 0, 0, '管理员', 1),
+ '{"label":"DeepSeek 报告完整性与质量核验","platform":"DeepSeek","model":"deepseek-flash","temperature":0.3}', '[]', '[{"id":"progress_report","name":"progress_report","label":"进度评估","type":"string"}]',
+ '{"id":"llm_1","type":"llm","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 报告完整性与质量核验","platform":"DeepSeek","model":"deepseek-flash","temperature":0.3},"output":[{"id":"progress_report","name":"progress_report","label":"进度评估","type":"string"}]}}', 0, 0, '管理员', 1),
 (1001, 7, 'reply_1', '回复', 3,
  '{"label":"课设批阅与完成度汇总"}', '[]', '[]',
  '{"id":"reply_1","type":"reply","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"课设批阅与完成度汇总"},"output":[]}}', 0, 0, '管理员', 1);
@@ -346,8 +346,8 @@ VALUES
  '{"label":"知识图谱实体抽取与契约断言","toolName":"graph_entity_extractor","toolSource":"custom"}', '[]', '[{"id":"assertions","name":"assertions","label":"断言凭单","type":"string"}]',
  '{"id":"tool_1","type":"tool","position":{"x":840,"y":240},"data":{"input":[],"config":{"label":"知识图谱实体抽取与契约断言","toolName":"graph_entity_extractor","toolSource":"custom"},"output":[{"id":"assertions","name":"assertions","label":"断言凭单","type":"string"}]}}', 0, 0, '管理员', 1),
 (1001, 8, 'llm_1', '大模型推理', 2,
- '{"label":"DeepSeek 质量研判与覆盖度评定","provider":1,"model":"deepseek-flash","temperature":0.2}', '[]', '[{"id":"eval_report","name":"eval_report","label":"测试研报","type":"string"}]',
- '{"id":"llm_1","type":"llm","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 质量研判与覆盖度评定","provider":1,"model":"deepseek-flash","temperature":0.2},"output":[{"id":"eval_report","name":"eval_report","label":"测试研报","type":"string"}]}}', 0, 0, '管理员', 1),
+ '{"label":"DeepSeek 质量研判与覆盖度评定","platform":"DeepSeek","model":"deepseek-flash","temperature":0.2}', '[]', '[{"id":"eval_report","name":"eval_report","label":"测试研报","type":"string"}]',
+ '{"id":"llm_1","type":"llm","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"DeepSeek 质量研判与覆盖度评定","platform":"DeepSeek","model":"deepseek-flash","temperature":0.2},"output":[{"id":"eval_report","name":"eval_report","label":"测试研报","type":"string"}]}}', 0, 0, '管理员', 1),
 (1001, 8, 'reply_1', '回复', 3,
  '{"label":"综合测试通过报告"}', '[]', '[]',
  '{"id":"reply_1","type":"reply","position":{"x":1600,"y":240},"data":{"input":[],"config":{"label":"综合测试通过报告"},"output":[]}}', 0, 0, '管理员', 1);
