@@ -158,6 +158,9 @@ import quickVerticalIcon from "@/assets/kac/overview/quick-vertical.png";
 import quickMySolutionIcon from "@/assets/kac/overview/quick-my-solution.png";
 import quickMyAppIcon from "@/assets/kac/overview/quick-my-app.png";
 
+import { toRef, nextTick } from "vue";
+import { useNumberScroll, staggerEnter } from "@/composables/useGsapMotion";
+
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -168,6 +171,12 @@ const overviewStats = reactive({
   applyTotal: 0,
   myApplyTotal: 0,
 });
+
+// GSAP 平滑数字滚动插值
+const applyTotalNum = toRef(overviewStats, "applyTotal");
+const myApplyTotalNum = toRef(overviewStats, "myApplyTotal");
+const applyTotalDisplay = useNumberScroll(applyTotalNum);
+const myApplyTotalDisplay = useNumberScroll(myApplyTotalNum);
 
 function handleCardClick(item) {
   if (runnerDrawerRef.value) {
@@ -203,12 +212,12 @@ const quickEntries = [
 const quickStats = computed(() => [
   {
     label: "所有应用",
-    value: overviewStats.applyTotal,
+    value: applyTotalDisplay.value,
     path: "/kac/horizontal",
   },
   {
     label: "我的应用",
-    value: overviewStats.myApplyTotal,
+    value: myApplyTotalDisplay.value,
     path: "/kac/myApp",
   },
 ]);
@@ -264,6 +273,18 @@ async function getApplyList() {
     const response = await listApply(applyQueryParams);
     applyList.value = response.data.rows || [];
     overviewStats.applyTotal = response.data.total || 0;
+    nextTick(() => {
+      const cards = document.querySelectorAll(".apply-grid .apply-card");
+      if (cards && cards.length > 0) {
+        staggerEnter(cards, {
+          fromY: 16,
+          fromScale: 0.96,
+          duration: 0.35,
+          stagger: 0.04,
+          ease: "power2.out",
+        });
+      }
+    });
   } catch {
     applyList.value = [];
   } finally {
@@ -574,16 +595,20 @@ onMounted(() => {
 
 .interactive-card {
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px -4px rgba(0, 82, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 82, 255, 0.35);
+    box-shadow: 0 12px 28px -4px rgba(0, 82, 255, 0.16), 0 0 12px rgba(0, 82, 255, 0.12), 0 0 0 1px rgba(0, 82, 255, 0.28);
+    border-color: rgba(0, 82, 255, 0.45);
+
+    .apply-icon-wrapper {
+      transform: scale(1.06);
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
 
     .card-action-dock {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 }

@@ -3,9 +3,12 @@ import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { getToken } from '@/utils/auth';
 const token = getToken();
 // 获取流程
-export function getFlow(botId) {
+export function getFlow(botIdOrParams) {
+    const id = typeof botIdOrParams === 'object' && botIdOrParams !== null
+        ? (botIdOrParams.botId || botIdOrParams.id)
+        : botIdOrParams;
     return request({
-        url: '/kb/flow?botId=' + botId,
+        url: '/kb/flow?botId=' + id,
         method: 'get'
     });
 }
@@ -71,7 +74,9 @@ export const ProcessFlow = {
                 if (onClose) onClose();
                 try {
                     ctrl?.abort();
-                } catch (e) {}
+                } catch {
+                    // 忽略取消异常
+                }
             },
             signal: ctrl.signal
         });

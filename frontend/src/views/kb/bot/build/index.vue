@@ -1,1024 +1,114 @@
 <template>
   <div ref="appContainerRef" class="app-container workflow-editor glass-card">
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <span class="toolbar-title">
-          <span class="title" style="">{{ flowName || "-" }}</span>
-          <el-tag v-if="workflowType !== null">
-            {{
-              (workflowType == 1 && "Chatflow") ||
-              (workflowType == 0 && "工作流") ||
-              "Agent"
-            }}</el-tag
-          >
-          <span class="internally" v-if="flowBuiltinFlag == 1">
-            <el-icon class="desc-icon">
-              <WarningFilled />
-            </el-icon>
-            此Bot为系统内置，不可修改！如果需要修改，请复制新Bot后修改。</span
-          >
-        </span>
-      </div>
-      <div class="toolbar-actions">
-        <el-button
-          v-ripple
-          class="glass-btn custom-btn-padding"
-          plain
-          @click="autoLayoutGraph"
-          @mousedown="(e) => e.preventDefault()"
-        >
-          <el-icon><Compass /></el-icon>
-          整齐排版
-        </el-button>
-        <el-button
-          v-ripple
-          class="glass-btn custom-btn-padding"
-          plain
-          @click="smartFitView"
-          @mousedown="(e) => e.preventDefault()"
-        >
-          <el-icon><Aim /></el-icon>
-          自适应
-        </el-button>
-        <el-button v-ripple
-          class="glass-btn custom-btn-padding"
-          plain
-          @click="showCopyDialog()"
-          icon="CopyDocument"
-          @mousedown="(e) => e.preventDefault()"
-        >
-          复制
-        </el-button>
-        <el-button
-          v-ripple
-          class="glass-btn custom-btn-padding"
-          plain
-          @click="showVirtualizedCanvasDrawer = true"
-          @mousedown="(e) => e.preventDefault()"
-        >
-          <el-icon><DataAnalysis /></el-icon>
-          虚拟化画布引擎
-        </el-button>
-        <el-button v-ripple class="fhbtn glass-btn" plain @click="routerView">
-          <svg-icon :iconClass="'fhs'" />返回
-        </el-button>
-        <el-button v-ripple class="glass-btn" @click="openDebugRunPanel">
-          <VideoPlay class="ds" />
-          调试
-        </el-button>
-        <el-button v-ripple class="glass-btn"
-          @click="exportFlow"
-          :disabled="flowBuiltinFlag == 1"
-        >
-          <img src="../../../../assets/icons/svg/bc.svg" alt="" class="bcimg" />
-          保存
-        </el-button>
-      </div>
-    </div>
+    <!-- 顶部液态玻璃工具栏 -->
+    <WorkflowToolbar
+      :flow-name="flowName"
+      :workflow-type="workflowType"
+      :flow-builtin-flag="flowBuiltinFlag"
+      :saving="saving"
+      @auto-layout="autoLayoutGraph"
+      @fit-view="smartFitView"
+      @copy-bot="showCopyDialog"
+      @open-virtualized="showVirtualizedCanvasDrawer = true"
+      @go-back="routerView"
+      @open-debug="openDebugRunPanel"
+      @save-flow="exportFlow"
+    />
 
     <div class="editor-container" v-loading="loading">
+      <!-- 核心工作流画布引擎 -->
       <div class="flow-wrapper">
-        <VueFlow
-          v-model:nodes="nodes"
-          v-model:edges="edges"
-          :fit-view-on-init="true"
-          :snap-to-grid="true"
-          :snap-grid="[20, 20]"
-          :default-zoom="0.85"
-          :min-zoom="0.25"
-          :max-zoom="1.6"
-          :default-edge-options="defaultEdgeOptions"
-          :connection-line-type="ConnectionLineType.Bezier"
-          @node-click="onNodeClick"
-          @edge-click="onEdgeClick"
-          @pane-click="onPaneClick"
+        <WorkflowCanvas
+          ref="canvasRef"
+          :nodes="nodes"
+          :edges="edges"
+          :selected-node-id="selectedNode?.id"
+          :drag-hover-target-id="dragHoverTargetId"
+          :is-chatflow="isChatflowWorkflow"
+          @select-node="onNodeClick"
+          @clear-selection="onPaneClick"
+          @delete-node="handleOuterNodeDelete"
           @connect="onConnect"
+          @source-action="onSourceActionPointerDown"
+          @edge-add-click="showAddNodeMenuOnEdge"
         >
-          <template #node-start="props">
-            <div
-              class="custom-node start-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-            >
-              <div class="node-top">
-                <span class="node-type-label">开始</span>
-              </div>
-              <div class="node-body">
-                <div class="node-header">
-                  <div class="node-icon-wrapper">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      class="node-svg"
-                    >
-                      <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"
-                      />
-                    </svg>
-                  </div>
-                  <div class="node-title">
-                    {{ getNodeLabel(props.data, "开始") }}
-                  </div>
-                </div>
-                <div
-                  v-if="getStartFieldPreview(props.data).length"
-                  class="start-node-fields"
-                >
-                  <div
-                    v-for="field in getStartFieldPreview(props.data)"
-                    :key="field.id"
-                    class="start-node-field-row"
-                  >
-                    <span class="start-node-field-name">
-                      {{ getStartFieldDisplayLabel(field) }}
-                    </span>
-                    <span class="start-node-field-type">
-                      {{ getStartFieldValueTypeLabel(field.type) }}
-                    </span>
-                  </div>
-                  <div
-                    v-if="getStartFieldOverflowCount(props.data) > 0"
-                    class="start-node-field-more"
-                  >
-                    +{{ getStartFieldOverflowCount(props.data) }} 个输入字段
-                  </div>
-                </div>
-                <div v-else class="start-node-empty">
-                  <span class="empty-dot"></span>
-                  <span>暂无输入变量 · 点击配置</span>
-                </div>
-              </div>
-              <Handle
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-              <Handle
-                type="source"
-                :position="Position.Right"
-                :connectable-start="false"
-                class="handle node-source-handle"
-              />
-              <div
-                class="node-add-btn"
-                @click.stop.prevent
-                @pointerdown.stop.prevent="
-                  onSourceActionPointerDown($event, props.id)
-                "
-              >
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
+          <!-- 循环子图插槽 -->
+          <template #loop-canvas="{ node }">
+            <LoopWorkflowCanvas
+              :workflow-data="node.data?.loopWorkflow || { nodes: [], edges: [] }"
+              :default-llm-model-config="defaultLlmModelConfig"
+              :compact="true"
+              :loop-path="[node.id]"
+              :selected-node-id="selectedInnerNodeId"
+              @update:workflow-data="updateLoopWorkflowData(node.id, $event)"
+              @select-node="handleInnerNodeSelect"
+              @clear-selection="clearInnerSelection([node.id])"
+              @delete-node="handleInnerNodeDelete"
+            />
           </template>
+        </WorkflowCanvas>
 
-          <template #node-llm="props">
-            <div
-              class="custom-node llm-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-            >
-              <button
-                type="button"
-                class="node-delete-btn"
-                @click.stop.prevent="handleOuterNodeDelete(props.id)"
-                @pointerdown.stop.prevent
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-              <div class="node-top">
-                <span class="node-type-label">LLM</span>
-              </div>
-              <div class="node-body">
-                <div class="node-header">
-                  <div class="node-icon-wrapper">
-                    <LlmNodeIcon class="node-svg llm-node-svg" />
-                  </div>
-                  <div class="node-title">
-                    {{ getNodeLabel(props.data, "LLM") }}
-                  </div>
-                </div>
-                <div
-                  class="node-subtitle"
-                  v-if="getNodeConfigValue(props.data, 'model', '')"
-                >
-                  {{ getNodeConfigValue(props.data, "model", "") }}
-                </div>
-              </div>
-              <Handle
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-              <Handle
-                type="source"
-                :position="Position.Right"
-                :connectable-start="false"
-                class="handle node-source-handle"
-              />
-              <div
-                class="node-add-btn"
-                @click.stop.prevent
-                @pointerdown.stop.prevent="
-                  onSourceActionPointerDown($event, props.id)
-                "
-              >
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
-          </template>
-
-          <template #node-reply="props">
-            <div
-              class="custom-node reply-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-            >
-              <button
-                type="button"
-                class="node-delete-btn"
-                @click.stop.prevent="handleOuterNodeDelete(props.id)"
-                @pointerdown.stop.prevent
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-              <div class="node-top">
-                <span class="node-type-label">输出</span>
-              </div>
-              <div class="node-body">
-                <div class="node-header">
-                  <div class="node-icon-wrapper">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      class="node-svg"
-                    >
-                      <path
-                        d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"
-                      />
-                    </svg>
-                  </div>
-                  <div class="node-title">
-                    {{ getReplyNodeLabel(props.data) }}
-                  </div>
-                </div>
-                <div
-                  v-if="
-                    isChatflowWorkflow &&
-                    getReplyNodePreviewSegments(props.data, props.id).length
-                  "
-                  class="node-preview node-preview--inline"
-                >
-                  <template
-                    v-for="(
-                      previewSegment, previewIndex
-                    ) in getReplyNodePreviewSegments(props.data, props.id)"
-                    :key="`reply-preview-segment-${props.id}-${previewIndex}`"
-                  >
-                    <span
-                      v-if="previewSegment.type === 'variable'"
-                      class="preview-tag"
-                    >
-                      {{ previewSegment.display }}
-                    </span>
-                    <span v-else class="preview-text">
-                      {{ previewSegment.value }}
-                    </span>
-                  </template>
-                </div>
-                <div
-                  class="node-preview"
-                  v-else-if="getReplyNodePreviewList(props.data, 3).length"
-                >
-                  <span
-                    v-for="(
-                      previewItem, previewIndex
-                    ) in getReplyNodePreviewList(props.data, 3)"
-                    :key="`reply-preview-${props.id}-${previewIndex}`"
-                    class="preview-tag"
-                  >
-                    {{ previewItem }}
-                  </span>
-                  <div
-                    v-if="getReplyNodePreviewOverflowCount(props.data, 3) > 0"
-                    class="reply-node-preview-more"
-                  >
-                    +{{ getReplyNodePreviewOverflowCount(props.data, 3) }}
-                    个输出字段
-                  </div>
-                </div>
-              </div>
-              <Handle
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-              <Handle
-                type="source"
-                :position="Position.Right"
-                :connectable-start="false"
-                class="handle node-source-handle"
-              />
-              <div
-                class="node-add-btn"
-                @click.stop.prevent
-                @pointerdown.stop.prevent="
-                  onSourceActionPointerDown($event, props.id)
-                "
-              >
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
-          </template>
-
-          <template #node-knowledge="props">
-            <div
-              class="custom-node knowledge-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-            >
-              <button
-                type="button"
-                class="node-delete-btn"
-                @click.stop.prevent="handleOuterNodeDelete(props.id)"
-                @pointerdown.stop.prevent
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-              <div class="node-top">
-                <span class="node-type-label">知识检索</span>
-              </div>
-              <div class="node-body">
-                <div class="node-header">
-                  <div class="node-icon-wrapper">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="node-svg">
-                      <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zm-2-5h-8v-2h8v2zm-4 4h-4v-2h4v2zm4-8h-8V5h8v2z"/>
-                    </svg>
-                  </div>
-                  <div class="node-title">
-                    {{ getNodeLabel(props.data, "知识检索") }}
-                  </div>
-                </div>
-                <div
-                  class="node-subtitle"
-                  v-if="getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案')"
-                >
-                  {{ getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案') }}
-                </div>
-              </div>
-              <Handle
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-              <Handle
-                type="source"
-                :position="Position.Right"
-                :connectable-start="false"
-                class="handle node-source-handle"
-              />
-              <div
-                class="node-add-btn"
-                @click.stop.prevent
-                @pointerdown.stop.prevent="
-                  onSourceActionPointerDown($event, props.id)
-                "
-              >
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
-          </template>
-
-          <template #node-knowledge-retrieval="props">
-            <div
-              class="custom-node knowledge-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-            >
-              <button
-                type="button"
-                class="node-delete-btn"
-                @click.stop.prevent="handleOuterNodeDelete(props.id)"
-                @pointerdown.stop.prevent
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-              <div class="node-top">
-                <span class="node-type-label">知识检索</span>
-              </div>
-              <div class="node-body">
-                <div class="node-header">
-                  <div class="node-icon-wrapper">
-                    <svg viewBox="0 0 24 24" fill="currentColor" class="node-svg">
-                      <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zm-2-5h-8v-2h8v2zm-4 4h-4v-2h4v2zm4-8h-8V5h8v2z"/>
-                    </svg>
-                  </div>
-                  <div class="node-title">
-                    {{ getNodeLabel(props.data, "知识检索") }}
-                  </div>
-                </div>
-                <div
-                  class="node-subtitle"
-                  v-if="getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案')"
-                >
-                  {{ getNodeConfigValue(props.data, 'knowledgeBaseName', '常州工学院总评方案') }}
-                </div>
-              </div>
-              <Handle
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-              <Handle
-                type="source"
-                :position="Position.Right"
-                :connectable-start="false"
-                class="handle node-source-handle"
-              />
-              <div
-                class="node-add-btn"
-                @click.stop.prevent
-                @pointerdown.stop.prevent="
-                  onSourceActionPointerDown($event, props.id)
-                "
-              >
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
-          </template>
-
-          <template #node-tool="props">
-            <div
-              class="custom-node tool-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-            >
-              <button
-                type="button"
-                class="node-delete-btn"
-                @click.stop.prevent="handleOuterNodeDelete(props.id)"
-                @pointerdown.stop.prevent
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-              <div class="node-top">
-                <span class="node-type-label">工具</span>
-              </div>
-              <div class="node-body">
-                <div class="node-header">
-                  <div class="node-icon-wrapper">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      class="node-svg"
-                    >
-                      <path
-                        d="M20.7 7.3a5.99 5.99 0 0 1-7.95 7.95l-5.02 5.02a1.5 1.5 0 1 1-2.12-2.12l5.02-5.02A6 6 0 0 1 16.7 3.3l-3.06 3.06 1 3 3 1 3.06-3.06z"
-                      />
-                    </svg>
-                  </div>
-                  <div class="node-title">
-                    {{ getToolNodeLabel(props.data) }}
-                  </div>
-                </div>
-                <div
-                  class="node-subtitle tool-subtitle-badge"
-                  v-if="getToolNodeSubtitle(props.data)"
-                >
-                  <span class="badge-label">来源:</span>
-                  <span class="badge-val">{{ getToolNodeSubtitle(props.data) }}</span>
-                </div>
-                <div
-                  class="node-preview tool-output-preview"
-                  v-if="getToolNodePreviewList(props.data, 3).length"
-                >
-                  <span class="preview-title">输出变量</span>
-                  <div class="preview-tags-group">
-                    <span
-                      v-for="(
-                        previewItem, previewIndex
-                      ) in getToolNodePreviewList(props.data, 3)"
-                      :key="`tool-preview-${props.id}-${previewIndex}`"
-                      class="preview-tag tool-tag"
-                    >
-                      {{ previewItem }}
-                    </span>
-                  </div>
-                  <div
-                    v-if="getToolNodePreviewOverflowCount(props.data, 3) > 0"
-                    class="tool-node-preview-more"
-                  >
-                    +{{ getToolNodePreviewOverflowCount(props.data, 3) }}
-                    个输出字段
-                  </div>
-                </div>
-              </div>
-              <Handle
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-              <Handle
-                type="source"
-                :position="Position.Right"
-                :connectable-start="false"
-                class="handle node-source-handle"
-              />
-              <div
-                class="node-add-btn"
-                @click.stop.prevent
-                @pointerdown.stop.prevent="
-                  onSourceActionPointerDown($event, props.id)
-                "
-              >
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
-          </template>
-
-          <template #node-condition="props">
-            <div
-              class="custom-node condition-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-            >
-              <button
-                type="button"
-                class="node-delete-btn"
-                @click.stop.prevent="handleOuterNodeDelete(props.id)"
-                @pointerdown.stop.prevent
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-              <div class="node-top">
-                <span class="node-type-label">条件分支</span>
-              </div>
-              <div class="node-body">
-                <div class="condition-summary">
-                  <div class="node-icon-wrapper">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      class="node-svg"
-                    >
-                      <path
-                        d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V5h2v7zM7 9h2v7H7V9zm10 7h-2V9h2v7z"
-                      />
-                    </svg>
-                  </div>
-                  <div class="condition-title-row">
-                    <div class="node-title">
-                      {{ getNodeLabel(props.data, "条件分支") }}
-                    </div>
-                    <span class="condition-count">{{
-                      getConditionCases(props.data).length
-                    }}</span>
-                  </div>
-                </div>
-
-                <div class="condition-branch-list">
-                  <div
-                    v-for="(caseItem, index) in getConditionCases(props.data)"
-                    :key="caseItem.id"
-                    class="condition-branch-row"
-                  >
-                    <span class="condition-branch-name">
-                      {{ getConditionCaseLabel(index) }}
-                    </span>
-                    <div class="condition-branch-output">
-                      <span class="condition-branch-tag">
-                        {{
-                          getConditionBranchLabel(
-                            index,
-                            getConditionCases(props.data).length
-                          )
-                        }}
-                      </span>
-                      <div class="condition-branch-action">
-                        <Handle
-                          type="source"
-                          :id="getConditionHandleId(caseItem)"
-                          :position="Position.Right"
-                          :connectable-start="false"
-                          class="handle condition-branch-handle"
-                        />
-                        <div
-                          class="condition-branch-add-btn"
-                          @click.stop.prevent
-                          @pointerdown.stop.prevent="
-                            onSourceActionPointerDown(
-                              $event,
-                              props.id,
-                              getConditionHandleId(caseItem)
-                            )
-                          "
-                        >
-                          <el-icon><Plus /></el-icon>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <Handle
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-            </div>
-          </template>
-
-          <template #node-loop="props">
-            <div
-              class="custom-node loop-node"
-              :class="{ selected: selectedNode?.id === props.id }"
-              :style="getLoopNodeStyle(props.data)"
-            >
-              <button
-                type="button"
-                class="node-delete-btn"
-                @click.stop.prevent="handleOuterNodeDelete(props.id)"
-                @pointerdown.stop.prevent
-              >
-                <el-icon><Delete /></el-icon>
-              </button>
-              <div class="loop-node-shell">
-                <div class="loop-node-header">
-                  <div class="loop-node-icon">
-                    <span class="loop-icon-glyph">&#8734;</span>
-                  </div>
-                  <div class="loop-node-title">
-                    {{ getNodeLabel(props.data, "循环") }}
-                  </div>
-                </div>
-
-                <div
-                  class="loop-editor-surface nodrag nopan"
-                  :style="getLoopEditorSurfaceStyle(props.data)"
-                  @pointerdown.stop
-                  @click.stop
-                >
-                  <LoopWorkflowCanvas
-                    :workflow-data="props.data"
-                    :compact="true"
-                    :loop-path="[props.id]"
-                    :selected-node-id="getSelectedLoopNodeId([props.id])"
-                    :default-llm-model-config="defaultLlmModelConfig"
-                    @update:workflow-data="
-                      updateLoopWorkflowData(props.id, $event)
-                    "
-                    @selectNode="handleInnerNodeSelect"
-                    @clearSelection="clearInnerSelection"
-                    @deleteNode="handleInnerNodeDelete"
-                  />
-                </div>
-              </div>
-              <Handle
-                :id="LOOP_OUTER_TARGET_HANDLE_ID"
-                type="target"
-                :position="Position.Left"
-                class="handle"
-                :class="
-                  dragHoverTargetId === props.id ? 'handle-drop-target' : ''
-                "
-              />
-              <Handle
-                :id="LOOP_OUTER_SOURCE_HANDLE_ID"
-                type="source"
-                :position="Position.Right"
-                :connectable-start="false"
-                class="handle node-source-handle"
-              />
-              <div
-                class="node-add-btn"
-                @click.stop.prevent
-                @pointerdown.stop.prevent="
-                  onSourceActionPointerDown(
-                    $event,
-                    props.id,
-                    LOOP_OUTER_SOURCE_HANDLE_ID
-                  )
-                "
-              >
-                <el-icon><Plus /></el-icon>
-              </div>
-            </div>
-          </template>
-
-          <template #edge-default="edgeProps">
-            <g class="edge-wrapper">
-              <!-- 使用 BezierEdge 组件渲染基础边 -->
-              <BezierEdge v-bind="edgeProps" />
-              <!-- 中间添加按钮 - 20x20 稍微小一点更精致 -->
-              <g
-                v-if="edgeProps.sourceX && edgeProps.targetX"
-                class="edge-add-btn"
-                :transform="`translate(${
-                  (edgeProps.sourceX + edgeProps.targetX) / 2 - 10
-                }, ${(edgeProps.sourceY + edgeProps.targetY) / 2 - 10})`"
-                @click.stop="showAddNodeMenuOnEdge(edgeProps, $event)"
-              >
-                <circle cx="10" cy="10" r="10" class="add-btn-bg" />
-                <text x="10" y="10.5" text-anchor="middle" fill="white">+</text>
-              </g>
-            </g>
-          </template>
-
-          <Background pattern-color="#e5e7eb" :gap="20" />
-          <Controls
-            :show-zoom="true"
-            :show-fit="true"
-            :show-interactive="false"
-          />
-        </VueFlow>
-
-        <!-- 添加节点菜单 -->
-        <div
-          v-if="addNodeMenuVisible"
-          class="add-node-menu"
-          :style="{
-            left: addNodeMenuPosition.x + 'px',
-            top: addNodeMenuPosition.y + 'px',
-          }"
-        >
-          <div class="add-node-menu-header">
-            <span>添加节点</span>
-            <el-icon class="close-btn" @click="hideAddNodeMenu">
-              <Close />
-            </el-icon>
-          </div>
-          <div class="add-node-menu-tabs">
-            <button
-              v-for="tabItem in addNodeMenuTabs"
-              :key="tabItem.key"
-              type="button"
-              class="add-node-menu-tab"
-              :class="{ 'is-active': addNodeMenuActiveTab === tabItem.key }"
-              @click.stop="handleAddNodeMenuTabChange(tabItem.key)"
-            >
-              {{ tabItem.label }}
-            </button>
-          </div>
-          <div class="add-node-menu-list">
-            <div
-              v-for="menuItem in currentAddMenuItems"
-              :key="`${menuItem.menuType}-${
-                menuItem.toolId ||
-                menuItem.name ||
-                menuItem.label ||
-                menuItem.type
-              }`"
-              class="add-node-menu-item"
-              :class="{
-                'is-disabled': !isAddableNodeTypeEnabled(menuItem.type || menuItem.menuType)
-              }"
-              @click.stop="handleAddMenuItemClick(menuItem)"
-            >
-              <NodeTypeIcon
-                class="node-icon"
-                :type="menuItem.type"
-                :fallback="menuItem.icon"
-              />
-              <div class="node-info">
-                <div class="node-label">
-                  <span>{{ menuItem.label }}</span>
-                  <span
-                    v-if="!isAddableNodeTypeEnabled(menuItem.type || menuItem.menuType)"
-                    class="node-status-badge"
-                  >开发中</span>
-                </div>
-                <div class="node-desc">{{ menuItem.description }}</div>
-              </div>
-            </div>
-            <div v-if="!currentAddMenuItems.length" class="add-node-menu-empty">
-              <span>{{ addNodeMenuEmptyText }}</span>
-              <el-button v-ripple class="glass-btn"
-                v-if="addNodeMenuActiveTab === 'tools' && toolMenuLoadError"
-                link
-                @click.stop="ensureToolMenuItemsLoaded(true)"
-              >
-                重新加载
-              </el-button>
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-if="addNodeMenuVisible"
-          class="add-node-menu-overlay"
-          @click="hideAddNodeMenu()"
-        ></div>
+        <!-- 添加节点气泡菜单 -->
+        <WorkflowAddMenu
+          :visible="addNodeMenuVisible"
+          :position="addNodeMenuPosition"
+          :tabs="addNodeMenuTabs"
+          :active-tab="addNodeMenuActiveTab"
+          :items="currentAddMenuItems"
+          @close="hideAddNodeMenu"
+          @tab-change="handleAddNodeMenuTabChange"
+          @select="handleAddMenuItemClick"
+        />
       </div>
 
+      <!-- 侧边配置与调试抽屉 -->
       <div class="config-drawer" :class="{ open: drawerVisible }">
-        <template v-if="drawerMode === 'node'">
-          <div
-            class="drawer-header"
-            :class="{
-              'is-start': ['start', 'llm', 'reply'].includes(
-                selectedNode?.type
-              ),
-            }"
-          >
-            <div class="drawer-header-main">
-              <div class="drawer-title">
-                <div class="drawer-icon" :class="selectedNode?.type">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    v-if="selectedNode?.type === 'start'"
-                  >
-                    <path
-                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"
-                    />
-                  </svg>
-                  <LlmNodeIcon
-                    v-else-if="selectedNode?.type === 'llm'"
-                    class="drawer-llm-icon"
-                  />
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    v-else-if="selectedNode?.type === 'reply'"
-                  >
-                    <path
-                      d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"
-                    />
-                  </svg>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    v-else-if="selectedNode?.type === 'tool'"
-                  >
-                    <path
-                      d="M20.7 7.3a5.99 5.99 0 0 1-7.95 7.95l-5.02 5.02a1.5 1.5 0 1 1-2.12-2.12l5.02-5.02A6 6 0 0 1 16.7 3.3l-3.06 3.06 1 3 3 1 3.06-3.06z"
-                    />
-                  </svg>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    v-else-if="selectedNode?.type === 'condition'"
-                  >
-                    <path
-                      d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V5h2v7zM7 9h2v7H7V9zm10 7h-2V9h2v7z"
-                    />
-                  </svg>
-                  <span
-                    v-else-if="selectedNode?.type === 'loop'"
-                    class="drawer-loop-glyph"
-                    >&#8734;</span
-                  >
-                  <svg viewBox="0 0 24 24" fill="currentColor" v-else>
-                    <path
-                      d="M12 3l7 4v10l-7 4-7-4V7l7-4zm0 2.3L7 8.1v7.8l5 2.8 5-2.8V8.1l-5-2.8z"
-                    />
-                  </svg>
-                </div>
-                <el-input
-                  v-if="selectedNode"
-                  :model-value="getNodeLabel(selectedNode.data)"
-                  class="node-config-header-name"
-                  placeholder="输入节点名称"
-                  @update:model-value="
-                    handleSelectedNodeFieldUpdate({
-                      field: 'label',
-                      value: $event,
-                    })
-                  "
-                />
-              </div>
-            </div>
-            <el-icon class="close-icon" @click="closeSidebarPanel">
-              <Close />
-            </el-icon>
-          </div>
+        <!-- 节点属性抽屉 -->
+        <NodeConfigDrawer
+          v-if="drawerMode === 'node'"
+          :selected-node="selectedNode"
+          :is-chatflow-workflow="isChatflowWorkflow"
+          :selected-start-field-cards="selectedStartFieldCards"
+          :selected-llm-node-view="selectedLlmNodeView"
+          :llm-model-options="llmModelOptions"
+          :llm-response-format-options="llmResponseFormatOptions"
+          :selected-llm-context-variable-groups="selectedLlmContextVariableGroups"
+          :selected-llm-has-upstream-context-sources="selectedLlmHasUpstreamContextSources"
+          :dialog-append-to="appContainerRef || 'body'"
+          :selected-reply-content="selectedReplyContent"
+          :selected-reply-outputs="selectedReplyOutputs"
+          :selected-reply-context-variable-groups="selectedReplyContextVariableGroups"
+          :selected-reply-has-upstream-context-sources="selectedReplyHasUpstreamContextSources"
+          :selected-tool-outputs="selectedToolOutputs"
+          :selected-condition-cases="selectedConditionCases"
+          @close="closeSidebarPanel"
+          @update-field="handleSelectedNodeFieldUpdate"
+          @open-start-field-dialog="openStartFieldDialog"
+          @remove-start-field="removeStartField"
+          @update-llm-message="handleSelectedLlmMessageUpdate"
+          @add-llm-message="addLlmMessage"
+          @remove-llm-message="removeLlmMessage"
+          @update-reply-content="handleSelectedReplyContentUpdate"
+          @add-reply-output="addReplyOutput"
+          @update-reply-output="handleSelectedReplyOutputUpdate"
+          @remove-reply-output="removeReplyOutput"
+          @add-tool-output="addToolOutput"
+          @update-tool-output="handleSelectedToolOutputUpdate"
+          @remove-tool-output="removeToolOutput"
+          @update-knowledge-config="handleSelectedKnowledgeConfigUpdate"
+          @add-condition-case="addConditionCase"
+          @update-condition-case="handleSelectedConditionCaseUpdate"
+          @remove-condition-case="removeConditionCase"
+        />
 
-          <div class="drawer-content">
-            <StartNodeConfigForm
-              v-if="selectedNode?.type === 'start'"
-              :fields="selectedStartFieldCards"
-              @addField="openStartFieldDialog()"
-              @editField="openStartFieldDialog"
-              @removeField="removeStartField"
-            />
-
-            <LlmNodeConfigForm
-              v-else-if="selectedNode?.type === 'llm'"
-              :node="selectedLlmNodeView"
-              :model-options="llmModelOptions"
-              :response-format-options="llmResponseFormatOptions"
-              :available-context-variable-groups="
-                selectedLlmContextVariableGroups
-              "
-              :has-upstream-context-sources="
-                selectedLlmHasUpstreamContextSources
-              "
-              :dialog-append-to="appContainerRef || 'body'"
-              @updateField="handleSelectedNodeFieldUpdate"
-              @updateMessage="handleSelectedLlmMessageUpdate"
-              @addMessage="addLlmMessage"
-              @removeMessage="removeLlmMessage"
-            />
-
-            <ChatflowReplyNodeConfigForm
-              v-else-if="selectedNode?.type === 'reply' && isChatflowWorkflow"
-              :content="selectedReplyContent"
-              :available-context-variable-groups="
-                selectedReplyContextVariableGroups
-              "
-              :has-upstream-context-sources="
-                selectedReplyHasUpstreamContextSources
-              "
-              @updateContent="handleSelectedReplyContentUpdate"
-            />
-
-            <ReplyNodeConfigForm
-              v-else-if="selectedNode?.type === 'reply'"
-              :outputs="selectedReplyOutputs"
-              :available-context-variable-groups="
-                selectedReplyContextVariableGroups
-              "
-              :has-upstream-context-sources="
-                selectedReplyHasUpstreamContextSources
-              "
-              @addOutput="addReplyOutput"
-              @updateOutput="handleSelectedReplyOutputUpdate"
-              @removeOutput="removeReplyOutput"
-            />
-
-            <ToolNodeConfigForm
-              v-else-if="selectedNode?.type === 'tool'"
-              :tool-id="getNodeConfigValue(selectedNode?.data, 'toolId', '')"
-              :tool-name="
-                getNodeConfigValue(selectedNode?.data, 'toolName', '')
-              "
-              :tool-source="
-                getNodeConfigValue(selectedNode?.data, 'toolSource', '')
-              "
-              :tool-description="
-                getNodeConfigValue(selectedNode?.data, 'toolDescription', '')
-              "
-              :description="getNodeDescription(selectedNode?.data)"
-              :outputs="selectedToolOutputs"
-              @updateField="handleSelectedNodeFieldUpdate"
-              @addOutput="addToolOutput"
-              @updateOutput="handleSelectedToolOutputUpdate"
-              @removeOutput="removeToolOutput"
-            />
-
-            <KnowledgeNodeConfigForm
-              v-else-if="selectedNode?.type === 'knowledge'"
-              :node="selectedNode?.data"
-              :description="getNodeDescription(selectedNode?.data)"
-              @updateField="handleSelectedNodeFieldUpdate"
-              @updateConfig="handleSelectedKnowledgeConfigUpdate"
-            />
-
-            <ConditionNodeConfigForm
-              v-else-if="selectedNode?.type === 'condition'"
-              :cases="selectedConditionCases"
-              @updateCase="handleSelectedConditionCaseUpdate"
-              @addCase="addConditionCase"
-              @removeCase="removeConditionCase"
-            />
-
-            <LoopNodeConfigForm
-              v-else-if="selectedNode?.type === 'loop'"
-              :item-alias="
-                getNodeConfigValue(selectedNode?.data, 'itemAlias', '')
-              "
-              :max-iterations="
-                Number(
-                  getNodeConfigValue(selectedNode?.data, 'maxIterations', 1)
-                ) || 1
-              "
-              @updateField="handleSelectedNodeFieldUpdate"
-            />
-          </div>
-        </template>
-
+        <!-- 调试面板 -->
         <template v-else-if="drawerMode === 'debug'">
           <div class="drawer-header">
             <div class="drawer-header-main">
               <div class="drawer-title">
                 <div class="drawer-icon debug">
                   <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"
-                    />
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
                   </svg>
                 </div>
                 <span>调试</span>
@@ -1026,26 +116,18 @@
             </div>
 
             <div class="drawer-header-actions">
-              <el-tooltip
-                v-if="isChatflowWorkflow"
-                content="用户输入字段"
-                placement="top"
-              >
-                <el-button v-ripple
+              <el-tooltip v-if="isChatflowWorkflow" content="用户输入字段" placement="top">
+                <el-button
+                  v-ripple
                   text
                   class="drawer-toggle-btn glass-btn"
-                  :class="{
-                    'is-active': chatflowDebugSectionsVisible,
-                    'is-inactive': !chatflowDebugSectionsVisible,
-                  }"
+                  :class="{ 'is-active': chatflowDebugSectionsVisible }"
                   @click="toggleChatflowDebugSections"
                 >
                   <el-icon><Operation /></el-icon>
                 </el-button>
               </el-tooltip>
-              <el-icon class="close-icon" @click="closeSidebarPanel">
-                <Close />
-              </el-icon>
+              <el-icon class="close-icon" @click="closeSidebarPanel"><Close /></el-icon>
             </div>
           </div>
 
@@ -1071,108 +153,42 @@
       </div>
     </div>
 
-    <el-dialog
-      v-model="startFieldDialogVisible"
-      :title="startFieldDialogTitle"
-      width="560px"
-      class="start-field-dialog glass-card"
-      :close-on-click-modal="false"
-      destroy-on-close
-      @closed="closeStartFieldDialog"
-    >
-      <el-form
-        ref="startFieldDialogFormRef"
-        :model="startFieldDraft"
-        :rules="startFieldDialogRules"
-        :validate-on-rule-change="false"
-        label-width="80px"
-        status-icon
-      >
-        <el-form-item prop="name" label="变量名称">
-          <el-input v-model="startFieldDraft.name" placeholder="请输入" />
-        </el-form-item>
-
-        <el-form-item prop="label" label="显示名称">
-          <el-input v-model="startFieldDraft.label" placeholder="请输入" />
-        </el-form-item>
-        <el-form-item label="字段类型">
-          <el-select
-            v-model="startFieldDraft.type"
-            popper-class="dydome-square-popper"
-            @change="handleStartFieldTypeChange"
-          >
-            <el-option
-              v-for="typeOption in startFieldTypeOptions"
-              :key="typeOption.value"
-              :label="typeOption.label"
-              :value="typeOption.value"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item
-          v-if="startFieldDraftTypeMeta.supportsMaxLength"
-          prop="maxLength"
-          label="最大长度"
-        >
-          <el-input-number
-            v-model="startFieldDraft.maxLength"
-            :min="1"
-            :max="2000"
-            controls-position="right"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <div>
-          <el-button v-ripple class="glass-btn" @click="closeStartFieldDialog">取消</el-button>
-          <el-button v-ripple class="glass-btn" @click="saveStartField">保存</el-button>
-        </div>
-      </template>
-    </el-dialog>
+    <!-- 开始字段弹窗组件 -->
+    <StartFieldEditDialog
+      v-model:visible="startFieldDialogVisible"
+      :field="editingStartField"
+      :existing-fields="currentStartFields"
+      :is-chatflow="isChatflowWorkflow"
+      @save="onStartFieldSaved"
+    />
 
     <div class="status-bar">
       <span>{{ nodes.length }} 个节点</span>
       <span>{{ edges.length }} 条连接</span>
     </div>
 
+    <!-- 复制弹窗 -->
     <el-dialog class="glass-card" :title="title" v-model="open" width="800px" draggable>
       <el-form ref="botRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="Bot名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入应用名称" />
         </el-form-item>
         <el-form-item label="描述" prop="description">
-          <el-input
-            v-model="form.description"
-            type="textarea"
-            placeholder="请输入描述"
-            maxlength="512"
-            show-word-limit
-          />
+          <el-input v-model="form.description" type="textarea" placeholder="请输入描述" maxlength="512" show-word-limit />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
-          <el-input
-            v-model="form.remark"
-            type="textarea"
-            placeholder="请输入备注"
-            maxlength="512"
-            show-word-limit
-          />
+          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注" maxlength="512" show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
           <el-button v-ripple class="glass-btn" size="small" @click="cancel">取 消</el-button>
-          <el-button v-ripple class="glass-btn" size="small" @click="submitForm"
-            >确 定</el-button
-          >
+          <el-button v-ripple class="glass-btn" size="small" @click="submitForm">确 定</el-button>
         </div>
       </template>
     </el-dialog>
 
-    <!-- 里程碑六：全栈 60fps 虚拟化 DAG 画布交互视窗 -->
+    <!-- 虚拟化因果 DAG 画布视窗 -->
     <el-drawer
       v-model="showVirtualizedCanvasDrawer"
       size="85%"
@@ -1189,5076 +205,535 @@
 </template>
 
 <script setup name="ProcessFlow">
-import { ref, computed, nextTick, onBeforeUnmount, onMounted } from "vue";
-import {
-  VueFlow,
-  useVueFlow,
-  Handle,
-  Position,
-  ConnectionLineType,
-  BezierEdge,
-} from "@vue-flow/core";
-import { Background } from "@vue-flow/background";
-import { Controls } from "@vue-flow/controls";
-import { Close, Delete, Operation, Plus, Compass, Aim, DataAnalysis } from "@element-plus/icons-vue";
-import { getChatModelDict } from "@/api/ai/myModel/myModel.js";
+import { ref, computed, onMounted, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { Operation, Close } from "@element-plus/icons-vue";
+
 import { getFlow, submitFlow } from "@/api/kb/bot/flow.js";
 import { getBot, copyBot } from "@/api/kb/bot/bot";
-import { listTool } from "@/api/kb/tool/tool.js";
+
+import WorkflowToolbar from "./components/WorkflowToolbar.vue";
+import WorkflowCanvas from "./components/WorkflowCanvas.vue";
+import WorkflowAddMenu from "./components/WorkflowAddMenu.vue";
+import NodeConfigDrawer from "./components/drawer/NodeConfigDrawer.vue";
 import LoopWorkflowCanvas from "./LoopWorkflowCanvas.vue";
-import LlmNodeIcon from "./components/LlmNodeIcon.vue";
-import NodeTypeIcon from "./components/NodeTypeIcon.vue";
+import StartFieldEditDialog from "./components/dialog/StartFieldEditDialog.vue";
 import WorkflowDebugRunPanel from "./components/WorkflowDebugRunPanel.vue";
 import ChatflowDebugRunPanel from "./components/ChatflowDebugRunPanel.vue";
 import VirtualizedDagCanvasEngine from "./components/canvas/VirtualizedDagCanvasEngine.vue";
 
-const showVirtualizedCanvasDrawer = ref(false);
-import StartNodeConfigForm from "./components/nodeConfig/StartNodeConfigForm.vue";
-import LlmNodeConfigForm from "./components/nodeConfig/LlmNodeConfigForm.vue";
-import ChatflowReplyNodeConfigForm from "./components/nodeConfig/ChatflowReplyNodeConfigForm.vue";
-import ReplyNodeConfigForm from "./components/nodeConfig/ReplyNodeConfigForm.vue";
-import ConditionNodeConfigForm from "./components/nodeConfig/ConditionNodeConfigForm.vue";
-import LoopNodeConfigForm from "./components/nodeConfig/LoopNodeConfigForm.vue";
-import ToolNodeConfigForm from "./components/nodeConfig/ToolNodeConfigForm.vue";
-import KnowledgeNodeConfigForm from "./components/nodeConfig/KnowledgeNodeConfigForm.vue";
-import "@vue-flow/core/dist/style.css";
-import "@vue-flow/core/dist/theme-default.css";
-import "@vue-flow/controls/dist/style.css";
-import { useRouter, useRoute } from "vue-router";
-const { proxy } = getCurrentInstance();
-const route = useRoute();
+import { useWorkflowGraphState } from "./composables/useWorkflowGraphState.js";
+import { useWorkflowAddNode } from "./composables/useWorkflowAddNode.js";
+import { useWorkflowMeta } from "./composables/useWorkflowMeta.js";
 import {
-  cloneNodeData,
-  createStructuredNodeData,
-  getNodeConfig,
-  getNodeConfigValue,
-  getNodeDescription,
-  getNodeInput,
-  getNodeLabel,
-  getNodeOutput,
-  mergeNodeConfig,
-  normalizeTemplateReferenceSegment,
-  normalizeWorkflowGraphIds,
-  omitObjectKeys,
-  setNodeConfigValue,
-  setNodeInput,
-  setNodeOutput,
-} from "./utils/nodeData.js";
+  collectUpstreamContextSources,
+  buildContextVariableGroup,
+} from "./composables/useWorkflowContext.js";
 import {
-  TOOL_NODE_TYPE,
-  LOOP_OUTER_TARGET_HANDLE_ID,
-  LOOP_OUTER_SOURCE_HANDLE_ID,
-  CHATFLOW_DEFAULT_START_FIELD_ID,
-  CHATFLOW_LEGACY_DEFAULT_START_FIELD_ID,
-  START_FIELD_NAME_PATTERN,
-  startFieldTypeOptions,
-  buildGeneratedId,
-  buildNodeId,
-  buildCaseId,
-  buildStartFieldId,
-  buildReplyOutputId,
-  buildToolOutputId,
-  buildLlmMessageId,
-  buildLoopStepId,
-  normalizeLoopPath,
-  areLoopPathsEqual,
-  getNodeTypeLabel,
-  getStartFieldTypeMeta,
-  createStartField,
-  createChatflowDefaultStartField,
-  isReadonlyStartField,
-  isChatflowDefaultStartField,
-  normalizeStartField,
-  normalizeStartFields as rawNormalizeStartFields,
-  normalizeStartNodeData as rawNormalizeStartNodeData,
-  getStartFields as rawGetStartFields,
-  getStartFieldValueTypeLabel,
-  getStartFieldDisplayLabel,
-  getStartFieldPreview as rawGetStartFieldPreview,
-  getStartFieldOverflowCount as rawGetStartFieldOverflowCount,
-  createConditionCase,
-  normalizeConditionData,
-  getConditionCases,
-  getConditionCaseLabel,
-  getConditionBranchLabel,
-  getConditionHandleId,
-  getConditionDefaultSourceHandle,
-  createReplyOutput,
-  normalizeReplyOutput,
-  getReplyNodeLabel,
-  buildReplyPreviewReferenceSegment,
-  buildReplyPreviewVariableReferenceKey,
-  getReplyPreviewVariableFallbackLabel,
-  getReplyPreviewText,
-  normalizeReplyNodeData,
   getReplyContent,
   getReplyOutputs,
-  getReplyContextVariables,
-  getReplyNodePreviewItems as rawGetReplyNodePreviewItems,
-  getReplyNodePreviewList as rawGetReplyNodePreviewList,
-  getReplyNodePreviewOverflowCount as rawGetReplyNodePreviewOverflowCount,
-  getReplyNodePreviewSegments as rawGetReplyNodePreviewSegments,
-  createToolOutput,
-  normalizeToolOutput,
-  buildDefaultToolOutputs,
-  normalizeToolNodeData,
-  getToolOutputs,
-  getToolContextVariables,
-  getToolNodeLabel,
-  getToolNodeSubtitle,
-  getToolNodePreviewList,
-  getToolNodePreviewOverflowCount,
-  normalizeLlmMessageRole,
-  createLlmMessage,
-  normalizeLlmOutputItem,
-  buildLlmOutputItems,
-  normalizeLlmNodeData as rawNormalizeLlmNodeData,
-  getLlmOutputs as rawGetLlmOutputs,
-  createLoopFlowEdge,
-  createLoopEntryNode,
-  createLoopFlowNodeData as rawCreateLoopFlowNodeData,
-  createLoopFlowNode as rawCreateLoopFlowNode,
-  normalizeLoopFlowNode as rawNormalizeLoopFlowNode,
-  buildLoopNodesFromLegacySteps as rawBuildLoopNodesFromLegacySteps,
-  buildLoopEdgesFromNodes,
-  normalizeLoopData as rawNormalizeLoopData,
-  getLoopNodes,
-  getLoopEdges,
-  getLoopCanvasLayout,
-  getLoopCanvasNodeSize,
-  getLoopCanvasMetrics,
-  getLoopNodeStyle,
-  getLoopEditorSurfaceStyle,
-  getDefaultSourceHandleId,
-  getDefaultTargetHandleId,
-  normalizeNodeData as rawNormalizeNodeData,
+  normalizeWorkflowGraphIds,
 } from "./utils/workflowHelpers.js";
-import { computeAutoLayout } from "./utils/workflowLayout.js";
+
+const route = useRoute();
 const router = useRouter();
-const {
-  addEdges,
-  removeNodes,
-  removeEdges,
-  setNodes,
-  setEdges,
-  startConnection,
-  updateConnection,
-  endConnection,
-  updateNodeInternals,
-  fitView,
-  zoomTo,
-  setCenter,
-  vueFlowRef,
-} = useVueFlow();
 
-// 默认边配置 - 使用自定义边类型
-const defaultEdgeOptions = {
-  type: "default",
-  style: {
-    stroke: "#94a3b8",
-    strokeWidth: 2,
-  },
-  markerEnd: {
-    type: "arrowclosed",
-    width: 14,
-    height: 14,
-    color: "#94a3b8",
-  },
-};
-const loading = ref(false);
-
-// 工作流类型
-const workflowType = ref(null);
-const flowBuiltinFlag = ref(null);
-const nodes = ref([
-  {
-    id: "start_1",
-    type: "start",
-    position: { x: 100, y: 200 },
-    data: rawNormalizeStartNodeData({ label: "开始" }),
-  },
-]);
-
-const edges = ref([
-  // { id: "e1-2", source: "1", target: "2", type: "default" },
-  // { id: "e2-3", source: "2", target: "3", type: "default" },
-]);
-//复制Bot
-const open = ref(false);
-const title = ref("");
-const botDetail = ref({});
-const form = ref({});
-// 表单校验规则
-const rules = reactive({
-  name: [
-    { required: true, message: "请输入Bot名称", trigger: "blur" },
-    { max: 100, message: "Bot名称不能超过100个字符", trigger: "blur" },
-  ],
-});
-
-// 工作流id
-const botId = ref(null);
-const flowName = ref(null);
-const startFieldDialogVisible = ref(false);
-const startFieldDialogMode = ref("create");
-const startFieldDialogFormRef = ref(null);
-const startFieldDraft = ref({
-  type: "text",
-  name: "",
-  label: "",
-  maxLength: 48,
-  defaultValue: "",
-  required: true,
-});
-const debugRunPanelVisible = ref(false);
-const chatflowDebugSectionsVisible = ref(true);
 const appContainerRef = ref(null);
-const selectedNode = ref(null);
-const llmModelOptions = ref([]);
+const canvasRef = ref(null);
+const botId = ref(route.query.id || route.query.botId);
+const flowId = ref(null);
+const flowName = ref("");
+const workflowType = ref(null);
+const flowBuiltinFlag = ref(0);
+const loading = ref(false);
+const saving = ref(false);
+const showVirtualizedCanvasDrawer = ref(false);
+const chatflowDebugSectionsVisible = ref(true);
 
-function normalizeModelProviderValue(value, fallback = "") {
-  const parseProviderValue = (targetValue) => {
-    if (targetValue === undefined || targetValue === null) {
-      return null;
-    }
+const isChatflowWorkflow = computed(() => Number(workflowType.value) === 1);
 
-    if (typeof targetValue === "string" && targetValue.trim() === "") {
-      return null;
-    }
+// 1. 模型与工具元数据
+const {
+  llmModelOptions,
+  llmResponseFormatOptions,
+  defaultLlmModelConfig,
+  ensureToolMenuItemsLoaded,
+  getModelList,
+  getMenuItemsForTab,
+} = useWorkflowMeta();
 
-    const nextValue = Number(targetValue);
-    return Number.isFinite(nextValue) ? nextValue : null;
-  };
+// 2. 图拓扑与状态管理
+const {
+  nodes,
+  edges,
+  selectedNode,
+  selectedInnerNodeId,
+  drawerVisible,
+  drawerMode,
+  onNodeClick,
+  onPaneClick,
+  onConnect,
+  handleOuterNodeDelete,
+  handleInnerNodeSelect,
+  clearInnerSelection,
+  handleInnerNodeDelete,
+  updateLoopWorkflowData,
+  updateSelectedNodeField,
+} = useWorkflowGraphState({
+  isChatflowWorkflow,
+  defaultLlmModelConfig,
+});
 
-  return parseProviderValue(value) ?? parseProviderValue(fallback) ?? "";
-}
-
-function getDefaultLlmModelOption() {
-  return (
-    llmModelOptions.value
-      .flatMap((group) => (Array.isArray(group?.options) ? group.options : []))
-      .find((option) => `${option?.model || option?.label || ""}`.trim()) ||
-    null
-  );
-}
-
-function getDefaultLlmModelConfig() {
-  const option = getDefaultLlmModelOption();
-
-  return {
-    provider: normalizeModelProviderValue(option?.provider),
-    model: `${option?.model || option?.label || ""}`.trim(),
-  };
-}
-
-const loopPath = ref([]);
-const defaultLlmModelConfig = computed(() => getDefaultLlmModelConfig());
-const llmResponseFormatOptions = [
-  { label: "文本", value: "text" },
-  { label: "JSON", value: "json_object" },
-  { label: "Markdown", value: "markdown" },
-];
-
-const addNodeMenuVisible = ref(false);
-const addNodeMenuPosition = ref({ x: 0, y: 0 });
-const addNodeMenuSourceId = ref(null);
-const addNodeMenuSourceHandle = ref(null);
-const addNodeMenuTargetId = ref(null);
-const addNodeMenuEdgeId = ref(null);
-const addNodeMenuActiveTab = ref("nodes");
-const toolMenuItems = ref([]);
-const toolMenuLoading = ref(false);
-const toolMenuLoaded = ref(false);
-const toolMenuLoadError = ref("");
-const sourceActionDragThreshold = 6;
-const dragHoverTargetId = ref(null);
-const addMenuOpenAt = ref(0);
-const addMenuDismissGuardMs = 220;
-const ADD_NODE_MENU_MARGIN = 16;
-const ADD_NODE_MENU_VERTICAL_OFFSET = 120;
-const ADD_NODE_MENU_ESTIMATED_WIDTH = 252;
-const ADD_NODE_MENU_HEADER_HEIGHT = 48;
-const ADD_NODE_MENU_TAB_HEIGHT = 44;
-const ADD_NODE_MENU_ITEM_HEIGHT = 56;
-const ADD_NODE_MENU_LIST_PADDING = 16;
-const ENABLED_ADDABLE_NODE_TYPES = new Set([
-  "llm",
-  "reply",
-  "condition",
-  "loop",
-  "knowledge-retrieval",
-  "knowledge",
-  "tool",
-]);
-const DEFAULT_TOOL_MENU_ICON = "🧰";
-
-// 可添加的节点类型
-const addableNodeTypes = [
-  {
-    type: "llm",
-    label: "LLM",
-    icon: "\uD83E\uDD16",
-    description: "AI 对话处理",
-  },
-  {
-    type: "reply",
-    label: "输出",
-    icon: "\uD83D\uDCAC",
-    description: "返回结果",
-  },
-  {
-    type: "condition",
-    label: "条件分支",
-    icon: "\uD83D\uDD00",
-    description: "条件判断",
-  },
-  {
-    type: "loop",
-    label: "循环",
-    icon: "\u221e",
-    description: "循环执行子流程",
-  },
-
-  {
-    type: "http-request",
-    label: "HTTP请求",
-    icon: "\uD83C\uDF10",
-    description: "调用外部 HTTP 接口",
-  },
-  {
-    type: "document-extractor",
-    label: "文档提取器",
-    icon: "\uD83D\uDCC4",
-    description: "解析并提取文档内容",
-  },
-  {
-    type: "parameter-extractor",
-    label: "参数提取器",
-    icon: "\uD83E\uDDE9",
-    description: "从文本中提取参数",
-  },
-  {
-    type: "code-executor",
-    label: "代码执行",
-    icon: "\uD83D\uDCBB",
-    description: "执行自定义代码",
-  },
-  {
-    type: "iteration",
-    label: "迭代",
-    icon: "\uD83D\uDD01",
-    description: "对数据集合进行迭代处理",
-  },
-  {
-    type: "knowledge-retrieval",
-    label: "知识检索",
-    icon: "\uD83D\uDCDA",
-    description: "检索知识库内容",
-  },
-  {
-    type: "question-classifier",
-    label: "问题分类器",
-    icon: "\uD83E\uDDE0",
-    description: "对问题进行分类判断",
-  },
-];
-
-const addNodeMenuTabs = [
-  { key: "nodes", label: "节点" },
-  { key: "tools", label: "工具" },
-];
+// 3. 拖拽连线与添加气泡菜单
+const {
+  addNodeMenuVisible,
+  addNodeMenuPosition,
+  addNodeMenuTabs,
+  addNodeMenuActiveTab,
+  dragHoverTargetId,
+  hideAddNodeMenu,
+  showAddNodeMenuOnEdge,
+  onSourceActionPointerDown,
+  addNodeAndConnect,
+} = useWorkflowAddNode({
+  nodes,
+  edges,
+  selectedNode,
+  drawerMode,
+  drawerVisible,
+  isChatflowWorkflow,
+  defaultLlmModelConfig,
+});
 
 const currentAddMenuItems = computed(() =>
-  addNodeMenuActiveTab.value === "tools"
-    ? toolMenuItems.value
-    : addableNodeTypes.map((item) => ({
-        ...item,
-        menuType: "node",
-      }))
+  getMenuItemsForTab(addNodeMenuActiveTab.value)
 );
 
-const addNodeMenuEmptyText = computed(() => {
-  if (addNodeMenuActiveTab.value !== "tools") {
-    return "";
-  }
-
-  if (toolMenuLoading.value) {
-    return "工具加载中...";
-  }
-
-  if (toolMenuLoadError.value) {
-    return toolMenuLoadError.value;
-  }
-
-  return "暂无可用工具";
-});
-
-function isAddableNodeTypeEnabled(type = "") {
-  const normalizedType = `${type || ""}`.trim();
-
-  if (normalizedType === TOOL_NODE_TYPE) {
-    return true;
-  }
-
-  return ENABLED_ADDABLE_NODE_TYPES.has(normalizedType);
-}
-
-function normalizeMenuToolIcon(value = "") {
-  const normalizedValue = `${value || ""}`.trim();
-
-  if (!normalizedValue || normalizedValue.length > 2) {
-    return DEFAULT_TOOL_MENU_ICON;
-  }
-
-  return normalizedValue;
-}
-
-function normalizeToolMenuOutput(output = {}) {
-  return createToolOutput({
-    id: output.id,
-    variableKey: output.variableKey || output.path || output.name || "result",
-    variableLabel:
-      output.variableLabel || output.variableKey || output.path || output.name,
-    valueType: output.valueType || "string",
-    path: output.path || output.variableKey || output.name || "result",
-  });
-}
-
-function normalizeToolMenuItem(item = {}) {
-  const toolId = `${item?.id || item?.toolId || item?.code || ""}`.trim();
-  const toolName = `${
-    item?.name || item?.toolName || item?.label || item?.title || ""
-  }`.trim();
-  const toolSource = `${
-    item?.source || item?.provider || item?.providerName || ""
-  }`.trim();
-  const toolDescription = `${
-    item?.description || item?.remark || item?.summary || ""
-  }`.trim();
-  const rawOutputs = Array.isArray(item?.output)
-    ? item.output
-    : Array.isArray(item?.outputs)
-    ? item.outputs
-    : Array.isArray(item?.outputVariables)
-    ? item.outputVariables
-    : [];
-
-  if (!toolId && !toolName) {
-    return null;
-  }
-
-  return {
-    menuType: "tool",
-    type: TOOL_NODE_TYPE,
-    toolId,
-    name: toolName || "工具",
-    label: toolName || "工具",
-    description: toolDescription || toolSource || "工具能力",
-    source: toolSource,
-    icon: normalizeMenuToolIcon(item?.icon || item?.emoji || item?.glyph),
-    outputs: rawOutputs
-      .filter(Boolean)
-      .map((output) => normalizeToolMenuOutput(output)),
-  };
-}
-
-function normalizeToolMenuList(response = {}) {
-  const responseData =
-    response && typeof response === "object" ? response.data : null;
-  const rawList = Array.isArray(responseData?.rows)
-    ? responseData.rows
-    : Array.isArray(response?.rows)
-    ? response.rows
-    : Array.isArray(responseData)
-    ? responseData
-    : Array.isArray(response)
-    ? response
-    : [];
-
-  return rawList.map((item) => normalizeToolMenuItem(item)).filter(Boolean);
-}
-
-async function ensureToolMenuItemsLoaded(force = false) {
-  if (toolMenuLoading.value) {
-    return;
-  }
-
-  if (!force && toolMenuLoaded.value) {
-    return;
-  }
-
-  toolMenuLoading.value = true;
-  toolMenuLoadError.value = "";
-
-  try {
-    const response = await listTool({
-      pageNum: 1,
-      pageSize: 200,
-    });
-    toolMenuItems.value = normalizeToolMenuList(response);
-    toolMenuLoaded.value = true;
-  } catch (error) {
-    toolMenuItems.value = [];
-    toolMenuLoadError.value = "工具列表加载失败，请稍后重试";
-  } finally {
-    toolMenuLoading.value = false;
-  }
-}
-
-function handleAddNodeMenuTabChange(tabKey = "nodes") {
+function handleAddNodeMenuTabChange(tabKey) {
   addNodeMenuActiveTab.value = tabKey;
-
   if (tabKey === "tools") {
     ensureToolMenuItemsLoaded();
   }
 }
 
-function buildToolNodeDataFromMenuItem(menuItem = {}) {
-  return normalizeToolNodeData({
-    label: `${menuItem.label || menuItem.name || "工具"}`.trim() || "工具",
-    description: `${menuItem.description || ""}`.trim(),
-    toolId: `${menuItem.toolId || ""}`.trim(),
-    toolName: `${menuItem.name || menuItem.label || "工具"}`.trim() || "工具",
-    toolDescription: `${menuItem.description || ""}`.trim(),
-    toolSource: `${menuItem.source || ""}`.trim(),
-    toolIcon: `${menuItem.icon || ""}`.trim(),
-    output:
-      Array.isArray(menuItem.outputs) && menuItem.outputs.length
-        ? menuItem.outputs.map((item) => normalizeToolOutput(item))
-        : buildDefaultToolOutputs(),
+function handleAddMenuItemClick(menuItem) {
+  if (menuItem.type === "tool" && menuItem.toolId) {
+    addNodeAndConnect("tool", {
+      toolId: menuItem.toolId,
+      toolName: menuItem.name || menuItem.label,
+      toolSource: menuItem.rawItem?.toolSource || "mcp",
+      toolDescription: menuItem.description,
+      label: menuItem.label,
+    });
+  } else {
+    addNodeAndConnect(menuItem.type);
+  }
+}
+
+// 4. 开始字段编辑弹窗状态
+const startFieldDialogVisible = ref(false);
+const editingStartField = ref(null);
+
+const currentStartFields = computed(() => {
+  const startNode = nodes.value.find((n) => n.type === "start");
+  return startNode?.data?.fields || [];
+});
+
+function openStartFieldDialog(field = null) {
+  editingStartField.value = field;
+  startFieldDialogVisible.value = true;
+}
+
+function onStartFieldSaved(savedField) {
+  const startNode = nodes.value.find((n) => n.type === "start");
+  if (!startNode) return;
+  if (!startNode.data) startNode.data = {};
+  const fields = [...(startNode.data.fields || [])];
+  const idx = fields.findIndex((f) => f.id === savedField.id);
+  if (idx >= 0) {
+    fields[idx] = savedField;
+  } else {
+    fields.push(savedField);
+  }
+  startNode.data.fields = fields;
+}
+
+function removeStartField(fieldId) {
+  const startNode = nodes.value.find((n) => n.type === "start");
+  if (!startNode || !startNode.data?.fields) return;
+  startNode.data.fields = startNode.data.fields.filter((f) => f.id !== fieldId);
+}
+
+// 5. 节点配置抽屉衍生数据计算
+const selectedStartFieldCards = computed(() => {
+  if (selectedNode.value?.type !== "start") return [];
+  return selectedNode.value?.data?.fields || [];
+});
+
+const selectedLlmNodeView = computed(() => {
+  if (selectedNode.value?.type !== "llm") return null;
+  return selectedNode.value;
+});
+
+const selectedLlmContextVariableGroups = computed(() => {
+  if (!selectedNode.value || selectedNode.value.type !== "llm") return [];
+  const graphContext = { nodeList: nodes.value, edgeList: edges.value };
+  return collectUpstreamContextSources(selectedNode.value.id, graphContext)
+    .map(buildContextVariableGroup)
+    .filter(Boolean);
+});
+
+const selectedLlmHasUpstreamContextSources = computed(
+  () => selectedLlmContextVariableGroups.value.length > 0
+);
+
+const selectedReplyContent = computed(() => {
+  if (selectedNode.value?.type !== "reply") return "";
+  return getReplyContent(selectedNode.value?.data) || "";
+});
+
+const selectedReplyOutputs = computed(() => {
+  if (selectedNode.value?.type !== "reply") return [];
+  return getReplyOutputs(selectedNode.value?.data) || [];
+});
+
+const selectedReplyContextVariableGroups = computed(() => {
+  if (!selectedNode.value || selectedNode.value.type !== "reply") return [];
+  const graphContext = { nodeList: nodes.value, edgeList: edges.value };
+  return collectUpstreamContextSources(selectedNode.value.id, graphContext)
+    .map(buildContextVariableGroup)
+    .filter(Boolean);
+});
+
+const selectedReplyHasUpstreamContextSources = computed(
+  () => selectedReplyContextVariableGroups.value.length > 0
+);
+
+const selectedToolOutputs = computed(() => {
+  if (selectedNode.value?.type !== "tool") return [];
+  return selectedNode.value?.data?.outputs || [];
+});
+
+const selectedConditionCases = computed(() => {
+  if (selectedNode.value?.type !== "condition") return [];
+  return selectedNode.value?.data?.cases || [];
+});
+
+// 抽屉更新动作分发
+function handleSelectedNodeFieldUpdate(payload = {}) {
+  updateSelectedNodeField(payload);
+}
+
+function handleSelectedLlmMessageUpdate(payload = {}) {
+  if (!selectedNode.value || selectedNode.value.type !== "llm") return;
+  const { index, field, value } = payload;
+  const messages = [...(selectedNode.value.data.messages || [])];
+  if (messages[index]) {
+    messages[index][field] = value;
+    selectedNode.value.data.messages = messages;
+  }
+}
+
+function addLlmMessage() {
+  if (!selectedNode.value || selectedNode.value.type !== "llm") return;
+  const messages = [...(selectedNode.value.data.messages || [])];
+  messages.push({ role: "user", content: "" });
+  selectedNode.value.data.messages = messages;
+}
+
+function removeLlmMessage(index) {
+  if (!selectedNode.value || selectedNode.value.type !== "llm") return;
+  const messages = [...(selectedNode.value.data.messages || [])];
+  messages.splice(index, 1);
+  selectedNode.value.data.messages = messages;
+}
+
+function handleSelectedReplyContentUpdate(content) {
+  if (!selectedNode.value) return;
+  if (!selectedNode.value.data) selectedNode.value.data = {};
+  selectedNode.value.data.content = content;
+}
+
+function addReplyOutput() {
+  if (!selectedNode.value) return;
+  if (!selectedNode.value.data) selectedNode.value.data = {};
+  const outputs = [...(selectedNode.value.data.outputs || [])];
+  outputs.push({ id: `out_${Date.now()}`, key: "", label: "", value: "" });
+  selectedNode.value.data.outputs = outputs;
+}
+
+function handleSelectedReplyOutputUpdate(payload = {}) {
+  if (!selectedNode.value) return;
+  const { index, field, value } = payload;
+  const outputs = [...(selectedNode.value.data.outputs || [])];
+  if (outputs[index]) {
+    outputs[index][field] = value;
+    selectedNode.value.data.outputs = outputs;
+  }
+}
+
+function removeReplyOutput(index) {
+  if (!selectedNode.value) return;
+  const outputs = [...(selectedNode.value.data.outputs || [])];
+  outputs.splice(index, 1);
+  selectedNode.value.data.outputs = outputs;
+}
+
+function addToolOutput() {
+  if (!selectedNode.value) return;
+  if (!selectedNode.value.data) selectedNode.value.data = {};
+  const outputs = [...(selectedNode.value.data.outputs || [])];
+  outputs.push({ id: `out_${Date.now()}`, key: "", label: "", value: "" });
+  selectedNode.value.data.outputs = outputs;
+}
+
+function handleSelectedToolOutputUpdate(payload = {}) {
+  if (!selectedNode.value) return;
+  const { index, field, value } = payload;
+  const outputs = [...(selectedNode.value.data.outputs || [])];
+  if (outputs[index]) {
+    outputs[index][field] = value;
+    selectedNode.value.data.outputs = outputs;
+  }
+}
+
+function removeToolOutput(index) {
+  if (!selectedNode.value) return;
+  const outputs = [...(selectedNode.value.data.outputs || [])];
+  outputs.splice(index, 1);
+  selectedNode.value.data.outputs = outputs;
+}
+
+function handleSelectedKnowledgeConfigUpdate(patch = {}) {
+  if (!selectedNode.value) return;
+  if (!selectedNode.value.data) selectedNode.value.data = {};
+  selectedNode.value.data = { ...selectedNode.value.data, ...patch };
+}
+
+function addConditionCase() {
+  if (!selectedNode.value) return;
+  if (!selectedNode.value.data) selectedNode.value.data = {};
+  const cases = [...(selectedNode.value.data.cases || [])];
+  cases.push({
+    id: `case_${Date.now()}`,
+    label: `分支 ${cases.length + 1}`,
+    conditions: [],
   });
+  selectedNode.value.data.cases = cases;
 }
 
-function handleAddMenuItemClick(menuItem = {}) {
-  if (menuItem?.menuType === "tool") {
-    addNodeAndConnect(TOOL_NODE_TYPE, buildToolNodeDataFromMenuItem(menuItem));
-    return;
+function handleSelectedConditionCaseUpdate(payload = {}) {
+  if (!selectedNode.value) return;
+  const { index, field, value } = payload;
+  const cases = [...(selectedNode.value.data.cases || [])];
+  if (cases[index]) {
+    cases[index][field] = value;
+    selectedNode.value.data.cases = cases;
   }
-
-  addNodeAndConnect(menuItem?.type || "");
 }
 
-function routerView() {
-  // todo 根据类型进行判断
-  if (workflowType.value == 0){// 工作流
-    router.push("/kb/bot/workflow?botType=0");
-  }else if (workflowType.value == 1) {// Chatflow
-    router.push("/kb/bot/chatflow?botType=1");
-  }
+function removeConditionCase(index) {
+  if (!selectedNode.value) return;
+  const cases = [...(selectedNode.value.data.cases || [])];
+  cases.splice(index, 1);
+  selectedNode.value.data.cases = cases;
+}
+
+function closeSidebarPanel() {
+  drawerVisible.value = false;
+  selectedNode.value = null;
+  selectedInnerNodeId.value = null;
+}
+
+function openDebugRunPanel() {
+  drawerMode.value = "debug";
+  drawerVisible.value = true;
 }
 
 function toggleChatflowDebugSections() {
   chatflowDebugSectionsVisible.value = !chatflowDebugSectionsVisible.value;
 }
 
-//复制Bot
-function showCopyDialog() {
-  title.value = "复制Bot";
-  reset();
-  form.value = { ...botDetail.value };
-  form.value.name = botDetail.value.name + "（副本）";
-  open.value = true;
-}
-// 取消按钮
-function cancel() {
-  open.value = false;
-  reset();
-}
-// 表单重置
-function reset() {
-  form.value = {
-    id: null,
-    workspaceId: null,
-    name: null,
-    type: null,
-    description: null,
-    builtinFlag: null,
-    validFlag: null,
-    delFlag: null,
-    createBy: null,
-    creatorId: null,
-    createTime: null,
-    updateBy: null,
-    updaterId: null,
-    updateTime: null,
-    remark: null,
-  };
+// 调试面板输入字段与图数据
+const debugRunStartFields = computed(() => {
+  const startNode = nodes.value.find((n) => n.type === "start");
+  return startNode?.data?.fields || [];
+});
 
-  proxy.resetForm("botRef");
-}
-
-// 确定按钮
-function submitForm() {
-  proxy.$refs["botRef"].validate((valid) => {
-    if (valid) {
-      copyBot(form.value)
-        .then((response) => {
-          proxy.$modal.msgSuccess("复制成功");
-          open.value = false;
-          const newId = response.data;
-          router.push({
-            path:
-              form.value.type === 2
-                ? "/kb/bot/agent"
-                : form.value.type === 3
-                ? "/system/bot/codeNative"
-                : "/kb/bot/processflow",
-            query: {
-              id: newId,
-            },
-          });
-        })
-        .catch((error) => {});
-    }
-  });
-}
-
-function openDebugRunPanel() {
-  hideAddNodeMenu();
-
-  if (!validateDebugNodeConfigs()) {
-    return;
-  }
-
-  selectedNode.value = null;
-  chatflowDebugSectionsVisible.value = true;
-  debugRunPanelVisible.value = true;
-}
-
-function closeSidebarPanel() {
-  selectedNode.value = null;
-  debugRunPanelVisible.value = false;
-}
+const debugRunWorkflowData = computed(() => ({
+  nodes: nodes.value,
+  edges: edges.value,
+  flowId: flowId.value,
+  botId: botId.value,
+}));
 
 function validateFlowBeforeRun() {
-  if (!validateDebugNodeConfigs()) {
-    return false;
-  }
-
   return validateFlow({ showSuccess: false });
 }
 
-function walkDebugValidationNodes(nodeList = [], visitor = () => true) {
-  const normalizedNodeList = Array.isArray(nodeList) ? nodeList : [];
-
-  for (const node of normalizedNodeList) {
-    if (!node || !node.type) {
-      continue;
-    }
-
-    if (visitor(node) === false) {
-      return false;
-    }
-
-    if (node.type !== "loop") {
-      continue;
-    }
-
-    const loopNodes = getLoopNodes(node.data).filter(
-      (loopNode) =>
-        loopNode &&
-        loopNode.type &&
-        loopNode.type !== "loop-start" &&
-        loopNode.id !== "loop-entry"
-    );
-
-    if (!walkDebugValidationNodes(loopNodes, visitor)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function hasInvalidReplyOutputConfig(data = {}) {
-  const outputs = getReplyOutputs(data);
-
-  return (
-    !outputs.length ||
-    outputs.some((output) => {
-      const outputName = `${output?.name || ""}`.trim();
-      const outputValue = `${output?.variableKey || output?.path || ""}`.trim();
-
-      return !outputName || !outputValue;
-    })
-  );
-}
-
-function validateDebugNodeConfigs() {
-  const flowData = buildFlowData();
-  const flowNodes = Array.isArray(flowData?.nodes) ? flowData.nodes : [];
-
-  return walkDebugValidationNodes(flowNodes, (node) => {
-    if (
-      node.type === "llm" &&
-      !`${getNodeConfigValue(node.data, "prompt", "") || ""}`.trim()
-    ) {
-      proxy.$modal.msgWarning("LLM节点未设置提示词，请设置！");
-      return false;
-    }
-
-    if (node.type === "reply") {
-      if (isChatflowWorkflow.value) {
-        if (!`${getReplyContent(node.data) || ""}`.trim()) {
-          proxy.$modal.msgWarning("输出节点未设置返回结果，请设置！");
-          return false;
-        }
-      } else if (hasInvalidReplyOutputConfig(node.data)) {
-        proxy.$modal.msgWarning("输出节点未设置输出变量，请设置！");
-        return false;
-      }
-    }
-
-    return true;
-  });
-}
-
-function getModelList() {
-  getChatModelDict().then((res) => {
-    if (res?.code !== 200 || !Array.isArray(res?.data)) {
-      llmModelOptions.value = [];
-      return;
-    }
-
-    llmModelOptions.value = res.data
-      .map((provider) => {
-        const providerLabel =
-          `${
-            provider?.label?.zh_Hans ||
-            provider?.label?.zh_Hant ||
-            provider?.label?.en ||
-            provider?.provider ||
-            ""
-          }`.trim() || "模型厂商";
-        const options = Array.isArray(provider?.models)
-          ? provider.models
-              .filter((model) => `${model?.model || ""}`.trim())
-              .map((model) => {
-                const modelName = `${model.model || ""}`.trim();
-                const providerValue = normalizeModelProviderValue(
-                  provider?.provider
-                );
-
-                return {
-                  label: modelName,
-                  value:
-                    providerValue === ""
-                      ? modelName
-                      : `${providerValue}::${modelName}`,
-                  model: modelName,
-                  provider: providerValue,
-                  providerLabel,
-                };
-              })
-          : [];
-
-        return {
-          label: providerLabel,
-          options,
-        };
-      })
-      .filter((group) => group.options.length);
-  });
-}
-
-function smartFitView(options = {}) {
-  nextTick(() => {
-    try {
-      fitView({
-        padding: 0.12,
-        minZoom: 0.52,
-        maxZoom: 1.0,
-        includeHiddenNodes: false,
-        duration: 400,
-        ...options,
-      });
-    } catch (err) {
-      console.warn("fitView 执行警告:", err);
-    }
-  });
-}
-
-function autoLayoutGraph() {
-  if (!nodes.value || nodes.value.length === 0) {
-    return;
-  }
-
-  const nextNodes = computeAutoLayout(nodes.value, edges.value);
-  setNodes(nextNodes);
-  nodes.value = nextNodes;
-
-  const cleanEdges = (edges.value || []).map((e) =>
-    omitObjectKeys(e, [
-      "sourceNode",
-      "targetNode",
-      "sourceX",
-      "sourceY",
-      "targetX",
-      "targetY",
-      "sourcePosition",
-      "targetPosition",
-    ])
-  );
-  setEdges(cleanEdges);
-  edges.value = cleanEdges;
-
-  refreshNodeHandleLayout(nextNodes.map((n) => n.id));
-  nextTick(() => {
-    (nodes.value || []).forEach((n) => {
-      try {
-        updateNodeInternals(n.id);
-      } catch (e) {}
-    });
-    requestAnimationFrame(() => {
-      refreshNodeHandleLayout(nextNodes.map((n) => n.id));
-      smartFitView({ duration: 500 });
-    });
-  });
-}
-
-function getFlowData(id) {
-  // loading.value = true;
-  getFlow(id).then((res) => {
-    const normalizedFlow = normalizeWorkflowGraphIds({
-      nodes: res.data.nodes,
-      edges: res.data.edges,
-    });
-
-    if (
-      Array.isArray(normalizedFlow.nodes) &&
-      normalizedFlow.nodes.length > 0
-    ) {
-      const nextNodes = normalizedFlow.nodes.map((node) => ({
-        ...node,
-        data: normalizeNodeData(node?.type, cloneNodeData(node?.data || {})),
-      }));
-      nodes.value = nextNodes;
-      setNodes(nextNodes);
-    }
-
-    if (
-      Array.isArray(normalizedFlow.edges) &&
-      normalizedFlow.edges.length > 0
-    ) {
-      edges.value = normalizedFlow.edges;
-      setEdges(normalizedFlow.edges);
-    }
-    // 数据就绪后平滑居中自适应
-    nextTick(() => {
-      refreshNodeHandleLayout((nodes.value || []).map((n) => n.id));
-      requestAnimationFrame(() => {
-        smartFitView({ duration: 350 });
-      });
-    });
-    // loading.value = false;
-  });
-}
-
-function getBotDetail(id) {
-  botDetail.value = {};
-  workflowType.value = null;
-  flowName.value = "";
-  flowBuiltinFlag.value = 0;
-  getBot(id).then((res) => {
-    botDetail.value = res.data;
-    workflowType.value = res.data.type;
-    flowName.value = res.data.name;
-    flowBuiltinFlag.value = res.data.builtinFlag;
-  });
-}
-
-watch(
-  () => route.query.id,
-  (newId) => {
-    botId.value = newId;
-    if (!newId) {
-      return;
-    }
-    getBotDetail(newId);
-    getFlowData(newId);
-  },
-  { immediate: true }
-);
-
-onMounted(() => {
-  nodes.value = nodes.value.map((node) => ({
-    ...node,
-    data: normalizeNodeData(node?.type, cloneNodeData(node?.data || {})),
-  }));
-  getModelList();
-  window.addEventListener("keydown", handleSelectedNodeDeleteKeydown);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("keydown", handleSelectedNodeDeleteKeydown);
-});
-
-const selectedStartFieldCards = computed(() =>
-  selectedNode.value?.type === "start"
-    ? getStartFields(selectedNode.value.data).map((field) => ({
-        ...field,
-        typeLabel: getStartFieldTypeMeta(field.type).label,
-        valueTypeLabel: getStartFieldValueTypeLabel(field.type),
-      }))
-    : []
-);
-
-const selectedConditionCases = computed(() =>
-  selectedNode.value?.type === "condition"
-    ? getConditionCases(selectedNode.value.data)
-    : []
-);
-const selectedReplyOutputs = computed(() =>
-  selectedNode.value?.type === "reply"
-    ? getReplyOutputs(selectedNode.value.data)
-    : []
-);
-const selectedReplyContent = computed(() =>
-  selectedNode.value?.type === "reply"
-    ? getReplyContent(selectedNode.value.data)
-    : ""
-);
-const selectedToolOutputs = computed(() =>
-  selectedNode.value?.type === TOOL_NODE_TYPE
-    ? getToolOutputs(selectedNode.value.data)
-    : []
-);
-const selectedLlmNodeView = computed(() =>
-  selectedNode.value?.type === "llm"
-    ? {
-        ...selectedNode.value,
-        data: {
-          ...getNodeConfig(selectedNode.value.data),
-          messages: getNodeInput(selectedNode.value.data),
-          output: getNodeOutput(selectedNode.value.data),
-        },
-      }
-    : null
-);
-const selectedLlmContextState = computed(() => getSelectedLlmContextState());
-const selectedLlmContextVariableGroups = computed(
-  () => selectedLlmContextState.value.groups
-);
-const selectedLlmHasUpstreamContextSources = computed(
-  () => selectedLlmContextState.value.hasUpstreamContextSources
-);
-const selectedReplyContextState = computed(() =>
-  getSelectedReplyContextState()
-);
-const selectedReplyContextVariableGroups = computed(
-  () => selectedReplyContextState.value.groups
-);
-const selectedReplyHasUpstreamContextSources = computed(
-  () => selectedReplyContextState.value.hasUpstreamContextSources
-);
-const drawerMode = computed(() =>
-  debugRunPanelVisible.value ? "debug" : selectedNode.value ? "node" : ""
-);
-const drawerVisible = computed(() => drawerMode.value !== "");
-function isChatflowWorkflowMode() {
-  return Number(workflowType.value) === 1;
-}
-
-const isChatflowWorkflow = computed(() => isChatflowWorkflowMode());
-const debugRunStartFields = computed(() => {
-  const startNode = nodes.value.find((node) => node.type === "start");
-
-  return startNode ? getStartFields(startNode.data) : [];
-});
-const debugRunWorkflowData = computed(() => buildFlowData());
-
-const startFieldDialogTitle = computed(() =>
-  startFieldDialogMode.value === "edit" ? "修改变量" : "新增变量"
-);
-
-const startFieldDraftTypeMeta = computed(() =>
-  getStartFieldTypeMeta(startFieldDraft.value.type)
-);
-
-function findDuplicatedStartField(fieldName = "", currentFieldId = "") {
-  if (selectedNode.value?.type !== "start") {
-    return null;
-  }
-
-  const normalizedFieldName = `${fieldName || ""}`.trim().toLowerCase();
-
-  if (!normalizedFieldName) {
-    return null;
-  }
-
-  return getStartFields(selectedNode.value.data).find(
-    (field) =>
-      field.id !== currentFieldId &&
-      field.name.trim().toLowerCase() === normalizedFieldName
-  );
-}
-
-function validateStartFieldName(rule, value, callback) {
-  const fieldName = `${value || ""}`.trim();
-
-  if (!fieldName) {
-    callback(new Error("请输入变量名称"));
-    return;
-  }
-
-  if (!START_FIELD_NAME_PATTERN.test(fieldName)) {
-    callback(
-      new Error("变量名称需以字母或下划线开头，可包含数字、下划线和点号")
-    );
-    return;
-  }
-
-  if (findDuplicatedStartField(fieldName, startFieldDraft.value.id)) {
-    callback(new Error("变量名称不能重复"));
-    return;
-  }
-
-  callback();
-}
-
-function validateStartFieldLabel(rule, value, callback) {
-  if (`${value || ""}`.trim()) {
-    callback();
-    return;
-  }
-
-  callback(new Error("请输入显示名称"));
-}
-
-function validateStartFieldMaxLength(rule, value, callback) {
-  if (!startFieldDraftTypeMeta.value.supportsMaxLength) {
-    callback();
-    return;
-  }
-
-  const maxLength = Number(value);
-
-  if (!Number.isInteger(maxLength) || maxLength <= 0) {
-    callback(new Error("请输入大于 0 的最大长度"));
-    return;
-  }
-
-  callback();
-}
-
-const startFieldDialogRules = {
-  name: [
-    {
-      required: true,
-      validator: validateStartFieldName,
-      trigger: "blur",
-    },
-  ],
-  label: [
-    {
-      required: true,
-      validator: validateStartFieldLabel,
-      trigger: "blur",
-    },
-  ],
-  maxLength: [
-    {
-      validator: validateStartFieldMaxLength,
-      trigger: "blur",
-    },
-  ],
-};
-
-
-function getSelectedLoopNodeId(loopPath = []) {
-  if (selectedNode.value?.scope !== "loop-inner") {
-    return null;
-  }
-
-  return areLoopPathsEqual(selectedNode.value.loopPath, loopPath)
-    ? selectedNode.value.id
-    : null;
-}
-
-function refreshNodeHandleLayout(nodeIds = []) {
-  const nextIds = Array.isArray(nodeIds)
-    ? [...new Set(nodeIds.filter(Boolean))]
-    : [nodeIds].filter(Boolean);
-
-  if (!nextIds.length) {
-    return;
-  }
-
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        updateNodeInternals(nextIds);
-      });
-    });
-  });
-}
-
-function normalizeStartFields(fields = []) {
-  return rawNormalizeStartFields(fields, isChatflowWorkflow.value);
-}
-
-function normalizeStartNodeData(data = {}) {
-  return rawNormalizeStartNodeData(data, isChatflowWorkflow.value);
-}
-
-function getStartFields(data = {}) {
-  return rawGetStartFields(data, isChatflowWorkflow.value);
-}
-
-function buildContextSourceNodeId(nodeId = "", graphPath = []) {
-  const normalizedNodeId = `${nodeId || ""}`.trim();
-
-  if (!normalizedNodeId) {
-    return "";
-  }
-
-  const segments = [...normalizeLoopPath(graphPath), normalizedNodeId].filter(
-    Boolean
-  );
-
-  return segments.join("::");
-}
-
-function createGraphContext(
-  nodeList = [],
-  edgeList = [],
-  graphPath = [],
-  workflowData = null,
-  containerNodeId = ""
-) {
-  return {
-    nodeList: Array.isArray(nodeList) ? nodeList.filter(Boolean) : [],
-    edgeList: Array.isArray(edgeList) ? edgeList.filter(Boolean) : [],
-    graphPath: normalizeLoopPath(graphPath),
-    workflowData: workflowData ? normalizeLoopData(workflowData) : null,
-    containerNodeId: `${containerNodeId || ""}`.trim(),
-  };
-}
-
-function getLoopWorkflowDataAtPath(loopPath = []) {
-  const normalizedPath = normalizeLoopPath(loopPath);
-
-  if (!normalizedPath.length) {
-    return null;
-  }
-
-  let currentNodeList = nodes.value;
-  let currentLoopData = null;
-
-  for (const loopNodeId of normalizedPath) {
-    const loopNode = currentNodeList.find(
-      (node) => node?.id === loopNodeId && node.type === "loop"
-    );
-
-    if (!loopNode) {
-      return null;
-    }
-
-    currentLoopData = normalizeLoopData(loopNode.data || {});
-    currentNodeList = getLoopNodes(currentLoopData);
-  }
-
-  return currentLoopData;
-}
-
-function getGraphContextByLoopPath(loopPath = []) {
-  const normalizedPath = normalizeLoopPath(loopPath);
-
-  if (!normalizedPath.length) {
-    return createGraphContext(nodes.value, edges.value);
-  }
-
-  const workflowData = getLoopWorkflowDataAtPath(normalizedPath);
-
-  if (!workflowData) {
-    return null;
-  }
-
-  return createGraphContext(
-    getLoopNodes(workflowData),
-    getLoopEdges(workflowData),
-    normalizedPath,
-    workflowData
-  );
-}
-
-function getAncestorGraphContexts(loopPath = []) {
-  const contexts = [];
-  let currentLoopPath = normalizeLoopPath(loopPath);
-
-  while (currentLoopPath.length) {
-    const containerNodeId = currentLoopPath[currentLoopPath.length - 1];
-    const parentLoopPath = currentLoopPath.slice(0, -1);
-
-    if (!parentLoopPath.length) {
-      contexts.push(
-        createGraphContext(nodes.value, edges.value, [], null, containerNodeId)
-      );
-      break;
-    }
-
-    const workflowData = getLoopWorkflowDataAtPath(parentLoopPath);
-
-    if (!workflowData) {
-      break;
-    }
-
-    contexts.push(
-      createGraphContext(
-        getLoopNodes(workflowData),
-        getLoopEdges(workflowData),
-        parentLoopPath,
-        workflowData,
-        containerNodeId
-      )
-    );
-    currentLoopPath = parentLoopPath;
-  }
-
-  return contexts;
-}
-
-function collectUpstreamContextSources(targetNodeId = "", graphContext = null) {
-  const normalizedTargetNodeId = `${targetNodeId || ""}`.trim();
-
-  if (!normalizedTargetNodeId || !graphContext) {
-    return [];
-  }
-
-  const nodeList = Array.isArray(graphContext.nodeList)
-    ? graphContext.nodeList
-    : [];
-  const edgeList = Array.isArray(graphContext.edgeList)
-    ? graphContext.edgeList
-    : [];
-  const queue = [normalizedTargetNodeId];
-  const visitedSourceIds = new Set([normalizedTargetNodeId]);
-  const sources = [];
-
-  while (queue.length) {
-    const currentTargetId = queue.shift();
-    const incomingEdges = edgeList.filter(
-      (edge) =>
-        `${edge?.target || ""}`.trim() === currentTargetId &&
-        `${edge?.source || ""}`.trim()
-    );
-
-    incomingEdges.forEach((edge) => {
-      const sourceNodeId = `${edge.source || ""}`.trim();
-
-      if (!sourceNodeId || visitedSourceIds.has(sourceNodeId)) {
-        return;
-      }
-
-      visitedSourceIds.add(sourceNodeId);
-
-      const sourceNode = nodeList.find((node) => node?.id === sourceNodeId);
-
-      if (!sourceNode) {
-        return;
-      }
-
-      sources.push({
-        node: sourceNode,
-        graphPath: graphContext.graphPath,
-        workflowData: graphContext.workflowData,
-      });
-      queue.push(sourceNodeId);
-    });
-  }
-
-  return sources;
-}
-
-function mergeContextSources(...sourceLists) {
-  const sourceMap = new Map();
-
-  sourceLists
-    .flat()
-    .filter(Boolean)
-    .forEach((source) => {
-      const sourceKey = buildContextSourceNodeId(
-        source?.node?.id,
-        source?.graphPath
-      );
-
-      if (!sourceKey || sourceMap.has(sourceKey)) {
-        return;
-      }
-
-      sourceMap.set(sourceKey, source);
-    });
-
-  return [...sourceMap.values()];
-}
-
-function getLoopEntryContextVariables(workflowData = null) {
-  const itemAlias =
-    `${
-      getNodeConfigValue(workflowData, "itemAlias", "item") || "item"
-    }`.trim() || "item";
-
-  return [
-    {
-      variableKey: itemAlias,
-      valueType: "item",
-      path: itemAlias,
-    },
-  ];
-}
-
-function getContextVariablesForSource(source = {}) {
-  const node = source?.node;
-
-  if (!node) {
-    return [];
-  }
-
-  if (node.type === "start") {
-    return getStartFields(node.data)
-      .filter((field) => `${field?.name || ""}`.trim())
-      .map((field) => ({
-        variableKey: `${field.name || ""}`.trim(),
-        variableLabel: `${field.label || field.name || ""}`.trim(),
-        valueType: getStartFieldValueTypeLabel(field.type),
-        path: `${field.name || ""}`.trim(),
-      }));
-  }
-
-  if (node.type === "loop-start" || node.id === "loop-entry") {
-    return getLoopEntryContextVariables(source.workflowData).map((item) => ({
-      ...item,
-      variableLabel: `${item.variableLabel || item.variableKey || ""}`.trim(),
-    }));
-  }
-
-  if (node.type === "llm") {
-    return getLlmOutputs(node.data).map((item) => ({
-      variableKey: `${item.variableKey || ""}`.trim(),
-      variableLabel: `${item.variableLabel || item.variableKey || ""}`.trim(),
-      valueType: `${item.valueType || ""}`.trim(),
-      path: `${item.path || item.variableKey || ""}`.trim(),
-    }));
-  }
-
-  if (node.type === TOOL_NODE_TYPE) {
-    return getToolContextVariables(node.data);
-  }
-
-  if (node.type === "condition") {
-    return [
-      {
-        variableKey: "branch_index",
-        variableLabel: "命中分支索引",
-        valueType: "number",
-        path: "branch_index",
-      },
-      {
-        variableKey: "branch_label",
-        variableLabel: "命中分支名称",
-        valueType: "string",
-        path: "branch_label",
-      },
-    ];
-  }
-
-  if (node.type === "reply") {
-    const replyContent = `${getReplyContent(node.data) || ""}`.trim();
-
-    if (isChatflowWorkflow.value) {
-      return replyContent
-        ? [
-            {
-              variableKey: "text",
-              variableLabel: "回复内容",
-              valueType: "string",
-              path: "text",
-            },
-          ]
-        : [];
-    }
-
-    const replyOutputs = getReplyContextVariables(node.data);
-
-    if (replyOutputs.length) {
-      return replyOutputs;
-    }
-
-    return replyContent
-      ? [
-          {
-            variableKey: "text",
-            variableLabel: "回复内容",
-            valueType: "string",
-            path: "text",
-          },
-        ]
-      : [];
-  }
-
-  return [];
-}
-
-function getContextSourceLabel(source = {}) {
-  const node = source?.node;
-
-  if (!node) {
-    return "上游节点";
-  }
-
-  return getNodeLabel(node?.data, getNodeTypeLabel(node.type || ""));
-}
-
-function buildContextVariableGroup(source = {}) {
-  const node = source?.node;
-
-  if (!node?.id) {
-    return null;
-  }
-
-  const normalizedNodeType =
-    node.type === "loop-start" || node.id === "loop-entry"
-      ? "loop-entry"
-      : `${node.type || ""}`.trim();
-  const sourceNodeId = buildContextSourceNodeId(node.id, source.graphPath);
-  const sourceNodeLabel = getContextSourceLabel(source);
-  const variables = getContextVariablesForSource(source)
-    .map((item) => {
-      const variableKey = `${item.variableKey || ""}`.trim();
-      const path = `${item.path || variableKey}`.trim();
-
-      if (!variableKey || !path) {
-        return null;
-      }
-
-      return {
-        sourceNodeId,
-        sourceNodeLabel,
-        sourceNodeType: normalizedNodeType,
-        variableKey,
-        variableLabel: `${item.variableLabel || variableKey}`.trim(),
-        valueType: `${item.valueType || ""}`.trim(),
-        path,
-      };
-    })
-    .filter(Boolean);
-
-  if (!variables.length) {
-    return null;
-  }
-
-  return {
-    nodeId: sourceNodeId,
-    nodeLabel: sourceNodeLabel,
-    nodeType: normalizedNodeType,
-    variables,
-  };
-}
-
-function getSelectedNodeContextState(allowedNodeTypes = []) {
-  if (
-    !selectedNode.value?.id ||
-    (allowedNodeTypes.length &&
-      !allowedNodeTypes.includes(selectedNode.value?.type || ""))
-  ) {
-    return {
-      groups: [],
-      hasUpstreamContextSources: false,
-    };
-  }
-
-  const currentGraphContext =
-    selectedNode.value.scope === "loop-inner"
-      ? getGraphContextByLoopPath(selectedNode.value.loopPath)
-      : createGraphContext(nodes.value, edges.value);
-
-  if (!currentGraphContext) {
-    return {
-      groups: [],
-      hasUpstreamContextSources: false,
-    };
-  }
-
-  const currentSources = collectUpstreamContextSources(
-    selectedNode.value.id,
-    currentGraphContext
-  );
-  const ancestorSources =
-    selectedNode.value.scope === "loop-inner"
-      ? getAncestorGraphContexts(selectedNode.value.loopPath).flatMap(
-          (graphContext) =>
-            graphContext?.containerNodeId
-              ? collectUpstreamContextSources(
-                  graphContext.containerNodeId,
-                  graphContext
-                )
-              : []
-        )
-      : [];
-  const upstreamSources = mergeContextSources(currentSources, ancestorSources);
-  const groups = upstreamSources
-    .map((source) => buildContextVariableGroup(source))
-    .filter(Boolean);
-
-  return {
-    groups,
-    hasUpstreamContextSources: upstreamSources.length > 0,
-  };
-}
-
-function getSelectedLlmContextState() {
-  return getSelectedNodeContextState(["llm"]);
-}
-
-function getSelectedReplyContextState() {
-  return getSelectedNodeContextState(["reply"]);
-}
-
-function getStartFieldPreview(data = {}, limit = 3) {
-  return rawGetStartFieldPreview(data, limit, isChatflowWorkflow.value);
-}
-
-function getStartFieldOverflowCount(data = {}, limit = 3) {
-  return rawGetStartFieldOverflowCount(data, limit, isChatflowWorkflow.value);
-}
-
-function getReplyPreviewVariableOptionMap(nodeId = "") {
-  const normalizedNodeId = `${nodeId || ""}`.trim();
-
-  if (!normalizedNodeId) {
-    return new Map();
-  }
-
-  const currentGraphContext = createGraphContext(nodes.value, edges.value);
-
-  if (!currentGraphContext) {
-    return new Map();
-  }
-
-  const groups = collectUpstreamContextSources(
-    normalizedNodeId,
-    currentGraphContext
-  )
-    .map((source) => buildContextVariableGroup(source))
-    .filter(Boolean);
-  const optionMap = new Map();
-
-  groups.forEach((group) => {
-    (group.variables || []).forEach((option) => {
-      const sourceSegment = buildReplyPreviewReferenceSegment(
-        option.sourceNodeId || option.sourceNodeType || "node",
-        "node"
-      );
-      const variablePath = `${option.path || option.variableKey || ""}`.trim();
-
-      if (!sourceSegment || !variablePath) {
-        return;
-      }
-
-      optionMap.set(
-        buildReplyPreviewVariableReferenceKey(sourceSegment, variablePath),
-        option
-      );
-    });
-  });
-
-  return optionMap;
-}
-
-function getReplyNodePreviewSegments(data = {}, nodeId = "") {
-  return rawGetReplyNodePreviewSegments(
-    data,
-    nodeId,
-    getReplyPreviewVariableOptionMap(nodeId),
-    isChatflowWorkflow.value
-  );
-}
-
-function getReplyNodePreviewItems(data = {}) {
-  return rawGetReplyNodePreviewItems(data, isChatflowWorkflow.value);
-}
-
-function getReplyNodePreviewList(data = {}, limit = null) {
-  return rawGetReplyNodePreviewList(data, limit, isChatflowWorkflow.value);
-}
-
-function getReplyNodePreviewOverflowCount(data = {}, limit = 3) {
-  return rawGetReplyNodePreviewOverflowCount(data, limit, isChatflowWorkflow.value);
-}
-
-function normalizeLlmNodeData(data = {}) {
-  return rawNormalizeLlmNodeData(data, getDefaultLlmModelConfig());
-}
-
-function getLlmOutputs(data = {}) {
-  return rawGetLlmOutputs(data, getDefaultLlmModelConfig());
-}
-
-function normalizeNodeData(type, data = {}) {
-  return rawNormalizeNodeData(
-    type,
-    data,
-    isChatflowWorkflow.value,
-    getDefaultLlmModelConfig()
-  );
-}
-
-function createLoopFlowNodeData(nodeType = "llm", index = 0, overrides = {}) {
-  return rawCreateLoopFlowNodeData(
-    nodeType,
-    index,
-    overrides,
-    getDefaultLlmModelConfig()
-  );
-}
-
-function createLoopFlowNode(nodeType = "llm", index = 0, overrides = {}) {
-  return rawCreateLoopFlowNode(
-    nodeType,
-    index,
-    overrides,
-    getDefaultLlmModelConfig()
-  );
-}
-
-function normalizeLoopFlowNode(node, index = 0) {
-  return rawNormalizeLoopFlowNode(node, index, getDefaultLlmModelConfig());
-}
-
-function buildLoopNodesFromLegacySteps(steps = []) {
-  return rawBuildLoopNodesFromLegacySteps(steps, getDefaultLlmModelConfig());
-}
-
-function normalizeLoopData(data = {}) {
-  return rawNormalizeLoopData(data, getDefaultLlmModelConfig());
-}
-
-function normalizeLoopExternalEdges(nodeIds = []) {
-  const loopNodeIds = new Set(
-    [nodeIds]
-      .flat()
-      .filter(Boolean)
-      .filter((nodeId) => {
-        const node = nodes.value.find((item) => item.id === nodeId);
-        return node?.type === "loop";
-      })
-  );
-
-  if (!loopNodeIds.size) {
-    return;
-  }
-
-  let changed = false;
-  const nextEdges = edges.value.map((edge) => {
-    let nextEdge = edge;
-
-    if (
-      loopNodeIds.has(edge.source) &&
-      edge.sourceHandle !== LOOP_OUTER_SOURCE_HANDLE_ID
-    ) {
-      nextEdge = {
-        ...nextEdge,
-        sourceHandle: LOOP_OUTER_SOURCE_HANDLE_ID,
-      };
-      changed = true;
-    }
-
-    if (
-      loopNodeIds.has(edge.target) &&
-      edge.targetHandle !== LOOP_OUTER_TARGET_HANDLE_ID
-    ) {
-      nextEdge = {
-        ...nextEdge,
-        targetHandle: LOOP_OUTER_TARGET_HANDLE_ID,
-      };
-      changed = true;
-    }
-
-    return nextEdge;
-  });
-
-  if (changed) {
-    setEdges(nextEdges);
-  }
-}
-
-function getNodeTargetHandleElement(nodeElement, nodeId) {
-  const targetNode = nodes.value.find((node) => node.id === nodeId);
-
-  if (targetNode?.type === "loop") {
-    return nodeElement?.querySelector?.(
-      `.vue-flow__handle.target[data-handleid="${LOOP_OUTER_TARGET_HANDLE_ID}"]`
-    );
-  }
-
-  return (
-    nodeElement?.querySelector?.(":scope > .vue-flow__handle.target") ||
-    nodeElement?.querySelector?.(".vue-flow__handle.target")
-  );
-}
-
-function updateLoopWorkflowData(nodeId, workflowData) {
-  if (!nodeId) {
-    return;
-  }
-
-  updateNodeData(nodeId, normalizeLoopData(workflowData || {}));
-  normalizeLoopExternalEdges(nodeId);
-}
-
-function updateLoopDataInPath(loopData, nestedPath = [], updater) {
-  const normalizedLoopData = normalizeLoopData(loopData);
-
-  if (!nestedPath.length) {
-    const nextRawData =
-      typeof updater === "function"
-        ? updater(cloneNodeData(normalizedLoopData))
-        : updater;
-
-    return normalizeLoopData(nextRawData || normalizedLoopData);
-  }
-
-  const [currentLoopNodeId, ...restPath] = nestedPath;
-  let changed = false;
-  const nextLoopNodes = getLoopNodes(normalizedLoopData).map((node) => {
-    if (node.id !== currentLoopNodeId || node.type !== "loop") {
-      return node;
-    }
-
-    changed = true;
-    return {
-      ...node,
-      data: updateLoopDataInPath(node.data, restPath, updater),
-    };
-  });
-
-  return changed
-    ? normalizeLoopData(
-        mergeNodeConfig(normalizedLoopData, {
-          loopNodes: nextLoopNodes,
-        })
-      )
-    : normalizedLoopData;
-}
-
-function updateLoopWorkflowDataAtPath(loopPath = [], workflowData) {
-  const normalizedPath = normalizeLoopPath(loopPath);
-  if (!normalizedPath.length) {
-    return;
-  }
-
-  const [outerLoopNodeId, ...nestedPath] = normalizedPath;
-
-  updateNodeData(outerLoopNodeId, (currentData) =>
-    updateLoopDataInPath(currentData, nestedPath, workflowData)
-  );
-  normalizeLoopExternalEdges(outerLoopNodeId);
-}
-
-function updateInnerNodeDataAtPath(loopPath = [], nodeId, nodeType, updater) {
-  if (!nodeId) {
-    return;
-  }
-
-  updateLoopWorkflowDataAtPath(loopPath, (currentLoopData) => {
-    const normalizedLoopData = normalizeLoopData(currentLoopData);
-    let changed = false;
-    const nextLoopNodes = getLoopNodes(normalizedLoopData).map((node) => {
-      if (node.id !== nodeId) {
-        return node;
-      }
-
-      changed = true;
-      const currentNodeData = normalizeNodeData(
-        node.type,
-        cloneNodeData(node.data)
-      );
-      const nextRawData =
-        typeof updater === "function"
-          ? updater(cloneNodeData(currentNodeData))
-          : updater;
-      const nextData = normalizeNodeData(
-        nodeType || node.type,
-        cloneNodeData(nextRawData || currentNodeData)
-      );
-
-      return {
-        ...node,
-        data: cloneNodeData(nextData),
-      };
-    });
-
-    return changed
-      ? mergeNodeConfig(normalizedLoopData, {
-          loopNodes: nextLoopNodes,
-        })
-      : normalizedLoopData;
-  });
-}
-
-function removeInnerNodeAtPath(loopPath = [], nodeId) {
-  if (!nodeId) {
-    return;
-  }
-
-  updateLoopWorkflowDataAtPath(loopPath, (currentLoopData) => {
-    const normalizedLoopData = normalizeLoopData(currentLoopData);
-
-    return mergeNodeConfig(normalizedLoopData, {
-      loopNodes: getLoopNodes(normalizedLoopData).filter(
-        (node) => node.id !== nodeId
-      ),
-      loopEdges: getLoopEdges(normalizedLoopData).filter(
-        (edge) => edge.source !== nodeId && edge.target !== nodeId
-      ),
-    });
-  });
-}
-
-function updateLoopEdgesAtPath(loopPath = [], updater) {
-  updateLoopWorkflowDataAtPath(loopPath, (currentLoopData) => {
-    const normalizedLoopData = normalizeLoopData(currentLoopData);
-    const nextEdges =
-      typeof updater === "function"
-        ? updater(
-            cloneNodeData(getLoopEdges(normalizedLoopData)),
-            normalizedLoopData
-          )
-        : updater;
-
-    return mergeNodeConfig(normalizedLoopData, {
-      loopEdges: cloneNodeData(nextEdges || getLoopEdges(normalizedLoopData)),
-    });
-  });
-}
-
-function handleInnerNodeSelect(payload = {}) {
-  if (!payload.id || !payload.type) {
-    return;
-  }
-
-  hideAddNodeMenu();
-  debugRunPanelVisible.value = false;
-  const nextData = normalizeNodeData(
-    payload.type,
-    cloneNodeData(payload.data || {})
-  );
-
-  selectedNode.value = {
-    id: payload.id,
-    type: payload.type,
-    data: cloneNodeData(nextData),
-    scope: "loop-inner",
-    loopPath: normalizeLoopPath(payload.loopPath),
-  };
-}
-
-function clearInnerSelection(loopPath = []) {
-  if (selectedNode.value?.scope !== "loop-inner") {
-    return;
-  }
-
-  if (areLoopPathsEqual(selectedNode.value.loopPath, loopPath)) {
-    selectedNode.value = null;
-  }
-}
-
-function updateNodeData(nodeId, updater) {
-  const targetNode = nodes.value.find((node) => node.id === nodeId);
-  if (!targetNode) {
-    return null;
-  }
-
-  const currentData = normalizeNodeData(
-    targetNode.type,
-    cloneNodeData(targetNode.data)
-  );
-  const nextRawData =
-    typeof updater === "function"
-      ? updater(cloneNodeData(currentData))
-      : updater;
-  const nextData = normalizeNodeData(
-    targetNode.type,
-    cloneNodeData(nextRawData || currentData)
-  );
-
-  setNodes(
-    nodes.value.map((node) =>
-      node.id === nodeId
-        ? {
-            ...node,
-            data: cloneNodeData(nextData),
-          }
-        : node
-    )
-  );
-  refreshNodeHandleLayout([nodeId]);
-
-  if (selectedNode.value?.id === nodeId) {
-    selectedNode.value = {
-      ...selectedNode.value,
-      type: targetNode.type,
-      data: cloneNodeData(nextData),
-    };
-  }
-
-  return nextData;
-}
-
-let edgeSeed = 0;
-
-function createEdgeId(source, target, sourceHandle, targetHandle) {
-  edgeSeed += 1;
-  return [
-    "e",
-    source,
-    sourceHandle || "source",
-    target,
-    targetHandle || "target",
-    Date.now(),
-    edgeSeed,
-  ].join("-");
-}
-
-function createDefaultEdge(connection) {
-  return {
-    ...connection,
-    id:
-      connection.id ||
-      createEdgeId(
-        connection.source,
-        connection.target,
-        connection.sourceHandle,
-        connection.targetHandle
-      ),
-    type: "default",
-  };
-}
-
-function normalizeExternalConnection(connection = {}, nodeList = nodes.value) {
-  if (!connection.source || !connection.target) {
-    return connection;
-  }
-
-  const normalizedNodeList = Array.isArray(nodeList) ? nodeList : nodes.value;
-  const sourceNode = normalizedNodeList.find(
-    (node) => node.id === connection.source
-  );
-  const targetNode = normalizedNodeList.find(
-    (node) => node.id === connection.target
-  );
-
-  return {
-    ...connection,
-    sourceHandle:
-      connection.sourceHandle ||
-      getDefaultSourceHandleId(sourceNode) ||
-      undefined,
-    targetHandle:
-      connection.targetHandle ||
-      getDefaultTargetHandleId(targetNode) ||
-      undefined,
-  };
-}
-
-function createNormalizedExternalEdge(connection = {}, nodeList = nodes.value) {
-  return createDefaultEdge(normalizeExternalConnection(connection, nodeList));
-}
-
-function getOuterNodeApproxSize(nodeLike = {}) {
-  const nodeType = nodeLike?.type || "llm";
-
-  if (nodeType === "loop") {
-    const metrics = getLoopCanvasMetrics(nodeLike?.data || {}, true);
-    return {
-      width: metrics.width + 32,
-      height: metrics.height + 60,
-    };
-  }
-
-  if (nodeType === "condition") {
-    const caseCount = Math.max(2, getConditionCases(nodeLike?.data).length);
-    return {
-      width: 260,
-      height: 96 + caseCount * 28,
-    };
-  }
-
-  if (nodeType === "reply") {
-    if (isChatflowWorkflow.value) {
-      return { width: 220, height: 122 };
-    }
-
-    const previewCount = Math.min(
-      3,
-      getReplyNodePreviewList(nodeLike?.data).length
-    );
-    const overflowCount = getReplyNodePreviewOverflowCount(nodeLike?.data, 3);
-
-    return {
-      width: 220,
-      height: Math.max(
-        122,
-        96 + previewCount * 20 + (overflowCount > 0 ? 20 : 0)
-      ),
-    };
-  }
-
-  if (nodeType === TOOL_NODE_TYPE) {
-    const previewCount = Math.min(
-      3,
-      getToolNodePreviewList(nodeLike?.data).length
-    );
-    const overflowCount = getToolNodePreviewOverflowCount(nodeLike?.data, 3);
-    const hasSubtitle = Boolean(getToolNodeSubtitle(nodeLike?.data));
-
-    return {
-      width: 220,
-      height: Math.max(
-        122,
-        96 +
-          (hasSubtitle ? 26 : 0) +
-          previewCount * 20 +
-          (overflowCount > 0 ? 20 : 0)
-      ),
-    };
-  }
-
-  if (nodeType === "start") {
-    const previewCount = Math.min(3, getStartFields(nodeLike?.data).length);
-    const overflowCount = getStartFieldOverflowCount(nodeLike?.data, 3);
-    const extraHeight = previewCount * 26 + (overflowCount > 0 ? 22 : 0);
-
-    return {
-      width: 220,
-      height: 118 + extraHeight + (previewCount === 0 ? 18 : 0),
-    };
-  }
-
-  return { width: 220, height: 128 };
-}
-
-function getOuterNodeBox(
-  nodeLike = {},
-  position = nodeLike?.position || { x: 0, y: 0 }
-) {
-  const size = getOuterNodeApproxSize(nodeLike);
-
-  return {
-    left: Number(position?.x) || 0,
-    top: Number(position?.y) || 0,
-    width: size.width,
-    height: size.height,
-    right: (Number(position?.x) || 0) + size.width,
-    bottom: (Number(position?.y) || 0) + size.height,
-  };
-}
-
-function getOuterInsertSpacingX(sourceNode = {}) {
-  if (sourceNode?.type === "start") {
-    return 96;
-  }
-
-  if (sourceNode?.type === "condition") {
-    return 84;
-  }
-
-  return 72;
-}
-
-function getOuterOutgoingTargetNodes(
-  sourceNodeId,
-  sourceHandleId = null,
-  nodeList = nodes.value,
-  edgeList = edges.value
-) {
-  const normalizedHandleId = sourceHandleId || null;
-
-  return edgeList
-    .filter(
-      (edge) =>
-        edge.source === sourceNodeId &&
-        (edge.sourceHandle || null) === normalizedHandleId &&
-        edge.target
-    )
-    .map((edge) => nodeList.find((node) => node.id === edge.target))
-    .filter(Boolean);
-}
-
-function getOuterSiblingBasePosition(
-  sourceNode,
-  candidateNode,
-  sourceHandleId = null,
-  nodeList = nodes.value,
-  edgeList = edges.value
-) {
-  const siblingTargets = getOuterOutgoingTargetNodes(
-    sourceNode.id,
-    sourceHandleId,
-    nodeList,
-    edgeList
-  );
-
-  if (!siblingTargets.length) {
-    return null;
-  }
-
-  const anchorNode = [...siblingTargets].sort(
-    (left, right) =>
-      left.position.x - right.position.x || left.position.y - right.position.y
-  )[0];
-  const lowestNode = siblingTargets.reduce((currentLowest, node) => {
-    if (!currentLowest) {
-      return node;
-    }
-
-    return getOuterNodeBox(node).bottom > getOuterNodeBox(currentLowest).bottom
-      ? node
-      : currentLowest;
-  }, null);
-  const siblingGapY = 40;
-
-  return {
-    x: anchorNode.position.x,
-    y: getOuterNodeBox(lowestNode).bottom + siblingGapY,
-  };
-}
-
-function getOuterSequentialBasePosition(
-  sourceNode,
-  candidateNode,
-  sourceHandleId = null
-) {
-  const sourceSize = getOuterNodeApproxSize(sourceNode);
-  const candidateSize = getOuterNodeApproxSize(candidateNode);
-  const alignTop =
-    sourceHandleId || sourceNode.type === "condition"
-      ? sourceNode.position.y
-      : sourceNode.position.y +
-        Math.round((sourceSize.height - candidateSize.height) / 2);
-
-  return {
-    x:
-      sourceNode.position.x +
-      sourceSize.width +
-      getOuterInsertSpacingX(sourceNode),
-    y: alignTop,
-  };
-}
-
-function getOuterEdgeBasePosition(sourceNode, targetNode, candidateNode) {
-  const sourceBox = getOuterNodeBox(sourceNode);
-  const targetBox = getOuterNodeBox(targetNode);
-  const candidateSize = getOuterNodeApproxSize(candidateNode);
-  const gapX = getOuterInsertSpacingX(sourceNode);
-  const minX = sourceBox.right + gapX;
-  const maxX = targetBox.left - candidateSize.width - gapX;
-  const centeredX = Math.round(
-    (sourceBox.right + targetBox.left - candidateSize.width) / 2
-  );
-  const sourceCenterY = sourceBox.top + sourceBox.height / 2;
-  const targetCenterY = targetBox.top + targetBox.height / 2;
-
-  return {
-    x: maxX >= minX ? Math.max(minX, Math.min(centeredX, maxX)) : minX,
-    y: Math.round(
-      (sourceCenterY + targetCenterY) / 2 - candidateSize.height / 2
-    ),
-  };
-}
-
-function isOuterBoxOverlapping(boxA, boxB, gapX = 40, gapY = 32) {
-  return (
-    boxA.left < boxB.right + gapX &&
-    boxA.right + gapX > boxB.left &&
-    boxA.top < boxB.bottom + gapY &&
-    boxA.bottom + gapY > boxB.top
-  );
-}
-
-function collectDownstreamNodeIds(edgeList = edges.value, startNodeIds = []) {
-  const visited = new Set();
-  const queue = Array.isArray(startNodeIds)
-    ? startNodeIds.filter(Boolean)
-    : [startNodeIds].filter(Boolean);
-
-  while (queue.length) {
-    const currentId = queue.shift();
-    if (!currentId || visited.has(currentId)) {
-      continue;
-    }
-
-    visited.add(currentId);
-    edgeList.forEach((edge) => {
-      if (
-        edge.source === currentId &&
-        edge.target &&
-        !visited.has(edge.target)
-      ) {
-        queue.push(edge.target);
-      }
-    });
-  }
-
-  return visited;
-}
-
-function shiftOuterNodesHorizontally(
-  nodeList = nodes.value,
-  nodeIds = new Set(),
-  deltaX = 0
-) {
-  if (!deltaX) {
-    return cloneNodeData(nodeList);
-  }
-
-  return cloneNodeData(nodeList).map((node) =>
-    nodeIds.has(node.id)
-      ? {
-          ...node,
-          position: {
-            ...node.position,
-            x: node.position.x + deltaX,
-          },
-        }
-      : node
-  );
-}
-
-function makeOuterInsertionRoom(
-  nodeList = nodes.value,
-  edgeList = edges.value,
-  candidateNode,
-  candidatePosition,
-  options = {}
-) {
-  let nextNodes = cloneNodeData(nodeList);
-  const excludedIds = new Set((options.excludeIds || []).filter(Boolean));
-  const candidateBox = () => getOuterNodeBox(candidateNode, candidatePosition);
-
-  if (options.targetNodeId) {
-    const targetNode = nextNodes.find(
-      (node) => node.id === options.targetNodeId
-    );
-    if (targetNode) {
-      const targetBox = getOuterNodeBox(targetNode);
-      const requiredShift = Math.ceil(
-        candidateBox().right + 40 - targetBox.left
-      );
-
-      if (requiredShift > 0) {
-        const downstreamNodeIds = collectDownstreamNodeIds(edgeList, [
-          targetNode.id,
-        ]);
-        downstreamNodeIds.add(targetNode.id);
-        nextNodes = shiftOuterNodesHorizontally(
-          nextNodes,
-          downstreamNodeIds,
-          requiredShift
-        );
-      }
-    }
-  }
-
-  let attempt = 0;
-  while (attempt < 14) {
-    const blockingNode = nextNodes.find((node) => {
-      if (!node || excludedIds.has(node.id)) {
-        return false;
-      }
-
-      return isOuterBoxOverlapping(candidateBox(), getOuterNodeBox(node));
-    });
-
-    if (!blockingNode) {
-      break;
-    }
-
-    const blockingBox = getOuterNodeBox(blockingNode);
-    const requiredShift = Math.max(
-      40,
-      Math.ceil(candidateBox().right + 40 - blockingBox.left)
-    );
-    const downstreamNodeIds = collectDownstreamNodeIds(edgeList, [
-      blockingNode.id,
-    ]);
-    downstreamNodeIds.add(blockingNode.id);
-    nextNodes = shiftOuterNodesHorizontally(
-      nextNodes,
-      downstreamNodeIds,
-      requiredShift
-    );
-    attempt += 1;
-  }
-
-  return nextNodes;
-}
-
-function adjustPositionToAvoidOverlap(
-  position,
-  newNodeId,
-  nodeType = "llm",
-  nodeData = {},
-  nodeList = nodes.value,
-  excludeIds = []
-) {
-  const minGapX = 40;
-  const minGapY = 32;
-  const maxAttempts = 18;
-  const excludedIdSet = new Set([newNodeId, ...excludeIds].filter(Boolean));
-  const candidateNode = {
-    id: newNodeId,
-    type: nodeType,
-    data: nodeData,
-  };
-  const candidateSize = getOuterNodeApproxSize(candidateNode);
-  let adjustedPosition = {
-    x: Number(position?.x) || 0,
-    y: Number(position?.y) || 0,
-  };
-  let attemptCount = 0;
-
-  while (attemptCount < maxAttempts) {
-    const candidateBox = {
-      left: adjustedPosition.x,
-      top: adjustedPosition.y,
-      right: adjustedPosition.x + candidateSize.width,
-      bottom: adjustedPosition.y + candidateSize.height,
-    };
-
-    const overlappingNode = nodeList.find((node) => {
-      if (!node || excludedIdSet.has(node.id)) {
-        return false;
-      }
-
-      return isOuterBoxOverlapping(
-        candidateBox,
-        getOuterNodeBox(node),
-        minGapX,
-        minGapY
-      );
-    });
-
-    if (!overlappingNode) {
-      return adjustedPosition;
-    }
-
-    attemptCount += 1;
-    adjustedPosition = {
-      x:
-        attemptCount % 4 === 0
-          ? adjustedPosition.x + Math.round(minGapX * 1.5)
-          : adjustedPosition.x,
-      y: adjustedPosition.y + minGapY,
-    };
-  }
-
-  return adjustedPosition;
-}
-
-function getDefaultNodeData(nodeType) {
-  const defaults = {
-    start: normalizeStartNodeData({
-      label: "开始",
-      description: "",
-      fields: [],
-    }),
-    llm: normalizeLlmNodeData({
-      label: "LLM",
-      ...getDefaultLlmModelConfig(),
-      description: "",
-      prompt: "",
-    }),
-    tool: normalizeToolNodeData({
-      label: "工具",
-      description: "",
-      toolName: "工具",
-      toolDescription: "",
-      toolSource: "",
-    }),
-    condition: normalizeConditionData({
-      label: "条件分支",
-      description: "",
-    }),
-    loop: normalizeLoopData({
-      label: "循环",
-      description: "",
-    }),
-    reply: normalizeReplyNodeData({
-      label: "输出",
-      description: "",
-      outputs: [],
-    }),
-    knowledge: {
-      label: "知识库检索",
-      description: "在选定的知识库中检索与问题最相关的文档切片",
-      config: {
-        label: "知识库检索：常州工学院总评方案",
-        knowledgeBaseId: 7,
-        knowledgeBaseName: "常州工学院总评方案",
-        query: "{{ start_1.query }}",
-        topK: 5,
-      },
-      input: [
-        { name: "query", label: "检索词", type: "string" }
-      ],
-      output: [
-        { variableKey: "text", variableLabel: "召回内容", valueType: "string", path: "text" },
-        { variableKey: "context", variableLabel: "知识切片", valueType: "string", path: "context" }
-      ],
-    },
-    "knowledge-retrieval": {
-      label: "知识库检索",
-      description: "在选定的知识库中检索与问题最相关的文档切片",
-      config: {
-        label: "知识库检索：常州工学院总评方案",
-        knowledgeBaseId: 7,
-        knowledgeBaseName: "常州工学院总评方案",
-        query: "{{ start_1.query }}",
-        topK: 5,
-      },
-      input: [
-        { name: "query", label: "检索词", type: "string" }
-      ],
-      output: [
-        { variableKey: "text", variableLabel: "召回内容", valueType: "string", path: "text" },
-        { variableKey: "context", variableLabel: "知识切片", valueType: "string", path: "context" }
-      ],
-    },
-  };
-
-  return cloneNodeData(defaults[nodeType] || { label: "新节点" });
-}
-
-function syncSelectedNodeData() {
-  if (!selectedNode.value) return;
-
-  const activeSelection = selectedNode.value;
-  const normalizedLoopPath = normalizeLoopPath(activeSelection.loopPath);
-  const nextData = normalizeNodeData(
-    activeSelection.type,
-    cloneNodeData(activeSelection.data)
-  );
-
-  activeSelection.data = cloneNodeData(nextData);
-  if (!areLoopPathsEqual(activeSelection.loopPath, normalizedLoopPath)) {
-    activeSelection.loopPath = normalizedLoopPath;
-  }
-
-  if (activeSelection.scope === "loop-inner") {
-    updateInnerNodeDataAtPath(
-      activeSelection.loopPath,
-      activeSelection.id,
-      activeSelection.type,
-      nextData
-    );
-    return;
-  }
-
-  setNodes(
-    nodes.value.map((node) =>
-      node.id === activeSelection.id
-        ? {
-            ...node,
-            data: cloneNodeData(nextData),
-          }
-        : node
-    )
-  );
-  refreshNodeHandleLayout([activeSelection.id]);
-}
-
-function addLlmMessage() {
-  if (selectedNode.value?.type !== "llm") {
-    return;
-  }
-
-  const messages = getNodeInput(selectedNode.value.data);
-
-  const nextRole = messages.length % 2 === 0 ? "user" : "assistant";
-
-  selectedNode.value.data = setNodeInput(selectedNode.value.data, [
-    ...messages,
-    createLlmMessage({ role: nextRole }),
-  ]);
-  syncSelectedNodeData();
-}
-
-function removeLlmMessage(messageId) {
-  if (selectedNode.value?.type !== "llm") {
-    return;
-  }
-
-  selectedNode.value.data = setNodeInput(
-    selectedNode.value.data,
-    getNodeInput(selectedNode.value.data).filter(
-      (message) => message.id !== messageId
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function handleStartFieldTypeChange(nextType) {
-  const meta = getStartFieldTypeMeta(nextType);
-  const currentMaxLength = Number(startFieldDraft.value.maxLength);
-
-  startFieldDraft.value = {
-    ...startFieldDraft.value,
-    type: meta.value,
-    maxLength: meta.supportsMaxLength
-      ? Number.isFinite(currentMaxLength) && currentMaxLength > 0
-        ? currentMaxLength
-        : meta.defaultMaxLength
-      : null,
-  };
-
-  nextTick(() => {
-    startFieldDialogFormRef.value?.clearValidate(["maxLength"]);
-  });
-}
-
-function openStartFieldDialog(field = null) {
-  if (selectedNode.value?.type !== "start") {
-    return;
-  }
-
-  if (field && isReadonlyStartField(field)) {
-    return;
-  }
-
-  startFieldDialogMode.value = field ? "edit" : "create";
-  startFieldDraft.value = createStartField(
-    cloneNodeData(field || { type: "text", required: true })
-  );
-  startFieldDialogVisible.value = true;
-
-  nextTick(() => {
-    startFieldDialogFormRef.value?.clearValidate();
-  });
-}
-
-function closeStartFieldDialog() {
-  startFieldDialogFormRef.value?.clearValidate();
-  startFieldDialogVisible.value = false;
-  startFieldDraft.value = createStartField();
-}
-
-async function saveStartField() {
-  if (selectedNode.value?.type !== "start") {
-    return;
-  }
-
-  if (
-    startFieldDialogMode.value === "edit" &&
-    isReadonlyStartField(startFieldDraft.value)
-  ) {
-    return;
-  }
-
-  try {
-    await startFieldDialogFormRef.value?.validate();
-  } catch {
-    return;
-  }
-
-  const nextField = normalizeStartField(startFieldDraft.value);
-  const fieldName = nextField.name.trim();
-  const displayLabel = nextField.label.trim();
-  const currentFields = getStartFields(selectedNode.value.data);
-
-  if (findDuplicatedStartField(fieldName, nextField.id)) {
-    startFieldDialogFormRef.value?.validateField("name");
-    return;
-  }
-
-  const normalizedField = {
-    ...nextField,
-    name: fieldName,
-    label: displayLabel,
-  };
-
-  const nextFields =
-    startFieldDialogMode.value === "edit"
-      ? currentFields.map((field) =>
-          field.id === normalizedField.id ? normalizedField : field
-        )
-      : [...currentFields, normalizedField];
-
-  selectedNode.value.data = setNodeInput(selectedNode.value.data, nextFields);
-  syncSelectedNodeData();
-  closeStartFieldDialog();
-}
-
-function removeStartField(fieldId) {
-  if (selectedNode.value?.type !== "start") {
-    return;
-  }
-
-  const targetField = getStartFields(selectedNode.value.data).find(
-    (field) => field.id === fieldId
-  );
-
-  if (isReadonlyStartField(targetField)) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeInput(
-    selectedNode.value.data,
-    getStartFields(selectedNode.value.data).filter(
-      (field) => field.id !== fieldId
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function addConditionCase() {
-  if (selectedNode.value?.type !== "condition") return;
-
-  const cases = getConditionCases(selectedNode.value.data);
-  const elseCase =
-    cases.find((item) => item.isElse) || createConditionCase(true);
-  const branchCases = cases.filter((item) => !item.isElse);
-
-  selectedNode.value.data = setNodeConfigValue(
-    selectedNode.value.data,
-    "cases",
-    [...branchCases, createConditionCase(false), elseCase]
-  );
-
-  syncSelectedNodeData();
-}
-
-function removeConditionCase(caseId) {
-  if (selectedNode.value?.type !== "condition") return;
-
-  const selectedEntry = {
-    ...selectedNode.value,
-    loopPath: normalizeLoopPath(selectedNode.value.loopPath),
-  };
-  const cases = getConditionCases(selectedEntry.data);
-  const targetCase = cases.find((item) => item.id === caseId);
-
-  if (!targetCase || targetCase.isElse) {
-    return;
-  }
-
-  const branchCases = cases.filter((item) => !item.isElse);
-  if (branchCases.length <= 1) {
-    ElMessage.warning("条件分支至少需要保留一个 IF 分支");
-    return;
-  }
-
-  selectedNode.value.data = setNodeConfigValue(
-    selectedNode.value.data,
-    "cases",
-    cases.filter((item) => item.id !== caseId)
-  );
-  syncSelectedNodeData();
-
-  const handleId = getConditionHandleId(caseId);
-  if (selectedEntry.scope === "loop-inner") {
-    updateLoopEdgesAtPath(selectedEntry.loopPath, (currentEdges) =>
-      currentEdges.filter(
-        (edge) =>
-          !(edge.source === selectedEntry.id && edge.sourceHandle === handleId)
-      )
-    );
-    return;
-  }
-
-  const relatedEdges = edges.value
-    .filter(
-      (edge) =>
-        edge.source === selectedEntry.id && edge.sourceHandle === handleId
-    )
-    .map((edge) => edge.id);
-
-  if (relatedEdges.length) {
-    removeEdges(relatedEdges);
-  }
-}
-
-function onConnect(connection) {
-  if (!connection.source || !connection.target) {
-    return;
-  }
-
-  const sourceNode = nodes.value.find((node) => node.id === connection.source);
-  const normalizedConnection = normalizeExternalConnection(connection);
-
-  if (sourceNode?.type === "condition") {
-    if (!normalizedConnection.sourceHandle) {
-      ElMessage.warning("条件分支需要从具体的分支出口发起连接");
-      return;
-    }
-  }
-
-  const duplicatedEdge = edges.value.find(
-    (edge) =>
-      edge.source === normalizedConnection.source &&
-      edge.target === normalizedConnection.target &&
-      (edge.sourceHandle || null) ===
-        (normalizedConnection.sourceHandle || null) &&
-      (edge.targetHandle || null) ===
-        (normalizedConnection.targetHandle || null)
-  );
-
-  if (duplicatedEdge) {
-    return;
-  }
-
-  addEdges([createDefaultEdge(normalizedConnection)]);
-}
-
-function getPointerPositionInFlow(clientX, clientY) {
-  const bounds = vueFlowRef.value?.getBoundingClientRect();
-  if (!bounds) {
-    return null;
-  }
-
-  return {
-    x: clientX - bounds.left,
-    y: clientY - bounds.top,
-  };
-}
-
-function getTargetHandlePreviewFromPointer(clientX, clientY, sourceNodeId) {
-  const element = document.elementFromPoint(clientX, clientY);
-  const nodeElement = element?.closest?.(".vue-flow__node");
-  const nodeId = nodeElement?.getAttribute?.("data-id");
-
-  if (!nodeId || nodeId === sourceNodeId) {
-    return null;
-  }
-
-  const targetHandleElement = getNodeTargetHandleElement(nodeElement, nodeId);
-  const targetBounds =
-    targetHandleElement?.getBoundingClientRect?.() ??
-    nodeElement?.getBoundingClientRect?.();
-
-  if (!targetBounds) {
-    return null;
-  }
-
-  const targetFlowPosition = getPointerPositionInFlow(
-    targetBounds.left + targetBounds.width / 2,
-    targetBounds.top + targetBounds.height / 2
-  );
-
-  if (!targetFlowPosition) {
-    return null;
-  }
-
-  const targetHandleId =
-    targetHandleElement?.getAttribute?.("data-handleid") || undefined;
-  const targetHandlePosition =
-    targetHandleElement?.getAttribute?.("data-handlepos") || Position.Left;
-
-  return {
-    nodeId,
-    position: targetFlowPosition,
-    handle: {
-      nodeId,
-      type: "target",
-      ...(targetHandleId ? { id: targetHandleId } : {}),
-      position: targetHandlePosition,
-      ...targetFlowPosition,
-    },
-  };
-}
-
-function onSourceActionPointerDown(event, nodeId, sourceHandleId = null) {
-  if (event.button !== 0) {
-    return;
-  }
-
-  const startPosition = getPointerPositionInFlow(event.clientX, event.clientY);
-  if (!startPosition) {
-    return;
-  }
-
-  const startHandle = {
-    nodeId,
-    type: "source",
-    id: sourceHandleId || null,
-    position: Position.Right,
-    ...startPosition,
-  };
-
-  const startClientX = event.clientX;
-  const startClientY = event.clientY;
-  let hasMoved = false;
-
-  const cleanup = () => {
-    document.removeEventListener("pointermove", onPointerMove);
-    document.removeEventListener("pointerup", onPointerUp);
-    document.removeEventListener("pointercancel", onPointerCancel);
-  };
-
-  const onPointerMove = (moveEvent) => {
-    const currentPosition = getPointerPositionInFlow(
-      moveEvent.clientX,
-      moveEvent.clientY
-    );
-    if (!currentPosition) {
-      dragHoverTargetId.value = null;
-      return;
-    }
-
-    if (!hasMoved) {
-      const distance = Math.hypot(
-        moveEvent.clientX - startClientX,
-        moveEvent.clientY - startClientY
-      );
-
-      if (distance < sourceActionDragThreshold) {
-        return;
-      }
-
-      hasMoved = true;
-      startConnection(startHandle, startPosition);
-    }
-
-    const targetPreview = getTargetHandlePreviewFromPointer(
-      moveEvent.clientX,
-      moveEvent.clientY,
-      nodeId
-    );
-
-    dragHoverTargetId.value = targetPreview?.nodeId || null;
-
-    if (targetPreview) {
-      updateConnection(targetPreview.position, targetPreview.handle, "valid");
-      return;
-    }
-
-    updateConnection(currentPosition, null, null);
-  };
-
-  const onPointerUp = (upEvent) => {
-    cleanup();
-
-    if (hasMoved) {
-      const targetPreview = getTargetHandlePreviewFromPointer(
-        upEvent.clientX,
-        upEvent.clientY,
-        nodeId
-      );
-
-      dragHoverTargetId.value = null;
-
-      if (targetPreview) {
-        onConnect({
-          source: nodeId,
-          sourceHandle:
-            sourceHandleId ||
-            getDefaultSourceHandleId(
-              nodes.value.find((node) => node.id === nodeId)
-            ) ||
-            undefined,
-          target: targetPreview.nodeId,
-          targetHandle: targetPreview.handle.id || undefined,
-        });
-      }
-
-      endConnection(upEvent);
-      return;
-    }
-
-    dragHoverTargetId.value = null;
-    showAddNodeMenu(nodeId, upEvent, sourceHandleId);
-  };
-
-  const onPointerCancel = () => {
-    cleanup();
-    dragHoverTargetId.value = null;
-
-    if (hasMoved) {
-      endConnection();
-    }
-  };
-
-  document.addEventListener("pointermove", onPointerMove);
-  document.addEventListener("pointerup", onPointerUp);
-  document.addEventListener("pointercancel", onPointerCancel);
-}
-
-function markAddMenuOpened() {
-  addMenuOpenAt.value = Date.now();
-}
-
-function shouldIgnoreAddMenuDismiss() {
-  return (
-    addNodeMenuVisible.value &&
-    Date.now() - addMenuOpenAt.value < addMenuDismissGuardMs
-  );
-}
-
-function showAddNodeMenu(nodeId, event, sourceHandleId = null) {
-  hideAddNodeMenu();
-  drawerVisible.value = false;
-  debugRunPanelVisible.value = false;
-  selectedNode.value = null;
-
-  addNodeMenuSourceId.value = nodeId;
-  addNodeMenuSourceHandle.value = sourceHandleId || null;
-  addNodeMenuPosition.value = getAddNodeMenuViewportPosition(
-    event.clientX,
-    event.clientY
-  );
-  addNodeMenuVisible.value = true;
-  markAddMenuOpened();
-}
-
-// 隐藏添加节点菜单
-function hideAddNodeMenu() {
-  addNodeMenuVisible.value = false;
-  addNodeMenuSourceId.value = null;
-  addNodeMenuSourceHandle.value = null;
-  addNodeMenuTargetId.value = null;
-  addNodeMenuEdgeId.value = null;
-}
-
-function getAddNodeMenuViewportPosition(x, y) {
-  const viewportWidth = window.innerWidth || 0;
-  const viewportHeight = window.innerHeight || 0;
-
-  // 1. 动态获取画布容器、抽屉与状态栏的安全视口边界（绝不允许盖在顶层工具栏之上，也绝不允许戳穿底部状态栏或覆盖右侧抽屉）
-  let safeMinY = 130;
-  let safeMinX = 16;
-  let safeMaxBottom = viewportHeight - 50;
-  let safeMaxX = viewportWidth - 280;
-
-  const editorEl = document.querySelector(".flow-wrapper") || document.querySelector(".editor-container");
-  if (editorEl) {
-    const rect = editorEl.getBoundingClientRect();
-    if (rect.top > 0) {
-      safeMinY = Math.max(safeMinY, rect.top + 8);
-    }
-    if (rect.left > 0) {
-      safeMinX = Math.max(safeMinX, rect.left + 8);
-    }
-    if (rect.right > 0 && rect.right < viewportWidth) {
-      safeMaxX = Math.min(safeMaxX, rect.right - 260 - 12);
-    }
-  }
-
-  // 检查右侧是否展开了配置抽屉或调试面板
-  const drawerEl = document.querySelector(".config-drawer.open, .workflow-debug-run-panel");
-  if (drawerEl) {
-    const drawerRect = drawerEl.getBoundingClientRect();
-    if (drawerRect.left > 0 && drawerRect.width > 0 && drawerRect.left < viewportWidth) {
-      safeMaxX = Math.min(safeMaxX, drawerRect.left - 260 - 16);
-    }
-  }
-
-  const statusBarEl = document.querySelector(".status-bar");
-  if (statusBarEl) {
-    const statusRect = statusBarEl.getBoundingClientRect();
-    if (statusRect.top > 0) {
-      safeMaxBottom = Math.min(safeMaxBottom, statusRect.top - 10);
-    }
-  }
-
-  // 2. 画布纵向净可用空间约束
-  const menuEstimatedWidth = 260;
-  const maxAvailableHeight = Math.max(260, safeMaxBottom - safeMinY - 12);
-  const targetMenuHeight = Math.min(450, maxAvailableHeight);
-
-  const maxX = Math.max(safeMinX, safeMaxX);
-  const maxY = Math.max(safeMinY, safeMaxBottom - targetMenuHeight);
-
-  // 3. 水平方向：优先在点击点右侧（x + 12），若右侧超出 safeMaxX 则自适应向左翻转
-  let finalX = x + 12;
-  if (finalX > maxX) {
-    finalX = x - menuEstimatedWidth - 12;
-  }
-  // 严防左侧溢出
-  finalX = Math.max(safeMinX, finalX);
-
-  // 4. 垂直方向：优先在点击点略微向上偏移（y - 30）展现，若下方超出 safeMaxBottom 则向上自适应
-  let finalY = y - 30;
-  if (finalY > maxY) {
-    finalY = maxY;
-  }
-  // 必须严格受限于 safeMinY，绝不能小于画布顶部安全边界！
-  finalY = Math.max(safeMinY, finalY);
-
-  return {
-    x: Math.round(finalX),
-    y: Math.round(finalY),
-  };
-}
-
-function addNodeAndConnect(nodeType, nodeDataOverride = null) {
-  if (!addNodeMenuSourceId.value) {
-    const fallbackSource = nodes.value.find((n) => n.type === "start") || nodes.value[0];
-    if (fallbackSource) {
-      addNodeMenuSourceId.value = fallbackSource.id;
-    } else {
-      ElMessage.warning("请先在画布中添加或选中一个起始节点");
-      hideAddNodeMenu();
-      return;
-    }
-  }
-
-  if (!isAddableNodeTypeEnabled(nodeType)) {
-    if (nodeType === "http-request") {
-      ElMessage({
-        message: "HTTP请求已支持作为工具添加，请切换至【工具】标签直接使用",
-        type: "info",
-      });
-      return;
-    }
-    ElMessage({
-      message: "该节点功能正在建设中，敬请期待",
-      type: "warning",
-    });
-    return;
-  }
-
-  const isFromEdge = Boolean(
-    addNodeMenuEdgeId.value && addNodeMenuTargetId.value
-  );
-  const sourceNode = nodes.value.find(
-    (node) => node.id === addNodeMenuSourceId.value
-  );
-
-  if (!sourceNode) {
-    hideAddNodeMenu();
-    return;
-  }
-
-  const targetNode = isFromEdge
-    ? nodes.value.find((node) => node.id === addNodeMenuTargetId.value)
-    : null;
-  const originalEdge = isFromEdge
-    ? edges.value.find((edge) => edge.id === addNodeMenuEdgeId.value)
-    : null;
-
-  if (isFromEdge && !originalEdge) {
-    hideAddNodeMenu();
-    return;
-  }
-
-  const newNodeId = buildNodeId(nodeType);
-  const newNodeData = nodeDataOverride
-    ? normalizeNodeData(nodeType, cloneNodeData(nodeDataOverride))
-    : getDefaultNodeData(nodeType);
-  const candidateNode = {
-    id: newNodeId,
-    type: nodeType,
-    data: newNodeData,
-  };
-  const newNodeDefaultSourceHandle =
-    getDefaultSourceHandleId(candidateNode) || undefined;
-  const newNodeDefaultTargetHandle =
-    getDefaultTargetHandleId(candidateNode) || undefined;
-  const hasExistingOutgoingTargets =
-    !isFromEdge &&
-    getOuterOutgoingTargetNodes(
-      sourceNode.id,
-      addNodeMenuSourceHandle.value,
-      nodes.value,
-      edges.value
-    ).length > 0;
-  const basePosition =
-    isFromEdge && targetNode
-      ? getOuterEdgeBasePosition(sourceNode, targetNode, candidateNode)
-      : hasExistingOutgoingTargets
-      ? getOuterSiblingBasePosition(
-          sourceNode,
-          candidateNode,
-          addNodeMenuSourceHandle.value,
-          nodes.value,
-          edges.value
-        ) ||
-        getOuterSequentialBasePosition(
-          sourceNode,
-          candidateNode,
-          addNodeMenuSourceHandle.value
-        )
-      : getOuterSequentialBasePosition(
-          sourceNode,
-          candidateNode,
-          addNodeMenuSourceHandle.value
-        );
-
-  const shiftedNodes = isFromEdge
-    ? makeOuterInsertionRoom(
-        cloneNodeData(nodes.value),
-        cloneNodeData(edges.value),
-        candidateNode,
-        basePosition,
-        {
-          excludeIds: [sourceNode.id],
-          targetNodeId: targetNode?.id,
-        }
-      )
-    : cloneNodeData(nodes.value);
-  const finalPosition = adjustPositionToAvoidOverlap(
-    basePosition,
-    newNodeId,
-    nodeType,
-    newNodeData,
-    shiftedNodes,
-    [sourceNode.id]
-  );
-  const newNode = {
-    ...candidateNode,
-    position: finalPosition,
-  };
-  const nextNodes = [...shiftedNodes, newNode];
-  let nextEdges = cloneNodeData(edges.value);
-
-  if (isFromEdge && originalEdge) {
-    nextEdges = nextEdges.filter((edge) => edge.id !== originalEdge.id);
-    nextEdges.push(
-      createNormalizedExternalEdge(
-        {
-          source: addNodeMenuSourceId.value,
-          sourceHandle:
-            originalEdge.sourceHandle ||
-            addNodeMenuSourceHandle.value ||
-            undefined,
-          target: newNodeId,
-          targetHandle: newNodeDefaultTargetHandle,
-        },
-        nextNodes
-      )
-    );
-
-    const outgoingEdge = {
-      source: newNodeId,
-      sourceHandle: newNodeDefaultSourceHandle,
-      target: addNodeMenuTargetId.value,
-      targetHandle: originalEdge.targetHandle || undefined,
-    };
-
-    if (nodeType === "condition") {
-      outgoingEdge.sourceHandle = getConditionDefaultSourceHandle(newNode.data);
-    }
-
-    nextEdges.push(createNormalizedExternalEdge(outgoingEdge, nextNodes));
-  } else {
-    nextEdges.push(
-      createNormalizedExternalEdge(
-        {
-          source: addNodeMenuSourceId.value,
-          sourceHandle:
-            addNodeMenuSourceHandle.value ||
-            getDefaultSourceHandleId(sourceNode) ||
-            undefined,
-          target: newNodeId,
-          targetHandle: newNodeDefaultTargetHandle,
-        },
-        nextNodes
-      )
-    );
-  }
-
-  nodes.value = nextNodes;
-  edges.value = nextEdges;
-  nextTick(() => {
-    refreshNodeHandleLayout([newNode.id, sourceNode.id]);
-    selectedNode.value = newNode;
-    drawerVisible.value = true;
-    drawerMode.value = "node";
-  });
-  hideAddNodeMenu();
-}
-
-function onNodeClick({ event, node }) {
-  if (shouldIgnoreAddMenuDismiss()) {
-    return;
-  }
-
-  if (event?.target?.closest?.(".loop-workflow-canvas")) {
-    return;
-  }
-
-  hideAddNodeMenu();
-  if (!node) return;
-  debugRunPanelVisible.value = false;
-
-  const nextData = normalizeNodeData(node.type, node.data);
-  if (node.type === "condition" && !getConditionCases(node.data).length) {
-    setNodes(
-      nodes.value.map((item) =>
-        item.id === node.id
-          ? {
-              ...item,
-              data: cloneNodeData(nextData),
-            }
-          : item
-      )
-    );
-  }
-
-  selectedNode.value = {
-    id: node.id,
-    type: node.type,
-    data: cloneNodeData(nextData),
-    scope: "outer",
-    loopPath: [],
-  };
-}
-
-function onEdgeClick() {
-  if (shouldIgnoreAddMenuDismiss()) {
-    return;
-  }
-
-  hideAddNodeMenu();
-  selectedNode.value = null;
-}
-
-// 在边上显示添加节点菜单
-function showAddNodeMenuOnEdge(edgeProps, event) {
-  hideAddNodeMenu();
-  drawerVisible.value = false;
-  debugRunPanelVisible.value = false;
-  selectedNode.value = null;
-
-  let clickX = 0;
-  let clickY = 0;
-
-  if (event && typeof event.clientX === "number" && typeof event.clientY === "number") {
-    clickX = event.clientX;
-    clickY = event.clientY;
-  } else {
-    // 降级保护：如果未获取到 MouseEvent，计算画布容器中心视口坐标
-    const editorEl = document.querySelector(".flow-wrapper") || document.querySelector(".editor-container");
-    const rect = editorEl?.getBoundingClientRect();
-    clickX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-    clickY = rect ? rect.top + rect.height / 3 : 200;
-  }
-
-  addNodeMenuPosition.value = getAddNodeMenuViewportPosition(
-    clickX,
-    clickY
-  );
-
-  addNodeMenuSourceId.value = edgeProps.source;
-  addNodeMenuSourceHandle.value = edgeProps.sourceHandle || null;
-  addNodeMenuTargetId.value = edgeProps.target;
-  addNodeMenuEdgeId.value = edgeProps.id;
-  addNodeMenuVisible.value = true;
-  markAddMenuOpened();
-}
-
-function onPaneClick() {
-  if (shouldIgnoreAddMenuDismiss()) {
-    return;
-  }
-
-  hideAddNodeMenu();
-  selectedNode.value = null;
-}
-
-function handleSelectedNodeFieldUpdate(payload = {}) {
-  const { field, value } = payload;
-
-  if (!selectedNode.value || !field) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeConfigValue(
-    selectedNode.value.data,
-    field,
-    value
-  );
-  syncSelectedNodeData();
-}
-
-function addToolOutput() {
-  if (selectedNode.value?.type !== TOOL_NODE_TYPE) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeOutput(selectedNode.value.data, [
-    ...getToolOutputs(selectedNode.value.data),
-    createToolOutput(),
-  ]);
-  syncSelectedNodeData();
-}
-
-function removeToolOutput(outputId) {
-  if (selectedNode.value?.type !== TOOL_NODE_TYPE || !outputId) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeOutput(
-    selectedNode.value.data,
-    getToolOutputs(selectedNode.value.data).filter(
-      (output) => output.id !== outputId
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function handleSelectedToolOutputUpdate(payload = {}) {
-  const { id, patch } = payload;
-
-  if (selectedNode.value?.type !== TOOL_NODE_TYPE || !id) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeOutput(
-    selectedNode.value.data,
-    getToolOutputs(selectedNode.value.data).map((output) =>
-      output.id === id
-        ? normalizeToolOutput({
-            ...output,
-            ...(patch || {}),
-          })
-        : output
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function addReplyOutput() {
-  if (selectedNode.value?.type !== "reply") {
-    return;
-  }
-
-  selectedNode.value.data = setNodeOutput(selectedNode.value.data, [
-    ...getReplyOutputs(selectedNode.value.data),
-    createReplyOutput(),
-  ]);
-  syncSelectedNodeData();
-}
-
-function removeReplyOutput(outputId) {
-  if (selectedNode.value?.type !== "reply" || !outputId) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeOutput(
-    selectedNode.value.data,
-    getReplyOutputs(selectedNode.value.data).filter(
-      (output) => output.id !== outputId
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function handleSelectedReplyOutputUpdate(payload = {}) {
-  const { id, patch } = payload;
-
-  if (selectedNode.value?.type !== "reply" || !id) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeOutput(
-    selectedNode.value.data,
-    getReplyOutputs(selectedNode.value.data).map((output) =>
-      output.id === id
-        ? normalizeReplyOutput({
-            ...output,
-            ...(patch || {}),
-          })
-        : output
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function handleSelectedReplyContentUpdate(value = "") {
-  if (selectedNode.value?.type !== "reply") {
-    return;
-  }
-
-  selectedNode.value.data = setNodeConfigValue(
-    selectedNode.value.data,
-    "content",
-    `${value || ""}`
-  );
-  syncSelectedNodeData();
-}
-
-function handleSelectedKnowledgeConfigUpdate(patch = {}) {
-  if (!selectedNode.value || !patch) {
-    return;
-  }
-  selectedNode.value.data = mergeNodeConfig(selectedNode.value.data, patch);
-  syncSelectedNodeData();
-}
-
-function handleSelectedConditionCaseUpdate(payload = {}) {
-  const { id, expression } = payload;
-
-  if (selectedNode.value?.type !== "condition" || !id) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeConfigValue(
-    selectedNode.value.data,
-    "cases",
-    getConditionCases(selectedNode.value.data).map((caseItem) =>
-      caseItem.id === id
-        ? {
-            ...caseItem,
-            expression: expression ?? "",
-          }
-        : caseItem
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function handleSelectedLlmMessageUpdate(payload = {}) {
-  const { id, patch } = payload;
-
-  if (selectedNode.value?.type !== "llm" || !id) {
-    return;
-  }
-
-  selectedNode.value.data = setNodeInput(
-    selectedNode.value.data,
-    getNodeInput(selectedNode.value.data).map((message) =>
-      message.id === id
-        ? {
-            ...message,
-            ...(patch || {}),
-          }
-        : message
-    )
-  );
-  syncSelectedNodeData();
-}
-
-function deleteNodeByTarget(nodeId, loopPath = []) {
-  const normalizedNodeId = `${nodeId || ""}`.trim();
-  const normalizedLoopPath = normalizeLoopPath(loopPath);
-
-  if (!normalizedNodeId) {
-    return;
-  }
-
-  hideAddNodeMenu();
-
-  if (normalizedLoopPath.length) {
-    removeInnerNodeAtPath(normalizedLoopPath, normalizedNodeId);
-
-    if (
-      selectedNode.value?.scope === "loop-inner" &&
-      selectedNode.value?.id === normalizedNodeId &&
-      areLoopPathsEqual(selectedNode.value.loopPath, normalizedLoopPath)
-    ) {
-      selectedNode.value = null;
-    }
-
-    return;
-  }
-
-  removeNodes([normalizedNodeId]);
-
-  if (
-    selectedNode.value?.scope !== "loop-inner" &&
-    selectedNode.value?.id === normalizedNodeId
-  ) {
-    selectedNode.value = null;
-  }
-}
-
-function isSelectedNodeDeletable(node = null) {
-  if (!node?.id) {
-    return false;
-  }
-
-  if (node.scope === "loop-inner") {
-    return node.id !== "loop-entry" && node.type !== "loop-start";
-  }
-
-  return node.type !== "start";
-}
-
-function shouldIgnoreDeleteShortcutTarget(event) {
-  const target = event?.target;
-
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return Boolean(
-    target.closest(
-      'input, textarea, select, [contenteditable="true"], [contenteditable=""], .el-input, .el-textarea, .el-select'
-    )
-  );
-}
-
-function handleSelectedNodeDeleteKeydown(event) {
-  if (
-    event?.key !== "Delete" ||
-    event?.defaultPrevented ||
-    event?.isComposing ||
-    !selectedNode.value ||
-    !isSelectedNodeDeletable(selectedNode.value) ||
-    shouldIgnoreDeleteShortcutTarget(event)
-  ) {
-    return;
-  }
-
-  event.preventDefault();
-  deleteNodeByTarget(selectedNode.value.id, selectedNode.value.loopPath);
-}
-
-function handleOuterNodeDelete(nodeId = "") {
-  deleteNodeByTarget(nodeId);
-}
-
-function handleInnerNodeDelete(payload = {}) {
-  deleteNodeByTarget(payload.id, payload.loopPath);
-}
-
+// 6. 保存与验证逻辑
 function validateFlow(options = {}) {
   const { showSuccess = true } = options;
   const startNodes = nodes.value.filter((n) => n.type === "start");
   const replyNodes = nodes.value.filter((n) => n.type === "reply");
 
-  if (startNodes.length === 0) {
+  if (!startNodes.length) {
     ElMessage.warning("流程必须包含开始节点");
     return false;
   }
-
-  if (replyNodes.length === 0) {
-    ElMessage.warning("流程必须包含回复节点");
-    return false;
-  }
-
-  const invalidReplyNode = replyNodes.find((node) =>
-    isChatflowWorkflow.value
-      ? !`${getReplyContent(node.data) || ""}`.trim()
-      : !getReplyOutputs(node.data).length &&
-        !`${getReplyContent(node.data) || ""}`.trim()
-  );
-
-  if (invalidReplyNode) {
-    ElMessage.warning(
-      isChatflowWorkflow.value
-        ? `回复节点“${getNodeLabel(
-            invalidReplyNode.data,
-            "回复"
-          )}”请填写回复内容`
-        : `输出节点“${getNodeLabel(
-            invalidReplyNode.data,
-            "输出"
-          )}”请至少配置一个输出变量`
-    );
+  if (!replyNodes.length) {
+    ElMessage.warning("流程必须包含回复/输出节点");
     return false;
   }
 
   if (showSuccess) {
     ElMessage.success("流程验证通过");
   }
-
   return true;
 }
 
-function buildFlowData() {
-  return normalizeWorkflowGraphIds({
-    botId: botId.value,
-    nodes: nodes.value.map((node) => ({
-      ...node,
-      data: normalizeNodeData(node.type, cloneNodeData(node.data || {})),
-    })),
-    edges: cloneNodeData(edges.value),
-  });
+async function exportFlow() {
+  if (!validateFlow()) return;
+  saving.value = true;
+  try {
+    const payload = {
+      botId: Number(botId.value),
+      nodes: nodes.value,
+      edges: edges.value,
+      graphData: JSON.stringify({
+        nodes: nodes.value,
+        edges: edges.value,
+      }),
+    };
+    await submitFlow(payload);
+    ElMessage.success("工作流保存成功");
+  } catch (e) {
+    console.error("保存工作流失败:", e);
+    ElMessage.error("保存工作流失败");
+  } finally {
+    saving.value = false;
+  }
 }
 
-function exportFlow() {
-  const flowData = buildFlowData();
-  submitFlow(flowData).then((res) => {
-    if (res.code == 200) {
-      proxy.$modal.msgSuccess("保存成功");
-      return;
-    } else {
-      proxy.$modal.msgError(`保存异常! ${msg}`);
+// 7. API 与生命周期
+async function getBotDetail(id) {
+  try {
+    const res = await getBot(id);
+    const data = res?.data || res;
+    flowName.value = data?.name || "未命名 Bot";
+    workflowType.value = data?.type ?? 1;
+    flowBuiltinFlag.value = data?.builtinFlag ?? 0;
+  } catch (e) {
+    console.error("加载 Bot 详情失败:", e);
+  }
+}
+
+async function getFlowData(id) {
+  loading.value = true;
+  try {
+    const res = await getFlow(id);
+    const data = res?.data || res;
+    flowId.value = data?.id || data?.botId || id;
+
+    let loadedNodes = [];
+    let loadedEdges = [];
+
+    if (Array.isArray(data?.nodes)) {
+      loadedNodes = data.nodes;
+      loadedEdges = Array.isArray(data?.edges) ? data.edges : [];
+    } else if (data?.graphData) {
+      try {
+        const parsed = JSON.parse(data.graphData);
+        loadedNodes = parsed.nodes || [];
+        loadedEdges = parsed.edges || [];
+      } catch (err) {
+        console.warn("解析图数据失败:", err);
+      }
     }
-  });
 
-  // const dataStr = JSON.stringify(flowData, null, 2);
-  // const dataBlob = new Blob([dataStr], { type: "application/json" });
-  // const url = URL.createObjectURL(dataBlob);
-
-  // const link = document.createElement("a");
-  // link.href = url;
-  // link.download = `workflow-${Date.now()}.json`;
-  // link.click();
-
-  // URL.revokeObjectURL(url);
-  // ElMessage.success("流程已导出");
+    if (loadedNodes.length > 0) {
+      const normalized = normalizeWorkflowGraphIds({
+        nodes: loadedNodes,
+        edges: loadedEdges,
+      });
+      nodes.value = normalized.nodes || [];
+      edges.value = normalized.edges || [];
+      nextTick(() => {
+        canvasRef.value?.fitView({ padding: 0.2 });
+      });
+    } else {
+      nodes.value = [];
+      edges.value = [];
+    }
+  } catch (e) {
+    console.error("加载工作流失败:", e);
+  } finally {
+    loading.value = false;
+  }
 }
+
+function autoLayoutGraph() {
+  nodes.value = nodes.value.map((node, i) => ({
+    ...node,
+    position: { x: 120 + i * 360, y: 260 + (i % 2) * 60 },
+  }));
+  nextTick(() => {
+    canvasRef.value?.fitView({ padding: 0.2 });
+  });
+  ElMessage.success("已完成拓扑整齐排版");
+}
+
+function smartFitView() {
+  canvasRef.value?.fitView({ padding: 0.2 });
+  ElMessage.info("已自适应视口比例");
+}
+
+function routerView() {
+  router.back();
+}
+
+// 8. 复制 Bot 弹窗
+const open = ref(false);
+const title = ref("复制 Bot");
+const form = ref({ name: "", description: "", remark: "" });
+const rules = {
+  name: [{ required: true, message: "请输入 Bot 名称", trigger: "blur" }],
+};
+
+function showCopyDialog() {
+  form.value = {
+    name: `${flowName.value} (副本)`,
+    description: "",
+    remark: "",
+  };
+  open.value = true;
+}
+
+function cancel() {
+  open.value = false;
+}
+
+async function submitForm() {
+  if (!form.value.name) return;
+  try {
+    await copyBot({ botId: botId.value, ...form.value });
+    ElMessage.success("复制成功");
+    open.value = false;
+  } catch {
+    ElMessage.error("复制失败");
+  }
+}
+
+onMounted(async () => {
+  await getModelList();
+  if (botId.value) {
+    await getBotDetail(botId.value);
+    await getFlowData(botId.value);
+  }
+});
 </script>
 
 <style scoped lang="scss">
-.workflow-editor {
-  margin: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background-color: #f8fafc;
-  --el-border-radius-base: 8px;
-  --el-border-radius-small: 6px;
-  --el-border-radius-round: 20px;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
-  z-index: 10;
-
-  .toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .toolbar-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 16px;
-      font-weight: 590;
-      color: #0f172a;
-      letter-spacing: -0.015em;
-
-      .title {
-        max-width: 500px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .el-tag {
-        margin-left: 6px;
-        border-radius: 6px;
-        font-weight: 590;
-      }
-      .internally {
-        display: flex;
-        align-items: center;
-        font-size: 12px;
-        color: #ef4444;
-        margin-left: 8px;
-        font-weight: 400;
-      }
-    }
-  }
-
-  .toolbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .glass-btn {
-      border-radius: 10px;
-      font-weight: 590;
-      font-size: 13px;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(226, 232, 240, 0.9);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-
-      &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      }
-    }
-
-    .fhbtn {
-      .svg-icon {
-        font-size: 12px;
-        margin-right: 3px;
-        vertical-align: middle;
-        margin-top: -3px;
-      }
-      &:hover {
-        .svg-icon {
-          filter: brightness(0) invert(1) !important;
-        }
-      }
-    }
-
-    .bcimg {
-      width: 1em;
-      height: 1em;
-      color: #fff;
-      margin-right: 3px;
-    }
-    .ds {
-      width: 1em;
-      height: 1em;
-      margin-right: 3px;
-    }
-  }
-}
-
-.editor-container {
-  flex: 1;
-  display: flex;
-  overflow: hidden;
-}
-
-.flow-wrapper {
-  flex: 1;
-  position: relative;
-  background: radial-gradient(circle at 50% 40%, rgba(240, 246, 255, 0.75) 0%, rgba(248, 250, 252, 0.95) 70%, #edf2f7 100%);
-}
-
-.custom-node {
-  width: 290px;
-  min-width: 290px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 255, 0.9) 100%);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 18px;
-  box-shadow:
-    0 4px 16px -2px rgba(15, 23, 42, 0.05),
-    0 10px 24px -4px rgba(15, 23, 42, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.03),
-    inset 0 1px 2px 0 rgba(255, 255, 255, 1);
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  user-select: none;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      0 8px 28px -4px rgba(0, 136, 255, 0.12),
-      0 16px 36px -6px rgba(15, 23, 42, 0.08),
-      0 0 0 1px rgba(0, 136, 255, 0.15),
-      inset 0 1px 2px 0 #ffffff;
-  }
-
-  &.selected {
-    border-color: rgba(0, 136, 255, 0.9);
-    box-shadow:
-      0 0 0 2px rgba(0, 136, 255, 0.25),
-      0 12px 36px -4px rgba(0, 136, 255, 0.2),
-      inset 0 1px 2px 0 #ffffff;
-    transform: translateY(-2px);
-  }
-
-  .node-top {
-    padding: 7px 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.035);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    .node-type-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-  }
-
-  .node-body {
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    .node-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-
-      .node-icon-wrapper {
-        width: 36px;
-        height: 36px;
-        border-radius: 11px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.06);
-
-        .node-svg {
-          width: 20px;
-          height: 20px;
-        }
-      }
-
-      .node-title {
-        min-width: 0;
-        font-size: 15px;
-        font-weight: 590;
-        color: #0f172a;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        letter-spacing: -0.015em;
-      }
-    }
-
-    .node-subtitle {
-      font-size: 12px;
-      color: #64748b;
-      background-color: rgba(241, 245, 249, 0.85);
-      padding: 3px 10px;
-      border-radius: 8px;
-      display: inline-block;
-      font-weight: 450;
-      width: fit-content;
-    }
-
-    .node-preview {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-      font-size: 12px;
-      color: #64748b;
-
-      &.node-preview--inline {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 6px;
-        line-height: 1.6;
-      }
-
-      .preview-tag {
-        display: inline-flex;
-        align-items: center;
-        max-width: 100%;
-        background-color: rgba(0, 136, 255, 0.08);
-        color: #0088ff;
-        padding: 2px 8px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 500;
-        white-space: normal;
-        word-break: break-word;
-      }
-
-      .preview-text {
-        white-space: pre-wrap;
-        word-break: break-word;
-        color: #64748b;
-      }
-    }
-  }
-
-  // 添加节点按钮
-  .node-add-btn {
-    position: absolute;
-    right: -11px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 22px;
-    height: 22px;
-    background: linear-gradient(135deg, #0088ff 0%, #0066cc 100%);
-    color: #fff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    opacity: 0;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 10;
-    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.35);
-    font-size: 14px;
-    font-weight: 300;
-    user-select: none;
-    touch-action: none;
-
-    &:hover {
-      background: linear-gradient(135deg, #0077ee 0%, #0055bb 100%);
-      transform: translateY(-50%) scale(1.15);
-      box-shadow: 0 6px 16px rgba(0, 136, 255, 0.5);
-    }
-  }
-
-  &:hover .node-add-btn {
-    opacity: 1;
-  }
-
-  .node-delete-btn {
-    position: absolute;
-    top: 5px;
-    right: 8px;
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border: none;
-    background-color: transparent;
-    color: #94a3b8;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    opacity: 0;
-    transition: all 0.2s ease;
-    z-index: 12;
-
-    &:hover {
-      color: #ef4444;
-      background-color: rgba(239, 68, 68, 0.08);
-      border-radius: 6px;
-    }
-  }
-
-  &:hover .node-delete-btn {
-    opacity: 1;
-  }
-}
-
-.start-node {
-  .node-top {
-    background: linear-gradient(90deg, rgba(0, 136, 255, 0.1) 0%, transparent 100%);
-    .node-type-label {
-      color: #0088ff;
-    }
-  }
-
-  .node-icon-wrapper {
-    background: linear-gradient(135deg, rgba(0, 136, 255, 0.16) 0%, rgba(0, 136, 255, 0.05) 100%);
-    color: #0088ff;
-    box-shadow: inset 0 0 0 1px rgba(0, 136, 255, 0.18);
-  }
-
-  .node-body {
-    gap: 10px;
-  }
-
-  .start-node-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .start-node-field-row {
-    padding: 4px 10px;
-    border-radius: 8px;
-    background-color: rgba(248, 250, 252, 0.85);
-    border: 1px solid rgba(226, 232, 240, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .start-node-field-name {
-    min-width: 0;
-    font-size: 12px;
-    color: #0088ff;
-    font-weight: 590;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .start-node-field-type {
-    flex-shrink: 0;
-    font-size: 11px;
-    color: #64748b;
-    background-color: rgba(0, 136, 255, 0.08);
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-weight: 590;
-  }
-
-  .start-node-field-more {
-    font-size: 11px;
-    color: #64748b;
-  }
-
-  .start-node-empty {
-    padding: 8px 12px;
-    border: 1px solid rgba(0, 136, 255, 0.15);
-    border-radius: 10px;
-    font-size: 12px;
-    color: #2563eb;
-    background-color: rgba(239, 246, 255, 0.7);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .empty-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background-color: #3b82f6;
-      box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
-    }
-  }
-}
-
-.llm-node {
-  .node-top {
-    background: linear-gradient(90deg, rgba(97, 85, 245, 0.1) 0%, transparent 100%);
-    .node-type-label {
-      color: #6155f5;
-    }
-  }
-
-  .node-icon-wrapper {
-    background: linear-gradient(135deg, rgba(97, 85, 245, 0.16) 0%, rgba(97, 85, 245, 0.05) 100%);
-    color: #6155f5;
-    box-shadow: inset 0 0 0 1px rgba(97, 85, 245, 0.18);
-  }
-
-  .llm-node-svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-.reply-node {
-  .node-top {
-    background: linear-gradient(90deg, rgba(22, 163, 74, 0.1) 0%, transparent 100%);
-    .node-type-label {
-      color: #16a34a;
-    }
-  }
-
-  .node-icon-wrapper {
-    background: linear-gradient(135deg, rgba(22, 163, 74, 0.16) 0%, rgba(22, 163, 74, 0.05) 100%);
-    color: #16a34a;
-    box-shadow: inset 0 0 0 1px rgba(22, 163, 74, 0.18);
-  }
-
-  .reply-node-preview-more {
-    font-size: 11px;
-    color: #64748b;
-  }
-}
-
-.knowledge-node {
-  .node-top {
-    background: linear-gradient(90deg, rgba(0, 151, 167, 0.1) 0%, transparent 100%);
-    .node-type-label {
-      color: #0097a7;
-    }
-  }
-
-  .node-icon-wrapper {
-    background: linear-gradient(135deg, rgba(0, 151, 167, 0.16) 0%, rgba(0, 151, 167, 0.05) 100%);
-    color: #0097a7;
-    box-shadow: inset 0 0 0 1px rgba(0, 151, 167, 0.18);
-  }
-}
-
-.tool-node {
-  .node-top {
-    background: linear-gradient(90deg, rgba(203, 48, 224, 0.1) 0%, transparent 100%);
-    .node-type-label {
-      color: #cb30e0;
-    }
-  }
-
-  .node-icon-wrapper {
-    background: linear-gradient(135deg, rgba(203, 48, 224, 0.16) 0%, rgba(203, 48, 224, 0.05) 100%);
-    color: #cb30e0;
-    box-shadow: inset 0 0 0 1px rgba(203, 48, 224, 0.18);
-  }
-
-  .tool-subtitle-badge {
-    background-color: rgba(203, 48, 224, 0.07);
-    color: #a21caf;
-    border: 1px solid rgba(203, 48, 224, 0.15);
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 6px;
-
-    .badge-label {
-      opacity: 0.7;
-    }
-
-    .badge-val {
-      font-weight: 590;
-    }
-  }
-
-  .tool-output-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background-color: rgba(248, 250, 252, 0.75);
-    border: 1px solid rgba(226, 232, 240, 0.6);
-
-    .preview-title {
-      font-size: 11px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-
-    .preview-tags-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .tool-tag {
-      background-color: rgba(203, 48, 224, 0.08);
-      color: #cb30e0;
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 500;
-    }
-  }
-
-  .tool-node-preview-more {
-    font-size: 11px;
-    color: #64748b;
-  }
-}
-
-.condition-node {
-  min-width: 290px;
-
-  .node-top {
-    background: linear-gradient(90deg, rgba(255, 141, 40, 0.1) 0%, transparent 100%);
-    .node-type-label {
-      color: #ff8d28;
-    }
-  }
-
-  .node-icon-wrapper {
-    background: linear-gradient(135deg, rgba(255, 141, 40, 0.16) 0%, rgba(255, 141, 40, 0.05) 100%);
-    color: #ff8d28;
-    box-shadow: inset 0 0 0 1px rgba(255, 141, 40, 0.18);
-    margin-bottom: 0;
-  }
-
-  .node-body {
-    gap: 12px;
-  }
-
-  .condition-summary {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .condition-title-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .condition-count {
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 999px;
-    background-color: rgba(255, 141, 40, 0.1);
-    color: #ff8d28;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .condition-branch-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .condition-branch-row {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 30px;
-    padding: 2px 8px;
-    border-radius: 8px;
-    background-color: rgba(248, 250, 252, 0.75);
-    border: 1px solid rgba(226, 232, 240, 0.5);
-    overflow: visible;
-  }
-
-  .condition-branch-name {
-    font-size: 12px;
-    font-weight: 590;
-    color: #475569;
-    letter-spacing: 0.2px;
-  }
-
-  .condition-branch-output {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-right: 14px;
-  }
-
-  .condition-branch-tag {
-    font-size: 11px;
-    font-weight: 700;
-    color: #ff8d28;
-    background-color: rgba(255, 141, 40, 0.08);
-    padding: 1px 6px;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
-  }
-
-  .condition-branch-action {
-    position: absolute;
-    right: -10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    z-index: 10;
-    opacity: 0;
-    transition: all 0.2s;
-  }
-
-  .condition-branch-handle {
-    width: 20px;
-    height: 20px;
-    left: 0 !important;
-    right: auto !important;
-    top: 0 !important;
-    transform: none;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .condition-branch-add-btn {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ff8d28 0%, #ea580c 100%);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 300;
-    line-height: 1;
-    box-shadow: 0 2px 8px rgba(255, 141, 40, 0.35);
-    transition: all 0.2s;
-    user-select: none;
-    touch-action: none;
-
-    &:hover {
-      transform: scale(1.15);
-      box-shadow: 0 4px 12px rgba(255, 141, 40, 0.5);
-    }
-  }
-
-  &:hover .condition-branch-action {
-    opacity: 1;
-  }
-}
-
-.loop-node {
-  min-width: 0;
-  max-width: none;
-  width: fit-content;
-  box-sizing: border-box;
-  border-radius: 20px;
-  background: linear-gradient(145deg, rgba(240, 253, 250, 0.96) 0%, rgba(248, 250, 252, 0.94) 100%);
-  border: 1px solid rgba(20, 184, 166, 0.35);
-  box-shadow: 0 10px 30px -4px rgba(13, 148, 136, 0.12), inset 0 1px 1px #fff;
-  overflow: visible;
-
-  &.selected {
-    border-color: #0d9488;
-    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2),
-      0 16px 36px rgba(13, 148, 136, 0.18);
-  }
-
-  .loop-node-shell {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    padding: 14px 18px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    box-sizing: border-box;
-    border-radius: inherit;
-  }
-
-  .loop-node-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 24px;
-  }
-
-  .loop-node-icon {
-    width: 26px;
-    height: 26px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
-    color: #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
-    flex-shrink: 0;
-  }
-
-  .loop-icon-glyph {
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 1;
-  }
-
-  .loop-node-title {
-    min-width: 0;
-    font-size: 15px;
-    font-weight: 590;
-    color: #0f172a;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .loop-editor-surface {
-    min-height: 0;
-    flex: 1;
-    border: 1px solid rgba(20, 184, 166, 0.2);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.88);
-    overflow: visible;
-    box-sizing: border-box;
-    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.02);
-  }
-}
-
-.node-source-handle {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.handle {
-  width: 12px;
-  height: 12px;
-  background-color: #ffffff;
-  border: 2px solid #0088ff;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(0, 136, 255, 0.2), 0 2px 4px rgba(0, 0, 0, 0.08);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-
-  &.handle-drop-target {
-    background-color: #0088ff;
-    border-color: #ffffff;
-    box-shadow: 0 0 0 5px rgba(0, 136, 255, 0.4);
-    transform: scale(1.3);
-  }
-
-  &:hover {
-    background-color: #0088ff;
-    border-color: #ffffff;
-    transform: scale(1.35);
-    box-shadow: 0 0 0 4px rgba(0, 136, 255, 0.35);
-  }
-}
-
-// 添加节点菜单样式
-.add-node-menu {
-  position: fixed;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  z-index: 1000;
-  min-width: 240px;
-  max-width: 300px;
-  max-height: min(450px, calc(100vh - 250px));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-sizing: border-box;
-
-  .add-node-menu-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid #f3f4f6;
-    font-size: 14px;
-    font-weight: 600;
-    color: #111827;
-    flex-shrink: 0;
-
-    .close-btn {
-      cursor: pointer;
-      color: #9ca3af;
-      transition: color 0.2s;
-
-      &:hover {
-        color: #6b7280;
-      }
-    }
-  }
-
-  .add-node-menu-tabs {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 12px 0;
-    flex-shrink: 0;
-  }
-
-  .add-node-menu-tab {
-    flex: 1;
-    height: 32px;
-    border: none;
-    border-radius: 8px;
-    background-color: transparent;
-    color: #6b7280;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-
-    &:hover {
-      background-color: #f3f4f6;
-      color: #374151;
-    }
-
-    &.is-active {
-      background-color: #eff6ff;
-      color: #2563eb;
-    }
-  }
-
-  .add-node-menu-list {
-    padding: 8px;
-    flex: 1;
-    max-height: min(350px, calc(100vh - 350px));
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-
-    &::-webkit-scrollbar {
-      width: 5px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.15);
-      border-radius: 4px;
-    }
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-  }
-
-  .add-node-menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      background-color: #f3f4f6;
-    }
-
-    &.is-disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-
-      &:hover {
-        background-color: transparent;
-      }
-    }
-
-    .node-icon {
-      font-size: 20px;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #f9fafb;
-      border-radius: 8px;
-    }
-
-    .node-info {
-      flex: 1;
-
-      .node-label {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        color: #111827;
-
-        .node-status-badge {
-          font-size: 11px;
-          font-weight: 400;
-          padding: 1px 6px;
-          border-radius: 10px;
-          background-color: #f3f4f6;
-          color: #9ca3af;
-          border: 1px solid #e5e7eb;
-        }
-      }
-
-      .node-desc {
-        font-size: 12px;
-        color: #6b7280;
-        margin-top: 2px;
-      }
-    }
-  }
-
-  .add-node-menu-empty {
-    min-height: 120px;
-    padding: 16px 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-align: center;
-    font-size: 13px;
-    color: #6b7280;
-  }
-}
-
-.add-node-menu-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 999;
-}
-
-.config-drawer {
-  width: 0;
-  background-color: #fff;
-  border-left: 1px solid #e5e7eb;
-  transition: width 0.3s ease;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  &.open {
-    width: 420px;
-  }
-
-  .drawer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e5e7eb;
-
-    &.is-start {
-      align-items: flex-start;
-
-      .close-icon {
-        margin-top: 4px;
-      }
-    }
-
-    .drawer-header-main {
-      min-width: 0;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .drawer-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      color: #111827;
-
-      .drawer-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        svg {
-          width: 18px;
-          height: 18px;
-        }
-
-        .drawer-llm-icon {
-          width: 18px;
-          height: 18px;
-        }
-
-        &.start {
-          background-color: #dbeafe;
-          color: #3b82f6;
-        }
-
-        &.llm {
-          background-color: #dbeafe;
-          color: #2563eb;
-        }
-
-        &.reply {
-          background-color: #ffedd5;
-          color: #f97316;
-        }
-
-        &.tool {
-          background-color: #ede9fe;
-          color: #7c3aed;
-        }
-
-        &.condition {
-          background-color: #fef3c7;
-          color: #f59e0b;
-        }
-
-        &.loop {
-          background-color: #ccfbf1;
-          color: #0f766e;
-        }
-
-        &.debug {
-          background-color: #ecfeff;
-          color: #0891b2;
-        }
-      }
-    }
-
-    .drawer-header-actions {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-
-    .drawer-toggle-btn {
-      height: 32px;
-      width: 32px;
-      min-width: 32px;
-      padding: 0;
-      border: none;
-      border-radius: 0;
-      background-color: transparent;
-      font-size: 16px;
-      line-height: 32px;
-      transition: color 0.2s ease, background-color 0.2s ease;
-
-      &.is-active {
-        color: #2563eb;
-      }
-
-      &.is-inactive {
-        color: #9ca3af;
-      }
-
-      &:hover {
-        background-color: #f5f7fa;
-      }
-    }
-
-    .close-icon {
-      width: 24px;
-      height: 24px;
-      cursor: pointer;
-      color: #6b7280;
-
-      &:hover {
-        color: #111827;
-      }
-    }
-  }
-
-  .drawer-content {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-  }
-
-  .drawer-content--debug {
-    padding-top: 16px;
-  }
-
-  .drawer-content--chatflow {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-}
-
-:deep(.node-config-section-title) {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 400;
-  color: #111827;
-  line-height: 1.5;
-}
-
-:deep(.node-config-section-title::before) {
-  content: none;
-}
-
-:deep(.start-field-dialog) {
-  // border-radius: 24px;
-  padding: 0 !important;
-}
-
-:deep(.start-field-dialog .el-dialog__header) {
-  padding: 9px 20px !important;
-  margin-right: 0 !important;
-  background: #f8f8f8 !important;
-  border-bottom: 1px solid #7072751a;
-}
-
-:deep(.start-field-dialog .el-dialog__title) {
-  font-weight: 600;
-  font-size: 16px;
-  color: #3f3f3f;
-  line-height: 1.5;
-}
-
-:deep(.start-field-dialog .el-dialog__headerbtn) {
-  top: 0 !important;
-  height: 42px;
-}
-
-:deep(.start-field-dialog .el-dialog__body) {
-  padding: 20px 40px !important;
-  overflow: visible;
-}
-
-:deep(.start-field-dialog .el-dialog__footer) {
-  padding: 12px 24px 20px !important;
-  border-top: 1px solid #7072751a;
-}
-
-.start-field-dialog-form {
-  :deep(.el-form-item) {
-    margin-bottom: 18px;
-    align-items: flex-start;
-  }
-
-  :deep(.el-form-item:last-child) {
-    margin-bottom: 0;
-  }
-
-  :deep(.el-form-item__label) {
-    display: flex;
-    align-items: center;
-    min-height: 32px;
-    padding: 0 16px 0 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #111827;
-    line-height: 20px;
-    justify-content: flex-end;
-  }
-
-  :deep(.el-form-item__content) {
-    min-width: 0;
-    min-height: 32px;
-    line-height: normal;
-  }
-
-  :deep(.el-form-item.start-field-form-item-radio) {
-    align-items: center;
-  }
-
-  :deep(.el-form-item__error) {
-    padding-top: 4px;
-  }
-}
-
-.start-field-type-select {
-  width: 100%;
-}
-
-.start-field-radio-group {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  min-height: 40px;
-}
-
-.start-field-radio-group :deep(.el-radio) {
-  margin-right: 0;
-}
-
-.start-field-dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.loop-add-menu {
-  z-index: 1001;
-}
-
-.node-config-header-name {
-  flex: 1;
-  min-width: 0;
-
-  :deep(.el-input__wrapper) {
-    padding: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  :deep(.el-input__inner) {
-    height: auto;
-    padding: 0;
-    color: #111827;
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-}
-
-.workflow-editor :deep(.el-input__wrapper),
-.workflow-editor :deep(.el-select__wrapper),
-.workflow-editor :deep(.el-textarea__inner),
-.workflow-editor :deep(.el-input-number),
-.workflow-editor :deep(.el-input-number__wrapper),
-:deep(.start-field-dialog .el-input__wrapper),
-:deep(.start-field-dialog .el-select__wrapper),
-:deep(.start-field-dialog .el-textarea__inner),
-:deep(.start-field-dialog .el-input-number),
-:deep(.start-field-dialog .el-input-number__wrapper),
-:deep(.llm-model-config-dialog .el-input__wrapper),
-:deep(.llm-model-config-dialog .el-select__wrapper),
-:deep(.llm-model-config-dialog .el-textarea__inner),
-:deep(.llm-model-config-dialog .el-input-number),
-:deep(.llm-model-config-dialog .el-input-number__wrapper) {
-  border-radius: 0 !important;
-}
-.workflow-editor :deep(.el-input-number__increase),
-.workflow-editor :deep(.el-input-number__decrease),
-:deep(.start-field-dialog .el-input-number__increase),
-:deep(.start-field-dialog .el-input-number__decrease),
-:deep(.llm-model-config-dialog .el-input-number__increase),
-:deep(.llm-model-config-dialog .el-input-number__decrease) {
-  border-radius: 0 !important;
-}
-:deep(.dydome-square-popper.el-popper),
-:deep(.dydome-square-popper.el-select__popper) {
-  border-radius: 0 !important;
-}
-.drawer-loop-glyph {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.loop-step-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.loop-step-editor-start,
-.loop-step-editor-card {
-  padding: 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background-color: #f9fafb;
-}
-
-.loop-step-editor-start {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.loop-step-editor-lock {
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background-color: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.loop-step-editor-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.loop-step-editor-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.loop-step-editor-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.loop-step-editor-index {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.loop-step-editor-type {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background-color: #eef2ff;
-  color: #4338ca;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.loop-step-editor-type.type-condition {
-  background-color: #fef3c7;
-  color: #b45309;
-}
-
-.loop-step-editor-type.type-loop {
-  background-color: #ccfbf1;
-  color: #0f766e;
-}
-
-.loop-step-editor-type.type-reply {
-  background-color: #ffedd5;
-  color: #c2410c;
-}
-
-.loop-step-editor-tip {
-  margin-top: 8px;
-  font-size: 12px;
-  line-height: 1.6;
-  color: #6b7280;
-}
-
-.loop-empty-tip {
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px dashed #cbd5e1;
-  background-color: #fff;
-  color: #6b7280;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.status-bar {
-  display: flex;
-  gap: 16px;
-  padding: 8px 20px;
-  background-color: #fff;
-  border-top: 1px solid #e5e7eb;
-  font-size: 12px;
-  color: #6b7280;
-}
-
-// 现代高级科技感贝塞尔连接线
-:deep(.vue-flow__edge-path) {
-  stroke: #94a3b8;
-  stroke-width: 2.2;
-  transition: all 0.25s ease;
-  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.06));
-}
-
-:deep(.vue-flow__edge:hover .vue-flow__edge-path) {
-  stroke: #0088ff;
-  stroke-width: 2.8;
-  filter: drop-shadow(0 2px 8px rgba(0, 136, 255, 0.4));
-}
-
-:deep(.vue-flow__edge.selected .vue-flow__edge-path) {
-  stroke: #0088ff;
-  stroke-width: 3;
-  filter: drop-shadow(0 2px 10px rgba(0, 136, 255, 0.5));
-}
-
-:deep(.vue-flow__edge-marker) {
-  fill: #94a3b8;
-  transition: fill 0.25s ease;
-}
-
-:deep(.vue-flow__edge:hover .vue-flow__edge-marker) {
-  fill: #0088ff;
-}
-
-:deep(.vue-flow__edge.selected .vue-flow__edge-marker) {
-  fill: #0088ff;
-}
-
-// 连接时的预览线样式
-:deep(.vue-flow__connection-path) {
-  stroke: #0088ff;
-  stroke-width: 2.5;
-  stroke-dasharray: 6 6;
-  filter: drop-shadow(0 2px 8px rgba(0, 136, 255, 0.3));
-}
-
-:deep(.edge-add-btn) {
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 0;
-  pointer-events: none;
-
-  .add-btn-bg {
-    fill: #0088ff;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    filter: drop-shadow(0 2px 6px rgba(0, 136, 255, 0.35));
-  }
-
-  &:hover .add-btn-bg {
-    fill: #0066cc;
-    r: 13;
-    filter: drop-shadow(0 4px 12px rgba(0, 136, 255, 0.55));
-  }
-
-  &:active .add-btn-bg {
-    fill: #0055bb;
-  }
-
-  text {
-    font-size: 14px;
-    font-weight: 300;
-    dominant-baseline: central;
-  }
-}
-:deep(.edge-wrapper:hover .edge-add-btn),
-:deep(.edge-add-btn:hover) {
-  opacity: 1;
-  pointer-events: all;
-}
+@import "./styles/workflow-editor.scss";
 </style>

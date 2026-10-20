@@ -54,18 +54,19 @@
           </div>
 
           <div class="chatflow-debug-conversation__bubble">
+            <template v-if="message.role === 'assistant'">
+              <StreamingReasoningView
+                :reasoning-content="message.reasoningContent || message.reasoning_content || ''"
+                :content="message.content || ''"
+                :is-streaming="message.status === 'streaming'"
+                :duration="message.duration || 0"
+              />
+            </template>
             <div
-              v-if="
-                message.role !== 'assistant' ||
-                !`${message.content || ''}`.trim()
-              "
+              v-else-if="!`${message.content || ''}`.trim()"
               class="chatflow-debug-conversation__text"
             >
-              {{
-                message.role === "assistant" && message.status === "streaming"
-                  ? "正在生成回复..."
-                  : message.content || "暂无内容"
-              }}
+              暂无内容
             </div>
             <MarkdownView
               v-else
@@ -82,6 +83,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from "vue";
 import MarkdownView from "@/components/MarkdownView/index.vue";
+import StreamingReasoningView from "./StreamingReasoningView.vue";
 import assistantAvatar from "@/assets/app/gpt-new.svg";
 import userAvatar from "@/assets/system/images/profile.jpg";
 

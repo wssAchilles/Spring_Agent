@@ -219,14 +219,19 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
         cases.forEach((c) => {
           if (c?.id) {
             const rawId = `${c.id}`;
-            const cleanId = rawId.replace(/^case[_-]/, "");
-            const canonicalHandle = c.targetHandle || `condition-case-${cleanId}`;
+            const cleanId = rawId.replace(/^condition-case-/, "").replace(/^case[_-]/, "");
+            const canonicalHandle = `condition-case-${cleanId}`;
             conditionCasesMap.set(`${node.id}##${rawId}`, canonicalHandle);
             conditionCasesMap.set(`${node.id}##${cleanId}`, canonicalHandle);
             conditionCasesMap.set(`${node.id}##condition-case-${rawId}`, canonicalHandle);
             conditionCasesMap.set(`${node.id}##condition-case-${cleanId}`, canonicalHandle);
             if (c.targetHandle) {
-              conditionCasesMap.set(`${node.id}##${c.targetHandle}`, canonicalHandle);
+              const targetRaw = `${c.targetHandle}`;
+              const targetClean = targetRaw.replace(/^condition-case-/, "").replace(/^case[_-]/, "");
+              const canonicalTargetHandle = `condition-case-${targetClean}`;
+              conditionCasesMap.set(`${node.id}##${targetRaw}`, canonicalTargetHandle);
+              conditionCasesMap.set(`${node.id}##${targetClean}`, canonicalTargetHandle);
+              conditionCasesMap.set(`${node.id}##${canonicalTargetHandle}`, canonicalTargetHandle);
             }
           }
         });
@@ -235,14 +240,19 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
       if (Array.isArray(conditions)) {
         conditions.forEach((c, idx) => {
           const rawId = `${c.id || (c.targetHandle ? c.targetHandle.replace(/^condition-case-/, "") : `case-${idx + 1}`)}`;
-          const cleanId = rawId.replace(/^case[_-]/, "");
-          const canonicalHandle = c.targetHandle || `condition-case-${cleanId}`;
+          const cleanId = rawId.replace(/^condition-case-/, "").replace(/^case[_-]/, "");
+          const canonicalHandle = `condition-case-${cleanId}`;
           conditionCasesMap.set(`${node.id}##${rawId}`, canonicalHandle);
           conditionCasesMap.set(`${node.id}##${cleanId}`, canonicalHandle);
           conditionCasesMap.set(`${node.id}##condition-case-${rawId}`, canonicalHandle);
           conditionCasesMap.set(`${node.id}##condition-case-${cleanId}`, canonicalHandle);
           if (c.targetHandle) {
-            conditionCasesMap.set(`${node.id}##${c.targetHandle}`, canonicalHandle);
+            const targetRaw = `${c.targetHandle}`;
+            const targetClean = targetRaw.replace(/^condition-case-/, "").replace(/^case[_-]/, "");
+            const canonicalTargetHandle = `condition-case-${targetClean}`;
+            conditionCasesMap.set(`${node.id}##${targetRaw}`, canonicalTargetHandle);
+            conditionCasesMap.set(`${node.id}##${targetClean}`, canonicalTargetHandle);
+            conditionCasesMap.set(`${node.id}##${canonicalTargetHandle}`, canonicalTargetHandle);
           }
         });
       }
@@ -275,10 +285,16 @@ export function normalizeWorkflowGraphIds(graph = {}, parentContext = {}) {
         const candidateKey = `${resolvedSource}##${sourceHandle}`;
         if (conditionCasesMap.has(candidateKey)) {
           sourceHandle = conditionCasesMap.get(candidateKey);
-        } else if (!sourceHandle.startsWith("condition-case-")) {
-          const candidateKeyWithPrefix = `${resolvedSource}##condition-case-${sourceHandle}`;
-          if (conditionCasesMap.has(candidateKeyWithPrefix)) {
-            sourceHandle = conditionCasesMap.get(candidateKeyWithPrefix);
+        } else {
+          const clean = `${sourceHandle}`.replace(/^condition-case-/, "").replace(/^case[_-]/, "");
+          const cleanKey = `${resolvedSource}##${clean}`;
+          if (conditionCasesMap.has(cleanKey)) {
+            sourceHandle = conditionCasesMap.get(cleanKey);
+          } else if (!sourceHandle.startsWith("condition-case-")) {
+            const candidateKeyWithPrefix = `${resolvedSource}##condition-case-${sourceHandle}`;
+            if (conditionCasesMap.has(candidateKeyWithPrefix)) {
+              sourceHandle = conditionCasesMap.get(candidateKeyWithPrefix);
+            }
           }
         }
       } else {

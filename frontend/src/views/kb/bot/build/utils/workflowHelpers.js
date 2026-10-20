@@ -8,9 +8,25 @@ import {
   getNodeLabel,
   getNodeOutput,
   normalizeTemplateReferenceSegment,
+  normalizeWorkflowGraphIds,
   omitObjectKeys,
   setNodeConfigValue,
 } from "./nodeData.js";
+
+export {
+  cloneNodeData,
+  createStructuredNodeData,
+  getNodeConfig,
+  getNodeConfigValue,
+  getNodeDescription,
+  getNodeInput,
+  getNodeLabel,
+  getNodeOutput,
+  normalizeTemplateReferenceSegment,
+  normalizeWorkflowGraphIds,
+  omitObjectKeys,
+  setNodeConfigValue,
+};
 
 // ==========================================
 // 1. 核心常量与枚举选项

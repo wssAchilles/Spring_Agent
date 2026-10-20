@@ -120,7 +120,9 @@
 </template>
 
 <script setup>
+import { nextTick, onMounted, watch } from "vue";
 import KnowledgeCover from "@/assets/kmc/knowledgeCover.png";
+import { staggerEnter } from "@/composables/useGsapMotion";
 
 const { proxy } = getCurrentInstance();
 const router = useRouter();
@@ -142,12 +144,40 @@ const getDictLabel = (dictValue) => {
   // 如果找不到匹配项，返回原值或默认显示
   return dictValue || "--";
 };
-defineProps({
+const props = defineProps({
   data: {
     type: Array,
     required: true,
   },
 });
+
+// GSAP 级联交错入场动效（保证在动画完成后彻底清除 transform 避免 Isolated Group）
+function triggerStaggerEnter() {
+  nextTick(() => {
+    const cards = document.querySelectorAll(".card-container .card");
+    if (cards && cards.length > 0) {
+      staggerEnter(cards, {
+        fromY: 14,
+        fromScale: 0.96,
+        duration: 0.36,
+        stagger: 0.04,
+        ease: "power2.out",
+      });
+    }
+  });
+}
+
+onMounted(() => {
+  triggerStaggerEnter();
+});
+
+watch(
+  () => props.data,
+  () => {
+    triggerStaggerEnter();
+  },
+  { deep: true }
+);
 
 // 解析标签
 const parseTags = (tagsStr) => {
@@ -206,15 +236,17 @@ function handleDetail(row) {
     border-radius: 12px;
     cursor: pointer;
     box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
                 border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     contain: layout style;
 
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
-      border-color: rgba(0, 0, 0, 0.18);
+      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.14), 0 0 16px rgba(99, 102, 241, 0.15), 0 0 0 1px rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.35);
+
+      .card-title-text .icon {
+        transform: scale(1.08);
+      }
     }
 
     .card-top {
