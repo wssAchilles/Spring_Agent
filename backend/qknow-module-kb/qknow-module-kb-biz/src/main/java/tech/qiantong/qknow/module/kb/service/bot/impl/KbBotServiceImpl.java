@@ -40,6 +40,8 @@ public class KbBotServiceImpl extends ServiceImpl<KbBotMapper, KbBotDO> implemen
     private IKbFlowNodeService flowNodeService;
     @Resource
     private IKbFlowEdgeService flowEdgeService;
+    @Resource
+    private tech.qiantong.qknow.module.kb.service.flow.IKbFlowTemplateService flowTemplateService;
 
     /**
      * 获得bot 管理分页列表
@@ -62,6 +64,14 @@ public class KbBotServiceImpl extends ServiceImpl<KbBotMapper, KbBotDO> implemen
     public Long createKbBot(KbBotSaveReqVO createReqVO) {
         KbBotDO dictType = BeanUtils.toBean(createReqVO, KbBotDO.class);
         baseMapper.insert(dictType);
+        // 原生数据库驱动：为新创建的 Bot 自动按模板初始化标准节点与连线，彻底清除前端硬编码
+        if (dictType.getId() != null) {
+            try {
+                flowTemplateService.initBotWorkflowByTemplate(dictType.getId(), dictType.getType(), null);
+            } catch (Exception e) {
+                log.warn("[KbBotService] Failed to auto-initialize template workflow for bot: {}", dictType.getId(), e);
+            }
+        }
         return dictType.getId();
     }
 

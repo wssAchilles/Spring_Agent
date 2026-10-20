@@ -47,9 +47,12 @@ public class LLMNodeBO extends BaseNodeBO {
         Message[] messageArray = getMessageArray(configJson, inputDefArray, context);
 
         Long provider = configJson.getLong("provider");
+        if (provider == null) {
+            provider = 1L; // 默认 DeepSeek Provider 保底
+        }
         String model = configJson.getString("model");
-        if (Objects.isNull(provider) || StrUtil.isEmpty(model)) {
-            throw new ServiceException("模型选择错误：provider=" + provider + ", model=" + model);
+        if (StrUtil.isEmpty(model)) {
+            model = "deepseek-flash"; // 默认 DeepSeek 活跃模型保底
         }
 
         boolean stream = isStream(context);

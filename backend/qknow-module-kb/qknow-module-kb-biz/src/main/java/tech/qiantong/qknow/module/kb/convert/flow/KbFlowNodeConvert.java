@@ -37,6 +37,19 @@ public class KbFlowNodeConvert {
         JSONObject configJson = dataJson.getJSONObject("config");
         if (configJson == null) {
             configJson = new JSONObject();
+            for (String key : dataJson.keySet()) {
+                if (!"input".equals(key) && !"output".equals(key) && !"config".equals(key)) {
+                    configJson.put(key, dataJson.get(key));
+                }
+            }
+        }
+        if (nodeType == FlowNodeTypeEnums.LLM) {
+            if (!configJson.containsKey("provider") || configJson.get("provider") == null) {
+                configJson.put("provider", 1L);
+            }
+            if (!configJson.containsKey("model") || configJson.getString("model") == null || configJson.getString("model").isBlank()) {
+                configJson.put("model", "deepseek-flash");
+            }
         }
 
         node.setUuid(nodeJson.getString("id"));

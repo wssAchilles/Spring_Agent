@@ -122,13 +122,15 @@ public class ToolNodeBO extends BaseNodeBO {
         Map<String, Object> output = new HashMap<>();
         try {
             Map<String, Object> toolArguments = inputData != null ? inputData : new HashMap<>();
-            String callResult = null;
-            if (mcpToolAdapter != null) {
-                callResult = mcpToolAdapter.executeTool(targetTool, toolArguments);
+            if (mcpToolAdapter == null) {
+                log.error("[ToolNode] MCP 工具适配器未初始化，工具执行失败: tool={}", targetTool);
+                return NodeRunResultBO.failure(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName, "MCP 工具适配器未初始化");
             }
 
+            String callResult = mcpToolAdapter.executeTool(targetTool, toolArguments);
             if (callResult == null) {
-                callResult = "{\"status\":\"NO_ADAPTER\",\"message\":\"MCP 工具适配器未初始化\"}";
+                log.error("[ToolNode] MCP 工具执行返回空结果: tool={}", targetTool);
+                return NodeRunResultBO.failure(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName, "工具调用未返回有效结果");
             }
 
             // 解析结果
@@ -137,6 +139,20 @@ public class ToolNodeBO extends BaseNodeBO {
                 parsedResult = JSONObject.parse(callResult);
             } catch (Exception ignored) {
                 parsedResult = callResult;
+            }
+
+            if (parsedResult instanceof JSONObject resObj) {
+                if (Boolean.TRUE.equals(resObj.getBoolean("isError"))
+                        || "ERROR".equalsIgnoreCase(resObj.getString("status"))
+                        || "FAILURE".equalsIgnoreCase(resObj.getString("status"))) {
+                    String errorMsg = resObj.getString("message");
+                    if (errorMsg == null) {
+                        errorMsg = resObj.getString("error");
+                    }
+                    log.error("[ToolNode] MCP 工具内部执行失败: tool={}, error={}", targetTool, errorMsg);
+                    return NodeRunResultBO.failure(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName,
+                            "工具执行失败: " + (errorMsg != null ? errorMsg : callResult));
+                }
             }
 
             output.put("result", parsedResult);

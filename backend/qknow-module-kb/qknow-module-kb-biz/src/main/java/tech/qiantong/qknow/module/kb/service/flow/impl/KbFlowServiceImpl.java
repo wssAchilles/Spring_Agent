@@ -352,6 +352,16 @@ public class KbFlowServiceImpl implements IKbFlowService {
 
         // 维护动态剪枝集合（被条件分支未命中剔除的下游节点集合）
         Set<String> prunedNodes = ConcurrentHashMap.newKeySet();
+        // 从断点已完成结果中重建剪枝集
+        for (Map.Entry<String, NodeRunResultBO> entry : initialResultMap.entrySet()) {
+            NodeRunResultBO pastResult = entry.getValue();
+            if (pastResult != null && pastResult.getNextNodeIds() != null) {
+                Set<String> pastPruned = DagUtils.computePrunedNodesUuids(entry.getKey(), pastResult.getNextNodeIds(), edgePairs);
+                if (pastPruned != null && !pastPruned.isEmpty()) {
+                    prunedNodes.addAll(pastPruned);
+                }
+            }
+        }
         // 维护节点执行结果映射 (初始装载断点已完成结果)
         Map<String, NodeRunResultBO> resultMap = new ConcurrentHashMap<>(initialResultMap);
         AtomicInteger stepCounter = new AtomicInteger(initialResultMap.size() + 1);
@@ -581,7 +591,26 @@ public class KbFlowServiceImpl implements IKbFlowService {
             }
         }
 
-        int startGroupIndex = checkpoint.getGroupIndex() + 1;
+        List<KbFlowNodeDO> flowNodes = flowBO.getNodeList();
+        List<KbFlowEdgeDO> flowEdges = flowBO.getEdgeList() != null ? flowBO.getEdgeList() : Collections.emptyList();
+        List<String> nodeUuids = flowNodes.stream().map(KbFlowNodeDO::getUuid).toList();
+        List<Map.Entry<String, String>> edgePairs = flowEdges.stream()
+                .map(e -> Map.entry(e.getSourceNodeUuid(), e.getTargetNodeUuid()))
+                .toList();
+        List<List<String>> parallelGroups = DagUtils.getParallelGroupsUuids(nodeUuids, edgePairs);
+
+        // 若检查点所在层所有节点均已成功完成，则从下一层开始；否则从当前层重新执行未成功或挂起的节点
+        int startGroupIndex = checkpoint.getGroupIndex();
+        if (startGroupIndex >= 0 && startGroupIndex < parallelGroups.size()) {
+            List<String> lastGroup = parallelGroups.get(startGroupIndex);
+            boolean allCompleted = !lastGroup.isEmpty() && lastGroup.stream().allMatch(nodeId -> {
+                NodeRunResultBO res = initialResultMap.get(nodeId);
+                return res != null && Objects.equals(RuntimeStatusEnums.SUCCESS.getCode(), res.getStatus());
+            });
+            if (allCompleted) {
+                startGroupIndex++;
+            }
+        }
         log.info("[DAG 调度器] 恢复执行工作流：runtimeId={}, botId={}, 从第 {} 层继续执行, 已完成节点数={}",
                 runtimeId, botId, startGroupIndex + 1, initialResultMap.size());
 
