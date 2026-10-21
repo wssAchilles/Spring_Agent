@@ -233,3 +233,7 @@ logging:
   level:
     org.springframework.ai: DEBUG
     com.alibaba.cloud.ai: DEBUG
+
+# 仅本地开发使用的 JWT 密钥；生产必须通过 TOKEN_SECRET 注入（application.yml 默认留空）
+token:
+  secret: ${TOKEN_SECRET:qknow-local-dev-jwt-secret-32bytes-2026}

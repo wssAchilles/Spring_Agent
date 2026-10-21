@@ -318,18 +318,38 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
     }
 
     /**
+     * 知识库访问权限判定（P0-13 fail-close）。
+     * 无用户上下文（内部任务/定时任务）保持内部调用放行；
+     * 存在用户上下文但权限查询异常时必须拒绝，禁止 fail-open 泄露其它租户知识库。
+     */
+    private boolean isKnowledgeBaseAccessible(Long knowledgeBaseId) {
+        Long userId;
+        try {
+            userId = SecurityUtils.getUserId();
+        } catch (Exception e) {
+            log.debug("无用户上下文，内部调用跳过权限过滤");
+            return true;
+        }
+        if (userId == null) {
+            return true;
+        }
+        try {
+            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(userId);
+            return accessibleKbIds == null || accessibleKbIds.contains(knowledgeBaseId);
+        } catch (Exception e) {
+            log.warn("知识库权限过滤失败，按拒绝处理: userId={}, kbId={}, error={}",
+                    userId, knowledgeBaseId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 召回测试
      */
     @Override
     public List<RetrieveResultRespVO> recallTest(RetrieveResultReqVO retrieveResultReqVO) {
-        // 权限检查（无用户上下文时跳过）
-        try {
-            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
-            if (accessibleKbIds != null && !accessibleKbIds.contains(retrieveResultReqVO.getId())) {
-                return new ArrayList<>();
-            }
-        } catch (Exception e) {
-            log.debug("跳过权限检查：{}", e.getMessage());
+        if (!isKnowledgeBaseAccessible(retrieveResultReqVO.getId())) {
+            return new ArrayList<>();
         }
 
         // 从知识库获取 Embedding 配置
@@ -467,16 +487,10 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
 
     @Override
     public RecallDebugRespVO recallDebug(RetrieveResultReqVO retrieveResultReqVO) {
-        // 权限检查（无用户上下文时跳过）
-        try {
-            List<Long> accessibleKbIds = permissionFilter.getAccessibleKnowledgeBaseIds(SecurityUtils.getUserId());
-            if (accessibleKbIds != null && !accessibleKbIds.contains(retrieveResultReqVO.getId())) {
-                RecallDebugRespVO respVO = new RecallDebugRespVO();
-                respVO.setResults(new ArrayList<>());
-                return respVO;
-            }
-        } catch (Exception e) {
-            log.debug("跳过权限检查：{}", e.getMessage());
+        if (!isKnowledgeBaseAccessible(retrieveResultReqVO.getId())) {
+            RecallDebugRespVO respVO = new RecallDebugRespVO();
+            respVO.setResults(new ArrayList<>());
+            return respVO;
         }
 
         // 从知识库获取 Embedding 配置

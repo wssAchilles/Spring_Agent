@@ -55,18 +55,39 @@ public class TokenService
     @Autowired
     private RedisCache redisCache;
 
+    @Autowired(required = false)
+    private org.springframework.core.env.Environment environment;
+
     @jakarta.annotation.PostConstruct
     public void validateTokenSecret() {
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException("CRITICAL SECURITY ERROR: token.secret 未配置！");
         }
+        boolean devProfile = isDevProfile();
         if ("qknow-jwt-secret-key-32bytes-secure-2026".equals(secret) ||
             "qknow-production-jwt-token-secret-key-secure-2026".equals(secret)) {
-            log.warn("================================================================================");
-            log.warn("SECURITY WARNING: token.secret 正在使用公开默认密钥！");
-            log.warn("生产环境必须通过环境变量 TOKEN_SECRET 设置独立高熵私钥，以防止 JWT 伪造！");
-            log.warn("================================================================================");
+            if (devProfile) {
+                log.warn("================================================================================");
+                log.warn("SECURITY WARNING: token.secret 正在使用公开默认密钥（仅允许 dev profile）！");
+                log.warn("生产环境必须通过环境变量 TOKEN_SECRET 设置独立高熵私钥，以防止 JWT 伪造！");
+                log.warn("================================================================================");
+            } else {
+                throw new IllegalStateException("CRITICAL SECURITY ERROR: 生产环境禁止使用公开默认 token.secret，"
+                        + "请通过 TOKEN_SECRET 注入独立高熵私钥");
+            }
         }
+    }
+
+    private boolean isDevProfile() {
+        if (environment == null) {
+            return false;
+        }
+        for (String profile : environment.getActiveProfiles()) {
+            if ("dev".equalsIgnoreCase(profile)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -126,8 +126,8 @@ spring:
 token:
   # 令牌自定义标识
   header: Authorization
-  # 令牌密钥
-  secret: ${TOKEN_SECRET:qknow-jwt-secret-key-32bytes-secure-2026}
+  # 令牌密钥：必须由环境变量注入；dev profile 在 application-dev.yml 提供本地默认值
+  secret: ${TOKEN_SECRET:}
   # 令牌有效期（默认30分钟）
   expireTime: 600
 

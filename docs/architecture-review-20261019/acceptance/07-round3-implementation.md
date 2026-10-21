@@ -109,3 +109,22 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 | 回归测试 | `McpEmbeddingWiringTest` 2 条（按平台解析/缺省回退）＋ `McpServerEndpointAuthTest` 4 条（默认关闭、缺令牌 fail-close、合法令牌、错误令牌） | `tests/.../acceptance/` |
 
 验证：`mvn -pl tests -am test` **BUILD SUCCESS**（`qknow-tests 1886 / 0 fail / 8 skipped`）；`docker compose -f deploy/docker/docker-compose.yml config` exit 0。
+
+## 9. 第六批：RAG 权限 fail-close（P0-13）
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| 权限 fail-open 修复 | `recallTest`/`recallDebug` 两处 `catch → 跳过权限检查` 改为统一 `isKnowledgeBaseAccessible`：无用户上下文（内部任务）放行；有用户上下文但权限查询异常时**拒绝**；无权知识库返回空 | `KmcKnowledgeBaseServiceImpl.java` |
+| 回归测试 | `RagPermissionFailCloseTest` 2 条：权限存储异常返回空、无权知识库返回空 | `tests/.../acceptance/` |
+
+验证：`mvn -pl tests -am test` **BUILD SUCCESS**（`qknow-tests 1888 / 0 fail / 8 skipped`）。
+
+## 10. 第七批：JWT 密钥生产 fail-close（P0-01/R7）
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| 移除公开默认密钥 | `application.yml` 的 `token.secret` 默认值改为空，生产必须由 `TOKEN_SECRET` 注入；`application-dev.yml` 提供仅本地使用的 dev 默认值 | `application.yml`、`application-dev.yml` |
+| 启动 fail-close | `TokenService` 对已知公开默认密钥：dev profile 仅告警，非 dev（生产）直接抛异常阻断启动；空密钥仍启动失败 | `TokenService.java` |
+| 回归测试 | `TokenSecretFailCloseTest` 4 条：空密钥失败、生产公开默认失败、dev 允许、生产强密钥通过 | `tests/.../acceptance/` |
+
+> 备注：全量运行期间 `Phase111MemoryConsolidationTest#testSleepTimeConcurrentMessageZeroLoss` 出现一次时序性偶发失败，隔离运行与随后的全量重跑均通过；该用例为既有并发时序测试，未发现与本次改动的因果关系，但建议后续加固定等待/重试消除 flake。
