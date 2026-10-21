@@ -99,3 +99,13 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 验证：`mvn -pl tests -am clean test` **BUILD SUCCESS**（`qknow-tests 1880 / 0 fail / 8 skipped`、`kb-biz 35 / 0 fail`、`hermes-core 99 / 0 fail`）；`docker compose -f deploy/docker/docker-compose.yml config` exit 0。
 
 补充回归：`ProviderResolutionContractTest` 锁定"LLM 节点未配置 provider 时按 platform 动态解析、绝不回退 keyId=1"的契约。
+
+## 8. 第五批：MCP3 语义向量路由 + 原生 MCP Server 端点
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| MCP3 控制面语义路由 | `IAiModelApiService` 新增 `getEmbeddingModelByPlatform`；`HermesConfiguration` 在启动时把千问 1536 维 EmbeddingModel 注入控制面 `McpToolAdapter`，失败降级为关键词路由并告警；平台/模型名可配置 | `IAiModelApiService.java`、`AiModelApiServiceImpl.java`、`HermesConfiguration.java` |
+| MCP Server 端点 | 控制面引入 `qknow-mcp-server`，新增 `POST /mcp` JSON-RPC 端点，默认关闭；启用必须配置 `MCP_SERVER_AUTH_TOKEN`，Bearer 令牌常量时间比较；配置 `qknow.mcp.server.enabled/auth-token` 与 compose 环境变量 | `McpServerController.java`、`McpHttpAuthGuard.java`、`qknow-server/pom.xml`、`application.yml`、`docker-compose-qknow.yml` |
+| 回归测试 | `McpEmbeddingWiringTest` 2 条（按平台解析/缺省回退）＋ `McpServerEndpointAuthTest` 4 条（默认关闭、缺令牌 fail-close、合法令牌、错误令牌） | `tests/.../acceptance/` |
+
+验证：`mvn -pl tests -am test` **BUILD SUCCESS**（`qknow-tests 1886 / 0 fail / 8 skipped`）；`docker compose -f deploy/docker/docker-compose.yml config` exit 0。

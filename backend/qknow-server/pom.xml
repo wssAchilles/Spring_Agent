@@ -80,6 +80,13 @@
             <version>${qknow.version}</version>
         </dependency>
 
+        <!-- 原生 MCP Server（HTTP JSON-RPC 端点 /mcp） -->
+        <dependency>
+            <groupId>tech.qiantong</groupId>
+            <artifactId>qknow-mcp-server</artifactId>
+            <version>${qknow.version}</version>
+        </dependency>
+
         <!-- Hermes gRPC 生成类的运行时；覆盖 Hadoop 传递的 protobuf 2.5 -->
         <dependency>
             <groupId>com.google.protobuf</groupId>

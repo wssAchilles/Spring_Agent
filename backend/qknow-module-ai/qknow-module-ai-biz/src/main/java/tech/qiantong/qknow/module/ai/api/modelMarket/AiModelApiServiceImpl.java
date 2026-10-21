@@ -69,7 +69,22 @@ public class AiModelApiServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO>
      */
     @Override
     public ChatModel getChatModelByPlatform(String platform, String modelName) {
-        String targetPlatform = (platform == null || platform.isBlank()) ? "DeepSeek" : platform.trim();
+        AiApiKeyDO selected = selectApiKeyByPlatform(platform, "DeepSeek");
+        return getChatModel(selected.getId(), modelName);
+    }
+
+    /**
+     * 按平台名称解析当前环境可用的 API Key 并构建 EmbeddingModel。
+     * 供控制面 MCP 工具语义路由等未显式绑定 keyId 的场景使用。
+     */
+    @Override
+    public EmbeddingModel getEmbeddingModelByPlatform(String platform, String modelName) {
+        AiApiKeyDO selected = selectApiKeyByPlatform(platform, "TongYi");
+        return getEmbeddingModel(selected.getId(), modelName);
+    }
+
+    private AiApiKeyDO selectApiKeyByPlatform(String platform, String defaultPlatform) {
+        String targetPlatform = (platform == null || platform.isBlank()) ? defaultPlatform : platform.trim();
         List<AiApiKeyDO> keys = apiKeyMapper.selectList(Wrappers.<AiApiKeyDO>lambdaQuery());
         AiApiKeyDO selected = keys.stream()
                 .filter(key -> key.getApiKey() != null && !key.getApiKey().isBlank())
@@ -85,7 +100,7 @@ public class AiModelApiServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO>
         if (!targetPlatform.equalsIgnoreCase(selected.getPlatform())) {
             log.warn("平台 [{}] 未配置 API Key，回退使用平台 [{}] 的可用 Key", targetPlatform, selected.getPlatform());
         }
-        return getChatModel(selected.getId(), modelName);
+        return selected;
     }
 
     /**

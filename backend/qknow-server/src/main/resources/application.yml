@@ -12,6 +12,11 @@ qknow:
   addressEnabled: false
   # 验证码类型 math 数字计算 char 字符验证
   captchaType: math
+  # 原生 MCP Server HTTP 端点（默认关闭；启用时必须在 MCP_SERVER_AUTH_TOKEN 配置访问令牌）
+  mcp:
+    server:
+      enabled: ${MCP_SERVER_ENABLED:false}
+      auth-token: ${MCP_SERVER_AUTH_TOKEN:}
   rag:
     crag:
       enabled: true  # 开启 CRAG 检索评估

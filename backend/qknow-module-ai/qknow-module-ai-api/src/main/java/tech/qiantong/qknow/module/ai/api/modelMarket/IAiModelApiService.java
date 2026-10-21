@@ -25,6 +25,16 @@ public interface IAiModelApiService {
      */
     ChatModel getChatModelByPlatform(String platform, String modelName);
 
+    /**
+     * 按平台名称解析当前环境可用的 API Key 并构建 EmbeddingModel。
+     * 用于控制面 MCP 工具语义路由等未显式绑定 ai_api_key.id 的场景。
+     *
+     * @param platform  平台名称（如 TongYi），为空时默认 TongYi
+     * @param modelName 向量模型名称
+     * @return EmbeddingModel
+     */
+    EmbeddingModel getEmbeddingModelByPlatform(String platform, String modelName);
+
     EmbeddingModel getEmbeddingModel(Long keyId, String modelName);
 
     JSONArray getModelDict(Integer type);
