@@ -231,7 +231,8 @@ public class KbFlowTemplateServiceImpl implements IKbFlowTemplateService {
         data.put("label", "知识库检索");
         JSONObject config = new JSONObject();
         config.put("label", "知识库检索");
-        config.put("knowledgeBaseId", null);
+        // 模板不绑定具体知识库（环境 id 不可移植），由创建 Bot 后显式选择；运行时缺失将 fail-close 提示
+        config.put("knowledgeBaseIds", new JSONArray());
         config.put("knowledgeBaseName", "");
         config.put("query", query);
         config.put("topK", 5);

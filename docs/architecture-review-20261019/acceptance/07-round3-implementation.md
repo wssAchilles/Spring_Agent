@@ -144,3 +144,11 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 | `isHealthy()` 鉴权 | 健康检查 stub 附加 `x-hermes-auth-token` 元数据，避免开启 gRPC 鉴权后健康探针被误判为 DOWN | `HermesGrpcClient.java` |
 
 验证：全量 `mvn -pl tests -am test` **BUILD SUCCESS**（`qknow-tests 1892 / 0 fail / 8 skipped`）。
+
+## 13. 第十批：知识库节点绑定 fail-close（P0-12 模板残留）
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| 移除硬编码 KB 兜底 | `KnowledgeNodeBO` 删除 `kbIds.add(7L)`（跨环境/跨租户错误召回），未绑定知识库时返回可操作的失败信息 | `KnowledgeNodeBO.java` |
+| 模板绑定语义 | 模板改用空 `knowledgeBaseIds` 数组，不再写 `knowledgeBaseId: null`；创建 Bot 后由用户显式选择知识库 | `KbFlowTemplateServiceImpl.java` |
+| 回归测试 | `KnowledgeNodeBindingContractTest`：未绑定知识库必须 ERROR 且提示明确 | `tests/.../acceptance/` |

@@ -72,7 +72,14 @@ public class KnowledgeNodeBO extends BaseNodeBO {
             }
         }
         if (kbIds.isEmpty()) {
-            kbIds.add(7L); // 默认使用常州工学院总评方案知识库
+            // 禁止使用硬编码知识库 id 兜底（会跨租户/跨环境召回错误知识库）
+            String message = "知识库检索节点未绑定知识库，请在 Bot 编排中配置 knowledgeBaseId/knowledgeBaseIds";
+            log.error("{}: uuid={}", message, nodeDefinition.getUuid());
+            Map<String, Object> outputData = new HashMap<>();
+            outputData.put(nodeDefinition.getUuid() + ".text", message);
+            outputData.put(nodeDefinition.getUuid() + ".context", message);
+            outputData.put("text", message);
+            return NodeRunResultBO.failure(nodeDefinition.getUuid(), nodeDefinition.getName(), message);
         }
 
         // 2. 获取检索查询词 query (优先支持变量替换 format)
