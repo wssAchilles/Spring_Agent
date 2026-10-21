@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.tool.mcp.governance.McpToolProjectionReceipt;
 import tech.qiantong.qknow.hermes.tool.mcp.governance.McpToolSemanticRetriever;
@@ -85,19 +86,42 @@ public class McpToolAdapter {
         this.toolTimeoutMillis = toolTimeoutMillis;
     }
 
+    /** 显式开关：默认关闭，避免未配置/未版本锁定的远端依赖在启动期拉起子进程 */
+    @Value("${qknow.mcp.github.enabled:false}")
+    private boolean githubServerEnabled = false;
+
+    /** 固定 npm 包版本，避免浮动 latest 导致供应链不可复现 */
+    @Value("${qknow.mcp.github.package-version:0.6.2}")
+    private String githubPackageVersion = "0.6.2";
+
+    /** 初始化超时，超时后放弃注册，避免阻塞/悬挂 */
+    @Value("${qknow.mcp.github.init-timeout-seconds:30}")
+    private long githubInitTimeoutSeconds = 30L;
+
     @PostConstruct
     public void initializeGithubServer() {
-        String token = System.getenv("GITHUB_PERSONAL_ACCESS_TOKEN");
-        if (token != null && !token.isBlank()) {
-            CompletableFuture.runAsync(() -> {
-                try {
-                    log.info("检测到 GITHUB_PERSONAL_ACCESS_TOKEN，异步初始化 GitHub MCP Server...");
-                    registerServer(githubServerConfig(token));
-                } catch (Exception e) {
-                    log.warn("异步初始化 GitHub MCP Server 异常: {}", e.getMessage());
-                }
-            });
+        if (!githubServerEnabled) {
+            log.debug("GitHub MCP Server 未启用 (qknow.mcp.github.enabled=false)");
+            return;
         }
+        String token = System.getenv("GITHUB_PERSONAL_ACCESS_TOKEN");
+        if (token == null || token.isBlank()) {
+            log.info("GitHub MCP Server 已启用但缺少 GITHUB_PERSONAL_ACCESS_TOKEN，跳过初始化");
+            return;
+        }
+        CompletableFuture.runAsync(() -> {
+                    try {
+                        log.info("检测到 GITHUB_PERSONAL_ACCESS_TOKEN，异步初始化 GitHub MCP Server...");
+                        registerServer(githubServerConfig(token));
+                    } catch (Exception e) {
+                        log.warn("异步初始化 GitHub MCP Server 异常: {}", e.getMessage());
+                    }
+                })
+                .orTimeout(Math.max(1L, githubInitTimeoutSeconds), java.util.concurrent.TimeUnit.SECONDS)
+                .exceptionally(ex -> {
+                    log.warn("GitHub MCP Server 初始化超时或失败: {}", ex.getMessage());
+                    return null;
+                });
     }
 
     @Data
@@ -204,7 +228,10 @@ public class McpToolAdapter {
     McpServerConfig githubServerConfig(String token) {
         McpServerConfig config = new McpServerConfig();
         config.setName("github");
-        config.setCommand(List.of("npx", "-y", "@modelcontextprotocol/server-github"));
+        String packageSpec = (githubPackageVersion == null || githubPackageVersion.isBlank())
+                ? "@modelcontextprotocol/server-github"
+                : "@modelcontextprotocol/server-github@" + githubPackageVersion.trim();
+        config.setCommand(List.of("npx", "-y", packageSpec));
         config.setEnvironment(Map.of("GITHUB_PERSONAL_ACCESS_TOKEN", token));
         config.setEnabled(true);
         return config;

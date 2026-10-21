@@ -83,7 +83,8 @@ class McpToolAdapterTest {
         McpToolAdapter.McpServerConfig config = adapter.githubServerConfig("test-token");
 
         assertEquals("github", config.getName());
-        assertEquals(List.of("npx", "-y", "@modelcontextprotocol/server-github"), config.getCommand());
+        // 供应链可复现：默认固定 npm 包版本，禁止浮动 latest
+        assertEquals(List.of("npx", "-y", "@modelcontextprotocol/server-github@0.6.2"), config.getCommand());
         assertEquals("test-token", config.getEnvironment().get("GITHUB_PERSONAL_ACCESS_TOKEN"));
         assertTrue(config.isEnabled());
     }

@@ -83,15 +83,21 @@ public class StdioEnterpriseTransport implements EnterpriseMcpClientTransport, M
         Map<String, String> safeEnv = new HashMap<>();
         String path = System.getenv("PATH");
         if (path != null) safeEnv.put("PATH", path);
-        // 关键防御：HOME 重定向到沙箱专用临时目录，严禁暴露宿主敏感凭据 (~/.ssh, ~/.npmrc)
+        // 关键防御：HOME 重定向到沙箱专用目录，严禁暴露宿主敏感凭据 (~/.ssh, ~/.npmrc)
         String baseTmp = System.getProperty("java.io.tmpdir", "/tmp");
-        safeEnv.put("HOME", baseTmp + "/qknow-mcp-sandbox");
+        File sandboxHome = new File(baseTmp, "qknow-mcp-sandbox");
+        if (!sandboxHome.exists() && !sandboxHome.mkdirs()) {
+            log.warn("[StdioEnterpriseTransport] 无法创建 MCP 沙箱 HOME 目录: {}", sandboxHome.getAbsolutePath());
+        }
+        safeEnv.put("HOME", sandboxHome.getAbsolutePath());
         String tmpdir = System.getenv("TMPDIR");
         if (tmpdir != null) safeEnv.put("TMPDIR", tmpdir);
-        // 透传网络代理白名单变量，支持企业私有内网访问
-        for (String proxyVar : java.util.List.of("HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy")) {
-            String val = System.getenv(proxyVar);
-            if (val != null) safeEnv.put(proxyVar, val);
+        // 透传网络代理与自定义 CA 白名单变量，支持企业私有内网/代理 CA 环境
+        for (String passthroughVar : java.util.List.of(
+                "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy",
+                "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE", "SSL_CERT_DIR", "GIT_SSL_CAINFO", "REQUESTS_CA_BUNDLE")) {
+            String val = System.getenv(passthroughVar);
+            if (val != null) safeEnv.put(passthroughVar, val);
         }
 
         pb.environment().clear();
@@ -100,6 +106,9 @@ public class StdioEnterpriseTransport implements EnterpriseMcpClientTransport, M
             pb.environment().putAll(environment);
         }
         if (workingDirectory != null) {
+            if (!workingDirectory.exists() && !workingDirectory.mkdirs()) {
+                throw new IOException("MCP 工作目录不存在且无法创建: " + workingDirectory.getAbsolutePath());
+            }
             pb.directory(workingDirectory);
         }
         // 核心加固：stderr 独立建管排空，严禁丢弃或阻塞

@@ -128,3 +128,11 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 | 回归测试 | `TokenSecretFailCloseTest` 4 条：空密钥失败、生产公开默认失败、dev 允许、生产强密钥通过 | `tests/.../acceptance/` |
 
 > 备注：全量运行期间 `Phase111MemoryConsolidationTest#testSleepTimeConcurrentMessageZeroLoss` 出现一次时序性偶发失败，隔离运行与随后的全量重跑均通过；该用例为既有并发时序测试，未发现与本次改动的因果关系，但建议后续加固定等待/重试消除 flake。
+
+## 11. 第八批：MCP4 客户端沙箱与供应链加固
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| GitHub MCP 开关/超时/版本 | `initializeGithubServer` 默认关闭，需显式 `qknow.mcp.github.enabled=true`；npm 包固定版本（默认 `0.6.2`，可配置）；异步初始化增加 30s 超时与失败告警 | `McpToolAdapter.java` |
+| Stdio 沙箱 | 启动前创建 `qknow-mcp-sandbox` HOME 目录；工作目录缺失时自动创建，失败则明确抛错；代理白名单补充 `NODE_EXTRA_CA_CERTS`/`SSL_CERT_FILE`/`SSL_CERT_DIR`/`GIT_SSL_CAINFO`/`REQUESTS_CA_BUNDLE` | `StdioEnterpriseTransport.java` |
+| 测试 | 更新 `McpToolAdapterTest` 断言固定版本命令；既有 stdio 传输测试继续通过 | `McpToolAdapterTest.java` |
