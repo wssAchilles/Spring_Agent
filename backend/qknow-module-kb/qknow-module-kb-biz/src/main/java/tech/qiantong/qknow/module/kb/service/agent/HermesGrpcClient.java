@@ -147,6 +147,13 @@ public class HermesGrpcClient {
         try {
             HermesServiceGrpc.HermesServiceBlockingStub blockingStub =
                     HermesServiceGrpc.newBlockingStub(channel);
+            // 健康检查同样必须携带内部鉴权头，否则开启 gRPC 鉴权后会被判为不健康
+            Metadata headers = new Metadata();
+            if (hermesAuthToken != null && !hermesAuthToken.isBlank()) {
+                headers.put(Metadata.Key.of("x-hermes-auth-token", Metadata.ASCII_STRING_MARSHALLER), hermesAuthToken);
+            }
+            blockingStub = blockingStub.withInterceptors(
+                    io.grpc.stub.MetadataUtils.newAttachHeadersInterceptor(headers));
             HealthResponse response = blockingStub.healthCheck(HealthRequest.newBuilder().build());
             return "UP".equals(response.getStatus());
         } catch (Exception e) {
