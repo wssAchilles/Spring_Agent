@@ -523,33 +523,52 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
             return getCurrentToolCalls();
         }
 
+        /**
+         * 统一空参数语义：DeepSeek 无参函数在流式增量中可能表现为空串或缺失，
+         * 最终必须统一为合法 JSON 对象 {@code "{}"}，避免下游按空串解析失败。
+         */
+        private static String normalizeArguments(String rawArguments) {
+            return (rawArguments == null || rawArguments.isBlank()) ? "{}" : rawArguments;
+        }
+
         public synchronized List<AssistantMessage.ToolCall> getCurrentToolCalls() {
             List<AssistantMessage.ToolCall> result = new ArrayList<>();
             for (ToolCallState state : indexMap.values()) {
-                String args = state.arguments.toString();
+                if (state.name == null || state.name.isBlank()) {
+                    // 名称尚未到达的中间态不构成可执行工具调用
+                    continue;
+                }
                 result.add(new AssistantMessage.ToolCall(
                         state.id,
                         state.type,
                         state.name,
-                        args.isEmpty() ? "{}" : args
+                        normalizeArguments(state.arguments.toString())
                 ));
             }
             return result;
         }
 
         public synchronized boolean hasToolCalls() {
-            return !indexMap.isEmpty();
+            for (ToolCallState state : indexMap.values()) {
+                if (state.name != null && !state.name.isBlank()) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public synchronized List<Map<String, Object>> toRawToolCallsList() {
             List<Map<String, Object>> list = new ArrayList<>();
             for (ToolCallState state : indexMap.values()) {
+                if (state.name == null || state.name.isBlank()) {
+                    continue;
+                }
                 Map<String, Object> map = new LinkedHashMap<>();
                 map.put("id", state.id);
                 map.put("type", state.type);
                 map.put("function", Map.of(
                         "name", state.name,
-                        "arguments", state.arguments.toString()
+                        "arguments", normalizeArguments(state.arguments.toString())
                 ));
                 list.add(map);
             }

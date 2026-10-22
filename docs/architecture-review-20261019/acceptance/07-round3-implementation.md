@@ -159,3 +159,10 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 |---|---|---|
 | 取消桥接抽取 | 新增 `StreamSubscriptionGuard`：`subscribeAsync` 在 `boundedElastic` 订阅并**先落位 Disposable 再返回**；`disposeIfPresent` 幂等释放。`AgentOrchestrator` 的 onDispose 与订阅路径统一走该工具 | `StreamSubscriptionGuard.java`、`AgentOrchestrator.java` |
 | 回归测试 | `StreamCancellationContractTest` 3 条：阻塞源 subscribe 立即返回且句柄已落位；dispose 传播 cancel 到源；正常完成不丢事件 | `tests/.../acceptance/` |
+
+## 15. 第十二批：流式工具调用空参数一致性（P0-07 残留）
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| 空参数统一 | `StreamToolCallAccumulator` 统一将空/缺失 arguments 归一化为 `"{}"`，`ToolCall` 与 `toRawToolCallsList` 语义一致；名称未到达的中间态不再视为可执行调用 | `DeepSeekCompatibleChatModel.java` |
+| 回归测试 | `StreamToolCallArgumentsContractTest` 2 条：空参数统一、未完成调用不可执行 | `tests/.../acceptance/` |
