@@ -152,3 +152,10 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 | 移除硬编码 KB 兜底 | `KnowledgeNodeBO` 删除 `kbIds.add(7L)`（跨环境/跨租户错误召回），未绑定知识库时返回可操作的失败信息 | `KnowledgeNodeBO.java` |
 | 模板绑定语义 | 模板改用空 `knowledgeBaseIds` 数组，不再写 `knowledgeBaseId: null`；创建 Bot 后由用户显式选择知识库 | `KbFlowTemplateServiceImpl.java` |
 | 回归测试 | `KnowledgeNodeBindingContractTest`：未绑定知识库必须 ERROR 且提示明确 | `tests/.../acceptance/` |
+
+## 14. 第十一批：P0-08 取消桥接收敛与回归测试
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| 取消桥接抽取 | 新增 `StreamSubscriptionGuard`：`subscribeAsync` 在 `boundedElastic` 订阅并**先落位 Disposable 再返回**；`disposeIfPresent` 幂等释放。`AgentOrchestrator` 的 onDispose 与订阅路径统一走该工具 | `StreamSubscriptionGuard.java`、`AgentOrchestrator.java` |
+| 回归测试 | `StreamCancellationContractTest` 3 条：阻塞源 subscribe 立即返回且句柄已落位；dispose 传播 cancel 到源；正常完成不丢事件 | `tests/.../acceptance/` |

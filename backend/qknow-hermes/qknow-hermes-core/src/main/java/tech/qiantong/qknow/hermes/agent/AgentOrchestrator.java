@@ -467,18 +467,15 @@ public class AgentOrchestrator {
         // 杜绝同步阻塞执行模型下，流未结束导致 onDispose 无法注册的结构性时序失效！
         java.util.concurrent.atomic.AtomicReference<reactor.core.Disposable> streamSubscriptionRef = new java.util.concurrent.atomic.AtomicReference<>();
         emitter.onDispose(() -> {
-            reactor.core.Disposable sub = streamSubscriptionRef.get();
-            if (sub != null && !sub.isDisposed()) {
-                sub.dispose();
-            }
+            StreamSubscriptionGuard.disposeIfPresent(streamSubscriptionRef);
             releaseReactCapacity.run();
         });
 
         try {
-            // 关键修复 (P0-08)：把订阅调度到弹性线程池，使 subscribe() 在阻塞式模型流结束前返回，
-            // 从而 streamSubscriptionRef 能在断连发生前完成赋值，取消信号才能真正 dispose 内层订阅。
+            // 关键修复 (P0-08)：订阅调度到弹性线程池，使 subscribe() 在阻塞式模型流结束前返回，
+            // 由 StreamSubscriptionGuard 在返回前完成 ref 赋值，取消信号才能真正 dispose 内层订阅。
             reactor.core.Disposable streamSubscription =
-                    stream.subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic()).subscribe(
+                    StreamSubscriptionGuard.subscribeAsync(stream, streamSubscriptionRef,
                 output -> {
                     try {
                         if (output instanceof StreamingOutput streamingOutput) {
@@ -562,7 +559,6 @@ public class AgentOrchestrator {
                     emitter.complete();
                 }
             );
-            streamSubscriptionRef.set(streamSubscription);
             if (emitter.isCancelled() && !streamSubscription.isDisposed()) {
                 streamSubscription.dispose();
             }
