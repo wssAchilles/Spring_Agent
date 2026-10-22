@@ -1,6 +1,6 @@
 {
   "qrel": "experiment/datasets/qrel_real_corpus_30.json",
-  "frozen_hash": "e2ace60af69f66340fbbd90ca31f385045a5673d170bc76760548ab1b7359e16",
+  "frozen_hash": "99410c5a6a42e5b225ff33901f7f6268424dc4f1a5a84d8a14f4142e54b1228c",
   "top_k": 10,
   "query_count": 30,
   "failed_queries": [],
@@ -38,11 +38,11 @@
       ]
     },
     "seg_recall@5": {
-      "mean": 0.6,
+      "mean": 0.633333,
       "n": 30,
       "bootstrap_95ci": [
-        0.4,
-        0.766667
+        0.433333,
+        0.8
       ]
     },
     "seg_recall@10": {
@@ -54,11 +54,11 @@
       ]
     },
     "seg_mrr@10": {
-      "mean": 0.346984,
+      "mean": 0.350556,
       "n": 30,
       "bootstrap_95ci": [
-        0.217222,
-        0.488651
+        0.220556,
+        0.491667
       ]
     }
   }
