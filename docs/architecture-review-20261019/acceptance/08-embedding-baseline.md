@@ -79,3 +79,29 @@ qknow:
 仓库 `docs/plans/*` 与 `AGENTS.md` 中的“阿里千问 1536 维”属于历史算法基线描述；**当前真实库内数据与实验基线以本文为准：`text-embedding-v4` / 1024 维**。
 
 如需回到 1536 维 Qwen 基线，必须**重建全部语料向量**（4,955 条约 ¥0.6–1.1，或 31,250 条 segment 约 ¥1.6–3.1），不能只换查询模型。
+
+## 5. 本地配置修正与 API 级验证（2026-10-22）
+
+已按上节 SQL 将本地 `kmc_knowledge_base` 的 7 条记录统一修正为：
+
+```
+embedding_model = text-embedding-v4
+embedding_model_provider = 103   -- ai_api_key.id = TongYi
+```
+
+随后以 Java 21 启动后端（独立端口 8098，避免与本地 dev watcher 的 8099 冲突），`admin/admin123` 登录后调用真实 API：
+
+```http
+POST /kmc/knowledgeBase/recallTest?debug=true
+Authorization: Bearer <token>
+{"id":8,"query":"鸿蒙移动端图书借阅系统为什么从 Supabase 迁移到 PocketBase？迁移时保留了哪些数据？","topK":5}
+```
+
+返回 `code=200`，命中 `移动应用开发.pdf`，首条 `score=3.015625`、**`scoreType=RRF`**，共 12 条候选；证明“DB 配置 → v4 查询向量化 → pgvector/混合检索 → RRF 排序”的应用链路已真实打通。
+
+启动过程中同时修复了两个阻塞问题：
+
+1. `embedded-redis` 已从生产 fat jar 排除，但 `EmbeddedRedisConfig` 仍被 Spring 内省导致 `NoClassDefFoundError`；
+   增加 `@ConditionalOnClass(name = "redis.embedded.RedisServer")` 后，缺失该依赖时整类跳过。
+2. `HermesConfiguration` 通过 `@PostConstruct` 注入 `McpToolAdapter` 形成循环依赖；
+   改为独立的 `McpSemanticEmbeddingInitializer implements ApplicationRunner`，容器就绪后再装配 MCP 语义 EmbeddingModel。
