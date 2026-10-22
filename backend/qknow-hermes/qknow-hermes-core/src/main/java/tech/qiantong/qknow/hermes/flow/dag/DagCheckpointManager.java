@@ -252,18 +252,27 @@ public class DagCheckpointManager {
             return false;
         }
         Map<String, NodeRunResultBO> results = restoreCompletedResults(checkpoint);
-        for (NodeRunResultBO result : results.values()) {
+        for (NodeRunResultBO result : new ArrayList<>(results.values())) {
             if (!RuntimeStatusEnums.SUSPENDED.getCode().equals(result.getStatus())) {
                 continue;
             }
-            Map<String, Object> output = new LinkedHashMap<>();
-            if (result.getOutput() != null) {
-                output.putAll(result.getOutput());
+            boolean replayOnWake = result.getOutput() != null
+                    && Boolean.TRUE.equals(result.getOutput().get("replayOnWake"));
+            if (replayOnWake) {
+                // 工具节点挂起的是“尚未执行的调用”，必须移出完成集以便恢复时重放；
+                // 若在此处标记 SUCCESS，HITL 恢复会跳过真正的高危工具调用并错误报告成功。
+                results.remove(result.getNodeUuid());
+            } else {
+                // 审批节点：审批通过本身即完成节点，保持既有语义并注入人工输入
+                Map<String, Object> output = new LinkedHashMap<>();
+                if (result.getOutput() != null) {
+                    output.putAll(result.getOutput());
+                }
+                output.put("wokenAt", System.currentTimeMillis());
+                output.put("humanInput", humanInput != null ? humanInput : Map.of());
+                result.setStatus(RuntimeStatusEnums.SUCCESS.getCode());
+                result.setOutput(output);
             }
-            output.put("wokenAt", System.currentTimeMillis());
-            output.put("humanInput", humanInput != null ? humanInput : Map.of());
-            result.setStatus(RuntimeStatusEnums.SUCCESS.getCode());
-            result.setOutput(output);
 
             Map<String, Object> vars = restoreVariables(checkpoint);
             if (humanInput != null) {
@@ -273,7 +282,8 @@ public class DagCheckpointManager {
             if (jdbcTemplate == null) {
                 checkpoint.setStatus("RUNNING");
             }
-            log.info("Suspended DAG checkpoint woken: runtimeId={}, node={}", runtimeId, result.getNodeUuid());
+            log.info("Suspended DAG checkpoint woken for re-execution: runtimeId={}, node={}, remainingCompleted={}",
+                    runtimeId, result.getNodeUuid(), results.size());
             return true;
         }
         return false;
@@ -562,6 +572,14 @@ public class DagCheckpointManager {
                 jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS lease_owner_id VARCHAR(128)");
                 jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS lease_expire_at TIMESTAMP");
                 jdbcTemplate.execute("ALTER TABLE dag_checkpoints ADD COLUMN IF NOT EXISTS fencing_token BIGINT NOT NULL DEFAULT 1");
+                // 兼容历史 bigint 时间戳列：统一迁移为 TIMESTAMP，否则 INSERT CURRENT_TIMESTAMP 会失败
+                try {
+                    jdbcTemplate.execute("ALTER TABLE dag_checkpoints ALTER COLUMN created_at TYPE TIMESTAMP USING to_timestamp(created_at/1000.0)");
+                    jdbcTemplate.execute("ALTER TABLE dag_checkpoints ALTER COLUMN updated_at TYPE TIMESTAMP USING to_timestamp(updated_at/1000.0)");
+                    log.info("dag_checkpoints 历史 bigint 时间列已迁移为 TIMESTAMP");
+                } catch (Exception ignored) {
+                    // 已是 TIMESTAMP 或迁移已完成
+                }
                 tableInitialized.set(true);
                 log.info("dag_checkpoints 检查点数据表结构初始化/对齐成功");
             } catch (Exception e) {

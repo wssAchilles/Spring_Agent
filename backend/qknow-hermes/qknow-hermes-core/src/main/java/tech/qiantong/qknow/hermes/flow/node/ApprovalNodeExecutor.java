@@ -40,6 +40,29 @@ public class ApprovalNodeExecutor {
         String nodeId = node.getUuid();
         String approvalKey = flowId + ":" + requestId + ":" + nodeId;
 
+        // 恢复重放幂等：若该审批单已在 Redis 中存在 APPROVED 决策，直接成功返回，
+        // 避免“恢复时重新挂起”导致审批已完成却无法推进。
+        try {
+            IRedisService redisService = getRedisService();
+            if (redisService != null) {
+                String decisionJson = redisService.get(REDIS_DECISION_PREFIX + approvalKey);
+                if (decisionJson != null && !decisionJson.isBlank()) {
+                    JSONObject decision = JSON.parseObject(decisionJson);
+                    if ("APPROVED".equalsIgnoreCase(decision.getString("decision"))) {
+                        Map<String, Object> approvedOutput = new LinkedHashMap<>();
+                        approvedOutput.put("approvalKey", approvalKey);
+                        approvedOutput.put("status", "APPROVED");
+                        approvedOutput.put("decidedAt", decision.getLong("decidedAt"));
+                        log.info("审批节点复放命中既有 APPROVED 决策，直接推进: approvalKey={}", approvalKey);
+                        return NodeRunResultBO.success(nodeId, node.getName(), approvedOutput);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("审批节点恢复时校验既有决策失败，按正常挂起处理: approvalKey={}, error={}",
+                    approvalKey, e.getMessage());
+        }
+
         log.info("审批节点暂停: flowId={}, nodeId={}, 等待人工审批", flowId, nodeId);
 
         // 记录待办项并注册 CompletableFuture（便于进程内事件通知）

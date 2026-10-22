@@ -109,6 +109,9 @@ public class ToolNodeBO extends BaseNodeBO {
             suspendPayload.put("reason", approvalReason);
             suspendPayload.put("input", inputData);
             suspendPayload.put("suspendedAt", System.currentTimeMillis());
+            // 工具节点挂起的是“尚未执行的工具调用”，审批放行后必须重放该节点；
+            // 审批节点则不同：审批通过本身即完成该节点，不应重放。
+            suspendPayload.put("replayOnWake", true);
             return NodeRunResultBO.suspended(nodeDef != null ? nodeDef.getUuid() : "unknown", nodeName, suspendPayload);
         }
 
