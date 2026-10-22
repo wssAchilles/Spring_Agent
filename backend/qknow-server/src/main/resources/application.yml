@@ -17,6 +17,9 @@ qknow:
     server:
       enabled: ${MCP_SERVER_ENABLED:false}
       auth-token: ${MCP_SERVER_AUTH_TOKEN:}
+  # Embedding 维度：0=启动时从 vector_store 自动探测；当前语料基线为 text-embedding-v4（1024）
+  embedding:
+    dimension: ${QKNOW_EMBEDDING_DIMENSION:0}
   rag:
     crag:
       enabled: true  # 开启 CRAG 检索评估

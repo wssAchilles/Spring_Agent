@@ -9,25 +9,26 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 阿里千问 1536 维超球面 MCP 工具动态语义检索器与 Schema 安全裁剪器 (定理 1.1)
- * 在单位超球面 S^{1535} 上基于测地余弦内积实现 MIPS 极速检索与 Top-K 按需投影，消除上下文膨胀
+ * 超球面 MCP 工具动态语义检索器与 Schema 安全裁剪器 (定理 1.1)
+ * 向量维度不写死：首次索引自动探测（生产语料基线 text-embedding-v4 / 1024 维），
+ * 也可通过 {@link #setEmbeddingDimension(int)} 显式指定；维度不一致的向量直接拒绝索引。
  */
 @Component
 public class McpToolSemanticRetriever {
 
     private static final Logger log = LoggerFactory.getLogger(McpToolSemanticRetriever.class);
 
-    /**
-     * 阿里千问 1536 维超球面向量固定维度
-     */
+    /** 兼容回退维度；实际维度由首次索引向量自动探测或显式设置 */
     public static final int EMBEDDING_DIM = 1536;
+
+    private volatile int embeddingDimension;
 
     /**
      * 默认检索深度 K
      */
     public static final int DEFAULT_TOP_K = 5;
 
-    // 内存工具超球面向量索引: toolCode -> float[1536] (严格 L2 单位归一化)
+    // 内存工具超球面向量索引: toolCode -> float[N] (严格 L2 单位归一化，N 由实际模型决定)
     private final Map<String, float[]> toolVectors = new ConcurrentHashMap<>();
 
     // 内存工具原始元数据缓存: toolCode -> ToolMetadata
@@ -57,25 +58,44 @@ public class McpToolSemanticRetriever {
      * @param toolCode    工具全局唯一标识 (如 mcp.github.create_issue)
      * @param description 工具职责描述
      * @param inputSchema 原始 JSON Schema
-     * @param vector      阿里千问 1536 维嵌入向量
+     * @param vector      实际 embedding 模型输出的向量（维度自动探测）
      */
     public void indexTool(String toolCode, String description, Map<String, Object> inputSchema, float[] vector) {
         if (toolCode == null || toolCode.isBlank()) {
             return;
         }
 
-        toolMetadataMap.put(toolCode, new ToolMetadata(
+        ToolMetadata metadata = new ToolMetadata(
                 toolCode,
                 description != null ? description : "",
                 inputSchema != null ? Map.copyOf(inputSchema) : Map.of()
-        ));
+        );
 
-        if (vector != null && vector.length == EMBEDDING_DIM) {
-            toolVectors.put(toolCode, normalize(vector));
-            log.debug("[McpRetriever] 已建立超球面向量索引: {}", toolCode);
-        } else {
-            log.warn("[McpRetriever] 注册工具 {} 向量为空或维度不匹配 (期望 1536)", toolCode);
+        if (vector == null || vector.length == 0) {
+            // 无向量工具仍登记元数据，供无语义检索时的默认工具集使用
+            toolMetadataMap.put(toolCode, metadata);
+            log.warn("[McpRetriever] 注册工具 {} 向量为空，跳过向量索引", toolCode);
+            return;
         }
+        int detected = embeddingDimension;
+        if (detected == 0) {
+            synchronized (this) {
+                if (embeddingDimension == 0) {
+                    embeddingDimension = vector.length;
+                    log.info("[McpRetriever] 自动探测到 embedding 维度: {}", vector.length);
+                }
+                detected = embeddingDimension;
+            }
+        }
+        if (vector.length != detected) {
+            // 维度不一致属于跨向量空间：不登记元数据，避免默认工具集返回不可用工具
+            log.warn("[McpRetriever] 注册工具 {} 维度不匹配 (期望 {}, 实际 {})，拒绝索引",
+                    toolCode, detected, vector.length);
+            return;
+        }
+        toolMetadataMap.put(toolCode, metadata);
+        toolVectors.put(toolCode, normalize(vector));
+        log.debug("[McpRetriever] 已建立超球面向量索引: {} (dim={})", toolCode, detected);
     }
 
     /**
@@ -106,9 +126,16 @@ public class McpToolSemanticRetriever {
     }
 
     /**
+     * 已建立向量索引的工具数量（维度不匹配/空向量不会进入索引）。
+     */
+    public int getIndexedToolCount() {
+        return toolVectors.size();
+    }
+
+    /**
      * 在超球面 S^{1535} 上执行 MIPS 检索，选出 Top-K 最优工具标识列表
      *
-     * @param queryVector 用户意图查询向量 (1536 维)
+     * @param queryVector 用户意图查询向量（维度必须与索引维度一致）
      * @param k           检索深度 K (默认 5)
      * @return 按相似度从高到低排序的工具代码列表
      */
@@ -118,8 +145,13 @@ public class McpToolSemanticRetriever {
             return List.copyOf(toolMetadataMap.keySet());
         }
 
-        if (queryVector == null || queryVector.length != EMBEDDING_DIM) {
-            // 无有效查询向量时，返回默认前 targetK 个工具
+        int expectedDim = embeddingDimension;
+        if (queryVector == null || (expectedDim > 0 && queryVector.length != expectedDim)) {
+            // 无有效查询向量或维度不一致时，返回默认前 targetK 个工具，避免跨空间余弦
+            if (queryVector != null) {
+                log.warn("[McpRetriever] 查询向量维度 {} 与索引维度 {} 不一致，降级为默认工具集",
+                        queryVector.length, expectedDim);
+            }
             return toolMetadataMap.keySet().stream().limit(targetK).toList();
         }
 
@@ -277,10 +309,24 @@ public class McpToolSemanticRetriever {
      */
     private double dotProduct(float[] a, float[] b) {
         double dot = 0.0;
-        for (int i = 0; i < EMBEDDING_DIM; i++) {
+        int len = Math.min(a.length, b.length);
+        for (int i = 0; i < len; i++) {
             dot += a[i] * b[i];
         }
         return dot;
+    }
+
+    /**
+     * 显式指定索引维度（由调用方从 EmbeddingModel 或配置注入）；传 0 表示自动探测。
+     */
+    public void setEmbeddingDimension(int dimension) {
+        if (dimension > 0) {
+            this.embeddingDimension = dimension;
+        }
+    }
+
+    public int getEmbeddingDimension() {
+        return embeddingDimension;
     }
 
     private record ScoredTool(String toolCode, double score) {}
