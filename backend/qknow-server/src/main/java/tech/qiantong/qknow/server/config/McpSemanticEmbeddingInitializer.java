@@ -38,6 +38,8 @@ public class McpSemanticEmbeddingInitializer implements ApplicationRunner {
         try {
             mcpToolAdapter.setEmbeddingModel(
                     aiModelApiService.getEmbeddingModelByPlatform(embeddingPlatform, embeddingModelName));
+            // 工具注册可能早于 EmbeddingModel 就绪，补建语义索引，避免 MCP3 路由为空
+            mcpToolAdapter.reindexSemanticTools();
             log.info("控制面 MCP 语义路由已接入向量模型: platform={}, model={}",
                     embeddingPlatform, embeddingModelName);
         } catch (Exception e) {

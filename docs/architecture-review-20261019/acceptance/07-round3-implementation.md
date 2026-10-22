@@ -166,3 +166,12 @@ fix(core): 闭环修复验收遗留的流程、检索与安全缺陷
 |---|---|---|
 | 空参数统一 | `StreamToolCallAccumulator` 统一将空/缺失 arguments 归一化为 `"{}"`，`ToolCall` 与 `toRawToolCallsList` 语义一致；名称未到达的中间态不再视为可执行调用 | `DeepSeekCompatibleChatModel.java` |
 | 回归测试 | `StreamToolCallArgumentsContractTest` 2 条：空参数统一、未完成调用不可执行 | `tests/.../acceptance/` |
+
+## 16. 第十三批：真实冒烟暴露的流程/语义缺陷
+
+| 项 | 处置 | 文件 |
+|---|---|---|
+| 条件分支公共下游误剪枝 | `computePrunedNodesUuids` 先计算选中分支可达的受保护集合，再遍历未选中分支；公共汇合节点（如 reply）不再被错误标记 SKIPPED | `DagUtils.java` |
+| 知识库节点 `{{chunks}}` 未解析 | 知识库节点输出新增 `chunks` 别名，与 `knowledge_x.text` 同内容，兼容历史模板 | `KnowledgeNodeBO.java` |
+| MCP3 语义索引启动时序 | MCP Server 工具注册早于 EmbeddingModel 就绪时会以空向量入索引；新增 `reindexSemanticTools()`，控制面初始化后补建语义索引 | `McpToolAdapter.java`、`McpSemanticEmbeddingInitializer.java` |
+| 回归测试 | `DagUtilsTest` 新增 2 条公共下游保护；`KnowledgeNodeOutputAliasTest` 锁定 chunks 别名；全量 **1910 tests / 0 fail / 8 skipped** | `tests/.../` |

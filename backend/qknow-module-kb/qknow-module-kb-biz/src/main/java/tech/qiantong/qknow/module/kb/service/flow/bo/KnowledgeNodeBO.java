@@ -161,6 +161,8 @@ public class KnowledgeNodeBO extends BaseNodeBO {
             outputData.put(nodeDefinition.getUuid() + ".context", formattedResult);
             outputData.put(nodeDefinition.getUuid() + ".count", results != null ? results.size() : 0);
             outputData.put("text", formattedResult);
+            // 兼容历史模板 {{chunks}} 变量：知识库节点统一输出合并后的切片上下文别名
+            outputData.put("chunks", formattedResult);
 
             return NodeRunResultBO.success(nodeDefinition.getUuid(), nodeDefinition.getName(), outputData);
 

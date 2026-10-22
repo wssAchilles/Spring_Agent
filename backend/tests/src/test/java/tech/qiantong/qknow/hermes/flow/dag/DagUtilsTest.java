@@ -143,6 +143,36 @@ class DagUtilsTest {
         assertTrue(successors.contains("C"));
     }
 
+
+    // ========== 条件分支剪枝：公共下游保护 ==========
+
+    @Test
+    @DisplayName("条件分支未选中路径与选中路径汇合时，公共下游不得被剪枝")
+    void computePruned_commonDescendantIsProtected() {
+        // condition -> selected(A), unselected(B); A -> merge(C) <- B
+        List<KbFlowEdgeDO> edges = List.of(
+                edge("condition", "A"), edge("condition", "B"),
+                edge("A", "C"), edge("B", "C"));
+
+        Set<String> pruned = DagUtils.computePrunedNodes("condition", List.of("A"), edges);
+
+        assertEquals(Set.of("B"), pruned,
+                "公共下游 C 也可从选中分支到达，绝不能被标记为 SKIPPED");
+    }
+
+    @Test
+    @DisplayName("选中路径更深时，其可达后代全部受保护")
+    void computePruned_deepSelectedDescendantsProtected() {
+        // condition -> A(selected), B(unselected); A -> A2 -> C; B -> C
+        List<KbFlowEdgeDO> edges = List.of(
+                edge("condition", "A"), edge("condition", "B"),
+                edge("A", "A2"), edge("A2", "C"), edge("B", "C"));
+
+        Set<String> pruned = DagUtils.computePrunedNodes("condition", List.of("A"), edges);
+
+        assertEquals(Set.of("B"), pruned);
+    }
+
     // ========== hasCycle ==========
 
     @Test

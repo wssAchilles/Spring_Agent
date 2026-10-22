@@ -255,16 +255,30 @@ public class DagUtils {
             return Collections.emptySet();
         }
 
-        // 3. 从未选中的分支根节点开始，递归向下标记下游可达节点
+        // 3. 先计算“选中分支可达的全部节点”，这些节点即使从被剪枝分支也能到达，
+        //    也不能被标记为 SKIPPED（否则汇合到选中路径的公共下游会被错误剪掉）。
+        Set<String> protectedBySelected = new HashSet<>(selectedSet);
+        Queue<String> selectedQueue = new LinkedList<>(selectedSet);
+        while (!selectedQueue.isEmpty()) {
+            String current = selectedQueue.poll();
+            for (String next : getSuccessorsUuids(current, edgePairs)) {
+                if (protectedBySelected.add(next)) {
+                    selectedQueue.offer(next);
+                }
+            }
+        }
+
+        // 4. 从未选中的分支根节点开始，递归向下标记下游可达节点；命中选中分支可达集合时停止。
         Set<String> prunedNodes = new LinkedHashSet<>();
         Queue<String> queue = new LinkedList<>(unselectedDirectSuccessors);
-
         while (!queue.isEmpty()) {
             String current = queue.poll();
+            if (protectedBySelected.contains(current)) {
+                continue;
+            }
             if (prunedNodes.add(current)) {
-                Set<String> nextSuccessors = getSuccessorsUuids(current, edgePairs);
-                for (String next : nextSuccessors) {
-                    if (!selectedSet.contains(next)) {
+                for (String next : getSuccessorsUuids(current, edgePairs)) {
+                    if (!protectedBySelected.contains(next)) {
                         queue.offer(next);
                     }
                 }

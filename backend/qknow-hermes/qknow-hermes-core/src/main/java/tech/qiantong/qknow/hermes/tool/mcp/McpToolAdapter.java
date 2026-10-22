@@ -30,6 +30,7 @@ public class McpToolAdapter {
     private final Map<String, FunctionToolCallback<?, ?>> mcpTools = new ConcurrentHashMap<>();
     private final Map<String, McpClient> clients = new ConcurrentHashMap<>();
     private final Map<String, JSONObject> toolSchemas = new ConcurrentHashMap<>();
+    private final Map<String, String> toolDescriptions = new ConcurrentHashMap<>();
 
     private final McpToolSemanticRetriever semanticRetriever;
     private final McpVirtualThreadCircuitBreaker circuitBreaker;
@@ -76,6 +77,31 @@ public class McpToolAdapter {
 
     public void setEmbeddingModel(org.springframework.ai.embedding.EmbeddingModel embeddingModel) {
         this.embeddingModel = embeddingModel;
+    }
+
+    /**
+     * 当 EmbeddingModel 晚于 MCP Server 注册时才就绪（控制面启动时序）时，
+     * 对已发现工具补建语义向量索引；否则语义路由会退化为空向量并走关键词兜底。
+     */
+    public void reindexSemanticTools() {
+        if (embeddingModel == null || mcpTools.isEmpty()) {
+            return;
+        }
+        int indexed = 0;
+        for (Map.Entry<String, FunctionToolCallback<?, ?>> entry : mcpTools.entrySet()) {
+            String toolCode = entry.getKey();
+            String description = toolDescriptions.getOrDefault(toolCode, "");
+            try {
+                float[] vector = embeddingModel.embed(toolCode + ": " + description);
+                semanticRetriever.indexTool(toolCode, description, toolSchemas.get(toolCode), vector);
+                indexed++;
+            } catch (Exception e) {
+                log.warn("补建 MCP 工具语义向量失败: {}, err={}", toolCode, e.getMessage());
+            }
+        }
+        if (indexed > 0) {
+            log.info("MCP 语义索引补建完成: {} 个工具", indexed);
+        }
     }
 
     public long getToolTimeoutMillis() {
@@ -189,6 +215,7 @@ public class McpToolAdapter {
                     FunctionToolCallback<McpToolRequest, String> callback =
                             createMcpToolCallback(config.getName(), toolName, description);
                     mcpTools.put(toolCode, callback);
+                    toolDescriptions.put(toolCode, description != null ? description : "");
 
                     // 注册至超球面语义检索器
                     float[] vector = null;
