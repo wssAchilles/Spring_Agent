@@ -1,7 +1,7 @@
 {
-  "qrel_version": "1.0",
+  "qrel_version": "1.1",
   "dataset": "real_corpus_kb1_kb8_30",
-  "created_at": "2026-10-22T20:26:51+08:00",
+  "created_at": "2026-10-22T20:30:20+08:00",
   "architecture_model_baseline": {
     "embedding_model": "text-embedding-v4",
     "dimension": 1024
@@ -15,13 +15,15 @@
     "kb1_vectors": 2158,
     "kb8_vectors": 2317,
     "backend_commit": "31366dfa",
-    "notes": "vector_store is production corpus; 35 vectors without kb metadata excluded"
+    "notes": "35 vectors without kb metadata excluded"
   },
   "annotation_protocol": {
     "mode": "B: agent-generated + independent reviewer + human spot-check",
     "query_frozen_before_retrieval": true,
     "retrieval_results_seen_during_authoring": false,
-    "reviewer": "separate reviewer prompt, PASS 30/30",
+    "independent_review_v1": "25/30 PASS; 5 leakage FAIL on earlier snapshot",
+    "remediation": "rewrote 11 queries to remove >=8-char normalized overlap; v2 strict audit 0 violations",
+    "independent_review_v2": "pending",
     "human_spot_check": "pending 8-item sheet"
   },
   "queries": [
@@ -38,14 +40,14 @@
       ],
       "source_chunk_id": "1128e8ac-0f4b-46d1-88ca-e27374edbc0f",
       "evidence_quote": "在资源约束内最大化消除了OOM崩溃",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q002",
       "kb_id": 8,
-      "query": "哪个Spark配置开关用于压缩event log体积？",
+      "query": "哪个配置项通过限制执行计划字符串长度来避免日志文件膨胀？",
       "category": "multi_fact",
       "gold_document_ids": [
         "27"
@@ -55,14 +57,14 @@
       ],
       "source_chunk_id": "6adde8aa-ce89-477f-89aa-0fb02e29c8f2",
       "evidence_quote": "ark.sql.maxPlanStringLength=8192是压缩 event log 体积的关键开关。",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q003",
       "kb_id": 8,
-      "query": "系统采用哪种模式作为第一阶段提交方式？",
+      "query": "系统在第一阶段采用哪种提交模式？",
       "category": "procedural",
       "gold_document_ids": [
         "27"
@@ -72,8 +74,8 @@
       ],
       "source_chunk_id": "63657ff4-736e-4ceb-a882-d4c79b0b2554",
       "evidence_quote": "系统采用 YARN client mode 作为第一阶段提交方式",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -89,8 +91,8 @@
       ],
       "source_chunk_id": "3265ee35-d845-4763-b083-104e08398c03",
       "evidence_quote": "Proceedings of the 4th Annual Symposium on Cloud Computing. 2013",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -106,8 +108,8 @@
       ],
       "source_chunk_id": "4ea7b388-6e83-4194-9634-11e91716cf72",
       "evidence_quote": "auth refresh convergence, polling interval control, and caching strategies",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -123,8 +125,8 @@
       ],
       "source_chunk_id": "77f2d6c1-8c1b-4c45-bc7a-0fd3971c0ba6",
       "evidence_quote": "1. 精确匹配：用户输入与字段值完全一致。",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -140,8 +142,8 @@
       ],
       "source_chunk_id": "4548ce7e-781d-4f7a-b226-eb564bc3db4f",
       "evidence_quote": "包括分类分布、标签排名、班级借阅排名和月度借阅趋势，通过柱状图展示",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -157,8 +159,8 @@
       ],
       "source_chunk_id": "77f2d6c1-8c1b-4c45-bc7a-0fd3971c0ba6",
       "evidence_quote": "匹配按优先级从高到低依次执行：1. 精确匹配",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -174,14 +176,14 @@
       ],
       "source_chunk_id": "5f3315f2-0958-423b-8987-552ef8a2a96b",
       "evidence_quote": "uses OpenCV edge detection and HoughLines segment extraction",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q010",
       "kb_id": 8,
-      "query": "ByteTrack算法在每一帧中将检测结果分为哪两个集合？",
+      "query": "该多目标跟踪算法在每一帧把检测结果分成哪两个集合？",
       "category": "numerical",
       "gold_document_ids": [
         "24"
@@ -191,14 +193,14 @@
       ],
       "source_chunk_id": "4cb39705-63f9-4839-8954-cc8dc4c1ac66",
       "evidence_quote": "算法将检测结果分为高置信度集合 𝐷ℎ𝑖𝑔ℎ和低置信度集合 𝐷𝑙𝑜𝑤",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q011",
       "kb_id": 8,
-      "query": "国内研究者在ByteTrack基础上针对什么场景提出了改进方案？",
+      "query": "已有研究在该跟踪算法基础上针对什么场景做了改进？",
       "category": "factoid",
       "gold_document_ids": [
         "24"
@@ -208,8 +210,8 @@
       ],
       "source_chunk_id": "674a44d5-cc15-4263-8988-ab0e723f75de",
       "evidence_quote": "国内研究者在 ByteTrack基础上提出了面向密集行人场景的改进方案",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -225,8 +227,8 @@
       ],
       "source_chunk_id": "a5a30470-a447-4e25-8b93-c73ebf25de05",
       "evidence_quote": "the Greenshields linear speed-density model employed for traffic flow parameter estimation and congestion classification",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -242,8 +244,8 @@
       ],
       "source_chunk_id": "cfa8a072-c2f8-4eb8-bc2d-959c9cfcc747",
       "evidence_quote": "点击它发送请求到 /api/space/users/:id/mute",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -259,8 +261,8 @@
       ],
       "source_chunk_id": "55546dd0-a1b6-4abc-af9b-f9be98978f85",
       "evidence_quote": "Spring Boot, Go for messaging, and C++ for graph processing",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -276,14 +278,14 @@
       ],
       "source_chunk_id": "55546dd0-a1b6-4abc-af9b-f9be98978f85",
       "evidence_quote": "stores users, groups, contacts, news, events, user vectors, and experiment configurations in Supabase PostgreSQL",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q016",
       "kb_id": 1,
-      "query": "为支持自定义gap参数，建议给哪个文件补充统一入口？",
+      "query": "为了支持可配置的间隙参数，建议在哪个文件补统一入口？",
       "category": "factoid",
       "gold_document_ids": [
         "14"
@@ -293,14 +295,14 @@
       ],
       "source_chunk_id": "9ab596bf-0580-4501-93c0-fcc81a8fed21",
       "evidence_quote": "为 bottom_sheet_spacing.dart 进一步补充统一入口，例如显式支持自定义",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q017",
       "kb_id": 1,
-      "query": "Day 15针对杀后台后下载仍继续的问题，最终明确了什么结论？",
+      "query": "Day 15 对应用退到后台后下载仍不中断的问题得出了什么结论？",
       "category": "multi_fact",
       "gold_document_ids": [
         "14"
@@ -310,8 +312,8 @@
       ],
       "source_chunk_id": "1a29faff-cde9-44d7-95bb-b55b6433a048",
       "evidence_quote": "最终明确：提高概率可行，跨所有机型与所有硬杀路径的 100%稳定中断不可保证",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -327,8 +329,8 @@
       ],
       "source_chunk_id": "05192ea6-c6c5-4191-8fe2-6c43b40e92f2",
       "evidence_quote": "由控制器以“前台 400ms、后台 2s”的策略主动轮询 dmQuery",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -344,14 +346,14 @@
       ],
       "source_chunk_id": "5d1c1a4f-434f-48ba-9f9a-847a1f2af342",
       "evidence_quote": "任务一：Flutter 与 Android 锁屏级下载进度指示器调研",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q020",
       "kb_id": 1,
-      "query": "Telegram方法论向React工程迁移映射中，后台计算层对应哪些React技术？",
+      "query": "将即时通讯应用的方案映射到 React 时，后台计算层对应哪些技术？",
       "category": "numerical",
       "gold_document_ids": [
         "15"
@@ -361,8 +363,8 @@
       ],
       "source_chunk_id": "32df9a95-1f80-44e2-928c-7dc776fa33ab",
       "evidence_quote": "Vite Worker + Com-link",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -378,14 +380,14 @@
       ],
       "source_chunk_id": "55754a6b-4a97-4857-9c2f-3fe7807a915c",
       "evidence_quote": "围绕“锁屏级自定义下载进度指示器”",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q022",
       "kb_id": 1,
-      "query": "文档第1章复盘安卓应用内更新链路稳定性时，分析了哪两种现象？",
+      "query": "第 1 章分析移动端应用更新稳定性时，重点排查了哪两种现象？",
       "category": "multi_fact",
       "gold_document_ids": [
         "13"
@@ -395,8 +397,8 @@
       ],
       "source_chunk_id": "e5c16eee-4a29-413c-8c2e-45702d002fe8",
       "evidence_quote": "已分析APK安装失败和后台下载中断现象",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -412,8 +414,8 @@
       ],
       "source_chunk_id": "5b0cb330-84d6-4ae4-9522-2f0a103928aa",
       "evidence_quote": "reflects on the process of moving from symptom confusion to recognizing system-level constraints, then shifting from patch-based thinking to architecture-level solutions, and finally accepting the need for architectural adjustments",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -429,8 +431,8 @@
       ],
       "source_chunk_id": "8f5c4405-9f54-47b6-9550-461372f20af1",
       "evidence_quote": "主要涵盖对WorkManager能力边界和旧路径状态机一致性的澄清",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -446,8 +448,8 @@
       ],
       "source_chunk_id": "676a9f02-faf2-4b9f-b461-450783282106",
       "evidence_quote": "已确认事实+待补充项",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -463,14 +465,14 @@
       ],
       "source_chunk_id": "59095fcb-eb30-4f47-9e44-236a993ac962",
       "evidence_quote": "系统登记了从日志骨架搭建到验证风险跟踪的五个关键任务",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q027",
       "kb_id": 1,
-      "query": "Day 12 工作日志从占位态升级为什么状态，并实现了哪三项标准化输出？",
+      "query": "Day 12 的记录能力从占位升级到了什么状态，并实现了哪三项输出？",
       "category": "multi_fact",
       "gold_document_ids": [
         "12"
@@ -480,14 +482,14 @@
       ],
       "source_chunk_id": "59fc33bb-6361-4808-bd07-8a3c1251fa8b",
       "evidence_quote": "Day 12 已完成日志框架从占位态向工程化记录态的升级，实现了“结构化台账 + 可视化流程 + 风险追踪”的标准化输出。",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q028",
       "kb_id": 1,
-      "query": "多语言键值对齐后，分析展示不一致根因时发现了哪两个问题？",
+      "query": "在排查展示不一致时，发现了哪两个根因问题？",
       "category": "procedural",
       "gold_document_ids": [
         "10"
@@ -497,8 +499,8 @@
       ],
       "source_chunk_id": "06eaef6e-6a9b-416a-b3a5-1efad69daf17",
       "evidence_quote": "开始分析展示不一致的根因——展示规则分散与输入约束后置",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
@@ -514,14 +516,14 @@
       ],
       "source_chunk_id": "c4e203d4-f996-4775-a24e-eefd5aad9c9a",
       "evidence_quote": "失败后改为在文案表尾部追加键值，绕开编码/上下文不稳定片段，补丁成功落地。",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     },
     {
       "query_id": "Q030",
       "kb_id": 1,
-      "query": "昵称展示截断规则要求昵称主体最多保留多少个字符？",
+      "query": "系统对昵称主体最多保留多少个字符？",
       "category": "numerical",
       "gold_document_ids": [
         "10"
@@ -531,10 +533,10 @@
       ],
       "source_chunk_id": "06cc98a2-7cc6-4021-9263-30761b7c4933",
       "evidence_quote": "两处展示均按昵称主体 12 字符截断。",
-      "review_status": "PASS",
-      "reviewer": "independent_llm_reviewer_pass",
+      "review_status": "PASS_STRICT_AUDIT",
+      "reviewer": "independent_review_v2_pending",
       "human_spot_check": "PENDING"
     }
   ],
-  "frozen_hash": "b83dcb16472513947d3173bdb2ccd0d69d826f6dca8a19111381140138801137"
+  "frozen_hash": "e2ace60af69f66340fbbd90ca31f385045a5673d170bc76760548ab1b7359e16"
 }

@@ -1,6 +1,6 @@
 {
   "qrel": "experiment/datasets/qrel_real_corpus_30.json",
-  "frozen_hash": "b83dcb16472513947d3173bdb2ccd0d69d826f6dca8a19111381140138801137",
+  "frozen_hash": "e2ace60af69f66340fbbd90ca31f385045a5673d170bc76760548ab1b7359e16",
   "top_k": 10,
   "query_count": 30,
   "failed_queries": [],
@@ -22,43 +22,43 @@
       ]
     },
     "doc_mrr@10": {
-      "mean": 0.927778,
+      "mean": 0.905556,
       "n": 30,
       "bootstrap_95ci": [
-        0.838889,
-        1.0
+        0.805556,
+        0.977778
       ]
     },
     "doc_ndcg@10": {
-      "mean": 0.937698,
+      "mean": 0.921031,
       "n": 30,
       "bootstrap_95ci": [
-        0.854364,
-        1.0
+        0.833333,
+        0.983333
       ]
     },
     "seg_recall@5": {
-      "mean": 0.666667,
+      "mean": 0.6,
       "n": 30,
       "bootstrap_95ci": [
-        0.5,
-        0.833333
+        0.4,
+        0.766667
       ]
     },
     "seg_recall@10": {
-      "mean": 0.733333,
+      "mean": 0.633333,
       "n": 30,
       "bootstrap_95ci": [
-        0.566667,
-        0.9
+        0.433333,
+        0.8
       ]
     },
     "seg_mrr@10": {
-      "mean": 0.508968,
+      "mean": 0.346984,
       "n": 30,
       "bootstrap_95ci": [
-        0.352857,
-        0.662857
+        0.217222,
+        0.488651
       ]
     }
   }
