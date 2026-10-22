@@ -60,6 +60,7 @@
 - 第十二批：流式工具调用空参数统一归一化为 `{}`，未完成调用不再可执行。
 - 仍遗留：P0-15 多智能体生产接线、P0-16 真实评测证据、容器/真实模型端到端冒烟。
 - 补充基线说明：**[acceptance/08-embedding-baseline.md](acceptance/08-embedding-baseline.md)** 明确当前语料切分/向量模型为 **text-embedding-v4（1024 维）**（实测同文本余弦 0.999999），qwen3.7-text-embedding 与存量向量不兼容（0.0186）；维度门禁与 MCP 检索已改为配置/自动探测。
+- 真实链路实验：**[acceptance/09-hitl-and-p016.md](acceptance/09-hitl-and-p016.md)** 记录 HITL/工具调用真实冒烟通过，并暴露修复“审批恢复跳过工具执行”；P0-16 因现有 qrel 为合成语料实体标注、与真实 vector_store 不匹配，按治理要求标记 BLOCKED，待授权构建真实 qrel。
 
 ## 一句话结论
 
