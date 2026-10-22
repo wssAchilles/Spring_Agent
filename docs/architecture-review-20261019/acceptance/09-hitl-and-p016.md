@@ -46,7 +46,7 @@
 - 为让 flow 真正跑到工具节点，临时给 `knowledge_1` 绑定 KB 8（否则知识库节点按设计 fail-close）。
 - 实验后 Bot 9 的 `tool_1` / `knowledge_1` 配置与 style 快照已**全部还原**，Redis 测试审批键已清理，临时 8098 进程已停止；用户本地 8099 dev watcher 未改动。
 
-## 2. P0-16 小规模 Recall/MRR 评测：BLOCKED（qrel 与真实语料不匹配）
+## 2. P0-16 小规模 Recall/MRR 评测：历史阻塞及解决（最初 qrel 与真实语料不匹配）
 
 ### 2.1 尝试与证据
 
@@ -72,10 +72,10 @@
    - gold 使用 `vector_store.metadata->>'kmc_segment_id'` / `kmc_document_id`，不用实体名；
    - 标注过程盲测：先固定 query，再检索候选，人工/规则只确认“是否回答了问题”，避免按 top-k 结果反推 gold。
 2. 定义指标与预算：`Recall@5`、`Recall@10`、`MRR@10`、`nDCG@10`，固定 topK 与检索模式（v4 + hybrid + RRF），记录延迟与 embedding token；单轮成本 < ¥1。
-3. 通过 Gate 后再执行，并将结果写入 `acceptance/`；在此之前 P0-16 状态保持 **BLOCKED（缺真实 qrel）**，不以合成数据替代真实运行证据。
+3. 通过 Gate 后再执行，并将结果写入 `acceptance/`。该阻塞已由 [10-p016-real-qrel.md](10-p016-real-qrel.md) 解决：Mode B 真实 qrel 已跑出指标，人工抽查通过，P0-16 CLOSED。
 
 ## 3. 当前状态
 
 - HITL/工具调用：**通过**（真实 MCP 工具执行 + 审批恢复），缺陷已修复并新增 2 条回归测试；全量 **1907 tests / 0 fail / 8 skipped**。
-- P0-16：真实 qrel 已按 Mode B 构建并跑出真实指标，见 **[10-p016-real-qrel.md](10-p016-real-qrel.md)**；人工抽查 8 条待确认，确认后闭环。
+- P0-16：真实 qrel 已按 Mode B 构建并跑出真实指标，人工抽查 8 条已于 2026-10-22 通过，**P0-16 CLOSED**；详见 **[10-p016-real-qrel.md](10-p016-real-qrel.md)**。
 - 相关提交：`49f33dd9`（HITL 恢复修复）、`92084772`（v4 维度基线）、`ecb0a841`（启动修复）。

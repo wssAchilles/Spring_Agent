@@ -25,7 +25,7 @@
     "remediation_v2": "rewrote 11 queries to remove >=8-char normalized overlap; v2 strict audit 0 violations",
     "independent_review_v2": "PASS 29/30; Q025 vague FAIL",
     "remediation_v3": "rewrote Q025 with Day12 anchor; category metadata corrected; strict audit 0 violations; Q025 local recheck PASS",
-    "human_spot_check": "pending 8-item sheet"
+    "human_spot_check": "PASS (8 items, confirmed 2026-10-22)"
   },
   "queries": [
     {
@@ -43,7 +43,7 @@
       "evidence_quote": "在资源约束内最大化消除了OOM崩溃",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q002",
@@ -60,7 +60,7 @@
       "evidence_quote": "ark.sql.maxPlanStringLength=8192是压缩 event log 体积的关键开关。",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q003",
@@ -77,7 +77,7 @@
       "evidence_quote": "系统采用 YARN client mode 作为第一阶段提交方式",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q004",
@@ -94,7 +94,7 @@
       "evidence_quote": "Proceedings of the 4th Annual Symposium on Cloud Computing. 2013",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q005",
@@ -111,7 +111,7 @@
       "evidence_quote": "auth refresh convergence, polling interval control, and caching strategies",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q006",
@@ -128,7 +128,7 @@
       "evidence_quote": "1. 精确匹配：用户输入与字段值完全一致。",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q007",
@@ -145,7 +145,7 @@
       "evidence_quote": "包括分类分布、标签排名、班级借阅排名和月度借阅趋势，通过柱状图展示",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q008",
@@ -162,7 +162,7 @@
       "evidence_quote": "匹配按优先级从高到低依次执行：1. 精确匹配",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q009",
@@ -179,7 +179,7 @@
       "evidence_quote": "uses OpenCV edge detection and HoughLines segment extraction",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q010",
@@ -196,7 +196,7 @@
       "evidence_quote": "算法将检测结果分为高置信度集合 𝐷ℎ𝑖𝑔ℎ和低置信度集合 𝐷𝑙𝑜𝑤",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q011",
@@ -213,7 +213,7 @@
       "evidence_quote": "国内研究者在 ByteTrack基础上提出了面向密集行人场景的改进方案",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q012",
@@ -230,7 +230,7 @@
       "evidence_quote": "the Greenshields linear speed-density model employed for traffic flow parameter estimation and congestion classification",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q013",
@@ -247,7 +247,7 @@
       "evidence_quote": "点击它发送请求到 /api/space/users/:id/mute",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q014",
@@ -264,7 +264,7 @@
       "evidence_quote": "Spring Boot, Go for messaging, and C++ for graph processing",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q015",
@@ -281,7 +281,7 @@
       "evidence_quote": "stores users, groups, contacts, news, events, user vectors, and experiment configurations in Supabase PostgreSQL",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q016",
@@ -298,7 +298,7 @@
       "evidence_quote": "为 bottom_sheet_spacing.dart 进一步补充统一入口，例如显式支持自定义",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q017",
@@ -315,7 +315,7 @@
       "evidence_quote": "最终明确：提高概率可行，跨所有机型与所有硬杀路径的 100%稳定中断不可保证",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q018",
@@ -332,7 +332,7 @@
       "evidence_quote": "由控制器以“前台 400ms、后台 2s”的策略主动轮询 dmQuery",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q019",
@@ -349,7 +349,7 @@
       "evidence_quote": "任务一：Flutter 与 Android 锁屏级下载进度指示器调研",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q020",
@@ -366,7 +366,7 @@
       "evidence_quote": "Vite Worker + Com-link",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q021",
@@ -383,7 +383,7 @@
       "evidence_quote": "围绕“锁屏级自定义下载进度指示器”",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q022",
@@ -400,7 +400,7 @@
       "evidence_quote": "已分析APK安装失败和后台下载中断现象",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q023",
@@ -417,7 +417,7 @@
       "evidence_quote": "reflects on the process of moving from symptom confusion to recognizing system-level constraints, then shifting from patch-based thinking to architecture-level solutions, and finally accepting the need for architectural adjustments",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q024",
@@ -434,7 +434,7 @@
       "evidence_quote": "主要涵盖对WorkManager能力边界和旧路径状态机一致性的澄清",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q025",
@@ -451,7 +451,7 @@
       "evidence_quote": "已确认事实+待补充项",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q026",
@@ -468,7 +468,7 @@
       "evidence_quote": "系统登记了从日志骨架搭建到验证风险跟踪的五个关键任务",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q027",
@@ -485,7 +485,7 @@
       "evidence_quote": "Day 12 已完成日志框架从占位态向工程化记录态的升级，实现了“结构化台账 + 可视化流程 + 风险追踪”的标准化输出。",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q028",
@@ -502,7 +502,7 @@
       "evidence_quote": "开始分析展示不一致的根因——展示规则分散与输入约束后置",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q029",
@@ -519,7 +519,7 @@
       "evidence_quote": "失败后改为在文案表尾部追加键值，绕开编码/上下文不稳定片段，补丁成功落地。",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     },
     {
       "query_id": "Q030",
@@ -536,7 +536,7 @@
       "evidence_quote": "两处展示均按昵称主体 12 字符截断。",
       "review_status": "PASS_V2_REVIEW_AFTER_Q025_FIX",
       "reviewer": "independent_v2_29/30; Q025 fixed and local recheck PASS",
-      "human_spot_check": "PENDING"
+      "human_spot_check": "PASS"
     }
   ],
   "frozen_hash": "99410c5a6a42e5b225ff33901f7f6268424dc4f1a5a84d8a14f4142e54b1228c"
