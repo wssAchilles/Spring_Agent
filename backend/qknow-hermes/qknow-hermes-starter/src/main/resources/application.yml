@@ -56,6 +56,14 @@ mybatis-plus:
     password: ${MYBATIS_ENCRYPTOR_PASSWORD:${TOKEN_SECRET:qknow-jwt-secret-key-32bytes-secure-2026}}
 
 hermes:
+  orchestration:
+    enabled: ${HERMES_ORCHESTRATION_ENABLED:false}
+    timeout-ms: ${HERMES_ORCHESTRATION_TIMEOUT_MS:15000}
+    max-workers: ${HERMES_ORCHESTRATION_MAX_WORKERS:3}
+    debate-rounds: ${HERMES_ORCHESTRATION_DEBATE_ROUNDS:1}
+    max-cost-cny: ${HERMES_ORCHESTRATION_MAX_COST_CNY:0.05}
+    receipt-cache-max-entries: ${HERMES_ORCHESTRATION_RECEIPT_CACHE_MAX_ENTRIES:256}
+    receipt-cache-ttl-ms: ${HERMES_ORCHESTRATION_RECEIPT_CACHE_TTL_MS:1800000}
   routing:
     tool-calling-model:
       enabled: false

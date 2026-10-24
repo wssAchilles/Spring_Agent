@@ -48,10 +48,30 @@ public class ShortTermMemory {
 
     /**
      * 返回最后 maxMessages 条消息。
+     * 先对 CopyOnWriteArrayList 取不可变快照再切片：直接对原列表 subList 后再拷贝，
+     * 若期间有并发 add，COWSubList 会抛出 ConcurrentModificationException。
      */
     public List<Message> getContext(int maxMessages) {
-        int fromIndex = Math.max(0, messages.size() - maxMessages);
-        return new ArrayList<>(messages.subList(fromIndex, messages.size()));
+        List<Message> snapshot = new ArrayList<>(messages);
+        int fromIndex = Math.max(0, snapshot.size() - maxMessages);
+        return new ArrayList<>(snapshot.subList(fromIndex, snapshot.size()));
+    }
+
+    /**
+     * 返回会话最早的 count 条消息（与 safeTrimIncremental 裁剪的左侧区间严格一致），
+     * 供睡眠期整理“读取前 N 条 → 处理 → 裁剪前 N 条”的 CAS 语义使用，
+     * 避免并发追加时读取到新消息、却裁剪掉未处理的旧消息。
+     */
+    public List<Message> getOldestMessages(String sessionId, int count) {
+        if (count <= 0) {
+            return List.of();
+        }
+        if (redisService == null || sessionId == null || sessionId.isBlank()) {
+            List<Message> snapshot = new ArrayList<>(messages);
+            return new ArrayList<>(snapshot.subList(0, Math.min(count, snapshot.size())));
+        }
+        List<String> encoded = redisService.range(redisKey(sessionId), 0, count - 1);
+        return encoded == null ? List.of() : encoded.stream().map(this::decode).collect(Collectors.toList());
     }
 
     public List<Message> getContext(String sessionId, int maxMessages) {

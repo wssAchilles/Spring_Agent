@@ -388,6 +388,8 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
         // 5. 构建系统提示词
         String systemPrompt = NodeUtils.replacePlaceholder(kbAgentConfig.getPrePrompt(), kbAgentConfig.getInput());
+        String parametersJson = kbAgentConfig.getParameters() != null ? kbAgentConfig.getParameters() : "";
+        OrchestrationMode orchestrationMode = resolveOrchestrationMode(parametersJson);
 
         // 6. 构建 gRPC ChatRequest
         ChatRequest request = ChatRequest.newBuilder()
@@ -399,6 +401,8 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 .setQuestion(kbAgentConfig.getQuestion())
                 .setSystemPrompt(systemPrompt != null ? systemPrompt : "")
                 .setInputParams(kbAgentConfig.getInput() != null ? kbAgentConfig.getInput() : "")
+                .setParameters(parametersJson)
+                .setOrchestrationMode(orchestrationMode)
                 .setModelConfig(ModelConfig.newBuilder()
                         .setModelId(modelId)
                         .setModelName(modelName != null ? modelName : "")
@@ -589,5 +593,38 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 .map(Long::parseLong)
                 .sorted()
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 解析 Bot 扩展配置 JSON (parameters.orchestrationMode) 中的多智能体编排模式 (P0-15)
+     * 默认返回 ORCHESTRATION_MODE_SINGLE，未知配置安全降级为 SINGLE。
+     */
+    public static OrchestrationMode resolveOrchestrationMode(String parametersJson) {
+        if (parametersJson == null || parametersJson.isBlank()) {
+            return OrchestrationMode.ORCHESTRATION_MODE_SINGLE;
+        }
+        try {
+            JSONObject json = JSONObject.parseObject(parametersJson);
+            if (json == null) {
+                return OrchestrationMode.ORCHESTRATION_MODE_SINGLE;
+            }
+            String modeStr = json.getString("orchestrationMode");
+            if (modeStr == null || modeStr.isBlank()) {
+                return OrchestrationMode.ORCHESTRATION_MODE_SINGLE;
+            }
+            String normalized = modeStr.trim().toUpperCase(Locale.ROOT);
+            return switch (normalized) {
+                case "SINGLE", "ORCHESTRATION_MODE_SINGLE" -> OrchestrationMode.ORCHESTRATION_MODE_SINGLE;
+                case "SWARM", "ORCHESTRATION_MODE_SWARM" -> OrchestrationMode.ORCHESTRATION_MODE_SWARM;
+                case "DEBATE", "ORCHESTRATION_MODE_DEBATE" -> OrchestrationMode.ORCHESTRATION_MODE_DEBATE;
+                default -> {
+                    log.warn("[ORCHESTRATION_UNKNOWN_MODE] 未知编排模式配置 '{}', 自动降级为 SINGLE", modeStr);
+                    yield OrchestrationMode.ORCHESTRATION_MODE_SINGLE;
+                }
+            };
+        } catch (Exception e) {
+            log.warn("[ORCHESTRATION_UNKNOWN_MODE] 解析 parameters JSON 失败, 自动降级为 SINGLE: {}", e.getMessage());
+            return OrchestrationMode.ORCHESTRATION_MODE_SINGLE;
+        }
     }
 }

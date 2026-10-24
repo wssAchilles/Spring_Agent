@@ -135,6 +135,14 @@ token:
   expireTime: 600
 
 hermes:
+  orchestration:
+    enabled: ${HERMES_ORCHESTRATION_ENABLED:false}
+    timeout-ms: ${HERMES_ORCHESTRATION_TIMEOUT_MS:15000}
+    max-workers: ${HERMES_ORCHESTRATION_MAX_WORKERS:3}
+    debate-rounds: ${HERMES_ORCHESTRATION_DEBATE_ROUNDS:1}
+    max-cost-cny: ${HERMES_ORCHESTRATION_MAX_COST_CNY:0.05}
+    receipt-cache-max-entries: ${HERMES_ORCHESTRATION_RECEIPT_CACHE_MAX_ENTRIES:256}
+    receipt-cache-ttl-ms: ${HERMES_ORCHESTRATION_RECEIPT_CACHE_TTL_MS:1800000}
   rag:
     router:
       prompt-version: ${HERMES_RAG_ROUTER_PROMPT_VERSION:manual-v1}

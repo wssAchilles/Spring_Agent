@@ -1,0 +1,62 @@
+{
+  "hypothesis_id": "P015-MULTI-AGENT-PRODUCTION-WIRING",
+  "project_commit": "b6516ee3",
+  "created_at": "2026-10-22T21:56:00+08:00",
+  "total_sources": 22,
+  "verification_counts": {
+    "VERIFIED": 22,
+    "PARTIALLY_VERIFIED": 0,
+    "NOT_VERIFIED": 0
+  },
+  "research_gate_status": "RESEARCH_GATE_PASSED",
+  "reports": [
+    {
+      "report_id": "P015-A",
+      "role": "theoretical-literature",
+      "path": "/Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/p015/research/A-theory.md",
+      "sha256": "678f79aba48ce5bf5ae3cddeb2f5aec5bdf3133f7b1e740fc0a2ddfd5dd95555",
+      "status": "COMPLETE",
+      "sources_count": 6,
+      "attachments": [
+        {
+          "type": "ledger",
+          "path": "/Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/p015/research/A-theory.ledger.json",
+          "sha256": "f89d2c3380afb061c8d9226b6ec73826a1a06f30e0dd9079d57578ac9371511f"
+        }
+      ]
+    },
+    {
+      "report_id": "P015-B",
+      "role": "code-forensic",
+      "path": "/Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/p015/research/B-code-audit.md",
+      "sha256": "65c7001713e01fb2f2d665590dc1721e567621d932789acf46a7ba19ea10ed96",
+      "status": "COMPLETE",
+      "sources_count": 16,
+      "attachments": [
+        {
+          "type": "evidence",
+          "path": "/Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/p015/research/B-code-audit.evidence.jsonl",
+          "sha256": "cfc94f1612b7431b58d1d0058482a5920b749c45a70aac9b254623fd81bc237f"
+        }
+      ]
+    },
+    {
+      "report_id": "P015-C",
+      "role": "system-architecture",
+      "path": "/Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/p015/research/C-architecture.md",
+      "sha256": "688addcd65e08816d8754223544553d43c53e85ff4978684bb8da31acb39f703",
+      "status": "COMPLETE",
+      "attachments": [
+        {
+          "type": "decision",
+          "path": "/Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/p015/research/C-architecture.decision.json",
+          "sha256": "0885db46b3b0eee470a78f8884fb727f49e9aa78947ab7210b428aa2dde0b85c"
+        }
+      ]
+    }
+  ],
+  "index_summary": {
+    "readme_path": "/Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/p015/research/00-README.md",
+    "readme_sha256": "6a05827eeeee7cbdb92eff23981c2f3f3cc35fdad7ac977f95d32b40ad648dd3"
+  }
+}

@@ -86,7 +86,8 @@ public class SleepTimeMemoryConsolidator {
                 return MemoryConsolidationReceipt.create(receiptId, sessionId, userId, now, 0, 0, "EMPTY", "SKIPPED_EMPTY");
             }
 
-            List<Message> contextMessages = shortTermMemory.getContext(sessionId, initialCount);
+            // 读取与后续裁剪区间严格一致的“最早 initialCount 条”快照，而非末尾 N 条
+            List<Message> contextMessages = shortTermMemory.getOldestMessages(sessionId, initialCount);
 
             // 2. 提取三维结构化画像
             ProfileExtractionResult extractionResult = extractStructuredProfile(sessionId, userId, contextMessages);

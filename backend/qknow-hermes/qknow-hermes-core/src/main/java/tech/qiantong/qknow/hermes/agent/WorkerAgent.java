@@ -16,44 +16,65 @@ import tech.qiantong.qknow.hermes.tool.mcp.governance.McpToolProjectionReceipt;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 工作体智能体
- * 包装 ReactAgent，执行具体的子任务，支持千问 1536 维超球面动态工具投影与 Safe Schema 剪枝绑定
+ * 包装 ReactAgent，执行具体的子任务，支持千问超球面动态工具投影与 Safe Schema 剪枝绑定
  */
 @Slf4j
 public class WorkerAgent extends BaseAgent {
 
+    @Getter
     private final String systemPrompt;
     @Getter
     private final List<ToolCallback> tools;
+    @Getter
+    private final Set<String> capabilities;
     private final ChatModel chatModel;
     private final ToolCallbackResolver resolver;
     private final ToolDiscoveryService toolDiscoveryService;
 
     public WorkerAgent(String name, String description, String systemPrompt,
                        List<ToolCallback> tools, ChatModel chatModel, ToolCallbackResolver resolver) {
-        this(name, description, systemPrompt, tools, chatModel, resolver, null);
+        this(name, description, systemPrompt, tools, chatModel, resolver, null, Set.of());
+    }
+
+    public WorkerAgent(String name, String description, String systemPrompt,
+                       List<ToolCallback> tools, ChatModel chatModel, ToolCallbackResolver resolver,
+                       Set<String> capabilities) {
+        this(name, description, systemPrompt, tools, chatModel, resolver, null, capabilities);
     }
 
     public WorkerAgent(String name, String description, String systemPrompt,
                        List<ToolCallback> tools, ChatModel chatModel, ToolCallbackResolver resolver,
                        ToolDiscoveryService toolDiscoveryService) {
+        this(name, description, systemPrompt, tools, chatModel, resolver, toolDiscoveryService, Set.of());
+    }
+
+    public WorkerAgent(String name, String description, String systemPrompt,
+                       List<ToolCallback> tools, ChatModel chatModel, ToolCallbackResolver resolver,
+                       ToolDiscoveryService toolDiscoveryService,
+                       Set<String> capabilities) {
         super(name, description);
         this.systemPrompt = systemPrompt;
         this.tools = tools != null ? List.copyOf(tools) : List.of();
         this.chatModel = chatModel;
         this.resolver = resolver;
         this.toolDiscoveryService = toolDiscoveryService;
+        this.capabilities = capabilities != null && !capabilities.isEmpty()
+                ? Collections.unmodifiableSet(new LinkedHashSet<>(capabilities))
+                : Set.of();
     }
 
     /**
      * 派生携带新工具集的工作体智能体
      */
     public WorkerAgent withTools(List<ToolCallback> newTools) {
-        return new WorkerAgent(getName(), getDescription(), systemPrompt, newTools, chatModel, resolver, toolDiscoveryService);
+        return new WorkerAgent(getName(), getDescription(), systemPrompt, newTools, chatModel, resolver, toolDiscoveryService, capabilities);
     }
 
     @Override
@@ -76,13 +97,21 @@ public class WorkerAgent extends BaseAgent {
 
             messages.add(new UserMessage(question));
 
+            if (Thread.currentThread().isInterrupted()) {
+                throw new java.util.concurrent.CancellationException("WorkerAgent interrupted before execution");
+            }
+
             // 前置动态意图投影决策
             List<ToolCallback> activeTools = resolveActiveTools(question, context);
 
             ReactAgent reactAgent = createReactAgent(activeTools);
             Object result = reactAgent.call(messages);
 
-            return extractText(result);
+            String text = extractText(result);
+            if (text != null && (text.startsWith("Exception:") || text.startsWith("Empty response from model"))) {
+                return "执行失败: " + getName() + " - " + text;
+            }
+            return text;
         } catch (Exception e) {
             log.error("WorkerAgent {} 执行失败", getName(), e);
             return "执行失败: " + getName() + " - " + e.getMessage();

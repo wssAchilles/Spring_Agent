@@ -16,8 +16,8 @@ import java.util.concurrent.*;
 @Component
 public class TopologicalPhasedDispatcher {
 
-    // 工业级隔离专用线程池，拒绝策略采用 CallerRunsPolicy，杜绝污染 commonPool
-    private final ExecutorService agentTaskExecutor = new ThreadPoolExecutor(
+    // 工业级隔离专用共享线程池，拒绝策略采用 CallerRunsPolicy，杜绝每次新建实例泄漏线程或污染 commonPool
+    private static final ExecutorService AGENT_TASK_EXECUTOR = new ThreadPoolExecutor(
             8, 32,
             60L, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(200),
@@ -54,6 +54,9 @@ public class TopologicalPhasedDispatcher {
                 sessionId, plan.totalTasks(), plan.phases().size());
 
         for (int phaseIndex = 0; phaseIndex < plan.phases().size(); phaseIndex++) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new CancellationException("Dispatcher interrupted before phase " + phaseIndex);
+            }
             List<DagTaskNode> currentPhase = plan.phases().get(phaseIndex);
             log.info("[Dispatcher] 启动执行 Phase [{}], 包含并行任务数: {}", phaseIndex, currentPhase.size());
 
@@ -62,7 +65,7 @@ public class TopologicalPhasedDispatcher {
             for (DagTaskNode task : currentPhase) {
                 CompletableFuture<Void> taskFuture = CompletableFuture.runAsync(() -> {
                     executeSingleTask(sessionId, task, blackboard);
-                }, agentTaskExecutor)
+                }, AGENT_TASK_EXECUTOR)
                 // 生产级硬超时防护：单任务超过限定时间强制熔断抛出 TimeoutException
                 .orTimeout(task.timeoutSeconds(), TimeUnit.SECONDS)
                 .exceptionally(throwable -> {
@@ -75,13 +78,24 @@ public class TopologicalPhasedDispatcher {
                 futures.add(taskFuture);
             }
 
-            // 同步栅栏等待当前 Phase 所有任务完全完成（或超时降级完成）
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            // 同步栅栏等待当前 Phase 所有任务完全完成，支持超时取消中断传播 (P0-4)
+            try {
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                futures.forEach(f -> f.cancel(true));
+                throw new CancellationException("Phase dispatch interrupted for session " + sessionId);
+            } catch (ExecutionException ee) {
+                log.warn("[Dispatcher] Phase [{}] 阶段任务执行异常: {}", phaseIndex, ee.getMessage());
+            }
             log.info("[Dispatcher] Phase [{}] 阶段执行栅栏已通过，进入下一阶段", phaseIndex);
         }
     }
 
     private void executeSingleTask(String sessionId, DagTaskNode task, SharedBlackboard blackboard) {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new CancellationException("Swarm worker task interrupted: " + task.taskId());
+        }
         // 1. 蜂群环路防死锁检查
         if (swarmLoopGuard != null) {
             swarmLoopGuard.preCheck(sessionId, task.taskId());

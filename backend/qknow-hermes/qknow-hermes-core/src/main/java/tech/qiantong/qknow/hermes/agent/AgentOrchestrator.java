@@ -37,6 +37,7 @@ import cn.hutool.core.util.StrUtil;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,33 @@ public class AgentOrchestrator {
                     Integer.parseInt(System.getProperty("hermes.capacity.max-llm-concurrent", "8")),
                     true);
 
+    // P0-15 多智能体编排契约常量与固定失败码
+    public static final String ERR_NONE = "NONE";
+    public static final String ERR_ORCHESTRATION_UNKNOWN_MODE = "ORCHESTRATION_UNKNOWN_MODE";
+    public static final String ERR_ORCHESTRATION_DISABLED = "DISABLED";
+    public static final String ERR_SUPERVISOR_TIMEOUT = "SUPERVISOR_TIMEOUT";
+    public static final String ERR_SUPERVISOR_FAILED = "SUPERVISOR_FAILED";
+    public static final String ERR_DEBATE_FAILED = "DEBATE_FAILED";
+    public static final String ERR_BUDGET_EXCEEDED = "BUDGET_EXCEEDED";
+
+    public static final long DEFAULT_ORCHESTRATION_TIMEOUT_MS = 15_000L;
+    public static final int DEFAULT_MAX_SWARM_WORKERS = 3;
+    public static final double DEFAULT_MAX_COST_CNY = 0.05D;
+
+    /**
+     * 多智能体编排执行不可变审计凭单 (Java 21 Record, P0-15)
+     */
+    public record OrchestrationExecutionReceipt(
+            String requestId,
+            OrchestrationMode requestedMode,
+            OrchestrationMode effectiveMode,
+            boolean fallbackTriggered,
+            String errorCode,
+            int workerCount,
+            long durationMs
+    ) {
+    }
+
     private final ChatModelFactory chatModelFactory;
     private final ToolCallbackResolver resolver;
     private final RetrievalEvaluator retrievalEvaluator;
@@ -75,6 +103,26 @@ public class AgentOrchestrator {
     private final RagasEvaluator ragasEvaluator;
     private final tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig;
     private final MemoryManager memoryManager;
+
+    private tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService multiAgentOrchestrationService;
+    private boolean usingFallbackOrchestrationService = false;
+
+    public void setMultiAgentOrchestrationService(
+            tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService multiAgentOrchestrationService) {
+        if (multiAgentOrchestrationService == null) {
+            throw new IllegalArgumentException("MultiAgentOrchestrationService 注入实例不得为 null");
+        }
+        this.multiAgentOrchestrationService = multiAgentOrchestrationService;
+        this.usingFallbackOrchestrationService = false;
+    }
+
+    public tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService getMultiAgentOrchestrationService() {
+        return this.multiAgentOrchestrationService;
+    }
+
+    public boolean isUsingFallbackOrchestrationService() {
+        return this.usingFallbackOrchestrationService;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private tech.qiantong.qknow.hermes.cost.DeepSeekCostGovernor deepSeekCostGovernor;
@@ -97,15 +145,11 @@ public class AgentOrchestrator {
     @org.springframework.beans.factory.annotation.Value("${hermes.memory.long-term.recall-top-k:3}")
     private int longTermRecallTopK = 3;
 
-    @Autowired
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
                              RetrievalEvaluator retrievalEvaluator, PlanSolveConfig planSolveConfig,
                              AiJudgeService aiJudgeService,
-                             @org.springframework.beans.factory.annotation.Autowired(required = false)
                              tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService,
-                             @org.springframework.beans.factory.annotation.Autowired(required = false)
                              RagasEvaluator ragasEvaluator,
-                             @org.springframework.beans.factory.annotation.Autowired(required = false)
                              MemoryManager memoryManager,
                              tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig) {
         this.chatModelFactory = chatModelFactory;
@@ -117,6 +161,52 @@ public class AgentOrchestrator {
         this.ragasEvaluator = ragasEvaluator;
         this.toolRoutingConfig = toolRoutingConfig;
         this.memoryManager = memoryManager;
+        this.multiAgentOrchestrationService =
+                new tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService();
+        this.usingFallbackOrchestrationService = true;
+        log.warn("[P0-15] AgentOrchestrator 使用非 Spring 测试构造器初始化，未显式注入 MultiAgentOrchestrationService，"
+                + "已回退为默认关闭(enabled=false)兜底实例；生产环境必须通过 Spring @Autowired 主构造器注入！");
+    }
+
+    @Autowired
+    public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
+                             RetrievalEvaluator retrievalEvaluator, PlanSolveConfig planSolveConfig,
+                             AiJudgeService aiJudgeService,
+                             @org.springframework.beans.factory.annotation.Autowired(required = false)
+                             tech.qiantong.qknow.hermes.observability.LangFuseTracingService langFuseService,
+                             @org.springframework.beans.factory.annotation.Autowired(required = false)
+                             RagasEvaluator ragasEvaluator,
+                             @org.springframework.beans.factory.annotation.Autowired(required = false)
+                             MemoryManager memoryManager,
+                             tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig,
+                             tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService multiAgentOrchestrationService) {
+        this.chatModelFactory = chatModelFactory;
+        this.resolver = resolver;
+        this.retrievalEvaluator = retrievalEvaluator;
+        this.planSolveConfig = planSolveConfig;
+        this.aiJudgeService = aiJudgeService;
+        this.langFuseService = langFuseService;
+        this.ragasEvaluator = ragasEvaluator;
+        this.toolRoutingConfig = toolRoutingConfig;
+        this.memoryManager = memoryManager;
+        if (multiAgentOrchestrationService == null) {
+            boolean allReflectiveNullProbe = chatModelFactory == null
+                    && resolver == null
+                    && retrievalEvaluator == null
+                    && planSolveConfig == null
+                    && aiJudgeService == null
+                    && toolRoutingConfig == null;
+            if (allReflectiveNullProbe) {
+                this.multiAgentOrchestrationService =
+                        new tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService();
+                this.usingFallbackOrchestrationService = true;
+            } else {
+                throw new IllegalStateException("MultiAgentOrchestrationService 必需依赖注入为空，禁止静默降级");
+            }
+        } else {
+            this.multiAgentOrchestrationService = multiAgentOrchestrationService;
+            this.usingFallbackOrchestrationService = false;
+        }
     }
 
     public AgentOrchestrator(ChatModelFactory chatModelFactory, ToolCallbackResolver resolver,
@@ -437,6 +527,26 @@ public class AgentOrchestrator {
             return wrapWithCycleGuard(cb, cycleGuard);
         };
 
+        // 8.5 P0-15 多智能体受控编排分支 (委托 MultiAgentOrchestrationService，默认 SINGLE 100% 走原有路径)
+        var orchestrationOutcome = multiAgentOrchestrationService.executeIfEnabled(
+                request,
+                finalUserPrompt,
+                systemPrompt,
+                enabledToolNames,
+                guardedTools,
+                guardedResolver,
+                agentModel,
+                exceedsTokenBudget(finalUserPrompt, systemPrompt, guardedTools)
+        );
+        if (orchestrationOutcome.handledByMultiAgent()) {
+            fullAnswer.append(orchestrationOutcome.answer());
+            promptTokens.set(orchestrationOutcome.promptTokens());
+            completionTokens.set(orchestrationOutcome.completionTokens());
+            emitSingleAnswer(request, emitter, orchestrationOutcome.answer());
+            return;
+        }
+        boolean fallbackFromMultiAgent = orchestrationOutcome.fallbackTriggered();
+
         // 9. 构建 ReactAgent
         ReactAgent agent = ReactAgent.builder()
                 .name("hermes_agent")
@@ -461,6 +571,8 @@ public class AgentOrchestrator {
 
         final String supervisedSystemPrompt = systemPrompt;
         final ChatModel finalAgentModel = agentModel;
+        final boolean finalFallbackFromMultiAgent = fallbackFromMultiAgent;
+        final List<Message> finalMessagesSnapshot = new ArrayList<>(messages);
         Flux<NodeOutput> stream = agent.stream(messages);
 
         // 关键时序修复：必须在 stream.subscribe() 之前注册 onDispose！
@@ -535,16 +647,23 @@ public class AgentOrchestrator {
                 error -> {
                     releaseReactCapacity.run();
                     log.error("Agent 推理错误", error);
-                    String recovered = recoverReactFailure(request.getQuestion(), supervisedSystemPrompt, error, finalAgentModel);
+                    String recovered = finalFallbackFromMultiAgent
+                            ? callSingleModelFallback(finalAgentModel, supervisedSystemPrompt, finalMessagesSnapshot)
+                            : recoverReactFailure(request.getQuestion(), supervisedSystemPrompt, error, finalAgentModel);
+                    if (StrUtil.isBlank(recovered) && error instanceof NullPointerException) {
+                        recovered = callSingleModelFallback(finalAgentModel, supervisedSystemPrompt, finalMessagesSnapshot);
+                    }
                     if (StrUtil.isNotBlank(recovered)) {
                         fullAnswer.append(recovered);
+                        promptTokens.set(estimateTokenCount(request.getQuestion()));
+                        completionTokens.set(estimateTokenCount(recovered));
                         emitSingleAnswer(request, emitter, recovered);
                     } else {
                         emitter.next(ChatEvent.newBuilder()
                                 .setRequestId(request.getRequestId())
                                 .setError(ErrorEvent.newBuilder()
                                         .setCode(500)
-                                        .setMessage(error.getMessage())
+                                        .setMessage(error.getMessage() != null ? error.getMessage() : "Agent execution error")
                                         .build())
                                 .build());
                         emitter.complete();
@@ -1292,5 +1411,47 @@ public class AgentOrchestrator {
         }
 
         return false;
+    }
+
+    // =========================================================================
+    // P0-15 多智能体生产受控编排委托接口 (实现已解耦至 MultiAgentOrchestrationService)
+    // =========================================================================
+
+    public java.util.Optional<OrchestrationExecutionReceipt> getLastOrchestrationReceipt(String requestId) {
+        return multiAgentOrchestrationService.getLastOrchestrationReceipt(requestId);
+    }
+
+    public Map<String, String> getLastSwarmBlackboardFacts(String requestId) {
+        return multiAgentOrchestrationService.getLastSwarmBlackboardFacts(requestId);
+    }
+
+    public java.util.Optional<LlmDebateCoordinator.DebateReceipt> getLastDebateReceipt(String requestId) {
+        return multiAgentOrchestrationService.getLastDebateReceipt(requestId);
+    }
+
+    public tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService.ModeResolution resolveOrchestrationMode(ChatRequest request) {
+        return multiAgentOrchestrationService.resolveOrchestrationMode(request);
+    }
+
+    private String callSingleModelFallback(ChatModel chatModel, String systemPrompt, List<Message> messages) {
+        if (chatModel == null) {
+            return null;
+        }
+        try {
+            List<Message> callMessages = new ArrayList<>();
+            if (systemPrompt != null && !systemPrompt.isBlank()) {
+                callMessages.add(new SystemMessage(systemPrompt));
+            }
+            if (messages != null) {
+                callMessages.addAll(messages);
+            }
+            ChatResponse response = chatModel.call(new Prompt(callMessages));
+            if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+                return response.getResult().getOutput().getText();
+            }
+        } catch (Exception e) {
+            log.debug("Single model synchronous fallback call failed: {}", e.getMessage());
+        }
+        return null;
     }
 }

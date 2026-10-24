@@ -1,0 +1,70 @@
+{
+  "hypothesis_id": "P015-MULTI-AGENT-PRODUCTION-WIRING",
+  "baseline": {
+    "mode": "SINGLE"
+  },
+  "candidates": [
+    {
+      "mode": "SWARM",
+      "components": [
+        "SupervisorAgent",
+        "AgentRegistry",
+        "WorkerAgent"
+      ],
+      "default_enabled": false
+    },
+    {
+      "mode": "DEBATE",
+      "components": [
+        "LlmDebateCoordinator"
+      ],
+      "default_enabled": false,
+      "phase": "PHASE_2"
+    }
+  ],
+  "rejected": [
+    {
+      "component": "MoAExpertConsensusEngine",
+      "reason": "启发式/固定1536，无真实LLM多角色"
+    },
+    {
+      "component": "TripartiteDebateArbiterEngine",
+      "reason": "非真实LLM辩论"
+    }
+  ],
+  "contract": {
+    "proto_field": "orchestration_mode",
+    "control_plane_key": "parameters.orchestrationMode",
+    "timeout_ms": 15000,
+    "max_workers": 3,
+    "max_cost_cny": 0.05,
+    "fallback": "SINGLE"
+  },
+  "datasets": {
+    "queries": 15,
+    "seeds": 3,
+    "judge": "DeepSeek+human"
+  },
+  "metrics": [
+    "quality",
+    "p95_latency",
+    "tokens",
+    "cost_cny",
+    "fallback_rate"
+  ],
+  "stop_conditions": [
+    "质量提升 < 10%",
+    "p95 延迟 > 3x baseline",
+    "token 成本 > 3x baseline",
+    "降级率 > 5%"
+  ],
+  "minimal_files": [
+    "backend/qknow-hermes/qknow-hermes-proto/src/main/proto/hermes.proto",
+    "backend/qknow-module-kb/qknow-module-kb-biz/src/main/java/tech/qiantong/qknow/module/kb/service/agent/impl/KbAgentConfigServiceImpl.java",
+    "backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/AgentOrchestrator.java",
+    "backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/SupervisorAgent.java"
+  ],
+  "verification_commands": [
+    "JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem PATH=/Users/achilles/.sdkman/candidates/java/21.0.5-tem/bin:$PATH mvn -B -ntp -f backend/pom.xml -pl qknow-hermes/qknow-hermes-core -am test"
+  ]
+}

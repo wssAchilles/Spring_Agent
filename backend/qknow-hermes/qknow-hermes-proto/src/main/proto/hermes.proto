@@ -25,6 +25,14 @@ service HermesService {
 // ============================================================
 // Chat Messages (ReactAgent path)
 // ============================================================
+
+// 多智能体编排模式枚举 (P0-15)
+enum OrchestrationMode {
+  ORCHESTRATION_MODE_SINGLE = 0;  // 默认单智能体 ReAct 路径（零回归基线）
+  ORCHESTRATION_MODE_SWARM = 1;   // 蜂群主管拆解与并行 Worker 协同 (SupervisorAgent)
+  ORCHESTRATION_MODE_DEBATE = 2;  // 最小三角色真实 LLM 辩论 (Proposer/Critic/Judge)
+}
+
 message ChatRequest {
   string request_id = 1;
   int64 bot_id = 2;
@@ -40,6 +48,8 @@ message ChatRequest {
   repeated RAGContext rag_contexts = 12;    // Pre-retrieved RAG results
   int64 user_id = 13;
   int64 conversation_id = 14;
+  string parameters = 15;                   // JSON: Bot 扩展编排参数 (如 orchestrationMode 等)
+  OrchestrationMode orchestration_mode = 16; // 编排策略模式，默认 ORCHESTRATION_MODE_SINGLE
 }
 
 message ModelConfig {

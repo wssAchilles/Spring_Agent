@@ -1,0 +1,176 @@
+[
+  {
+    "id": "AUTOGEN-2023",
+    "sourceType": "paper",
+    "titleOrRepository": "AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation",
+    "authorsOrMaintainer": "Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Shaokun Zhang, Erkang Zhu, Beibin Li, Li Jiang, Xiaoyun Zhang, Chi Wang",
+    "venueAndYear": "ICLR 2024 / arXiv 2023",
+    "doiOrArxiv": "arXiv:2308.08155",
+    "url": "https://arxiv.org/html/2308.08155",
+    "commitOrTag": "N/A",
+    "license": "CC BY 4.0",
+    "filesOrSectionsRead": "Abstract, Section 1 (Introduction), Section 2 (The AutoGen Framework - 2.1 Conversable Agents, 2.2 Conversation Programming), Section 3 (Applications - Math & Multi-Agent Coding), Section 4 (Discussion), Appendix B.1 (General Guidelines)",
+    "verificationStatus": "VERIFIED",
+    "relevantFinding": "提出了 ConversableAgent 与 GroupChatManager 架构。GroupChatManager 扮演集中式主管（Supervisor）角色，执行说话者选择、回答收集与广播三步循环。指出缺乏约束的智能体自由对话会导致 Token 消耗呈超线性爆发，必须依靠明确的终止函数（is_termination_msg、max_consecutive_auto_reply）实现强行熔断。",
+    "projectApplicability": "直接支持本项目 SupervisorAgent 的调度与守护设计。其两级解耦思路（主管决策 vs 工人执行）完全适用于 Hermes。但其采用的全量历史广播机制必须坚决拒绝，本项目需采用黑板/单任务入参出参隔离，以防 Token 膨胀。",
+    "limitations": "论文缺乏生产级严苛 SLA 延迟约束；其 LLM 动态选发言人机制引入显著的不确定性与高首字延迟（TTFT），不适于确定性企业工作流。",
+    "readEvidence": [
+      {
+        "url": "https://arxiv.org/html/2308.08155",
+        "httpStatus": 200,
+        "sectionsRead": [
+          "Abstract",
+          "Introduction",
+          "Multi-Agent Framework",
+          "Discussion",
+          "Appendix B.1"
+        ],
+        "retrievedAt": "2026-10-22T21:37:43+08:00"
+      }
+    ]
+  },
+  {
+    "id": "MULTIAGENT-DEBATE-2023",
+    "sourceType": "paper",
+    "titleOrRepository": "Improving Factuality and Reasoning in Language Models through Multiagent Debate",
+    "authorsOrMaintainer": "Yilun Du, Shuang Li, Antonio Torralba, Joshua B. Tenenbaum, Igor Mordatch",
+    "venueAndYear": "ICML 2024 / arXiv 2023",
+    "doiOrArxiv": "arXiv:2305.14325",
+    "url": "https://arxiv.org/html/2305.14325",
+    "commitOrTag": "N/A",
+    "license": "CC BY-SA 4.0",
+    "filesOrSectionsRead": "Abstract, Section 1 (Introduction), Section 2 (Language Generation through Multiagent Debate - 2.1 Multiagent Generation, 2.2 Consensus in Debates), Section 3 (Experiments - 3.1 Reasoning, 3.2 Factuality, 3.3 Analysis of Number of Agents & Rounds of Debate), Section 4 (Related Work)",
+    "verificationStatus": "VERIFIED",
+    "relevantFinding": "在 GSM8K、MMLU 与事实问答中，多智能体对抗辩论相对单智能体带来 +8%~+18% 的推理与事实性提升。分析表明收益在 2-3 轮迅速达到平台期，4 轮以上边际收益递减。模型具有天然的随和妥协倾向（agreeable/sycophancy），容易陷入假共识（false consensus），必须通过提示词与角色立场对立引导思辨。",
+    "projectApplicability": "直接确立了本项目 DEBATE 编排策略的最小架构基准：固定 3 角色（正方 Proposer、反方 Critic、仲裁裁判 Judge），轮次严格锁死为 2 轮以内。证明了盲目增加轮次和 Agent 数对问答无益且导致成本和延迟不可控。",
+    "limitations": "论文仅在数学推理与静态问答基准上评估，未涵盖私有知识库 RAG 场景；当外部检索证据本身包含噪声时，辩论机制可能放大假证据并形成稳固的错误共识。",
+    "readEvidence": [
+      {
+        "url": "https://arxiv.org/html/2305.14325",
+        "httpStatus": 200,
+        "sectionsRead": [
+          "Abstract",
+          "Method: Multiagent Debate",
+          "Experiments",
+          "Debate Convergence Analysis"
+        ],
+        "retrievedAt": "2026-10-22T21:37:47+08:00"
+      }
+    ]
+  },
+  {
+    "id": "METAGPT-2023",
+    "sourceType": "paper",
+    "titleOrRepository": "MetaGPT: Meta Programming for A Multi-Agent Collaborative Framework",
+    "authorsOrMaintainer": "Sirui Hong, Mingchen Zhuge, Jonathan Chen, Xiawu Zheng, Yuheng Cheng, Ceyao Zhang, Jinlin Wang, Zili Wang, Steven Ka Shing Yau, Zijuan Lin, Liyang Zhou, Chenglin Chen, Liang Zhao, Lingpeng Kong, Jian Yang, Chenguang Li, Ping Luo",
+    "venueAndYear": "ICLR 2024 / arXiv 2023",
+    "doiOrArxiv": "arXiv:2308.00352",
+    "url": "https://arxiv.org/html/2308.00352",
+    "commitOrTag": "N/A",
+    "license": "Apache-2.0",
+    "filesOrSectionsRead": "Abstract, Section 1 (Introduction), Section 3 (MetaGPT: Meta-programming Framework - 3.1 SOPs, 3.2 Communication Protocol, Publish-Subscribe, 3.3 Iterative Programming), Section 4 (Experiments - HumanEval, MBPP, SoftwareDev, Ablation), Appendix D.1 (Limitations)",
+    "verificationStatus": "VERIFIED",
+    "relevantFinding": "将人类 SOP 编码进多智能体协作中，定义了严格的专业角色与强类型结构化产物契约（PRD/API Spec/Tasks）。利用基于消息观察与发布-订阅模式的环境共享记忆，避免了 O(N^2) 自由通信噪声，显著降低了多智能体级联幻觉，单项目开销压降至 zsh.20-.0。",
+    "projectApplicability": "印证了本项目 SupervisorAgent 中引入 （共享黑板）与 Java 21 Record 不可变凭单的设计哲学。多智能体绝不能靠自由文本漫谈，必须以结构化契约驱动各阶段输出。",
+    "limitations": "SOP 固化导致应对未预期的复杂变通任务时弹性不足；若首节点角色产出瑕疵契约，下游角色盲目遵从会导致不可逆的错误级联传播（Error Cascade）。",
+    "readEvidence": [
+      {
+        "url": "https://arxiv.org/html/2308.00352",
+        "httpStatus": 200,
+        "sectionsRead": [
+          "Abstract",
+          "SOP & Role-Play",
+          "Structured Communication Protocol",
+          "Ablation Study",
+          "Appendix D.1 Limitations"
+        ],
+        "retrievedAt": "2026-10-22T21:37:49+08:00"
+      }
+    ]
+  },
+  {
+    "id": "MOA-2024",
+    "sourceType": "paper",
+    "titleOrRepository": "Mixture-of-Agents Enhances Large Language Model Capabilities",
+    "authorsOrMaintainer": "Junlin Wang, Jue Wang, Ben Athiwaratkun, Ce Zhang, James Zou",
+    "venueAndYear": "NeurIPS 2024 / arXiv 2024",
+    "doiOrArxiv": "arXiv:2406.04692",
+    "url": "https://arxiv.org/html/2406.04692",
+    "commitOrTag": "N/A",
+    "license": "CC BY 4.0",
+    "filesOrSectionsRead": "Abstract, Section 1 (Introduction), Section 2 (Mixture-of-Agents Methodology - 2.1 Collaborativeness, 2.2 Architecture), Section 3 (Evaluation - AlpacaEval 2.0, MT-Bench, 3.3 What Makes MoA Work, 3.4 Budget and Token Analysis), Section 4 (Related Work)",
+    "verificationStatus": "VERIFIED",
+    "relevantFinding": "形式化提出了大模型“协作性（Collaborativeness）”假设：弱模型生成的候选响应能显著激发聚合模型产出高分答案（AlpacaEval 2.0 胜率 65.1%）。但 MoA 的多层网络导致输入 Token 随层数与智能体数激增 O(L * N * K)，首字延迟受限于最慢 Proposer。",
+    "projectApplicability": "为 SupervisorAgent 的  方法提供了理论支撑。同时约束我们在 Hermes 生产落地上绝不能采用多层重型 MoA（L >= 2），必须精简为单层浅层聚合（L=1, N <= 3），否则 P95 延迟与 Token 成本必破 3 倍红线。",
+    "limitations": "评测主要基于通用问答排行榜，未考察私有企业级高密度技术文档问答；上下文拼接过长易引发长文本“Lost in the Middle”效应。",
+    "readEvidence": [
+      {
+        "url": "https://arxiv.org/html/2406.04692",
+        "httpStatus": 200,
+        "sectionsRead": [
+          "Abstract",
+          "Method: MoA Architecture",
+          "Collaborativeness of LLMs",
+          "Budget and Token Analysis"
+        ],
+        "retrievedAt": "2026-10-22T21:37:52+08:00"
+      }
+    ]
+  },
+  {
+    "id": "LANGGRAPH-SUPERVISOR-2024",
+    "sourceType": "official-doc",
+    "titleOrRepository": "LangChain / LangGraph Multi-Agent Supervisor Official Architecture Guide & Repository",
+    "authorsOrMaintainer": "LangChain, Inc. (Harrison Chase, Eugene Yurtsev et al.)",
+    "venueAndYear": "LangChain Official Documentation 2024",
+    "doiOrArxiv": "N/A",
+    "url": "https://docs.langchain.com/oss/python/langchain/supervisor",
+    "commitOrTag": "langchain-ai/langgraph-supervisor@main",
+    "license": "MIT",
+    "filesOrSectionsRead": "Overview, Why use a supervisor?, Wrap sub-agents as tools, Understanding the architecture, Tool-calling hand-off pattern, State graph routing, Termination criteria",
+    "verificationStatus": "VERIFIED",
+    "relevantFinding": "权威架构演进：从“全量广播图状态”转向“将子智能体（Sub-agent）包装为 Tool 并由 Supervisor 进行 Tool-calling 调度”。该范式有效隔离了每个 Agent 内部的推理工具历史，Supervisor 仅接收最终结果摘要，实现精细化上下文工程与防膨胀。",
+    "projectApplicability": "为 Hermes 中  与  的工程解耦提供了官方工业级蓝图：Supervisor 应作为按 Bot 配置的顶级编排器，通过受控工具调用管理 Worker，严格隔离子任务状态。",
+    "limitations": "官方指出对于常规简单单步查询，引入 Supervisor 会额外增加至少 1-2 次完整 LLM 往返，导致响应延迟成倍放大；因此必须提供按 Bot 配置的开关机制，默认保持单 Agent 极速直通。",
+    "readEvidence": [
+      {
+        "url": "https://docs.langchain.com/oss/python/langchain/supervisor",
+        "httpStatus": 200,
+        "sectionsRead": [
+          "Supervisor Architecture Pattern",
+          "Wrap sub-agents as tools",
+          "Understanding the architecture"
+        ],
+        "retrievedAt": "2026-10-22T21:37:53+08:00"
+      }
+    ]
+  },
+  {
+    "id": "DEEPSEEK-API-DOCS-2026",
+    "sourceType": "official-doc",
+    "titleOrRepository": "DeepSeek 官方开发者文档：API 调用、推理模型与定价指南",
+    "authorsOrMaintainer": "杭州深度求索人工智能基础技术研究有限公司 (DeepSeek)",
+    "venueAndYear": "DeepSeek 官方文档 2026",
+    "doiOrArxiv": "N/A",
+    "url": "https://api-docs.deepseek.com/zh-cn/guides/reasoning_model",
+    "commitOrTag": "N/A",
+    "license": "Proprietary (Official Documentation)",
+    "filesOrSectionsRead": "Quick Start (Your First API Call, Models & Pricing), API Guides (Reasoning Model / Thinking Mode, Context Caching, Rate Limits & Error Codes)",
+    "verificationStatus": "VERIFIED",
+    "relevantFinding": "明确系统主力模型为 （DeepSeek-V4.1-Flash-1017）与 。提供了革命性的 Context Caching 机制：缓存命中输入价格（0.02-0.04元/百万tokens）仅为未命中价格（0.15-0.30元/百万tokens）的约 1/7。思考模式禁止配置非标准温度参数。",
+    "projectApplicability": "决定了本项目 SWARM 与 DEBATE 编排在实际落地中的成本护城河：只要保持 Supervisor 与 Debate 各角色的 System Prompt 及前置上下文严格前缀对齐，即可激活 Context Caching，使得多 Agent 多轮调用的实际成本远低于理论 3 倍预算限制。",
+    "limitations": "API 存在并发请求速率限制（Rate Limits）；若 SWARM 或 DEBATE 出现无节制的并发迸发，容易触碰 HTTP 429 限流，必须在工程层受控于信号量（LLM_CALL_SEMAPHORE）。",
+    "readEvidence": [
+      {
+        "url": "https://api-docs.deepseek.com/zh-cn/guides/reasoning_model",
+        "httpStatus": 200,
+        "sectionsRead": [
+          "DeepSeek-R1 / Reasoning Models API",
+          "Thinking Mode & Reasoning Content Output",
+          "Context Caching Pricing & Hit Rate Mechanism"
+        ],
+        "retrievedAt": "2026-10-22T21:37:59+08:00"
+      }
+    ]
+  }
+]
