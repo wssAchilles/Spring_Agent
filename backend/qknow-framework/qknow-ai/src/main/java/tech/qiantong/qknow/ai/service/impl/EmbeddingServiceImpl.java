@@ -2,6 +2,7 @@
 package tech.qiantong.qknow.ai.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
@@ -31,7 +32,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class EmbeddingServiceImpl implements IEmbeddingService {
 
+    private static final int TEXT_EMBEDDING_V4_DIMENSION = 1024;
+
     private final ConcurrentHashMap<String, EmbeddingModel> cache = new ConcurrentHashMap<>();
+
+    @Value("${qknow.embedding.dimension:0}")
+    private int configuredDimension;
 
     /**
      * 获取 向量化模型（带缓存）
@@ -49,11 +55,14 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
     }
 
     private EmbeddingModel createModel(String platForm, String baseUrl, String apiKey, String modelName) {
+        if (platForm == null) {
+            throw new ServiceException("不支持的向量平台: null");
+        }
         return switch (platForm) {
             case "OpenAI" -> this.getOpenAiModel(baseUrl, apiKey, modelName);
             case "TongYi" -> this.getDashScopeModel(baseUrl, apiKey, modelName);
             case "Ollama" -> this.getOllamaModel(baseUrl, modelName);
-            default -> this.getOpenAiModel(baseUrl, apiKey, modelName);
+            default -> throw new ServiceException("不支持的向量平台: " + platForm);
         };
     }
 
@@ -87,6 +96,12 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
         if (dashScopeBaseUrl.endsWith("/v1")) {
             dashScopeBaseUrl = dashScopeBaseUrl.substring(0, dashScopeBaseUrl.length() - 3);
         }
+        OpenAiEmbeddingOptions.Builder options = OpenAiEmbeddingOptions.builder()
+                .model(modelName);
+        Integer dimension = resolveDimension(modelName);
+        if (dimension != null) {
+            options.dimensions(dimension);
+        }
         return new OpenAiEmbeddingModel(
                 OpenAiApi.builder()
                         .baseUrl(dashScopeBaseUrl)
@@ -94,10 +109,17 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
                         .restClientBuilder(timeoutRestClientBuilder())
                         .build(),
                 MetadataMode.EMBED,
-                OpenAiEmbeddingOptions.builder()
-                        .model(modelName)
-                        .dimensions(1536)
-                        .build());
+                options.build());
+    }
+
+    private Integer resolveDimension(String modelName) {
+        if (configuredDimension > 0) {
+            return configuredDimension;
+        }
+        if (StrUtil.isNotBlank(modelName) && "text-embedding-v4".equalsIgnoreCase(modelName.trim())) {
+            return TEXT_EMBEDDING_V4_DIMENSION;
+        }
+        return null;
     }
 
     private RestClient.Builder timeoutRestClientBuilder() {

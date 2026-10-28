@@ -31,6 +31,7 @@ import tech.qiantong.qknow.module.kmc.dal.mapper.knowledgeSegment.KmcDocumentSeg
 import tech.qiantong.qknow.module.kmc.service.kmcDocument.IKmcDocumentService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeBase.IKmcKnowledgeBaseService;
 import tech.qiantong.qknow.module.kmc.service.knowledgeSegment.IKmcDocumentSegmentService;
+import tech.qiantong.qknow.module.kmc.service.rag.guard.EmbeddingDimensionGuard;
 import tech.qiantong.qknow.module.kmc.service.sync.ILuceneService;
 import tech.qiantong.qknow.thirdparty.domain.dify.enums.DocFormEnum;
 
@@ -58,6 +59,8 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
     private ILuceneService luceneService;
     @Resource
     private IKmcKnowledgeBaseService iKmcKnowledgeBaseService;
+    @Resource
+    private EmbeddingDimensionGuard embeddingDimensionGuard;
 
     @Override
     public PageResult<KmcDocumentSegmentDO> getKmcDocumentSegmentPage(KmcDocumentSegmentPageReqVO pageReqVO) {
@@ -422,6 +425,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
      */
     public void save2VectorStore(KmcKnowledgeBaseDO knowledgeBaseDO,
                                  KmcDocumentSegmentDO segmentDO, KmcDocumentDO documentDO) {
+        validateEmbeddingBeforeStore(knowledgeBaseDO, segmentDO);
         VectorStore vectorStore = getVectorStore(knowledgeBaseDO);
         Document document = segment2AiDocument(segmentDO, documentDO);
         List<Document> documentList = Collections.singletonList(document);
@@ -437,6 +441,7 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
     public void update2VectorStore(KmcKnowledgeBaseDO knowledgeBaseDO,
                                    KmcDocumentSegmentDO segmentDO,
                                    KmcDocumentDO documentDO) {
+        validateEmbeddingBeforeStore(knowledgeBaseDO, segmentDO);
         VectorStore vectorStore = getVectorStore(knowledgeBaseDO);
         Document document = segment2AiDocument(segmentDO, documentDO);
 
@@ -446,6 +451,24 @@ public class KmcDocumentSegmentServiceImpl extends ServiceImpl<KmcDocumentSegmen
         vectorStore.delete(expression);
 
         vectorStore.add(Collections.singletonList(document));
+    }
+
+    private void validateEmbeddingBeforeStore(KmcKnowledgeBaseDO knowledgeBaseDO, KmcDocumentSegmentDO segmentDO) {
+        if (embeddingDimensionGuard == null || segmentDO == null || segmentDO.getContent() == null) {
+            return;
+        }
+        try {
+            EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
+                    Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
+                    knowledgeBaseDO.getEmbeddingModel());
+            if (embeddingModel != null) {
+                float[] probe = embeddingModel.embed(segmentDO.getContent());
+                embeddingDimensionGuard.validateBeforeWrite(probe);
+            }
+        } catch (Exception e) {
+            log.error("[KmcDocumentSegmentService] 向量入库前维度或超球面范数校验阻断: {}", e.getMessage());
+            throw e;
+        }
     }
 
     private Document segment2AiDocument(KmcDocumentSegmentDO segmentDO, KmcDocumentDO documentDO) {
