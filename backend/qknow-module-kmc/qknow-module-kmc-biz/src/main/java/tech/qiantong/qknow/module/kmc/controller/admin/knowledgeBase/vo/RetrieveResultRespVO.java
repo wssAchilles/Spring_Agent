@@ -88,6 +88,9 @@ public class RetrieveResultRespVO {
     /** 来源 */
     private String source;
 
+    /** 多路命中与得分元数据 (Phase 13 / CODE-1 多路召回存证) */
+    private java.util.Map<String, Object> metadata;
+
     /** 调试信息 */
     private java.util.Map<String, Object> debugInfo;
 

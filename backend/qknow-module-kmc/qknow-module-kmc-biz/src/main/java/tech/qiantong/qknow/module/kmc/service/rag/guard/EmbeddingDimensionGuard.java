@@ -7,6 +7,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.ai.service.IEmbeddingDimensionProvider;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -23,9 +24,9 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class EmbeddingDimensionGuard {
+public class EmbeddingDimensionGuard implements IEmbeddingDimensionProvider {
 
-    /** 兼容回退值；实际维度由配置或数据库探测决定 */
+    /** 兼容回退值；用于无数据库/无配置的单测环境回退 */
     public static final int REQUIRED_DIMENSION = 1536;
     public static final String DEFAULT_MODEL_NAME = "text-embedding-v4";
     public static final String DEFAULT_PROVIDER = "dashscope";
@@ -44,9 +45,22 @@ public class EmbeddingDimensionGuard {
     private JdbcTemplate jdbcTemplate;
 
     /**
-     * 当前生效的向量维度：显式配置优先，其次启动探测值，最后回退 1536。
+     * 当前生效的向量维度：
+     * 1. 若配置与探测同时存在且不一致，触发 Fail-Close 异常阻断；
+     * 2. 若配置 > 0 则生效配置；
+     * 3. 若配置 <= 0，尝试从底层存储探测，若探测成功则生效探测值；
+     * 4. 否则回退 REQUIRED_DIMENSION (1536)。
      */
+    @Override
     public int getEffectiveDimension() {
+        if (configuredDimension <= 0 && detectedDimension <= 0 && jdbcTemplate != null) {
+            detectFromDatabase();
+        }
+        if (configuredDimension > 0 && detectedDimension > 0 && configuredDimension != detectedDimension) {
+            throw new IllegalStateException(String.format(
+                    "向量维度严重漂移！配置维度 [%d] 与底层存储物理维度 [%d] 不一致，系统强制 Fail-Close 阻断！",
+                    configuredDimension, detectedDimension));
+        }
         if (configuredDimension > 0) {
             return configuredDimension;
         }
@@ -54,6 +68,31 @@ public class EmbeddingDimensionGuard {
             return detectedDimension;
         }
         return REQUIRED_DIMENSION;
+    }
+
+    /**
+     * 主动从 vector_store 表探测物理维度
+     */
+    public synchronized void detectFromDatabase() {
+        if (jdbcTemplate == null) {
+            return;
+        }
+        try {
+            Integer tableExists = jdbcTemplate.queryForObject(
+                    "SELECT count(*) FROM information_schema.tables WHERE table_name = 'vector_store'",
+                    Integer.class);
+            if (tableExists != null && tableExists > 0) {
+                Integer actualDim = jdbcTemplate.queryForObject(
+                        "SELECT vector_dims(embedding) FROM vector_store WHERE embedding IS NOT NULL LIMIT 1",
+                        Integer.class);
+                if (actualDim != null && actualDim > 0) {
+                    detectedDimension = actualDim;
+                    log.info("[EmbeddingDimensionGuard] 主动探测 vector_store 物理维度成功: {}", detectedDimension);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[EmbeddingDimensionGuard] 主动探测底层 vector_store 物理维度忽略异常: {}", e.getMessage());
+        }
     }
 
     /**
@@ -124,35 +163,39 @@ public class EmbeddingDimensionGuard {
     }
 
     /**
-     * 启动期健康检查与物理对齐探测 (软失败安全保护)
+     * 启动期健康检查与物理对齐探测 (Fail-Close 强一致性防御)
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onStartupCheck() {
-        if (jdbcTemplate == null) {
-            return;
-        }
-        log.info("[EmbeddingDimensionGuard] 开始执行向量维度与模型基线对齐探测...");
         try {
-            Integer tableExists = jdbcTemplate.queryForObject(
-                    "SELECT count(*) FROM information_schema.tables WHERE table_name = 'vector_store'",
-                    Integer.class);
-            if (tableExists != null && tableExists > 0) {
-                Integer actualDim = jdbcTemplate.queryForObject(
-                        "SELECT vector_dims(embedding) FROM vector_store WHERE embedding IS NOT NULL LIMIT 1",
-                        Integer.class);
-                if (actualDim != null && actualDim > 0) {
-                    detectedDimension = actualDim;
-                }
-                int effective = getEffectiveDimension();
-                log.info("[EmbeddingDimensionGuard] vector_store 基线维度: effective={}, configured={}, detected={}",
-                        effective, configuredDimension, detectedDimension);
-                if (configuredDimension > 0 && detectedDimension > 0 && configuredDimension != detectedDimension) {
-                    log.error("[EmbeddingDimensionGuard] 配置维度 {} 与数据库实际维度 {} 不一致，检索将产生跨空间误差！",
-                            configuredDimension, detectedDimension);
-                }
+            if (jdbcTemplate != null) {
+                log.info("[EmbeddingDimensionGuard] 开始执行向量维度与模型基线对齐探测...");
+                detectFromDatabase();
             }
+            int effective = getEffectiveDimension();
+            log.info("[EmbeddingDimensionGuard] vector_store 基线维度: effective={}, configured={}, detected={}",
+                    effective, configuredDimension, detectedDimension);
+        } catch (IllegalStateException e) {
+            log.error("[EmbeddingDimensionGuard] 启动期物理维度不一致强拦截 (Fail-Close): {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.warn("[EmbeddingDimensionGuard] 启动探测忽略环境差异: {}", e.getMessage());
         }
+    }
+
+    public int getDetectedDimension() {
+        return detectedDimension;
+    }
+
+    public void setDetectedDimension(int detectedDimension) {
+        this.detectedDimension = detectedDimension;
+    }
+
+    public int getConfiguredDimension() {
+        return configuredDimension;
+    }
+
+    public void setConfiguredDimension(int configuredDimension) {
+        this.configuredDimension = configuredDimension;
     }
 }

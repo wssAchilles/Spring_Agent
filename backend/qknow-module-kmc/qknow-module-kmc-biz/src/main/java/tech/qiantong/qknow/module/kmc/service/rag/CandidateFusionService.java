@@ -69,11 +69,16 @@ public class CandidateFusionService {
 
         Map<Long, RetrievalResult> bestBySegment = new LinkedHashMap<>();
         Map<Long, Double> rrfScores = new HashMap<>();
+        Map<Long, List<String>> segmentMatchedPaths = new LinkedHashMap<>();
+        Map<Long, Map<String, Integer>> segmentPathRanks = new LinkedHashMap<>();
+        Map<Long, Map<String, Double>> segmentPathScores = new LinkedHashMap<>();
 
-        for (List<RetrievalResult> results : filtered) {
+        for (int i = 0; i < filtered.size(); i++) {
+            List<RetrievalResult> results = filtered.get(i);
             if (results == null || results.isEmpty()) {
                 continue;
             }
+            String pathName = (pathNames != null && i < pathNames.size()) ? pathNames.get(i) : null;
             for (int rank = 0; rank < results.size(); rank++) {
                 RetrievalResult result = results.get(rank);
                 Long segmentId = result.getSegmentId();
@@ -84,6 +89,17 @@ public class CandidateFusionService {
                 double rrfIncrement = 1.0 / (rrfK + rank + 1);
                 rrfScores.merge(segmentId, rrfIncrement, Double::sum);
 
+                String currentPath = (result.getSource() != null && !result.getSource().isBlank())
+                        ? result.getSource()
+                        : (pathName != null ? pathName : "path-" + i);
+
+                List<String> paths = segmentMatchedPaths.computeIfAbsent(segmentId, k -> new ArrayList<>());
+                if (!paths.contains(currentPath)) {
+                    paths.add(currentPath);
+                }
+                segmentPathRanks.computeIfAbsent(segmentId, k -> new LinkedHashMap<>()).put(currentPath, rank + 1);
+                segmentPathScores.computeIfAbsent(segmentId, k -> new LinkedHashMap<>()).put(currentPath, result.getScore());
+
                 RetrievalResult existing = bestBySegment.get(segmentId);
                 if (existing == null || result.getScore() > existing.getScore()) {
                     bestBySegment.put(segmentId, result);
@@ -93,6 +109,14 @@ public class CandidateFusionService {
 
         List<RetrievalResult> fused = new ArrayList<>(bestBySegment.size());
         for (Map.Entry<Long, RetrievalResult> entry : bestBySegment.entrySet()) {
+            Map<String, Object> meta = entry.getValue().getMetadata() != null
+                    ? new LinkedHashMap<>(entry.getValue().getMetadata())
+                    : new LinkedHashMap<>();
+            List<String> matched = segmentMatchedPaths.getOrDefault(entry.getKey(), List.of());
+            meta.put("matchedPaths", matched);
+            meta.put("pathRanks", segmentPathRanks.getOrDefault(entry.getKey(), Map.of()));
+            meta.put("pathScores", segmentPathScores.getOrDefault(entry.getKey(), Map.of()));
+
             RetrievalResult copy = RetrievalResult.builder()
                     .segmentId(entry.getValue().getSegmentId())
                     .qmSegmentId(entry.getValue().getQmSegmentId())
@@ -104,7 +128,7 @@ public class CandidateFusionService {
                     .score(rrfScores.getOrDefault(entry.getKey(), 0.0))
                     .scoreType(RetrievalResult.SCORE_TYPE_RRF)
                     .source(entry.getValue().getSource())
-                    .metadata(entry.getValue().getMetadata() != null ? new LinkedHashMap<>(entry.getValue().getMetadata()) : new LinkedHashMap<>())
+                    .metadata(meta)
                     .build();
             fused.add(copy);
         }

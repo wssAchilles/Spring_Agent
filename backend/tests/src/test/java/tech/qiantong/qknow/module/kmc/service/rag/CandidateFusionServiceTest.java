@@ -195,6 +195,35 @@ class CandidateFusionServiceTest {
         assertEquals(1, fused.size());
     }
 
+    @Test
+    @DisplayName("多路召回切片完整保留 matchedPaths 与 pathRanks 元数据")
+    @SuppressWarnings("unchecked")
+    void fuse_preservesMatchedPathsAndRanksInMetadata() {
+        // segmentId=100 同时被 keyword 和 vector 召回
+        RetrievalResult keywordHit = buildResult(100L, 12.5, "keyword");
+        RetrievalResult vectorHit = buildResult(100L, 0.82, "vector");
+
+        List<List<RetrievalResult>> input = List.of(List.of(keywordHit), List.of(vectorHit));
+        List<String> pathNames = List.of("keyword", "vector");
+
+        CandidateFusionService.FusionResult fusionResult = service.fuseWithDiagnostics(input, pathNames);
+        List<RetrievalResult> fused = fusionResult.getResults();
+
+        assertEquals(1, fused.size());
+        RetrievalResult top = fused.get(0);
+        assertNotNull(top.getMetadata());
+
+        List<String> matchedPaths = (List<String>) top.getMetadata().get("matchedPaths");
+        assertNotNull(matchedPaths);
+        assertTrue(matchedPaths.contains("keyword"));
+        assertTrue(matchedPaths.contains("vector"));
+
+        java.util.Map<String, Integer> ranks = (java.util.Map<String, Integer>) top.getMetadata().get("pathRanks");
+        assertNotNull(ranks);
+        assertEquals(1, ranks.get("keyword"));
+        assertEquals(1, ranks.get("vector"));
+    }
+
     private RetrievalResult buildResult(Long segmentId, double score, String source) {
         return RetrievalResult.builder()
                 .segmentId(segmentId)

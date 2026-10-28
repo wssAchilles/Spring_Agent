@@ -1,0 +1,193 @@
+{
+  "requestId": "req-cd6e28db-8075-4550-a8e1-69a2a989ba5a",
+  "timestamp": "2026-10-28 11:33:38",
+  "costMs": 1155.0798416137695,
+  "query": "Day 12 的日志记录如何区分已确认内容与待补充内容？",
+  "kbId": 1,
+  "topK": 7,
+  "results": [
+    {
+      "rank": 1,
+      "segmentId": "29071",
+      "documentId": "12",
+      "documentName": "Day12-CICD流水线搭建",
+      "score": 0.047712258380229994,
+      "scoreType": "RRF",
+      "source": "keyword",
+      "matchedPaths": [
+        "vector",
+        "keyword",
+        "metadata"
+      ],
+      "pathRanks": {
+        "vector": 7,
+        "keyword": 1,
+        "metadata": 1
+      },
+      "pathScores": {
+        "vector": 0.7499125599861145,
+        "keyword": 17.187591552734375,
+        "metadata": 10.0
+      },
+      "hasVectorContribution": true,
+      "contentSnippet": "这是文档的摘要部分，概括了Day 12工作日志的整体目标、方法特点和阶段性成果。它位于文档开头，为读者提供核心架构与记录策略的总览，后续各章节（如任务台账、问题"
+    },
+    {
+      "rank": 2,
+      "segmentId": "29081",
+      "documentId": "12",
+      "documentName": "Day12-CICD流水线搭建",
+      "score": 0.0451389124346464,
+      "scoreType": "RRF",
+      "source": "keyword",
+      "matchedPaths": [
+        "vector",
+        "keyword",
+        "metadata"
+      ],
+      "pathRanks": {
+        "vector": 2,
+        "keyword": 7,
+        "metadata": 11
+      },
+      "pathScores": {
+        "vector": 0.7685290575027466,
+        "keyword": 12.10381031036377,
+        "metadata": 10.0
+      },
+      "hasVectorContribution": true,
+      "contentSnippet": "本文档是 Day 12 技术工作日志，采用“已确认事实+待补充项”双轨记录策略。在完成日志目标、任务台账、问题分析、改动影响、验证保障、闭环追踪等核心章节后，1"
+    },
+    {
+      "rank": 3,
+      "segmentId": "29083",
+      "documentId": "12",
+      "documentName": "Day12-CICD流水线搭建",
+      "score": 0.044533544747991996,
+      "scoreType": "RRF",
+      "source": "keyword",
+      "matchedPaths": [
+        "vector",
+        "keyword",
+        "metadata"
+      ],
+      "pathRanks": {
+        "vector": 8,
+        "keyword": 2,
+        "metadata": 13
+      },
+      "pathScores": {
+        "vector": 0.7452793717384338,
+        "keyword": 15.015470504760742,
+        "metadata": 10.0
+      },
+      "hasVectorContribution": true,
+      "contentSnippet": "该文档是Day 12技术工作日志，采用“已确认事实+待补充项”双轨记录策略。当前输入信息不完整，主要集中在文档改造目标层面，而非业务执行证据层面。因此本章节先建"
+    },
+    {
+      "rank": 4,
+      "segmentId": "29072",
+      "documentId": "12",
+      "documentName": "Day12-CICD流水线搭建",
+      "score": 0.04451067477014181,
+      "scoreType": "RRF",
+      "source": "keyword",
+      "matchedPaths": [
+        "vector",
+        "keyword",
+        "metadata"
+      ],
+      "pathRanks": {
+        "vector": 9,
+        "keyword": 12,
+        "metadata": 2
+      },
+      "pathScores": {
+        "vector": 0.7344252467155457,
+        "keyword": 11.38710880279541,
+        "metadata": 10.0
+      },
+      "hasVectorContribution": true,
+      "contentSnippet": "文档摘要末尾列出关键词，随后进入目录页。该摘要总结了Day 12工作日志的目标——在信息不完整条件下建立可追溯、可审计的标准化记录体系，采用“已确认事实+待补充"
+    },
+    {
+      "rank": 5,
+      "segmentId": "29095",
+      "documentId": "12",
+      "documentName": "Day12-CICD流水线搭建",
+      "score": 0.04354276388991915,
+      "scoreType": "RRF",
+      "source": "keyword",
+      "matchedPaths": [
+        "vector",
+        "keyword",
+        "metadata"
+      ],
+      "pathRanks": {
+        "vector": 1,
+        "keyword": 5,
+        "metadata": 25
+      },
+      "pathScores": {
+        "vector": 0.780802845954895,
+        "keyword": 13.088289260864258,
+        "metadata": 10.0
+      },
+      "hasVectorContribution": true,
+      "contentSnippet": "该文档是 Day 12 技术工作日志的最终结论部分。在之前各节（1.1–1.9）中，文档已完成了日志目标定义、输入完整性检查、任务台账、报错分析、改动范围评估、"
+    },
+    {
+      "rank": 6,
+      "segmentId": "29094",
+      "documentId": "12",
+      "documentName": "Day12-CICD流水线搭建",
+      "score": 0.04316239316239316,
+      "scoreType": "RRF",
+      "source": "keyword",
+      "matchedPaths": [
+        "vector",
+        "keyword",
+        "metadata"
+      ],
+      "pathRanks": {
+        "vector": 5,
+        "keyword": 3,
+        "metadata": 24
+      },
+      "pathScores": {
+        "vector": 0.7578892111778259,
+        "keyword": 14.052413940429688,
+        "metadata": 10.0
+      },
+      "hasVectorContribution": true,
+      "contentSnippet": "Day 12 工作日志的核心目标是构建结构化记录体系，在信息不完整条件下确保可追溯、可审计。文档采用“已确认事实+待补充项”双轨策略，涵盖日志目标、任务台账、问"
+    },
+    {
+      "rank": 7,
+      "segmentId": "29082",
+      "documentId": "12",
+      "documentName": "Day12-CICD流水线搭建",
+      "score": 0.042919799498746865,
+      "scoreType": "RRF",
+      "source": "metadata",
+      "matchedPaths": [
+        "vector",
+        "keyword",
+        "metadata"
+      ],
+      "pathRanks": {
+        "vector": 3,
+        "keyword": 16,
+        "metadata": 12
+      },
+      "pathScores": {
+        "vector": 0.7645487785339355,
+        "keyword": 8.820403099060059,
+        "metadata": 10.0
+      },
+      "hasVectorContribution": true,
+      "contentSnippet": "This section marks the beginning of Chapter 1 (Day 12 Work Log), immediately fol"
+    }
+  ],
+  "vectorParticipatedCount": 7
+}

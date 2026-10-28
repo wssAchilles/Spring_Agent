@@ -96,4 +96,34 @@ class EmbeddingServiceImplTest {
         assertNotNull(options);
         assertNull(options.getDimensions());
     }
+
+    @Test
+    @DisplayName("接入 IEmbeddingDimensionProvider 时优先读取探测维度")
+    void dashScopeReadsFromDimensionProvider() {
+        EmbeddingServiceImpl service = new EmbeddingServiceImpl();
+        IEmbeddingDimensionProvider mockProvider = () -> 1024;
+        service.setDimensionProvider(mockProvider);
+
+        OpenAiEmbeddingModel model = (OpenAiEmbeddingModel) service.getEmbeddingModel(
+                "TongYi", null, "test-key", "text-embedding-v4");
+        OpenAiEmbeddingOptions options = (OpenAiEmbeddingOptions)
+                ReflectionTestUtils.getField(model, "defaultOptions");
+
+        assertNotNull(options);
+        assertEquals(1024, options.getDimensions());
+    }
+
+    @Test
+    @DisplayName("Provider 探测到维度不一致抛出异常时强行阻断")
+    void providerMismatchThrowsFailClose() {
+        EmbeddingServiceImpl service = new EmbeddingServiceImpl();
+        IEmbeddingDimensionProvider mismatchProvider = () -> {
+            throw new IllegalStateException("配置与底库维度冲突！");
+        };
+        service.setDimensionProvider(mismatchProvider);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                service.getEmbeddingModel("TongYi", null, "test-key", "text-embedding-v4"));
+        assertTrue(ex.getMessage().contains("配置与底库维度冲突"));
+    }
 }

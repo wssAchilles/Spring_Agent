@@ -1072,6 +1072,7 @@ public class KmcKnowledgeBaseServiceImpl extends ServiceImpl<KmcKnowledgeBaseMap
         vo.setScoreType(r.getScoreType() != null ? r.getScoreType() : RetrievalResult.SCORE_TYPE_RRF);
         vo.setWordCount(r.getContent() != null ? r.getContent().length() : 0);
         vo.setSource(r.getSource());
+        vo.setMetadata(r.getMetadata());
         return vo;
     }
 

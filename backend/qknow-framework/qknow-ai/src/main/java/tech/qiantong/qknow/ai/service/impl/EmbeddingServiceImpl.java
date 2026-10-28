@@ -2,6 +2,7 @@
 package tech.qiantong.qknow.ai.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -14,6 +15,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import tech.qiantong.qknow.ai.service.IEmbeddingDimensionProvider;
 import tech.qiantong.qknow.ai.service.IEmbeddingService;
 import tech.qiantong.qknow.common.exception.ServiceException;
 
@@ -38,6 +40,9 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
 
     @Value("${qknow.embedding.dimension:0}")
     private int configuredDimension;
+
+    @Autowired(required = false)
+    private IEmbeddingDimensionProvider dimensionProvider;
 
     /**
      * 获取 向量化模型（带缓存）
@@ -113,6 +118,12 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
     }
 
     private Integer resolveDimension(String modelName) {
+        if (dimensionProvider != null) {
+            int providerDim = dimensionProvider.getEffectiveDimension();
+            if (providerDim > 0) {
+                return providerDim;
+            }
+        }
         if (configuredDimension > 0) {
             return configuredDimension;
         }
@@ -120,6 +131,14 @@ public class EmbeddingServiceImpl implements IEmbeddingService {
             return TEXT_EMBEDDING_V4_DIMENSION;
         }
         return null;
+    }
+
+    public void setDimensionProvider(IEmbeddingDimensionProvider dimensionProvider) {
+        this.dimensionProvider = dimensionProvider;
+    }
+
+    public void setConfiguredDimension(int configuredDimension) {
+        this.configuredDimension = configuredDimension;
     }
 
     private RestClient.Builder timeoutRestClientBuilder() {

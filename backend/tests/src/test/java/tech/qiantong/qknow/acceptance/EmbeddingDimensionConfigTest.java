@@ -75,4 +75,29 @@ class EmbeddingDimensionConfigTest {
         assertDoesNotThrow(() -> guard.validateBeforeWrite(valid));
         assertThrows(IllegalArgumentException.class, () -> guard.validateBeforeWrite(invalid));
     }
+
+    @Test
+    @DisplayName("配置维度与底库实际维度冲突时触发 Fail-Close 阻断")
+    void mismatchBetweenConfiguredAndDetectedThrowsFailClose() {
+        EmbeddingDimensionGuard guard = new EmbeddingDimensionGuard();
+        guard.setConfiguredDimension(1536);
+        guard.setDetectedDimension(1024);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, guard::getEffectiveDimension);
+        assertTrue(ex.getMessage().contains("系统强制 Fail-Close 阻断"));
+
+        assertThrows(IllegalStateException.class, guard::onStartupCheck);
+    }
+
+    @Test
+    @DisplayName("未配置 (0) 时从底层存储探测维度成功并生效")
+    void zeroConfigUsesDetectedDimension() {
+        EmbeddingDimensionGuard guard = new EmbeddingDimensionGuard();
+        guard.setConfiguredDimension(0);
+        guard.setDetectedDimension(1024);
+
+        assertEquals(1024, guard.getEffectiveDimension());
+        assertDoesNotThrow(() -> guard.validateBeforeWrite(new float[1024]));
+        assertThrows(IllegalArgumentException.class, () -> guard.validateBeforeWrite(new float[1536]));
+    }
 }
