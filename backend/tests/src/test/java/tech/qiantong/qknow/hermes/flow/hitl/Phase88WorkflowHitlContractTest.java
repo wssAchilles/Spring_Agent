@@ -71,8 +71,8 @@ public class Phase88WorkflowHitlContractTest {
                 "wf_001", "main", "node_llm", "大模型生成节点",
                 snap2.snapshotId(), currentVars, "prompt", "report", emb0);
 
-        // JVM 预热消除冷启动与 GC 抖动
-        for (int w = 0; w < 100; w++) {
+        // JVM 预热消除冷启动与 GC 抖动（充分触发 JIT 内联编译）
+        for (int w = 0; w < 2000; w++) {
             manager.reconstructStateAtSnapshot(snap3.snapshotId());
         }
 

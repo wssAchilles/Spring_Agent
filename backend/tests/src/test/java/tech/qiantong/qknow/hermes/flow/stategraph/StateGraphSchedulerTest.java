@@ -249,8 +249,8 @@ class StateGraphSchedulerTest {
 
         graph.addStartNode("bench-node");
 
-        // 预热 JIT
-        for (int i = 0; i < 200; i++) {
+        // 预热 JIT（充分触发 C2 内联消除调度抖动）
+        for (int i = 0; i < 2000; i++) {
             StateGraphContext ctx = new StateGraphContext("bench-warmup-" + i, "benchmark-graph", 1);
             scheduler.execute(graph, ctx);
         }
