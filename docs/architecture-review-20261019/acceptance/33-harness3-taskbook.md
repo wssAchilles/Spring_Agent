@@ -1,8 +1,10 @@
 # Hermes Harness² 阶段三离线 Propose–Probe–Compose 实施任务书 (FROZEN TASKBOOK)
 
 > **任务书版本**：3.0.0-STAGE3-FROZEN  
-> **任务书状态**：`FROZEN`（待冻结签名写入）  
-> **正文冻结 SHA-256 签名**：`ef487d8cff8848d968946e3e833040f4724e3835e397f7975181087e764bdc14`  
+> **任务书状态**：FROZEN（已冻结）  
+> **正文冻结 SHA-256 签名**：`b45d056beaf803faa8eabe958645fd0f581b4ca5a1c10b5c98225041633ddf87`  
+> **正文签名复算命令**：`sed -n '/## 一、阶段三唯一待验证假设与契约基准/,$p' docs/architecture-review-20261019/acceptance/33-harness3-taskbook.md | shasum -a 256`  
+> **全文件校验文件**：`docs/architecture-review-20261019/acceptance/33-harness3-taskbook.md.sha256`  
 > **关联分支基线**：`feat/hermes-harness-stage2`（Commit `26c913e5`）  
 > **实施目标分支**：`feat/hermes-harness-stage3`  
 > **运行环境约束**：统一且唯一使用 SDKMAN 管理的 Java 21 隔离环境（`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`）  
