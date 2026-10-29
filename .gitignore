@@ -110,3 +110,4 @@ scripts/eval_suite/__pycache__
 __pycache__/
 *.pyc
 .codebase-memory/
+ASOC/
