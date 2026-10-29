@@ -22,8 +22,11 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.agent.guard.ReActCycleGuard;
+import tech.qiantong.qknow.hermes.agent.harness.HarnessEvidenceCollector;
+import tech.qiantong.qknow.hermes.agent.harness.HarnessEvidenceRecord;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessAssembler;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
+import tech.qiantong.qknow.hermes.agent.harness.MemoryContextStrategyRecord;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -117,6 +120,40 @@ public class AgentOrchestrator {
 
     public HermesHarnessAssembler getHarnessAssembler() {
         return harnessAssembler;
+    }
+
+    private final java.util.Map<String, HarnessEvidenceRecord> latestEvidenceMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, HermesHarnessVoucher> voucherOverrideMap = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public HarnessEvidenceRecord getLatestEvidence(String requestId) {
+        if (requestId == null) {
+            return null;
+        }
+        return latestEvidenceMap.get(requestId);
+    }
+
+    public void recordEvidence(HarnessEvidenceRecord evidence) {
+        if (evidence != null) {
+            latestEvidenceMap.put(evidence.requestId(), evidence);
+            if (latestEvidenceMap.size() > 100) {
+                java.util.Iterator<String> it = latestEvidenceMap.keySet().iterator();
+                if (it.hasNext()) {
+                    latestEvidenceMap.remove(it.next());
+                }
+            }
+        }
+    }
+
+    public void registerRequestVoucher(String requestId, HermesHarnessVoucher voucher) {
+        if (requestId != null && voucher != null) {
+            voucherOverrideMap.put(requestId, voucher);
+        }
+    }
+
+    public void unregisterRequestVoucher(String requestId) {
+        if (requestId != null) {
+            voucherOverrideMap.remove(requestId);
+        }
     }
 
     private tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService multiAgentOrchestrationService;
@@ -432,23 +469,42 @@ public class AgentOrchestrator {
         String[] toolNames = enabledToolNames.toArray(new String[0]);
         log.info("Agent 工具列表: {}", enabledToolNames);
 
-        // 5. 构建消息历史（优先从短期记忆读取，回退到关系库）
+        // 5. 构建不可变 Harness 凭单并由契约驱动运行时参数
+        String resolvedSystemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
+        HermesHarnessVoucher harnessVoucher = voucherOverrideMap.get(request.getRequestId());
+        if (harnessVoucher == null) {
+            harnessVoucher = harnessAssembler.createRequestVoucher(request.getBotId(), resolvedSystemPrompt);
+        }
+        final HermesHarnessVoucher effectiveVoucher = harnessVoucher;
+        final HarnessEvidenceCollector evidenceCollector = new HarnessEvidenceCollector(
+                request.getRequestId(), request.getBotId(), effectiveVoucher);
+        evidenceCollector.recordUserInput(request.getQuestion());
+
+        MemoryContextStrategyRecord memoryStrategy = effectiveVoucher.memoryContext();
+        int shortTermWindow = memoryStrategy.shortTermWindowSize();
+        int effectiveLongTermRecallTopK = memoryStrategy.longTermRecallTopK();
+
+        // 构建消息历史（受短期记忆窗口契约驱动）
         List<Message> messages = new ArrayList<>();
         if (memoryManager != null && hasCompleteIdentity(request)) {
             try {
                 String sessionId = memorySessionId(request);
-                List<Message> shortTermMessages = memoryManager.getShortTerm().getContext(sessionId, 20);
+                List<Message> shortTermMessages = memoryManager.getShortTerm().getContext(sessionId, shortTermWindow);
                 if (!shortTermMessages.isEmpty()) {
                     messages.addAll(shortTermMessages);
-                    log.debug("从短期记忆加载历史: sessionId={}, count={}", sessionId, shortTermMessages.size());
+                    log.debug("从短期记忆加载历史 (契约窗口={}): sessionId={}, count={}",
+                            shortTermWindow, sessionId, shortTermMessages.size());
                 }
             } catch (Exception e) {
                 log.debug("短期记忆读取失败，回退到关系库: {}", e.getMessage());
             }
         }
-        // Fallback: 若短期记忆为空（被打捞清理或未初始化），从关系库读取
+        // Fallback: 若短期记忆为空（被打捞清理或未初始化），从关系库读取（受短期窗口契约截断）
         if (messages.isEmpty()) {
-            for (ChatMessage historyMsg : request.getHistoryList()) {
+            List<ChatMessage> historyList = request.getHistoryList();
+            int startIdx = Math.max(0, historyList.size() - shortTermWindow);
+            for (int i = startIdx; i < historyList.size(); i++) {
+                ChatMessage historyMsg = historyList.get(i);
                 if ("user".equals(historyMsg.getRole())) {
                     messages.add(new UserMessage(historyMsg.getContent()));
                 } else if ("assistant".equals(historyMsg.getRole())) {
@@ -456,12 +512,12 @@ public class AgentOrchestrator {
                 }
             }
         }
-        // H11: 短期与关系库皆空时，召回长期记忆摘要
+        // H11: 短期与关系库皆空时，召回长期记忆摘要（受契约召回上限约束）
         if (messages.isEmpty() && longTermRecallOnEmpty && memoryManager != null
                 && hasCompleteIdentity(request)) {
             try {
                 List<org.springframework.ai.document.Document> longTermDocs =
-                        memoryManager.recallByScope(request.getQuestion(), memoryScope(request), longTermRecallTopK);
+                        memoryManager.recallByScope(request.getQuestion(), memoryScope(request), effectiveLongTermRecallTopK);
                 if (longTermDocs != null && !longTermDocs.isEmpty()) {
                     StringBuilder sb = new StringBuilder("相关历史记忆摘要：\n");
                     int n = 0;
@@ -471,13 +527,14 @@ public class AgentOrchestrator {
                             continue;
                         }
                         sb.append("- ").append(text).append('\n');
-                        if (++n >= longTermRecallTopK) {
+                        if (++n >= effectiveLongTermRecallTopK) {
                             break;
                         }
                     }
                     if (n > 0) {
                         messages.add(new UserMessage(sb.toString()));
-                        log.debug("长期记忆召回注入: scope={}, docs={}", memoryScope(request), n);
+                        log.debug("长期记忆召回注入 (契约TopK={}): scope={}, docs={}",
+                                effectiveLongTermRecallTopK, memoryScope(request), n);
                     }
                 }
             } catch (Exception e) {
@@ -487,12 +544,9 @@ public class AgentOrchestrator {
         recordUserMemory(request);
 
         // 6. 构建系统提示词：由不可变 Harness 凭单装配静态前缀，动态 RAG 只进入 UserMessage。
-        String resolvedSystemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
-        HermesHarnessVoucher harnessVoucher = harnessAssembler.createRequestVoucher(
-                request.getBotId(), resolvedSystemPrompt);
-        String systemPrompt = harnessAssembler.assembleSystemPrompt(harnessVoucher, tools);
-        final String harnessVersion = harnessVoucher.version();
-        final String harnessFingerprint = harnessVoucher.computeFingerprint();
+        String systemPrompt = harnessAssembler.assembleSystemPrompt(effectiveVoucher, tools);
+        final String harnessVersion = effectiveVoucher.version();
+        final String harnessFingerprint = effectiveVoucher.computeFingerprint();
         String plannerSupervision = createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
         if (StrUtil.isNotBlank(plannerSupervision)) {
             systemPrompt = systemPrompt + plannerSupervision;
@@ -504,15 +558,26 @@ public class AgentOrchestrator {
         // 动态 RAG 检索上下文挂载在当前轮次 User 消息前缀，杜绝污染全局 System 前缀
         String ragContextBlock = buildRagContextBlock(effectiveRagContexts, retrievalEvaluation);
         String finalUserPrompt = harnessAssembler.assembleUserMessageWithContext(
-                request.getQuestion(), ragContextBlock, harnessVoucher);
+                request.getQuestion(), ragContextBlock, effectiveVoucher);
         messages.add(new UserMessage(finalUserPrompt));
+
+        // 记录 RAG 物理执行证据
+        double ragTopScore = 0.0;
+        if (retrievalEvaluation != null) {
+            ragTopScore = retrievalEvaluation.getConfidence();
+        }
+        evidenceCollector.recordRagEvidence(effectiveRagContexts.size(), ragTopScore);
 
         String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, tools, chatModel);
         if (planAnswer != null) {
             fullAnswer.append(planAnswer);
             promptTokens.set(estimateTokenCount(request.getQuestion()));
             completionTokens.set(estimateTokenCount(planAnswer));
-            emitSingleAnswer(request, emitter, planAnswer, harnessVoucher);
+            evidenceCollector.recordFinalOutput(planAnswer);
+            evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+            recordEvidence(evidenceCollector.finalizeEvidence());
+            unregisterRequestVoucher(request.getRequestId());
+            emitSingleAnswer(request, emitter, planAnswer, effectiveVoucher);
             return;
         }
 
@@ -563,7 +628,11 @@ public class AgentOrchestrator {
             fullAnswer.append(orchestrationOutcome.answer());
             promptTokens.set(orchestrationOutcome.promptTokens());
             completionTokens.set(orchestrationOutcome.completionTokens());
-            emitSingleAnswer(request, emitter, orchestrationOutcome.answer(), harnessVoucher);
+            evidenceCollector.recordFinalOutput(orchestrationOutcome.answer());
+            evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+            recordEvidence(evidenceCollector.finalizeEvidence());
+            unregisterRequestVoucher(request.getRequestId());
+            emitSingleAnswer(request, emitter, orchestrationOutcome.answer(), effectiveVoucher);
             return;
         }
         boolean fallbackFromMultiAgent = orchestrationOutcome.fallbackTriggered();
@@ -573,7 +642,7 @@ public class AgentOrchestrator {
                 .name("hermes_agent")
                 .model(agentModel)
                 .hooks(ModelCallLimitHook.builder()
-                        .runLimit(harnessVoucher.guardrails().maxCycleSteps())
+                        .runLimit(effectiveVoucher.guardrails().maxCycleSteps())
                         .build())
                 .systemPrompt(systemPrompt)
                 .toolNames(toolNames)
@@ -656,6 +725,7 @@ public class AgentOrchestrator {
                                         .build());
                             } else if (type == OutputType.AGENT_TOOL_FINISHED) {
                                 log.info("工具调用完成: tool={}, status={}", output.node(), "success");
+                                evidenceCollector.recordToolExecution(output.node(), 0, true, "", "");
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
                                         .setToolInvoked(ToolInvoked.newBuilder()
@@ -682,8 +752,15 @@ public class AgentOrchestrator {
                         fullAnswer.append(recovered);
                         promptTokens.set(estimateTokenCount(request.getQuestion()));
                         completionTokens.set(estimateTokenCount(recovered));
-                        emitSingleAnswer(request, emitter, recovered, harnessVoucher);
+                        evidenceCollector.recordFinalOutput(recovered);
+                        evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+                        recordEvidence(evidenceCollector.finalizeEvidence());
+                        unregisterRequestVoucher(request.getRequestId());
+                        emitSingleAnswer(request, emitter, recovered, effectiveVoucher);
                     } else {
+                        evidenceCollector.recordFinalOutput("ERROR: " + (error.getMessage() != null ? error.getMessage() : "Agent execution error"));
+                        recordEvidence(evidenceCollector.finalizeEvidence());
+                        unregisterRequestVoucher(request.getRequestId());
                         emitter.next(ChatEvent.newBuilder()
                                 .setRequestId(request.getRequestId())
                                 .setError(ErrorEvent.newBuilder()
@@ -696,6 +773,10 @@ public class AgentOrchestrator {
                 },
                 () -> {
                     releaseReactCapacity.run();
+                    evidenceCollector.recordFinalOutput(fullAnswer.toString());
+                    evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+                    recordEvidence(evidenceCollector.finalizeEvidence());
+                    unregisterRequestVoucher(request.getRequestId());
                     emitter.next(ChatEvent.newBuilder()
                             .setRequestId(request.getRequestId())
                             .setDone(DoneSignal.newBuilder().build())
