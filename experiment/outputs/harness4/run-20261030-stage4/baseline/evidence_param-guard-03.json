@@ -1,0 +1,24 @@
+{
+	"botId":1001,
+	"estimatedCostCny":7.35E-4,
+	"estimatedTokens":490,
+	"evidenceId":"ev-test-probe-run-20261030-stage4-baseline-param-guard-03-e8e809db",
+	"executionDurationMs":18,
+	"finalOutputSummary":"时间参数纠错: 检测到非标准时间，已引导自纠 (基线冗余套话)",
+	"ragDocumentCount":1,
+	"ragTopScore":0.95,
+	"requestId":"probe-run-20261030-stage4-baseline-param-guard-03-e8e809db",
+	"timestamp":"2026-10-29T16:30:04.764851Z",
+	"toolExecutions":[
+		{
+			"durationMs":10,
+			"inputDigest":"in_hash_sample",
+			"outputDigest":"out_hash_sample",
+			"success":true,
+			"toolName":"calendar_event_creator"
+		}
+	],
+	"userInputSummary":"输入非标准日期格式参数，验证工具参数前置约束是否引导自纠降级。",
+	"voucherFingerprint":"v-base-fingerprint",
+	"voucherVersion":"1.0.0-BASE"
+}

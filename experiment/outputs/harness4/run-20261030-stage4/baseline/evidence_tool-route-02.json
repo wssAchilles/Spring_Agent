@@ -1,0 +1,24 @@
+{
+	"botId":1001,
+	"estimatedCostCny":7.5E-4,
+	"estimatedTokens":500,
+	"evidenceId":"ev-test-probe-run-20261030-stage4-baseline-tool-route-02-4a5be7ba",
+	"executionDurationMs":20,
+	"finalOutputSummary":"确定性兜底回答 (基线冗余套话)",
+	"ragDocumentCount":1,
+	"ragTopScore":0.95,
+	"requestId":"probe-run-20261030-stage4-baseline-tool-route-02-4a5be7ba",
+	"timestamp":"2026-10-29T16:30:04.763728Z",
+	"toolExecutions":[
+		{
+			"durationMs":10,
+			"inputDigest":"in_hash_sample",
+			"outputDigest":"out_hash_sample",
+			"success":true,
+			"toolName":"defaultTool"
+		}
+	],
+	"userInputSummary":"客户反映交易扣款成功但未生成凭单，请核查流水状态并查询结算账户余额。",
+	"voucherFingerprint":"v-base-fingerprint",
+	"voucherVersion":"1.0.0-BASE"
+}

@@ -17,29 +17,49 @@ public final class SelectionDataLeakageTripwire {
     private SelectionDataLeakageTripwire() {}
 
     /**
-     * 严禁进入模型的评委判词与结果标记清单（大小写不敏感）。
+     * 严禁进入模型的评委判词与结果标记清单（大小写不敏感，扩充至 24 个标记）。
      */
     public static final Set<String> GRADER_VERDICT_MARKERS = Set.of(
             "deterministic_eval_summary",
             "deterministic_eval_result",
             "judge_scope_and_deterministic_status",
+            "judge findings on the rendered result",
             "passed_count",
             "pass_rate",
             "test_pass_rate",
             "gold_rubric",
             "ground_truth_answer",
-            "qrels.tsv"
+            "qrels.tsv",
+            "expected_tool_call",
+            "gold_standard",
+            "rubric_score",
+            "eval_metric",
+            "leakage_marker",
+            "candidate_adoption_verdict",
+            "黄金标准",
+            "标准答案",
+            "评测通过率",
+            "得分判定",
+            "预期输出",
+            "期望工具调用",
+            "测试判词",
+            "采纳判决"
     );
 
     /**
-     * 严禁被上下文读取的敏感测试路径模式。
+     * 严禁被上下文读取的敏感测试路径模式（扩充至 10 个拦截模式）。
      */
     public static final List<String> SENSITIVE_PATH_PATTERNS = List.of(
             "/qrels",
             "/holdout/",
             "/expected/",
             "/rubrics/",
-            "/ground_truth/"
+            "/ground_truth/",
+            "/eval_cache/",
+            "/experiment/outputs/",
+            "/acceptance/",
+            "docs/architecture-review",
+            "target/surefire-reports/"
     );
 
     /**

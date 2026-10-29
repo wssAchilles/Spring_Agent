@@ -1,0 +1,24 @@
+{
+	"botId":1001,
+	"estimatedCostCny":8.25E-4,
+	"estimatedTokens":550,
+	"evidenceId":"ev-test-probe-run-20261030-stage4-baseline-ctx-history-04-1c3256a5",
+	"executionDurationMs":20,
+	"finalOutputSummary":"架构演进建议: 消除指代，采用 eBPF 绕过网络时延瓶颈 (基线冗余套话)",
+	"ragDocumentCount":1,
+	"ragTopScore":0.95,
+	"requestId":"probe-run-20261030-stage4-baseline-ctx-history-04-1c3256a5",
+	"timestamp":"2026-10-29T16:30:04.765533Z",
+	"toolExecutions":[
+		{
+			"durationMs":10,
+			"inputDigest":"in_hash_sample",
+			"outputDigest":"out_hash_sample",
+			"success":true,
+			"toolName":"defaultTool"
+		}
+	],
+	"userInputSummary":"针对前文提到的方案 A 的最担忧瓶颈，业界在网络数据面上有何绕过优化方案？",
+	"voucherFingerprint":"v-base-fingerprint",
+	"voucherVersion":"1.0.0-BASE"
+}

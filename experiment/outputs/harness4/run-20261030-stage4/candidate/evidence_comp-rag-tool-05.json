@@ -1,0 +1,24 @@
+{
+	"botId":1001,
+	"estimatedCostCny":6.9E-4,
+	"estimatedTokens":460,
+	"evidenceId":"ev-test-probe-run-20261030-stage4-candidate-comp-rag-tool-05-671101f3",
+	"executionDurationMs":20,
+	"finalOutputSummary":"确定性兜底回答 (精炼客观)",
+	"ragDocumentCount":1,
+	"ragTopScore":0.95,
+	"requestId":"probe-run-20261030-stage4-candidate-comp-rag-tool-05-671101f3",
+	"timestamp":"2026-10-29T16:30:04.768660Z",
+	"toolExecutions":[
+		{
+			"durationMs":10,
+			"inputDigest":"in_hash_sample",
+			"outputDigest":"out_hash_sample",
+			"success":true,
+			"toolName":"defaultTool"
+		}
+	],
+	"userInputSummary":"生成一份微服务架构演进评估报告，包含 4 列标准 Markdown 对比矩阵与 200 字总结。",
+	"voucherFingerprint":"v-cand-fingerprint",
+	"voucherVersion":"1.1.0-CAND"
+}

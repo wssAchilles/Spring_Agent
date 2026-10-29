@@ -1,0 +1,24 @@
+{
+	"botId":1001,
+	"estimatedCostCny":8.7E-4,
+	"estimatedTokens":580,
+	"evidenceId":"ev-test-probe-run-20261030-stage4-baseline-kb-qa-01-45cb57d1",
+	"executionDurationMs":22,
+	"finalOutputSummary":"中间件规范回答: 重试3次，退避2.0，幂等键使用SHA-256 (基线冗余套话)",
+	"ragDocumentCount":1,
+	"ragTopScore":0.95,
+	"requestId":"probe-run-20261030-stage4-baseline-kb-qa-01-45cb57d1",
+	"timestamp":"2026-10-29T16:30:04.657211Z",
+	"toolExecutions":[
+		{
+			"durationMs":10,
+			"inputDigest":"in_hash_sample",
+			"outputDigest":"out_hash_sample",
+			"success":true,
+			"toolName":"knowledgeBase_MiddleWare_Spec"
+		}
+	],
+	"userInputSummary":"请根据企业规范，查询订单支付系统的超时重试次数与幂等键生成规则。",
+	"voucherFingerprint":"v-base-fingerprint",
+	"voucherVersion":"1.0.0-BASE"
+}
