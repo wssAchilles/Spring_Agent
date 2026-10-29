@@ -210,8 +210,8 @@ public class ReflectiveMemoryCoordinator {
                 return Collections.emptyList();
             }
 
-            // MMR 多样性协同重排 Top-5
-            return scoringService.rerankByMMR(active, queryEmbedding, 5, 0.70, System.currentTimeMillis());
+            // Pareto 前沿与拥挤距离协同重排 Top-5
+            return scoringService.rerankByParetoFrontier(active, queryEmbedding, 5, System.currentTimeMillis());
         } catch (Exception ex) {
             log.warn("Episodic recall encounter error, falling back smoothly: {}", ex.getMessage());
             return Collections.emptyList();

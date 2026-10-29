@@ -109,3 +109,4 @@ scripts/eval_suite/__pycache__
 .venv/
 __pycache__/
 *.pyc
+.codebase-memory/

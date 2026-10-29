@@ -5,6 +5,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import tech.qiantong.qknow.hermes.memory.scoring.ParetoMemoryRanker;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -15,17 +16,11 @@ import java.util.*;
  * 遵循 Phase 21 理论与架构体系：
  * 1. 动态艾宾浩斯强化衰减模型 (Theorem 1.1 & 1.2)
  * 2. 实体关系图 2-Hop 激活扩散 (Theorem 2.1 ~ 2.3)
- * 3. 多目标 Pareto 排序与温度 Sigmoid 余弦标定 (Theorem 3.1 & 3.2)
- *    Score = 0.40 * Sim_cal + 0.25 * R(t) + 0.15 * Importance + 0.20 * C_graph
+ * 3. 多目标 Pareto 排序：校准相似度、动态留存、重要度与图关联度
  * 4. SHA-256 内容签名幂等防重
  */
 @Slf4j
 public class LongTermMemory {
-
-    private static final double WEIGHT_SIMILARITY = 0.40;
-    private static final double WEIGHT_DECAY = 0.25;
-    private static final double WEIGHT_IMPORTANCE = 0.15;
-    private static final double WEIGHT_GRAPH = 0.20;
 
     private static final double SIGMOID_TAU = 0.65;
     private static final double SIGMOID_TEMPERATURE = 0.15;
@@ -229,14 +224,17 @@ public class LongTermMemory {
 
         final Map<String, Double> finalGraphActivations = graphActivations;
 
-        // 按多目标 Pareto 综合评分重排序
-        mutable.sort((a, b) -> {
-            double scoreA = computeCompositeScore(a, finalGraphActivations);
-            double scoreB = computeCompositeScore(b, finalGraphActivations);
-            return Double.compare(scoreB, scoreA);
-        });
-
-        List<Document> topDocs = mutable.size() > topK ? mutable.subList(0, topK) : mutable;
+        // 保持检索候选与目标计算不变，以 Pareto 层级和前沿多样性替代固定加权排序。
+        List<ParetoMemoryRanker.ObjectiveVector<Document>> objectives = new ArrayList<>(mutable.size());
+        for (Document doc : mutable) {
+            double similarity = computeCalibratedSimilarity(doc);
+            double retention = computeRetention(doc);
+            double importance = getImportance(doc);
+            double graphRelevance = computeGraphRelevance(doc, finalGraphActivations);
+            objectives.add(new ParetoMemoryRanker.ObjectiveVector<>(doc,
+                    List.of(similarity, retention, importance, graphRelevance), similarity, 0.0, 0));
+        }
+        List<Document> topDocs = ParetoMemoryRanker.rankObjectivesTopK(objectives, topK);
 
         // 异步/内存唤醒强化更新
         reinforceRetrievedMemories(topDocs);
@@ -292,29 +290,10 @@ public class LongTermMemory {
         return results != null ? results : Collections.emptyList();
     }
 
-    /**
-     * 多目标 Pareto 综合评分函数 (Theorem 3.1 & 3.2):
-     * Score = 0.40 * Sim_cal + 0.25 * R(t) + 0.15 * Importance + 0.20 * C_graph
-     */
-    private double computeCompositeScore(Document doc, Map<String, Double> graphActivations) {
+    private double computeCalibratedSimilarity(Document doc) {
         double rawScore = doc.getScore() != null ? doc.getScore() : 0.0;
-        // 归一化余弦相似度并做温度 Sigmoid 标定
         double similarity = rawScore <= 1.0 && rawScore >= 0.0 ? rawScore : Math.max(0.0, 1.0 - Math.min(rawScore, 2.0) / 2.0);
-        double simCalibrated = 1.0 / (1.0 + Math.exp(-(similarity - SIGMOID_TAU) / SIGMOID_TEMPERATURE));
-
-        // 动态艾宾浩斯强化留存率 R(t)
-        double retention = computeRetention(doc);
-
-        // 重要度
-        double importance = getImportance(doc);
-
-        // 实体图谱 2-Hop 激活关联度
-        double cGraph = computeGraphRelevance(doc, graphActivations);
-
-        return WEIGHT_SIMILARITY * simCalibrated
-                + WEIGHT_DECAY * retention
-                + WEIGHT_IMPORTANCE * importance
-                + WEIGHT_GRAPH * cGraph;
+        return 1.0 / (1.0 + Math.exp(-(similarity - SIGMOID_TAU) / SIGMOID_TEMPERATURE));
     }
 
     private double computeRetention(Document doc) {

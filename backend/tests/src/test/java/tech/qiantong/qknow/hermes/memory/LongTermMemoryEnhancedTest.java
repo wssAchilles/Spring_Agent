@@ -54,7 +54,7 @@ class LongTermMemoryEnhancedTest {
     }
 
     @Test
-    @DisplayName("Theorem 3.1 验证：多目标重排单调可分离性，高关联核心历史记忆击败低相关新琐碎记忆")
+    @DisplayName("Pareto 重排保留历史关联记忆与近期记忆之间的目标权衡")
     void testMultiObjectiveRankingMonotonicity() {
         long now = System.currentTimeMillis();
         long thirtyDaysAgo = now - 30L * 86400000L;
@@ -74,8 +74,9 @@ class LongTermMemoryEnhancedTest {
 
         assertNotNull(ranked);
         assertEquals(2, ranked.size());
-        // 核心历史记忆 docA 凭借高相似度、强化留存率、高重要性与图谱激活度，应当逆转排在第 1 位
-        assertEquals(docA.getText(), ranked.get(0).getText(), "高价值核心记忆必须排在第一位，彻底消除时近偏见");
+        // docA 在相关性、重要性和图激活上占优，docB 在新近度上占优；两者互不支配，应同时保留。
+        assertTrue(ranked.stream().anyMatch(doc -> docA.getText().equals(doc.getText())));
+        assertTrue(ranked.stream().anyMatch(doc -> docB.getText().equals(doc.getText())));
     }
 
     @Test

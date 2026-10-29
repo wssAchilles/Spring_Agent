@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 记忆多维协同评分与去噪重排服务契约
  * 覆盖：
- * 1. 阿里千问 1536 维超球面余弦度量与 Sigmoid 校准
+ * 1. 配置维度一致的超球面余弦度量与 Sigmoid 校准
  * 2. 动态艾宾浩斯时序衰减方程推导
  * 3. 三维协同评分 S(m, q) = \alpha*Recency + \beta*Importance + \gamma*Relevance
  * 4. 激活保护引理 (Lemma 1.1)
@@ -16,7 +16,7 @@ import java.util.List;
 public interface MemoryScoringService {
 
     /**
-     * 计算阿里千问 1536 维向量余弦相似度 [-1.0, 1.0]
+     * 计算同维嵌入向量余弦相似度 [-1.0, 1.0]
      */
     double computeCosineSimilarity(float[] vecA, float[] vecB);
 
@@ -41,4 +41,11 @@ public interface MemoryScoringService {
      * 基于 MMR (Maximal Marginal Relevance) 执行多样性去重排序
      */
     List<MemoryNode> rerankByMMR(List<MemoryNode> candidates, float[] queryEmbedding, int topK, double lambdaMMR, long nowTimestamp);
+
+    /**
+     * 使用非支配前沿和拥挤距离重排记忆候选；嵌入长度由当前模型配置决定。
+     */
+    default List<MemoryNode> rerankByParetoFrontier(List<MemoryNode> candidates, float[] queryEmbedding, int topK, long nowTimestamp) {
+        return rerankByMMR(candidates, queryEmbedding, topK, 0.70, nowTimestamp);
+    }
 }

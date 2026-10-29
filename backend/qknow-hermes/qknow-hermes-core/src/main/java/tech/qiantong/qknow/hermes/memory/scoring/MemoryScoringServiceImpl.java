@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 记忆多维协同评分与去噪重排服务实现
  * 严格落实：
- * - 阿里千问 1536 维超球面归一化余弦相似度
+ * - 配置维度一致的超球面归一化余弦相似度
  * - 动态艾宾浩斯强化衰减抑制 \lambda(k)
  * - 三维协同检索得分方程 S(m, q)
  * - 激活保护引理 (Lemma 1.1)
@@ -142,5 +142,10 @@ public class MemoryScoringServiceImpl implements MemoryScoringService {
         }
 
         return selected;
+    }
+
+    @Override
+    public List<MemoryNode> rerankByParetoFrontier(List<MemoryNode> candidates, float[] queryEmbedding, int topK, long nowTimestamp) {
+        return ParetoMemoryRanker.rankTopK(candidates, queryEmbedding, topK, nowTimestamp, this);
     }
 }
