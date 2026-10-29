@@ -1,0 +1,122 @@
+{
+  "$id": "https://schemas.agentic-scientist.local/scientific-evidence/artifact-manifest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "source",
+            "derived",
+            "manuscript",
+            "figure",
+            "table",
+            "script",
+            "log",
+            "other"
+          ],
+          "type": "string"
+        },
+        "media_type": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "path": {
+          "description": "Path to the artifact relative to the scientific-evidence root when possible.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "sha256": {
+          "description": "Optional hash recorded when the producing workflow computes one.",
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "derived_from": {
+      "description": "Inline @evidence refs or stable ids describing the artifact inputs.",
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "generated_by": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "cwd": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "finished_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "script_path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "script_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "started_at": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "script_path"
+      ],
+      "type": "object"
+    },
+    "named_outputs": {
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "integer",
+          "boolean",
+          "array",
+          "object",
+          "null"
+        ]
+      },
+      "description": "Optional machine-readable outputs emitted by the derivation.",
+      "type": "object"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "schema_name": {
+      "const": "scientific-evidence.artifact-manifest"
+    }
+  },
+  "required": [
+    "schema_name",
+    "artifact",
+    "derived_from"
+  ],
+  "title": "Scientific Evidence Artifact Manifest",
+  "type": "object"
+}

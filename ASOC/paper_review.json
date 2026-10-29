@@ -1,0 +1,84 @@
+{
+  "status": "revise",
+  "summary": "The current manuscript is an internally reproducible, deliberately bounded kernel report with a synchronized exploratory LongMemEval raw-session proxy. The independent rerun reproduces the accepted proxy exactly, but the draft is not submission-ready: Pareto does not outperform the matched weighted-sum baseline, the evidence verifier does not interpret locator semantics, and author/declaration metadata remain placeholders.",
+  "strengths": [
+    "The independent rerun on the frozen dataset, contract, and script reproduces the accepted summary and both per-question CSVs byte-for-byte; ten built-in self-tests pass.",
+    "The manuscript clearly separates the four-objective production adapter, the three-objective node-only timing path, and the raw-session lexical proxy.",
+    "The LongMemEval result is reported honestly as Pareto 0.2529 versus weighted sum 0.2559 at macro Recall@5, with a descriptive -0.003 difference and no significance claim.",
+    "The manuscript explicitly disclaims Qwen-vector, compressed-summary, answer-quality, end-to-end latency, and production-safety conclusions, including the missing user-level vector filter.",
+    "LaTeX, citation, claim, figure, and Supplementary Information checks pass with zero dangling evidence links."
+  ],
+  "major_comments": [
+    {
+      "id": "submission-metadata-incomplete",
+      "section": "Front matter and declarations",
+      "issue": "The manuscript still contains anonymous or author-confirmation placeholders that are not suitable for a finalized submission.",
+      "evidence": [
+        "paper.tex uses `Anonymous authors`.",
+        "Funding, competing interest, and CRediT sections state that author confirmation is required.",
+        "paper_review_packet.md records that the draft remains a review version pending verified metadata."
+      ],
+      "requested_change": "Replace the anonymous author block and confirmation placeholders with verified author and declaration metadata for the non-blinded submission; retain the current form only for an explicitly blinded review draft."
+    },
+    {
+      "id": "evidence-locator-scope",
+      "section": "Evidence and reproducibility",
+      "issue": "The machine verifier confirms reachable evidence targets but does not interpret locator semantics, so anchored links do not independently prove that every numeric locator matches the cited field.",
+      "evidence": [
+        "scientific-evidence/verification-report.json classifies locator-bearing links as anchored and states that locator semantics were not interpreted.",
+        "paper_review_packet.md states that the principal values were manually cross-checked against the final logs and CSVs.",
+        "The independent rerun sidecars record the dataset, contract, script hashes and byte-identical per-question outputs."
+      ],
+      "requested_change": "Retain the verifier limitation and manual cross-check statement in the reproducibility section; do not describe anchored references as semantic machine verification."
+    },
+    {
+      "id": "bounded-evidence-positioning",
+      "section": "Title, abstract, and conclusion",
+      "issue": "The paper remains a roughly 3,500-word implementation and microbenchmark report with five cited sources, while the only external quality comparison is a lexical raw-session proxy in which Pareto is slightly worse than the matched baseline.",
+      "evidence": [
+        "paper_review_packet.md records approximately 3,500 TeX-counted words and five cited references.",
+        "paper.tex reports macro Recall@5 of 0.2529 for Pareto versus 0.2559 for weighted sum and explicitly rejects a superiority claim."
+      ],
+      "requested_change": "Keep the title, abstract, and conclusion framed as a bounded implementation/proxy study; do not present the manuscript as evidence of retrieval improvement or as a regular-paper quality benchmark."
+    }
+  ],
+  "minor_comments": [
+    {
+      "id": "production-safety-blocker",
+      "section": "Abstract, Limitations, and Conclusion",
+      "issue": "The vector-query path does not apply userId filtering, so tenant isolation is not established.",
+      "evidence": [
+        "paper.tex states that the vector query is not filtered by user identifier and that shared scopes may admit cross-user candidates.",
+        "paper_data.json and the review packet retain this as a production-safety blocker."
+      ],
+      "requested_change": "Keep this caveat prominent in any submission summary and require a separately authorized remediation and verification before production deployment."
+    },
+    {
+      "id": "coverage-scope",
+      "section": "Results and Supplementary Information",
+      "issue": "Coverage is class-level diagnostic evidence, not whole-project coverage.",
+      "evidence": [
+        "pareto-jacoco-report-post-coverage-fix.csv reports 100% instruction/branch/line/method coverage for ParetoMemoryRanker.",
+        "paper.tex explicitly labels the JaCoCo figures as class-level diagnostics.",
+        "paper_data.json and the packet do not claim module-wide coverage."
+      ],
+      "requested_change": "Preserve the class/module scope whenever coverage is summarized; do not shorten it to `100% coverage`."
+    },
+    {
+      "id": "layout-warnings",
+      "section": "Typesetting",
+      "issue": "Compilation succeeds, but duplicate hyperref page anchors and several overfull/underfull boxes remain.",
+      "evidence": [
+        "compile_latex.sh succeeds and validates rendered Supplementary Information, while the compile log reports duplicate page-anchor and box warnings."
+      ],
+      "requested_change": "Repair only if the target venue requires warning-free layout; these warnings do not currently invalidate the compiled draft."
+    }
+  ],
+  "questions": [
+    "Is this artifact intended for blinded review or final submission, and which verified author and declaration metadata should replace the placeholders?"
+  ],
+  "score": {
+    "value": 3,
+    "label": "weak_accept"
+  }
+}

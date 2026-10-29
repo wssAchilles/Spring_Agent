@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReferenceProvenance",
+  "type": "object",
+  "required": ["generated_at", "count", "queries", "references"],
+  "properties": {
+    "generated_at": {"type": "string"},
+    "count": {"type": "integer", "minimum": 0},
+    "queries": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "paper_id", "citation_key", "query", "source_url"],
+        "properties": {
+          "id": {"type": "string"},
+          "paper_id": {"type": "string"},
+          "citation_key": {"type": "string"},
+          "title": {"type": ["string", "null"]},
+          "year": {"type": ["integer", "null"]},
+          "venue": {"type": ["string", "null"]},
+          "citation_count": {"type": ["integer", "null"]},
+          "query": {"type": "string"},
+          "source_url": {"type": "string"},
+          "retrieved_at": {"type": "string"}
+        }
+      }
+    }
+  }
+}

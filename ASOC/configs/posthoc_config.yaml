@@ -1,0 +1,43 @@
+defaults:
+  - _self_
+
+agent:
+  name: claude
+  model: null
+  profile: null
+  reasoning_effort: null
+
+paths:
+  task_dir: ""
+  results_dir: ""
+  evidence_dir: null
+  output_dir: null
+
+execution:
+  bootstrap_timeout_seconds: 3600
+  bootstrap_max_attempts: 3
+  generation_timeout_seconds: 1800
+  selection_timeout_seconds: 1800
+  analysis_timeout_seconds: 3600
+  analysis_timeout_grace_seconds: 30
+  max_selected_analyses: 3
+  max_attempts_per_analysis: 3
+  primary_metric_key: null
+  primary_metric_tolerance: 0.01
+  retrain_if_checkpoint_missing: true
+  checkpoint_mode: required
+
+container:
+  enabled: false
+  image: "agentic-scientist/agent-cli:latest"
+  network: bridge
+  auth_root: "~"
+  env_file: ""
+
+logging:
+  format: human
+  verbose: false
+  heartbeat_seconds: 60
+  show_run_header: true
+
+run_id: null

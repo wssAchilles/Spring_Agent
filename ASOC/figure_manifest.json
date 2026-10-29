@@ -1,0 +1,48 @@
+{
+  "figures": [
+    {
+      "figure_id": "pareto_memory_overview",
+      "path_png": "figures/pareto_memory_overview.png",
+      "path_pdf": "figures/pareto_memory_overview.pdf",
+      "figure_type": "diagram",
+      "n_panels": 1,
+      "panels_per_row": 1,
+      "categories_per_panel": [4],
+      "series_per_panel": [1],
+      "max_label_chars": 84,
+      "font_sizes": {"title": 12, "axis": 10, "ticks": 10, "legend": 10},
+      "uses_abbrev_labels": false,
+      "uses_progression": false,
+      "generator": "matplotlib",
+      "attempted_generator": "generate-concept-figure",
+      "fallback_reason": "The preferred concept-figure workflow could not run because autoillustrate and drawio are absent and no enhancement credential is available. An initial manual SVG was visually malformed, so a readable deterministic matplotlib diagram replaced it.",
+      "prompt_log_path": null,
+      "source_ids": ["retrieval-ranking-implementation"],
+      "placement": "full_width",
+      "intended_latex_width_fraction": 1.0,
+      "estimated_min_rendered_font_pt": 9.5
+    },
+    {
+      "figure_id": "graphical_abstract",
+      "path_png": "figures/graphical_abstract.png",
+      "path_pdf": "figures/graphical_abstract.pdf",
+      "figure_type": "diagram",
+      "n_panels": 1,
+      "panels_per_row": 1,
+      "categories_per_panel": [4],
+      "series_per_panel": [1],
+      "max_label_chars": 78,
+      "font_sizes": {"title": 28, "axis": 16, "ticks": 13, "legend": 13},
+      "uses_abbrev_labels": false,
+      "uses_progression": false,
+      "generator": "manual",
+      "attempted_generator": "generate-concept-figure",
+      "fallback_reason": "The preferred concept-figure workflow was unavailable; a deterministic SVG/ImageMagick export was generated from paper_data.json.",
+      "prompt_log_path": null,
+      "source_ids": ["retrieval-ranking-implementation", "kernel-tests-final-14-post-coverage-fix"],
+      "placement": "full_width",
+      "intended_latex_width_fraction": 1.0,
+      "estimated_min_rendered_font_pt": 12
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "claims": [
+    {
+      "claim": "The targeted Java test suite passed 14 tests with zero failures and zero errors.",
+      "source_ids": ["kernel-tests-final-14-post-coverage-fix"],
+      "citation_keys": []
+    },
+    {
+      "claim": "The warmed N=1000, 1024-dimensional node-only kernel microbenchmark used nine samples and reported a median latency of 2.537 ms.",
+      "source_ids": ["kernel-tests-final-14-post-coverage-fix"],
+      "citation_keys": []
+    },
+    {
+      "claim": "JaCoCo reports 100% instruction, branch, line, and method coverage for ParetoMemoryRanker; this is not 100% project-wide coverage.",
+      "source_ids": ["pareto-ranker-jacoco-coverage-post-coverage-fix"],
+      "citation_keys": []
+    },
+    {
+      "claim": "The implementation applies Pareto ordering at the long-term-memory and episodic adapter boundaries while retaining existing candidate-generation and reinforcement mechanisms; selected memory objects may change.",
+      "source_ids": ["retrieval-ranking-implementation"],
+      "citation_keys": []
+    },
+    {
+      "claim": "The long-term-memory trade-off fixture has two candidates with topK=2 and asserts membership only; it does not exercise adapter truncation, assert order, or verify graph-activation effects.",
+      "source_ids": ["retrieval-ranking-implementation"],
+      "citation_keys": []
+    },
+    {
+      "claim": "The implementation has distinct document-level and node-level decay calculations; recall reinforcement is count-based and does not use semantic-association feedback in the strength update.",
+      "source_ids": ["retrieval-ranking-implementation"],
+      "citation_keys": []
+    },
+    {
+      "claim": "The generic non-dominated front builder has O(n^2 d) time and O(n^2 + n d) auxiliary space; the node-only first-front fast path is O(n log n), with a general fallback when the front is smaller than K.",
+      "source_ids": ["retrieval-ranking-implementation"],
+      "citation_keys": ["deb2002nsga2"]
+    },
+    {
+      "claim": "NSGA-II provides non-dominated sorting and crowding-distance mechanisms, but does not establish memory-retrieval gains for this system.",
+      "source_ids": ["doi:10.1109/4235.996017"],
+      "citation_keys": ["deb2002nsga2"]
+    },
+    {
+      "claim": "On the corrected frozen LongMemEval-S raw-session lexical proxy, Pareto macro Recall@5 is 0.2528667 versus 0.2558667 for the fixed weighted-sum baseline, a descriptive difference of -0.003.",
+      "source_ids": ["longmemeval-session-rerank-run-v2-20261029"],
+      "citation_keys": ["wu2024longmemeval", "perez2009bm25lucene"]
+    },
+    {
+      "claim": "The paired descriptive outcomes comprise 1 Pareto win, 496 ties, and 3 weighted-sum wins; shared session IDs connect all 500 questions into one component, so the manuscript reports no question-level significance test.",
+      "source_ids": ["longmemeval-session-rerank-run-v2-20261029"],
+      "citation_keys": ["wu2024longmemeval"]
+    },
+    {
+      "claim": "The LongMemEval experiment uses raw sessions with a BM25 lexical proxy, timestamp-derived retention, and importance fixed at zero; it does not measure Qwen-vector or generated-summary retrieval.",
+      "source_ids": ["longmemeval-session-rerank-run-v2-20261029"],
+      "citation_keys": ["wu2024longmemeval", "perez2009bm25lucene"]
+    },
+    {
+      "claim": "The source data contains 13 questions with repeated non-qrel session IDs and 75 future-dated qrel labels; strict-cutoff sensitivity retains unavailable labels as misses.",
+      "source_ids": ["longmemeval-session-rerank-run-v2-20261029"],
+      "citation_keys": ["wu2024longmemeval"]
+    },
+    {
+      "claim": "An independent rerun passed ten built-in self-tests, reproduced the accepted dataset/results/interpretation, and generated full and strict-cutoff per-question CSVs byte-identical to the accepted execution.",
+      "source_ids": ["longmemeval-session-rerank-reproduction-20261029"],
+      "citation_keys": []
+    }
+  ]
+}

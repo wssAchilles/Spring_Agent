@@ -1,0 +1,77 @@
+{
+  "generated_at": "2026-10-28T16:24:07+00:00",
+  "count": 5,
+  "queries": [],
+  "references": [
+    {
+      "id": "doi:10.48550/arXiv.2305.10250",
+      "paper_id": "10.48550/arXiv.2305.10250",
+      "citation_key": "zhong2023memorybank",
+      "title": "MemoryBank: Enhancing Large Language Models with Long-Term Memory",
+      "year": 2023,
+      "venue": "arXiv preprint arXiv:2305.10250",
+      "citation_count": null,
+      "query": "N/A — original search query not retained",
+      "source_url": "https://arxiv.org/html/2305.10250",
+      "retrieved_at": "N/A — original retrieval timestamp not retained",
+      "verificationStatus": "VERIFIED",
+      "filesOrSectionsRead": "Sections 1-4 and 6"
+    },
+    {
+      "id": "doi:10.18653/v1/2022.acl-long.356",
+      "paper_id": "10.18653/v1/2022.acl-long.356",
+      "citation_key": "xu2022goldfish",
+      "title": "Beyond Goldfish Memory: Long-Term Open-Domain Conversation",
+      "year": 2022,
+      "venue": "Proceedings of ACL",
+      "citation_count": null,
+      "query": "N/A — original search query not retained",
+      "source_url": "https://aclanthology.org/2022.acl-long.356/",
+      "retrieved_at": "N/A — original retrieval timestamp not retained",
+      "verificationStatus": "VERIFIED",
+      "filesOrSectionsRead": "Sections 1 and 3-6"
+    },
+    {
+      "id": "doi:10.48550/arXiv.2410.10813",
+      "paper_id": "10.48550/arXiv.2410.10813",
+      "citation_key": "wu2024longmemeval",
+      "title": "LongMemEval: Benchmarking Chat Assistants on Long-Term Interactive Memory",
+      "year": 2024,
+      "venue": "arXiv preprint arXiv:2410.10813",
+      "citation_count": null,
+      "query": "N/A — original search query not retained",
+      "source_url": "https://arxiv.org/html/2410.10813",
+      "retrieved_at": "N/A — original retrieval timestamp not retained",
+      "verificationStatus": "VERIFIED",
+      "filesOrSectionsRead": "Sections 1-5 and Appendices C-E"
+    },
+    {
+      "id": "doi:10.1109/4235.996017",
+      "paper_id": "10.1109/4235.996017",
+      "citation_key": "deb2002nsga2",
+      "title": "A Fast and Elitist Multiobjective Genetic Algorithm: NSGA-II",
+      "year": 2002,
+      "venue": "IEEE Transactions on Evolutionary Computation",
+      "citation_count": null,
+      "query": "N/A — original search query not retained",
+      "source_url": "https://doi.org/10.1109/4235.996017",
+      "retrieved_at": "N/A — original retrieval timestamp not retained",
+      "verificationStatus": "PARTIALLY_VERIFIED",
+      "filesOrSectionsRead": "Abstract and publicly available text of Sections III-IV and VII"
+    },
+    {
+      "id": "doi:10.48550/arXiv.0911.5046",
+      "paper_id": "10.48550/arXiv.0911.5046",
+      "citation_key": "perez2009bm25lucene",
+      "title": "Integrating the Probabilistic Model BM25/BM25F into Lucene",
+      "year": 2009,
+      "venue": "arXiv preprint arXiv:0911.5046",
+      "citation_count": null,
+      "query": "Recorded in the experiment-specific Research Ledger",
+      "source_url": "https://arxiv.org/html/0911.5046",
+      "retrieved_at": "2026-10-29",
+      "verificationStatus": "VERIFIED",
+      "filesOrSectionsRead": "Full HTML source; Abstract; Introduction; Included Models; BM25 scoring equation, IDF equation, and parameter description"
+    }
+  ]
+}

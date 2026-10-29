@@ -1,0 +1,20 @@
+{
+  "schema_name": "scientific-evidence.artifact-manifest",
+  "artifact": {
+    "path": "figures/pareto_memory_overview.png",
+    "kind": "figure",
+    "media_type": "image/png",
+    "sha256": "2e37fc8842df445497f4903bdb8442c4b9295ee762abb23b04c4c8a9b72bee15"
+  },
+  "derived_from": [
+    "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+    "@evidence[[figures/make_pareto_overview.py]]"
+  ],
+  "generated_by": {
+    "script_path": "figures/make_pareto_overview.py",
+    "command": ["python3", "figures/make_pareto_overview.py"],
+    "cwd": ".",
+    "script_sha256": "1cf752f59bf7463bbba6a065441590817bd620f0f132c659acd380a3c52967e1"
+  },
+  "notes": "Deterministic matplotlib fallback after generate-concept-figure prerequisites were unavailable; PNG export is 300 DPI. The figure is an implementation overview, not a quantitative result."
+}

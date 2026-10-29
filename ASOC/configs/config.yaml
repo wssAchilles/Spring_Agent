@@ -1,0 +1,104 @@
+# Base defaults for the investigation CLI (agsci investigate).
+# Override with Hydra CLI overrides (key=value).
+
+defaults:
+  - _self_
+
+run_id: null
+
+agent:
+  name: claude
+  model: null
+  profile: null
+  reasoning_effort: null
+  pool: []
+  models: {}
+
+paths:
+  task_dir: examples/circpack
+  results_dir: null
+  global_memory_dir: null
+  shared_memory_dir: null
+  conclusions_dir: null
+  instruct: null
+  paper_instruct: null
+  paper_contributions: null
+  seed_program: null
+
+execution:
+  max_idea_cycles: 20
+  workers: 1
+  resume: false
+  draft_task_if_missing: false
+  task_only: false
+  max_program_evals_per_attempt: 4
+  harness_evaluated_attempts: false
+  gpu_evaluation: false
+  run_timeout_seconds: 21600
+  harness_evaluation_timeout_seconds: 7200
+  idea_timeout_seconds: 3600
+  max_idea_generation_attempts: 2
+  run_timeout_grace_seconds: 30
+  prune_every_n_cycles: 0
+  parallel_fail_fast: false
+  worker_index: 0
+  cycle_offset: 0
+  total_cycles: 0
+  # Sync isolation for ablation; this does not sandbox host worker filesystem access.
+  isolate_worker_memory: false
+
+task_drafting:
+  workflow: robust
+  design_max_repairs: 8
+  contract_max_repairs: 3
+  smoke_max_repairs: 3
+  smoke_max_infrastructure_attempts: 3
+  alignment_max_repairs: 10
+  qualification_max_repairs: 4
+  agent_transient_max_attempts: 4
+  qualification_max_infrastructure_attempts: 3
+  production_entry_timeout_seconds: 300
+  max_gate_checks_per_repair: 12
+  max_runtime_bytes: 17179869184
+  draft_max_attempts: 3
+  evaluator_smoke_timeout_seconds: 1800
+
+paper:
+  enabled: false
+  profile: default
+  two_stage: false
+  # External post-publication reviewer. Set to openai to send the final manuscript for review.
+  ai_review: disabled
+  # Planned review/repair cycles during the paper workflow, including when validation is still failing. Each cycle runs review, then a text-only manuscript repair pass.
+  review_rounds: 0
+  # Shared cap for paper draft repairs and post-draft integrity repair loops.
+  max_repair_rounds: 10
+  timeout_seconds: 7200
+  timeout_grace_seconds: 30
+  min_refs: 8
+  max_refs: 15
+
+container:
+  enabled: false
+  image: "agentic-scientist/agent-cli:latest"
+  network: bridge
+  auth_root: "~"
+  env_file: ""
+  gpu_count: 0
+
+logging:
+  format: human
+  verbose: false
+  heartbeat_seconds: 60
+  show_run_header: true
+
+versioning:
+  enabled: true                   # commit the run dir to a hidden sidecar git repo
+  run_root: null                  # null -> paths.results_dir
+  git_dir_name: .agentic_history  # sibling sidecar suffix; outside the agent run mount
+  max_file_bytes: 0               # 0 = no size cap
+  max_total_bytes: 17179869184    # 16 GiB aggregate cap; 0 disables
+  timeout_seconds: 600
+  tag_checkpoints: true
+  final_include_environments: false
+  finalize_on_exit: true            # pipeline children override false; parent owns final snapshot

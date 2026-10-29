@@ -1,0 +1,18 @@
+{
+  "bundle_root": "/Users/achilles/Documents/\u8bb8\u5b50\u797a/Agent/ASOC/scientific-evidence",
+  "generated_at": "2026-10-29T04:18:06.669903+00:00",
+  "ledger_path": "ledger.jsonl",
+  "schema_name": "scientific-evidence.schema-bundle",
+  "schemas": {
+    "artifact-manifest": "schemas/artifact-manifest.schema.json",
+    "evidence-reference": "schemas/evidence-reference.schema.json",
+    "ledger-entry": "schemas/ledger-entry.schema.json",
+    "verification-report": "schemas/verification-report.schema.json"
+  },
+  "spec_markdown": "spec.md",
+  "verification_statuses": [
+    "resolved",
+    "anchored",
+    "dangling"
+  ]
+}

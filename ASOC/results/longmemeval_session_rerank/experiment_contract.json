@@ -1,0 +1,76 @@
+{
+  "contract_version": 3,
+  "experiment_id": "longmemeval_s_raw_session_pareto_vs_weighted_sum_v2",
+  "hypothesis": "On the complete LongMemEval-S raw-session candidate set, Pareto Top-K has higher macro session-level Recall@5 than the fixed weighted scalar baseline when both methods receive identical lexical-relevance proxy, retention, and importance features.",
+  "data": {
+    "path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+    "sha256": "d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442",
+    "candidate_identity": "candidate entries are keyed by list position and aligned across haystack_session_ids, haystack_sessions, and haystack_dates; retain repeated non-qrel IDs as separate dated candidates; each qrel ID must map to exactly one candidate position per question",
+    "qrel": "answer_session_ids",
+    "questions": 500,
+    "qrel_labels": 948,
+    "split": "none; all question/session-overlap component; exploratory descriptive evaluation only"
+  },
+  "candidate_features": {
+    "lexical_relevance_proxy": {
+      "name": "BM25 raw-session lexical score",
+      "tokenizer": "lowercase ASCII alphanumeric tokens via regex [a-z0-9]+; all conversation message contents concatenated; no stopword filtering; distinct query terms",
+      "k1": 2.0,
+      "b": 0.75,
+      "idf": "ln((N - df + 0.5) / (df + 0.5)); term score includes Lucene's (k1+1) multiplier",
+      "unit_mapping": "max(0, bm25) / (1 + max(0, bm25))"
+    },
+    "retention": {
+      "equation": "exp(-lambda0 * max(0, question_date - session_date)_days / (1 + eta * ln(1 + access_count)))",
+      "lambda0": 0.05,
+      "eta": 0.5,
+      "access_count": 0,
+      "timestamp_rule": "as_of cutoff time is question_date; future-dated sessions have zero age in the full-haystack primary analysis"
+    },
+    "importance": {
+      "value": 0.0,
+      "reason": "LongMemEval has no importance feature; use the Java MemoryNode primitive double default and do not infer labels"
+    },
+    "graph_relevance": "omitted; the selected production analogue is the three-objective MemoryNode route"
+  },
+  "methods": {
+    "pareto": {
+      "objectives_maximized": ["retention", "lexical_relevance_proxy", "importance"],
+      "selection": "non-dominated fronts; normalized crowding distance with objective-boundary infinity; descending lexical relevance tie-break; stable input order thereafter",
+      "top_k": [5, 10]
+    },
+    "weighted_sum_baseline": {
+      "equation": "0.25 * retention + 0.35 * importance + 0.40 * lexical_relevance_proxy",
+      "source": "MemoryScoringServiceImpl.computeCompositeScore production constants; importance=0 means the activation floor does not apply",
+      "selection": "descending score; stable input order for exact ties",
+      "top_k": [5, 10]
+    }
+  },
+  "primary_analysis": {
+    "candidate_universe": "all haystack sessions provided for each question; original answer_session_ids retained",
+    "metrics": ["macro Recall@5", "micro Recall@5", "macro Recall@10", "micro Recall@10", "macro nDCG@5", "Hit@5", "Precision@5"],
+    "primary_metric": "macro Recall@5",
+    "stratification": "question_type descriptive aggregates; no hypothesis tests",
+    "inference": "descriptive paired deltas only; no p-values, confidence intervals, or independent-question claims"
+  },
+  "sensitivity_analysis": {
+    "candidate_universe": "exclude sessions with haystack_date > question_date",
+    "qrels": "do not change or filter the original answer_session_ids; unavailable qrels count as misses",
+    "purpose": "expose temporal-cutoff sensitivity; not the primary benchmark setting"
+  },
+  "leakage_controls": [
+    "Answers and qrels are accessed only by the final metric aggregation, never by candidate features or rank computation.",
+    "No query split, parameter tuning, or qrel modification is performed; the scoring implementation was corrected before the frozen analysis was accepted and the preliminary run is retained only as invalidated diagnostic output.",
+    "All candidates for a question are shared exactly between the two ranking methods; repeated non-qrel candidate IDs are retained by position and not deduplicated.",
+    "Question/session overlap counts each session ID once per question; each qrel ID must map to exactly one candidate position, and metric hits are unique by session ID.",
+    "The complete LongMemEval-S set is one connected component under shared candidate session IDs; question-level significance tests are prohibited."
+  ],
+  "resources": {
+    "execution": "local CPU, Python standard library only",
+    "network": "none during experiment execution",
+    "paid_api_calls": 0,
+    "gpu": 0,
+    "source_data_mutation": false
+  },
+  "reproduction_command": "python3 results/longmemeval_session_rerank/run_experiment.py --data data/external/longmemeval/longmemeval_s_cleaned.json --contract results/longmemeval_session_rerank/experiment_contract.json --output results/longmemeval_session_rerank/run_v2"
+}

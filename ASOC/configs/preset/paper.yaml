@@ -1,0 +1,36 @@
+# @package _global_
+# Shared campaign preset: the pipeline settings every paper-experiment run used. Task presets (configs/preset/<task>.yaml) compose
+# this file and state only what differs for that task.
+#
+# Select a task preset with `agsci run examples/<task> preset=<task>`.
+# Run-time values (run_id, agent, container image, GPU allocation, resume state)
+# stay CLI overrides on top of the preset.
+agent:
+  reasoning_effort: high
+
+execution:
+  phases: task_drafting,investigation,ablations,final_evaluation,posthoc,paper,review,revision
+
+investigation:
+  execution:
+    max_idea_cycles: 20
+    max_idea_generation_attempts: 1
+    max_program_evals_per_attempt: 2
+    idea_timeout_seconds: 3000
+    run_timeout_seconds: 21600
+    harness_evaluated_attempts: true
+
+ablations:
+  execution:
+    num_replications: 1
+    max_evals_per_variant: 1
+    # Two-hour ablation deadlines, as in the campaign runs (the variants default).
+    variant_timeout_seconds: 7200
+    cross_task_timeout_seconds: 7200
+
+paper:
+  paper_format: iclr
+  final_outcome_policy: allow_not_qualified
+
+versioning:
+  final_include_environments: false

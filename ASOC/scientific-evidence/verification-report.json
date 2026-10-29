@@ -1,0 +1,1486 @@
+{
+  "results": [
+    {
+      "locator": "results",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "implementation_details.objective_counts",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#implementation_details.objective_counts]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "limitations",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#limitations]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "implementation_details.objective_counts",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#implementation_details.objective_counts]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "paper_data.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[figures/make_graphical_abstract.py]]",
+      "resolved_path": "figures/make_graphical_abstract.py",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_graphical_abstract.py",
+      "target": "figures/make_graphical_abstract.py"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "figures/make_pareto_overview.py",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "Tests run: 14, Failures: 0, Errors: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#Tests run: 14, Failures: 0, Errors: 0]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "pareto_n1000_embedding1024_median_ms=2.537",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#pareto_n1000_embedding1024_median_ms=2.537]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[figures/graphical_abstract.png.prov.json]]",
+      "resolved_path": "figures/graphical_abstract.png.prov.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "figures/graphical_abstract.png.prov.json"
+    },
+    {
+      "locator": "results.full",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#results.full]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "hypothesis",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#hypothesis]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results.n1000_embedding_dimensions",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results.n1000_embedding_dimensions]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results.n1000_median_latency_ms",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results.n1000_median_latency_ms]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "pareto_n1000_embedding1024_sorted_samples_ns",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#pareto_n1000_embedding1024_sorted_samples_ns]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json.prov.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json"
+    },
+    {
+      "locator": "dataset",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#dataset]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "locator": "Tests run: 14, Failures: 0, Errors: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#Tests run: 14, Failures: 0, Errors: 0]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "results",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results.full",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#results.full]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "ParetoMemoryRanker",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/pareto-jacoco-report-post-coverage-fix.csv#ParetoMemoryRanker]]",
+      "resolved_path": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv"
+    },
+    {
+      "locator": "Tests run: 14, Failures: 0, Errors: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#Tests run: 14, Failures: 0, Errors: 0]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results.full",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#results.full]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "locator": "results.pareto_ranker_coverage_percent",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results.pareto_ranker_coverage_percent]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "ParetoMemoryRanker",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/pareto-jacoco-report-post-coverage-fix.csv#ParetoMemoryRanker]]",
+      "resolved_path": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv"
+    },
+    {
+      "locator": "pareto_n1000_embedding1024_median_ms=2.537",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#pareto_n1000_embedding1024_median_ms=2.537]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "results.n1000_median_latency_ms",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results.n1000_median_latency_ms]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results.full",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#results.full]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "locator": "results.asof",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#results.asof]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "locator": "results.full",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#results.full]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json.prov.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json"
+    },
+    {
+      "locator": "limitations",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#limitations]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "locator": "interpretation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_v2/summary.json#interpretation]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "locator": "limitations",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#limitations]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.test-compilation-diagnostic-20261029",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.test-compilation-diagnostic-20261029]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "limitations",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#limitations]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/kernel/core-compile-post-coverage-fix.log]]",
+      "resolved_path": "results/kernel/core-compile-post-coverage-fix.log",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/core-compile-post-coverage-fix.log"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-integration-fix.log]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-integration-fix.log",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-integration-fix.log"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/kernel/pareto-jacoco-report-post-coverage-fix.csv]]",
+      "resolved_path": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[paper_data.json]]",
+      "resolved_path": "paper_data.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json"
+    },
+    {
+      "locator": "Tests run: 3, Failures: 0, Errors: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#Tests run: 3, Failures: 0, Errors: 0]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "Tests run: 8, Failures: 0, Errors: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#Tests run: 8, Failures: 0, Errors: 0]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "Tests run: 14, Failures: 0, Errors: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#Tests run: 14, Failures: 0, Errors: 0]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation.locators.long_term_integration_tests]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "hypothesis",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#hypothesis]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "results",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "limitations",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#limitations]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "paper.tex",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "Tests run: 14, Failures: 0, Errors: 0, Skipped: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#Tests run: 14, Failures: 0, Errors: 0, Skipped: 0]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "results/kernel/README.md",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "pareto_n1000_embedding1024_median_ms=2.537",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/memory-tests-final-14-post-coverage-fix.log#pareto_n1000_embedding1024_median_ms=2.537]]",
+      "resolved_path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "results/kernel/README.md",
+      "target": "results/kernel/memory-tests-final-14-post-coverage-fix.log"
+    },
+    {
+      "locator": "Tests run: 14, Failures: 0, Errors: 0, Skipped: 0",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/pareto-coverage-post-coverage-fix.log#Tests run: 14, Failures: 0, Errors: 0, Skipped: 0]]",
+      "resolved_path": "results/kernel/pareto-coverage-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "results/kernel/README.md",
+      "target": "results/kernel/pareto-coverage-post-coverage-fix.log"
+    },
+    {
+      "locator": "ParetoMemoryRanker",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/pareto-jacoco-report-post-coverage-fix.csv#ParetoMemoryRanker]]",
+      "resolved_path": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "results/kernel/README.md",
+      "target": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv"
+    },
+    {
+      "locator": "BUILD SUCCESS",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[results/kernel/core-compile-post-coverage-fix.log#BUILD SUCCESS]]",
+      "resolved_path": "results/kernel/core-compile-post-coverage-fix.log",
+      "status": "anchored",
+      "subject_kind": "text-artifact",
+      "subject_path": "results/kernel/README.md",
+      "target": "results/kernel/core-compile-post-coverage-fix.log"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+      "resolved_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "status": "resolved",
+      "subject_kind": "text-artifact",
+      "subject_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "target": "data/external/longmemeval/longmemeval_s_cleaned.json"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "figures/graphical_abstract.png",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "figures/graphical_abstract.png"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "figures/graphical_abstract.png",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "figures/graphical_abstract.png"
+    },
+    {
+      "locator": "results",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#results]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "implementation_details.objective_counts",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#implementation_details.objective_counts]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "paper_data.json"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "paper_data.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[figures/make_graphical_abstract.py]]",
+      "resolved_path": "figures/make_graphical_abstract.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "figures/make_graphical_abstract.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "figures/make_graphical_abstract.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "figures/make_graphical_abstract.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "figures/make_graphical_abstract.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/graphical_abstract.png.prov.json",
+      "target": "figures/make_graphical_abstract.py"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "figures/pareto_memory_overview.png",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/pareto_memory_overview.png.prov.json",
+      "target": "figures/pareto_memory_overview.png"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "figures/pareto_memory_overview.png",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/pareto_memory_overview.png.prov.json",
+      "target": "figures/pareto_memory_overview.png"
+    },
+    {
+      "locator": "grounding_sources.retrieval-ranking-implementation",
+      "messages": [
+        "Target path exists, but locator semantics were not interpreted by the base verifier."
+      ],
+      "raw_reference": "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+      "resolved_path": "paper_data.json",
+      "status": "anchored",
+      "subject_kind": "manifest",
+      "subject_path": "figures/pareto_memory_overview.png.prov.json",
+      "target": "paper_data.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[figures/make_pareto_overview.py]]",
+      "resolved_path": "figures/make_pareto_overview.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/pareto_memory_overview.png.prov.json",
+      "target": "figures/make_pareto_overview.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "figures/make_pareto_overview.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/pareto_memory_overview.png.prov.json",
+      "target": "figures/make_pareto_overview.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "figures/make_pareto_overview.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "figures/pareto_memory_overview.png.prov.json",
+      "target": "figures/make_pareto_overview.py"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+      "resolved_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "target": "data/external/longmemeval/longmemeval_s_cleaned.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+      "resolved_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "target": "data/external/longmemeval/longmemeval_s_cleaned.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+      "resolved_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "target": "data/external/longmemeval/longmemeval_s_cleaned.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+      "resolved_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv.prov.json",
+      "target": "data/external/longmemeval/longmemeval_s_cleaned.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_asof_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+      "resolved_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv.prov.json",
+      "target": "data/external/longmemeval/longmemeval_s_cleaned.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/per_question_metrics.csv.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "Manifest artifact.path exists."
+      ],
+      "raw_reference": "<artifact.path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<artifact.sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_v2/summary.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+      "resolved_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "target": "data/external/longmemeval/longmemeval_s_cleaned.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+      "resolved_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/experiment_contract.json"
+    },
+    {
+      "messages": [
+        "Target path exists."
+      ],
+      "raw_reference": "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "messages": [
+        "generated_by.script_path exists."
+      ],
+      "raw_reference": "<generated_by.script_path>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    },
+    {
+      "hash_checked": true,
+      "messages": [
+        "Recorded sha256 matches file contents."
+      ],
+      "raw_reference": "<generated_by.script_sha256>",
+      "resolved_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "status": "resolved",
+      "subject_kind": "manifest",
+      "subject_path": "results/longmemeval_session_rerank/run_v2/summary.json.prov.json",
+      "target": "results/longmemeval_session_rerank/run_experiment.py"
+    }
+  ],
+  "root_dir": "/Users/achilles/Documents/\u8bb8\u5b50\u797a/Agent/ASOC",
+  "schema_name": "scientific-evidence.verification-report",
+  "summary": {
+    "anchored_references": 59,
+    "dangling_references": 0,
+    "manifests_checked": 8,
+    "resolved_references": 68,
+    "total_references": 127
+  },
+  "verified_at": "2026-10-29T07:23:46.353378+00:00"
+}

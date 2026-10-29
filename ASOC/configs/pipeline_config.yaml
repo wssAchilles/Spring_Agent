@@ -1,0 +1,57 @@
+# End-to-end pipeline orchestrator config.
+# Chains: task drafting -> investigation (agsci investigate) -> ablations (variants
+#         pipeline) -> final evaluation -> post-hoc analysis -> paper (paper.sh).
+#
+# Every pipeline-owned key, type, default, and description lives on the
+# dataclasses in src/pipeline/config.py; `python -m src.pipeline.cli --help`
+# prints them all. Hydra composes this file onto that schema, so it only states
+# values that intentionally differ from a default.
+#
+# Each phase's own stage config is composed into that phase's package, so every
+# stage key is addressable as <phase>.<stage key> without being re-declared:
+#   investigation.execution.isolate_worker_memory=true   (investigation CLI, configs/config.yaml)
+#   ablations.execution.max_ablations=5                 (configs/variants_config.yaml)
+#   posthoc.execution.max_selected_analyses=2           (configs/posthoc_config.yaml)
+#   paper.paper_review_rounds=2                         (paper.sh, configs/paper_config.yaml)
+# Only keys whose value differs from the stage's own default are forwarded.
+# Keys the pipeline derives itself (paths, run id, agent, container, logging,
+# versioning) are rejected with a message naming the pipeline key to use.
+#
+# Override with Hydra CLI overrides, e.g.:
+#   python -m src.pipeline.cli task.dir=examples/circpack execution.dry_run=true
+# Reproduce a campaign run with its checked-in preset:
+#   python -m src.pipeline.cli preset=grpo task.dir=examples/grpo
+
+defaults:
+  - pipeline_schema
+  - config@investigation
+  - variants_config@ablations
+  - posthoc_config@posthoc
+  - paper_config@paper
+  - _self_
+  # Optional task preset (configs/preset/<task>.yaml), selected with preset=<task>;
+  # listed after _self_ so preset values override this file's orchestrator defaults.
+  - preset: null
+
+# Where the orchestrator wants a different default than the stage itself.
+investigation:
+  execution:
+    max_idea_cycles: 3                # investigation default: 20
+    max_program_evals_per_attempt: 1  # investigation default: 4
+
+ablations:
+  execution:
+    num_replications: 5               # variants default: 1
+    max_evals_per_variant: 5          # variants default: 2
+    # null -> the variants default (7200)
+    variant_timeout_seconds: null
+    cross_task_timeout_seconds: null
+
+posthoc:
+  container:
+    network: bridge                   # narrower than container.network; host only when required
+
+paper:
+  paper_min_refs: 25                  # paper.sh default: 8
+  paper_max_refs: 30                  # paper.sh default: 15
+  standalone_paper: true              # paper.sh default: false

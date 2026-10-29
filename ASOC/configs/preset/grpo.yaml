@@ -1,0 +1,13 @@
+# @package _global_
+# Preset for examples/grpo; composes the shared paper campaign preset.
+defaults:
+  - paper
+  - _self_
+
+investigation:
+  execution:
+    gpu_evaluation: true
+
+container:
+  # GPUs the task requires; the pipeline checks AGENT_CONTAINER_GPUS against it.
+  gpu_count: 2

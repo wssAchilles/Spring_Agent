@@ -1,0 +1,83 @@
+{
+  "$id": "https://schemas.agentic-scientist.local/scientific-evidence/ledger-entry.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entry_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "entry_kind": {
+      "enum": [
+        "artifact",
+        "claim",
+        "figure",
+        "table",
+        "verification",
+        "note"
+      ],
+      "type": "string"
+    },
+    "evidence_refs": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "description": "Open payload for workflow-specific metadata.",
+      "type": "object"
+    },
+    "recorded_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "schema_name": {
+      "const": "scientific-evidence.ledger-entry"
+    },
+    "subject": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "artifact",
+            "claim",
+            "manifest",
+            "verification",
+            "other"
+          ],
+          "type": "string"
+        },
+        "locator": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "kind"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_name",
+    "entry_id",
+    "entry_kind",
+    "subject",
+    "evidence_refs",
+    "recorded_at"
+  ],
+  "title": "Scientific Evidence Ledger Entry",
+  "type": "object"
+}

@@ -1,0 +1,33 @@
+{
+  "schema_name": "scientific-evidence.artifact-manifest",
+  "artifact": {
+    "path": "results/longmemeval_session_rerank/reproduction_check_20261029/per_question_metrics.csv",
+    "kind": "derived",
+    "media_type": "text/csv",
+    "sha256": "9f76ee61eef2b55e9a4d30a3bdf72b8d18861a2be4a71b0850d9999b84f32563"
+  },
+  "derived_from": [
+    "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+    "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+    "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]"
+  ],
+  "generated_by": {
+    "script_path": "results/longmemeval_session_rerank/run_experiment.py",
+    "script_sha256": "213fec47eead17b53152d19921cdc5cb90b4faa8344a5b2e2df16c412c5e9123",
+    "cwd": "ASOC",
+    "command": [
+      "python3",
+      "results/longmemeval_session_rerank/run_experiment.py",
+      "--data",
+      "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "--contract",
+      "results/longmemeval_session_rerank/experiment_contract.json",
+      "--output",
+      "results/longmemeval_session_rerank/reproduction_check_20261029",
+      "--self-test"
+    ],
+    "started_at": "2026-10-29T13:59:52+08:00",
+    "finished_at": "2026-10-29T14:00:03+08:00"
+  },
+  "notes": "Per-question outcomes from the independent rerun; byte-identical to run_v2/per_question_metrics.csv."
+}

@@ -1,0 +1,277 @@
+{
+  "metadata": {
+    "experiment_id": "longmemeval_s_raw_session_pareto_vs_weighted_sum_v2",
+    "started_at": "2026-10-29T12:51:32+08:00",
+    "finished_at": "2026-10-29T12:51:44+08:00",
+    "elapsed_seconds": 11.66148675000295,
+    "python_version": "3.11.6",
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "command": "python3 results/longmemeval_session_rerank/run_experiment.py --data data/external/longmemeval/longmemeval_s_cleaned.json --contract results/longmemeval_session_rerank/experiment_contract.json --output results/longmemeval_session_rerank/run_v2",
+    "data_path": "data/external/longmemeval/longmemeval_s_cleaned.json",
+    "data_sha256": "d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442",
+    "contract_sha256": "f930d35fa3feaa08aa887730743a00c7f7ae669e92b782ca2921fb95deb0db71",
+    "script_path": "/Users/achilles/Documents/许子祺/Agent/ASOC/results/longmemeval_session_rerank/run_experiment.py",
+    "script_sha256": "213fec47eead17b53152d19921cdc5cb90b4faa8344a5b2e2df16c412c5e9123",
+    "output_files": [
+      "per_question_metrics.csv",
+      "per_question_asof_metrics.csv",
+      "summary.json"
+    ],
+    "network_calls": 0,
+    "paid_api_calls": 0,
+    "source_data_modified": false
+  },
+  "dataset": {
+    "questions": 500,
+    "qrel_labels": 948,
+    "unique_session_ids": 19195,
+    "session_occurrences": 23867,
+    "session_question_pairs": 23854,
+    "session_ids_shared_across_questions": 3932,
+    "max_questions_per_session": 6,
+    "candidate_duplicate_occurrences": 13,
+    "questions_with_duplicate_candidate_ids": 13,
+    "question_overlap_components": 1,
+    "questions_with_future_dated_candidates": 76,
+    "future_dated_qrel_labels": 75,
+    "questions_with_future_dated_qrel": 44,
+    "questions_with_no_asof_gold": 20,
+    "asof_available_qrel_labels": 873,
+    "asof_micro_recall_ceiling_at_infinite_k": 0.9208860759493671,
+    "sha256": "d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442"
+  },
+  "results": {
+    "full": {
+      "pareto": {
+        "5": {
+          "macro_recall": 0.2528666666666667,
+          "micro_recall": 0.22046413502109705,
+          "macro_ndcg": 0.21224865040764607,
+          "macro_precision": 0.08360000000000001,
+          "hit_rate": 0.376,
+          "queries": 500,
+          "qrel_labels": 948
+        },
+        "10": {
+          "macro_recall": 0.37643333333333334,
+          "micro_recall": 0.3449367088607595,
+          "macro_ndcg": null,
+          "macro_precision": 0.0654,
+          "hit_rate": 0.546,
+          "queries": 500,
+          "qrel_labels": 948
+        }
+      },
+      "weighted": {
+        "5": {
+          "macro_recall": 0.2558666666666667,
+          "micro_recall": 0.22257383966244726,
+          "macro_ndcg": 0.21370015483054167,
+          "macro_precision": 0.0844,
+          "hit_rate": 0.378,
+          "queries": 500,
+          "qrel_labels": 948
+        },
+        "10": {
+          "macro_recall": 0.37643333333333334,
+          "micro_recall": 0.3449367088607595,
+          "macro_ndcg": null,
+          "macro_precision": 0.0654,
+          "hit_rate": 0.546,
+          "queries": 500,
+          "qrel_labels": 948
+        }
+      },
+      "paired_recall5": {
+        "mean_delta_pareto_minus_weighted": -0.003,
+        "pareto_wins": 1,
+        "ties": 496,
+        "weighted_wins": 3
+      },
+      "macro_recall_by_question_type": {
+        "knowledge-update": {
+          "pareto": {
+            "5": 0.30128205128205127,
+            "10": 0.38461538461538464
+          },
+          "weighted": {
+            "5": 0.30128205128205127,
+            "10": 0.38461538461538464
+          }
+        },
+        "multi-session": {
+          "pareto": {
+            "5": 0.1548872180451128,
+            "10": 0.2669172932330827
+          },
+          "weighted": {
+            "5": 0.1548872180451128,
+            "10": 0.2669172932330827
+          }
+        },
+        "single-session-assistant": {
+          "pareto": {
+            "5": 0.2857142857142857,
+            "10": 0.39285714285714285
+          },
+          "weighted": {
+            "5": 0.2857142857142857,
+            "10": 0.39285714285714285
+          }
+        },
+        "single-session-preference": {
+          "pareto": {
+            "5": 0.13333333333333333,
+            "10": 0.3
+          },
+          "weighted": {
+            "5": 0.13333333333333333,
+            "10": 0.3
+          }
+        },
+        "single-session-user": {
+          "pareto": {
+            "5": 0.44285714285714284,
+            "10": 0.5714285714285714
+          },
+          "weighted": {
+            "5": 0.45714285714285713,
+            "10": 0.5714285714285714
+          }
+        },
+        "temporal-reasoning": {
+          "pareto": {
+            "5": 0.23558897243107768,
+            "10": 0.3888471177944862
+          },
+          "weighted": {
+            "5": 0.23934837092731828,
+            "10": 0.3888471177944862
+          }
+        }
+      }
+    },
+    "asof": {
+      "pareto": {
+        "5": {
+          "macro_recall": 0.2494,
+          "micro_recall": 0.21518987341772153,
+          "macro_ndcg": 0.20581718540273924,
+          "macro_precision": 0.0816,
+          "hit_rate": 0.37,
+          "queries": 500,
+          "qrel_labels": 948
+        },
+        "10": {
+          "macro_recall": 0.37056666666666666,
+          "micro_recall": 0.33544303797468356,
+          "macro_ndcg": null,
+          "macro_precision": 0.0636,
+          "hit_rate": 0.54,
+          "queries": 500,
+          "qrel_labels": 948
+        }
+      },
+      "weighted": {
+        "5": {
+          "macro_recall": 0.2524,
+          "micro_recall": 0.21729957805907174,
+          "macro_ndcg": 0.20692291865667006,
+          "macro_precision": 0.0824,
+          "hit_rate": 0.372,
+          "queries": 500,
+          "qrel_labels": 948
+        },
+        "10": {
+          "macro_recall": 0.36956666666666665,
+          "micro_recall": 0.33438818565400846,
+          "macro_ndcg": null,
+          "macro_precision": 0.06340000000000001,
+          "hit_rate": 0.54,
+          "queries": 500,
+          "qrel_labels": 948
+        }
+      },
+      "paired_recall5": {
+        "mean_delta_pareto_minus_weighted": -0.003,
+        "pareto_wins": 0,
+        "ties": 498,
+        "weighted_wins": 2
+      },
+      "macro_recall_by_question_type": {
+        "knowledge-update": {
+          "pareto": {
+            "5": 0.3076923076923077,
+            "10": 0.391025641025641
+          },
+          "weighted": {
+            "5": 0.3076923076923077,
+            "10": 0.38461538461538464
+          }
+        },
+        "multi-session": {
+          "pareto": {
+            "5": 0.1548872180451128,
+            "10": 0.2669172932330827
+          },
+          "weighted": {
+            "5": 0.1548872180451128,
+            "10": 0.2669172932330827
+          }
+        },
+        "single-session-assistant": {
+          "pareto": {
+            "5": 0.2857142857142857,
+            "10": 0.39285714285714285
+          },
+          "weighted": {
+            "5": 0.2857142857142857,
+            "10": 0.39285714285714285
+          }
+        },
+        "single-session-preference": {
+          "pareto": {
+            "5": 0.13333333333333333,
+            "10": 0.3
+          },
+          "weighted": {
+            "5": 0.13333333333333333,
+            "10": 0.3
+          }
+        },
+        "single-session-user": {
+          "pareto": {
+            "5": 0.44285714285714284,
+            "10": 0.5714285714285714
+          },
+          "weighted": {
+            "5": 0.45714285714285713,
+            "10": 0.5714285714285714
+          }
+        },
+        "temporal-reasoning": {
+          "pareto": {
+            "5": 0.21879699248120302,
+            "10": 0.3630325814536341
+          },
+          "weighted": {
+            "5": 0.22255639097744362,
+            "10": 0.3630325814536341
+          }
+        }
+      }
+    }
+  },
+  "interpretation": {
+    "primary": "Full-haystack raw-session reranking using a BM25 lexical proxy; descriptive only.",
+    "asof_sensitivity": "Strict question_date cutoff with original qrels retained; future-dated labels count as misses.",
+    "prohibited_claims": [
+      "Qwen/cosine retrieval gain",
+      "production compressed-memory gain",
+      "answer-quality gain",
+      "forgetting benefit",
+      "statistical significance",
+      "production latency"
+    ]
+  }
+}

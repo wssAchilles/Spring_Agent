@@ -1,0 +1,47 @@
+defaults:
+  - _self_
+
+agent:
+  name: claude
+  model: null
+  profile: null
+  reasoning_effort: null
+
+paths:
+  task_dir: ""
+  task_name: null
+  results_dir: ""
+  output_dir: null
+  baseline_program_override: null
+  custom_baselines: []
+  extra_tasks: []
+
+execution:
+  stages: null                      # stage subset, e.g. "0,1" or "0-3"; null runs all
+  custom_only: false                # only custom baselines; skip control_best/baseline_reference
+  max_ablations: 3
+  max_extra_baselines: 3
+  max_evals_per_variant: 2
+  variant_timeout_seconds: 7200
+  evaluation_timeout_seconds: null
+  variant_timeout_grace_seconds: 30
+  generation_timeout_seconds: 1800
+  retrofit_timeout_seconds: 1800
+  selection_timeout_seconds: 1800
+  readme_timeout_seconds: 600
+  num_replications: 1
+  sandbox_image: null               # null -> container.image; pinned before execution
+  cross_task_timeout_seconds: 7200
+
+container:
+  enabled: true
+  image: "agentic-scientist/agent-cli:latest"
+  network: bridge
+  auth_root: "~"
+  env_file: ""
+
+logging:
+  format: human
+  verbose: false
+  heartbeat_seconds: 60
+  show_run_header: true

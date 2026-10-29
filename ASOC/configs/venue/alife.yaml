@@ -1,0 +1,14 @@
+# Venue specification consumed by src/orchestrator/paper_venues.py.
+name: alife
+brief: src/templates/paper_venues/alife.md
+author_block: src/templates/paper_authors/alife.tex
+template_dir: templates/alife
+latex_markers:
+  - '\\usepackage\{[^}]*alifeconf[^}]*\}'
+page_budget:
+  min_body_pages: 8
+  max_body_pages: 8
+  min_last_body_page_fill_ratio: 0.75
+  body_columns: 2
+  exclude_references: true
+checks: [alife_framing]

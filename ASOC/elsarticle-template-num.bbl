@@ -1,0 +1,34 @@
+\begin{thebibliography}{1}
+\expandafter\ifx\csname url\endcsname\relax
+  \def\url#1{\texttt{#1}}\fi
+\expandafter\ifx\csname urlprefix\endcsname\relax\def\urlprefix{URL }\fi
+\expandafter\ifx\csname href\endcsname\relax
+  \def\href#1#2{#2} \def\path#1{#1}\fi
+
+\bibitem{zhong2023memorybank}
+W.~Zhong, L.~Guo, Q.~Gao, H.~Ye, Y.~Wang, Memorybank: Enhancing large language
+  models with long-term memory, arXiv preprint arXiv:2305.10250 (2023).
+\newblock \href {https://doi.org/10.48550/arXiv.2305.10250}
+  {\path{doi:10.48550/arXiv.2305.10250}}.
+
+\bibitem{xu2022goldfish}
+J.~Xu, A.~Szlam, J.~Weston, Beyond goldfish memory: Long-term open-domain
+  conversation, in: Proceedings of ACL, 2022, pp. 5180--5197.
+\newblock \href {https://doi.org/10.18653/v1/2022.acl-long.356}
+  {\path{doi:10.18653/v1/2022.acl-long.356}}.
+
+\bibitem{wu2024longmemeval}
+D.~Wu, H.~Wang, W.~Yu, Y.~Zhang, K.-W. Chang, D.~Yu, Longmemeval: Benchmarking
+  chat assistants on long-term interactive memory, arXiv preprint
+  arXiv:2410.10813 (2024).
+\newblock \href {https://doi.org/10.48550/arXiv.2410.10813}
+  {\path{doi:10.48550/arXiv.2410.10813}}.
+
+\bibitem{deb2002nsga2}
+K.~Deb, A.~Pratap, S.~Agarwal, T.~Meyarivan, A fast and elitist multiobjective
+  genetic algorithm: Nsga-ii, IEEE Transactions on Evolutionary Computation
+  6~(2) (2002) 182--197.
+\newblock \href {https://doi.org/10.1109/4235.996017}
+  {\path{doi:10.1109/4235.996017}}.
+
+\end{thebibliography}

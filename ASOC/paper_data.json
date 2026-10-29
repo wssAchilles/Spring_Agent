@@ -1,0 +1,261 @@
+{
+  "paper_profile": "standalone",
+  "title": "Pareto Memory Ranking Under Fixed Candidate Sets: Kernel Validation and Exploratory LongMemEval Session Reranking",
+  "hypothesis": "With the same raw-session candidate positions and frozen lexical, retention, and importance features, non-dominated ranking can be compared descriptively with a fixed weighted-sum baseline without changing candidate generation or memory-state updates.",
+  "results": {
+    "targeted_tests": 14,
+    "test_failures": 0,
+    "test_errors": 0,
+    "tests_by_class": {
+      "LongTermMemoryEnhancedTest": 3,
+      "ParetoMemoryRankerTest": 8,
+      "DynamicEbbinghausDecayTest": 3
+    },
+    "n1000_candidates": 1000,
+    "n1000_embedding_dimensions": 1024,
+    "n1000_timing_samples": 9,
+    "n1000_median_latency_ms": 2.537,
+    "pareto_ranker_coverage_percent": {
+      "instruction": 100.0,
+      "branch": 100.0,
+      "line": 100.0,
+      "method": 100.0
+    },
+    "longmemeval_session_proxy": {
+      "questions": 500,
+      "qrel_labels": 948,
+      "unique_session_ids": 19195,
+      "candidate_positions": 23867,
+      "session_question_pairs": 23854,
+      "session_ids_shared_across_questions": 3932,
+      "question_overlap_components": 1,
+      "questions_with_duplicate_candidate_ids": 13,
+      "future_dated_qrel_labels": 75,
+      "questions_with_future_dated_qrel": 44,
+      "asof_available_qrel_labels": 873,
+      "pareto_macro_recall_at_5": 0.2528666666666667,
+      "weighted_macro_recall_at_5": 0.2558666666666667,
+      "macro_recall_at_5_delta": -0.003,
+      "pareto_micro_recall_at_5": 0.22046413502109705,
+      "weighted_micro_recall_at_5": 0.22257383966244726,
+      "pareto_macro_ndcg_at_5": 0.21224865040764607,
+      "weighted_macro_ndcg_at_5": 0.21370015483054167,
+      "pareto_hit_rate_at_5": 0.376,
+      "weighted_hit_rate_at_5": 0.378,
+      "pareto_macro_recall_at_10": 0.37643333333333334,
+      "weighted_macro_recall_at_10": 0.37643333333333334,
+      "pareto_micro_recall_at_10": 0.3449367088607595,
+      "weighted_micro_recall_at_10": 0.3449367088607595,
+      "paired_recall_at_5": {
+        "pareto_wins": 1,
+        "ties": 496,
+        "weighted_wins": 3
+      },
+      "asof_pareto_macro_recall_at_5": 0.2494,
+      "asof_weighted_macro_recall_at_5": 0.2524,
+      "asof_pareto_micro_recall_at_5": 0.21518987341772153,
+      "asof_weighted_micro_recall_at_5": 0.21729957805907174,
+      "asof_micro_recall_ceiling_at_infinite_k": 0.9208860759493671
+    }
+  },
+  "implementation_details": {
+    "objective_counts": {
+      "document_adapter": 4,
+      "node_only_adapter": 3
+    },
+    "document_retention": {
+      "default_strength_days": 30.0,
+      "maximum_strength_days": 3650.0,
+      "default_plasticity_alpha": 0.2,
+      "importance_protection_beta": 0.5,
+      "importance_center": 0.5
+    },
+    "node_recency": {
+      "default_decay_rate": 0.05,
+      "access_count_reinforcement_eta": 0.5
+    },
+    "complexity": {
+      "generic_all_fronts_time": "O(n^2 d)",
+      "generic_all_fronts_auxiliary_space": "O(n^2 + n d)",
+      "node_first_front_fast_path_time": "O(n log n)",
+      "node_first_front_fast_path_auxiliary_space": "O(n)",
+      "node_top_k_fast_path_time_including_embedding_dimension_D": "O(n D + n log n)",
+      "node_fallback_time": "O(n D + n^2 d)"
+    },
+    "source_id": "retrieval-ranking-implementation"
+  },
+  "grounding_sources": {
+    "kernel-tests-final-14-post-coverage-fix": {
+      "kind": "test_log",
+      "path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "sha256": "81b1ec1f64229bb27a8ea65e52ce6a0964b1f6a94f9f6de52d240b11bce1380f",
+      "locators": {
+        "targeted_tests": "Tests run: 14, Failures: 0, Errors: 0, Skipped: 0",
+        "test_class_counts": "LongTermMemoryEnhancedTest=3; ParetoMemoryRankerTest=8; DynamicEbbinghausDecayTest=3",
+        "n1000_median_latency_ms": "pareto_n1000_embedding1024_median_ms=2.537",
+        "n1000_sorted_samples_ns": "pareto_n1000_embedding1024_sorted_samples_ns=[2283292, 2297041, 2427709, 2511125, 2536833, 2573542, 2588792, 2748625, 2750292]"
+      }
+    },
+    "pareto-ranker-jacoco-coverage-post-coverage-fix": {
+      "kind": "jacoco_csv",
+      "path": "results/kernel/pareto-jacoco-report-post-coverage-fix.csv",
+      "sha256": "15bbcf8132c6ded44d93c3af7d7f8a67f8f06d83ace130c10428515e7140d345",
+      "locators": {
+        "class_row": "ParetoMemoryRanker: 0 missed/2004 covered instructions; 0 missed/240 covered branches; 0 missed/321 covered lines; 0 missed/25 covered methods",
+        "coverage_percent": "100.0% instruction; 100.0% branch (240/240); 100.0% line; 100.0% method"
+      }
+    },
+    "pareto-ranker-jacoco-run-post-coverage-fix": {
+      "kind": "instrumented_test_log",
+      "path": "results/kernel/pareto-coverage-post-coverage-fix.log",
+      "sha256": "a48208b4ad6723c4c29154a9a78c65c7561cd80ecd5326f869ce047583805a12",
+      "locators": {
+        "instrumented_test_status": "Tests run: 14, Failures: 0, Errors: 0, Skipped: 0",
+        "instrumented_timing": "pareto_n1000_embedding1024_median_ms=4.074",
+        "timing_note": "JaCoCo-instrumented timing is not the manuscript's 2.537 ms non-JaCoCo observation."
+      }
+    },
+    "pareto-ranker-jacoco-execution-data-post-coverage-fix": {
+      "kind": "coverage_execution_data",
+      "path": "results/kernel/pareto-jacoco-post-coverage-fix.exec",
+      "sha256": "ef8729a5b8cb69c5e05b17ace00769fd3dd49845e16ef061cc530bc75c28eb73",
+      "locators": {
+        "report_generation": "jacoco-report-post-coverage-fix.log loads the matching target/jacoco.exec artifact archived in ASOC"
+      }
+    },
+    "pareto-ranker-jacoco-report-build-post-coverage-fix": {
+      "kind": "build_log",
+      "path": "results/kernel/jacoco-report-post-coverage-fix.log",
+      "sha256": "58edbf5b33be6973d1f487aef6f7a53d406a4a8be0eb95056bb0cea65c11871b",
+      "locators": {
+        "analyzed_class_count": "Analyzed bundle 'qknow-hermes-core' with 762 classes",
+        "build_status": "BUILD SUCCESS"
+      }
+    },
+    "java21-targeted-test-final-14": {
+      "kind": "test_log",
+      "path": "results/kernel/memory-tests-final-14-post-coverage-fix.log",
+      "sha256": "81b1ec1f64229bb27a8ea65e52ce6a0964b1f6a94f9f6de52d240b11bce1380f",
+      "locators": {
+        "java_version": "openjdk version \"21.0.5\"",
+        "command": "Not recorded in the archived output; no invoking-command transcript is retained.",
+        "test_compile": "Nothing to compile - all classes are up to date.",
+        "test_status": "Tests run: 14, Failures: 0, Errors: 0, Skipped: 0; node-only median=2.537 ms across nine samples",
+        "build_status": "BUILD SUCCESS"
+      }
+    },
+    "test-compilation-diagnostic-20261029": {
+      "kind": "diagnostic_test_compile_log",
+      "path": "results/kernel/memory-tests-final-14-integration-fix.log",
+      "sha256": "f4d590bebf6939a9c5e5b083dc555e70dde4fb5357af7c5d3a0ee62c15496798",
+      "locators": {
+        "build_status": "BUILD FAILURE during testCompile",
+        "error_count": "17 test-source compilation errors in Phase151EvolutionaryQuantizedInfraContractTest and Phase152OffHeapCausalInfraContractTest",
+        "targeted_tests": "The targeted Surefire tests did not execute in this diagnostic attempt."
+      }
+    },
+    "java21-core-compile-post-coverage-fix": {
+      "kind": "build_log",
+      "path": "results/kernel/core-compile-post-coverage-fix.log",
+      "sha256": "6e346a85513f0e5b6087037dc00eb50455ee762be55644cb374f2f8039302600",
+      "locators": {
+        "java_version": "openjdk version \"21.0.5\"",
+        "build_status": "BUILD SUCCESS"
+      }
+    },
+    "retrieval-ranking-implementation": {
+      "kind": "source_code",
+      "paths": [
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/LongTermMemory.java#recall",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/DynamicEbbinghausDecay.java",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/scoring/MemoryScoringServiceImpl.java#computeRecency",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/scoring/ParetoMemoryRanker.java#rankTopK",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/ReflectiveMemoryCoordinator.java#recallEpisodicNodesWithFailOpen",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/scoring/MemoryScoringServiceImpl.java#rerankByParetoFrontier",
+        "../backend/tests/src/test/java/tech/qiantong/qknow/hermes/memory/ParetoMemoryRankerTest.java",
+        "../backend/tests/src/test/java/tech/qiantong/qknow/hermes/memory/LongTermMemoryEnhancedTest.java",
+        "../backend/tests/src/test/java/tech/qiantong/qknow/hermes/memory/DynamicEbbinghausDecayTest.java"
+      ],
+      "sha256": {
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/LongTermMemory.java": "c5fa559df17b8bf6837e77ca7d682d1d3d368efa3dabbb181a26c9489be042ae",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/DynamicEbbinghausDecay.java": "ea86788d61911ec9c3c9ad008d1d3353ed4c052e4264fd75d4ee9511b02886c8",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/scoring/ParetoMemoryRanker.java": "48d63453f751855b1414d466662eaa4572adf637592ed2c2dc1eeaaf0df89308",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/ReflectiveMemoryCoordinator.java": "365b6c2e7aaf435771cc50e8d5919c3e95f9d27030a714c0347b4eb76e7a217e",
+        "../backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/memory/scoring/MemoryScoringServiceImpl.java": "6d6b2a5db5a3f7c4cf7f2b3d26c64eab73cea4a6423d51d69aa7d635a381749f",
+        "../backend/tests/src/test/java/tech/qiantong/qknow/hermes/memory/ParetoMemoryRankerTest.java": "83dd6383626a5a2401203f307c641cb9c8bbc8d0efef7200d3c31102bdee5cbd",
+        "../backend/tests/src/test/java/tech/qiantong/qknow/hermes/memory/LongTermMemoryEnhancedTest.java": "11ec5692ef06ad50c229f2e9c9490b9190097a3a7f5146d5e50f65076ad9af34",
+        "../backend/tests/src/test/java/tech/qiantong/qknow/hermes/memory/DynamicEbbinghausDecayTest.java": "d58820d2c3d30f7e7eddafcb05ccf87721d5c63831169fdf753ae4987dd084fa"
+      },
+      "locators": {
+        "long_term_recall": "LongTermMemory.java:183-242",
+        "dynamic_retention": "DynamicEbbinghausDecay.java:29-115; LongTermMemory.java:299-350",
+        "node_recency": "MemoryScoringServiceImpl.java:62-76",
+        "node_rank_top_k": "ParetoMemoryRanker.java:336-371",
+        "episodic_adapter": "ReflectiveMemoryCoordinator.java:201-214",
+        "service_adapter": "MemoryScoringServiceImpl.java:147-150",
+        "optimized_first_front": "ParetoMemoryRanker.java:374-475",
+        "fast_path_parity_test": "ParetoMemoryRankerTest.java:105-126",
+        "long_term_integration_tests": "LongTermMemoryEnhancedTest.java:56-110",
+        "retention_helper_tests": "DynamicEbbinghausDecayTest.java:11-62"
+      },
+      "notes": "Working-tree file hashes identify the exact current implementation and tests. The 3-objective node timing path is distinct from the 4-objective graph adapter; the source tree is not represented by an immutable commit in this draft."
+    },
+    "longmemeval-session-rerank-run-v2-20261029": {
+      "kind": "experiment_summary_json",
+      "path": "results/longmemeval_session_rerank/run_v2/summary.json",
+      "sha256": "0e87f70e54dd0681ae10c00a36e7152960b58266a6b60e3c1a1a70f161c4700a",
+      "input_sha256": "d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442",
+      "contract_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "contract_sha256": "f930d35fa3feaa08aa887730743a00c7f7ae669e92b782ca2921fb95deb0db71",
+      "script_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "script_sha256": "213fec47eead17b53152d19921cdc5cb90b4faa8344a5b2e2df16c412c5e9123",
+      "locators": {
+        "questions_and_qrels": "dataset.questions=500; dataset.qrel_labels=948",
+        "primary_macro_recall_at_5": "results.full.pareto.5.macro_recall=0.2528666666666667; results.full.weighted.5.macro_recall=0.2558666666666667",
+        "paired_outcomes": "results.full.paired_recall5: Pareto wins=1; ties=496; weighted wins=3",
+        "primary_micro_recall_at_5": "results.full.pareto.5.micro_recall=0.22046413502109705; results.full.weighted.5.micro_recall=0.22257383966244726",
+        "primary_macro_ndcg_at_5": "results.full.pareto.5.macro_ndcg=0.21224865040764607; results.full.weighted.5.macro_ndcg=0.21370015483054167",
+        "strict_cutoff_micro_denominator": "results.asof.*.5.micro_recall; all 948 original qrels retained and unavailable qrels count as misses",
+        "dependence_audit": "dataset.question_overlap_components=1"
+      },
+      "notes": "Accepted corrected descriptive raw-session evaluation with complete Lucene BM25 term factor, timestamp-derived retention, and importance fixed at 0.0; not production Qwen-vector or compressed-memory retrieval. Preliminary run/ is explicitly invalidated and excluded."
+    },
+    "longmemeval-session-rerank-reproduction-20261029": {
+      "kind": "independent_reproduction_summary_json",
+      "path": "results/longmemeval_session_rerank/reproduction_check_20261029/summary.json",
+      "sha256": "c0362529d36b59da722e8a4d3b2c354c2089473a83b1b192b0f31c9f4133c91d",
+      "input_sha256": "d6f21ea9d60a0d56f34a05b609c79c88a451d2ae03597821ea3d5a9678c3a442",
+      "contract_path": "results/longmemeval_session_rerank/experiment_contract.json",
+      "contract_sha256": "f930d35fa3feaa08aa887730743a00c7f7ae669e92b782ca2921fb95deb0db71",
+      "script_path": "results/longmemeval_session_rerank/run_experiment.py",
+      "script_sha256": "213fec47eead17b53152d19921cdc5cb90b4faa8344a5b2e2df16c412c5e9123",
+      "locators": {
+        "built_in_self_tests": "SELF_TESTS_PASSED=10",
+        "reproduction_start": "2026-10-29T13:59:52+08:00",
+        "reproduction_finish": "2026-10-29T14:00:03+08:00",
+        "full_per_question_csv_sha256": "9f76ee61eef2b55e9a4d30a3bdf72b8d18861a2be4a71b0850d9999b84f32563; byte-identical to run_v2",
+        "asof_per_question_csv_sha256": "94865ae57a6911de34dfdf6e68e0f46c783890add9df804ded5ca4dc13a4fda7; byte-identical to run_v2",
+        "summary_comparison": "dataset, results, and interpretation objects equal run_v2"
+      },
+      "notes": "Independent rerun of the frozen data, contract, and script. The summary metadata differs by execution time, output path, and actual command only; dataset, results, and interpretation are identical to accepted run_v2. Ten embedded self-tests passed."
+    }
+  },
+  "limitations": [
+    "The kernel test is not an end-to-end retrieval benchmark.",
+    "LongMemEval was evaluated as raw-session reranking with a BM25 lexical proxy; this does not evaluate frozen production summaries, Qwen embeddings, answer generation, or MSC.",
+    "The corrected Pareto macro Recall@5 point estimate is 0.003 below the fixed weighted-sum baseline; the paired outcomes are 1 Pareto win, 496 ties, and 3 weighted-sum wins. Shared candidate sessions connect all questions into one component, so no question-level significance or generalization claim is justified.",
+    "Thirteen questions contain repeated non-qrel candidate session IDs with identical content and distinct dates; candidate positions are retained separately as specified, and this source-data irregularity may influence position-wise ranking.",
+    "Seventy-five of 948 qrel labels are future-dated relative to their question dates; the full-candidate analysis preserves the supplied haystack, while strict-cutoff sensitivity counts unavailable qrels as misses.",
+    "Latency is a warmed JUnit microbenchmark on one machine, not production p50/p95 latency.",
+    "LongTermMemoryEnhancedTest's trade-off fixture has two candidates with topK=2 and asserts membership only; it does not exercise adapter truncation, assert returned order, or demonstrate graph-activation effects. Generic ranker tests cover truncation separately.",
+    "The successful targeted test log reports test compilation as up to date and does not retain the invoked Maven command. A later diagnostic test-source compilation failed on 17 unrelated Phase151/Phase152 benchmark-test errors before Surefire; therefore the archived pass is not a fresh compile-and-test proof for the current source snapshot.",
+    "JaCoCo reports 100% instruction, branch, line, and method coverage for the ParetoMemoryRanker class; overall project coverage is not established.",
+    "The current long-term-memory vector query does not apply userId as a filter; tenant isolation requires separate remediation and verification before production-safety claims."
+  ],
+  "versioning": {
+    "branch": "codex/paper",
+    "base_commit": "ef31ae12",
+    "snapshot_type": "uncommitted working tree",
+    "note": "SHA-256 values above identify the source files used; this draft does not claim an immutable Git revision."
+  }
+}

@@ -1,0 +1,127 @@
+{
+  "$id": "https://schemas.agentic-scientist.local/scientific-evidence/verification-report.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "notes": {
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "hash_checked": {
+            "type": "boolean"
+          },
+          "locator": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "raw_reference": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "resolved_path": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "resolved",
+              "anchored",
+              "dangling"
+            ],
+            "type": "string"
+          },
+          "subject_kind": {
+            "enum": [
+              "text-artifact",
+              "manifest",
+              "ledger-entry",
+              "other"
+            ],
+            "type": "string"
+          },
+          "subject_path": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "target": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_path",
+          "subject_kind",
+          "raw_reference",
+          "target",
+          "status",
+          "messages"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "root_dir": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "schema_name": {
+      "const": "scientific-evidence.verification-report"
+    },
+    "summary": {
+      "additionalProperties": false,
+      "properties": {
+        "anchored_references": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "dangling_references": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "manifests_checked": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "resolved_references": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "total_references": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total_references",
+        "resolved_references",
+        "anchored_references",
+        "dangling_references",
+        "manifests_checked"
+      ],
+      "type": "object"
+    },
+    "verified_at": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_name",
+    "verified_at",
+    "root_dir",
+    "summary",
+    "results"
+  ],
+  "title": "Scientific Evidence Verification Report",
+  "type": "object"
+}

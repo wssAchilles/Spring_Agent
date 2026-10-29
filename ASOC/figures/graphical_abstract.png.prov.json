@@ -1,0 +1,25 @@
+{
+  "schema_name": "scientific-evidence.artifact-manifest",
+  "artifact": {
+    "path": "figures/graphical_abstract.png",
+    "kind": "figure",
+    "media_type": "image/png",
+    "sha256": "66f9634991be50cf64f68821846416ef3e310830cce2107f1b89ef8e1e887ea2"
+  },
+  "derived_from": [
+    "@evidence[[paper_data.json#results]]",
+    "@evidence[[paper_data.json#implementation_details.objective_counts]]",
+    "@evidence[[paper_data.json#grounding_sources.retrieval-ranking-implementation]]",
+    "@evidence[[figures/make_graphical_abstract.py]]"
+  ],
+  "generated_by": {
+    "script_path": "figures/make_graphical_abstract.py",
+    "command": [
+      "python3",
+      "figures/make_graphical_abstract.py"
+    ],
+    "cwd": ".",
+    "script_sha256": "1b828bb4a033130ce1e3745d89302cb9e628ef2ebea5fbbe5f34cd1ccc5e288f"
+  },
+  "notes": "SVG diagram rasterized by ImageMagick as a 1328x531, 300-DPI graphical abstract; no quality result is depicted."
+}

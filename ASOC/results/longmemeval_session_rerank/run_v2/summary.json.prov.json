@@ -1,0 +1,32 @@
+{
+  "schema_name": "scientific-evidence.artifact-manifest",
+  "artifact": {
+    "path": "results/longmemeval_session_rerank/run_v2/summary.json",
+    "kind": "derived",
+    "media_type": "application/json",
+    "sha256": "0e87f70e54dd0681ae10c00a36e7152960b58266a6b60e3c1a1a70f161c4700a"
+  },
+  "derived_from": [
+    "@evidence[[data/external/longmemeval/longmemeval_s_cleaned.json]]",
+    "@evidence[[results/longmemeval_session_rerank/experiment_contract.json]]",
+    "@evidence[[results/longmemeval_session_rerank/run_experiment.py]]"
+  ],
+  "generated_by": {
+    "script_path": "results/longmemeval_session_rerank/run_experiment.py",
+    "script_sha256": "213fec47eead17b53152d19921cdc5cb90b4faa8344a5b2e2df16c412c5e9123",
+    "cwd": "ASOC",
+    "command": [
+      "python3",
+      "results/longmemeval_session_rerank/run_experiment.py",
+      "--data",
+      "data/external/longmemeval/longmemeval_s_cleaned.json",
+      "--contract",
+      "results/longmemeval_session_rerank/experiment_contract.json",
+      "--output",
+      "results/longmemeval_session_rerank/run_v2"
+    ],
+    "started_at": "2026-10-29T12:51:32+08:00",
+    "finished_at": "2026-10-29T12:51:44+08:00"
+  },
+  "notes": "Accepted corrected single offline execution; full Lucene BM25 factor is applied before bounded relevance mapping. Descriptive only; no network, paid API, or source-data mutation."
+}

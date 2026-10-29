@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1328" height="531" viewBox="0 0 1328 531">
+<rect width="1328" height="531" fill="#F6F8FB"/>
+<style>
+  .title { font-family: Arial; font-size: 28px; font-weight: 700; fill: #172A46; }
+  .subtitle { font-family: Arial; font-size: 16px; fill: #53677F; }
+  .card-title { font-family: Arial; font-size: 19px; font-weight: 700; fill: #0F4D92; }
+  .body { font-family: Arial; font-size: 15px; fill: #172A46; }
+  .small { font-family: Arial; font-size: 13px; fill: #53677F; }
+  .metric { font-family: Arial; font-size: 16px; font-weight: 700; fill: #172A46; }
+  .limitation { font-family: Arial; font-size: 14px; fill: #53677F; }
+  .arrow { stroke: #0F4D92; stroke-width: 2.5; }
+</style>
+<text x="48" y="52" class="title">Pareto ranking for long-horizon agent memory</text>
+<text x="48" y="83" class="subtitle">A bounded re-ranking step preserves objective trade-offs after candidate generation.</text>
+<rect x="48" y="151" width="276" height="221" rx="16" fill="#EAF2FA" stroke="#B9C9DA" stroke-width="2"/><text x="66" y="188" class="card-title">Fixed candidate set</text><text x="66" y="239" class="body">Vector retrieval</text><text x="66" y="275" class="body">Metadata scope filtering</text><text x="66" y="311" class="body">Tenant isolation unverified</text><rect x="356" y="151" width="276" height="221" rx="16" fill="#FFFFFF" stroke="#B9C9DA" stroke-width="2"/><text x="374" y="188" class="card-title">Objective vectors</text><rect x="664" y="151" width="276" height="221" rx="16" fill="#FFF4D6" stroke="#B9C9DA" stroke-width="2"/><text x="682" y="188" class="card-title">Pareto ordering</text><text x="682" y="239" class="body">Non-dominated fronts</text><text x="682" y="275" class="body">Crowding at the Top-K cut</text><text x="682" y="311" class="body">Relevance tie-break</text><rect x="972" y="151" width="276" height="221" rx="16" fill="#E8F3EC" stroke="#B9C9DA" stroke-width="2"/><text x="990" y="188" class="card-title">Ranked Top-K</text><text x="990" y="239" class="body">Returned to memory caller</text><text x="990" y="275" class="body">Existing recall update follows</text><text x="990" y="311" class="body">Selected items may change</text>
+<text x="390" y="244" class="body">Document adapter</text><text x="390" y="264" class="small">4 objectives</text><text x="390" y="279" class="body">Node-only path</text><text x="390" y="299" class="small">3 objectives</text><text x="390" y="314" class="body">Graph relevance</text><text x="390" y="334" class="small">document path only</text>
+<line x1="326" y1="261" x2="346" y2="261" class="arrow"/><polygon points="344,255 355,261 344,267" fill="#0F4D92"/><line x1="634" y1="261" x2="654" y2="261" class="arrow"/><polygon points="652,255 663,261 652,267" fill="#0F4D92"/><line x1="942" y1="261" x2="962" y2="261" class="arrow"/><polygon points="960,255 971,261 960,267" fill="#0F4D92"/>
+<text x="48" y="422" class="metric">Kernel evidence: 14 tests passed · N=1,000 · 1024-D · 2.537 ms median</text>
+<text x="48" y="454" class="limitation">No retrieval-quality, statistical-significance, or end-to-end latency evaluation.</text>
+<text x="1280" y="499" text-anchor="end" class="small">Implementation overview · not a quality result</text>
+</svg>

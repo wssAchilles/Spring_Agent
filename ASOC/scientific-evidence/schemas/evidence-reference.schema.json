@@ -1,0 +1,51 @@
+{
+  "$id": "https://schemas.agentic-scientist.local/scientific-evidence/evidence-reference.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "locator": {
+      "description": "Opaque locator fragment after #. The base verifier does not need universal parsing.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "normalized_target": {
+      "description": "Optional normalized path, URI, or identifier used by the verifier.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "raw": {
+      "description": "Raw inline evidence token as written in a text-like artifact.",
+      "pattern": "^@evidence\\[\\[[^\\]]+\\]\\]$",
+      "type": "string"
+    },
+    "schema_name": {
+      "const": "scientific-evidence.evidence-reference"
+    },
+    "target": {
+      "description": "Target path, URI, or stable identifier before the optional #locator.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "target_kind": {
+      "enum": [
+        "path",
+        "absolute-path",
+        "uri",
+        "id",
+        "unknown"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_name",
+    "raw",
+    "target",
+    "target_kind"
+  ],
+  "title": "Scientific Evidence Reference",
+  "type": "object"
+}

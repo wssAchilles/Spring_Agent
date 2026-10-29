@@ -1,0 +1,807 @@
+{
+  "$defs": {
+    "FigureFontSizes": {
+      "additionalProperties": false,
+      "description": "Explicit font sizes for the legacy manifest contract.",
+      "properties": {
+        "axis": {
+          "title": "Axis",
+          "type": "number"
+        },
+        "legend": {
+          "title": "Legend",
+          "type": "number"
+        },
+        "ticks": {
+          "title": "Ticks",
+          "type": "number"
+        },
+        "title": {
+          "title": "Title",
+          "type": "number"
+        }
+      },
+      "required": [
+        "title",
+        "axis",
+        "ticks",
+        "legend"
+      ],
+      "title": "FigureFontSizes",
+      "type": "object"
+    },
+    "LegacyFigureManifestFigure": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "properties": {
+              "path_pdf": {
+                "minLength": 1
+              }
+            },
+            "required": [
+              "path_pdf"
+            ]
+          },
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "generator": {
+                    "const": "generate-concept-figure"
+                  }
+                },
+                "required": [
+                  "generator"
+                ]
+              },
+              {
+                "properties": {
+                  "attempted_generator": {
+                    "const": "generate-concept-figure"
+                  },
+                  "fallback_reason": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "generator": {
+                    "type": "null"
+                  },
+                  "prompt_log_path": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "generator",
+                  "attempted_generator",
+                  "prompt_log_path",
+                  "fallback_reason"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "description": "Original flat figure-manifest entry shape.",
+      "properties": {
+        "attempted_generator": {
+          "anyOf": [
+            {
+              "enum": [
+                "generate-concept-figure",
+                "matplotlib",
+                "tikz",
+                "native_latex",
+                "manual"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempted Generator"
+        },
+        "categories_per_panel": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Categories Per Panel",
+          "type": "array"
+        },
+        "estimated_min_rendered_font_pt": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimated Min Rendered Font Pt"
+        },
+        "fallback_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback Reason"
+        },
+        "figure_id": {
+          "minLength": 1,
+          "title": "Figure Id",
+          "type": "string"
+        },
+        "figure_type": {
+          "enum": [
+            "grouped_bar",
+            "bar",
+            "line",
+            "box",
+            "violin",
+            "scatter",
+            "heatmap",
+            "table_matrix",
+            "table",
+            "composite",
+            "diagram"
+          ],
+          "title": "Figure Type",
+          "type": "string"
+        },
+        "font_sizes": {
+          "$ref": "#/$defs/FigureFontSizes"
+        },
+        "generator": {
+          "anyOf": [
+            {
+              "enum": [
+                "generate-concept-figure",
+                "matplotlib",
+                "tikz",
+                "native_latex",
+                "manual"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generator"
+        },
+        "intended_latex_width_fraction": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intended Latex Width Fraction"
+        },
+        "max_label_chars": {
+          "exclusiveMinimum": 0,
+          "title": "Max Label Chars",
+          "type": "integer"
+        },
+        "n_panels": {
+          "exclusiveMinimum": 0,
+          "title": "N Panels",
+          "type": "integer"
+        },
+        "panels_per_row": {
+          "exclusiveMinimum": 0,
+          "title": "Panels Per Row",
+          "type": "integer"
+        },
+        "path_pdf": {
+          "default": "",
+          "title": "Path Pdf",
+          "type": "string"
+        },
+        "path_png": {
+          "minLength": 1,
+          "title": "Path Png",
+          "type": "string"
+        },
+        "placement": {
+          "anyOf": [
+            {
+              "enum": [
+                "column",
+                "full_width"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Placement"
+        },
+        "prompt_log_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Log Path"
+        },
+        "series_per_panel": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Series Per Panel",
+          "type": "array"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "uses_abbrev_labels": {
+          "title": "Uses Abbrev Labels",
+          "type": "boolean"
+        },
+        "uses_progression": {
+          "title": "Uses Progression",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "figure_id",
+        "path_png",
+        "figure_type",
+        "n_panels",
+        "panels_per_row",
+        "categories_per_panel",
+        "series_per_panel",
+        "max_label_chars",
+        "font_sizes",
+        "uses_abbrev_labels",
+        "uses_progression"
+      ],
+      "title": "LegacyFigureManifestFigure",
+      "type": "object"
+    },
+    "RichFigureFiles": {
+      "additionalProperties": false,
+      "description": "Nested artifact paths used by the richer manifest shape.",
+      "properties": {
+        "pdf": {
+          "default": "",
+          "title": "Pdf",
+          "type": "string"
+        },
+        "png": {
+          "minLength": 1,
+          "title": "Png",
+          "type": "string"
+        }
+      },
+      "required": [
+        "png"
+      ],
+      "title": "RichFigureFiles",
+      "type": "object"
+    },
+    "RichFigureManifestFigure": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "else": {
+            "properties": {
+              "files": {
+                "properties": {
+                  "pdf": {
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "pdf"
+                ]
+              }
+            }
+          },
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "generator": {
+                    "const": "generate-concept-figure"
+                  }
+                },
+                "required": [
+                  "generator"
+                ]
+              },
+              {
+                "properties": {
+                  "attempted_generator": {
+                    "const": "generate-concept-figure"
+                  },
+                  "fallback_reason": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "generator": {
+                    "type": "null"
+                  },
+                  "prompt_log_path": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "generator",
+                  "attempted_generator",
+                  "prompt_log_path",
+                  "fallback_reason"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "description": "Richer manifest shape used by newer standalone paper runs.",
+      "properties": {
+        "attempted_generator": {
+          "anyOf": [
+            {
+              "enum": [
+                "generate-concept-figure",
+                "matplotlib",
+                "tikz",
+                "native_latex",
+                "manual"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempted Generator"
+        },
+        "caption_short": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Caption Short"
+        },
+        "estimated_min_rendered_font_pt": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimated Min Rendered Font Pt"
+        },
+        "fallback_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback Reason"
+        },
+        "figure_id": {
+          "minLength": 1,
+          "title": "Figure Id",
+          "type": "string"
+        },
+        "figure_type": {
+          "enum": [
+            "grouped_bar",
+            "bar",
+            "line",
+            "box",
+            "violin",
+            "scatter",
+            "heatmap",
+            "table_matrix",
+            "table",
+            "composite",
+            "diagram"
+          ],
+          "title": "Figure Type",
+          "type": "string"
+        },
+        "files": {
+          "$ref": "#/$defs/RichFigureFiles"
+        },
+        "font_sizes": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FigureFontSizes"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "generator": {
+          "anyOf": [
+            {
+              "enum": [
+                "generate-concept-figure",
+                "matplotlib",
+                "tikz",
+                "native_latex",
+                "manual"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Generator"
+        },
+        "intended_latex_width_fraction": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intended Latex Width Fraction"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "max_label_chars": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Label Chars"
+        },
+        "min_font_size_pt": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Font Size Pt"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "panel_count": {
+          "exclusiveMinimum": 0,
+          "title": "Panel Count",
+          "type": "integer"
+        },
+        "panels": {
+          "items": {
+            "$ref": "#/$defs/RichFigurePanel"
+          },
+          "title": "Panels",
+          "type": "array"
+        },
+        "panels_per_row": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Panels Per Row"
+        },
+        "placement": {
+          "anyOf": [
+            {
+              "enum": [
+                "column",
+                "full_width"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Placement"
+        },
+        "prompt_log_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Log Path"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Required"
+        },
+        "source_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "uses_abbrev_labels": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Uses Abbrev Labels"
+        },
+        "uses_progression": {
+          "title": "Uses Progression",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "figure_id",
+        "figure_type",
+        "files",
+        "panel_count",
+        "panels",
+        "uses_progression"
+      ],
+      "title": "RichFigureManifestFigure",
+      "type": "object"
+    },
+    "RichFigurePanel": {
+      "additionalProperties": false,
+      "description": "Panel-level metadata for the richer manifest shape.",
+      "properties": {
+        "categories": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Categories"
+        },
+        "category_count": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category Count"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "metric": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metric"
+        },
+        "panel_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Panel Id"
+        },
+        "series_count": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Series Count"
+        },
+        "task": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Task"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        },
+        "y_range": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Y Range"
+        }
+      },
+      "title": "RichFigurePanel",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Top-level figure-manifest document.",
+  "properties": {
+    "figures": {
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/LegacyFigureManifestFigure"
+          },
+          {
+            "$ref": "#/$defs/RichFigureManifestFigure"
+          }
+        ]
+      },
+      "minItems": 1,
+      "title": "Figures",
+      "type": "array"
+    }
+  },
+  "required": [
+    "figures"
+  ],
+  "title": "FigureManifestDocument",
+  "type": "object"
+}

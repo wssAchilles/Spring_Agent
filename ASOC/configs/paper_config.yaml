@@ -1,0 +1,72 @@
+# The paper stage's own config: one key per `src/scripts/paper.sh` flag.
+#
+# paper.sh takes CLI flags rather than a Hydra config, so unlike the investigation CLI and
+# the variants / post-hoc pipelines it has no config file of its own to compose.
+# This file is that config file. Each key is named exactly after its long flag
+# with the leading dashes removed and dashes turned into underscores:
+#
+#     paper_min_refs: 25   ->   --paper-min-refs 25
+#     two_stage: true      ->   --two-stage          (booleans are bare flags)
+#     instruct: null       ->   (omitted; paper.sh applies its own fallback)
+#
+# Values are paper.sh's OWN defaults (`${VAR:-x}` read as `x`), so the
+# orchestrator can forward only what it changes. Keys whose paper.sh default is
+# read from the environment (`PAPER_FORMAT`, ...) are forwarded on every run,
+# see PaperConfig.always_forwarded. Adding a flag to paper.sh means adding one
+# line here; tests/test_paper_config_matches_script.py fails if the two drift.
+#
+# The pipeline orchestrator derives the agent, path, container, and logging
+# flags itself (see PaperConfig.owned in src/pipeline/config.py). They are
+# listed so the mirror is complete, but setting one through the pipeline is a
+# config error naming the pipeline key that controls it.
+
+defaults:
+  - _self_
+
+# Agent selection (owned by the pipeline: agent.*)
+agent: claude
+agent_model: null
+agent_profile: null
+reasoning_effort: null
+
+# Inputs and outputs (owned by the pipeline: derived from run_id / paths.*)
+task_dir: examples/circpack
+results_dir: null
+ablations_dir: null
+posthoc_dir: null
+final_evaluation_dir: null
+no_final_evaluation: false
+contract_task_dir: null
+investigation_results_dir: null
+global_memory_dir: null
+output_dir: null
+manifest_dir: null
+resume_existing: false
+
+# Writing knobs (forwarded when they differ from the values above)
+final_outcome_policy: qualified_only
+instruct: null
+venue_file: null                 # null: the brief for paper_format; '': no brief; else a path
+contributions_file: null
+skills: null
+paper_format: iclr
+paper_profile: default
+paper_min_refs: 8
+paper_max_refs: 15
+paper_max_repair_rounds: 10
+paper_review_rounds: 0
+standalone_paper: false          # paper.sh shorthand for --paper-profile standalone --two-stage
+two_stage: false
+
+# Logging (owned by the pipeline: logging.*)
+log_format: human
+verbose: false
+heartbeat_seconds: 60
+event_transport: direct
+
+# Container (owned by the pipeline: container.*)
+containerize: false
+container_image: agentic-scientist/agent-cli:latest
+container_network: bridge
+container_auth_root: null
+container_env_file: null
