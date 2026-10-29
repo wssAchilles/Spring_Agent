@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Hermes 阶段二不可变执行证据凭单 (Harness Evidence Record)。
+ * Hermes 阶段二不可变轻量执行摘要证据凭单 (Lightweight Execution Summary Evidence Record)。
  *
- * <p>吸收 Harness² ledger.py、context.py 与 runmark.py 的设计思想，
- * 记录单次智能体执行的完整时序、RAG 检索、工具调用、Token 成本与状态物理证据，
+ * <p>吸收 Harness² ledger.py 与 runmark.py 的设计思想，
+ * 记录单次智能体执行的轻量物理证据（含输入摘要、RAG 检索置信度、工具耗时与入参出参摘要哈希、Token 估算成本），
  * 并支持确定性 SHA-256 摘要签名防篡改。</p>
  */
 public record HarnessEvidenceRecord(

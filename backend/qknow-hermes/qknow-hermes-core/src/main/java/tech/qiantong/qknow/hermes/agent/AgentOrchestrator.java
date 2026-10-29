@@ -571,10 +571,12 @@ public class AgentOrchestrator {
         String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, tools, chatModel);
         if (planAnswer != null) {
             fullAnswer.append(planAnswer);
-            promptTokens.set(estimateTokenCount(request.getQuestion()));
-            completionTokens.set(estimateTokenCount(planAnswer));
+            long pt = estimateTokenCount(request.getQuestion());
+            long ct = estimateTokenCount(planAnswer);
+            promptTokens.set(pt);
+            completionTokens.set(ct);
             evidenceCollector.recordFinalOutput(planAnswer);
-            evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+            evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
             recordEvidence(evidenceCollector.finalizeEvidence());
             unregisterRequestVoucher(request.getRequestId());
             emitSingleAnswer(request, emitter, planAnswer, effectiveVoucher);
@@ -601,16 +603,16 @@ public class AgentOrchestrator {
             }
         }
 
-        // 8. 挂载 ReActCycleGuard 防死循环与振荡熔断守卫
+        // 8. 挂载 ReActCycleGuard 防死循环与振荡熔断守卫，并挂载真实工具执行证据采集
         final ReActCycleGuard cycleGuard = new ReActCycleGuard(
-                harnessVoucher.guardrails().maxCycleSteps(),
-                harnessVoucher.guardrails().loopThreshold());
+                effectiveVoucher.guardrails().maxCycleSteps(),
+                effectiveVoucher.guardrails().loopThreshold());
         List<ToolCallback> guardedTools = tools.stream()
-                .map(t -> wrapWithCycleGuard(t, cycleGuard))
+                .map(t -> wrapWithCycleGuard(t, cycleGuard, evidenceCollector))
                 .collect(Collectors.toList());
         ToolCallbackResolver guardedResolver = name -> {
             ToolCallback cb = resolver != null ? resolver.resolve(name) : null;
-            return wrapWithCycleGuard(cb, cycleGuard);
+            return wrapWithCycleGuard(cb, cycleGuard, evidenceCollector);
         };
 
         // 8.5 P0-15 多智能体受控编排分支 (委托 MultiAgentOrchestrationService，默认 SINGLE 100% 走原有路径)
@@ -626,10 +628,12 @@ public class AgentOrchestrator {
         );
         if (orchestrationOutcome.handledByMultiAgent()) {
             fullAnswer.append(orchestrationOutcome.answer());
-            promptTokens.set(orchestrationOutcome.promptTokens());
-            completionTokens.set(orchestrationOutcome.completionTokens());
+            long pt = orchestrationOutcome.promptTokens();
+            long ct = orchestrationOutcome.completionTokens();
+            promptTokens.set(pt);
+            completionTokens.set(ct);
             evidenceCollector.recordFinalOutput(orchestrationOutcome.answer());
-            evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+            evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
             recordEvidence(evidenceCollector.finalizeEvidence());
             unregisterRequestVoucher(request.getRequestId());
             emitSingleAnswer(request, emitter, orchestrationOutcome.answer(), effectiveVoucher);
@@ -725,7 +729,6 @@ public class AgentOrchestrator {
                                         .build());
                             } else if (type == OutputType.AGENT_TOOL_FINISHED) {
                                 log.info("工具调用完成: tool={}, status={}", output.node(), "success");
-                                evidenceCollector.recordToolExecution(output.node(), 0, true, "", "");
                                 emitter.next(ChatEvent.newBuilder()
                                         .setRequestId(request.getRequestId())
                                         .setToolInvoked(ToolInvoked.newBuilder()
@@ -750,15 +753,19 @@ public class AgentOrchestrator {
                     }
                     if (StrUtil.isNotBlank(recovered)) {
                         fullAnswer.append(recovered);
-                        promptTokens.set(estimateTokenCount(request.getQuestion()));
-                        completionTokens.set(estimateTokenCount(recovered));
+                        long pt = estimateTokenCount(request.getQuestion());
+                        long ct = estimateTokenCount(recovered);
+                        promptTokens.set(pt);
+                        completionTokens.set(ct);
                         evidenceCollector.recordFinalOutput(recovered);
-                        evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+                        evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
                         recordEvidence(evidenceCollector.finalizeEvidence());
                         unregisterRequestVoucher(request.getRequestId());
                         emitSingleAnswer(request, emitter, recovered, effectiveVoucher);
                     } else {
+                        long pt = estimateTokenCount(request.getQuestion());
                         evidenceCollector.recordFinalOutput("ERROR: " + (error.getMessage() != null ? error.getMessage() : "Agent execution error"));
+                        evidenceCollector.recordCostAndTokens(pt, calculateEstimatedCostCny(pt, 0L));
                         recordEvidence(evidenceCollector.finalizeEvidence());
                         unregisterRequestVoucher(request.getRequestId());
                         emitter.next(ChatEvent.newBuilder()
@@ -773,8 +780,16 @@ public class AgentOrchestrator {
                 },
                 () -> {
                     releaseReactCapacity.run();
+                    long pt = promptTokens.get();
+                    long ct = completionTokens.get();
+                    if (pt <= 0L && request.getQuestion() != null) {
+                        pt = estimateTokenCount(request.getQuestion());
+                    }
+                    if (ct <= 0L && fullAnswer.length() > 0) {
+                        ct = estimateTokenCount(fullAnswer.toString());
+                    }
                     evidenceCollector.recordFinalOutput(fullAnswer.toString());
-                    evidenceCollector.recordCostAndTokens(promptTokens.get() + completionTokens.get(), 0.0);
+                    evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
                     recordEvidence(evidenceCollector.finalizeEvidence());
                     unregisterRequestVoucher(request.getRequestId());
                     emitter.next(ChatEvent.newBuilder()
@@ -1442,10 +1457,19 @@ public class AgentOrchestrator {
     private record PlanTask(String taskId, String objective, String worker, List<String> dependencies) {
     }
 
+    private double calculateEstimatedCostCny(long promptTokens, long completionTokens) {
+        // 基于 DeepSeek 官方标准计费基准：输入 1 元/百万 tokens，输出 2 元/百万 tokens
+        return (promptTokens * 1.0 + completionTokens * 2.0) / 1_000_000.0;
+    }
+
     /**
-     * 包装带有死循环熔断防护的 ToolCallback
+     * 包装带有死循环熔断防护与证据采集的 ToolCallback
      */
     private ToolCallback wrapWithCycleGuard(ToolCallback original, ReActCycleGuard guard) {
+        return wrapWithCycleGuard(original, guard, null);
+    }
+
+    private ToolCallback wrapWithCycleGuard(ToolCallback original, ReActCycleGuard guard, HarnessEvidenceCollector evidenceCollector) {
         if (original == null) {
             return null;
         }
@@ -1462,6 +1486,9 @@ public class AgentOrchestrator {
                     if (agentMetricsService != null) {
                         agentMetricsService.recordCallLimitExceeded();
                     }
+                    if (evidenceCollector != null) {
+                        evidenceCollector.recordToolExecution(toolName, 0L, false, toolInput, "CIRCUIT_BREAKER_STEP_LIMIT");
+                    }
                     return "【系统熔断提示】：Agent 循环执行步数已达上限，已强制熔断。请直接输出最终答案。";
                 }
                 var check = guard.inspectToolCall(toolName, toolInput);
@@ -1469,18 +1496,28 @@ public class AgentOrchestrator {
                     if (agentMetricsService != null) {
                         agentMetricsService.recordCycleBreakerTriggered();
                     }
+                    if (evidenceCollector != null) {
+                        evidenceCollector.recordToolExecution(toolName, 0L, false, toolInput, "CIRCUIT_BREAKER_TRIPPED");
+                    }
                     return check.injectionMessage();
                 }
                 long toolStartNs = System.nanoTime();
                 boolean toolSuccess = true;
+                String result = "";
                 try {
-                    return original.call(toolInput);
+                    result = original.call(toolInput);
+                    return result;
                 } catch (Exception e) {
                     toolSuccess = false;
+                    result = "ERROR: " + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
                     throw e;
                 } finally {
+                    long durationMs = (System.nanoTime() - toolStartNs) / 1_000_000L;
                     if (agentMetricsService != null) {
                         agentMetricsService.recordToolExecution(toolName, toolSuccess, System.nanoTime() - toolStartNs);
+                    }
+                    if (evidenceCollector != null) {
+                        evidenceCollector.recordToolExecution(toolName, durationMs, toolSuccess, toolInput, result);
                     }
                 }
             }

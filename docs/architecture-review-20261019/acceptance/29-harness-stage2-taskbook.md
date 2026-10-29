@@ -2,7 +2,8 @@
 
 > **任务书版本**：2.0.0-STAGE2-FROZEN  
 > **任务书状态**：FROZEN（已冻结）  
-> **冻结签名 (SHA-256)**：`f4e373fe9d4c9a94fcf0bcc02abb4c3e0b145f26137625363339657bcef9a8b6`  
+> **正文冻结签名 (SHA-256)**：`e10b7eb1a95b9470cf7730741c1baf70cb7be42f7a738ed8063ef7f8986e7dd4`  
+> **正文签名复算命令**：`sed -n '/## A\./,$p' docs/architecture-review-20261019/acceptance/29-harness-stage2-taskbook.md | shasum -a 256`  
 > **基准分支**：`feat/hermes-harness-stage2`（从 `feat/hermes-harness-contract` 创建，Commit `770d7db9`）  
 > **实施环境**：Java 21 隔离环境（`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`）、DeepSeek 官方 API、阿里千问 1024 维超球面向量空间、单 Agent 生产默认模式。  
 > **准则遵循**：《AGENTS.md》科研门禁与独占简体中文规范
@@ -14,12 +15,12 @@
 ### 1. 现状与缺口分析
 阶段一（Commit `770d7db9`）成功落地了 8 大不可变组件 Record 契约与 `HermesHarnessVoucher` 聚合模型，并在 `HermesHarnessAssembler` 中封死了 System Prompt 动态变量注入。然而，阶段一仍存在“有契约但未接通”的断点：
 - **缺口 1：运行时参数未受契约驱动**：
-  在 `AgentOrchestrator.java` 中，模型调用的记忆滑动窗口深度、工具调用引导策略与守卫阈值等，并未全面读取传入的 `HermesHarnessVoucher` 内部字段（如 `MemoryContextStrategyRecord.shortTermWindowSize`、`ToolGuidancePolicyRecord.enforcePreconditionChecks`），依然依赖类内默认静态常数；
-- **缺口 2：缺乏全链路物理执行证据链 (Evidence Tracking Gap)**：
-  目前 Hermes 仅能在流式传输分片透传 `harness_fingerprint`，缺乏类似 Harness² `ledger.py`、`context.py` 与 `runmark.py` 的可追溯物理执行留痕机制。单次调用的输入、RAG 检索召回分片得分、工具调用时序与入参出参、真实 Token 消耗与执行指纹无法形成结构化不可变凭单，无法满足审计合规与后续离线评测的需求。
+  在 `AgentOrchestrator.java` 中，模型调用的记忆滑动窗口深度、工具调用引导策略与守卫阈值等，并未全面读取传入的 `HermesHarnessVoucher` 内部字段（如 `MemoryContextStrategyRecord.shortTermWindowSize`、`GuardrailsSpecificationRecord.maxCycleSteps`），依然依赖类内默认静态常数；
+- **缺口 2：缺乏结构化执行物理证据链 (Evidence Tracking Gap)**：
+  目前 Hermes 仅能在流式传输分片透传 `harness_fingerprint`，缺乏类似 Harness² `ledger.py`、`context.py` 与 `runmark.py` 的可追溯物理执行留痕机制。单次调用的输入、RAG 检索置信度得分、工具调用真实耗时与入参出参摘要哈希、基于 Token 的真实成本估算无法形成结构化不可变凭单，无法满足审计合规与后续离线评测的需求。
 
 ### 2. 阶段二唯一待验证假设 (Unique Falsifiable Hypothesis)
-> **在 Hermes 单 Agent (SINGLE 模式) 架构上，将阶段一建立的不可变 Harness 组件契约（`GuardrailsSpecificationRecord`、`MemoryContextStrategyRecord`、`ToolGuidancePolicyRecord`）真正接入并驱动运行时执行链路，并挂载轻量只读的 `HarnessEvidenceCollector`（证据采集器）：在保持默认生产行为与回答语义 100% 零回归的前提下，能够对单次请求产生确定性、包含完整时序/RAG/工具/成本物理证据的不可变凭单（`HarnessEvidenceRecord`），全量通过 Java 21 1942+ 项测试，为后续离线小样本下的受控 Harness 变异与探针评测提供唯一可复现的基石证据。**
+> **在 Hermes 单 Agent (SINGLE 模式) 架构上，将阶段一建立的不可变 Harness 组件契约核心参数（`GuardrailsSpecificationRecord.maxCycleSteps`、`MemoryContextStrategyRecord.shortTermWindowSize`、`longTermRecallTopK` 等）真正接入并驱动运行时执行链路，并挂载轻量只读的 `HarnessEvidenceCollector`（轻量执行摘要证据采集器）：在保持默认生产行为与回答语义 100% 零回归的前提下，能够对单次请求产生确定性、包含轻量执行摘要证据（RAG 置信度、工具真实耗时与入参出参摘要哈希、Token 估算成本）的不可变凭单（`HarnessEvidenceRecord`），全量通过 Java 21 1942+ 项测试，为后续离线小样本下的受控 Harness 变异与探针评测提供唯一可复现的基石证据。**
 
 ---
 
@@ -58,31 +59,33 @@
 
 ## D. 推荐的最小算法与工程方案
 
-### 1. 契约参数全面驱动运行时
-- 在 `AgentOrchestrator` 执行时，由 `HermesHarnessVoucher` 提取参数驱动核心流程：
-  - `memoryStrategy.shortTermWindowSize()`：控制上下文注入的短期历史轮次截断；
-  - `toolPolicy.enforcePreconditionChecks()`：在触发工具调用前进行形式化前置检查；
-  - `guardrails.maxModelCalls()` 与 `maxCostUsd()`：作为执行流的硬性熔断上限；
-  - 若调用方未显式传入 Voucher，自动挂载系统默认不可变 `HermesHarnessVoucher`，保证向下兼容。
+### 1. 核心契约参数驱动运行时与组件占位说明
+- 在 `AgentOrchestrator` 执行时，由 `HermesHarnessVoucher` 提取核心参数驱动关键执行流程：
+  - `memoryStrategy.shortTermWindowSize()`：驱动上下文注入的短期历史轮次截断（已接入）；
+  - `memoryStrategy.longTermRecallTopK()`：驱动长期历史记忆摘要召回上限（已接入）；
+  - `guardrails.maxCycleSteps()` 与 `loopThreshold()`：驱动 ReAct 循环守卫与模型调用限制 Hook（已接入）；
+  - `toolGuidance.autoToolSelectionEnabled()`：驱动 Assembler 中工具引导前缀生成（已接入）；
+  - 若调用方未显式传入 Voucher，自动挂载系统默认不可变 `HermesHarnessVoucher`，保证向下兼容；
+  - **组件契约占位说明**：`maxTokenBudget`、`maxCostCny`、`ToolGuidancePolicyRecord.hoareVerificationEnabled / twoPhaseApprovalEnabled`、`SubagentsTopologyRecord`、`EnterpriseSkillBankRecord`、`SandboxedExecutionPlanRecord`、`McpMiddlewarePluginsRecord` 目前作为强类型契约声明与结构占位，阶段二暂不做破坏性深入侵入，确保系统生产基线稳定。
 
-### 2. 离线全链路只读证据链 (`HarnessEvidenceCollector` & `HarnessEvidenceRecord`)
+### 2. 离线只读证据链 (`HarnessEvidenceCollector` & `HarnessEvidenceRecord`)
 - **不可变凭单模型 (`HarnessEvidenceRecord`)**：
   采用纯 Java 21 Record 声明，包含字段：
   - `evidenceId` (UUID 字符串)；
   - `requestId` 与 `botId`；
   - `voucherFingerprint` (SHA-256 哈希) 与 `voucherVersion`；
   - `timestamp` (创建时间戳)；
-  - `userInput` (原始用户输入摘要)；
-  - `ragDocumentCount` 与 `ragTopScore` (RAG 检索召回状态)；
-  - `toolExecutions` (不可变 List，记录工具名、耗时、状态、入参哈希)；
-  - `estimatedTokens` 与 `estimatedCostUsd`；
+  - `userInputSummary` (原始用户输入摘要)；
+  - `ragDocumentCount` 与 `ragTopScore` (RAG 检索分片数与检索置信度评分)；
+  - `toolExecutions` (不可变 List，记录工具名、真实执行耗时 `durationMs`、成功状态、真实入参摘要哈希与出参摘要哈希)；
+  - `estimatedTokens` (真实 Token 数量统计) 与 `estimatedCostCny` (基于 DeepSeek 官方单价真实计算的人民币成本)；
   - `executionDurationMs` (全链路物理执行耗时)；
   - `finalOutputSummary` (最终产出摘要)；
-  - `computeDigest()` (使用 SHA-256 计算整条证据的防篡改指纹)。
-- **只读旁路采集器 (`HarnessEvidenceCollector`)**：
-  - 线程安全、纯内存收集，无文件 I/O 阻塞；
-  - 通过 `startCapture(requestId, voucher)` 开启，在执行各关键阶段 `recordRag()`、`recordToolExecution()`、`recordTokens()`，执行完毕调用 `finalizeEvidence()` 输出不可变 `HarnessEvidenceRecord`；
-  - 支持通过监听器或上下文查询，对主流程响应式流零阻塞。
+  - `computeDigest()` (使用确定性 SHA-256 计算整条证据的防篡改签名)。
+- **轻量执行摘要证据采集器 (`HarnessEvidenceCollector`)**：
+  - 线程安全、同步纯内存轻量收集，无磁盘文件 I/O 阻塞；
+  - 在请求启动时绑定不可变 Voucher 初始化，在关键阶段 `recordRagEvidence()`、`recordToolExecution()`、`recordCostAndTokens()`，执行完毕调用 `finalizeEvidence()` 输出不可变 `HarnessEvidenceRecord`；
+  - 支持通过监听器或内存缓存查询最近证据，对主流程流式打字机输出零阻塞。
 
 ### 3. 为什么坚决不碰 MCP / SWARM / HITL
 - 坚持单变量实验原则：阶段二聚焦单智能体内部的“契约参数驱动”与“证据留痕”，不引入跨进程通信、多智能体协议与人工审批交互的不确定性。

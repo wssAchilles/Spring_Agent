@@ -14,11 +14,11 @@
 
 | 序号 | 任务书目标项 | 实施机制与技术标准 | 交付状态 |
 |:---:|:---|:---|:---:|
-| 1 | **找出真正适合 Hermes 的 2–3 个 Harness² 机制** | 确立“不可变契约参数驱动运行时 + 全链路只读不可变证据链 (`HarnessEvidenceCollector`)”两大核心机制；坚决拒绝在线篡改 Prompt 与任意脚本执行。 | **[x] 已达成** |
-| 2 | **形成可冻结、可验收的阶段任务书** | 完成阶段 0 只读审计、阶段 1 8 源定向检索、阶段 2 原生 subagent 物理派发、阶段 3 多 Agent 两轮辩论与终审裁决；形成冻结任务书并计算 SHA-256 签名。 | **[x] 已达成** |
-| 3 | **契约参数全面驱动运行时链路** | 在 `AgentOrchestrator` 中接通 `MemoryContextStrategyRecord`（短期窗口大小、长期召回 Top-K）与 `GuardrailsSpecificationRecord`（步数阈值），彻底废除硬编码。 | **[x] 已达成** |
-| 4 | **落地全链路只读不可变证据链** | 实现纯 Java 21 Record 驱动的 `HarnessEvidenceRecord` 与非阻塞旁路采集器 `HarnessEvidenceCollector`，支持确定性 SHA-256 签名（`computeDigest`）与常量时间比对（`verifyDigest`）。 | **[x] 已达成** |
-| 5 | **反事实消融实验（Ablation）通过** | 实测反事实场景：恶意篡改 Token 成本或最终输出摘要后，签名校验严格返回 `false`，防篡改与因果溯源能力 100% 成立。 | **[x] 已达成** |
+| 1 | **找出真正适合 Hermes 的 2–3 个 Harness² 机制** | 确立“核心契约参数驱动运行时 + 轻量执行摘要证据采集 (`HarnessEvidenceCollector`)”两大机制；坚决拒绝在线篡改 Prompt 与任意脚本执行。 | **[x] 已达成** |
+| 2 | **形成可冻结、可验收的阶段任务书** | 完成阶段 0 只读审计、阶段 1 8 源定向检索、阶段 2 原生 subagent 物理派发、阶段 3 多 Agent 两轮辩论与终审裁决；形成任务书并完成正文与全文件 SHA-256 签名冻结。 | **[x] 已达成** |
+| 3 | **核心契约参数驱动运行时链路** | 在 `AgentOrchestrator` 中接通 `MemoryContextStrategyRecord`（短期窗口大小、长期召回 Top-K）与 `GuardrailsSpecificationRecord`（步数阈值），其余组件仍作为契约占位。 | **[x] 已达成** |
+| 4 | **落地轻量执行摘要证据链** | 实现纯 Java 21 Record 驱动的 `HarnessEvidenceRecord` 与同步纯内存非阻塞采集器 `HarnessEvidenceCollector`，支持确定性 SHA-256 签名（`computeDigest`）与常量时间防篡改校验（`verifyDigest`）。 | **[x] 已达成** |
+| 5 | **反事实消融实验（Ablation）通过** | 实测反事实场景：恶意篡改 Token 成本或最终输出摘要后，签名校验严格返回 `false`，防篡改能力 100% 成立。 | **[x] 已达成** |
 | 6 | **全量测试回归门禁通过 (连续 2 次)** | 连续执行 2 次 `mvn clean test -pl tests -am`，两次测试数完全一致（1942 绿 / 0 失败 / 0 错误 / 8 跳过），耗时均为 01:14 min，零语义回归。 | **[x] 已达成** |
 | 7 | **严守工程红线与边界铁律** | 零修改 `main` 分支、零修改 MCP stdio、零修改 SWARM/HITL 核心、零引入外部依赖。 | **[x] 已达成** |
 
@@ -29,26 +29,28 @@
 ### 1. 修改文件清单（严格受控于任务书第 E 节）
 | 文件路径 | 变更类型 | SHA-256 物理签名 |
 |:---|:---:|:---|
-| `backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/AgentOrchestrator.java` | 业务修改 | `084eb3ea63758cc76b28ca416cf6e236d8eb6bc286af2de3629e280abfa66ff3` |
+| `backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/AgentOrchestrator.java` | 业务修改 | `dc2e3695d4edc5b6ea62679aa07a9aa3bdbae815e2cc8d732d7a374b21bc24e7` |
+| `backend/qknow-hermes/qknow-hermes-proto/pom.xml` | 门禁修复 (build-helper) | `fce5b5aa3767e4214928374e2b50c89ca44552c91ddf92e6423e0071fc66860a` |
 
 ### 2. 新增代码与测试文件清单
 | 文件路径 | 类型 | SHA-256 物理签名 |
 |:---|:---:|:---|
-| `backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/harness/HarnessEvidenceRecord.java` | 核心凭单 Record | `ba12f1c057d1cd9a7f39e999e33bbd5f5bb8a0ed69ca208505907de88994eff1` |
-| `backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/harness/HarnessEvidenceCollector.java` | 旁路采集器 | `29148944b42a69e4c4109e698c1ecbbeaf337fe740a06f0c95ca6cb68ccbcc02` |
+| `backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/harness/HarnessEvidenceRecord.java` | 核心凭单 Record | `2b35b232d7fc809cbe8b3339fc623e6f5ae11a0569453cbd13dce1229de2f2d9` |
+| `backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/harness/HarnessEvidenceCollector.java` | 摘要采集器 | `1adc1dd7045dbd97cf03fa42491fbb73e38068b8c5fc508a95372e52d832dee6` |
 | `backend/qknow-hermes/qknow-hermes-core/src/test/java/tech/qiantong/qknow/hermes/agent/harness/HermesHarnessStage2RuntimeTest.java` | 契约与消融单测 | `dd51c59e6b5ea15ffd6e76ca74cdcbe693c2cebbc53882ff1905347e1b243641` |
 
 ### 3. 新增科研法医与辩论审计文件清单
 | 阶段与文件路径 | 说明与说明 |
 |:---|:---|
 | [`docs/architecture-review-20261019/acceptance/27-harness2-audit.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-audit.md) | 阶段 0：只读审计与假设锁定报告 |
-| [`docs/architecture-review-20261019/acceptance/27-harness2-research.ledger.json`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-research.ledger.json) | 阶段 1：8 源 14 字段完整 Research Ledger |
+| [`docs/architecture-review-20261019/acceptance/27-harness2-research.ledger.json`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-research.ledger.json) | 阶段 1：8 源 14 字段完整 Research Ledger (Harness² 官方标题已更正) |
 | [`docs/architecture-review-20261019/acceptance/27-harness2-research.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-research.md) | 阶段 1：定向学术文献与工业代码法医审计报告 |
-| [`docs/architecture-review-20261019/acceptance/27-harness2-agent-A.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-agent-A.md) | 阶段 2：Agent A 理论与算法审计报告 (`a654165a`) |
+| [`docs/architecture-review-20261019/acceptance/27-harness2-agent-A.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-agent-A.md) | 阶段 2：Agent A 理论文献审计报告 (`a654165a`) |
 | [`docs/architecture-review-20261019/acceptance/27-harness2-agent-B.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-agent-B.md) | 阶段 2：Agent B 生产工程与 Java 适配报告 (`478dab7a`) |
 | [`docs/architecture-review-20261019/acceptance/27-harness2-agent-C.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/27-harness2-agent-C.md) | 阶段 2：Agent C 评测、风险与反事实审计报告 (`630415a9`) |
 | [`docs/architecture-review-20261019/acceptance/28-harness2-debate.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/28-harness2-debate.md) | 阶段 3：多智能体两轮辩论与终审裁决报告 |
-| [`docs/architecture-review-20261019/acceptance/29-harness-stage2-taskbook.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/29-harness-stage2-taskbook.md) | 阶段 4：冻结实施任务书 (`df9ea1fc1417...`) |
+| [`docs/architecture-review-20261019/acceptance/29-harness-stage2-taskbook.md`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/29-harness-stage2-taskbook.md) | 阶段 4：冻结实施任务书 (正文签名: `e10b7eb1...`, 全文件: `d0c2f1c3...`) |
+| [`docs/architecture-review-20261019/acceptance/29-harness-stage2-taskbook.md.sha256`](file:///Users/achilles/Documents/许子祺/Agent/docs/architecture-review-20261019/acceptance/29-harness-stage2-taskbook.md.sha256) | 阶段 4：shasum 校验标准文件 (`shasum -c` 验证通过) |
 
 ---
 

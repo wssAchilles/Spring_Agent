@@ -11,7 +11,7 @@
 
 本阶段严格遵循《AGENTS.md》科研门禁与取证前置铁律，对 8 个高相关性核心学术成果与工业生产级代码仓库进行了法医级全景剖析与实测验证：
 
-### 1. Harness²: Automated Harness Search for Autonomous Software Agents (arXiv:2610.14224)
+### 1. Harness²: Recursive Agent Harnessing for an Open World (arXiv:2610.14224)
 - **核心思想**：
   提出智能体性能公式 $\text{Agent} = \text{Model} + \text{Harness}$。在冻结大语言模型权重 $\mathcal{M}$ 的前提下，通过将智能体外周装配系统抽象为八大正交组件，利用双层递归（任务内 Propose–Probe–Compose 与跨任务经验库元递归）实现系统级自主进化。
 - **数学/算法机制**：

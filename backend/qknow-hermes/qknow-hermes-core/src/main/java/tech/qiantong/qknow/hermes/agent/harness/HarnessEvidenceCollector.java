@@ -15,10 +15,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
- * 阶段二只读旁路执行证据采集器 (Harness Evidence Collector)。
+ * 阶段二轻量执行摘要证据采集器 (Lightweight Execution Summary Evidence Collector)。
  *
  * <p>吸收 Harness² ledger 与 context 的设计思想，
- * 采用全异步、纯内存方式收集单次请求的物理证据，零阻塞流式通道，
+ * 采用同步纯内存、非阻塞方式收集单次请求的轻量执行物理证据，零阻塞流式通道，
  * 最终输出不可变凭单 {@link HarnessEvidenceRecord}。</p>
  */
 public class HarnessEvidenceCollector {
