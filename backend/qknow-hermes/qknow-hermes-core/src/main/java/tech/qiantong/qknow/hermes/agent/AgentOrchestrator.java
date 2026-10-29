@@ -22,6 +22,8 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.agent.guard.ReActCycleGuard;
+import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessAssembler;
+import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -103,6 +105,19 @@ public class AgentOrchestrator {
     private final RagasEvaluator ragasEvaluator;
     private final tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig;
     private final MemoryManager memoryManager;
+
+    private HermesHarnessAssembler harnessAssembler = new HermesHarnessAssembler();
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setHarnessAssembler(HermesHarnessAssembler harnessAssembler) {
+        if (harnessAssembler != null) {
+            this.harnessAssembler = harnessAssembler;
+        }
+    }
+
+    public HermesHarnessAssembler getHarnessAssembler() {
+        return harnessAssembler;
+    }
 
     private tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService multiAgentOrchestrationService;
     private boolean usingFallbackOrchestrationService = false;
@@ -471,21 +486,25 @@ public class AgentOrchestrator {
         }
         recordUserMemory(request);
 
-        // 6. 构建系统提示词 (DeepSeek 1M Context Caching 架构优化：保持 SystemPrompt 静态不可变，命中 1 折 Token 缓存)
-        String systemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
-        systemPrompt = appendSecurityInstructions(systemPrompt);
-        systemPrompt = appendToolInstructions(systemPrompt, enabledToolNames);
+        // 6. 构建系统提示词：由不可变 Harness 凭单装配静态前缀，动态 RAG 只进入 UserMessage。
+        String resolvedSystemPrompt = NodeUtils.replacePlaceholder(request.getSystemPrompt(), request.getInputParams());
+        HermesHarnessVoucher harnessVoucher = harnessAssembler.createRequestVoucher(
+                request.getBotId(), resolvedSystemPrompt);
+        String systemPrompt = harnessAssembler.assembleSystemPrompt(harnessVoucher, tools);
+        final String harnessVersion = harnessVoucher.version();
+        final String harnessFingerprint = harnessVoucher.computeFingerprint();
         String plannerSupervision = createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
         if (StrUtil.isNotBlank(plannerSupervision)) {
             systemPrompt = systemPrompt + plannerSupervision;
         }
-        log.info("Agent 静态系统提示词 (Context Caching 友好): {}", systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
+        log.info("Agent 静态系统提示词 (Context Caching 友好): harness={}, fingerprint={}, prompt={}",
+                harnessVersion, harnessFingerprint,
+                systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
 
         // 动态 RAG 检索上下文挂载在当前轮次 User 消息前缀，杜绝污染全局 System 前缀
         String ragContextBlock = buildRagContextBlock(effectiveRagContexts, retrievalEvaluation);
-        String finalUserPrompt = StrUtil.isNotBlank(ragContextBlock)
-                ? ragContextBlock + "\n\n" + request.getQuestion()
-                : request.getQuestion();
+        String finalUserPrompt = harnessAssembler.assembleUserMessageWithContext(
+                request.getQuestion(), ragContextBlock, harnessVoucher);
         messages.add(new UserMessage(finalUserPrompt));
 
         String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, tools, chatModel);
@@ -493,7 +512,7 @@ public class AgentOrchestrator {
             fullAnswer.append(planAnswer);
             promptTokens.set(estimateTokenCount(request.getQuestion()));
             completionTokens.set(estimateTokenCount(planAnswer));
-            emitSingleAnswer(request, emitter, planAnswer);
+            emitSingleAnswer(request, emitter, planAnswer, harnessVoucher);
             return;
         }
 
@@ -518,7 +537,9 @@ public class AgentOrchestrator {
         }
 
         // 8. 挂载 ReActCycleGuard 防死循环与振荡熔断守卫
-        final ReActCycleGuard cycleGuard = new ReActCycleGuard(10, 3);
+        final ReActCycleGuard cycleGuard = new ReActCycleGuard(
+                harnessVoucher.guardrails().maxCycleSteps(),
+                harnessVoucher.guardrails().loopThreshold());
         List<ToolCallback> guardedTools = tools.stream()
                 .map(t -> wrapWithCycleGuard(t, cycleGuard))
                 .collect(Collectors.toList());
@@ -542,7 +563,7 @@ public class AgentOrchestrator {
             fullAnswer.append(orchestrationOutcome.answer());
             promptTokens.set(orchestrationOutcome.promptTokens());
             completionTokens.set(orchestrationOutcome.completionTokens());
-            emitSingleAnswer(request, emitter, orchestrationOutcome.answer());
+            emitSingleAnswer(request, emitter, orchestrationOutcome.answer(), harnessVoucher);
             return;
         }
         boolean fallbackFromMultiAgent = orchestrationOutcome.fallbackTriggered();
@@ -551,7 +572,9 @@ public class AgentOrchestrator {
         ReactAgent agent = ReactAgent.builder()
                 .name("hermes_agent")
                 .model(agentModel)
-                .hooks(ModelCallLimitHook.builder().runLimit(10).build())
+                .hooks(ModelCallLimitHook.builder()
+                        .runLimit(harnessVoucher.guardrails().maxCycleSteps())
+                        .build())
                 .systemPrompt(systemPrompt)
                 .toolNames(toolNames)
                 .tools(guardedTools)
@@ -619,6 +642,8 @@ public class AgentOrchestrator {
                                                 .setReasoningContent(reasoningContent)
                                                 .setIsThinking(isThinking)
                                                 .setUserQuestion(request.getQuestion())
+                                                .setHarnessVersion(harnessVersion)
+                                                .setHarnessFingerprint(harnessFingerprint)
                                                 .build())
                                         .build());
                             } else if (type == OutputType.AGENT_MODEL_FINISHED) {
@@ -657,7 +682,7 @@ public class AgentOrchestrator {
                         fullAnswer.append(recovered);
                         promptTokens.set(estimateTokenCount(request.getQuestion()));
                         completionTokens.set(estimateTokenCount(recovered));
-                        emitSingleAnswer(request, emitter, recovered);
+                        emitSingleAnswer(request, emitter, recovered, harnessVoucher);
                     } else {
                         emitter.next(ChatEvent.newBuilder()
                                 .setRequestId(request.getRequestId())
@@ -1110,13 +1135,22 @@ public class AgentOrchestrator {
     }
 
     private void emitSingleAnswer(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter, String answer) {
+        emitSingleAnswer(request, emitter, answer, null);
+    }
+
+    private void emitSingleAnswer(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter,
+                                  String answer, HermesHarnessVoucher harnessVoucher) {
         String text = answer != null ? answer : "";
+        StreamingChunk.Builder chunkBuilder = StreamingChunk.newBuilder()
+                .setText(text)
+                .setUserQuestion(request.getQuestion());
+        if (harnessVoucher != null) {
+            chunkBuilder.setHarnessVersion(harnessVoucher.version())
+                    .setHarnessFingerprint(harnessVoucher.computeFingerprint());
+        }
         emitter.next(ChatEvent.newBuilder()
                 .setRequestId(request.getRequestId())
-                .setChunk(StreamingChunk.newBuilder()
-                        .setText(text)
-                        .setUserQuestion(request.getQuestion())
-                        .build())
+                .setChunk(chunkBuilder.build())
                 .build());
         emitter.next(ChatEvent.newBuilder()
                 .setRequestId(request.getRequestId())

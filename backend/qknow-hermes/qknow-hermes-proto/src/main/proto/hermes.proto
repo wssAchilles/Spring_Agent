@@ -100,6 +100,8 @@ message StreamingChunk {
   google.protobuf.Timestamp create_time = 3;
   string reasoning_content = 4;
   bool is_thinking = 5;
+  string harness_version = 6;
+  string harness_fingerprint = 7;
 }
 
 message ModelFinished {
