@@ -37,12 +37,12 @@
 
 | 任务标识 (`taskId`) | 业务场景 | Baseline Tokens | Candidate Tokens | Token 差分 ($\Delta T$) | Baseline 耗时 (ms) | Candidate 耗时 (ms) | 耗时差分 ($\Delta D$) | 盲审仲裁结果 (`VerdictOutcome`) |
 |---|---|---|---|---|---|---|---|---|
-| `kb-qa-01` | 订单支付超时重试与幂等规范 | 389 | 366 | **-23** (-5.9%) | 6667 | 5802 | **-865** | `SHORT_CIRCUITED_REJECT` (工具调用不匹配) |
-| `tool-route-02` | 银行流水扣款核查与余额校验 | 422 | 529 | **+107** (+25.4%) | 6803 | 7408 | **+605** | `SHORT_CIRCUITED_REJECT` (Token 膨胀) |
-| `param-guard-03` | 日历会议创建与非标时间纠错 | 418 | 461 | **+43** (+10.3%) | 5889 | 9603 | **+3714** | `SHORT_CIRCUITED_REJECT` (Token 膨胀) |
-| `ctx-history-04` | 消除指代与长程多轮对话推理 | 465 | 681 | **+216** (+46.5%) | 11506 | 13828 | **+2322** | `SHORT_CIRCUITED_REJECT` (Token 膨胀) |
-| `comp-rag-tool-05` | 微服务架构方案对比与表格生成 | 711 | 587 | **-124** (-17.4%) | 11861 | 11777 | **-84** | `SHORT_CIRCUITED_REJECT` (工具调用不匹配) |
-| **全量汇总 / 均值** | **5 大基准任务集合计** | **2405** | **2624** | **+219 (+9.1%)** | **42726** | **48418** | **+5692 (+13.3%)** | **采纳率: 0 / 5 (0%)** |
+| `kb-qa-01` | 订单支付超时重试与幂等规范 | 284 | 231 | **-53** (-18.7%) | 5145 | 4282 | **-863** | `SHORT_CIRCUITED_REJECT` (工具调用不匹配) |
+| `tool-route-02` | 银行流水扣款核查与余额校验 | 340 | 175 | **-165** (-48.5%) | 4678 | 4684 | **+6** | `SHORT_CIRCUITED_REJECT` (耗时超出容忍上限) |
+| `param-guard-03` | 日历会议创建与非标时间纠错 | 719 | 433 | **-286** (-39.8%) | 9925 | 6935 | **-2990** | `SHORT_CIRCUITED_REJECT` (工具调用不匹配) |
+| `ctx-history-04` | 消除指代与长程多轮对话推理 | 301 | 678 | **+377** (+125.2%) | 4672 | 12037 | **+7365** | `SHORT_CIRCUITED_REJECT` (Token 正向膨胀) |
+| `comp-rag-tool-05` | 微服务架构方案对比与表格生成 | 756 | 681 | **-75** (-9.9%) | 13442 | 16750 | **+3308** | `SHORT_CIRCUITED_REJECT` (耗时超出容忍上限) |
+| **全量汇总 / 均值** | **5 大基准任务集合计** | **2400** | **2198** | **-202 (-8.4%)** | **37862** | **44688** | **+6826 (+18.0%)** | **采纳率: 0 / 5 (0%)** |
 
 ---
 
@@ -53,13 +53,14 @@
 - **阶段五待验证假设**：通过提示词精炼压缩变异（`SYSTEM_PROMPT_CONCISE`），在保证核心答案不退化的情况下，能使端到端生成的平均 Token 数量减少至少 30 Tokens，且公网 RTT 耗时增量不超过 25ms。
 - **真实实验判定**：**`hypothesisVerified = false`（假设被证伪 / REFUTED）**。
 - **客观物理归因**：
-  1. **局部收益确实存在**：在纯问答的 `kb-qa-01`（减少 23 tokens，提速 865ms）与长文档输出的 `comp-rag-tool-05`（减少 124 tokens，提速 84ms）中，精炼提示词确实有效降低了生成冗余；
-  2. **全局发生 Token 膨胀**：在需要工具路由、上下文指代消歧与参数纠错的复杂场景（`tool-route-02`, `param-guard-03`, `ctx-history-04`）中，系统提示词的删减导致模型失去了对核心决策约束的明确引导，模型在自主推理时生成了更多的说明性文本与反思步骤，导致单任务 Token 反向膨胀高达 +107、+43、+216 tokens；
-  3. **硬指标熔断拦截**：双向盲审评判器严格执行物理门禁，针对 Token 发生正向膨胀的用例直接判定 `SHORT_CIRCUITED_REJECT`，绝不因局部个案而盲目采纳变异。
+  1. **局部 Token 节省确实显著**：在 `kb-qa-01`（-53 tokens）、`tool-route-02`（-165 tokens）、`param-guard-03`（-286 tokens）与 `comp-rag-tool-05`（-75 tokens）中，精炼提示词均显著减少了模型生成的 Token 消耗，总 Token 净降 202 个；
+  2. **长程推理严重发散与反弹**：在多轮上下文指代消歧用例（`ctx-history-04`）中，系统提示词的过度精炼删除了关键的指代消歧指导，导致模型在推理时产生了严重的认知不确定性，触发了漫长的自我反思与推演，单任务 Token 反向暴涨 +377 tokens，耗时由 4.6s 剧增至 12.0s；
+  3. **耗时预算突破上限**：由于缺少清晰格式引导，模型在 `comp-rag-tool-05` 生成对比表格时推理步骤增加，导致公网耗时延长 3.3s，违反了 $\Delta D \le 25\text{ms}$ 的严苛预算；
+  4. **硬指标门禁严格执行**：双向盲审评判器忠实执行多重硬指标拦截（Token 膨胀硬拦截、耗时越限拦截与工具调用完整性拦截），采纳数为 0，系统拒绝将该变异推向生产。
 
 ### 4.2 科研工程价值
 
-本实验给出了反直觉却极其严密的科学结论：**在生产级 Agent 系统中，“极简提示词”并非万能灵药**。过度精简系统级安全原则与格式规约，反而会迫使大模型在下游长思维链中消耗更多 Token 去“自我补充上下文”。这彻底印证了阶段四伪造实验数据的危害，展现了阶段五真实物理探针不可替代的工程真实性。
+本实验给出了反直觉却极其严密的科学结论：**在生产级 Agent 系统中，“极简提示词”并非万能灵药**。过度精简系统级安全原则与格式规约，虽然能在短问答中节省少量 Token，但会导致大模型在长程推理中因信息不充分而产生昂贵的长思维链发散。这彻底印证了阶段四伪造实验数据的危害，展现了阶段五真实物理探针不可替代的工程真实性。
 
 ---
 
@@ -68,17 +69,17 @@
 实验物理资产已全量落盘至 `experiment/outputs/harness5/run-20261030-stage5-real/`，所有文件通过 `shasum -a 256` 签名并 100% 校验一致：
 
 ```text
-d346802dd2df5c6b02c0f893fa157e00d23cc5d3f98515047e40d18c1025c631  baseline/evidence_comp-rag-tool-05.json
-3370a4fb5c272f9da35e031d0723000a4fcc5ae30273a53c567779b2fbfdd274  baseline/evidence_ctx-history-04.json
-64985a07620d1cbf7319779d23aaf857972aadf4c23624436b34bf039fe12b3a  baseline/evidence_kb-qa-01.json
-3bfd0aa59d02cc06e87a0c7be938fc11ee2347c737cbcc39b6e89a35498b14f5  baseline/evidence_param-guard-03.json
-1d17bd60aeda1c529fcf4bf1007ce53734078ede1c96db309f380a6ffc47e525  baseline/evidence_tool-route-02.json
-cc18f6f71b1a7f48c966d9fadbbf93e9e85b73d4ea27c4e63dddf5c9ca69ab1f  candidate/evidence_comp-rag-tool-05.json
-a85ad9cbfbb07f704b604e6cd013d47e6cbdd7a1ae7d8fc8a39758e5c765184b  candidate/evidence_ctx-history-04.json
-aec97907b42d78c1a5fb79e7c788281d758a7e7b47dcc62096057b7504e26c41  candidate/evidence_kb-qa-01.json
-83c4a82fa65a653015b465b10d98b2c3a7909bf1b3d6080b800ad60b13204332  candidate/evidence_param-guard-03.json
-eee1ba64a391d85d5c76e57ef707ecbab88251dc08bbafa4a0285339fa3460ec  candidate/evidence_tool-route-02.json
-bfed5ff6a88f700a04f44f70b1bd6dae406a0265bbe1f3f397a2c4bd8cc0e0d9  eval/ppc_summary.json
+73c0ad5af36b2874a65b3b7b48db350834081f40e573b00c3cf47cb57e0d4341  baseline/evidence_comp-rag-tool-05.json
+15710e3aa2e438c656319bbce52d0cc3a8f9ec203747db02f2966eabbd81df2a  baseline/evidence_ctx-history-04.json
+bc4aafdfdeedd0677c96fe9ba04fb9b510177ee5f9b1cdaecae5c819a42a7ae1  baseline/evidence_kb-qa-01.json
+5363c417224b04eab7df53b37e606a7bbb133d7af9124fd1653026203b1b3ea1  baseline/evidence_param-guard-03.json
+20dc220ecfd29d7d7da146e554b1a2cfeefcb18e9b90726f0cf867cfae94228a  baseline/evidence_tool-route-02.json
+7f7bb7bb6d56e34023c1aeba6c4f4e41eb092d17befbde05238eee6e97a69847  candidate/evidence_comp-rag-tool-05.json
+c0846fced79d49fdeac49f2169bc7051029047bfe4370de27f08d1aa732b7a89  candidate/evidence_ctx-history-04.json
+2f1e2f9130fb0c9c28b1537277a8a1abbc540bd651de2ccb8d844dd263ce32fc  candidate/evidence_kb-qa-01.json
+d6bfa10c1c7857179584a0f0b649a50a8fe155402b0230f328949b0293d85229  candidate/evidence_param-guard-03.json
+1713ceb1b6b84513495ccc21a484332466ee9f6aa1701502dcf3257e13359677  candidate/evidence_tool-route-02.json
+3ef79ca81a92838e379585b4cd2dbff4273c9865359f53b184467afecba4e9c1  eval/ppc_summary.json
 ```
 
 ---
