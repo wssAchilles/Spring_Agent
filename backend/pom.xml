@@ -16,6 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>21</java.version>
+        <hermes.live.excludedGroups>live</hermes.live.excludedGroups>
         <maven-jar-plugin.version>3.1.1</maven-jar-plugin.version>
         <spring-framework.version>6.2.15</spring-framework.version>
         <spring-security.version>6.5.7</spring-security.version>
@@ -263,10 +264,19 @@
                 <version>3.5.2</version>
                 <configuration>
                     <argLine>--enable-preview --enable-native-access=ALL-UNNAMED</argLine>
+                    <excludedGroups>${hermes.live.excludedGroups}</excludedGroups>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>live</id>
+            <properties>
+                <hermes.live.excludedGroups></hermes.live.excludedGroups>
+            </properties>
+        </profile>
+    </profiles>
     <repositories>
         <repository>
             <id>aliyun-public</id>

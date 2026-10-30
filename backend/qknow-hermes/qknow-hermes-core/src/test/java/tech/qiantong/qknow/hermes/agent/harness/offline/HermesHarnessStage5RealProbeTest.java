@@ -2,6 +2,7 @@ package tech.qiantong.qknow.hermes.agent.harness.offline;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import tech.qiantong.qknow.hermes.agent.AgentOrchestrator;
 import tech.qiantong.qknow.hermes.agent.harness.HarnessEvidenceRecord;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessAssembler;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class HermesHarnessStage5RealProbeTest {
 
     @Test
+    @Tag("live")
     @DisplayName("阶段五核心验收: ProductionAgentOrchestratorDriver 驱动真实 DeepSeek API 探针执行并落盘资产")
     void testRealProductionTrackProbeExecutionAndPersist() throws IOException {
         String apiKey = DefaultOfflineProbeExecutor.resolveEffectiveApiKey();
@@ -58,8 +60,8 @@ class HermesHarnessStage5RealProbeTest {
         OfflineProbeRunner runner = new OfflineProbeRunner(probeExecutor);
 
         Path projectRoot = OfflineProbeRunner.findProjectRoot();
-        Path outputBaseDir = projectRoot.resolve("experiment/outputs/harness5").toAbsolutePath().normalize();
-        String runId = "run-20261030-stage5-real";
+        Path outputBaseDir = projectRoot.resolve("experiment/outputs/harness5-live").toAbsolutePath().normalize();
+        String runId = "run-" + java.util.UUID.randomUUID();
 
         // 执行 5 大基准用例 × 2（Baseline 与 Candidate 各 1 次），共 10 次真实调用
         OfflineProbeRunner.FullPpcRunSummary summary = runner.runPpcCycle(runId, outputBaseDir);
