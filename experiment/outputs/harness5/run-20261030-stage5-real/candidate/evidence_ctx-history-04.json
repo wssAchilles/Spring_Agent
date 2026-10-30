@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":0.001337,
+	"estimatedTokens":678,
+	"evidenceId":"c3e71433-13d5-42ff-979f-5e6d5a0f87e0",
+	"executionDurationMs":12037,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"我当前会话中没有“前文”的方案 A定义，因此无法准确判断其“最担忧瓶颈”具体是吞吐、时延、虚拟化开销、加密开销、跨域传输还是可运维性。下面给出**条件化回答**：若方案 A的瓶颈落在网络数据面，业界常见的“绕过/优化”路线可按瓶颈类型选择。\n\n###1.内核协议栈开销大：内核旁路与用户态数据面- **XDP/eBPF、AF_XDP**：在驱动层尽早处理包，绕过部分内核网络栈；适合 DDoS清洗、负载均衡、可观测、轻量转发。\n- **DPDK / VPP / F-Stack**：用户态轮询收包、零拷贝、批处理；适合高吞吐网关、NFV、负载均衡。\n- **io_uring、busy-poll、RS...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-candidate-ctx-history-04-34ed281c",
+	"timestamp":"2026-10-30T08:43:57.501776Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"针对前文提到的方案 A 的最担忧瓶颈，业界在网络数据面上有何绕过优化方案？",
+	"voucherFingerprint":"cf1551252e0cd8f44d65323631dfd6e841a43ee93bba39426e3f5497dbcab709",
+	"voucherVersion":"1.0.0-mut-prompt"
+}

@@ -66,6 +66,7 @@ public class DefaultOfflineProbeExecutor implements OfflineProbeExecutor {
         String probeRequestId = String.format("probe-%s-%s-%s-%s",
                 runId, variantName, testCase.taskId(), UUID.randomUUID().toString().substring(0, 8));
 
+        String resolvedApiKey = resolveEffectiveApiKey();
         ChatRequest chatRequest = ChatRequest.newBuilder()
                 .setRequestId(probeRequestId)
                 .setWorkspaceId(9999L)
@@ -78,6 +79,7 @@ public class DefaultOfflineProbeExecutor implements OfflineProbeExecutor {
                         .setModelId(1L)
                         .setPlatform(opt.modelPlatform())
                         .setBaseUrl("https://api.deepseek.com")
+                        .setApiKey(resolvedApiKey)
                         .setModelName(opt.modelName())
                         .build())
                 .build();
@@ -93,6 +95,7 @@ public class DefaultOfflineProbeExecutor implements OfflineProbeExecutor {
 
         try {
             driver.execute(chatRequest)
+                    .retry(Math.max(0, opt.maxRetryAttempts() - 1))
                     .timeout(Duration.ofMillis(opt.timeoutMs()))
                     .doOnNext(event -> {
                         if (event.hasChunk() && event.getChunk().getText() != null) {
@@ -100,7 +103,7 @@ public class DefaultOfflineProbeExecutor implements OfflineProbeExecutor {
                         }
                     })
                     .doOnError(executionError::set)
-                    .blockLast(Duration.ofMillis(opt.timeoutMs() + 2000L));
+                    .blockLast(Duration.ofMillis(opt.timeoutMs() + 3000L));
 
             HarnessEvidenceRecord recorded = driver.getLatestEvidence(probeRequestId);
             evidenceRef.set(recorded);
@@ -115,6 +118,12 @@ public class DefaultOfflineProbeExecutor implements OfflineProbeExecutor {
 
         long durationMs = System.currentTimeMillis() - startTime;
         Throwable error = executionError.get();
+        if (error != null) {
+            Throwable root = reactor.core.Exceptions.unwrap(error);
+            if (root != null) {
+                error = root;
+            }
+        }
         HarnessEvidenceRecord finalEvidence = evidenceRef.get();
         boolean isSuccess = (error == null) && (finalEvidence != null);
         String errorCode = isSuccess ? "NONE" : (error != null ? error.getClass().getSimpleName() : "MISSING_EVIDENCE");
@@ -181,6 +190,46 @@ public class DefaultOfflineProbeExecutor implements OfflineProbeExecutor {
             log.error("[DefaultOfflineProbeExecutor] 证据物理落盘失败: taskId={}, error={}", taskId, e.getMessage());
             return null;
         }
+    }
+
+    public static String resolveEffectiveApiKey() {
+        String key = System.getenv("HERMES_OPENAI_API_KEY");
+        if (key == null || key.isBlank()) {
+            key = System.getenv("DEEPSEEK_API_KEY");
+        }
+        if (key == null || key.isBlank()) {
+            List<Path> candidateEnvPaths = List.of(
+                    Path.of(".env"),
+                    Path.of("../.env"),
+                    Path.of("../../.env"),
+                    Path.of("../../../.env")
+            );
+            for (Path envPath : candidateEnvPaths) {
+                if (Files.exists(envPath)) {
+                    try {
+                        List<String> lines = Files.readAllLines(envPath, StandardCharsets.UTF_8);
+                        for (String line : lines) {
+                            String trimmed = line.trim();
+                            if (trimmed.startsWith("HERMES_OPENAI_API_KEY=") || trimmed.startsWith("DEEPSEEK_API_KEY=")) {
+                                int eqIdx = trimmed.indexOf('=');
+                                String val = trimmed.substring(eqIdx + 1).trim();
+                                if (val.startsWith("\"") && val.endsWith("\"") && val.length() >= 2) {
+                                    val = val.substring(1, val.length() - 1);
+                                }
+                                if (val.startsWith("'") && val.endsWith("'") && val.length() >= 2) {
+                                    val = val.substring(1, val.length() - 1);
+                                }
+                                if (!val.isBlank() && !val.contains("placeholder") && !val.contains("xxx")) {
+                                    return val;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }
+        return key != null ? key : "";
     }
 
     private static HarnessEvidenceRecord synthesizeFailSafeEvidence(

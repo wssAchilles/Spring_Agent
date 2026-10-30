@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":5.83E-4,
+	"estimatedTokens":301,
+	"evidenceId":"f78fbcd4-f6fa-4b87-8863-49b670698121",
+	"executionDurationMs":4672,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"##无法直接作答：缺少“前文”上下文我这边**没有收到任何前序对话内容**，也没有可用的会话记忆。当前上下文中：\n\n-不存在“方案 A”的定义；\n-因此无法确定其“最担忧的瓶颈”是什么（是吞吐/时延、加解密开销、内核态协议栈处理、跨域/跨集群传输、还是可靠性上的单点问题）；\n-同时，本次请求未附带可检索的知识库文档，也未提供可调用的工具返回结果。\n\n在这种情况下直接列出“网络数据面绕过优化方案”，属于**无依据推测**，容易答非所问，因此我不做编造。\n\n##请补充以下任一信息1. **方案 A是什么**（场景、目标、技术路线）；\n2. **它所担忧的瓶颈**具体指向哪一层：\n -主机内协议栈（...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-baseline-ctx-history-04-b4d968a5",
+	"timestamp":"2026-10-30T08:43:23.474709Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"针对前文提到的方案 A 的最担忧瓶颈，业界在网络数据面上有何绕过优化方案？",
+	"voucherFingerprint":"1db0f7fd3beb4083eb3a5e08cdff4648dc3d190538db5468f9dce4187abd688c",
+	"voucherVersion":"1.0.0"
+}

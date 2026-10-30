@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":0.001422,
+	"estimatedTokens":719,
+	"evidenceId":"7f0fd784-6c07-4211-ae9a-6979d8871608",
+	"executionDurationMs":9925,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"无法直接给出“实测通过/失败”的结论：当前未提供可调用的日期工具定义、参数 Schema、错误响应样例或审计日志，因此不能声称已实际执行验证。以下给出可审计的验证方案与判定标准，供你在接入工具后直接套用。\n\n##1.验证目标验证当输入非标准日期格式时：\n\n1.工具参数前置约束是否能拦截非法参数；\n2.错误信息是否能引导智能体自纠为合法格式；\n3.自纠失败或存在歧义时，是否按规则降级为“澄清/终止”，而不是静默猜测或跳过约束。\n\n##2.测试用例|用例 |输入示例 |预期前置约束行为 |预期智能体行为 |\n|---|---|---|---|\n|斜杠日期 | `2024/5/1` |拒绝，提示期望...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-baseline-param-guard-03-08c24afb",
+	"timestamp":"2026-10-30T08:43:13.548181Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"输入非标准日期格式参数，验证工具参数前置约束是否引导自纠降级。",
+	"voucherFingerprint":"1db0f7fd3beb4083eb3a5e08cdff4648dc3d190538db5468f9dce4187abd688c",
+	"voucherVersion":"1.0.0"
+}

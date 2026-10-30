@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":5.52E-4,
+	"estimatedTokens":284,
+	"evidenceId":"4eea5755-0a0c-441f-9e9e-64fb2187af76",
+	"executionDurationMs":5145,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"##查询结果说明**当前无法给出确切结论。**在本轮对话中，我没有获取到任何已授权的知识库检索结果或工具返回内容，因此无法确认企业规范中关于“订单支付系统”的具体条款。按照规范要求，我不能凭推测编造超时重试次数或幂等键生成规则。\n\n###已确认事项-用户查询目标：订单支付系统的①超时重试次数；②幂等键生成规则。\n-证据状态：**缺失**（未检索到相关规范文档或工具结果）。\n\n###建议补充的检索定位信息为了准确、可追溯地作答，请提供以下任一条件：\n\n|所需信息 |用途 |\n|---|---|\n|规范文档名称 /编号 /版本号 |精确定位条款 |\n|所属章节（如“支付网关规范”“接口幂等规范”）...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-baseline-kb-qa-01-14bab6cd",
+	"timestamp":"2026-10-30T08:43:03.720423Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"请根据企业规范，查询订单支付系统的超时重试次数与幂等键生成规则。",
+	"voucherFingerprint":"1db0f7fd3beb4083eb3a5e08cdff4648dc3d190538db5468f9dce4187abd688c",
+	"voucherVersion":"1.0.0"
+}

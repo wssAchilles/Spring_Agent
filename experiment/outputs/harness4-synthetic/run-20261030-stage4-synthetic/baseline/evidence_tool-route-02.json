@@ -2,14 +2,14 @@
 	"botId":1001,
 	"estimatedCostCny":7.5E-4,
 	"estimatedTokens":500,
-	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-baseline-tool-route-02-e8765607",
+	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-baseline-tool-route-02-5e0a7f3a",
 	"executionDurationMs":20,
 	"executionMode":"DETERMINISTIC_TEST_DOUBLE",
 	"finalOutputSummary":"确定性兜底回答 (基线冗余套话)",
 	"ragDocumentCount":1,
 	"ragTopScore":0.95,
-	"requestId":"probe-run-20261030-stage4-synthetic-baseline-tool-route-02-e8765607",
-	"timestamp":"2026-10-30T04:09:31.230292Z",
+	"requestId":"probe-run-20261030-stage4-synthetic-baseline-tool-route-02-5e0a7f3a",
+	"timestamp":"2026-10-30T08:44:26.328796Z",
 	"toolExecutions":[
 		{
 			"durationMs":10,

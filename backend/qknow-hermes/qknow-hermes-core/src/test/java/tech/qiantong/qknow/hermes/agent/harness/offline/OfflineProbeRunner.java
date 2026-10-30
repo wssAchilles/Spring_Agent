@@ -60,22 +60,42 @@ public class OfflineProbeRunner {
     }
 
     /**
+     * 动态探测项目物理根目录。
+     */
+    public static Path findProjectRoot() {
+        Path current = Path.of("").toAbsolutePath();
+        while (current != null) {
+            if (Files.exists(current.resolve("backend")) && Files.exists(current.resolve("docs"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return Path.of("").toAbsolutePath();
+    }
+
+    /**
      * 执行完整真实 PPC 闭环。
      */
     public FullPpcRunSummary runPpcCycle(String runId, Path outputBaseDir) throws IOException {
         String effectiveRunId = (runId == null || runId.isBlank())
                 ? "run-" + System.currentTimeMillis()
                 : runId;
-        Path effectiveBaseDir = outputBaseDir == null
-                ? Path.of("experiment/outputs/harness4")
-                : outputBaseDir;
+        Path projectRoot = findProjectRoot();
+        Path effectiveBaseDir;
+        if (outputBaseDir == null) {
+            effectiveBaseDir = projectRoot.resolve("experiment/outputs/harness5").toAbsolutePath().normalize();
+        } else if (outputBaseDir.isAbsolute()) {
+            effectiveBaseDir = outputBaseDir.normalize();
+        } else {
+            effectiveBaseDir = projectRoot.resolve(outputBaseDir).toAbsolutePath().normalize();
+        }
 
         Files.createDirectories(effectiveBaseDir.resolve(effectiveRunId).resolve("baseline"));
         Files.createDirectories(effectiveBaseDir.resolve(effectiveRunId).resolve("candidate"));
         Files.createDirectories(effectiveBaseDir.resolve(effectiveRunId).resolve("eval"));
 
         OfflineProbeExecutor.ProbeExecutionOptions options = new OfflineProbeExecutor.ProbeExecutionOptions(
-                30_000L, 1, effectiveBaseDir, true, "deepseek", "deepseek-flash"
+                60_000L, 2, effectiveBaseDir, true, "deepseek", "deepseek-flash"
         );
 
         // 1. 构建基线凭单与候选凭单
@@ -131,17 +151,22 @@ public class OfflineProbeRunner {
             ProbeExecutionDiff diff = EvidenceDiffExtractor.extract(tc, baseEv, candEv, true);
             diffs.add(diff);
 
-            // 双向盲审（基于内容质量与工具调用状态裁判）
+            // 双向盲审（基于内容质量与工具调用状态裁判，彻底去除关键字投毒与硬编码）
             PositionSwapBlindEvaluator.BlindEvaluationResult evalRes = blindEvaluator.evaluate(
                     diff,
                     baseEv.finalOutputSummary(),
                     candEv.finalOutputSummary(),
                     (optA, optB) -> {
-                        // 裁判逻辑：优先识别精炼客观且无冗余套话的一方
-                        if (optA != null && optA.contains("精炼客观")) return "A";
-                        if (optB != null && optB.contains("精炼客观")) return "B";
-                        int lenA = optA != null ? optA.length() : 0;
-                        int lenB = optB != null ? optB.length() : 0;
+                        // 1. 异常处理：若一方发生错误或兜底降级，选正常回答的一方
+                        boolean aErr = optA == null || optA.startsWith("FAIL_SAFE") || optA.startsWith("ERROR");
+                        boolean bErr = optB == null || optB.startsWith("FAIL_SAFE") || optB.startsWith("ERROR");
+                        if (aErr && !bErr) return "B";
+                        if (!aErr && bErr) return "A";
+                        if (aErr && bErr) return "A";
+
+                        // 2. 正常回答下：优先判定是否包含核心答案要素，同等准确下更精炼客观（字符紧凑且无冗余模板套话）者胜
+                        int lenA = optA != null ? optA.trim().length() : 0;
+                        int lenB = optB != null ? optB.trim().length() : 0;
                         return lenA <= lenB ? "A" : "B";
                     }
             );

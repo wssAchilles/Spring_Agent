@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":3.33E-4,
+	"estimatedTokens":175,
+	"evidenceId":"8cfe9148-66ee-43e0-9c78-442c5647b129",
+	"executionDurationMs":4684,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"暂无法直接完成核查：当前未取得可用的流水查询与账户余额查询工具结果，且缺少交易关键标识，不能编造流水状态或余额。\n\n请补充以下信息后，我将按只读方式核查：\n1.交易流水号/渠道参考号；\n2.客户号及扣款账号；\n3.交易时间、金额、交易渠道；\n4.结算账户户名或账号（用于余额查询）；\n5.是否已有客户扣款成功凭证/回单。\n\n核查范围将包括：\n-平台交易流水状态：扣款成功、记账状态、凭单生成状态；\n-渠道对账/核心扣款结果是否一致；\n-凭单生成日志及异步任务是否失败；\n-结算账户当前余额及可用余额。\n\n在获得授权和上述标识前，建议先避免重复扣款，保留客户扣款凭证，并转交交易运营/结算岗做只读核查。...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-candidate-tool-route-02-6956a915",
+	"timestamp":"2026-10-30T08:43:45.877071Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"客户反映交易扣款成功但未生成凭单，请核查流水状态并查询结算账户余额。",
+	"voucherFingerprint":"cf1551252e0cd8f44d65323631dfd6e841a43ee93bba39426e3f5497dbcab709",
+	"voucherVersion":"1.0.0-mut-prompt"
+}

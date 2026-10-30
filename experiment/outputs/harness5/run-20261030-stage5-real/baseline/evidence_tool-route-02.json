@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":6.63E-4,
+	"estimatedTokens":340,
+	"evidenceId":"82403ecc-b541-4cf3-b1dc-e3218fc7ad20",
+	"executionDurationMs":4678,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"##核查结论**当前无法完成实际核查**：本会话中未接入任何可用的知识库文档或工具接口，我无法访问流水系统、凭单服务或结算账户系统，因此不能返回真实的流水状态与账户余额，也不会编造核查结果。\n\n##我需要的信息或权限|核查项 |所需能力 |用途 |\n|---|---|---|\n|交易流水状态 |交易流水查询工具（按交易流水号或客户号） |确认扣款是否已入账、记账状态与凭单生成标志 |\n|凭单生成记录 |凭单服务查询接口 |判断是否因异步生成失败或未触发而缺失 |\n|结算账户余额 |账户余额查询工具（按账户号） |核对扣款后余额是否与预期一致 |\n\n请提供以下要素，或为我开通上述工具权限：\n1....",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-baseline-tool-route-02-d2440541",
+	"timestamp":"2026-10-30T08:43:08.867996Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"客户反映交易扣款成功但未生成凭单，请核查流水状态并查询结算账户余额。",
+	"voucherFingerprint":"1db0f7fd3beb4083eb3a5e08cdff4648dc3d190538db5468f9dce4187abd688c",
+	"voucherVersion":"1.0.0"
+}

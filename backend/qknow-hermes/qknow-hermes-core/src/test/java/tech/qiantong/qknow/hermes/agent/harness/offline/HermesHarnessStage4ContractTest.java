@@ -184,7 +184,7 @@ class HermesHarnessStage4ContractTest {
     @Test
     @DisplayName("契约 6: OfflineProbeRunner 驱动 5 大用例完成测试替身受控 PPC 闭环与合成 JSON 隔离存证")
     void testEndToEndOfflineProbePpcCycleAndPersist() throws IOException {
-        Path outputBaseDir = Path.of("experiment/outputs/harness4-synthetic");
+        Path outputBaseDir = OfflineProbeRunner.findProjectRoot().resolve("experiment/outputs/harness4-synthetic").toAbsolutePath().normalize();
         String runId = "run-20261030-stage4-synthetic";
 
         Map<String, DeterministicHarnessTestDouble.DeterministicResponse> fixtures = Map.of(

@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":0.001488,
+	"estimatedTokens":756,
+	"evidenceId":"9d5de636-30f7-4a37-b563-8e5c5b6788de",
+	"executionDurationMs":13442,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"#微服务架构演进评估报告（通用评估框架）\n\n##一、证据边界与使用说明本次答复**未取得**贵司架构现状文档、技术栈清单、团队规模与业务量级等输入，也未调用任何检索或工具获取内部数据。因此本报告**不包含任何针对具体组织的量化结论**，定位为**可复用的评估框架与对比矩阵**。其中阶段特征为行业通行的定性描述，不含虚构的数值指标；实际决策前需以贵司实测数据（发布频率、变更失败率、平均恢复时长、峰值 QPS、团队数等）填入并复核。\n\n##二、演进阶段划分- **L1单体架构**：单一部署单元、单一数据库，进程内调用为主。\n- **L2模块化/服务化**：按业务域划分模块边界，抽取少量服务，边界初...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-baseline-comp-rag-tool-05-4c665cd6",
+	"timestamp":"2026-10-30T08:43:28.148315Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"生成一份微服务架构演进评估报告，包含 4 列标准 Markdown 对比矩阵与 200 字总结。",
+	"voucherFingerprint":"1db0f7fd3beb4083eb3a5e08cdff4648dc3d190538db5468f9dce4187abd688c",
+	"voucherVersion":"1.0.0"
+}

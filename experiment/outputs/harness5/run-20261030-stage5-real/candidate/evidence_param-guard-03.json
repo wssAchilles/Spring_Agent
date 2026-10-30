@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":8.5E-4,
+	"estimatedTokens":433,
+	"evidenceId":"9ab6ae9b-c417-4e06-acb2-06d4d90b9f76",
+	"executionDurationMs":6935,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"当前缺少具体工具名、参数 schema、非标准日期样例及降级策略，无法实际发起工具调用并验证。不能编造工具执行结果。可按下述方案验证“前置约束是否引导自纠降级”。\n\n##1.测试输入建议对日期参数 `date`构造非标准值：\n\n|类型 |示例 |\n|---|---|\n|非 ISO分隔符 | `2024/01/01`、`2024.01.01` |\n|中文格式 | `2024年1月1日` |\n|月日顺序歧义 | `01-02-2024` |\n|非法日期 | `2024-13-40` |\n|时间戳/数字 | `1704067200000` |\n|空值/异常类型 | `\"\"`、`null`、`[]` ...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-candidate-param-guard-03-74dd4e7b",
+	"timestamp":"2026-10-30T08:43:50.564701Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"输入非标准日期格式参数，验证工具参数前置约束是否引导自纠降级。",
+	"voucherFingerprint":"cf1551252e0cd8f44d65323631dfd6e841a43ee93bba39426e3f5497dbcab709",
+	"voucherVersion":"1.0.0-mut-prompt"
+}

@@ -76,7 +76,7 @@ public interface OfflineProbeExecutor {
             return new ProbeExecutionOptions(
                     30_000L,
                     1,
-                    Path.of("experiment/outputs/harness4"),
+                    Path.of("experiment/outputs/harness5"),
                     true,
                     "deepseek",
                     "deepseek-flash"

@@ -2,14 +2,14 @@
 	"botId":1001,
 	"estimatedCostCny":6.9E-4,
 	"estimatedTokens":460,
-	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-candidate-comp-rag-tool-05-27bcd9b6",
+	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-candidate-comp-rag-tool-05-aade7e0a",
 	"executionDurationMs":20,
 	"executionMode":"DETERMINISTIC_TEST_DOUBLE",
 	"finalOutputSummary":"确定性兜底回答 (精炼客观)",
 	"ragDocumentCount":1,
 	"ragTopScore":0.95,
-	"requestId":"probe-run-20261030-stage4-synthetic-candidate-comp-rag-tool-05-27bcd9b6",
-	"timestamp":"2026-10-30T04:09:31.235212Z",
+	"requestId":"probe-run-20261030-stage4-synthetic-candidate-comp-rag-tool-05-aade7e0a",
+	"timestamp":"2026-10-30T08:44:26.333263Z",
 	"toolExecutions":[
 		{
 			"durationMs":10,

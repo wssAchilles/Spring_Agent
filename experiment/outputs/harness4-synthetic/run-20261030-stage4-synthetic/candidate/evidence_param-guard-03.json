@@ -2,14 +2,14 @@
 	"botId":1001,
 	"estimatedCostCny":6.75E-4,
 	"estimatedTokens":450,
-	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-candidate-param-guard-03-3dd3f96f",
+	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-candidate-param-guard-03-c6331593",
 	"executionDurationMs":18,
 	"executionMode":"DETERMINISTIC_TEST_DOUBLE",
 	"finalOutputSummary":"时间参数纠错: 检测到非标准时间，已引导自纠 (精炼客观)",
 	"ragDocumentCount":1,
 	"ragTopScore":0.95,
-	"requestId":"probe-run-20261030-stage4-synthetic-candidate-param-guard-03-3dd3f96f",
-	"timestamp":"2026-10-30T04:09:31.234269Z",
+	"requestId":"probe-run-20261030-stage4-synthetic-candidate-param-guard-03-c6331593",
+	"timestamp":"2026-10-30T08:44:26.332371Z",
 	"toolExecutions":[
 		{
 			"durationMs":10,

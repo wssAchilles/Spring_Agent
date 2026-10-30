@@ -1,0 +1,19 @@
+{
+	"botId":1001,
+	"estimatedCostCny":0.001338,
+	"estimatedTokens":681,
+	"evidenceId":"6135d797-0616-4c98-9bb0-fdf809d295de",
+	"executionDurationMs":16750,
+	"executionMode":"REAL_PRODUCTION",
+	"finalOutputSummary":"#微服务架构演进评估报告（通用评估模板）\n\n> **数据说明**：当前未接入企业知识库或工具数据，以下内容基于通用架构实践形成，仅作为评估框架，不对特定组织现状作事实认定。正式结论需结合系统清单、调用链、SLO、团队结构与总拥有成本（TCO）校验。\n\n##一、4列标准 Markdown对比矩阵|评估维度 |单体架构 |服务化过渡（模块化/SOA） |微服务目标 |\n|---|---|---|---|\n|业务边界与耦合 |单进程内模块耦合较强，边界依赖代码规范 |按业务能力或接口拆分，但仍可能存在共享库、共享数据 |按领域限界上下文拆分，服务自治、边界清晰 |\n|交付与部署 |整体构建发布，回滚...",
+	"ragDocumentCount":0,
+	"ragTopScore":0.0,
+	"requestId":"probe-run-20261030-stage5-real-candidate-comp-rag-tool-05-03f4f816",
+	"timestamp":"2026-10-30T08:44:09.540970Z",
+	"toolExecutions":[
+		
+	],
+	"userInputSummary":"生成一份微服务架构演进评估报告，包含 4 列标准 Markdown 对比矩阵与 200 字总结。",
+	"voucherFingerprint":"cf1551252e0cd8f44d65323631dfd6e841a43ee93bba39426e3f5497dbcab709",
+	"voucherVersion":"1.0.0-mut-prompt"
+}
