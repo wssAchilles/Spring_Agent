@@ -1,140 +1,144 @@
-# Hermes Harness² 阶段六：真实 RAG/工具/记忆 Probe 与可复现实验门禁 阶段任务书
+# Hermes Harness² 阶段六：面向顶刊论文水准的递归自演化 Agent 核心框架架构设计与主干构建 阶段任务书
 
 ## 任务书元数据与冻结签名
 
 | 属性项 | 规范值 | 说明 |
 |---|---|---|
-| **任务书版本** | `1.0.0-FROZEN` | 阶段六不可变法定任务书 |
-| **生效状态** | **FROZEN (已冻结)** | 未经多 Agent 交叉重审，严禁擅自修改正文任何条款 |
+| **任务书版本** | `2.0.0-FROZEN` | 战略纠偏后全面对标顶刊论文水准的阶段六法定架构任务书 |
+| **生效状态** | **FROZEN (已冻结)** | 供后续 Agent 直接依据本任务书开展 `src/main/java` 框架代码撰写 |
+| **战略定位基线** | **全面对标顶刊论文撰写水准 (ESWA / IEEE TKDE / ACM TOIS / ICLR / NeurIPS)** | 不再服务或对接传统企业业务，一切代码与架构为顶刊论文撰写服务 |
+| **当前研发重心** | **100% 全量加码顶层架构设计与 Agent 核心框架代码撰写 (`src/main/java`)** | 现阶段暂不纠结于繁琐的消融对比等基线实验 |
 | **所属分支** | `feat/hermes-harness-stage6` | 基于 `feat/hermes-harness-stage5` 派生的阶段六独立研发分支 |
-| **正文签名 (`body_sha256`)** | `dae7aa9029f0728a0172446422a7b1632c993c7ec4cd0aa0aa43963e97196dae` | 自“## 一、阶段六唯一待验证核心假设与契约基准”至文件末尾的哈希签名 |
+| **正文签名 (`body_sha256`)** | `65f67a740eeb8620edf56f39a6894c39e23ca33d5d4acc41bc9e5d70df649321` | 自“## 一、战略定位纠偏与顶刊论文级核心架构命题”至文件末尾的哈希签名 |
 | **整文件签名 (`full_file_sha256`)** | 参见伴生文件 `45-harness6-taskbook.md.sha256` | 物理磁盘全文件逐字节哈希签名 |
-| **执行模型基线** | DeepSeek 官方活跃 API (`deepseek-flash`) | 官方标准接口，HTTP SSE 流式，解析 `reasoning_content` |
-| **向量嵌入基线** | 阿里千问 Embedding 1536 维超球面 | 单位 $L_2$ 范数，余弦几何度量 |
+| **执行模型基线** | DeepSeek 官方活跃 API (`deepseek-flash`) | 唯一遵循 https://api-docs.deepseek.com/zh-cn/，解析 `reasoning_content` |
+| **向量嵌入基线** | **阿里千问 Embedding (`text-embedding-v4`) 1024 维超球面** | 严格锁定 $\mathbb{S}^{1023} \subset \mathbb{R}^{1024}$，单位 $L_2$ 范数 $\|\mathbf{v}\|_2 = 1$，余弦度量 $d_{\text{Euc}}^2 = 2(1-\cos\theta)$ |
 | **运行时环境** | SDKMAN Java 21 (`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`) | 严禁污染主机 Java 17 |
-| **生产默认配置** | `hermes.orchestration.enabled=false`、`SINGLE` 模式 | 生产环境全局默认保持单智能体且不可变 |
 
 ---
 
-## 一、阶段六唯一待验证核心假设与契约基准
+## 一、战略定位纠偏与顶刊论文级核心架构命题
 
-### 1.1 唯一待验证核心假设 (Locked Hypothesis)
-> **“在真实 `AgentOrchestrator` 生产轨道中，为基准任务套件分别注入其业务语义所对应的 RAG 上下文、工具回调与历史记忆（分别打标为 `RAG`、`TOOL`、`HISTORY`、`COMPOSITE`；无法注入真实能力者严格降级标记为 `PROMPT_ONLY`），在同等能力与约束边界下，不可变 Harness 候选变异策略是否依然能在不降低任务成功率与答案质量的前提下实现端到端 Token 缩减与预算受控；若用例未注入对应能力，则其盲审结果与指标必须被硬性排除出 RAG/TOOL 算法采纳判定之外。”**
+### 1.1 最高战略定位澄清（写入基线铁律）
+1. **彻底脱离企业对接定位**：本项目目前**不再对接传统企业业务，不再服务于企业应用**。项目的一切顶层架构设计、形式化代数建模与核心代码实现，**100% 全面对标于人工智能与知识工程顶级期刊及顶级会议（ESWA, IEEE TKDE, ACM TOIS, ICLR, NeurIPS, KDD 等）的顶刊论文撰写水准**。
+2. **研发重心全量转移**：**目前先不纠结于消融对比等基线实验**（大规模数据集评测与消融对比留待后期论文实验章节统一开展），当前阶段 **100% 全量加码于顶层架构的设计与 Agent 核心框架主干代码（`src/main/java`）的撰写**。
+3. **向量空间几何基线锁定**：阿里千问（Qwen，`text-embedding-v4`）向量空间的维度严格锁定为 **1024 维**（单位超球面 $\mathbb{S}^{1023} \subset \mathbb{R}^{1024},\ \|\mathbf{v}\|_2 = 1$）。系统内所有流形投影、谱聚类质心、重构损失上界与相似度计算均严格建立在 **1024 维单位超球面余弦几何**之上。
 
-### 1.2 阶段六业务与技术边界红线
-1. **零生产修改原则**：所有用例扩展、测试工具回调与探针运行器改造必须 100% 局限于 `src/test/java` 作用域与 POM profile，严禁修改任何生产核心代码；
-2. **零外网依赖门禁**：常规 `mvn clean test` 必须在无外网、无 API Key 环境下 100% 绿色通过；真实 API 探针必须物理隔离在 `-Plive` profile 之中；
-3. **资产只追加不覆盖**：已归档历史资产（`experiment/outputs/harness5/`）设为只读写保护；Live 探针输出至未跟踪的 `experiment/outputs/harness6-live/<runId>/` 或 `target/live-evidence/`，测试完成后 `git status` 必须绝对保持 Clean；
-4. **真实性第一**：绝对禁止使用任何 `DeterministicHarnessTestDouble` 生成“真实生产凭单”，探针凭单必须为真实的 `REAL_PRODUCTION`。
-
----
-
-## 二、5 大基准用例全能力注入与 CapabilityTag 规范
-
-为彻底杜绝阶段五中 5 个用例全部退化为 Prompt-Only 的学术伪相关，阶段六强制绑定强类型能力标签与真实数据载荷：
-
-| 用例标识 (`taskId`) | 强类型标签 (`CapabilityTag`) | 注入的真实载荷 (Injected Fixtures) | 真实执行与验证路径 | 成功判定标准 |
-|---|---|---|---|---|
-| **`kb-qa-01`** | **`RAG`** | `RagContextFixture`：注入企业中间件规范切片（连接超时 1000ms、读超时 3000ms、重试 3 次、幂等键格式 `IDEMP_{bizType}_{userId}_{timestamp}_{sha256}`） | `AgentOrchestrator` 将其挂载至 `UserMessage` 前缀，并自动合成 `knowledgeQuery` 工具 | 凭单断言 `ragDocumentCount >= 1`，回答命中超时重试与幂等规范实体 |
-| **`tool-route-02`** | **`TOOL`** | `availableTools` 与 `toolCallbacks`：注入 `banking_transaction_query`、`banking_account_balance`、`banking_settlement_remedy` 3 个测试工具 | `DynamicTestToolCallbackResolver` 解析工具，模型触发 Function Calling，`wrapWithCycleGuard` 捕获执行 | 凭单断言 `toolExecutions` 包含真实记录，且命中 `banking_transaction_query` |
-| **`param-guard-03`** | **`TOOL`** | `availableTools` 与 `toolCallbacks`：注入 `calendar_event_creator` 工具，针对非法时间 `2026/10/29 25:99:99` 抛出参数校验错误 | 模型发起工具调用后收到格式错误反馈并进行自纠，或由守卫前置拦截 | 凭单断言 `toolExecutions` 非空，模型体现参数自纠轨迹 |
-| **`ctx-history-04`** | **`HISTORY`** | `historyFixtures`：注入 2 轮关于微服务网格 Sidecar 与网关方案对比的真实会话记录 | `AgentOrchestrator` 按 `shortTermWindow` 截断压入会话消息栈 | 模型成功将“方案 A 的最担忧瓶颈”消解为 `service_mesh_latency` 并给出 eBPF 优化方案 |
-| **`comp-rag-tool-05`** | **`COMPOSITE`** | `ragContexts` 与 `toolCallbacks`：注入架构白皮书对比切片，并挂载 `system_metrics_query` 工具 | RAG 切片挂载前缀，同时暴露系统指标工具，输出 4 列 Markdown 表格 | 凭单断言 `ragDocumentCount >= 1`，输出包含 4 列 Markdown 结构与字数总结 |
+### 1.2 阶段六核心学术架构命题 (Core Architectural Thesis)
+> **“构建一套形式化完备、代数自洽的递归自演化认知智能体核心框架（Hermes Harness² Cognitive Kernel）：将智能体控制面抽象为 8 元不可变代数契约流形 $\mathcal{H}$，在主干框架（`src/main/java`）中联合实现：(1) 基于执行轨迹退化归因的有界递归变异与三维 Pareto 前沿策略合成器；(2) 基于 1024 维单位超球面几何（$\mathbb{S}^{1023}$）的测地线质心记忆压缩与三级冷备可逆环形缓冲区；(3) 基于霍尔逻辑三元组 $\{P\}\ C\ \{Q\}$ 的神经符号工具守卫与无幽灵计数有界拒绝自动机；(4) 支持全能力（`RAG`、`TOOL`、`HISTORY`、`COMPOSITE`）统一装配的认知编排内核。”**
 
 ---
 
-## 三、单一变量控制（Single-Factor Invariance）与基线/候选契约
+## 二、对标顶刊论文 Methodology 的四大核心 Agent 框架模块设计 (`src/main/java`)
 
-遵循 DSPy (NeurIPS 2023) 与 Google Research Harness² 原则，Baseline 与 Candidate 的探针运行必须保证环境绝对同质：
+后续 Agent 在执行本阶段任务书时，必须将核心研发力量全部投入到 `backend/qknow-hermes/qknow-hermes-core/src/main/java/tech/qiantong/qknow/hermes/agent/harness/` 主干包下的四大顶刊级核心架构模块构建中：
 
-### 3.1 完全不可变量清单
-- 相同的 `testSuite`（包含相同的 `question`、`ragContexts`、`availableTools`、`history`）；
-- 相同的模型端点配置（`deepseek` / `deepseek-flash`）；
-- 相同的工具回调实现与输入参数；
-- 相同的超时限制（60s）与重试配置（2次）。
+```mermaid
+flowchart TD
+    subgraph Kernel["模块四：统一认知编排内核 (harness.kernel)"]
+        K1["HermesHarnessKernel (统一认知编排主干引擎)"]
+        K2["CapabilityContextAssembler (RAG / TOOL / HISTORY / COMPOSITE 全能力装配器)"]
+    end
 
-### 3.2 唯一受控自变量
-- **Baseline Voucher**：
-  版本 `1.0.0`，系统提示词包含完整的企业级系统原则、安全指令与详细格式约束（约 210 字）；记忆窗口 `shortTermWindow = 10`；
-- **Candidate Voucher**：
-  版本 `1.0.0-mut-stage6`，系统提示词由 `SYSTEM_PROMPT_CONCISE` 策略精炼压缩为核心角色与原则声明（约 65 字）；记忆窗口 `shortTermWindow = 4`。
+    subgraph Evolution["模块一：递归自演化与 Pareto 合成引擎 (harness.evolution)"]
+        E1["TrajectoryAttributionAnalyzer (执行轨迹退化归因分析器)"]
+        E2["AlgebraicHarnessMutator (8元不可变契约有界代数变异器)"]
+        E3["ParetoFrontierComposer (保真度-Token-延迟三维 Pareto 支配合成器)"]
+    end
 
----
+    subgraph Manifold["模块二：1024维超球面流形记忆与可逆冷备引擎 (harness.manifold)"]
+        M1["HypersphericalManifoldProjector (S^1023 球面 Fréchet 质心与损失上界计算器)"]
+        M2["ReversibleRingColdBuffer (Hot-Warm-Cold 三级冷备可逆隔离环形缓冲区)"]
+    end
 
-## 四、Maven Profile 双轨构建隔离与未跟踪资产目录规范
+    subgraph NeuroSymbolic["模块三：霍尔逻辑神经符号工具守卫与自动机 (harness.neurosymbolic)"]
+        N1["HoareTripleToolGuard ({P} C {Q} 前后置形式化契约工具守卫)"]
+        N2["LocallyDenseCycleAutomaton (先淘汰后判定、零幽灵计数有界拒绝自动机)"]
+    end
 
-### 4.1 构建轨道物理隔离
-1. **默认离线轨道 (`mvn test`)**：
-   - Surefire 插件配置 `<excludedGroups>live</excludedGroups>`；
-   - 排除所有真实网络探针类（如 `HermesHarnessStage6RealProbeTest`）；
-   - 在断网、无 API Key 环境下运行 `mvn clean test` 必须 100% 绿色构建成功；
-2. **Live 探针轨道 (`mvn test -Plive`)**：
-   - 激活 `live` Profile 时，指定执行全能力真实探针；
-   - 类级配置 `@Tag("live")`，并在 `@BeforeAll` 执行 `Assumptions.assumeTrue(apiKeyValid)` 优雅防守。
+    K1 --> K2
+    K1 --> Evolution
+    K1 --> Manifold
+    K1 --> NeuroSymbolic
+```
 
-### 4.2 资产输出目录与工作区防污染
-1. **输出路径隔离**：阶段六真实探针的凭单落盘根路径严格重定向至：
-   `experiment/outputs/harness6-live/<runId>/`
-2. **Git 忽略保护**：根目录 `.gitignore` 显式添加：
-   ```gitignore
-   experiment/outputs/*-live/
-   target/live-evidence/
-   ```
-3. **工作区纯净断言**：运行探针后，执行 `git status --porcelain` 必须为空，严禁破坏已归档历史凭单与哈希校验和。
+### 2.1 模块一：递归自演化认知与 Pareto 前沿合成引擎 (`harness.evolution`)
+对应顶刊论文 **Section 3.1: Recursive Harness Evolution via Bounded Algebraic Mutation**：
+1. **`TrajectoryAttributionAnalyzer.java`**：
+   - 输入不可变运行证据凭单（`HarnessExecutionEvidenceRecord`），从推理思考链膨胀率、工具调用错误模式、RAG 上下文利用率三个正交维度形式化提取退化归因向量（Attribution Vector）。
+2. **`AlgebraicHarnessMutator.java`**：
+   - 定义作用在 `HarnessConfigurationVoucher` 上的有界代数变异算子 $\mathcal{M}: \mathcal{H} \times \mathcal{E} \to \mathcal{H}'$，涵盖系统提示词精炼算子（`CONCISE_SYSTEM_PROMPT`）、短期窗口自适应缩放算子（`ADAPTIVE_MEMORY_WINDOW`）、工具引导强化算子（`TOOL_GUIDANCE_SYNTHESIS`）与守卫收紧算子（`GUARDRAIL_TIGHTENING`）；
+   - 每次变异均生成全新的不可变凭单并自动重算密码学指纹与缓存稳定性签名。
+3. **`ParetoFrontierComposer.java`**：
+   - 在语义保真度（$\mathcal{F}$）、Token 消耗（$\mathcal{C}_{\text{token}}$）、端到端延迟（$\mathcal{L}_{\text{latency}}$）三维目标空间中，严格实现 Pareto 支配关系判定（$\prec_{\text{Pareto}}$）与非支配前沿（Pareto Frontier）多策略正交合成。
 
----
+### 2.2 模块二：1024 维超球面流形记忆与可逆冷备引擎 (`harness.manifold`)
+对应顶刊论文 **Section 3.2: Hyperspherical Manifold Memory Compression on $\mathbb{S}^{1023}$**：
+1. **`HypersphericalManifoldProjector.java`**：
+   - 显式锁定维度常量 `QWEN_EMBEDDING_DIM = 1024`（对应阿里千问 `text-embedding-v4`）；
+   - 强制校验或归一化输入向量满足单位超球面约束 $\|\mathbf{v}\|_2 = 1.0$；
+   - 实现精确的超球面余弦相似度 $\cos\theta = \mathbf{u} \cdot \mathbf{v}$、弦欧氏距离平方 $d_{\text{Euc}}^2 = 2(1 - \cos\theta)$、测地线弧长距离 $d_{\text{geo}}(\mathbf{u}, \mathbf{v}) = \arccos(\text{clamp}(\mathbf{u} \cdot \mathbf{v}, -1, 1))$；
+   - 实现球面 Fréchet 均值/归一化质心投影 $\boldsymbol{\mu}_S = \frac{\bar{\mathbf{v}}}{\|\bar{\mathbf{v}}\|_2}$（其中 $\bar{\mathbf{v}} = \frac{1}{k}\sum_{i=1}^k \mathbf{v}_i$），并实时计算信息保真度重构损失上界：
+     $$\mathcal{L}_{\text{bound}} = 2\left(1 - \|\bar{\mathbf{v}}\|_2\right)$$
+2. **`ReversibleRingColdBuffer.java`**：
+   - 严格贯彻《AGENTS.md》第 7.5 节“三级冷备隔离环形缓冲区”铁律；
+   - 构建 **Hot Window（活跃上下文） $\to$ Warm Spectral Centroid（1024 维球面质心摘要） $\to$ Cold Ring Buffer（固定容量无锁/线程安全环形冷备区）** 三级存储；
+   - 当短期记忆被淘汰压缩为 1024 维球面质心时，原始情节记录无损移入 Cold Ring Buffer 并签发可逆恢复令牌（Restoration Token），支持按测地线相似度或令牌实现零物理硬删除的毫秒级自愈回滚。
 
-## 五、预算控制、时间看门狗与 8 大强制 BLOCKED 停止条件
+### 2.3 模块三：霍尔逻辑神经符号工具守卫与有界拒绝自动机 (`harness.neurosymbolic`)
+对应顶刊论文 **Section 3.3: Neuro-Symbolic Tool Guardrails with Hoare Logic & Cycle Automaton**：
+1. **`HoareTripleToolGuard.java`**：
+   - 将智能体工具调用形式化建模为霍尔三元组 $\{P\}\ C\ \{Q\}$：
+     - 前置条件校验器 $P(\text{args}, \mathcal{G})$：在工具 $C$ 物理执行前，验证参数 Schema 合法性、时间/数值边界与 `GuardrailsSpecificationRecord` 权限约束；
+     - 后置条件校验器 $Q(\text{result}, \mathcal{G})$：在工具返回后校验输出完整性与敏感信息零泄漏不变量；
+     - 违约自纠合成：当 $P$ 或 $Q$ 违约时，构造结构化神经符号反例反馈（Counterexample Feedback），引导模型在下一轮推理中精确修正参数。
+2. **`LocallyDenseCycleAutomaton.java`**：
+   - 严格实现论文与智能体 A/B 对齐的**局部致密重复死循环检测状态机**（滑动窗口大小 $W$，致密重复阈值 $K$）；
+   - **时序铁律（消除 $W+1$ 幽灵计数漏洞）**：每次新工具调用指纹进入状态机时，**必须先从双端队列头部弹出超出窗口 $W$ 的过期元素并递减频次表，然后再压入当前调用并判定频次是否达到阈值 $K$**，从数学上严格保证窗口内活跃状态数恒满足 $|Q_t| \le W$。
 
-### 5.1 预算与时间看门狗模型
-- **单用例超时看门狗**：单次模型网络调用设置 **60 秒** 硬超时，超时触发 `FAIL_SAFE` 凭单合成；
-- **指数退避重试**：最大重试次数 $\le 2$ 次（退避基数 1000ms，乘数 2.0，最大 4000ms，抖动区间 ±20%）；
-- **`OfflineBudgetCircuitBreaker` 阈值锁定**：
-  - 单批次累计 Token 上限：`50,000L` Tokens；
-  - 单批次累计成本上限：`0.10` 元人民币 (CNY)；
-  - 单批次总执行耗时上限：`180,000L` 毫秒 (3分钟)。
-
-### 5.2 8 大强制 BLOCKED 停止条件矩阵
-若触发以下任一条件，必须立即输出 `RESEARCH_GATE_BLOCKED` 并终止流程：
-1. `BLOCKED_RAG_DEFICIENCY`：用例标记为 `RAG` 但生成的物理凭单中 `ragDocumentCount == 0`；
-2. `BLOCKED_TOOL_DEFICIENCY`：用例标记为 `TOOL` 但未挂载有效 `ToolCallback` 或 `toolExecutions` 为空；
-3. `BLOCKED_HISTORY_DEFICIENCY`：用例标记为 `HISTORY` 但多轮会话未压入上下文导致消歧失败；
-4. `BLOCKED_DEFAULT_GATE_NETWORK_LEAK`：默认 `mvn test` 执行期间发起外部公网请求或因缺少 API Key 报错；
-5. `BLOCKED_ASSET_OVERWRITE_ATTEMPT`：探针试图写入 `harness5/` 归档目录或测试后工作区非 clean；
-6. `BLOCKED_BUDGET_BREAKER_TRIGGERED`：单批次 Token 突破 50,000 或成本突破 0.10 元；
-7. `BLOCKED_API_CONSECUTIVE_FAILURE`：连续 2 次真实调用发生 5xx 故障或网络无法连通；
-8. `BLOCKED_TASKBOOK_HASH_MISMATCH`：任务书正文签名或全文件签名复算校验失败。
-
----
-
-## 六、最小修改文件集合与禁止修改边界
-
-### 6.1 允许修改/新增的最小文件集合 (100% 局限于 test 作用域与 POM)
-1. `backend/qknow-hermes/qknow-hermes-core/src/test/java/tech/qiantong/qknow/hermes/agent/harness/offline/CapabilityTag.java` (新增枚举)
-2. `backend/qknow-hermes/qknow-hermes-core/src/test/java/tech/qiantong/qknow/hermes/agent/harness/offline/OfflineBenchmarkTestCase.java` (扩展能力字段与 Fixtures)
-3. `backend/qknow-hermes/qknow-hermes-core/src/test/java/tech/qiantong/qknow/hermes/agent/harness/offline/Stage6BenchmarkSuiteFactory.java` (新增用例工厂)
-4. `backend/qknow-hermes/qknow-hermes-core/src/test/java/tech/qiantong/qknow/hermes/agent/harness/offline/probe/DynamicTestToolCallbackResolver.java` (新增测试解析器)
-5. `backend/qknow-hermes/qknow-hermes-core/src/test/java/tech/qiantong/qknow/hermes/agent/harness/offline/probe/DefaultOfflineProbeExecutor.java` (重构全能力装配与能力门禁断言)
-6. `backend/qknow-hermes/qknow-hermes-core/src/test/java/tech/qiantong/qknow/hermes/agent/harness/offline/HermesHarnessStage6RealProbeTest.java` (新增 live profile 真实探针单测)
-7. `backend/pom.xml` 或子模块 `pom.xml` (配置 `live` Profile 与 Surefire 排除规则)
-8. `.gitignore` (追加 `experiment/outputs/*-live/` 与 `target/live-evidence/`)
-
-### 6.2 严禁触碰的架构边界 (Strict Prohibition Boundaries)
-- **严禁修改生产核心代码**（`tech/qiantong/qknow/hermes/agent/AgentOrchestrator.java` 保持 0 行修改）；
-- **严禁修改生产默认配置**（`hermes.orchestration.enabled` 必须保持 `false`，生产主干继续走确定性单智能体路径）；
-- **严禁修改任何既有 qrel 或历史实验证据**；
-- **严禁修改主干代码库中的 MCP、HITL、SWARM 核心协议**。
+### 2.4 模块四：全能力认知编排内核集成 (`harness.kernel`)
+对应顶刊论文 **Section 3.4: Unified Cognitive Orchestration Kernel**：
+1. **`CapabilityTag.java` & `CapabilityContextAssembler.java`（提升至 `src/main/java`）**：
+   - 强类型定义智能体任务能力标签：`PROMPT_ONLY`、`RAG`、`TOOL`、`HISTORY`、`COMPOSITE`；
+   - 提供统一的全能力上下文装配与契约前置守卫（例如当任务声明为 `RAG` 或 `TOOL` 时，强制校验 RAG 切片或工具回调的挂载完备性）。
+2. **`HermesHarnessKernel.java`**：
+   - 作为 Hermes Harness² 在 `src/main/java` 中的顶层门面与认知编排核心，将 8 大不可变契约凭单、`HypersphericalManifoldProjector`（1024 维）、`ReversibleRingColdBuffer`、`HoareTripleToolGuard`、`LocallyDenseCycleAutomaton` 以及 `ParetoFrontierComposer` 整合为高内聚、低耦合的顶刊级 Agent 框架内核，并与 `AgentOrchestrator` 无缝桥接。
 
 ---
 
-## 七、任务书双 Hash 规范与验证命令
+## 三、工程质量保障、双轨构建隔离与文件清单
 
-### 7.1 双 Hash 提取与复算定义
+虽然当前阶段**暂不纠结于繁琐的消融对比跑分实验**，但所有新增的 `src/main/java` 主干 Agent 框架代码必须具备顶刊开源标杆级的工程质量与确定性契约单测验证：
+
+### 3.1 主干新增文件清单 (`src/main/java/tech/qiantong/qknow/hermes/agent/harness/`)
+1. `manifold/HypersphericalManifoldProjector.java`（1024 维单位超球面几何投影、测地线距离与重构损失上界计算器）
+2. `manifold/ReversibleRingColdBuffer.java`（三级冷备可逆隔离环形缓冲区，支持软删除隔离与自愈回滚）
+3. `neurosymbolic/HoareTripleToolGuard.java`（基于霍尔逻辑 $\{P\}\ C\ \{Q\}$ 的神经符号工具前后置守卫）
+4. `neurosymbolic/LocallyDenseCycleAutomaton.java`（严格先淘汰后判定的无幽灵计数局部致密死循环拒绝自动机）
+5. `evolution/TrajectoryAttributionAnalyzer.java`（执行轨迹退化归因分析器）
+6. `evolution/AlgebraicHarnessMutator.java`（8 元不可变契约凭单有界代数变异器）
+7. `evolution/ParetoFrontierComposer.java`（保真度-Token-延迟三维 Pareto 前沿策略合成器）
+8. `kernel/CapabilityTag.java`（全能力强类型枚举：`PROMPT_ONLY`, `RAG`, `TOOL`, `HISTORY`, `COMPOSITE`）
+9. `kernel/CapabilityContextAssembler.java`（全能力请求上下文装配与契约校验器）
+10. `kernel/HermesHarnessKernel.java`（Hermes Harness² 顶层统一认知编排内核）
+
+### 3.2 确定性架构契约测试与 Live 隔离规范 (`src/test/java` & `pom.xml`)
+1. **主干架构契约单元测试（默认 `mvn test` 运行，毫秒级、零外网依赖）**：
+   - `HermesHarnessKernelArchitectureTest.java`：全面验证 1024 维超球面几何恒等式（$d_{\text{Euc}}^2 = 2(1-\cos\theta)$、重构损失上界 $\mathcal{L}_{\text{bound}}$）、三级冷备环形缓冲区零硬删除与自愈恢复、霍尔三元组前后置拦截、无幽灵计数自动机边界时序（$W$ 窗口精确淘汰）、有界代数变异与 Pareto 支配合成以及 `HermesHarnessKernel` 端到端认知编排闭环。
+2. **Maven `-Plive` 物理隔离保留**：
+   - 默认 `mvn clean test` 通过 `<excludedGroups>live</excludedGroups>` 排除任何外网 API 测试，确保无网/无 Key 环境 100% 绿色通过；
+   - 任何带 `@Tag("live")` 的探针测试输出均重定向至 `.gitignore` 忽略目录，确保工作区 `git status --porcelain` 恒为空。
+
+---
+
+## 四、任务书双 Hash 规范与构建验证命令
+
+### 4.1 双 Hash 提取与复算定义
 1. **正文签名 (`body_sha256`)**：
-   - 提取范围：从本文件行首标记 `^## 一、阶段六唯一待验证核心假设与契约基准` 起始至文件末尾；
+   - 提取范围：从本文件行首标记 `^## 一、战略定位纠偏与顶刊论文级核心架构命题` 起始至文件末尾；
    - 提取命令：
      ```bash
-     sed -n '/^## 一、阶段六唯一待验证核心假设与契约基准/,$p' docs/architecture-review-20261019/acceptance/45-harness6-taskbook.md | shasum -a 256
+     sed -n '/^## 一、战略定位纠偏与顶刊论文级核心架构命题/,$p' docs/architecture-review-20261019/acceptance/45-harness6-taskbook.md | shasum -a 256
      ```
 2. **全文件签名 (`full_file_sha256`)**：
    - 提取范围：物理磁盘文件的全部字节；
@@ -144,16 +148,15 @@
      cd docs/architecture-review-20261019/acceptance && shasum -a 256 -c 45-harness6-taskbook.md.sha256
      ```
 
-### 7.2 验收测试命令集
+### 4.2 框架构建与验证命令集
 ```bash
-# 1. 默认构建门禁验证 (必须 0 外网依赖，全绿通过)
+# 1. Hermes 核心模块编译与架构契约单测验证 (Java 21 隔离环境，零外网依赖)
+JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem PATH=/Users/achilles/.sdkman/candidates/java/21.0.5-tem/bin:$PATH \
+mvn -B -ntp test -f backend/pom.xml -pl qknow-hermes/qknow-hermes-core
+
+# 2. 全量回归测试门禁验证
 JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem PATH=/Users/achilles/.sdkman/candidates/java/21.0.5-tem/bin:$PATH \
 mvn -B -ntp clean test -f backend/pom.xml -pl tests -am
-
-# 2. Live 探针定向执行 (真实驱动 DeepSeek API)
-JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem PATH=/Users/achilles/.sdkman/candidates/java/21.0.5-tem/bin:$PATH \
-mvn -B -ntp test -f backend/pom.xml -pl qknow-hermes/qknow-hermes-core -am -Plive \
-  -Dtest=HermesHarnessStage6RealProbeTest -Dsurefire.failIfNoSpecifiedTests=false
 
 # 3. 工作区纯净度验证
 git status --porcelain

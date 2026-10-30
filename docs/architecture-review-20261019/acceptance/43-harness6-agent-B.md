@@ -7,7 +7,7 @@
 > **实施目标分支**：`feat/hermes-harness-stage6`  
 > **编译与运行隔离环境**：SDKMAN Java 21 (`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`)  
 > **系统生成模型基线**：DeepSeek 官方活跃模型（`deepseek-flash`）  
-> **系统向量模型基线**：阿里千问 Embedding 1536 维超球面单位向量（$\|\mathbf{v}\|_2 = 1.0$，余弦度量）  
+> **系统向量模型基线**：阿里千问 Embedding (`text-embedding-v4`) 1024 维超球面单位向量（$\|\mathbf{v}\|_2 = 1.0$，余弦度量）  
 > **生产全局配置基线**：`hermes.orchestration.enabled=false` 不可变，SINGLE 模式默认  
 > **准则遵循**：《AGENTS.md》科研门禁、Java 21 隔离环境与独占简体中文铁律  
 > **审计日期**：2026-10-30  

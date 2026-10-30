@@ -97,11 +97,18 @@
 
 ## 四、最终裁决共识与阶段六任务书冻结指令
 
-经过两轮严密、深入的交叉辩论，主 Agent 做出最终决议：
+经过两轮严密、深入的交叉辩论，并结合项目最高战略定位纠偏，主 Agent 做出最终决议：
 
-1. **完全采纳 Agent A、B、C 的专业审计与设计成果**；
-2. **冻结阶段六最小工程修改范围**：全部局限于 `src/test/java` 作用域与 POM profile 配置，生产代码保持 0 修改；
-3. **正式进入任务书起草与签名冻结阶段**：依据本辩论共识，撰写并冻结 `docs/architecture-review-20261019/acceptance/45-harness6-taskbook.md`，并生成其伴生签名文件 `45-harness6-taskbook.md.sha256`。
+1. **最高战略定位彻底转向顶刊论文撰写水准**：
+   - 本项目**不再对接传统企业业务，不再服务于企业应用**，一切架构设计与代码撰写**100% 对标顶级学术期刊与会议（ESWA, IEEE TKDE, ACM TOIS, ICLR, NeurIPS, KDD 等）的顶刊论文撰写水准**；
+   - **向量空间维度基线锁定**：阿里千问 Embedding（`text-embedding-v4`）输出维度严格锁定为 **1024 维单位超球面流形**（$\mathbb{S}^{1023} \subset \mathbb{R}^{1024},\ \|\mathbf{v}\|_2 = 1,\ d_{\text{Euc}}^2 = 2(1-\cos\theta)$）；
+   - **研发重心全量加码 Agent 主干框架**：当前阶段**暂不纠结于繁琐的消融对比等基线实验**，解除此前“仅限 `src/test` 修改”的束缚，**100% 全量加码于 `src/main/java/tech/qiantong/qknow/hermes/agent/harness/` 下顶刊级 Agent 核心框架架构的设计与主干代码撰写**。
+2. **确立面向顶刊论文 Methodology 的四大主干 Agent 框架模块（`src/main/java`）**：
+   - **模块一：递归自演化认知与 Pareto 合成引擎 (`harness.evolution`)**：将变异提议、代数算子与三维 Pareto 前沿策略合成提升为一等公民生产级框架组件；
+   - **模块二：1024 维超球面流形记忆与三级冷备可逆环形缓冲 (`harness.manifold`)**：实现 $\mathbb{S}^{1023}$ 球面 Fréchet 质心投影、重构损失上界 $\mathcal{L}_{\text{bound}} = 2(1 - \|\bar{\mathbf{v}}\|_2)$ 实时监控及三级冷备可逆隔离环形缓冲区；
+   - **模块三：霍尔逻辑神经符号工具守卫与无幽灵计数拒绝自动机 (`harness.neurosymbolic`)**：形式化前置条件 $\{P\}$、工具调用 $C$ 与后置契约 $\{Q\}$，实现严格“先滑动淘汰、后判定局部致密阈值”的有界拒绝状态机；
+   - **模块四：全能力认知编排内核集成 (`harness.kernel`)**：构建 `HermesHarnessKernel` 与全能力（`RAG`、`TOOL`、`HISTORY`、`COMPOSITE`）上下文装配器，同时保留 Maven `-Plive` 物理隔离与工作区防污染保障。
+3. **正式进入任务书升级与签名冻结阶段**：依据本战略裁决，全面重构并冻结 `docs/architecture-review-20261019/acceptance/45-harness6-taskbook.md`，并更新其伴生签名文件 `45-harness6-taskbook.md.sha256`。
 
 ---
 **辩论签署**：
