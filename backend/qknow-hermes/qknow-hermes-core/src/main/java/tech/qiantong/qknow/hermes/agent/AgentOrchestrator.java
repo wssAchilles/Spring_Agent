@@ -27,7 +27,11 @@ import tech.qiantong.qknow.hermes.agent.harness.HarnessEvidenceRecord;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessAssembler;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
 import tech.qiantong.qknow.hermes.agent.harness.MemoryContextStrategyRecord;
+import tech.qiantong.qknow.hermes.agent.harness.HarnessUsageSnapshot;
+import tech.qiantong.qknow.hermes.agent.harness.RagAttributionSummary;
+import tech.qiantong.qknow.hermes.agent.harness.UsageCapturingChatModel;
 import tech.qiantong.qknow.hermes.agent.harness.kernel.HarnessKernelBridge;
+import tech.qiantong.qknow.hermes.agent.harness.kernel.KernelBridgeMode;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -46,10 +50,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -72,6 +80,7 @@ public class AgentOrchestrator {
             new java.util.concurrent.Semaphore(
                     Integer.parseInt(System.getProperty("hermes.capacity.max-llm-concurrent", "8")),
                     true);
+    private static final Pattern RAG_CORE_TERM = Pattern.compile("\\p{IsHan}+|[a-z0-9]{2,}");
 
     // P0-15 多智能体编排契约常量与固定失败码
     public static final String ERR_NONE = "NONE";
@@ -306,10 +315,18 @@ public class AgentOrchestrator {
         java.util.concurrent.atomic.AtomicLong completionTokens = new java.util.concurrent.atomic.AtomicLong(0);
         java.util.concurrent.atomic.AtomicReference<HarnessKernelBridge.BridgeExecutionHandle> bridgeHandle =
                 new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<UsageCapturingChatModel> usageModel =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<Supplier<RagAttributionSummary>> ragAttribution =
+                new java.util.concurrent.atomic.AtomicReference<>(RagAttributionSummary::noRag);
         return Flux.<ChatEvent>create(emitter -> {
             try {
-                executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens, bridgeHandle);
+                executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens,
+                        bridgeHandle, usageModel, ragAttribution);
             } catch (Exception e) {
+                if (usageModel.get() != null) {
+                    usageModel.get().markIncomplete();
+                }
                 log.error("Hermes Agent 执行失败", e);
                 emitter.next(ChatEvent.newBuilder()
                         .setRequestId(request.getRequestId())
@@ -321,9 +338,20 @@ public class AgentOrchestrator {
                 emitter.complete();
             }
         }).doFinally(signalType -> {
+            if (signalType == reactor.core.publisher.SignalType.CANCEL && usageModel.get() != null) {
+                usageModel.get().markIncomplete();
+            }
             HarnessKernelBridge.BridgeExecutionHandle handle = bridgeHandle.get();
             if (handle != null) {
-                harnessKernelBridge.completeExecution(request.getRequestId(), handle, 0.0D);
+                HarnessUsageSnapshot usage = usageModel.get() == null ? HarnessUsageSnapshot.unknown()
+                        : usageModel.get().snapshot();
+                RagAttributionSummary rag = ragAttribution.get().get();
+                if (signalType == reactor.core.publisher.SignalType.CANCEL) {
+                    rag = RagAttributionSummary.of(rag.ragProvided(), 0, rag.ragScore());
+                }
+                harnessKernelBridge.completeExecution(request.getRequestId(), handle,
+                        usage.reasoningTokens(), usage.completionTokens(), rag.ragProvided(),
+                        rag.ragUsed(), rag.ragScore());
             }
             if (deepSeekCostGovernor != null) {
                 deepSeekCostGovernor.markRequestEnd();
@@ -406,7 +434,9 @@ public class AgentOrchestrator {
                               String traceId, StringBuilder fullAnswer,
                               java.util.concurrent.atomic.AtomicLong promptTokens,
                               java.util.concurrent.atomic.AtomicLong completionTokens,
-                              java.util.concurrent.atomic.AtomicReference<HarnessKernelBridge.BridgeExecutionHandle> bridgeHandle)
+                              java.util.concurrent.atomic.AtomicReference<HarnessKernelBridge.BridgeExecutionHandle> bridgeHandle,
+                              java.util.concurrent.atomic.AtomicReference<UsageCapturingChatModel> usageModel,
+                              java.util.concurrent.atomic.AtomicReference<Supplier<RagAttributionSummary>> ragAttribution)
             throws GraphRunnerException {
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
@@ -429,6 +459,9 @@ public class AgentOrchestrator {
         } else {
             throw new IllegalArgumentException("缺少模型配置");
         }
+        UsageCapturingChatModel meteredModel = new UsageCapturingChatModel(chatModel);
+        chatModel = meteredModel;
+        usageModel.set(meteredModel);
 
         // 2. CRAG 检索评估（仅记录，不清空预检索内容）
         // 控制面已做过 CRAG + 重检索 + Web fallback，默认跳过二次阻塞评估以降低延迟
@@ -442,7 +475,9 @@ public class AgentOrchestrator {
                         retrievalEvaluation.getLabel(), retrievalEvaluation.getConfidence());
             }
         }
-        List<RAGContext> effectiveRagContexts = request.getRagContextsList();
+        List<RAGContext> effectiveRagContexts = harnessKernelBridge.isOff()
+                ? request.getRagContextsList()
+                : request.getRagContextsList().stream().filter(this::isValidRagContext).toList();
 
         // 3. 构建知识库工具（使用预检索的 RAG 结果）
         List<ToolCallback> tools = new ArrayList<>();
@@ -500,6 +535,7 @@ public class AgentOrchestrator {
         final HarnessEvidenceCollector evidenceCollector = new HarnessEvidenceCollector(
                 request.getRequestId(), request.getBotId(), effectiveVoucher);
         evidenceCollector.recordUserInput(request.getQuestion());
+        evidenceCollector.setUsageSupplier(meteredModel::snapshot);
 
         MemoryContextStrategyRecord memoryStrategy = effectiveVoucher.memoryContext();
         int shortTermWindow = memoryStrategy.shortTermWindowSize();
@@ -577,7 +613,8 @@ public class AgentOrchestrator {
                         .build()).toList();
             }
             var handle = harnessKernelBridge.bridgeExecution(request, effectiveVoucher, systemPrompt,
-                    effectiveRagContexts, tools, resolver, effectiveHistory);
+                    effectiveRagContexts, tools, resolver, effectiveHistory,
+                    evidenceCollector, meteredModel::snapshot);
             bridgeHandle.set(handle);
             if (handle.failClosed()) {
                 evidenceCollector.recordFinalOutput("FAIL_SAFE: " + handle.failCloseReason());
@@ -592,6 +629,20 @@ public class AgentOrchestrator {
             systemPrompt = handle.effectiveSystemPrompt();
             bridgeTools = handle.effectiveTools();
             bridgeResolver = handle.effectiveResolver();
+            if (handle.capabilityContext() != null) {
+                effectiveRagContexts = handle.capabilityContext().ragContexts();
+                enabledToolNames = new ArrayList<>(handle.effectiveRequest().getToolMethodIdsList());
+                toolNames = enabledToolNames.toArray(new String[0]);
+                messages.clear();
+                for (ChatMessage historyMessage : handle.capabilityContext().history()) {
+                    if ("user".equals(historyMessage.getRole())) {
+                        messages.add(new UserMessage(historyMessage.getContent()));
+                    } else if ("assistant".equals(historyMessage.getRole())) {
+                        messages.add(new AssistantMessage(historyMessage.getContent()));
+                    }
+                }
+            }
+            evidenceCollector.recordCapabilityTag(handle.effectiveCapabilityTag().name());
         }
         final String harnessVersion = effectiveVoucher.version();
         final String harnessFingerprint = effectiveVoucher.computeFingerprint();
@@ -614,7 +665,17 @@ public class AgentOrchestrator {
         if (retrievalEvaluation != null) {
             ragTopScore = retrievalEvaluation.getConfidence();
         }
-        evidenceCollector.recordRagEvidence(effectiveRagContexts.size(), ragTopScore);
+        List<RAGContext> attributedRagContexts = retrievalEvaluation != null && retrievalEvaluation.isIncorrect()
+                ? List.of() : effectiveRagContexts.stream().filter(this::isValidRagContext).toList();
+        final double attributionScore = Double.isFinite(ragTopScore)
+                ? Math.max(0.0D, Math.min(1.0D, ragTopScore)) : 0.0D;
+        AtomicBoolean attributionAllowed = new AtomicBoolean(true);
+        Supplier<RagAttributionSummary> ragSupplier = () -> attributeRag(
+                attributedRagContexts, fullAnswer.toString(), evidenceCollector.toolExecutionsSnapshot(),
+                attributionScore, attributionAllowed.get());
+        ragAttribution.set(ragSupplier);
+        evidenceCollector.setRagAttributionSupplier(ragSupplier);
+        evidenceCollector.recordRagEvidence(attributedRagContexts.size(), attributionScore);
 
         String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, bridgeTools, chatModel);
         if (planAnswer != null) {
@@ -638,11 +699,11 @@ public class AgentOrchestrator {
             if (routingConfig != null && routingConfig.isEnabled()
                     && routingConfig.getApiKey() != null && !routingConfig.getApiKey().isBlank()) {
                 try {
-                    agentModel = chatModelFactory.getChatModel(
+                    agentModel = meteredModel.forDelegate(chatModelFactory.getChatModel(
                             routingConfig.getPlatform(),
                             routingConfig.getBaseUrl(),
                             routingConfig.getApiKey(),
-                            routingConfig.getModelName());
+                            routingConfig.getModelName()));
                     log.info("工具调用模型切换: {}/{}", routingConfig.getPlatform(), routingConfig.getModelName());
                 } catch (Exception e) {
                     log.warn("工具调用模型不可用，回退到主模型: {}", e.getMessage());
@@ -655,13 +716,18 @@ public class AgentOrchestrator {
         final ReActCycleGuard cycleGuard = new ReActCycleGuard(
                 effectiveVoucher.guardrails().maxCycleSteps(),
                 effectiveVoucher.guardrails().loopThreshold());
-        List<ToolCallback> guardedTools = bridgeTools.stream()
-                .map(t -> wrapWithCycleGuard(t, cycleGuard, evidenceCollector))
-                .collect(Collectors.toList());
+        boolean bridgeEnforced = bridgeHandle.get() != null
+                && bridgeHandle.get().effectiveMode() == KernelBridgeMode.ENFORCE;
+        List<ToolCallback> guardedTools = bridgeEnforced ? bridgeTools : bridgeTools.stream()
+                .map(t -> wrapWithCycleGuard(t, cycleGuard, evidenceCollector)).toList();
         ToolCallbackResolver effectiveBridgeResolver = bridgeResolver;
+        Set<String> allowedToolNames = Set.copyOf(enabledToolNames);
         ToolCallbackResolver guardedResolver = name -> {
+            if (!allowedToolNames.contains(name)) {
+                return null;
+            }
             ToolCallback cb = effectiveBridgeResolver != null ? effectiveBridgeResolver.resolve(name) : null;
-            return wrapWithCycleGuard(cb, cycleGuard, evidenceCollector);
+            return bridgeEnforced ? cb : wrapWithCycleGuard(cb, cycleGuard, evidenceCollector);
         };
 
         // 8.5 P0-15 多智能体受控编排分支 (委托 MultiAgentOrchestrationService，默认 SINGLE 100% 走原有路径)
@@ -793,6 +859,7 @@ public class AgentOrchestrator {
                 },
                 error -> {
                     releaseReactCapacity.run();
+                    attributionAllowed.set(false);
                     log.error("Agent 推理错误", error);
                     String recovered = finalFallbackFromMultiAgent
                             ? callSingleModelFallback(finalAgentModel, supervisedSystemPrompt, finalMessagesSnapshot)
@@ -1387,6 +1454,58 @@ public class AgentOrchestrator {
                     .append("优先依据 <knowledge_base> 中的内容回答；如果内容不足，请明确说明不确定性，不要编造。");
         }
         return builder.toString();
+    }
+
+    private boolean isValidRagContext(RAGContext context) {
+        if (context == null) {
+            return false;
+        }
+        String content = context.getPreRetrievedContent();
+        return content != null && !content.isBlank() && !"null".equalsIgnoreCase(content.trim());
+    }
+
+    private RagAttributionSummary attributeRag(List<RAGContext> contexts, String answer,
+                                               List<HarnessEvidenceRecord.ToolExecutionEntry> toolExecutions,
+                                               double score, boolean answerValid) {
+        if (contexts.isEmpty()) {
+            return RagAttributionSummary.noRag();
+        }
+        if (!answerValid || answer == null || answer.isBlank()) {
+            return RagAttributionSummary.of(contexts.size(), 0, score);
+        }
+        String normalizedAnswer = answer.toLowerCase(Locale.ROOT);
+        Set<String> answerTerms = coreTerms(normalizedAnswer);
+        int used = 0;
+        for (RAGContext context : contexts) {
+            boolean sourceNamed = (!context.getKnowledgeId().isBlank()
+                    && normalizedAnswer.contains(context.getKnowledgeId().toLowerCase(Locale.ROOT)))
+                    || (!context.getKnowledgeName().isBlank()
+                    && normalizedAnswer.contains(context.getKnowledgeName().toLowerCase(Locale.ROOT)));
+            boolean toolUsed = toolExecutions.stream().anyMatch(entry -> entry.success()
+                    && entry.toolName().equals("knowledgeBase" + context.getKnowledgeId()));
+            if (sourceNamed || toolUsed || coreTerms(context.getPreRetrievedContent()).stream()
+                    .filter(answerTerms::contains).limit(2).count() >= 2) {
+                used++;
+            }
+        }
+        return RagAttributionSummary.of(contexts.size(), used, score);
+    }
+
+    private Set<String> coreTerms(String text) {
+        Set<String> terms = new HashSet<>();
+        Matcher matcher = RAG_CORE_TERM.matcher(text.toLowerCase(Locale.ROOT));
+        while (matcher.find()) {
+            String term = matcher.group();
+            if (Character.UnicodeScript.of(term.codePointAt(0)) == Character.UnicodeScript.HAN) {
+                int[] points = term.codePoints().toArray();
+                for (int i = 0; i + 1 < points.length; i++) {
+                    terms.add(new String(points, i, 2));
+                }
+            } else {
+                terms.add(term);
+            }
+        }
+        return terms;
     }
 
     private String appendRagContext(String systemPrompt, List<RAGContext> ragContexts,

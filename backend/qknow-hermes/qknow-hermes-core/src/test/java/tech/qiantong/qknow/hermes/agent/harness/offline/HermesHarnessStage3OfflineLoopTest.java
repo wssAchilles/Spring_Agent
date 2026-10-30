@@ -51,6 +51,16 @@ class HermesHarnessStage3OfflineLoopTest {
             long durationMs,
             String toolName,
             boolean toolSuccess) {
+        return createSampleEvidence(evidenceId, tokens, durationMs, toolName, toolSuccess, UsageStatus.KNOWN);
+    }
+
+    private HarnessEvidenceRecord createSampleEvidence(
+            String evidenceId,
+            long tokens,
+            long durationMs,
+            String toolName,
+            boolean toolSuccess,
+            UsageStatus usageStatus) {
 
         List<HarnessEvidenceRecord.ToolExecutionEntry> tools = toolName == null
                 ? List.of()
@@ -76,7 +86,13 @@ class HermesHarnessStage3OfflineLoopTest {
                 tokens,
                 (tokens * 1.5) / 1_000_000.0,
                 durationMs,
-                "测试智能体最终答复输出摘要"
+                "测试智能体最终答复输出摘要",
+                HarnessEvidenceRecord.ExecutionMode.DETERMINISTIC_TEST_DOUBLE,
+                usageStatus,
+                "",
+                false,
+                0,
+                RagAttributionSummary.of(2, 0, 0.92)
         );
     }
 
@@ -147,6 +163,7 @@ class HermesHarnessStage3OfflineLoopTest {
         assertEquals("tool-route-02", diff.taskId());
         assertEquals(-50, diff.deltaTokens(), "Token 增量必须精准为 -50");
         assertEquals(3, diff.deltaDurationMs(), "耗时增量必须精准为 3ms");
+        assertTrue(diff.usageComparable(), "仅双方真实用量已知时允许比较");
         assertTrue(diff.toolSelectionMatched(), "工具选择匹配");
         assertTrue(diff.satisfiesBudgetGate(), "严格满足 ΔTokens <= 0 且 ΔDuration <= 5ms");
         assertTrue(diff.isEligibleForAdoption(), "具备采纳资质");
@@ -172,6 +189,29 @@ class HermesHarnessStage3OfflineLoopTest {
     }
 
     @Test
+    @DisplayName("未知 Usage 即使差分数值合规，也不得通过预算门禁或进入盲审")
+    void testUnknownUsageRejectsAdoption() {
+        OfflineBenchmarkTestCase testCase = OfflineBenchmarkTestCase.createDefaultSuite().get(0);
+        HarnessEvidenceRecord baseline = createSampleEvidence("ev-base", 1000, 100, null, true);
+        HarnessEvidenceRecord candidate = createSampleEvidence(
+                "ev-cand", 900, 102, null, true, UsageStatus.UNKNOWN);
+        ProbeExecutionDiff diff = EvidenceDiffExtractor.extract(testCase, baseline, candidate, true);
+
+        assertEquals(UsageStatus.KNOWN, diff.baselineUsageStatus());
+        assertEquals(UsageStatus.UNKNOWN, diff.candidateUsageStatus());
+        assertFalse(diff.usageComparable());
+        assertFalse(EvidenceDiffExtractor.extract(testCase, candidate, baseline, true).usageComparable());
+        assertFalse(diff.satisfiesBudgetGate());
+        assertFalse(diff.isEligibleForAdoption());
+        DualBlindSelectionEvaluator.SelectionDecisionRecord decision = new DualBlindSelectionEvaluator().evaluate(
+                testCase, diff, "base", "cand", (a, b) -> {
+                    throw new AssertionError("未知 Usage 不应调用盲审裁判");
+                });
+        assertFalse(decision.candidateAdopted());
+        assertEquals(DualBlindSelectionEvaluator.LABEL_BASELINE, decision.chosenCandidateId());
+    }
+
+    @Test
     @DisplayName("契约 5: 验证双向交叉匿名盲审（Position-Swap Dual Pass）消除大模型位置偏置")
     void testDualBlindSelectionPositionConsistency() {
         OfflineBenchmarkTestCase testCase = OfflineBenchmarkTestCase.createDefaultSuite().get(0);
@@ -191,6 +231,9 @@ class HermesHarnessStage3OfflineLoopTest {
                 0.0015,
                 0.0013,
                 true,
+                true,
+                UsageStatus.KNOWN,
+                UsageStatus.KNOWN,
                 true
         );
 

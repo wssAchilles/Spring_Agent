@@ -1,5 +1,7 @@
 package tech.qiantong.qknow.hermes.agent.harness.offline;
 
+import tech.qiantong.qknow.hermes.agent.harness.UsageStatus;
+
 import java.util.Objects;
 
 /**
@@ -20,19 +22,39 @@ public record ProbeExecutionDiff(
         double baselineCostCny,
         double candidateCostCny,
         boolean toolSelectionMatched, // 候选工具调用是否精准匹配预期
-        boolean nonDegradingQuality   // 业务应答是否完备且无退化
+        boolean nonDegradingQuality,  // 业务应答是否完备且无退化
+        UsageStatus baselineUsageStatus,
+        UsageStatus candidateUsageStatus,
+        boolean usageComparable
 ) {
     public ProbeExecutionDiff {
         taskId = Objects.requireNonNull(taskId, "taskId 不能为 null");
         baselineEvidenceId = Objects.requireNonNull(baselineEvidenceId, "baselineEvidenceId 不能为 null");
         candidateEvidenceId = Objects.requireNonNull(candidateEvidenceId, "candidateEvidenceId 不能为 null");
+        baselineUsageStatus = Objects.requireNonNull(baselineUsageStatus, "baselineUsageStatus 不能为 null");
+        candidateUsageStatus = Objects.requireNonNull(candidateUsageStatus, "candidateUsageStatus 不能为 null");
+        usageComparable = baselineUsageStatus == UsageStatus.KNOWN && candidateUsageStatus == UsageStatus.KNOWN;
+    }
+
+    public ProbeExecutionDiff(
+            String taskId, String baselineEvidenceId, String candidateEvidenceId,
+            long baselineTokens, long candidateTokens, long deltaTokens,
+            long baselineDurationMs, long candidateDurationMs, long deltaDurationMs,
+            double baselineCostCny, double candidateCostCny,
+            boolean toolSelectionMatched, boolean nonDegradingQuality) {
+        this(taskId, baselineEvidenceId, candidateEvidenceId,
+                baselineTokens, candidateTokens, deltaTokens,
+                baselineDurationMs, candidateDurationMs, deltaDurationMs,
+                baselineCostCny, candidateCostCny,
+                toolSelectionMatched, nonDegradingQuality,
+                UsageStatus.UNKNOWN, UsageStatus.UNKNOWN, false);
     }
 
     /**
      * 判断是否严格满足阶段三假设锁定的预算门禁：ΔTokens <= 0 且 ΔDuration <= 5ms。
      */
     public boolean satisfiesBudgetGate() {
-        return deltaTokens <= 0 && deltaDurationMs <= 5;
+        return usageComparable && deltaTokens <= 0 && deltaDurationMs <= 5;
     }
 
     /**

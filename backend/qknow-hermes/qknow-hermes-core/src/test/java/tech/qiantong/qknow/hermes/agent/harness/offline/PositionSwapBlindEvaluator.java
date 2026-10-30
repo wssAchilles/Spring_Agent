@@ -60,6 +60,13 @@ public final class PositionSwapBlindEvaluator {
         Objects.requireNonNull(blindJudge, "blindJudge 不能为空");
 
         // 1. 物理指标硬拦截（短路门禁）
+        if (!diff.usageComparable()) {
+            return new BlindEvaluationResult(
+                    diff.taskId(), false, "NONE", "NONE", false,
+                    VerdictOutcome.SHORT_CIRCUITED_REJECT,
+                    "物理指标硬拦截: Baseline 或 Candidate 的真实 Token Usage 未知"
+            );
+        }
         if (diff.deltaTokens() > 0) {
             return new BlindEvaluationResult(
                     diff.taskId(), false, "NONE", "NONE", false,

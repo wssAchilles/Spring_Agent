@@ -50,7 +50,10 @@ public final class EvidenceDiffExtractor {
                 baseEvidence.estimatedCostCny(),
                 candEvidence.estimatedCostCny(),
                 toolMatched,
-                nonDegradingQuality
+                nonDegradingQuality,
+                baseEvidence.usageStatus(),
+                candEvidence.usageStatus(),
+                false
         );
     }
 }

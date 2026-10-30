@@ -2,6 +2,8 @@ package tech.qiantong.qknow.hermes.agent.harness.offline.probe;
 
 import tech.qiantong.qknow.hermes.agent.harness.HarnessEvidenceRecord;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
+import tech.qiantong.qknow.hermes.agent.harness.RagAttributionSummary;
+import tech.qiantong.qknow.hermes.agent.harness.UsageStatus;
 import tech.qiantong.qknow.hermes.proto.ChatEvent;
 import tech.qiantong.qknow.hermes.proto.ChatRequest;
 import tech.qiantong.qknow.hermes.proto.DoneSignal;
@@ -70,7 +72,12 @@ public class DeterministicHarnessTestDouble implements HarnessExecutionDriver {
                 tokens * 0.0000015,
                 resp.simulatedDurationMs(),
                 answer,
-                HarnessEvidenceRecord.ExecutionMode.DETERMINISTIC_TEST_DOUBLE
+                HarnessEvidenceRecord.ExecutionMode.DETERMINISTIC_TEST_DOUBLE,
+                UsageStatus.KNOWN,
+                "",
+                false,
+                0,
+                RagAttributionSummary.of(1, 0, 0.95)
         );
         generatedEvidenceMap.put(reqId, record);
 

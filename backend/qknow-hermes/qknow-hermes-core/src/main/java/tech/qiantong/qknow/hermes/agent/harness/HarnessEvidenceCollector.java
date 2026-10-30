@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * 阶段二轻量执行摘要证据采集器 (Lightweight Execution Summary Evidence Collector)。
@@ -39,6 +40,9 @@ public class HarnessEvidenceCollector {
     private volatile long estimatedTokens = 0L;
     private volatile double estimatedCostCny = 0.0;
     private volatile String finalOutputSummary = "";
+    private volatile String capabilityTag = "PROMPT_ONLY";
+    private volatile Supplier<HarnessUsageSnapshot> usageSupplier;
+    private volatile Supplier<RagAttributionSummary> ragAttributionSupplier;
 
     // 观察者回调列表（只读监听，用于离线评测与测试验证）
     private final List<Consumer<HarnessEvidenceRecord>> completionListeners = new CopyOnWriteArrayList<>();
@@ -65,15 +69,45 @@ public class HarnessEvidenceCollector {
     }
 
     public void recordToolExecution(String toolName, long durationMs, boolean success, String inputRaw, String outputRaw) {
+        boolean blocked = outputRaw != null && (outputRaw.startsWith("[HARNESS_GUARD_REJECTED:")
+                || outputRaw.startsWith("CIRCUIT_BREAKER_")
+                || outputRaw.startsWith("【系统熔断提示】")
+                || outputRaw.startsWith("【系统纠偏提示】"));
         String inDigest = digestText(inputRaw);
         String outDigest = digestText(outputRaw);
         toolExecutions.add(new HarnessEvidenceRecord.ToolExecutionEntry(
                 toolName == null ? "unknown_tool" : toolName,
                 Math.max(0, durationMs),
-                success,
+                success && !blocked,
+                blocked,
+                blocked ? outputRaw : "",
                 inDigest,
                 outDigest
         ));
+    }
+
+    public void recordGuardBlockedToolExecution(String toolName, long durationMs, String violationReason,
+                                                String inputRaw, String outputRaw) {
+        toolExecutions.add(new HarnessEvidenceRecord.ToolExecutionEntry(
+                toolName == null ? "unknown_tool" : toolName,
+                Math.max(0, durationMs), false, true, violationReason,
+                digestText(inputRaw), digestText(outputRaw)));
+    }
+
+    public List<HarnessEvidenceRecord.ToolExecutionEntry> toolExecutionsSnapshot() {
+        return List.copyOf(toolExecutions);
+    }
+
+    public void setUsageSupplier(Supplier<HarnessUsageSnapshot> usageSupplier) {
+        this.usageSupplier = usageSupplier;
+    }
+
+    public void setRagAttributionSupplier(Supplier<RagAttributionSummary> ragAttributionSupplier) {
+        this.ragAttributionSupplier = ragAttributionSupplier;
+    }
+
+    public void recordCapabilityTag(String capabilityTag) {
+        this.capabilityTag = capabilityTag == null || capabilityTag.isBlank() ? "PROMPT_ONLY" : capabilityTag;
     }
 
     public void recordCostAndTokens(long tokens, double costCny) {
@@ -103,6 +137,14 @@ public class HarnessEvidenceCollector {
 
     public HarnessEvidenceRecord finalizeEvidence(HarnessEvidenceRecord.ExecutionMode executionMode) {
         long durationMs = Math.max(0, Instant.now().toEpochMilli() - startTime.toEpochMilli());
+        Supplier<HarnessUsageSnapshot> currentUsageSupplier = usageSupplier;
+        HarnessUsageSnapshot usage = currentUsageSupplier == null ? null : currentUsageSupplier.get();
+        boolean usageKnown = usage != null && usage.isKnown();
+        long tokens = currentUsageSupplier == null ? estimatedTokens : usageKnown ? usage.totalTokens() : 0L;
+        double cost = currentUsageSupplier == null ? estimatedCostCny : usageKnown ? usage.actualCostCny() : 0.0D;
+        Supplier<RagAttributionSummary> currentRagSupplier = ragAttributionSupplier;
+        RagAttributionSummary ragAttribution = currentRagSupplier == null ? null : currentRagSupplier.get();
+        int blockedCount = (int) toolExecutions.stream().filter(HarnessEvidenceRecord.ToolExecutionEntry::guardBlocked).count();
         HarnessEvidenceRecord record = new HarnessEvidenceRecord(
                 evidenceId,
                 requestId,
@@ -114,11 +156,16 @@ public class HarnessEvidenceCollector {
                 ragDocumentCount,
                 ragTopScore,
                 List.copyOf(toolExecutions),
-                estimatedTokens,
-                estimatedCostCny,
+                tokens,
+                cost,
                 durationMs,
                 finalOutputSummary,
-                Objects.requireNonNull(executionMode, "executionMode")
+                Objects.requireNonNull(executionMode, "executionMode"),
+                usageKnown ? UsageStatus.KNOWN : UsageStatus.UNKNOWN,
+                capabilityTag,
+                blockedCount > 0,
+                blockedCount,
+                ragAttribution
         );
 
         for (Consumer<HarnessEvidenceRecord> listener : completionListeners) {

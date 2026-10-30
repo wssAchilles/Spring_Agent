@@ -25,8 +25,10 @@ public final class CapabilityContextAssembler {
 
         public ChatRequest.Builder applyTo(ChatRequest.Builder builder) {
             Objects.requireNonNull(builder, "builder");
-            return builder.addAllRagContexts(ragContexts)
+            return builder.clearRagContexts().addAllRagContexts(ragContexts)
+                    .clearToolMethodIds()
                     .addAllToolMethodIds(toolCallbacks.keySet())
+                    .clearHistory()
                     .addAllHistory(history);
         }
     }
@@ -35,21 +37,31 @@ public final class CapabilityContextAssembler {
                                             Map<String, ToolCallback> toolCallbacks,
                                             List<ChatMessage> history) {
         Objects.requireNonNull(tag, "tag");
-        List<RAGContext> rag = ragContexts == null ? List.of() : List.copyOf(ragContexts);
-        Map<String, ToolCallback> tools = toolCallbacks == null ? Map.of() : Map.copyOf(toolCallbacks);
-        List<ChatMessage> messages = history == null ? List.of() : List.copyOf(history);
+        List<RAGContext> rag = ragContexts == null ? List.of() : ragContexts.stream()
+                .filter(context -> context != null && !context.getPreRetrievedContent().isBlank()
+                        && !"null".equalsIgnoreCase(context.getPreRetrievedContent().trim()))
+                .toList();
+        Map<String, ToolCallback> tools = new TreeMap<>();
+        if (toolCallbacks != null) {
+            toolCallbacks.forEach((name, callback) -> {
+                if (name != null && !name.isBlank() && callback != null) {
+                    tools.put(name, callback);
+                }
+            });
+        }
+        List<ChatMessage> messages = history == null ? List.of() : history.stream()
+                .filter(message -> message != null && !message.getContent().isBlank())
+                .toList();
 
         if (tag == CapabilityTag.PROMPT_ONLY
                 && (!rag.isEmpty() || !tools.isEmpty() || !messages.isEmpty())) {
             throw new IllegalArgumentException("PROMPT_ONLY cannot carry undeclared capabilities");
         }
 
-        if (tag.requiredContexts().contains(CapabilityTag.ContextKind.RAG)
-                && (rag.isEmpty() || rag.stream().anyMatch(context -> context.getPreRetrievedContent().isBlank()))) {
+        if (tag.requiredContexts().contains(CapabilityTag.ContextKind.RAG) && rag.isEmpty()) {
             throw new IllegalArgumentException("RAG capability requires nonempty retrieved context");
         }
-        if (tag.requiredContexts().contains(CapabilityTag.ContextKind.TOOL)
-                && (tools.isEmpty() || tools.keySet().stream().anyMatch(String::isBlank))) {
+        if (tag.requiredContexts().contains(CapabilityTag.ContextKind.TOOL) && tools.isEmpty()) {
             throw new IllegalArgumentException("TOOL capability requires mounted callbacks");
         }
         if (tag.requiredContexts().contains(CapabilityTag.ContextKind.HISTORY)

@@ -30,7 +30,12 @@ public record HarnessEvidenceRecord(
         double estimatedCostCny,
         long executionDurationMs,
         String finalOutputSummary,
-        ExecutionMode executionMode
+        ExecutionMode executionMode,
+        UsageStatus usageStatus,
+        String capabilityTag,
+        boolean guardBlocked,
+        int guardBlockedCount,
+        RagAttributionSummary ragAttribution
 ) {
     /**
      * 证据执行模式枚举：严格区分真实生产探针、确定性测试替身与异常保底凭单。
@@ -48,17 +53,29 @@ public record HarnessEvidenceRecord(
             String toolName,
             long durationMs,
             boolean success,
+            boolean guardBlocked,
+            String violationReason,
             String inputDigest,
             String outputDigest
     ) {
         public ToolExecutionEntry {
             toolName = Objects.requireNonNull(toolName, "toolName");
+            violationReason = violationReason == null ? "" : violationReason;
             inputDigest = inputDigest == null ? "" : inputDigest;
             outputDigest = outputDigest == null ? "" : outputDigest;
+            if (guardBlocked && success) {
+                throw new IllegalArgumentException("Guard-blocked tool execution must not be marked as success");
+            }
+        }
+
+        public ToolExecutionEntry(String toolName, long durationMs, boolean success,
+                                  String inputDigest, String outputDigest) {
+            this(toolName, durationMs, success, false, "", inputDigest, outputDigest);
         }
 
         public String canonical() {
-            return toolName + ":" + durationMs + ":" + success + ":" + inputDigest + ":" + outputDigest;
+            return toolName + ":" + durationMs + ":" + success + ":" + guardBlocked + ":"
+                    + violationReason + ":" + inputDigest + ":" + outputDigest;
         }
     }
 
@@ -73,6 +90,30 @@ public record HarnessEvidenceRecord(
         toolExecutions = toolExecutions == null ? List.of() : List.copyOf(toolExecutions);
         finalOutputSummary = finalOutputSummary == null ? "" : finalOutputSummary;
         executionMode = executionMode == null ? ExecutionMode.REAL_PRODUCTION : executionMode;
+        usageStatus = usageStatus == null ? UsageStatus.UNKNOWN : usageStatus;
+        capabilityTag = capabilityTag == null || capabilityTag.isBlank() ? "PROMPT_ONLY" : capabilityTag;
+        guardBlockedCount = Math.max(0, guardBlockedCount);
+        ragAttribution = ragAttribution == null
+                ? RagAttributionSummary.of(ragDocumentCount, 0, ragTopScore) : ragAttribution;
+    }
+
+    public HarnessEvidenceRecord(
+            String evidenceId, String requestId, Long botId, String voucherFingerprint,
+            String voucherVersion, Instant timestamp, String userInputSummary,
+            int ragDocumentCount, double ragTopScore, List<ToolExecutionEntry> toolExecutions,
+            long estimatedTokens, double estimatedCostCny, long executionDurationMs,
+            String finalOutputSummary, ExecutionMode executionMode
+    ) {
+        this(evidenceId, requestId, botId, voucherFingerprint, voucherVersion, timestamp,
+                userInputSummary, ragDocumentCount, ragTopScore, toolExecutions,
+                estimatedTokens, estimatedCostCny, executionDurationMs, finalOutputSummary,
+                executionMode, UsageStatus.UNKNOWN, "PROMPT_ONLY",
+                blockedCount(toolExecutions) > 0, blockedCount(toolExecutions),
+                RagAttributionSummary.of(ragDocumentCount, 0, ragTopScore));
+    }
+
+    private static int blockedCount(List<ToolExecutionEntry> entries) {
+        return entries == null ? 0 : (int) entries.stream().filter(ToolExecutionEntry::guardBlocked).count();
     }
 
     /**
@@ -131,7 +172,12 @@ public record HarnessEvidenceRecord(
           .append(estimatedCostCny).append("\u001f")
           .append(executionDurationMs).append("\u001f")
           .append(finalOutputSummary).append("\u001f")
-          .append(executionMode.name());
+          .append(executionMode.name()).append("\u001f")
+          .append(usageStatus.name()).append("\u001f")
+          .append(capabilityTag).append("\u001f")
+          .append(guardBlocked).append("\u001f")
+          .append(guardBlockedCount).append("\u001f")
+          .append(ragAttribution.canonical());
 
         for (ToolExecutionEntry te : toolExecutions) {
             sb.append("\u001e").append(te.canonical());

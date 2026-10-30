@@ -6,6 +6,7 @@ import tech.qiantong.qknow.hermes.agent.AgentOrchestrator;
 import tech.qiantong.qknow.hermes.agent.harness.HarnessEvidenceRecord;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessAssembler;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
+import tech.qiantong.qknow.hermes.agent.harness.UsageStatus;
 import tech.qiantong.qknow.hermes.agent.harness.offline.probe.*;
 
 import java.io.IOException;
@@ -128,7 +129,8 @@ class HermesHarnessStage4ContractTest {
         // 1. 物理差分硬短路门禁验证（构造 Token 膨胀）
         ProbeExecutionDiff swollenDiff = new ProbeExecutionDiff(
                 tc.taskId(), "ev-b", "ev-c", 500L, 550L, 50L, // deltaTokens = +50 (膨胀)
-                100L, 102L, 2L, 0.001, 0.0011, true, true
+                100L, 102L, 2L, 0.001, 0.0011, true, true,
+                UsageStatus.KNOWN, UsageStatus.KNOWN, true
         );
         PositionSwapBlindEvaluator.BlindEvaluationResult shortResult = evaluator.evaluate(
                 swollenDiff, "base", "cand", (a, b) -> "A"
@@ -139,7 +141,10 @@ class HermesHarnessStage4ContractTest {
         // 2. 模拟固定选 A 偏见（Pass 1 选 A，Pass 2 也选 A）
         ProbeExecutionDiff goodDiff = new ProbeExecutionDiff(
                 tc.taskId(), "ev-b", "ev-c", 500L, 450L, -50L, // 节省 50 tokens
-                100L, 102L, 2L, 0.001, 0.0009, true, true
+                100L, 102L, 2L, 0.001, 0.0009, true, true,
+                UsageStatus.KNOWN,
+                UsageStatus.KNOWN,
+                true
         );
         PositionSwapBlindEvaluator.BlindEvaluationResult biasedResult = evaluator.evaluate(
                 goodDiff, "base", "cand", (a, b) -> "A" // 固执选 A
@@ -154,6 +159,19 @@ class HermesHarnessStage4ContractTest {
         );
         assertTrue(robustWin.isConsistent());
         assertEquals(PositionSwapBlindEvaluator.VerdictOutcome.ROBUST_WIN_ADOPT, robustWin.outcome());
+
+        // 旧构造器保留，但无法证明真实用量，合规数值也必须短路。
+        ProbeExecutionDiff unknownDiff = new ProbeExecutionDiff(
+                tc.taskId(), "ev-b", "ev-c", 500L, 450L, -50L,
+                100L, 102L, 2L, 0.001, 0.0009, true, true
+        );
+        assertFalse(unknownDiff.usageComparable());
+        PositionSwapBlindEvaluator.BlindEvaluationResult unknownResult = evaluator.evaluate(
+                unknownDiff, "base", "cand", (a, b) -> {
+                    throw new AssertionError("未知 Usage 不应调用盲审裁判");
+                }
+        );
+        assertEquals(PositionSwapBlindEvaluator.VerdictOutcome.SHORT_CIRCUITED_REJECT, unknownResult.outcome());
     }
 
     @Test

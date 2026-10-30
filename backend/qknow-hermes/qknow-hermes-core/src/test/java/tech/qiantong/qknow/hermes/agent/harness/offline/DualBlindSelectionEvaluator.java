@@ -92,7 +92,7 @@ public class DualBlindSelectionEvaluator {
         SelectionDataLeakageTripwire.assertNoLeak(combinedContext, List.of());
 
         // 2. 预算硬门禁初筛：若候选者未通过预算门禁，直接宣布 Baseline 胜出，无需调用评测
-        if (!diff.satisfiesBudgetGate() || !diff.toolSelectionMatched() || !diff.nonDegradingQuality()) {
+        if (!diff.isEligibleForAdoption()) {
             long durationMs = (System.nanoTime() - startNs) / 1_000_000;
             return new SelectionDecisionRecord(
                     testCase.taskId(),

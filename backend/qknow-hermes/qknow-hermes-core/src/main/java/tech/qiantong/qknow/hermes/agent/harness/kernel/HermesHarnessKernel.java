@@ -166,8 +166,15 @@ public final class HermesHarnessKernel {
         }
 
         public synchronized TrajectoryEvaluationResult evaluateTrajectory(List<ParetoFrontierComposer.Candidate> candidates) {
+            return evaluateTrajectory(0, 0, 0, 0, 0.0, candidates);
+        }
+
+        public synchronized TrajectoryEvaluationResult evaluateTrajectory(long reasoningTokens, long answerTokens,
+                int ragProvided, int ragUsed, double ragScore,
+                List<ParetoFrontierComposer.Candidate> candidates) {
             var attribution = attributionAnalyzer.analyze(
-                    new TrajectoryAttributionAnalyzer.TrajectoryEvidence(0, 0, 0, 0, toolExecutions));
+                    new TrajectoryAttributionAnalyzer.TrajectoryEvidence(reasoningTokens, answerTokens,
+                            ragProvided, ragUsed, ragScore, toolExecutions));
             Optional<HermesHarnessVoucher> proposal = Optional.empty();
             if (attribution.toolErrorRate() > 0.0D) {
                 try {
