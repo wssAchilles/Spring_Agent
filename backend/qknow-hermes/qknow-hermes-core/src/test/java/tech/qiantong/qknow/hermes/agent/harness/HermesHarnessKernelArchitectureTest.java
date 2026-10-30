@@ -20,6 +20,7 @@ import tech.qiantong.qknow.hermes.proto.RAGContext;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,7 +40,12 @@ class HermesHarnessKernelArchitectureTest {
         assertEquals(2.0, projector.chordSquared(axis(0, 1), axis(1, 1)), 1.0e-12);
         assertEquals(Math.PI / 2, projector.geodesic(axis(0, 1), axis(1, 1)), 1.0e-12);
         assertEquals(4.0, projector.chordSquared(axis(0, 1), axis(0, -1)), 1.0e-12);
-        var centroid = projector.frechetMean(List.of(axis(0, 1), axis(1, 1)));
+        var centroid = projector.extrinsicCentroid(List.of(axis(0, 1), axis(1, 1)));
+        assertEquals(centroid.chordalLoss(),
+                projector.chordalCentroid(List.of(axis(0, 1), axis(1, 1))).chordalLoss(), 1.0e-12);
+        assertTrue(projector.geodesicDistortionUpperBound(centroid, Math.PI / 2) >= centroid.chordalLoss());
+        assertTrue(projector.geodesicDistortionUpperBound(centroid, Math.PI / 2)
+                <= Math.PI * Math.PI / 4 * centroid.chordalLoss());
         assertEquals(1.0, Math.hypot(centroid.vector()[0], centroid.vector()[1]), 1.0e-12);
         assertEquals(2.0 * (1.0 - Math.sqrt(0.5)), centroid.chordalLoss(), 1.0e-12);
         assertTrue(centroid.chordalLoss() >= 0.0);
@@ -61,12 +67,29 @@ class HermesHarnessKernelArchitectureTest {
         assertEquals(1, buffer.statistics().cold());
         assertEquals(1, buffer.statistics().archived());
         assertTrue(buffer.softDelete(secondToken));
-        assertEquals(1, buffer.statistics().softDeleted());
+        assertEquals(2, buffer.statistics().softDeleted());
         assertEquals("first", buffer.restore(firstToken).orElseThrow().payload());
         assertEquals("first", buffer.restoreNearest(axis(0, 1), 0.01).orElseThrow().payload());
         assertEquals("second", buffer.restore(secondToken).orElseThrow().payload());
         assertTrue(buffer.statistics().restored() >= 3);
         assertTrue(buffer.warmCentroid().isPresent());
+    }
+
+    @Test
+    void coldArchiveCapacityRejectsWithoutLosingRestorableEpisode() {
+        var buffer = new ReversibleRingColdBuffer<String>(1, 1, 1, 1,
+                new HypersphericalManifoldProjector());
+        buffer.add(new ReversibleRingColdBuffer.Episode<>("a", "first", axis(0, 1)));
+        var first = buffer.add(new ReversibleRingColdBuffer.Episode<>("b", "second", axis(1, 1))).orElseThrow();
+        var second = buffer.add(new ReversibleRingColdBuffer.Episode<>("c", "third", axis(2, 1))).orElseThrow();
+        assertThrows(IllegalStateException.class,
+                () -> buffer.add(new ReversibleRingColdBuffer.Episode<>("d", "fourth", axis(3, 1))));
+        assertEquals(1, buffer.statistics().archived());
+        assertFalse(buffer.canArchive());
+        assertFalse(buffer.softDelete(second));
+        assertEquals("second", buffer.restore(second).orElseThrow().payload());
+        assertEquals("first", buffer.restore(first).orElseThrow().payload());
+        assertTrue(buffer.statistics().rejectedArchive() >= 1);
     }
 
     @Test
@@ -90,6 +113,20 @@ class HermesHarnessKernelArchitectureTest {
         assertEquals(HoareTripleToolGuard.Violation.SENSITIVE_OUTPUT,
                 guard.verifyAfter(Map.of("status", "secret-key"), contract).counterexample().violation());
         assertFalse(guard.verifyAfter(null, contract).allowed());
+        assertEquals(HoareTripleToolGuard.Violation.MISSING_CONTRACT,
+                guard.verifyBefore(" ", Map.of(), limits, contract).counterexample().violation());
+        assertEquals(HoareTripleToolGuard.Violation.GUARDRAIL_STEP_LIMIT,
+                guard.verifyBefore("balance_query", Map.of("amount", 5), limits, contract,
+                        new HoareTripleToolGuard.ExecutionState(11, 1, 0, 0)).counterexample().violation());
+        assertEquals(HoareTripleToolGuard.Violation.GUARDRAIL_LOOP_THRESHOLD,
+                guard.verifyBefore("balance_query", Map.of("amount", 5), limits, contract,
+                        new HoareTripleToolGuard.ExecutionState(1, 3, 0, 0)).counterexample().violation());
+        assertEquals(HoareTripleToolGuard.Violation.GUARDRAIL_TOKEN_BUDGET,
+                guard.verifyBefore("balance_query", Map.of("amount", 5), limits, contract,
+                        new HoareTripleToolGuard.ExecutionState(1, 1, 100_001, 0)).counterexample().violation());
+        assertEquals(HoareTripleToolGuard.Violation.GUARDRAIL_COST_BUDGET,
+                guard.verifyBefore("balance_query", Map.of("amount", 5), limits, contract,
+                        new HoareTripleToolGuard.ExecutionState(1, 1, 0, 0.06)).counterexample().violation());
     }
 
     @Test
@@ -204,5 +241,50 @@ class HermesHarnessKernelArchitectureTest {
         assertNotNull(kernel.paretoComposer());
         assertThrows(IllegalArgumentException.class,
                 () -> kernel.prepare(voucher, CapabilityTag.RAG, List.of(), Map.of(), List.of()));
+    }
+
+    @Test
+    void kernelSessionOrchestratesComponentsAndIsolatesRequests() {
+        var kernel = new HermesHarnessKernel(2, 2, 2, 3, 2);
+        var voucher = new HermesHarnessAssembler().createDefaultProductionVoucher(7L);
+        var callback = FunctionToolCallback.builder("lookup", (String input) -> input)
+                .inputType(String.class).description("Look up a fact").build();
+        var contract = new HoareTripleToolGuard.Contract(Map.of(), args -> true,
+                Set.of("lookup"), Set.of(), Set.of());
+        AtomicInteger calls = new AtomicInteger();
+        var first = kernel.openSession("a", voucher);
+        var prepared = first.prepare(CapabilityTag.HISTORY, List.of(), Map.of(),
+                List.of(ChatMessage.newBuilder().setRole("user").setContent("prior question").build()));
+        assertEquals(1, prepared.coldBufferSnapshot().hot());
+        assertEquals(CapabilityTag.HISTORY, prepared.context().tag());
+        for (int i = 0; i < voucher.guardrails().loopThreshold() - 1; i++) {
+            assertTrue(first.invokeTool("lookup", Map.of(), "{}", contract, 1, 0,
+                    () -> "result-" + calls.incrementAndGet()).executed());
+        }
+        var rejected = first.invokeTool("lookup", Map.of(), "{}", contract, 1, 0,
+                () -> "result-" + calls.incrementAndGet());
+        assertFalse(rejected.executed());
+        assertEquals(voucher.guardrails().loopThreshold() - 1, calls.get());
+        assertTrue(first.evaluateTrajectory(List.of(new ParetoFrontierComposer.Candidate("base", 0.8, 10, 1)))
+                .mutationProposal().isPresent());
+        assertEquals(1.0 / voucher.guardrails().loopThreshold(),
+                first.evaluateTrajectory(List.of()).attribution().toolErrorRate(), 1.0e-12);
+
+        var second = kernel.openSession("b", voucher);
+        second.prepare(CapabilityTag.TOOL, List.of(), Map.of("lookup", callback), List.of());
+        var allowed = second.invokeTool("lookup", Map.of(), "{}", contract, 1, 0,
+                () -> "result-" + calls.incrementAndGet());
+        assertTrue(allowed.executed());
+        assertEquals(1, allowed.cycleInspection().frequency());
+        assertEquals(0, second.coldBufferSnapshot().hot());
+
+        var sensitiveContract = new HoareTripleToolGuard.Contract(Map.of(), args -> true,
+                Set.of("lookup"), Set.of(), Set.of("secret-key"));
+        var sensitive = second.invokeTool("lookup", Map.of(), "different", sensitiveContract, 1, 0,
+                () -> "secret-key");
+        assertTrue(sensitive.executed());
+        assertEquals("", sensitive.output());
+        assertEquals(HoareTripleToolGuard.Violation.SENSITIVE_OUTPUT,
+                sensitive.postDecision().counterexample().violation());
     }
 }

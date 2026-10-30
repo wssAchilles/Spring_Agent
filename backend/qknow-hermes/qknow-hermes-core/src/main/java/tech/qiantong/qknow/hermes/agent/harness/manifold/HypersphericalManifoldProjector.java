@@ -3,7 +3,11 @@ package tech.qiantong.qknow.hermes.agent.harness.manifold;
 import java.util.List;
 import java.util.Objects;
 
-/** Geometry of normalized 1024-dimensional Qwen embedding vectors. */
+/**
+ * Geometry of normalized 1024-dimensional Qwen embeddings on S^1023.
+ * The extrinsic/chordal centroid is the normalized Euclidean mean, not the intrinsic
+ * geodesic Frechet mean. It exactly minimizes empirical squared chordal risk.
+ */
 public final class HypersphericalManifoldProjector {
     public static final int QWEN_EMBEDDING_DIM = 1024;
 
@@ -58,8 +62,12 @@ public final class HypersphericalManifoldProjector {
         return Math.acos(cosine(left, right));
     }
 
-    /** The normalized extrinsic mean minimizes average squared chordal distance. */
-    public Centroid frechetMean(List<double[]> vectors) {
+    /**
+     * Returns mu_ext = mean(v_i) / ||mean(v_i)||, minimizing average squared chordal
+     * distance with loss 2(1 - ||mean(v_i)||). Within a local convex spherical cap,
+     * this O(Nd) closed form is a second-order approximation to the geodesic mean.
+     */
+    public Centroid extrinsicCentroid(List<double[]> vectors) {
         if (vectors == null || vectors.isEmpty()) {
             throw new IllegalArgumentException("At least one vector is required");
         }
@@ -78,5 +86,35 @@ public final class HypersphericalManifoldProjector {
             throw new IllegalArgumentException("Antipodal centroid is undefined");
         }
         return new Centroid(normalize(mean), 2.0 * (1.0 - Math.min(1.0, norm)));
+    }
+
+    /** Equivalent name for the extrinsic centroid's squared-chord objective. */
+    public Centroid chordalCentroid(List<double[]> vectors) {
+        return extrinsicCentroid(vectors);
+    }
+
+    /**
+     * Compatibility delegate returning the extrinsic/chordal centroid, not the
+     * intrinsic Frechet mean. Prefer {@link #extrinsicCentroid(List)}.
+     */
+    @Deprecated(since = "stage7", forRemoval = false)
+    public Centroid frechetMean(List<double[]> vectors) {
+        return extrinsicCentroid(vectors);
+    }
+
+    /**
+     * Bounds mean squared geodesic distortion within a cap of radius theta:
+     * d_geo^2 <= ((theta/2)/sin(theta/2))^2 d_chord^2 <= (pi^2/4) d_chord^2.
+     */
+    public double geodesicDistortionUpperBound(Centroid centroid, double maxGeodesicRadians) {
+        Objects.requireNonNull(centroid, "centroid must not be null");
+        if (Double.isNaN(maxGeodesicRadians) || maxGeodesicRadians < 0.0
+                || maxGeodesicRadians > Math.PI) {
+            throw new IllegalArgumentException("maxGeodesicRadians must be in [0, pi], got: "
+                    + maxGeodesicRadians);
+        }
+        double halfTheta = maxGeodesicRadians * 0.5;
+        double factor = halfTheta < 1.0e-9 ? 1.0 : Math.pow(halfTheta / Math.sin(halfTheta), 2);
+        return factor * centroid.chordalLoss();
     }
 }

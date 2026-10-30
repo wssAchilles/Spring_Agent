@@ -2,6 +2,7 @@ package tech.qiantong.qknow.hermes.agent.harness.neurosymbolic;
 
 import tech.qiantong.qknow.hermes.agent.harness.GuardrailsSpecificationRecord;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -9,7 +10,50 @@ import java.util.function.Predicate;
 
 /** Deterministic P(args, G) and Q(result, G) checks; execution remains with the caller. */
 public final class HoareTripleToolGuard {
-    public enum Violation { MISSING_CONTRACT, PERMISSION, SCHEMA, BOUNDARY, RESULT_INTEGRITY, SENSITIVE_OUTPUT }
+    public enum Violation {
+        MISSING_CONTRACT, PERMISSION, SCHEMA, BOUNDARY,
+        GUARDRAIL_STEP_LIMIT, GUARDRAIL_LOOP_THRESHOLD,
+        GUARDRAIL_TOKEN_BUDGET, GUARDRAIL_COST_BUDGET,
+        RESULT_INTEGRITY, SENSITIVE_OUTPUT
+    }
+
+    public record ExecutionState(int currentStep, int loopFrequency,
+                                 long estimatedTokens, double estimatedCostCny) {
+        public ExecutionState {
+            if (currentStep < 0 || loopFrequency < 0 || estimatedTokens < 0L
+                    || !Double.isFinite(estimatedCostCny) || estimatedCostCny < 0.0D) {
+                throw new IllegalArgumentException("ExecutionState metrics must be non-negative and finite");
+            }
+        }
+
+        public static ExecutionState initial() {
+            return new ExecutionState(1, 1, 0L, 0.0D);
+        }
+
+        public static ExecutionState fromArguments(Map<String, Object> arguments) {
+            if (arguments == null || arguments.isEmpty()) {
+                return initial();
+            }
+            int step = toInt(arguments.get("_step"), 1);
+            int frequency = toInt(arguments.get("_loopFrequency"), 1);
+            long tokens = toLong(arguments.get("_estimatedTokens"), 0L);
+            double cost = toDouble(arguments.get("_estimatedCostCny"), 0.0D);
+            return new ExecutionState(Math.max(0, step), Math.max(0, frequency),
+                    Math.max(0L, tokens), Math.max(0.0D, cost));
+        }
+
+        private static int toInt(Object value, int fallback) {
+            return value == null ? fallback : new BigDecimal(value.toString()).intValueExact();
+        }
+
+        private static long toLong(Object value, long fallback) {
+            return value == null ? fallback : new BigDecimal(value.toString()).longValueExact();
+        }
+
+        private static double toDouble(Object value, double fallback) {
+            return value == null ? fallback : Double.parseDouble(value.toString());
+        }
+    }
 
     public record Counterexample(Violation violation, String detail) {}
 
@@ -39,19 +83,41 @@ public final class HoareTripleToolGuard {
 
     public Decision verifyBefore(String toolName, Map<String, Object> arguments,
                                  GuardrailsSpecificationRecord guardrails, Contract contract) {
-        if (contract == null || guardrails == null || toolName == null || arguments == null) {
-            return Decision.reject(Violation.MISSING_CONTRACT, "Tool, arguments, guardrails and contract are required");
+        return verifyBefore(toolName, arguments, guardrails, contract, ExecutionState.fromArguments(arguments));
+    }
+
+    public Decision verifyBefore(String toolName, Map<String, Object> arguments,
+                                 GuardrailsSpecificationRecord guardrails, Contract contract,
+                                 ExecutionState state) {
+        Objects.requireNonNull(guardrails, "guardrails");
+        Objects.requireNonNull(state, "state");
+        if (contract == null || toolName == null || toolName.isBlank() || arguments == null) {
+            return Decision.reject(Violation.MISSING_CONTRACT, "Tool, arguments and contract are required");
         }
-        if (!contract.permittedTools().contains(toolName)) {
+        if (state.currentStep() > guardrails.maxCycleSteps()) {
+            return Decision.reject(Violation.GUARDRAIL_STEP_LIMIT, "Cycle step limit exceeded");
+        }
+        if (state.loopFrequency() >= guardrails.loopThreshold()) {
+            return Decision.reject(Violation.GUARDRAIL_LOOP_THRESHOLD, "Loop threshold reached");
+        }
+        if (state.estimatedTokens() > guardrails.maxTokenBudget()) {
+            return Decision.reject(Violation.GUARDRAIL_TOKEN_BUDGET, "Token budget exceeded");
+        }
+        if (state.estimatedCostCny() > guardrails.maxCostCny()) {
+            return Decision.reject(Violation.GUARDRAIL_COST_BUDGET, "Cost budget exceeded");
+        }
+        String normalizedTool = toolName.trim();
+        if (!contract.permittedTools().contains(normalizedTool)) {
             return Decision.reject(Violation.PERMISSION, "Tool is not permitted: " + toolName);
         }
+        Map<String, Object> safeArgs = arguments;
         for (Map.Entry<String, Class<?>> field : contract.requiredArguments().entrySet()) {
-            if (field.getValue() == null || !field.getValue().isInstance(arguments.get(field.getKey()))) {
+            if (field.getValue() == null || !field.getValue().isInstance(safeArgs.get(field.getKey()))) {
                 return Decision.reject(Violation.SCHEMA, "Invalid argument: " + field.getKey());
             }
         }
         try {
-            if (!contract.boundary().test(Map.copyOf(arguments))) {
+            if (!contract.boundary().test(Map.copyOf(safeArgs))) {
                 return Decision.reject(Violation.BOUNDARY, "Argument boundary violated");
             }
         } catch (RuntimeException e) {
