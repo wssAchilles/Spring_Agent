@@ -98,6 +98,10 @@ public class HarnessEvidenceCollector {
      * 终结收集并产出不可变凭单，同时触发监听回调。
      */
     public HarnessEvidenceRecord finalizeEvidence() {
+        return finalizeEvidence(HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION);
+    }
+
+    public HarnessEvidenceRecord finalizeEvidence(HarnessEvidenceRecord.ExecutionMode executionMode) {
         long durationMs = Math.max(0, Instant.now().toEpochMilli() - startTime.toEpochMilli());
         HarnessEvidenceRecord record = new HarnessEvidenceRecord(
                 evidenceId,
@@ -114,7 +118,7 @@ public class HarnessEvidenceCollector {
                 estimatedCostCny,
                 durationMs,
                 finalOutputSummary,
-                HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION
+                Objects.requireNonNull(executionMode, "executionMode")
         );
 
         for (Consumer<HarnessEvidenceRecord> listener : completionListeners) {

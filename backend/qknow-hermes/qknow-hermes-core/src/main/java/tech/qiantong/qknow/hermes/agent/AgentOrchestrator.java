@@ -27,6 +27,7 @@ import tech.qiantong.qknow.hermes.agent.harness.HarnessEvidenceRecord;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessAssembler;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
 import tech.qiantong.qknow.hermes.agent.harness.MemoryContextStrategyRecord;
+import tech.qiantong.qknow.hermes.agent.harness.kernel.HarnessKernelBridge;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -110,6 +111,18 @@ public class AgentOrchestrator {
     private final MemoryManager memoryManager;
 
     private HermesHarnessAssembler harnessAssembler = new HermesHarnessAssembler();
+    private HarnessKernelBridge harnessKernelBridge = HarnessKernelBridge.disabledInstance();
+
+    @Autowired(required = false)
+    public void setHarnessKernelBridge(HarnessKernelBridge harnessKernelBridge) {
+        if (harnessKernelBridge != null) {
+            this.harnessKernelBridge = harnessKernelBridge;
+        }
+    }
+
+    public HarnessKernelBridge getHarnessKernelBridge() {
+        return harnessKernelBridge;
+    }
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setHarnessAssembler(HermesHarnessAssembler harnessAssembler) {
@@ -291,9 +304,11 @@ public class AgentOrchestrator {
         StringBuilder fullAnswer = new StringBuilder();
         java.util.concurrent.atomic.AtomicLong promptTokens = new java.util.concurrent.atomic.AtomicLong(0);
         java.util.concurrent.atomic.AtomicLong completionTokens = new java.util.concurrent.atomic.AtomicLong(0);
+        java.util.concurrent.atomic.AtomicReference<HarnessKernelBridge.BridgeExecutionHandle> bridgeHandle =
+                new java.util.concurrent.atomic.AtomicReference<>();
         return Flux.<ChatEvent>create(emitter -> {
             try {
-                executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens);
+                executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens, bridgeHandle);
             } catch (Exception e) {
                 log.error("Hermes Agent 执行失败", e);
                 emitter.next(ChatEvent.newBuilder()
@@ -306,6 +321,10 @@ public class AgentOrchestrator {
                 emitter.complete();
             }
         }).doFinally(signalType -> {
+            HarnessKernelBridge.BridgeExecutionHandle handle = bridgeHandle.get();
+            if (handle != null) {
+                harnessKernelBridge.completeExecution(request.getRequestId(), handle, 0.0D);
+            }
             if (deepSeekCostGovernor != null) {
                 deepSeekCostGovernor.markRequestEnd();
             }
@@ -386,7 +405,9 @@ public class AgentOrchestrator {
     private void executeAgent(ChatRequest request, reactor.core.publisher.FluxSink<ChatEvent> emitter,
                               String traceId, StringBuilder fullAnswer,
                               java.util.concurrent.atomic.AtomicLong promptTokens,
-                              java.util.concurrent.atomic.AtomicLong completionTokens) throws GraphRunnerException {
+                              java.util.concurrent.atomic.AtomicLong completionTokens,
+                              java.util.concurrent.atomic.AtomicReference<HarnessKernelBridge.BridgeExecutionHandle> bridgeHandle)
+            throws GraphRunnerException {
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
         ChatModel chatModel;
@@ -545,6 +566,33 @@ public class AgentOrchestrator {
 
         // 6. 构建系统提示词：由不可变 Harness 凭单装配静态前缀，动态 RAG 只进入 UserMessage。
         String systemPrompt = harnessAssembler.assembleSystemPrompt(effectiveVoucher, tools);
+        List<ToolCallback> bridgeTools = tools;
+        ToolCallbackResolver bridgeResolver = resolver;
+        if (!harnessKernelBridge.isOff()) {
+            List<ChatMessage> effectiveHistory = request.getHistoryList();
+            if (effectiveHistory.isEmpty() && !messages.isEmpty()) {
+                effectiveHistory = messages.stream().map(message -> ChatMessage.newBuilder()
+                        .setRole(message instanceof AssistantMessage ? "assistant" : "user")
+                        .setContent(message.getText() == null ? "" : message.getText())
+                        .build()).toList();
+            }
+            var handle = harnessKernelBridge.bridgeExecution(request, effectiveVoucher, systemPrompt,
+                    effectiveRagContexts, tools, resolver, effectiveHistory);
+            bridgeHandle.set(handle);
+            if (handle.failClosed()) {
+                evidenceCollector.recordFinalOutput("FAIL_SAFE: " + handle.failCloseReason());
+                recordEvidence(evidenceCollector.finalizeEvidence(HarnessEvidenceRecord.ExecutionMode.FAIL_SAFE));
+                unregisterRequestVoucher(request.getRequestId());
+                emitter.next(ChatEvent.newBuilder().setRequestId(request.getRequestId())
+                        .setError(ErrorEvent.newBuilder().setCode(403)
+                                .setMessage(handle.failCloseReason()).build()).build());
+                emitter.complete();
+                return;
+            }
+            systemPrompt = handle.effectiveSystemPrompt();
+            bridgeTools = handle.effectiveTools();
+            bridgeResolver = handle.effectiveResolver();
+        }
         final String harnessVersion = effectiveVoucher.version();
         final String harnessFingerprint = effectiveVoucher.computeFingerprint();
         String plannerSupervision = createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
@@ -568,7 +616,7 @@ public class AgentOrchestrator {
         }
         evidenceCollector.recordRagEvidence(effectiveRagContexts.size(), ragTopScore);
 
-        String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, tools, chatModel);
+        String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, bridgeTools, chatModel);
         if (planAnswer != null) {
             fullAnswer.append(planAnswer);
             long pt = estimateTokenCount(request.getQuestion());
@@ -607,11 +655,12 @@ public class AgentOrchestrator {
         final ReActCycleGuard cycleGuard = new ReActCycleGuard(
                 effectiveVoucher.guardrails().maxCycleSteps(),
                 effectiveVoucher.guardrails().loopThreshold());
-        List<ToolCallback> guardedTools = tools.stream()
+        List<ToolCallback> guardedTools = bridgeTools.stream()
                 .map(t -> wrapWithCycleGuard(t, cycleGuard, evidenceCollector))
                 .collect(Collectors.toList());
+        ToolCallbackResolver effectiveBridgeResolver = bridgeResolver;
         ToolCallbackResolver guardedResolver = name -> {
-            ToolCallback cb = resolver != null ? resolver.resolve(name) : null;
+            ToolCallback cb = effectiveBridgeResolver != null ? effectiveBridgeResolver.resolve(name) : null;
             return wrapWithCycleGuard(cb, cycleGuard, evidenceCollector);
         };
 
