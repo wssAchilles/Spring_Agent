@@ -82,6 +82,8 @@ class HermesHarnessStage4ContractTest {
             assertTrue(report.success());
             assertEquals("NONE", report.errorCode());
             assertNotNull(report.evidenceRecord());
+            assertEquals(HarnessEvidenceRecord.ExecutionMode.DETERMINISTIC_TEST_DOUBLE,
+                    report.evidenceRecord().executionMode(), "测试替身生成的凭单必须显式标记 DETERMINISTIC_TEST_DOUBLE");
             assertNotNull(report.persistedJsonPath());
             assertTrue(Files.exists(report.persistedJsonPath()));
 
@@ -180,10 +182,10 @@ class HermesHarnessStage4ContractTest {
     }
 
     @Test
-    @DisplayName("契约 6: OfflineProbeRunner 驱动 5 大用例完成受控 PPC 闭环与物理 JSON 存证")
+    @DisplayName("契约 6: OfflineProbeRunner 驱动 5 大用例完成测试替身受控 PPC 闭环与合成 JSON 隔离存证")
     void testEndToEndOfflineProbePpcCycleAndPersist() throws IOException {
-        Path outputBaseDir = Path.of("experiment/outputs/harness4");
-        String runId = "run-20261030-stage4";
+        Path outputBaseDir = Path.of("experiment/outputs/harness4-synthetic");
+        String runId = "run-20261030-stage4-synthetic";
 
         Map<String, DeterministicHarnessTestDouble.DeterministicResponse> fixtures = Map.of(
                 "kb-qa-01", new DeterministicHarnessTestDouble.DeterministicResponse(
@@ -210,15 +212,17 @@ class HermesHarnessStage4ContractTest {
         assertTrue(summary.candidateAdoptedCount() > 0);
         assertTrue(summary.hypothesisVerified());
 
-        // 验证 10 份物理证据 JSON 资产全部真实落盘
+        // 验证 10 份合成证据 JSON 资产全部落盘且显式标记 DETERMINISTIC_TEST_DOUBLE
         for (OfflineBenchmarkTestCase tc : OfflineBenchmarkTestCase.createDefaultSuite()) {
             Path baseJson = outputBaseDir.resolve(runId).resolve("baseline").resolve("evidence_" + tc.taskId() + ".json");
             Path candJson = outputBaseDir.resolve(runId).resolve("candidate").resolve("evidence_" + tc.taskId() + ".json");
 
-            assertTrue(Files.exists(baseJson), "基线物理凭单必须存在: " + baseJson);
-            assertTrue(Files.exists(candJson), "候选物理凭单必须存在: " + candJson);
+            assertTrue(Files.exists(baseJson), "基线合成凭单必须存在: " + baseJson);
+            assertTrue(Files.exists(candJson), "候选合成凭单必须存在: " + candJson);
             assertTrue(Files.size(baseJson) > 0, "基线凭单文件大小必须大于 0");
             assertTrue(Files.size(candJson) > 0, "候选凭单文件大小必须大于 0");
+            assertTrue(Files.readString(baseJson).contains("\"executionMode\":\"DETERMINISTIC_TEST_DOUBLE\""));
+            assertTrue(Files.readString(candJson).contains("\"executionMode\":\"DETERMINISTIC_TEST_DOUBLE\""));
         }
 
         Path summaryJson = outputBaseDir.resolve(runId).resolve("eval").resolve("ppc_summary.json");

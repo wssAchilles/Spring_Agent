@@ -12,7 +12,7 @@ import java.util.Objects;
  * Hermes 阶段二不可变轻量执行摘要证据凭单 (Lightweight Execution Summary Evidence Record)。
  *
  * <p>吸收 Harness² ledger.py 与 runmark.py 的设计思想，
- * 记录单次智能体执行的轻量物理证据（含输入摘要、RAG 检索置信度、工具耗时与入参出参摘要哈希、Token 估算成本），
+ * 记录单次智能体执行的轻量物理证据（含输入摘要、RAG 检索置信度、工具耗时与入参出参摘要哈希、Token 估算成本及执行模式），
  * 并支持确定性 SHA-256 摘要签名防篡改。</p>
  */
 public record HarnessEvidenceRecord(
@@ -29,8 +29,18 @@ public record HarnessEvidenceRecord(
         long estimatedTokens,
         double estimatedCostCny,
         long executionDurationMs,
-        String finalOutputSummary
+        String finalOutputSummary,
+        ExecutionMode executionMode
 ) {
+    /**
+     * 证据执行模式枚举：严格区分真实生产探针、确定性测试替身与异常保底凭单。
+     */
+    public enum ExecutionMode {
+        REAL_PRODUCTION,
+        DETERMINISTIC_TEST_DOUBLE,
+        FAIL_SAFE
+    }
+
     /**
      * 单个工具执行的物理证据条目。
      */
@@ -62,6 +72,45 @@ public record HarnessEvidenceRecord(
         userInputSummary = userInputSummary == null ? "" : userInputSummary;
         toolExecutions = toolExecutions == null ? List.of() : List.copyOf(toolExecutions);
         finalOutputSummary = finalOutputSummary == null ? "" : finalOutputSummary;
+        executionMode = executionMode == null ? ExecutionMode.REAL_PRODUCTION : executionMode;
+    }
+
+    /**
+     * 兼容 14 参数构造器（默认标记为 REAL_PRODUCTION）。
+     */
+    public HarnessEvidenceRecord(
+            String evidenceId,
+            String requestId,
+            Long botId,
+            String voucherFingerprint,
+            String voucherVersion,
+            Instant timestamp,
+            String userInputSummary,
+            int ragDocumentCount,
+            double ragTopScore,
+            List<ToolExecutionEntry> toolExecutions,
+            long estimatedTokens,
+            double estimatedCostCny,
+            long executionDurationMs,
+            String finalOutputSummary
+    ) {
+        this(
+                evidenceId,
+                requestId,
+                botId,
+                voucherFingerprint,
+                voucherVersion,
+                timestamp,
+                userInputSummary,
+                ragDocumentCount,
+                ragTopScore,
+                toolExecutions,
+                estimatedTokens,
+                estimatedCostCny,
+                executionDurationMs,
+                finalOutputSummary,
+                ExecutionMode.REAL_PRODUCTION
+        );
     }
 
     /**
@@ -81,7 +130,8 @@ public record HarnessEvidenceRecord(
           .append(estimatedTokens).append("\u001f")
           .append(estimatedCostCny).append("\u001f")
           .append(executionDurationMs).append("\u001f")
-          .append(finalOutputSummary);
+          .append(finalOutputSummary).append("\u001f")
+          .append(executionMode.name());
 
         for (ToolExecutionEntry te : toolExecutions) {
             sb.append("\u001e").append(te.canonical());

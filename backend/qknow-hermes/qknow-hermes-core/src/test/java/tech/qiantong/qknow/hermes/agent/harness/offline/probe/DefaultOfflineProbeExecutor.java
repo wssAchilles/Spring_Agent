@@ -200,7 +200,8 @@ public class DefaultOfflineProbeExecutor implements OfflineProbeExecutor {
                 0L,
                 0.0,
                 durationMs,
-                "FAIL_SAFE [" + errorCode + "]: " + detailMsg
+                "FAIL_SAFE [" + errorCode + "]: " + detailMsg,
+                HarnessEvidenceRecord.ExecutionMode.FAIL_SAFE
         );
     }
 }

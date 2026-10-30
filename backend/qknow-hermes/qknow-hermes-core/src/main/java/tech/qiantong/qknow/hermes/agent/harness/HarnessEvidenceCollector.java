@@ -113,7 +113,8 @@ public class HarnessEvidenceCollector {
                 estimatedTokens,
                 estimatedCostCny,
                 durationMs,
-                finalOutputSummary
+                finalOutputSummary,
+                HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION
         );
 
         for (Consumer<HarnessEvidenceRecord> listener : completionListeners) {

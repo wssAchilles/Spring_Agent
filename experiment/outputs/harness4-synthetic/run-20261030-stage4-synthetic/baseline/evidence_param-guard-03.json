@@ -2,13 +2,14 @@
 	"botId":1001,
 	"estimatedCostCny":7.35E-4,
 	"estimatedTokens":490,
-	"evidenceId":"ev-test-probe-run-20261030-stage4-baseline-param-guard-03-e8e809db",
+	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-baseline-param-guard-03-8758af5f",
 	"executionDurationMs":18,
+	"executionMode":"DETERMINISTIC_TEST_DOUBLE",
 	"finalOutputSummary":"时间参数纠错: 检测到非标准时间，已引导自纠 (基线冗余套话)",
 	"ragDocumentCount":1,
 	"ragTopScore":0.95,
-	"requestId":"probe-run-20261030-stage4-baseline-param-guard-03-e8e809db",
-	"timestamp":"2026-10-29T16:30:04.764851Z",
+	"requestId":"probe-run-20261030-stage4-synthetic-baseline-param-guard-03-8758af5f",
+	"timestamp":"2026-10-30T04:09:31.231326Z",
 	"toolExecutions":[
 		{
 			"durationMs":10,

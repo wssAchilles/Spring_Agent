@@ -48,7 +48,7 @@ public class DeterministicHarnessTestDouble implements HarnessExecutionDriver {
         long tokens = isCandidate ? Math.max(100L, resp.simulatedTokens() - 40L) : resp.simulatedTokens();
         String answer = isCandidate ? resp.textResponse() + " (精炼客观)" : resp.textResponse() + " (基线冗余套话)";
 
-        // 构造对应的不可变凭单存入内部 Map
+        // 构造对应的不可变凭单存入内部 Map，强制标记为 DETERMINISTIC_TEST_DOUBLE
         HarnessEvidenceRecord record = new HarnessEvidenceRecord(
                 "ev-test-" + reqId,
                 reqId,
@@ -69,7 +69,8 @@ public class DeterministicHarnessTestDouble implements HarnessExecutionDriver {
                 tokens,
                 tokens * 0.0000015,
                 resp.simulatedDurationMs(),
-                answer
+                answer,
+                HarnessEvidenceRecord.ExecutionMode.DETERMINISTIC_TEST_DOUBLE
         );
         generatedEvidenceMap.put(reqId, record);
 

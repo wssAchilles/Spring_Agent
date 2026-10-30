@@ -2,13 +2,14 @@
 	"botId":1001,
 	"estimatedCostCny":7.5E-4,
 	"estimatedTokens":500,
-	"evidenceId":"ev-test-probe-run-20261030-stage4-baseline-comp-rag-tool-05-b5fba778",
+	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-baseline-tool-route-02-e8765607",
 	"executionDurationMs":20,
+	"executionMode":"DETERMINISTIC_TEST_DOUBLE",
 	"finalOutputSummary":"确定性兜底回答 (基线冗余套话)",
 	"ragDocumentCount":1,
 	"ragTopScore":0.95,
-	"requestId":"probe-run-20261030-stage4-baseline-comp-rag-tool-05-b5fba778",
-	"timestamp":"2026-10-29T16:30:04.766112Z",
+	"requestId":"probe-run-20261030-stage4-synthetic-baseline-tool-route-02-e8765607",
+	"timestamp":"2026-10-30T04:09:31.230292Z",
 	"toolExecutions":[
 		{
 			"durationMs":10,
@@ -18,7 +19,7 @@
 			"toolName":"defaultTool"
 		}
 	],
-	"userInputSummary":"生成一份微服务架构演进评估报告，包含 4 列标准 Markdown 对比矩阵与 200 字总结。",
+	"userInputSummary":"客户反映交易扣款成功但未生成凭单，请核查流水状态并查询结算账户余额。",
 	"voucherFingerprint":"v-base-fingerprint",
 	"voucherVersion":"1.0.0-BASE"
 }

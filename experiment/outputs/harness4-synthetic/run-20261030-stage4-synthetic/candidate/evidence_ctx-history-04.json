@@ -2,13 +2,14 @@
 	"botId":1001,
 	"estimatedCostCny":7.650000000000001E-4,
 	"estimatedTokens":510,
-	"evidenceId":"ev-test-probe-run-20261030-stage4-candidate-ctx-history-04-562c8202",
+	"evidenceId":"ev-test-probe-run-20261030-stage4-synthetic-candidate-ctx-history-04-1a986115",
 	"executionDurationMs":20,
+	"executionMode":"DETERMINISTIC_TEST_DOUBLE",
 	"finalOutputSummary":"架构演进建议: 消除指代，采用 eBPF 绕过网络时延瓶颈 (精炼客观)",
 	"ragDocumentCount":1,
 	"ragTopScore":0.95,
-	"requestId":"probe-run-20261030-stage4-candidate-ctx-history-04-562c8202",
-	"timestamp":"2026-10-29T16:30:04.768220Z",
+	"requestId":"probe-run-20261030-stage4-synthetic-candidate-ctx-history-04-1a986115",
+	"timestamp":"2026-10-30T04:09:31.234747Z",
 	"toolExecutions":[
 		{
 			"durationMs":10,
