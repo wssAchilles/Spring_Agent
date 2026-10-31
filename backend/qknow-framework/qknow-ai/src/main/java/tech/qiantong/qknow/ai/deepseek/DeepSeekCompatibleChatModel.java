@@ -44,8 +44,17 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
     private final String apiKey;
     private final String modelName;
     private final Double temperature;
+    private final Integer maxOutputTokens;
 
     public DeepSeekCompatibleChatModel(String baseUrl, String apiKey, String modelName, Double temperature) {
+        this(baseUrl, apiKey, modelName, temperature, null);
+    }
+
+    public DeepSeekCompatibleChatModel(String baseUrl, String apiKey, String modelName,
+                                       Double temperature, Integer maxOutputTokens) {
+        if (maxOutputTokens != null && maxOutputTokens <= 0) {
+            throw new IllegalArgumentException("maxOutputTokens must be positive");
+        }
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .build();
@@ -53,6 +62,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         this.apiKey = apiKey;
         this.modelName = (modelName != null && !modelName.isBlank()) ? modelName : DEFAULT_MODEL_NAME;
         this.temperature = temperature;
+        this.maxOutputTokens = maxOutputTokens;
     }
 
     @Override
@@ -209,6 +219,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         Map<String, Object> body = new LinkedHashMap<>();
         String targetModel = (this.modelName != null && !this.modelName.isBlank()) ? this.modelName : DEFAULT_MODEL_NAME;
         Double targetTemperature = this.temperature;
+        Integer requestedMaxTokens = null;
 
         // 从 Prompt Options 中提取运行时覆盖配置与思考控制
         if (prompt != null && prompt.getOptions() != null) {
@@ -219,6 +230,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
             if (options.getTemperature() != null) {
                 targetTemperature = options.getTemperature();
             }
+            requestedMaxTokens = options.getMaxTokens();
             if (options instanceof DeepSeekChatOptions dsOptions) {
                 if (dsOptions.getThinkingEnabled() != null) {
                     body.put("thinking", Map.of("type", dsOptions.getThinkingEnabled() ? "enabled" : "disabled"));
@@ -231,9 +243,6 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                 }
                 if (dsOptions.getToolChoice() != null) {
                     body.put("tool_choice", dsOptions.getToolChoice());
-                }
-                if (dsOptions.getMaxTokens() != null) {
-                    body.put("max_tokens", dsOptions.getMaxTokens());
                 }
             }
             if (options instanceof org.springframework.ai.model.tool.ToolCallingChatOptions toolOptions) {
@@ -268,6 +277,10 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         body.put("model", targetModel);
         body.put("messages", messages);
         body.put("stream", stream);
+        if (requestedMaxTokens != null || maxOutputTokens != null) {
+            body.put("max_tokens", requestedMaxTokens == null ? maxOutputTokens
+                    : maxOutputTokens == null ? requestedMaxTokens : Math.min(requestedMaxTokens, maxOutputTokens));
+        }
         boolean isThinkingEnabled = false;
         if (body.containsKey("thinking")) {
             Object thinkingObj = body.get("thinking");

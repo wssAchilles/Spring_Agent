@@ -27,4 +27,9 @@ public record HarnessUsageSnapshot(
     public boolean isKnown() {
         return usageStatus == UsageStatus.KNOWN && meteredCallCount > 0 && unmeteredCallCount == 0 && totalTokens > 0L;
     }
+
+    public boolean isCostKnown() {
+        return usageStatus == UsageStatus.KNOWN && totalTokens > 0L
+                && Double.isFinite(actualCostCny) && actualCostCny > 0.0D;
+    }
 }

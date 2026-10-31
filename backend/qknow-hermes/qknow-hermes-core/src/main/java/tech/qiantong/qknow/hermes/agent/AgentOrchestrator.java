@@ -146,6 +146,8 @@ public class AgentOrchestrator {
 
     private final java.util.Map<String, HarnessEvidenceRecord> latestEvidenceMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, HermesHarnessVoucher> voucherOverrideMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, UsageCapturingChatModel.ModelCallBudgetHook> budgetHookMap =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     public HarnessEvidenceRecord getLatestEvidence(String requestId) {
         if (requestId == null) {
@@ -175,6 +177,12 @@ public class AgentOrchestrator {
     public void unregisterRequestVoucher(String requestId) {
         if (requestId != null) {
             voucherOverrideMap.remove(requestId);
+        }
+    }
+
+    public void registerRequestBudgetHook(String requestId, UsageCapturingChatModel.ModelCallBudgetHook hook) {
+        if (requestId != null && hook != null) {
+            budgetHookMap.put(requestId, hook);
         }
     }
 
@@ -338,6 +346,7 @@ public class AgentOrchestrator {
                 emitter.complete();
             }
         }).doFinally(signalType -> {
+            budgetHookMap.remove(request.getRequestId());
             if (signalType == reactor.core.publisher.SignalType.CANCEL && usageModel.get() != null) {
                 usageModel.get().markIncomplete();
             }
@@ -459,7 +468,8 @@ public class AgentOrchestrator {
         } else {
             throw new IllegalArgumentException("缺少模型配置");
         }
-        UsageCapturingChatModel meteredModel = new UsageCapturingChatModel(chatModel);
+        UsageCapturingChatModel meteredModel = new UsageCapturingChatModel(
+                chatModel, budgetHookMap.get(request.getRequestId()));
         chatModel = meteredModel;
         usageModel.set(meteredModel);
 

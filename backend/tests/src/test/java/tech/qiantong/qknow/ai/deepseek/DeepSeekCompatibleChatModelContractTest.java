@@ -124,6 +124,18 @@ class DeepSeekCompatibleChatModelContractTest {
     }
 
     @Test
+    void boundedStage9ModelShouldCapDefaultAndGenericPromptOptions() {
+        DeepSeekCompatibleChatModel bounded = new DeepSeekCompatibleChatModel(
+                "https://api.deepseek.com", "sk-test", "deepseek-flash", null, 1024);
+        assertEquals(1024, bounded.buildRequestBody(new Prompt("question"), false).get("max_tokens"));
+
+        var options = org.springframework.ai.openai.OpenAiChatOptions.builder()
+                .maxTokens(4096).build();
+        Prompt withOptions = new Prompt(List.of(new UserMessage("question")), options);
+        assertEquals(1024, bounded.buildRequestBody(withOptions, false).get("max_tokens"));
+    }
+
+    @Test
     @DisplayName("契约4: 非流式响应解析完备提取 reasoning_content 与 tool_calls")
     void parseResponseShouldExtractReasoningContent() throws IOException {
         String jsonResponse = """

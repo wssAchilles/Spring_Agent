@@ -1,6 +1,11 @@
 package tech.qiantong.qknow.hermes.agent.harness;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,43 +19,69 @@ import reactor.core.publisher.Flux;
 /** Request-scoped model wrapper; only provider-reported usage is counted. */
 public final class UsageCapturingChatModel implements ChatModel {
 
-    private final ChatModel delegate;
-    private final Totals totals;
+    public interface ModelCallBudgetHook {
+        void beforeCall(Prompt prompt, HarnessUsageSnapshot snapshot);
 
-    public UsageCapturingChatModel(ChatModel delegate) {
-        this(delegate, new Totals());
+        void afterCall(HarnessUsageSnapshot snapshot);
     }
 
-    private UsageCapturingChatModel(ChatModel delegate, Totals totals) {
+    private static final ZoneId BEIJING = ZoneId.of("Asia/Shanghai");
+
+    private final ChatModel delegate;
+    private final Totals totals;
+    private final ModelCallBudgetHook budgetHook;
+    private final Clock clock;
+
+    public UsageCapturingChatModel(ChatModel delegate) {
+        this(delegate, null);
+    }
+
+    public UsageCapturingChatModel(ChatModel delegate, ModelCallBudgetHook budgetHook) {
+        this(delegate, budgetHook, Clock.systemUTC());
+    }
+
+    UsageCapturingChatModel(ChatModel delegate, ModelCallBudgetHook budgetHook, Clock clock) {
+        this(delegate, new Totals(), budgetHook, clock);
+    }
+
+    private UsageCapturingChatModel(ChatModel delegate, Totals totals, ModelCallBudgetHook budgetHook, Clock clock) {
         this.delegate = Objects.requireNonNull(delegate, "delegate");
         this.totals = totals;
+        this.budgetHook = budgetHook;
+        this.clock = Objects.requireNonNull(clock, "clock");
     }
 
     public UsageCapturingChatModel forDelegate(ChatModel delegate) {
-        return new UsageCapturingChatModel(delegate, totals);
+        return new UsageCapturingChatModel(delegate, totals, budgetHook, clock);
     }
 
     @Override
     public ChatResponse call(Prompt prompt) {
+        beforeCall(prompt);
+        ChatResponse response;
         try {
-            ChatResponse response = delegate.call(prompt);
-            record(usage(response));
-            return response;
+            response = delegate.call(prompt);
         } catch (RuntimeException | Error failure) {
             markIncomplete();
+            afterCall();
             throw failure;
         }
+        record(usage(response));
+        afterCall();
+        return response;
     }
 
     @Override
     public Flux<ChatResponse> stream(Prompt prompt) {
         return Flux.defer(() -> {
+            beforeCall(prompt);
             AtomicReference<Usage> lastUsage = new AtomicReference<>();
             Flux<ChatResponse> stream;
             try {
                 stream = delegate.stream(prompt);
             } catch (RuntimeException | Error failure) {
                 markIncomplete();
+                afterCall();
                 return Flux.error(failure);
             }
             return stream
@@ -62,7 +93,8 @@ public final class UsageCapturingChatModel implements ChatModel {
                     })
                     .doOnComplete(() -> record(lastUsage.get()))
                     .doOnError(failure -> markIncomplete())
-                    .doOnCancel(this::markIncomplete);
+                    .doOnCancel(this::markIncomplete)
+                    .doFinally(signal -> afterCall());
         });
     }
 
@@ -75,7 +107,7 @@ public final class UsageCapturingChatModel implements ChatModel {
         synchronized (totals) {
             return new HarnessUsageSnapshot(
                     UsageStatus.KNOWN, totals.promptTokens, totals.completionTokens, totals.totalTokens,
-                    totals.cacheHitTokens, totals.reasoningTokens, 0.0D,
+                    totals.cacheHitTokens, totals.reasoningTokens, totals.costNano / 1_000_000_000.0D,
                     totals.meteredCallCount, totals.unmeteredCallCount);
         }
     }
@@ -92,17 +124,56 @@ public final class UsageCapturingChatModel implements ChatModel {
                 totals.unmeteredCallCount++;
                 return;
             }
-            totals.promptTokens += positive(usage.getPromptTokens());
-            totals.completionTokens += positive(usage.getCompletionTokens());
+            long promptTokens = positive(usage.getPromptTokens());
+            long completionTokens = positive(usage.getCompletionTokens());
+            long cacheHitTokens = nativeNumber(usage.getNativeUsage(), "prompt_cache_hit_tokens");
+            totals.promptTokens += promptTokens;
+            totals.completionTokens += completionTokens;
             long reportedTotal = positive(usage.getTotalTokens());
             totals.totalTokens += reportedTotal > 0 ? reportedTotal
-                    : positive(usage.getPromptTokens()) + positive(usage.getCompletionTokens());
+                    : promptTokens + completionTokens;
             Object nativeUsage = usage.getNativeUsage();
-            totals.cacheHitTokens += nativeNumber(nativeUsage, "prompt_cache_hit_tokens");
+            totals.cacheHitTokens += cacheHitTokens;
             long nestedReasoning = nativeNumber(nativeField(nativeUsage, "completion_tokens_details"), "reasoning_tokens");
             totals.reasoningTokens += nestedReasoning > 0 ? nestedReasoning : nativeNumber(nativeUsage, "reasoning_tokens");
+            totals.costNano += computeOfficialCostNano(promptTokens, completionTokens, cacheHitTokens, clock.instant());
             totals.meteredCallCount++;
         }
+    }
+
+    private void beforeCall(Prompt prompt) {
+        if (budgetHook != null) {
+            budgetHook.beforeCall(prompt, snapshot());
+        }
+    }
+
+    private void afterCall() {
+        if (budgetHook != null) {
+            budgetHook.afterCall(snapshot());
+        }
+    }
+
+    public static boolean isPeakBeijingTime(Instant timestamp) {
+        // shortcut: statutory holidays need an official calendar; add one before pricing holiday calls.
+        var beijing = Objects.requireNonNull(timestamp, "timestamp").atZone(BEIJING);
+        DayOfWeek day = beijing.getDayOfWeek();
+        LocalTime time = beijing.toLocalTime();
+        return day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY
+                && ((!time.isBefore(LocalTime.of(9, 0)) && time.isBefore(LocalTime.NOON))
+                || (!time.isBefore(LocalTime.of(14, 0)) && time.isBefore(LocalTime.of(18, 0))));
+    }
+
+    public static long computeOfficialCostNano(long promptTokens, long completionTokens,
+                                                long cacheHitTokens, Instant timestamp) {
+        long hit = Math.min(Math.max(0L, promptTokens), Math.max(0L, cacheHitTokens));
+        long miss = Math.max(0L, promptTokens - hit);
+        long peakMultiplier = isPeakBeijingTime(timestamp) ? 2L : 1L;
+        return peakMultiplier * (hit * 20L + miss * 1_000L + Math.max(0L, completionTokens) * 4_000L);
+    }
+
+    public static double computeOfficialCostCny(long promptTokens, long completionTokens,
+                                                 long cacheHitTokens, Instant timestamp) {
+        return computeOfficialCostNano(promptTokens, completionTokens, cacheHitTokens, timestamp) / 1_000_000_000.0D;
     }
 
     private static Usage usage(ChatResponse response) {
@@ -140,6 +211,7 @@ public final class UsageCapturingChatModel implements ChatModel {
         private long totalTokens;
         private long cacheHitTokens;
         private long reasoningTokens;
+        private long costNano;
         private int meteredCallCount;
         private int unmeteredCallCount;
     }
