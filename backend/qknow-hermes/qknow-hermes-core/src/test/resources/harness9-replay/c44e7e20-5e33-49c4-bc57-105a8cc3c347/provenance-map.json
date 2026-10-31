@@ -1,0 +1,127 @@
+{
+  "rulesVersion": "harness9-allowlist-v1",
+  "runId": "c44e7e20-5e33-49c4-bc57-105a8cc3c347",
+  "originalManifestSha256": "7cc4f4c71d7e675eac4f99d47f9d722c34a6ffa3c159bddd808ed73951a61288",
+  "derivedManifestSha256": "aa8276739f96d48d7bce272fc7d0235b2054c856e505f99149c54065478b131c",
+  "files": [
+    {
+      "originalPath": "probes/baseline-kb-qa-01.json",
+      "originalSha256": "06abb9f35375b949605464eae0468df4b800c855b1ddf42998332c59ee7b8c55",
+      "derivedPath": "probes/baseline-kb-qa-01.json",
+      "derivedSha256": "ef8dc1fc7cfff8a83626b0d08022055d9a094ace09eb031b9a04298d2f4fa682"
+    },
+    {
+      "originalPath": "probes/baseline-tool-route-02.json",
+      "originalSha256": "22c01f8f70d9aba4f4a471ff4b8a389d7c8de65918fcf736bc22ac2d45f398de",
+      "derivedPath": "probes/baseline-tool-route-02.json",
+      "derivedSha256": "046e766f120b3b82e7fe1eb42df531774682a304babb9800cbdf1b188ccb24a6"
+    },
+    {
+      "originalPath": "probes/baseline-param-guard-03.json",
+      "originalSha256": "bab83b00f6c1cf7a45174ef34bd5dcbe97bf33fe42dc999e8863c1023b7026e8",
+      "derivedPath": "probes/baseline-param-guard-03.json",
+      "derivedSha256": "a0d02bb2c706e2e84500e98b18522c8682d44b88a1a495a654520ad3f2e78f0c"
+    },
+    {
+      "originalPath": "probes/baseline-ctx-history-04.json",
+      "originalSha256": "c6751a57e75b0c098f82cfcfe6297d2ecba6404c5f7afc9d4bf7d4968c56ccf1",
+      "derivedPath": "probes/baseline-ctx-history-04.json",
+      "derivedSha256": "d515ec1e46b4d0c7e3f04a62bcd453831fb98197424b9641cfb1b6c0b686763d"
+    },
+    {
+      "originalPath": "probes/baseline-comp-rag-tool-05.json",
+      "originalSha256": "87b914376e709e119d564315b7a63d59166303db833b50930cde8a4e8fe8db16",
+      "derivedPath": "probes/baseline-comp-rag-tool-05.json",
+      "derivedSha256": "319da43a33da30b009729bbe5da923f584ad988406928d74106975d1e3efc020"
+    },
+    {
+      "originalPath": "probes/candidate-a-kb-qa-01.json",
+      "originalSha256": "d7f08185a0212c6eebc7a179dd05901b3f431b71aa4bf17be39169b1547c458f",
+      "derivedPath": "probes/candidate-a-kb-qa-01.json",
+      "derivedSha256": "ca0b4ea7715b71ae38706798c3eae1fe827d1da7b89a6452480b96da2e76ec32"
+    },
+    {
+      "originalPath": "probes/candidate-a-tool-route-02.json",
+      "originalSha256": "b3822fff5e15e11e58855893056d4033097b7afaa698dc4968e868f0e534eaff",
+      "derivedPath": "probes/candidate-a-tool-route-02.json",
+      "derivedSha256": "96e9ba9a055ba13c473dbf76708fe58947f7c48d43266f856c2ecb335dbc7d2a"
+    },
+    {
+      "originalPath": "probes/candidate-a-param-guard-03.json",
+      "originalSha256": "7b12709411da5242605563ffe5b17eecb8bb1805fc0552320f26787894b54624",
+      "derivedPath": "probes/candidate-a-param-guard-03.json",
+      "derivedSha256": "83174dbbf3fa23ea6853db342e5fa6af4aeaf98eb031cc63d6a7597ddeee1189"
+    },
+    {
+      "originalPath": "probes/candidate-a-ctx-history-04.json",
+      "originalSha256": "3c144c18c84a33ebcbc06f7ab2acc0c9a24836562295eee3b85bb06adfe1a766",
+      "derivedPath": "probes/candidate-a-ctx-history-04.json",
+      "derivedSha256": "91ae31ef6787dae45c5a76b50376324b5e0092a0d4575631ae40872060330c5d"
+    },
+    {
+      "originalPath": "probes/candidate-a-comp-rag-tool-05.json",
+      "originalSha256": "8e6b5df6bc21268663b455cc26773ef92d9c6c19e23ea04fa86f3f3d5a0197eb",
+      "derivedPath": "probes/candidate-a-comp-rag-tool-05.json",
+      "derivedSha256": "f087fbe87dfe4b88ee35b673588da96e4470c29ca23a919e3aaa15a746b34947"
+    },
+    {
+      "originalPath": "probes/candidate-b-kb-qa-01.json",
+      "originalSha256": "a8f2ce0048c956a1b39fe81f7e8877f054dd53923fab133f74da2ed4166491b3",
+      "derivedPath": "probes/candidate-b-kb-qa-01.json",
+      "derivedSha256": "4dc0651b3ea0ba9293e57e5627c180341201f3578760cb869df924bdef840e83"
+    },
+    {
+      "originalPath": "probes/candidate-b-tool-route-02.json",
+      "originalSha256": "13f776a5f9c6df19546315ace258b85b8ff528201536409b4c3ab4304c979068",
+      "derivedPath": "probes/candidate-b-tool-route-02.json",
+      "derivedSha256": "1b168f8f9840c80683009d961a92839a30c1f2657147ab7932ce9caffe6c3c57"
+    },
+    {
+      "originalPath": "probes/candidate-b-param-guard-03.json",
+      "originalSha256": "54d57600b8873cec97b82bf32308e0a304926f97fe2035ed9405822da23c473b",
+      "derivedPath": "probes/candidate-b-param-guard-03.json",
+      "derivedSha256": "fe347a4b43588b95fa7d4c282eddde5ddc994275b7e1abf1df94e92d3f42d851"
+    },
+    {
+      "originalPath": "probes/candidate-b-ctx-history-04.json",
+      "originalSha256": "508333dfc33c77dd07bcf65ca6b6cb64d07c2da1223d4822786b417a9c73342d",
+      "derivedPath": "probes/candidate-b-ctx-history-04.json",
+      "derivedSha256": "58917323f72f6c8a032302a02382462bc0562c7981cfd27ebf0c11afcaf99437"
+    },
+    {
+      "originalPath": "probes/candidate-b-comp-rag-tool-05.json",
+      "originalSha256": "325486a73b1ea7ef1b0779426643e28f47483e2022138031eb137290bad1b84d",
+      "derivedPath": "probes/candidate-b-comp-rag-tool-05.json",
+      "derivedSha256": "eb2dda75eddba83c487c1ed2d75a9ecb83701b1c52f22f65d3048585bbe32acf"
+    },
+    {
+      "originalPath": "ppc_summary.json",
+      "originalSha256": "0083082a2e39312fbbe64e43331b52eaecf33a98864c0484ecbec521b646c531",
+      "derivedPath": "ppc_summary.json",
+      "derivedSha256": "1372a074ce6857d8316832d1a3f7d797d4d9ea0bb3ad63dad9249a4baceaf21a"
+    },
+    {
+      "originalPath": "selected_candidate.json",
+      "originalSha256": "0910cfaf815a628a133e57317a9e9596f2e1b42c7b666653c1a90c60b9072b64",
+      "derivedPath": "selected_candidate.json",
+      "derivedSha256": "42a7c1adeff1b6ce738e4681ff540506263c5e4cfbedc3e298537301b1fc10ba"
+    }
+  ],
+  "fingerprints": [
+    {
+      "candidateId": "baseline",
+      "original": "612953728cf129071eb18a97d702cb4c40a65455bdf379a2ab0c153119bc284f",
+      "derived": "459c3c7b3509847e8946e7f544e5cf6863adacf78709cf3db77bb13aedeb3f51"
+    },
+    {
+      "candidateId": "candidate-a",
+      "original": "1c73d978532ba0138e39a9ef63619c4cecfaeb9155188888d1c8098d8569ccd6",
+      "derived": "6d072f226ff2a36f1910fb361bb910207ed25d316992381abe4af6eb26966bc6"
+    },
+    {
+      "candidateId": "candidate-b",
+      "original": "f2cf140b904f73ced6fa0f2dc501c3606e868372decb14f7cde4abf42d291a30",
+      "derived": "4ed5e032d9d38178deb32f3665a69e418dd4b321f8f0e30e16a77ad1ff2bf6c6"
+    }
+  ]
+}

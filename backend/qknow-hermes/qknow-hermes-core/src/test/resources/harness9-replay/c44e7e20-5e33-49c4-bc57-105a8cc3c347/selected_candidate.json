@@ -1,0 +1,49 @@
+{
+  "selectedCandidateId": "baseline",
+  "voucher": {
+    "voucherId": "derived-baseline",
+    "botId": 9,
+    "version": "stage9",
+    "createdAt": "2026-10-31T01:08:41.433811Z",
+    "invariantSystemPrompt": {
+      "roleDefinition": "Offline replay baseline",
+      "corePrinciples": "Derived fixture; original prompt redacted.",
+      "safetyInstructions": "No production use."
+    },
+    "guardrails": {
+      "maxCycleSteps": 3,
+      "loopThreshold": 2,
+      "maxTokenBudget": 200000,
+      "maxCostCny": 10
+    },
+    "memoryContext": {
+      "shortTermWindowSize": 20,
+      "longTermRecallTopK": 5,
+      "reflexionDepth": 1
+    },
+    "toolGuidance": {
+      "autoToolSelectionEnabled": true,
+      "hoareVerificationEnabled": false,
+      "twoPhaseApprovalEnabled": false
+    },
+    "subagents": {
+      "orchestrationMode": "SINGLE",
+      "workerRoles": [],
+      "isolatedContextEnabled": true
+    },
+    "skillBank": {
+      "activeSkillIds": [],
+      "cosineGateThreshold": 0.88
+    },
+    "sandboxedExecutionPlan": {
+      "declaredParameterSlots": [],
+      "allowArbitraryScripts": false
+    },
+    "mcpMiddlewarePlugins": {
+      "dataMaskingEnabled": true,
+      "sagasCompensationEnabled": false,
+      "auditLoggingEnabled": true
+    }
+  },
+  "reason": "BASELINE_RETAINED_AFTER_REJECTED_CANDIDATES"
+}

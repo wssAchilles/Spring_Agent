@@ -1,0 +1,77 @@
+{
+  "candidateId": "baseline",
+  "caseId": "tool-route-02",
+  "qualityPass": true,
+  "executedAt": "2026-10-31T01:08:53.440062Z",
+  "executionMode": "REAL_PRODUCTION",
+  "effectiveCapabilityTag": "TOOL",
+  "cycleDetected": false,
+  "guardBlocked": false,
+  "ragScoreEnabled": false,
+  "ragAttribution": {
+    "ragProvided": 0,
+    "ragScore": 0,
+    "ragUnderutilization": 0,
+    "ragUsed": 0,
+    "status": "NO_RAG"
+  },
+  "meteredCallCount": 3,
+  "promptTokens": 2534,
+  "completionTokens": 1083,
+  "reasoningTokens": 540,
+  "cacheHitTokens": 1408,
+  "totalTokens": 3617,
+  "actualCostCny": 0.00548616,
+  "costKnown": true,
+  "usageStatus": "KNOWN",
+  "durationMs": 8053,
+  "peakPricingPeriod": false,
+  "injectedRagChunkIds": [],
+  "evidence": {
+    "botId": 9,
+    "voucherVersion": "stage9",
+    "timestamp": "2026-10-31T01:08:45.386918Z",
+    "executionMode": "REAL_PRODUCTION",
+    "capabilityTag": "TOOL",
+    "executionDurationMs": 8046,
+    "guardBlocked": false,
+    "guardBlockedCount": 0,
+    "ragDocumentCount": 0,
+    "ragTopScore": 0,
+    "ragAttribution": {
+      "ragProvided": 0,
+      "ragScore": 0,
+      "ragUnderutilization": 0,
+      "ragUsed": 0,
+      "status": "NO_RAG"
+    },
+    "usageStatus": "KNOWN",
+    "estimatedTokens": 3617,
+    "estimatedCostCny": 0.00548616,
+    "evidenceId": "derived-evidence-baseline-tool-route-02",
+    "requestId": "derived-request-baseline-tool-route-02",
+    "voucherFingerprint": "459c3c7b3509847e8946e7f544e5cf6863adacf78709cf3db77bb13aedeb3f51",
+    "userInputSummary": "[REDACTED USER INPUT]",
+    "finalOutputSummary": "[REDACTED MODEL OUTPUT]",
+    "toolExecutions": [
+      {
+        "success": true,
+        "guardBlocked": false,
+        "durationMs": 0,
+        "toolName": "derived-tool-1",
+        "inputDigest": null,
+        "outputDigest": null,
+        "violationReason": null
+      },
+      {
+        "success": true,
+        "guardBlocked": false,
+        "durationMs": 0,
+        "toolName": "derived-tool-2",
+        "inputDigest": null,
+        "outputDigest": null,
+        "violationReason": null
+      }
+    ]
+  }
+}

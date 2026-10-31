@@ -1,0 +1,68 @@
+{
+  "candidateId": "candidate-b",
+  "caseId": "tool-route-02",
+  "qualityPass": true,
+  "executedAt": "2026-10-31T01:10:04.691456Z",
+  "executionMode": "REAL_PRODUCTION",
+  "effectiveCapabilityTag": "TOOL",
+  "cycleDetected": false,
+  "guardBlocked": false,
+  "ragScoreEnabled": false,
+  "ragAttribution": {
+    "ragProvided": 0,
+    "ragScore": 0,
+    "ragUnderutilization": 0,
+    "ragUsed": 0,
+    "status": "NO_RAG"
+  },
+  "meteredCallCount": 2,
+  "promptTokens": 1412,
+  "completionTokens": 785,
+  "reasoningTokens": 322,
+  "cacheHitTokens": 1023,
+  "totalTokens": 2197,
+  "actualCostCny": 0.00354946,
+  "costKnown": true,
+  "usageStatus": "KNOWN",
+  "durationMs": 5453,
+  "peakPricingPeriod": false,
+  "injectedRagChunkIds": [],
+  "evidence": {
+    "botId": 9,
+    "voucherVersion": "stage9",
+    "timestamp": "2026-10-31T01:09:59.238446Z",
+    "executionMode": "REAL_PRODUCTION",
+    "capabilityTag": "TOOL",
+    "executionDurationMs": 5446,
+    "guardBlocked": false,
+    "guardBlockedCount": 0,
+    "ragDocumentCount": 0,
+    "ragTopScore": 0,
+    "ragAttribution": {
+      "ragProvided": 0,
+      "ragScore": 0,
+      "ragUnderutilization": 0,
+      "ragUsed": 0,
+      "status": "NO_RAG"
+    },
+    "usageStatus": "KNOWN",
+    "estimatedTokens": 2197,
+    "estimatedCostCny": 0.00354946,
+    "evidenceId": "derived-evidence-candidate-b-tool-route-02",
+    "requestId": "derived-request-candidate-b-tool-route-02",
+    "voucherFingerprint": "4ed5e032d9d38178deb32f3665a69e418dd4b321f8f0e30e16a77ad1ff2bf6c6",
+    "userInputSummary": "[REDACTED USER INPUT]",
+    "finalOutputSummary": "[REDACTED MODEL OUTPUT]",
+    "toolExecutions": [
+      {
+        "success": true,
+        "guardBlocked": false,
+        "durationMs": 0,
+        "toolName": "derived-tool-1",
+        "inputDigest": null,
+        "outputDigest": null,
+        "violationReason": null
+      }
+    ]
+  }
+}

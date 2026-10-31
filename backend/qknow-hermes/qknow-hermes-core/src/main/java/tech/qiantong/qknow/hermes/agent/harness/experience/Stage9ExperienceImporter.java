@@ -3,6 +3,7 @@ package tech.qiantong.qknow.hermes.agent.harness.experience;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -23,9 +24,18 @@ import java.util.Set;
 public final class Stage9ExperienceImporter {
     private static final String SUMMARY_FILE = "ppc_summary.json";
     private static final String SELECTED_FILE = "selected_candidate.json";
-    private static final String MANIFEST_FILE = "checksums.sha256";
-    private static final String FROZEN_MANIFEST_SHA256 =
-            "7cc4f4c71d7e675eac4f99d47f9d722c34a6ffa3c159bddd808ed73951a61288";
+    private enum ReplayAsset {
+        ORIGINAL("checksums.sha256", "7cc4f4c71d7e675eac4f99d47f9d722c34a6ffa3c159bddd808ed73951a61288"),
+        DERIVED("test-checksums.sha256", "aa8276739f96d48d7bce272fc7d0235b2054c856e505f99149c54065478b131c");
+
+        final String manifestFile;
+        final String manifestSha256;
+
+        ReplayAsset(String manifestFile, String manifestSha256) {
+            this.manifestFile = manifestFile;
+            this.manifestSha256 = manifestSha256;
+        }
+    }
     private static final List<String> PASSING_CASES = List.of(
             "kb-qa-01", "tool-route-02", "param-guard-03");
     private static final List<String> UNRESOLVED_CASES = List.of(
@@ -40,10 +50,18 @@ public final class Stage9ExperienceImporter {
     }
 
     public ExperienceRunSummaryRecord importRun(Path runDirectory) {
+        return importRun(runDirectory, ReplayAsset.ORIGINAL);
+    }
+
+    public ExperienceRunSummaryRecord importDerivedFixture(Path runDirectory) {
+        return importRun(runDirectory, ReplayAsset.DERIVED);
+    }
+
+    private ExperienceRunSummaryRecord importRun(Path runDirectory, ReplayAsset asset) {
         Objects.requireNonNull(runDirectory, "runDirectory");
         try {
             Path run = runDirectory.toAbsolutePath().normalize();
-            Map<String, String> checksums = verifyManifest(run);
+            Map<String, String> checksums = verifyManifest(run, asset);
             JSONObject summary = JSON.parseObject(Files.readString(run.resolve(SUMMARY_FILE)));
             String runId = summary.getString("runId");
             if (runId == null || !runId.matches("[0-9a-f-]{36}")
@@ -72,7 +90,19 @@ public final class Stage9ExperienceImporter {
                 }
             }
             Map<String, JSONObject> candidateById = candidates(candidates);
+            JSONObject selected = JSON.parseObject(Files.readString(run.resolve(SELECTED_FILE)));
+            verifySelection(summary, selected, candidateById, asset == ReplayAsset.DERIVED);
             Map<String, JSONObject> probeByKey = probes(probes);
+            for (JSONObject probe : probeByKey.values()) {
+                JSONObject candidate = candidateById.get(probe.getString("candidateId"));
+                JSONObject evidence = probe.getJSONObject("evidence");
+                if (!sameHash(candidate.getString("voucherFingerprint"),
+                        evidence.getString("voucherFingerprint"))
+                        || !candidate.getJSONObject("voucher").getString("version")
+                        .equals(evidence.getString("voucherVersion"))) {
+                    throw new IllegalArgumentException("Stage 9 probe and voucher fingerprint disagree");
+                }
+            }
             for (Map.Entry<String, JSONObject> probe : probeByKey.entrySet()) {
                 String file = "probes/" + probe.getKey().replace('/', '-') + ".json";
                 JSONObject frozen = JSON.parseObject(Files.readString(run.resolve(file)));
@@ -114,15 +144,15 @@ public final class Stage9ExperienceImporter {
         }
     }
 
-    private static Map<String, String> verifyManifest(Path run) throws IOException {
+    private static Map<String, String> verifyManifest(Path run, ReplayAsset asset) throws IOException {
         if (!Files.isDirectory(run) || Files.isSymbolicLink(run)) {
             throw new IOException("Stage 9 replay directory is unavailable");
         }
-        Path manifest = run.resolve(MANIFEST_FILE);
+        Path manifest = run.resolve(asset.manifestFile);
         if (!Files.isRegularFile(manifest) || Files.isSymbolicLink(manifest)) {
             throw new IOException("Stage 9 checksum manifest is unavailable");
         }
-        if (!sameHash(FROZEN_MANIFEST_SHA256, sha256(Files.readAllBytes(manifest)))) {
+        if (!sameHash(asset.manifestSha256, sha256(Files.readAllBytes(manifest)))) {
             throw new IOException("Stage 9 checksum manifest differs from the frozen run");
         }
         Map<String, String> checksums = new HashMap<>();
@@ -154,11 +184,36 @@ public final class Stage9ExperienceImporter {
             JSONObject candidate = (JSONObject) value;
             String id = candidate.getString("candidateId");
             if (!CANDIDATES.contains(id) || result.putIfAbsent(id, candidate) != null
-                    || !candidate.getString("voucherFingerprint").matches("[0-9a-f]{64}")) {
+                    || !matchesVoucher(candidate.getJSONObject("voucher"),
+                    candidate.getString("voucherFingerprint"))) {
                 throw new IllegalArgumentException("Unexpected Stage 9 candidate");
             }
         }
         return result;
+    }
+
+    static void verifySelection(JSONObject summary, JSONObject selected,
+                                Map<String, JSONObject> candidateById, boolean derived) {
+        if (selected == null || !summary.getString("selectedCandidateId")
+                .equals(selected.getString("selectedCandidateId"))
+                || !"baseline".equals(selected.getString("selectedCandidateId"))
+                || !"REJECTED_AFTER_REAL_PPC".equals(summary.getString("finalVerdict"))
+                || !candidateById.get("baseline").getJSONObject("voucher")
+                .equals(selected.getJSONObject("voucher"))
+                || !matchesVoucher(selected.getJSONObject("voucher"),
+                candidateById.get("baseline").getString("voucherFingerprint"))
+                || selected.getString("reason") == null
+                || selected.getString("reason").isBlank()
+                || (derived && !"BASELINE_RETAINED_AFTER_REJECTED_CANDIDATES"
+                .equals(selected.getString("reason")))) {
+            throw new IllegalArgumentException("Stage 9 selected candidate disagrees with summary");
+        }
+    }
+
+    private static boolean matchesVoucher(JSONObject voucher, String fingerprint) {
+        return voucher != null && fingerprint != null
+                && JSON.parseObject(voucher.toJSONString(), HermesHarnessVoucher.class)
+                .matchesFingerprint(fingerprint);
     }
 
     private static Map<String, JSONObject> probes(JSONArray array) {
