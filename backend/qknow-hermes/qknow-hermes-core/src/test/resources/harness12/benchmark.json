@@ -1,0 +1,49 @@
+{
+  "mode": "SYNTHETIC_ALGORITHM_BENCHMARK",
+  "benchmarkId": "hac1-v1",
+  "cue": "synthetic algorithm cue",
+  "tasks": [
+    {
+      "id": "B1",
+      "split": "BOOTSTRAP",
+      "category": "PROMPT_ONLY",
+      "question": "Can a concise invariant prompt remove redundant whitespace without changing safety constraints?",
+      "requiredOperators": ["CONCISE_SYSTEM_PROMPT"]
+    },
+    {
+      "id": "B2",
+      "split": "BOOTSTRAP",
+      "category": "HISTORY",
+      "question": "Can the bounded short-term memory window be adapted while retaining the recent context?",
+      "requiredOperators": ["ADAPTIVE_MEMORY_WINDOW"]
+    },
+    {
+      "id": "B3",
+      "split": "BOOTSTRAP",
+      "category": "RAG",
+      "question": "Can concise instructions and bounded memory be composed over two rounds?",
+      "requiredOperators": ["CONCISE_SYSTEM_PROMPT", "ADAPTIVE_MEMORY_WINDOW"]
+    },
+    {
+      "id": "T1",
+      "split": "TRANSFER",
+      "category": "TOOL",
+      "question": "Does an adopted concise-prompt operator transfer to a distinct synthetic tool task?",
+      "requiredOperators": ["CONCISE_SYSTEM_PROMPT"]
+    },
+    {
+      "id": "T2",
+      "split": "TRANSFER",
+      "category": "COMPOSITE",
+      "question": "Does an adopted memory-window operator transfer to a distinct synthetic composite task?",
+      "requiredOperators": ["ADAPTIVE_MEMORY_WINDOW"]
+    },
+    {
+      "id": "T3",
+      "split": "TRANSFER",
+      "category": "RAG",
+      "question": "Does a task already passing its oracle correctly report no transfer benefit?",
+      "requiredOperators": []
+    }
+  ]
+}
