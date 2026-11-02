@@ -18,12 +18,13 @@ baseline、A=`CONCISE_SYSTEM_PROMPT`、B=`ADAPTIVE_MEMORY_WINDOW` 的 canonical 
 ## 验证记录
 
 - 隔离 PostgreSQL 库：`h11b2a_fixture_stage13_20261102`；冻结 SQL 的 10 题、4 条检索命中、4 组工具绑定、2 组 HISTORY 与七类快照一致。带真实 JDBC、真实 `AgentOrchestrator` 和 fake ChatModel 的定向测试：`ControlledPpcRunnerTest` **11 tests、0 failures、0 errors、0 skipped**。其中 50 个 fake-model probes 完成 30+20 排程，唯一选择 A，未写 `ADOPTED`；另覆盖数据漂移拒绝、无凭据阻断、合成来源阻断、未授权工具、usage 缺失及调用前预算停止。
-- Java 21.0.5 Temurin、Maven 3.9.16、单一 Maven 进程、无手工 proto 预构建，默认单步命令：`mvn -B -ntp -f backend/pom.xml -pl tests -am clean test`。当前 Stage 13 工作树结果 `BUILD SUCCESS`；Surefire XML 复算 **2194 tests、0 failures、0 errors、10 skipped**。日志 `/tmp/stage13-prelive-release-clean-20261102.log` 的 SHA-256 为 `41eb0ae276d44b5e24365401316f7f0c19fd7a51548e419b81e0f4ba79242d91`。此为当前工作树验证；提交后的全新干净检出仍需复验。
+- Java 21.0.5 Temurin、Maven 3.9.16、单一 Maven 进程、无手工 proto 预构建，默认单步命令：`mvn -B -ntp -f backend/pom.xml -pl tests -am clean test`。当前 Stage 13 工作树结果 `BUILD SUCCESS`；Surefire XML 复算 **2194 tests、0 failures、0 errors、10 skipped**。日志 `/tmp/stage13-prelive-release-clean-20261102.log` 的 SHA-256 为 `41eb0ae276d44b5e24365401316f7f0c19fd7a51548e419b81e0f4ba79242d91`。
+- 提交 `f2998d74` 后，全新本地 APFS 检出 `/Users/achilles/.codex/worktrees/hermes13-clean-gate/Agent` 在同一 HEAD 再次单进程单步 `clean test`：`BUILD SUCCESS`，Surefire XML **2194 tests、0 failures、0 errors、10 skipped**；日志 `/tmp/stage13-clean-gate-f2998d74.log` 的 SHA-256 为 `fba0f2e22a1103dcf5da9a833a6c19ef02114a2c09a21325583096841a105e04`。同一检出连接隔离 PostgreSQL 的定向测试 **11/11 通过**，检出工作区仍 clean。此前历史构建间歇故障根因仍是 `UNPROVEN`。
 - 2026-11-02 读取 DeepSeek 官方[模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)及[思考模式](https://api-docs.deepseek.com/zh-cn/guides/thinking_mode)：目标模型 `deepseek-flash`，显式 `thinking.type=disabled`，当前高峰未缓存输入 ¥2/百万、输出 ¥8/百万。live 前仍须重核官方价格、参数与节假日计费。
 
 ## Live 放行条件
 
 1. 已暴露密钥撤销并轮换；新密钥只由执行环境安全注入，不写仓库、命令参数或日志。
-2. Stage 13 提交后在全新本地 APFS 检出通过默认单步 `clean test`，工作区 clean；任何 proto/clean 故障先保全现场，根因仍记 `UNPROVEN`。
+2. 每次 live 前确认执行 HEAD 与上述已验证提交一致；如源码变更，必须在全新本地 APFS 检出重新通过默认单步 `clean test`，工作区 clean。任何 proto/clean 故障先保全现场，根因仍记 `UNPROVEN`。
 3. 在正式 live 前重新确认官方价格与模型参数；一次连通性检查计入 100 调用/200000 tokens/¥10 预算。
 4. 真实 30+20 排程完成后才判定 `ADOPTED=1` 或 `NO_ADOPTED_EXPERIENCE`；预算、usage、来源或证据缺口分别按 `BUDGET_EXHAUSTED`/`BLOCKED` 停止，不手工补经验。
