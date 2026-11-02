@@ -34,7 +34,9 @@ PATH=/Users/achilles/.sdkman/candidates/java/21.0.5-tem/bin:$PATH \
 mvn -B -ntp -f backend/pom.xml -pl tests -am clean test
 ```
 
-结果：43/43 Reactor 模块 `BUILD SUCCESS`；从本次 Surefire XML 汇总 **2183 tests、0 failures、0 errors、8 skipped**。`TaskLevelRecursivePpcTest` 为 4 tests、0 failures、0 errors、0 skipped。默认 `live` 测试组由父 POM 排除。此验证在现有 Stage 12 工作树完成，不是全新干净检出的可移植性复验；历史构建间歇故障根因仍为 `UNPROVEN`，不能据此宣称修复。
+结果：43/43 Reactor 模块 `BUILD SUCCESS`；从本次 Surefire XML 汇总 **2183 tests、0 failures、0 errors、8 skipped**。`TaskLevelRecursivePpcTest` 为 4 tests、0 failures、0 errors、0 skipped。默认 `live` 测试组由父 POM 排除。
+
+交付门禁：Stage 12 的代码、benchmark、测试和本报告已由 `dc566b6c` 提交；同一 HEAD 的全新本地 APFS 检出 `/Users/achilles/.codex/worktrees/hermes12-clean-gate/Agent` 再次单进程、无手工 proto 预构建执行上述单步 `clean test`，`BUILD SUCCESS`，Surefire XML 复算 **2183 tests、0 failures、0 errors、8 skipped**，检出工作区 clean。Stage 12 标记为 `CLOSED`。历史构建间歇故障根因仍为 `UNPROVEN`；此次通过是环境范围内的验证，不宣称根因已修复。
 
 ## 后续边界
 
