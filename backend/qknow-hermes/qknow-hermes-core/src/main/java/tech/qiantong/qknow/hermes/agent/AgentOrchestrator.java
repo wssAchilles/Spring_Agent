@@ -148,6 +148,8 @@ public class AgentOrchestrator {
     private final java.util.Map<String, HermesHarnessVoucher> voucherOverrideMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, UsageCapturingChatModel.ModelCallBudgetHook> budgetHookMap =
             new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, HarnessEvidenceRecord.ExecutionMode> requestExecutionModes =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     public HarnessEvidenceRecord getLatestEvidence(String requestId) {
         if (requestId == null) {
@@ -184,6 +186,24 @@ public class AgentOrchestrator {
         if (requestId != null && hook != null) {
             budgetHookMap.put(requestId, hook);
         }
+    }
+
+    public void registerControlledFixtureRequest(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            throw new IllegalArgumentException("requestId is required");
+        }
+        requestExecutionModes.put(requestId, HarnessEvidenceRecord.ExecutionMode.CONTROLLED_FIXTURE);
+    }
+
+    public void unregisterControlledFixtureRequest(String requestId) {
+        if (requestId != null) {
+            requestExecutionModes.remove(requestId);
+        }
+    }
+
+    private HarnessEvidenceRecord.ExecutionMode executionModeFor(
+            String requestId, HarnessEvidenceRecord.ExecutionMode defaultMode) {
+        return requestExecutionModes.getOrDefault(requestId, defaultMode);
     }
 
     private tech.qiantong.qknow.hermes.agent.orchestration.MultiAgentOrchestrationService multiAgentOrchestrationService;
@@ -347,6 +367,7 @@ public class AgentOrchestrator {
             }
         }).doFinally(signalType -> {
             budgetHookMap.remove(request.getRequestId());
+            unregisterControlledFixtureRequest(request.getRequestId());
             if (signalType == reactor.core.publisher.SignalType.CANCEL && usageModel.get() != null) {
                 usageModel.get().markIncomplete();
             }
@@ -628,7 +649,8 @@ public class AgentOrchestrator {
             bridgeHandle.set(handle);
             if (handle.failClosed()) {
                 evidenceCollector.recordFinalOutput("FAIL_SAFE: " + handle.failCloseReason());
-                recordEvidence(evidenceCollector.finalizeEvidence(HarnessEvidenceRecord.ExecutionMode.FAIL_SAFE));
+                recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                        request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.FAIL_SAFE)));
                 unregisterRequestVoucher(request.getRequestId());
                 emitter.next(ChatEvent.newBuilder().setRequestId(request.getRequestId())
                         .setError(ErrorEvent.newBuilder().setCode(403)
@@ -696,7 +718,8 @@ public class AgentOrchestrator {
             completionTokens.set(ct);
             evidenceCollector.recordFinalOutput(planAnswer);
             evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
-            recordEvidence(evidenceCollector.finalizeEvidence());
+            recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                    request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION)));
             unregisterRequestVoucher(request.getRequestId());
             emitSingleAnswer(request, emitter, planAnswer, effectiveVoucher);
             return;
@@ -759,7 +782,8 @@ public class AgentOrchestrator {
             completionTokens.set(ct);
             evidenceCollector.recordFinalOutput(orchestrationOutcome.answer());
             evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
-            recordEvidence(evidenceCollector.finalizeEvidence());
+            recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                    request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION)));
             unregisterRequestVoucher(request.getRequestId());
             emitSingleAnswer(request, emitter, orchestrationOutcome.answer(), effectiveVoucher);
             return;
@@ -885,14 +909,16 @@ public class AgentOrchestrator {
                         completionTokens.set(ct);
                         evidenceCollector.recordFinalOutput(recovered);
                         evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
-                        recordEvidence(evidenceCollector.finalizeEvidence());
+                        recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                                request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION)));
                         unregisterRequestVoucher(request.getRequestId());
                         emitSingleAnswer(request, emitter, recovered, effectiveVoucher);
                     } else {
                         long pt = estimateTokenCount(request.getQuestion());
                         evidenceCollector.recordFinalOutput("ERROR: " + (error.getMessage() != null ? error.getMessage() : "Agent execution error"));
                         evidenceCollector.recordCostAndTokens(pt, calculateEstimatedCostCny(pt, 0L));
-                        recordEvidence(evidenceCollector.finalizeEvidence());
+                        recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                                request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION)));
                         unregisterRequestVoucher(request.getRequestId());
                         emitter.next(ChatEvent.newBuilder()
                                 .setRequestId(request.getRequestId())
@@ -916,7 +942,8 @@ public class AgentOrchestrator {
                     }
                     evidenceCollector.recordFinalOutput(fullAnswer.toString());
                     evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
-                    recordEvidence(evidenceCollector.finalizeEvidence());
+                    recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                            request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION)));
                     unregisterRequestVoucher(request.getRequestId());
                     emitter.next(ChatEvent.newBuilder()
                             .setRequestId(request.getRequestId())

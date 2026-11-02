@@ -24,7 +24,9 @@ import tech.qiantong.qknow.hermes.agent.harness.ppc.tasklevel.PpcRoundEvidence.S
 /** Bounded, deterministic task-level PPC for an isolated algorithm benchmark. */
 public final class TaskLevelRecursivePpc {
     public static final String MODE = "SYNTHETIC_ALGORITHM_BENCHMARK";
+    public static final String CONTROLLED_MODE = "CONTROLLED_FIXTURE";
     private static final String CATEGORY = "synthetic_algorithm_benchmark";
+    private static final String CONTROLLED_CATEGORY = "controlled_harness11b2a";
 
     private final ExperienceLibrary library;
     private final ExperienceGuidedProposer proposer;
@@ -52,7 +54,7 @@ public final class TaskLevelRecursivePpc {
         }
         List<ExperienceGuidedProposal> proposals = List.copyOf(operators).stream()
                 .distinct().map(ExperienceGuidedProposal::bootstrap).toList();
-        return run(task, baseline, proposals, probe, true);
+        return run(task, baseline, proposals, probe, true, false);
     }
 
     public Result runTransfer(Task task, HermesHarnessVoucher baseline, Probe probe) {
@@ -60,11 +62,32 @@ public final class TaskLevelRecursivePpc {
         List<ExperienceGuidedProposal> proposals = proposer.propose(task.domain(), task.cue(),
                         Map.copyOf(adoptedProvenance)).stream()
                 .map(ExperienceGuidedProposal::fromExperience).toList();
-        return run(task, baseline, proposals, probe, false);
+        return run(task, baseline, proposals, probe, false, false);
+    }
+
+    public Result runControlled(Task task, HermesHarnessVoucher baseline,
+                                List<Operator> operators, Probe probe) {
+        Objects.requireNonNull(task, "task");
+        Objects.requireNonNull(baseline, "baseline");
+        Objects.requireNonNull(operators, "operators");
+        if (task.domain().isUnscopedReplay()
+                || !CONTROLLED_CATEGORY.equals(task.domain().taskCategory())
+                || !baseline.botId().equals(task.domain().botId())) {
+            throw new IllegalArgumentException("a matching controlled fixture Domain is required");
+        }
+        if (operators.isEmpty() || operators.size() > 2 || operators.stream().distinct().count() != operators.size()
+                || operators.stream().anyMatch(operator -> operator != Operator.CONCISE_SYSTEM_PROMPT
+                        && operator != Operator.ADAPTIVE_MEMORY_WINDOW)) {
+            throw new IllegalArgumentException("controlled PPC accepts only unique A/B operators");
+        }
+        List<ExperienceGuidedProposal> proposals = List.copyOf(operators).stream()
+                .map(ExperienceGuidedProposal::bootstrap).toList();
+        return run(task, baseline, proposals, probe, false, true);
     }
 
     private Result run(Task task, HermesHarnessVoucher baseline,
-                       List<ExperienceGuidedProposal> proposed, Probe probe, boolean bootstrap) {
+                       List<ExperienceGuidedProposal> proposed, Probe probe,
+                       boolean bootstrap, boolean controlled) {
         Objects.requireNonNull(probe, "probe");
         Score baselineScore = Objects.requireNonNull(probe.evaluate(task, baseline), "baseline score");
         if (!baselineScore.safe()) {
@@ -144,10 +167,10 @@ public final class TaskLevelRecursivePpc {
             }
         }
 
-        Outcome outcome = bootstrap
+        Outcome outcome = controlled ? Outcome.EVALUATED : bootstrap
                 ? adopted.isEmpty() ? Outcome.NO_ADOPTION : Outcome.ADOPTED
                 : appliedEntryIds.isEmpty() ? Outcome.NO_TRANSFER : Outcome.TRANSFERRED;
-        return new Result(task.id(), MODE, outcome, stop, baseline, current, baselineScore,
+        return new Result(task.id(), controlled ? CONTROLLED_MODE : MODE, outcome, stop, baseline, current, baselineScore,
                 currentScore, rounds, adopted, recalledEntryIds, appliedEntryIds, probeCount);
     }
 
@@ -197,7 +220,7 @@ public final class TaskLevelRecursivePpc {
         }
     }
 
-    public enum Outcome { ADOPTED, NO_ADOPTION, TRANSFERRED, NO_TRANSFER }
+    public enum Outcome { ADOPTED, NO_ADOPTION, TRANSFERRED, NO_TRANSFER, EVALUATED }
 
     public enum StopReason { NO_MORE_PROPOSALS, NO_IMPROVEMENT, PROBE_FAILED, BUDGET_EXHAUSTED, ROUND_LIMIT }
 

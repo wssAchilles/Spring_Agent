@@ -42,6 +42,7 @@ public record HarnessEvidenceRecord(
      */
     public enum ExecutionMode {
         REAL_PRODUCTION,
+        CONTROLLED_FIXTURE,
         DETERMINISTIC_TEST_DOUBLE,
         FAIL_SAFE
     }

@@ -111,5 +111,6 @@ __pycache__/
 *.pyc
 .codebase-memory/
 experiment/outputs/*-live/
+experiment/outputs/harness11b2a/
 target/live-evidence/
 ASOC/

@@ -45,6 +45,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
     private final String modelName;
     private final Double temperature;
     private final Integer maxOutputTokens;
+    private final Boolean forcedThinkingEnabled;
 
     public DeepSeekCompatibleChatModel(String baseUrl, String apiKey, String modelName, Double temperature) {
         this(baseUrl, apiKey, modelName, temperature, null);
@@ -52,6 +53,12 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
 
     public DeepSeekCompatibleChatModel(String baseUrl, String apiKey, String modelName,
                                        Double temperature, Integer maxOutputTokens) {
+        this(baseUrl, apiKey, modelName, temperature, maxOutputTokens, null);
+    }
+
+    public DeepSeekCompatibleChatModel(String baseUrl, String apiKey, String modelName,
+                                       Double temperature, Integer maxOutputTokens,
+                                       Boolean forcedThinkingEnabled) {
         if (maxOutputTokens != null && maxOutputTokens <= 0) {
             throw new IllegalArgumentException("maxOutputTokens must be positive");
         }
@@ -63,6 +70,7 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         this.modelName = (modelName != null && !modelName.isBlank()) ? modelName : DEFAULT_MODEL_NAME;
         this.temperature = temperature;
         this.maxOutputTokens = maxOutputTokens;
+        this.forcedThinkingEnabled = forcedThinkingEnabled;
     }
 
     @Override
@@ -272,6 +280,11 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                     }
                 }
             }
+        }
+
+        if (forcedThinkingEnabled != null) {
+            targetModel = modelName;
+            body.put("thinking", Map.of("type", forcedThinkingEnabled ? "enabled" : "disabled"));
         }
 
         body.put("model", targetModel);
