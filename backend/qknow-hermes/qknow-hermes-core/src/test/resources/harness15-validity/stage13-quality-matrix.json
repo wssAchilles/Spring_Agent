@@ -1,0 +1,17 @@
+{
+  "sourceRunId": "crppc1-5b398395-a8cd-4106-a42b-5a678d410e2e",
+  "sourceRunSha256": "49ce0c3a903e295d986bfcebf4b694190067c1fca06c086a4a5b1ad1bbd12499",
+  "meaning": "Frozen Stage 13 qualityPass booleans only; complete answers are unavailable and new rubric cannot rescore them",
+  "rows": [
+    {"taskId":"B01","repetition":1,"baseline":false,"A":true,"B":true},
+    {"taskId":"B01","repetition":2,"baseline":true,"A":true,"B":true},
+    {"taskId":"B02","repetition":1,"baseline":true,"A":true,"B":true},
+    {"taskId":"B02","repetition":2,"baseline":true,"A":true,"B":true},
+    {"taskId":"B03","repetition":1,"baseline":false,"A":false,"B":true},
+    {"taskId":"B03","repetition":2,"baseline":true,"A":false,"B":false},
+    {"taskId":"B04","repetition":1,"baseline":true,"A":true,"B":true},
+    {"taskId":"B04","repetition":2,"baseline":true,"A":true,"B":true},
+    {"taskId":"B05","repetition":1,"baseline":true,"A":true,"B":true},
+    {"taskId":"B05","repetition":2,"baseline":true,"A":true,"B":true}
+  ]
+}
