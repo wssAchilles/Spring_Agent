@@ -211,6 +211,23 @@ class ControlledPpcRunnerTest {
     }
 
     @Test
+    void orchestratorKnowledgeAliasUsesOnlyControlledRagAndRemainsSafe() throws Exception {
+        ChatModel model = mock(ChatModel.class);
+        when(model.stream(any(Prompt.class))).thenAnswer(call -> Flux.just(responseWithKnowledgeAlias(call.getArgument(0))));
+        when(model.call(any(Prompt.class))).thenAnswer(call -> responseWithKnowledgeAlias(call.getArgument(0)));
+
+        var result = new ControlledPpcRunner(fixtures(), temp).runPreLive(model);
+
+        assertEquals(Status.PRELIVE_COMPLETE, result.status(), result.reason());
+        List<ControlledPpcRunner.ProbeRecord> ragProbes = result.probes().stream()
+                .filter(probe -> probe.taskId().equals("B02")).toList();
+        assertEquals(6, ragProbes.size());
+        assertTrue(ragProbes.stream().allMatch(probe -> probe.safe() && probe.ragUsed() > 0
+                && probe.agentEvidence().toolExecutions().stream()
+                        .anyMatch(tool -> tool.toolName().equals("knowledgeQuery") && tool.success())));
+    }
+
+    @Test
     void budgetStopsBeforeTheNextModelCall() throws Exception {
         ChatModel model = mock(ChatModel.class);
         when(model.stream(any(Prompt.class))).thenAnswer(call -> Flux.just(new ChatResponse(
@@ -257,6 +274,20 @@ class ControlledPpcRunnerTest {
         return metered ? new ChatResponse(List.of(new Generation(answer)),
                 ChatResponseMetadata.builder().usage(new DefaultUsage(100, 40, 140)).build())
                 : new ChatResponse(List.of(new Generation(answer)));
+    }
+
+    private static ChatResponse responseWithKnowledgeAlias(Prompt prompt) {
+        String joined = prompt.getInstructions().stream().map(message -> message.getText() == null
+                ? "" : message.getText()).reduce("", (left, right) -> left + "\n" + right);
+        if (joined.contains("question-B02")
+                && prompt.getInstructions().stream().noneMatch(ToolResponseMessage.class::isInstance)) {
+            return new ChatResponse(List.of(new Generation(AssistantMessage.builder().content("")
+                    .toolCalls(List.of(
+                            new ToolCall("kb-B02", "function", "knowledgeBase110201", "{\"query\":\"query-B02\"}"),
+                            new ToolCall("alias-B02", "function", "knowledgeQuery", "{\"query\":\"query-B02\"}")))
+                    .build())), ChatResponseMetadata.builder().usage(new DefaultUsage(100, 40, 140)).build());
+        }
+        return fakeResponse(prompt, true);
     }
 
     private static ChatResponse realFixtureResponse(Prompt prompt) {

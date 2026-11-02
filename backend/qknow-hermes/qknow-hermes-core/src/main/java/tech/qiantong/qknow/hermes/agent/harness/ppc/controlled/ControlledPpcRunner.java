@@ -315,7 +315,8 @@ public final class ControlledPpcRunner {
                 && evidence.toolExecutions().stream().allMatch(tool -> tool.success() && !tool.guardBlocked()
                         && (fixture.tool() != null && fixture.tool().name().equals(tool.toolName())
                         || fixture.retrieval() != null
-                        && ("knowledgeBase" + DOMAIN.knowledgeBaseId()).equals(tool.toolName())));
+                        && (("knowledgeBase" + DOMAIN.knowledgeBaseId()).equals(tool.toolName())
+                        || "knowledgeQuery".equals(tool.toolName()))));
         boolean quality = valid && safe && rubricPasses(fixture, answer)
                 && (fixture.retrieval() == null || evidence.ragAttribution().ragUsed() > 0)
                 && (fixture.tool() == null || toolInputs.size() == 1
