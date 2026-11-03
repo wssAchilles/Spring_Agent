@@ -32,6 +32,7 @@ import tech.qiantong.qknow.hermes.agent.harness.RagAttributionSummary;
 import tech.qiantong.qknow.hermes.agent.harness.UsageCapturingChatModel;
 import tech.qiantong.qknow.hermes.agent.harness.kernel.HarnessKernelBridge;
 import tech.qiantong.qknow.hermes.agent.harness.kernel.KernelBridgeMode;
+import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.runtime.PipelineRuntimeBridge;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -121,6 +122,18 @@ public class AgentOrchestrator {
 
     private HermesHarnessAssembler harnessAssembler = new HermesHarnessAssembler();
     private HarnessKernelBridge harnessKernelBridge = HarnessKernelBridge.disabledInstance();
+    private PipelineRuntimeBridge pipelineRuntimeBridge = PipelineRuntimeBridge.disabledInstance();
+
+    @Autowired(required = false)
+    public void setPipelineRuntimeBridge(PipelineRuntimeBridge pipelineRuntimeBridge) {
+        if (pipelineRuntimeBridge != null) {
+            this.pipelineRuntimeBridge = pipelineRuntimeBridge;
+        }
+    }
+
+    public PipelineRuntimeBridge getPipelineRuntimeBridge() {
+        return pipelineRuntimeBridge;
+    }
 
     @Autowired(required = false)
     public void setHarnessKernelBridge(HarnessKernelBridge harnessKernelBridge) {
@@ -562,7 +575,22 @@ public class AgentOrchestrator {
         if (harnessVoucher == null) {
             harnessVoucher = harnessAssembler.createRequestVoucher(request.getBotId(), resolvedSystemPrompt);
         }
-        final HermesHarnessVoucher effectiveVoucher = harnessVoucher;
+        var pipelineSelection = pipelineRuntimeBridge.prepare(
+                request.getRequestId(), harnessVoucher, !harnessKernelBridge.isOff());
+        if (pipelineSelection.failClosed()) {
+            HarnessEvidenceCollector failedEvidence = new HarnessEvidenceCollector(
+                    request.getRequestId(), request.getBotId(), harnessVoucher);
+            failedEvidence.recordUserInput(request.getQuestion());
+            failedEvidence.recordFinalOutput("FAIL_SAFE: " + pipelineSelection.failureCode());
+            recordEvidence(failedEvidence.finalizeEvidence(HarnessEvidenceRecord.ExecutionMode.FAIL_SAFE));
+            unregisterRequestVoucher(request.getRequestId());
+            emitter.next(ChatEvent.newBuilder().setRequestId(request.getRequestId())
+                    .setError(ErrorEvent.newBuilder().setCode(403)
+                            .setMessage(pipelineSelection.failureCode()).build()).build());
+            emitter.complete();
+            return;
+        }
+        final HermesHarnessVoucher effectiveVoucher = pipelineSelection.effectiveVoucher();
         final HarnessEvidenceCollector evidenceCollector = new HarnessEvidenceCollector(
                 request.getRequestId(), request.getBotId(), effectiveVoucher);
         evidenceCollector.recordUserInput(request.getQuestion());
