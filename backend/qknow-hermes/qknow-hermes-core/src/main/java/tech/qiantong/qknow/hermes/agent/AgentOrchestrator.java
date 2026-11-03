@@ -33,6 +33,7 @@ import tech.qiantong.qknow.hermes.agent.harness.UsageCapturingChatModel;
 import tech.qiantong.qknow.hermes.agent.harness.kernel.HarnessKernelBridge;
 import tech.qiantong.qknow.hermes.agent.harness.kernel.KernelBridgeMode;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.runtime.PipelineRuntimeBridge;
+import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.runtime.HarnessRoutingContext;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -575,8 +576,10 @@ public class AgentOrchestrator {
         if (harnessVoucher == null) {
             harnessVoucher = harnessAssembler.createRequestVoucher(request.getBotId(), resolvedSystemPrompt);
         }
+        var routingContext = pipelineRuntimeBridge.isOff()
+                ? null : HarnessRoutingContext.fromRequest(request, resolver);
         var pipelineSelection = pipelineRuntimeBridge.prepare(
-                request.getRequestId(), harnessVoucher, !harnessKernelBridge.isOff());
+                routingContext, harnessVoucher, !harnessKernelBridge.isOff());
         if (pipelineSelection.failClosed()) {
             HarnessEvidenceCollector failedEvidence = new HarnessEvidenceCollector(
                     request.getRequestId(), request.getBotId(), harnessVoucher);

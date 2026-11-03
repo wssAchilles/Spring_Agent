@@ -1,7 +1,6 @@
 package tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.runtime;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -9,18 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
-import tech.qiantong.qknow.hermes.agent.harness.evolution.AlgebraicHarnessMutator.Operator;
-import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.BoundedOperatorPipeline;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.PipelineMutation;
 
 /** Opt-in runtime selection; SHADOW never changes the executable voucher. */
 @Component
 public final class PipelineRuntimeBridge {
     private static final int RECEIPT_CAPACITY = 256;
-    private static final BoundedOperatorPipeline REGISTERED_PIPELINE = new BoundedOperatorPipeline(
-            List.of(Operator.CONCISE_SYSTEM_PROMPT, Operator.ADAPTIVE_MEMORY_WINDOW));
-
     private final PipelineRuntimeMode mode;
+    private final HarnessRouter router;
     private final PipelineMutation mutation = new PipelineMutation();
     private final Map<String, Receipt> receipts = new LinkedHashMap<>(16, 0.75f, true) {
         @Override
@@ -36,7 +31,12 @@ public final class PipelineRuntimeBridge {
     }
 
     public PipelineRuntimeBridge(boolean enabled, PipelineRuntimeMode configuredMode) {
+        this(enabled, configuredMode, HarnessRouter.defaults());
+    }
+
+    public PipelineRuntimeBridge(boolean enabled, PipelineRuntimeMode configuredMode, HarnessRouter router) {
         this.mode = enabled ? Objects.requireNonNull(configuredMode, "configuredMode") : PipelineRuntimeMode.OFF;
+        this.router = Objects.requireNonNull(router, "router");
     }
 
     public static PipelineRuntimeBridge disabledInstance() {
@@ -47,29 +47,52 @@ public final class PipelineRuntimeBridge {
         return mode == PipelineRuntimeMode.OFF;
     }
 
-    public Selection prepare(String requestId, HermesHarnessVoucher baseline, boolean kernelBridgeActive) {
+    public Selection prepare(HarnessRoutingContext context, HermesHarnessVoucher baseline,
+                             boolean kernelBridgeActive) {
         Objects.requireNonNull(baseline, "baseline");
         if (isOff()) {
             return new Selection(baseline, false, "");
         }
         String baselineFingerprint = baseline.computeFingerprint();
+        HarnessRouteDecision decision = null;
         try {
+            Objects.requireNonNull(context, "context");
+            String requestId = context.requestId();
             if (requestId == null || requestId.isBlank()) {
                 throw new IllegalArgumentException("requestId is required");
             }
+            decision = router.route(context);
             if (kernelBridgeActive) {
                 throw new IllegalStateException("Kernel bridge and pipeline runtime cannot run together");
             }
-            HermesHarnessVoucher candidate = mutation.apply(baseline, REGISTERED_PIPELINE);
+            HarnessProfile profile = decision.profile();
+            if (decision.fallback() || profile.pipeline() == null) {
+                store(new Receipt(requestId, mode, profile.profileId(), profile.version(),
+                        profile.fingerprint(), "", decision.reason(), decision.fallback(),
+                        decision.routeFingerprint(), baselineFingerprint, "", baselineFingerprint,
+                        true, false, ""));
+                return new Selection(baseline, false, "");
+            }
+            HermesHarnessVoucher candidate = mutation.apply(baseline, profile.pipeline());
             HermesHarnessVoucher effective = mode == PipelineRuntimeMode.ENFORCE ? candidate : baseline;
-            store(new Receipt(requestId, mode, REGISTERED_PIPELINE.fingerprint(),
-                    baselineFingerprint, candidate.computeFingerprint(), effective.computeFingerprint(),
-                    true, false, ""));
+            store(new Receipt(requestId, mode, profile.profileId(), profile.version(),
+                    profile.fingerprint(), profile.pipeline().fingerprint(), decision.reason(), false,
+                    decision.routeFingerprint(), baselineFingerprint, candidate.computeFingerprint(),
+                    effective.computeFingerprint(), true, false, ""));
             return new Selection(effective, false, "");
         } catch (RuntimeException failure) {
             String reason = "PIPELINE_PREPARE_FAILED:" + failure.getClass().getSimpleName();
+            String requestId = context == null ? null : context.requestId();
             if (requestId != null && !requestId.isBlank()) {
-                store(new Receipt(requestId, mode, REGISTERED_PIPELINE.fingerprint(),
+                HarnessProfile profile = decision == null ? null : decision.profile();
+                store(new Receipt(requestId, mode,
+                        profile == null ? "" : profile.profileId(),
+                        profile == null ? "" : profile.version(),
+                        profile == null ? "" : profile.fingerprint(),
+                        profile == null || profile.pipeline() == null ? "" : profile.pipeline().fingerprint(),
+                        decision == null ? "ROUTE_FAILED" : decision.reason(),
+                        decision != null && decision.fallback(),
+                        decision == null ? "" : decision.routeFingerprint(),
                         baselineFingerprint, "", baselineFingerprint, false,
                         mode == PipelineRuntimeMode.ENFORCE, reason));
             }
@@ -96,9 +119,11 @@ public final class PipelineRuntimeBridge {
         }
     }
 
-    public record Receipt(String requestId, PipelineRuntimeMode mode, String pipelineFingerprint,
-                          String baselineFingerprint, String candidateFingerprint,
-                          String executedFingerprint, boolean preparedSuccess,
+    public record Receipt(String requestId, PipelineRuntimeMode mode, String profileId,
+                          String profileVersion, String profileFingerprint, String pipelineFingerprint,
+                          String routeReason, boolean fallback, String routeFingerprint,
+                          String baselineFingerprint, String candidateFingerprint, String executedFingerprint,
+                          boolean preparedSuccess,
                           boolean failClosed, String failureCode) {
     }
 }
