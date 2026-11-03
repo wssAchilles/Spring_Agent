@@ -10,6 +10,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.PpcCandidate;
+import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.BoundedOperatorPipeline;
 
 public final class ExperienceGuidedProposer {
     private final ExperienceLibrary library;
@@ -47,26 +48,43 @@ public final class ExperienceGuidedProposer {
         PpcCandidate candidate = provenance.candidate();
         if (!candidate.voucher().botId().equals(entry.domain().botId())
                 || !candidate.voucher().matchesFingerprint(entry.harnessFingerprint())
-                || candidate.operators().size() != 1) {
+                || (provenance.pipeline() == null && candidate.operators().size() != 1)
+                || (provenance.pipeline() != null
+                        && !candidate.operators().equals(provenance.pipeline().operators()))) {
             return null;
         }
         // shortcut: field matching is not source authentication; require a signed run manifest before production use.
-        return new Suggestion(entry.entryId(), candidate.operators().getFirst());
+        return new Suggestion(entry.entryId(), candidate.operators().getFirst(), provenance.pipeline());
     }
 
-    public record OperatorProvenance(String sourceRunId, PpcCandidate candidate) {
+    public record OperatorProvenance(String sourceRunId, PpcCandidate candidate,
+                                     BoundedOperatorPipeline pipeline) {
         public OperatorProvenance {
             if (sourceRunId == null || sourceRunId.isBlank()) {
                 throw new IllegalArgumentException("sourceRunId is required");
             }
             Objects.requireNonNull(candidate, "candidate");
+            if (pipeline != null && !candidate.operators().equals(pipeline.operators())) {
+                throw new IllegalArgumentException("pipeline provenance operator mismatch");
+            }
+        }
+
+        public OperatorProvenance(String sourceRunId, PpcCandidate candidate) {
+            this(sourceRunId, candidate, null);
         }
     }
 
-    public record Suggestion(String entryId, Operator operator) {
+    public record Suggestion(String entryId, Operator operator, BoundedOperatorPipeline pipeline) {
         public Suggestion {
             Objects.requireNonNull(entryId, "entryId");
             Objects.requireNonNull(operator, "operator");
+            if (pipeline != null && !pipeline.operators().getFirst().equals(operator)) {
+                throw new IllegalArgumentException("pipeline suggestion primary operator mismatch");
+            }
+        }
+
+        public Suggestion(String entryId, Operator operator) {
+            this(entryId, operator, null);
         }
     }
 }

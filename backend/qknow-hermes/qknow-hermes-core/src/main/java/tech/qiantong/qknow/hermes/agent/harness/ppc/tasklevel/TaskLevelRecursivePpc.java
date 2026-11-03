@@ -15,6 +15,8 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.PpcCandidate;
+import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.BoundedOperatorPipeline;
+import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.PipelineMutation;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.recursive.ExperienceGuidedProposer;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.recursive.ExperienceGuidedProposer.OperatorProvenance;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.tasklevel.PpcRoundEvidence.CandidateProbe;
@@ -31,6 +33,7 @@ public final class TaskLevelRecursivePpc {
     private final ExperienceLibrary library;
     private final ExperienceGuidedProposer proposer;
     private final AlgebraicHarnessMutator mutator;
+    private final PipelineMutation pipelineMutation = new PipelineMutation();
     private final HarnessProposalSelector selector = new HarnessProposalSelector();
     private final PpcStopPolicy stopPolicy;
     private final Map<String, OperatorProvenance> adoptedProvenance = new LinkedHashMap<>();
@@ -55,6 +58,21 @@ public final class TaskLevelRecursivePpc {
         List<ExperienceGuidedProposal> proposals = List.copyOf(operators).stream()
                 .distinct().map(ExperienceGuidedProposal::bootstrap).toList();
         return run(task, baseline, proposals, probe, true, false);
+    }
+
+    public Result runBootstrapPipeline(Task task, HermesHarnessVoucher baseline,
+                                        List<Operator> singles, List<List<Operator>> registeredCombinations,
+                                        Probe probe) {
+        validate(task, baseline);
+        if (task.domain().isUnscopedReplay()) {
+            throw new IllegalArgumentException("UNSCOPED_REPLAY cannot adopt benchmark experience");
+        }
+        List<BoundedOperatorPipeline> pipelines = pipelineMutation.generate(singles, registeredCombinations);
+        if (pipelines.isEmpty()) {
+            throw new IllegalArgumentException("at least one candidate is required");
+        }
+        return run(task, baseline, pipelines.stream().map(ExperienceGuidedProposal::pipeline).toList(),
+                probe, true, false);
     }
 
     public Result runTransfer(Task task, HermesHarnessVoucher baseline, Probe probe) {
@@ -99,9 +117,9 @@ public final class TaskLevelRecursivePpc {
         List<PpcRoundEvidence> rounds = new ArrayList<>();
         List<ExperienceEntry> adopted = new ArrayList<>();
         List<String> appliedEntryIds = new ArrayList<>();
-        Map<Operator, ExperienceGuidedProposal> remaining = new LinkedHashMap<>();
+        Map<String, ExperienceGuidedProposal> remaining = new LinkedHashMap<>();
         for (ExperienceGuidedProposal proposal : proposed) {
-            remaining.putIfAbsent(proposal.operator(), proposal);
+            remaining.putIfAbsent(proposal.candidateKey(), proposal);
         }
         List<String> recalledEntryIds = bootstrap ? List.of() : remaining.values().stream()
                 .filter(ExperienceGuidedProposal::hasExperienceSource)
@@ -112,7 +130,9 @@ public final class TaskLevelRecursivePpc {
             Map<ExperienceGuidedProposal, HermesHarnessVoucher> candidates = new LinkedHashMap<>();
             for (ExperienceGuidedProposal proposal : remaining.values()) {
                 try {
-                    candidates.put(proposal, mutator.mutate(current, proposal.operator()));
+                    candidates.put(proposal, proposal.pipeline() == null
+                            ? mutator.mutate(current, proposal.operator())
+                            : pipelineMutation.apply(current, proposal.pipeline()));
                 } catch (IllegalStateException unavailable) {
                     // A bounded operator with no state change is not a probe.
                 }
@@ -154,12 +174,12 @@ public final class TaskLevelRecursivePpc {
 
             current = next;
             currentScore = winner.score();
-            remaining.remove(winner.proposal().operator());
+            remaining.remove(winner.proposal().candidateKey());
             if (winner.proposal().hasExperienceSource()) {
                 appliedEntryIds.add(winner.proposal().sourceEntryId());
             }
             if (bootstrap) {
-                adopted.add(adopt(task, round, winner.proposal().operator(), current,
+                adopted.add(adopt(task, round, winner.proposal(), current,
                         currentScore, evidence));
             }
             if (round == stopPolicy.maxRounds()) {
@@ -174,12 +194,12 @@ public final class TaskLevelRecursivePpc {
                 currentScore, rounds, adopted, recalledEntryIds, appliedEntryIds, probeCount);
     }
 
-    private ExperienceEntry adopt(Task task, int round, Operator operator,
+    private ExperienceEntry adopt(Task task, int round, ExperienceGuidedProposal proposal,
                                   HermesHarnessVoucher selected, Score score, PpcRoundEvidence evidence) {
         String entryId = "hac1-" + task.id() + "-r" + round;
         String runId = "hac1-run-" + task.id();
         ExperienceEntry entry = new ExperienceEntry(entryId, task.domain(), task.cue(),
-                "Accepted synthetic operator " + operator.name() + " for bounded benchmark reuse",
+                "Accepted synthetic operator " + proposal.candidateKey() + " for bounded benchmark reuse",
                 "Deterministic task probe improved in an isolated benchmark",
                 new EvidenceReference("hac1-evidence-" + task.id() + "-r" + round,
                         "hac1-request-" + task.id() + "-r" + round, evidence.computeDigest(), MODE),
@@ -188,7 +208,8 @@ public final class TaskLevelRecursivePpc {
                 1, false, null, Instant.EPOCH);
         ExperienceEntry saved = library.recordExperience(entry);
         adoptedProvenance.put(saved.entryId(), new OperatorProvenance(runId,
-                PpcCandidate.of(entryId, selected, List.of(operator))));
+                PpcCandidate.of(entryId, selected, proposal.pipeline() == null
+                        ? List.of(proposal.operator()) : proposal.pipeline().operators()), proposal.pipeline()));
         return saved;
     }
 

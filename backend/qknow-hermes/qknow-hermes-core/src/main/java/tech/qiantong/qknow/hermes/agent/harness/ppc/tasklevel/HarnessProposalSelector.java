@@ -16,7 +16,8 @@ public final class HarnessProposalSelector {
                         && candidate.score().safe()
                         && candidate.score().quality() > current.quality())
                 .sorted(Comparator.comparingDouble((CandidateProbe candidate) -> candidate.score().quality())
-                        .reversed().thenComparingInt(candidate -> candidate.proposal().operator().ordinal()))
+                        .reversed().thenComparingInt(candidate -> candidate.proposal().operator().ordinal())
+                        .thenComparing(candidate -> candidate.proposal().candidateKey()))
                 .findFirst();
     }
 }

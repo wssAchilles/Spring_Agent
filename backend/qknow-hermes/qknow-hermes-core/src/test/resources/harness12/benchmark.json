@@ -44,6 +44,13 @@
       "category": "RAG",
       "question": "Does a task already passing its oracle correctly report no transfer benefit?",
       "requiredOperators": []
+    },
+    {
+      "id": "C1",
+      "split": "COMPOSITION",
+      "category": "COMPOSITE",
+      "question": "Can one bounded operator pipeline satisfy both prompt and memory requirements when either operator alone cannot?",
+      "requiredOperators": ["CONCISE_SYSTEM_PROMPT", "ADAPTIVE_MEMORY_WINDOW"]
     }
   ]
 }

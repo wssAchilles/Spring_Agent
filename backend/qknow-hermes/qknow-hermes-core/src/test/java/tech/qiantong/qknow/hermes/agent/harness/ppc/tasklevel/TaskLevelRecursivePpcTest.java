@@ -16,6 +16,8 @@ import org.junit.jupiter.api.io.TempDir;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessAssembler;
 import tech.qiantong.qknow.hermes.agent.harness.HermesHarnessVoucher;
 import tech.qiantong.qknow.hermes.agent.harness.evolution.AlgebraicHarnessMutator.Operator;
+import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.BoundedOperatorPipeline;
+import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.PipelineMutation;
 import tech.qiantong.qknow.hermes.agent.harness.experience.DefaultExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDisposition;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
@@ -41,7 +43,8 @@ class TaskLevelRecursivePpcTest {
         Benchmark benchmark = benchmark();
         assertEquals(TaskLevelRecursivePpc.MODE, benchmark.mode());
         assertEquals("hac1-v1", benchmark.id());
-        assertEquals(6, benchmark.tasks().size());
+        assertEquals(7, benchmark.tasks().size());
+        assertEquals(6, benchmark.tasks().stream().filter(task -> !task.split().equals("COMPOSITION")).count());
         assertTrue(benchmark.tasks().stream().allMatch(task -> !task.question().isBlank()));
         assertEquals(3, benchmark.tasks().stream().filter(task -> task.split().equals("BOOTSTRAP")).count());
         assertEquals(3, benchmark.tasks().stream().filter(task -> task.split().equals("TRANSFER")).count());
@@ -196,6 +199,64 @@ class TaskLevelRecursivePpcTest {
         assertThrows(IllegalArgumentException.class, () -> engine.runBootstrap(
                 new TaskLevelRecursivePpc.Task("no-adopt", ExperienceDomain.unscopedReplay(),
                         benchmark.cue()), baseline(), OPERATORS, (ignored, voucher) -> new Score(0.0D, true)));
+    }
+
+    @Test
+    void boundedPipelineIsAProbeableCandidateAndAloneStrictlyImproves() throws Exception {
+        FixtureTask task = benchmark().tasks().stream()
+                .filter(row -> row.id().equals("C1")).findFirst().orElseThrow();
+        TaskLevelRecursivePpc.Task spec = taskSpec(task, benchmark().cue());
+        HermesHarnessVoucher baseline = baseline();
+        BoundedOperatorPipeline prompt = new BoundedOperatorPipeline(List.of(Operator.CONCISE_SYSTEM_PROMPT));
+        BoundedOperatorPipeline memory = new BoundedOperatorPipeline(List.of(Operator.ADAPTIVE_MEMORY_WINDOW));
+        BoundedOperatorPipeline both = new BoundedOperatorPipeline(OPERATORS);
+        TaskLevelRecursivePpc.Probe binaryOracle = (ignored, voucher) -> {
+            boolean concise = !voucher.invariantSystemPrompt().corePrinciples().contains("\n");
+            boolean shorter = voucher.memoryContext().shortTermWindowSize() < 20;
+            return new Score(concise && shorter ? 1.0D : 0.0D, true);
+        };
+
+        PipelineMutation mutation = new PipelineMutation();
+        assertEquals(0.0D, binaryOracle.evaluate(spec, mutation.apply(baseline, prompt)).quality());
+        assertEquals(0.0D, binaryOracle.evaluate(spec, mutation.apply(baseline, memory)).quality());
+
+        TaskLevelRecursivePpc engine = new TaskLevelRecursivePpc(library());
+        TaskLevelRecursivePpc.Result result = engine.runBootstrapPipeline(
+                spec, baseline, OPERATORS, List.of(OPERATORS), binaryOracle);
+        assertEquals(Outcome.ADOPTED, result.outcome());
+        assertEquals(1.0D, result.selectedScore().quality());
+        assertEquals(both.fingerprint(), result.rounds().getFirst().selected().pipeline().fingerprint());
+        assertEquals(4, result.probeCount());
+        assertEquals(1, result.adoptedEntries().size());
+        assertEquals(result.rounds().getFirst().computeDigest(),
+                result.adoptedEntries().getFirst().evidenceRef().evidenceSha256());
+        assertEquals(StopReason.BUDGET_EXHAUSTED, result.stopReason());
+
+        TaskLevelRecursivePpc.Result transferred = engine.runTransfer(
+                new TaskLevelRecursivePpc.Task("C1-transfer", DOMAIN, benchmark().cue()),
+                baseline, binaryOracle);
+        assertEquals(Outcome.TRANSFERRED, transferred.outcome());
+        assertEquals(List.of(result.adoptedEntries().getFirst().entryId()), transferred.appliedEntryIds());
+        assertEquals(both.fingerprint(), transferred.rounds().getFirst().selected().pipeline().fingerprint());
+
+        TaskLevelRecursivePpc.Result noImprovement = new TaskLevelRecursivePpc(library())
+                .runBootstrapPipeline(new TaskLevelRecursivePpc.Task("C1-no-improvement", DOMAIN,
+                                benchmark().cue()), baseline, OPERATORS, List.of(OPERATORS),
+                        (ignored, voucher) -> new Score(0.0D, true));
+        assertEquals(Outcome.NO_ADOPTION, noImprovement.outcome());
+        assertEquals(StopReason.NO_IMPROVEMENT, noImprovement.stopReason());
+        assertEquals(baseline.computeFingerprint(), noImprovement.selected().computeFingerprint());
+        assertThrows(IllegalArgumentException.class, () -> new TaskLevelRecursivePpc(library())
+                .runBootstrapPipeline(spec, baseline, List.of(OPERATORS.getFirst(), OPERATORS.getFirst()),
+                        List.of(OPERATORS), binaryOracle));
+
+        TaskLevelRecursivePpc.Result four = new TaskLevelRecursivePpc(library(),
+                PpcStopPolicy.withFourCandidates()).runBootstrapPipeline(
+                        new TaskLevelRecursivePpc.Task("C1-four", DOMAIN, benchmark().cue()), baseline,
+                        List.of(OPERATORS.getFirst(), OPERATORS.getLast(), Operator.TOOL_GUIDANCE_SYNTHESIS),
+                        List.of(OPERATORS), binaryOracle);
+        assertEquals(5, four.probeCount());
+        assertEquals(1.0D, four.selectedScore().quality());
     }
 
     private ExperienceLibrary library() {
