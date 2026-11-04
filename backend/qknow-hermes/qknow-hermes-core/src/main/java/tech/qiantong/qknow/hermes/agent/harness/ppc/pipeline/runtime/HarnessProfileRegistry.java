@@ -41,13 +41,17 @@ public final class HarnessProfileRegistry {
 
     public static HarnessProfileRegistry defaults() {
         return new HarnessProfileRegistry(List.of(
-                new HarnessProfile("baseline", "1", DEFAULT_DOMAIN, null, null, true, BUILTIN_SOURCE),
+                new HarnessProfile("baseline", "1", DEFAULT_DOMAIN, null, null, true, BUILTIN_SOURCE,
+                        HarnessProfileStatus.ACTIVE),
                 new HarnessProfile("prompt-profile", "1", DEFAULT_DOMAIN, CapabilityTag.PROMPT_ONLY,
-                        new BoundedOperatorPipeline(List.of(Operator.CONCISE_SYSTEM_PROMPT)), true, BUILTIN_SOURCE),
+                        new BoundedOperatorPipeline(List.of(Operator.CONCISE_SYSTEM_PROMPT)), true, BUILTIN_SOURCE,
+                        HarnessProfileStatus.ACTIVE),
                 new HarnessProfile("history-profile", "1", DEFAULT_DOMAIN, CapabilityTag.HISTORY,
-                        new BoundedOperatorPipeline(List.of(Operator.ADAPTIVE_MEMORY_WINDOW)), true, BUILTIN_SOURCE),
+                        new BoundedOperatorPipeline(List.of(Operator.ADAPTIVE_MEMORY_WINDOW)), true, BUILTIN_SOURCE,
+                        HarnessProfileStatus.ACTIVE),
                 new HarnessProfile("tool-profile", "1", DEFAULT_DOMAIN, CapabilityTag.TOOL,
-                        new BoundedOperatorPipeline(List.of(Operator.TOOL_GUIDANCE_SYNTHESIS)), true, BUILTIN_SOURCE)));
+                        new BoundedOperatorPipeline(List.of(Operator.TOOL_GUIDANCE_SYNTHESIS)), true, BUILTIN_SOURCE,
+                        HarnessProfileStatus.ACTIVE)));
     }
 
     public HarnessProfile defaultProfile() {

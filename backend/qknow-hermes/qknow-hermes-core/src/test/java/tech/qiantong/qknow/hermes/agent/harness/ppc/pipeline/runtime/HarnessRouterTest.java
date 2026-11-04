@@ -145,6 +145,39 @@ class HarnessRouterTest {
         assertEquals(DOMAIN, HarnessRoutingContext.fromRequest(base, resolver).domain());
     }
 
+    @Test
+    void deprecatedAndRetiredProfilesCannotBeSelectedForNewRoutes() {
+        HarnessProfile baseline = HarnessProfileRegistry.defaults().defaultProfile();
+        HarnessProfile deprecated = new HarnessProfile("history-profile", "1", DOMAIN, CapabilityTag.HISTORY,
+                new BoundedOperatorPipeline(List.of(Operator.ADAPTIVE_MEMORY_WINDOW)), true,
+                "TEST_WHITELIST", HarnessProfileStatus.DEPRECATED);
+        HarnessProfile retired = new HarnessProfile("tool-profile", "1", DOMAIN, CapabilityTag.TOOL,
+                new BoundedOperatorPipeline(List.of(Operator.TOOL_GUIDANCE_SYNTHESIS)), true,
+                "TEST_WHITELIST", HarnessProfileStatus.RETIRED);
+        HarnessRouter router = new HarnessRouter(new HarnessProfileRegistry(List.of(baseline, deprecated, retired)),
+                Map.of(CapabilityTag.HISTORY, "history-profile", CapabilityTag.TOOL, "tool-profile"));
+
+        HarnessRouteDecision deprecatedRoute = router.route(context(CapabilityTag.HISTORY));
+        HarnessRouteDecision retiredRoute = router.route(context(CapabilityTag.TOOL));
+        assertEquals("baseline", deprecatedRoute.profile().profileId());
+        assertEquals("PROFILE_DEPRECATED", deprecatedRoute.reason());
+        assertTrue(deprecatedRoute.fallback());
+        assertEquals("baseline", retiredRoute.profile().profileId());
+        assertEquals("PROFILE_RETIRED", retiredRoute.reason());
+        assertTrue(retiredRoute.fallback());
+    }
+
+    @Test
+    void requestContextUsesPositiveConversationIdOnlyAsSessionKey() {
+        ChatRequest noSession = ChatRequest.newBuilder().setRequestId("no-session").build();
+        ChatRequest validSession = noSession.toBuilder().setConversationId(42).build();
+
+        assertNull(HarnessRoutingContext.fromRequest(noSession, null).sessionId());
+        assertEquals("42", HarnessRoutingContext.fromRequest(validSession, null).sessionId());
+        assertNull(HarnessRoutingContext.fromRequest(
+                noSession.toBuilder().setConversationId(-1).build(), null).sessionId());
+    }
+
     private static void assertProfile(HarnessRouter router, CapabilityTag tag, String expectedId,
                                       Operator expectedOperator) {
         HarnessRouteDecision decision = router.route(context(tag));

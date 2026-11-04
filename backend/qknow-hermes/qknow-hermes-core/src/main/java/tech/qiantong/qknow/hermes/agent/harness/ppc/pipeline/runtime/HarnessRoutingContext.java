@@ -6,7 +6,11 @@ import tech.qiantong.qknow.hermes.agent.harness.kernel.CapabilityTag;
 import tech.qiantong.qknow.hermes.proto.ChatRequest;
 
 /** Request-observable routing inputs; null tag means no trusted classification. */
-public record HarnessRoutingContext(String requestId, String domain, CapabilityTag capabilityTag) {
+public record HarnessRoutingContext(String requestId, String sessionId, String domain, CapabilityTag capabilityTag) {
+    public HarnessRoutingContext(String requestId, String domain, CapabilityTag capabilityTag) {
+        this(requestId, null, domain, capabilityTag);
+    }
+
     public static HarnessRoutingContext fromRequest(ChatRequest request, ToolCallbackResolver resolver) {
         Objects.requireNonNull(request, "request");
         boolean rag = request.getRagContextsList().stream().anyMatch(context -> {
@@ -29,6 +33,8 @@ public record HarnessRoutingContext(String requestId, String domain, CapabilityT
                 : rag ? CapabilityTag.RAG
                 : tool ? CapabilityTag.TOOL
                 : history ? CapabilityTag.HISTORY : CapabilityTag.PROMPT_ONLY;
-        return new HarnessRoutingContext(request.getRequestId(), HarnessProfileRegistry.DEFAULT_DOMAIN, tag);
+        String sessionId = request.getConversationId() > 0 ? String.valueOf(request.getConversationId()) : null;
+        return new HarnessRoutingContext(request.getRequestId(), sessionId,
+                HarnessProfileRegistry.DEFAULT_DOMAIN, tag);
     }
 }

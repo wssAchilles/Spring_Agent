@@ -11,14 +11,22 @@ import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.BoundedOperatorPipe
 /** A versioned, immutable entry in the runtime routing whitelist. */
 public record HarnessProfile(String profileId, String version, String domainScope,
                              CapabilityTag capabilityTag, BoundedOperatorPipeline pipeline,
-                             boolean approved, String source) {
+                             boolean approved, String source, HarnessProfileStatus status) {
+    public HarnessProfile(String profileId, String version, String domainScope,
+                          CapabilityTag capabilityTag, BoundedOperatorPipeline pipeline,
+                          boolean approved, String source) {
+        this(profileId, version, domainScope, capabilityTag, pipeline, approved, source,
+                HarnessProfileStatus.ACTIVE);
+    }
+
     public HarnessProfile {
         requireText(profileId, "profileId");
         requireText(version, "version");
         requireText(domainScope, "domainScope");
         requireText(source, "source");
+        Objects.requireNonNull(status, "status");
         if ("baseline".equals(profileId)) {
-            if (capabilityTag != null || pipeline != null || !approved) {
+            if (capabilityTag != null || pipeline != null || !approved || status != HarnessProfileStatus.ACTIVE) {
                 throw new IllegalArgumentException("baseline must be approved and have no mutation");
             }
         } else if (capabilityTag == null || pipeline == null) {
@@ -27,10 +35,15 @@ public record HarnessProfile(String profileId, String version, String domainScop
     }
 
     public String fingerprint() {
-        return hash("harness-profile-v1", profileId, version, domainScope,
+        return hash("harness-profile-v2", profileId, version, domainScope,
                 capabilityTag == null ? "<any>" : capabilityTag.name(),
                 pipeline == null ? "<none>" : pipeline.fingerprint(),
-                Boolean.toString(approved), source);
+                Boolean.toString(approved), source, status.name());
+    }
+
+    HarnessProfile withStatus(HarnessProfileStatus nextStatus) {
+        return new HarnessProfile(profileId, version, domainScope, capabilityTag, pipeline,
+                approved, source, nextStatus);
     }
 
     static String hash(String... values) {

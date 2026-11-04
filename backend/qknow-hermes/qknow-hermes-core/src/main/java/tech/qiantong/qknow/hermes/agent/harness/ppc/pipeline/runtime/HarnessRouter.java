@@ -43,6 +43,12 @@ public final class HarnessRouter {
         if (!profile.approved()) {
             return fallback(context, "PROFILE_NOT_APPROVED");
         }
+        if (profile.status() == HarnessProfileStatus.DEPRECATED) {
+            return fallback(context, "PROFILE_DEPRECATED");
+        }
+        if (profile.status() == HarnessProfileStatus.RETIRED) {
+            return fallback(context, "PROFILE_RETIRED");
+        }
         if (!context.domain().equals(profile.domainScope())
                 || context.capabilityTag() != profile.capabilityTag()) {
             return fallback(context, "PROFILE_MISMATCH");
@@ -52,6 +58,24 @@ public final class HarnessRouter {
 
     private HarnessRouteDecision fallback(HarnessRoutingContext context, String reason) {
         return decision(context, registry.defaultProfile(), reason, true);
+    }
+
+    HarnessProfile routedProfile(HarnessRoutingContext context) {
+        String profileId = routes.get(context.capabilityTag());
+        return profileId == null ? null : registry.find(profileId).orElse(null);
+    }
+
+    HarnessProfile profile(String profileId) {
+        return registry.find(profileId).orElse(null);
+    }
+
+    HarnessProfile baseline() {
+        return registry.defaultProfile();
+    }
+
+    HarnessRouteDecision decisionFor(HarnessRoutingContext context, HarnessProfile profile,
+                                     String reason, boolean fallback) {
+        return decision(context, profile, reason, fallback);
     }
 
     private static HarnessRouteDecision decision(HarnessRoutingContext context, HarnessProfile profile,
