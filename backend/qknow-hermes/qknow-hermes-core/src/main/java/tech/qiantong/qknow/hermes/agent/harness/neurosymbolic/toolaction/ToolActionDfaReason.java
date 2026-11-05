@@ -1,0 +1,18 @@
+package tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction;
+
+public enum ToolActionDfaReason {
+    DFA_ALLOWED,
+    DFA_UNKNOWN_TOOL,
+    DFA_TRANSITION_NOT_FOUND,
+    DFA_TERMINAL_STATE,
+    DFA_SPEC_INVALID,
+    DFA_PATH_UNCOVERED,
+    DFA_SPEC_NOT_FOUND,
+    DFA_SESSION_UNAVAILABLE,
+    DFA_DUPLICATE_REPLAY,
+    DFA_DUPLICATE_IN_PROGRESS,
+    DFA_IDENTITY_CONFLICT,
+    DFA_STALE_COMPLETION,
+    DFA_TOOL_FAILURE,
+    DFA_GUARD_REJECTED
+}

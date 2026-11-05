@@ -2,6 +2,7 @@ package tech.qiantong.qknow.hermes.agent;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -37,6 +38,8 @@ public class WorkerAgent extends BaseAgent {
     private final ChatModel chatModel;
     private final ToolCallbackResolver resolver;
     private final ToolDiscoveryService toolDiscoveryService;
+    private final List<ToolInterceptor> toolInterceptors;
+    private boolean serialToolExecution;
 
     public WorkerAgent(String name, String description, String systemPrompt,
                        List<ToolCallback> tools, ChatModel chatModel, ToolCallbackResolver resolver) {
@@ -59,6 +62,14 @@ public class WorkerAgent extends BaseAgent {
                        List<ToolCallback> tools, ChatModel chatModel, ToolCallbackResolver resolver,
                        ToolDiscoveryService toolDiscoveryService,
                        Set<String> capabilities) {
+        this(name, description, systemPrompt, tools, chatModel, resolver, toolDiscoveryService,
+                capabilities, List.of());
+    }
+
+    public WorkerAgent(String name, String description, String systemPrompt,
+                       List<ToolCallback> tools, ChatModel chatModel, ToolCallbackResolver resolver,
+                       ToolDiscoveryService toolDiscoveryService,
+                       Set<String> capabilities, List<ToolInterceptor> toolInterceptors) {
         super(name, description);
         this.systemPrompt = systemPrompt;
         this.tools = tools != null ? List.copyOf(tools) : List.of();
@@ -68,13 +79,29 @@ public class WorkerAgent extends BaseAgent {
         this.capabilities = capabilities != null && !capabilities.isEmpty()
                 ? Collections.unmodifiableSet(new LinkedHashSet<>(capabilities))
                 : Set.of();
+        this.toolInterceptors = toolInterceptors == null ? List.of() : List.copyOf(toolInterceptors);
     }
 
     /**
      * 派生携带新工具集的工作体智能体
      */
     public WorkerAgent withTools(List<ToolCallback> newTools) {
-        return new WorkerAgent(getName(), getDescription(), systemPrompt, newTools, chatModel, resolver, toolDiscoveryService, capabilities);
+        WorkerAgent copy = new WorkerAgent(getName(), getDescription(), systemPrompt, newTools, chatModel, resolver,
+                toolDiscoveryService, capabilities, toolInterceptors);
+        copy.serialToolExecution = serialToolExecution;
+        return copy;
+    }
+
+    public WorkerAgent withToolInterceptors(List<ToolInterceptor> interceptors) {
+        WorkerAgent copy = new WorkerAgent(getName(), getDescription(), systemPrompt, tools, chatModel, resolver,
+                toolDiscoveryService, capabilities, interceptors);
+        copy.serialToolExecution = serialToolExecution;
+        return copy;
+    }
+
+    public WorkerAgent withSerialToolExecution(boolean enabled) {
+        this.serialToolExecution = enabled;
+        return this;
     }
 
     @Override
@@ -175,13 +202,19 @@ public class WorkerAgent extends BaseAgent {
      * 创建 ReactAgent（兼容默认工具集，public 以便测试跨包 mock）
      */
     public ReactAgent createReactAgent() {
-        return ReactAgent.builder()
+        var builder = ReactAgent.builder()
                 .name(getName())
                 .model(chatModel)
                 .systemPrompt(systemPrompt)
                 .tools(this.tools)
-                .resolver(resolver)
-                .build();
+                .resolver(resolver);
+        if (!toolInterceptors.isEmpty()) {
+            builder.interceptors(toolInterceptors.toArray(ToolInterceptor[]::new));
+        }
+        if (serialToolExecution) {
+            builder.parallelToolExecution(false);
+        }
+        return builder.build();
     }
 
     /**
@@ -191,12 +224,18 @@ public class WorkerAgent extends BaseAgent {
         if (activeTools == null || activeTools == this.tools || activeTools.equals(this.tools)) {
             return createReactAgent();
         }
-        return ReactAgent.builder()
+        var builder = ReactAgent.builder()
                 .name(getName())
                 .model(chatModel)
                 .systemPrompt(systemPrompt)
                 .tools(activeTools)
-                .resolver(resolver)
-                .build();
+                .resolver(resolver);
+        if (!toolInterceptors.isEmpty()) {
+            builder.interceptors(toolInterceptors.toArray(ToolInterceptor[]::new));
+        }
+        if (serialToolExecution) {
+            builder.parallelToolExecution(false);
+        }
+        return builder.build();
     }
 }

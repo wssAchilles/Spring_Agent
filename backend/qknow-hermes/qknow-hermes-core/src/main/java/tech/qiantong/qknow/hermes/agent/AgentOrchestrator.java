@@ -34,6 +34,10 @@ import tech.qiantong.qknow.hermes.agent.harness.kernel.HarnessKernelBridge;
 import tech.qiantong.qknow.hermes.agent.harness.kernel.KernelBridgeMode;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.runtime.PipelineRuntimeBridge;
 import tech.qiantong.qknow.hermes.agent.harness.ppc.pipeline.runtime.HarnessRoutingContext;
+import tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction.ToolActionDfaMode;
+import tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction.ToolActionDfaRuntime;
+import tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction.ToolActionDfaReceipt;
+import tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction.ToolCallDispatch;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -124,6 +128,25 @@ public class AgentOrchestrator {
     private HermesHarnessAssembler harnessAssembler = new HermesHarnessAssembler();
     private HarnessKernelBridge harnessKernelBridge = HarnessKernelBridge.disabledInstance();
     private PipelineRuntimeBridge pipelineRuntimeBridge = PipelineRuntimeBridge.disabledInstance();
+    private ToolActionDfaRuntime toolActionDfaRuntime = ToolActionDfaRuntime.defaults();
+
+    @org.springframework.beans.factory.annotation.Value("${hermes.tool-action-dfa.mode:OFF}")
+    private ToolActionDfaMode toolActionDfaMode = ToolActionDfaMode.OFF;
+
+    @org.springframework.beans.factory.annotation.Value("${hermes.tool-action-dfa.spec-id:}")
+    private String toolActionDfaSpecId = "";
+
+    @Autowired(required = false)
+    public void setToolActionDfaRuntime(ToolActionDfaRuntime toolActionDfaRuntime) {
+        if (toolActionDfaRuntime != null) {
+            this.toolActionDfaRuntime = toolActionDfaRuntime;
+        }
+    }
+
+    public void setToolActionDfaMode(ToolActionDfaMode mode, String specId) {
+        this.toolActionDfaMode = mode == null ? ToolActionDfaMode.OFF : mode;
+        this.toolActionDfaSpecId = specId == null ? "" : specId;
+    }
 
     @Autowired(required = false)
     public void setPipelineRuntimeBridge(PipelineRuntimeBridge pipelineRuntimeBridge) {
@@ -159,6 +182,8 @@ public class AgentOrchestrator {
     }
 
     private final java.util.Map<String, HarnessEvidenceRecord> latestEvidenceMap = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, List<ToolActionDfaReceipt>> latestToolActionDfaReceipts =
+            new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, HermesHarnessVoucher> voucherOverrideMap = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, UsageCapturingChatModel.ModelCallBudgetHook> budgetHookMap =
             new java.util.concurrent.ConcurrentHashMap<>();
@@ -170,6 +195,13 @@ public class AgentOrchestrator {
             return null;
         }
         return latestEvidenceMap.get(requestId);
+    }
+
+    public List<ToolActionDfaReceipt> getLatestToolActionDfaReceipts(String requestId) {
+        if (requestId == null) {
+            return List.of();
+        }
+        return latestToolActionDfaReceipts.getOrDefault(requestId, List.of());
     }
 
     public void recordEvidence(HarnessEvidenceRecord evidence) {
@@ -361,10 +393,13 @@ public class AgentOrchestrator {
                 new java.util.concurrent.atomic.AtomicReference<>();
         java.util.concurrent.atomic.AtomicReference<Supplier<RagAttributionSummary>> ragAttribution =
                 new java.util.concurrent.atomic.AtomicReference<>(RagAttributionSummary::noRag);
+        java.util.concurrent.atomic.AtomicReference<ToolCallDispatch> toolCallDispatch =
+                new java.util.concurrent.atomic.AtomicReference<>();
         return Flux.<ChatEvent>create(emitter -> {
+            latestToolActionDfaReceipts.remove(request.getRequestId());
             try {
                 executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens,
-                        bridgeHandle, usageModel, ragAttribution);
+                        bridgeHandle, usageModel, ragAttribution, toolCallDispatch);
             } catch (Exception e) {
                 if (usageModel.get() != null) {
                     usageModel.get().markIncomplete();
@@ -382,6 +417,16 @@ public class AgentOrchestrator {
         }).doFinally(signalType -> {
             budgetHookMap.remove(request.getRequestId());
             unregisterControlledFixtureRequest(request.getRequestId());
+            ToolCallDispatch dispatch = toolCallDispatch.getAndSet(null);
+            if (dispatch != null) {
+                latestToolActionDfaReceipts.put(request.getRequestId(), dispatch.closeAndSnapshot());
+                while (latestToolActionDfaReceipts.size() > 100) {
+                    java.util.Iterator<String> it = latestToolActionDfaReceipts.keySet().iterator();
+                    if (it.hasNext()) {
+                        latestToolActionDfaReceipts.remove(it.next());
+                    }
+                }
+            }
             if (signalType == reactor.core.publisher.SignalType.CANCEL && usageModel.get() != null) {
                 usageModel.get().markIncomplete();
             }
@@ -480,8 +525,23 @@ public class AgentOrchestrator {
                               java.util.concurrent.atomic.AtomicLong completionTokens,
                               java.util.concurrent.atomic.AtomicReference<HarnessKernelBridge.BridgeExecutionHandle> bridgeHandle,
                               java.util.concurrent.atomic.AtomicReference<UsageCapturingChatModel> usageModel,
-                              java.util.concurrent.atomic.AtomicReference<Supplier<RagAttributionSummary>> ragAttribution)
+                              java.util.concurrent.atomic.AtomicReference<Supplier<RagAttributionSummary>> ragAttribution,
+                              java.util.concurrent.atomic.AtomicReference<ToolCallDispatch> toolCallDispatchRef)
             throws GraphRunnerException {
+        ToolActionDfaMode dfaMode = toolActionDfaMode == null ? ToolActionDfaMode.OFF : toolActionDfaMode;
+        ToolCallDispatch toolCallDispatch = null;
+        if (dfaMode != ToolActionDfaMode.OFF) {
+            toolCallDispatch = toolActionDfaRuntime.openRequest(request.getRequestId(), dfaMode, toolActionDfaSpecId);
+            toolCallDispatchRef.set(toolCallDispatch);
+            if (toolCallDispatch.isEnforce() && !toolCallDispatch.isAvailable()) {
+                emitter.next(ChatEvent.newBuilder().setRequestId(request.getRequestId())
+                        .setError(ErrorEvent.newBuilder().setCode(403)
+                                .setMessage(toolCallDispatch.failureCode()).build()).build());
+                emitter.complete();
+                return;
+            }
+        }
+
         // 1. 创建 ChatModel
         ModelConfig modelConfig = request.getModelConfig();
         ChatModel chatModel;
@@ -709,13 +769,6 @@ public class AgentOrchestrator {
         }
         final String harnessVersion = effectiveVoucher.version();
         final String harnessFingerprint = effectiveVoucher.computeFingerprint();
-        String plannerSupervision = createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
-        if (StrUtil.isNotBlank(plannerSupervision)) {
-            systemPrompt = systemPrompt + plannerSupervision;
-        }
-        log.info("Agent 静态系统提示词 (Context Caching 友好): harness={}, fingerprint={}, prompt={}",
-                harnessVersion, harnessFingerprint,
-                systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
 
         // 动态 RAG 检索上下文挂载在当前轮次 User 消息前缀，杜绝污染全局 System 前缀
         String ragContextBlock = buildRagContextBlock(effectiveRagContexts, retrievalEvaluation);
@@ -740,7 +793,36 @@ public class AgentOrchestrator {
         evidenceCollector.setRagAttributionSupplier(ragSupplier);
         evidenceCollector.recordRagEvidence(attributedRagContexts.size(), attributionScore);
 
-        String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, bridgeTools, chatModel);
+        Set<String> allowedToolNames = Set.copyOf(enabledToolNames);
+        ToolCallbackResolver planBridgeResolver = bridgeResolver;
+        ToolCallbackResolver planResolver = selectPlanResolver(
+                dfaMode, allowedToolNames, resolver, planBridgeResolver);
+
+        var orchestrationMode = multiAgentOrchestrationService.resolveOrchestrationMode(request);
+        if (toolCallDispatch != null && toolCallDispatch.isEnforce()
+                && orchestrationMode.effectiveMode() != OrchestrationMode.ORCHESTRATION_MODE_SINGLE) {
+            toolCallDispatch.recordUncovered("MULTIAGENT");
+            String failureCode = "DFA_PATH_UNCOVERED:MULTIAGENT";
+            evidenceCollector.recordFinalOutput("FAIL_SAFE: " + failureCode);
+            recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                    request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.FAIL_SAFE)));
+            unregisterRequestVoucher(request.getRequestId());
+            emitter.next(ChatEvent.newBuilder().setRequestId(request.getRequestId())
+                    .setError(ErrorEvent.newBuilder().setCode(403).setMessage(failureCode).build()).build());
+            emitter.complete();
+            return;
+        }
+
+        String plannerSupervision = createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
+        if (StrUtil.isNotBlank(plannerSupervision)) {
+            systemPrompt = systemPrompt + plannerSupervision;
+        }
+        log.info("Agent 静态系统提示词 (Context Caching 友好): harness={}, fingerprint={}, prompt={}",
+                harnessVersion, harnessFingerprint,
+                systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
+
+        String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, bridgeTools,
+                planResolver, chatModel, toolCallDispatch);
         if (planAnswer != null) {
             fullAnswer.append(planAnswer);
             long pt = estimateTokenCount(request.getQuestion());
@@ -785,7 +867,6 @@ public class AgentOrchestrator {
         List<ToolCallback> guardedTools = bridgeEnforced ? bridgeTools : bridgeTools.stream()
                 .map(t -> wrapWithCycleGuard(t, cycleGuard, evidenceCollector)).toList();
         ToolCallbackResolver effectiveBridgeResolver = bridgeResolver;
-        Set<String> allowedToolNames = Set.copyOf(enabledToolNames);
         ToolCallbackResolver guardedResolver = name -> {
             if (!allowedToolNames.contains(name)) {
                 return null;
@@ -795,6 +876,10 @@ public class AgentOrchestrator {
         };
 
         // 8.5 P0-15 多智能体受控编排分支 (委托 MultiAgentOrchestrationService，默认 SINGLE 100% 走原有路径)
+        if (toolCallDispatch != null && !toolCallDispatch.isEnforce()
+                && orchestrationMode.effectiveMode() != OrchestrationMode.ORCHESTRATION_MODE_SINGLE) {
+            toolCallDispatch.recordUncovered("MULTIAGENT");
+        }
         var orchestrationOutcome = multiAgentOrchestrationService.executeIfEnabled(
                 request,
                 finalUserPrompt,
@@ -822,7 +907,7 @@ public class AgentOrchestrator {
         boolean fallbackFromMultiAgent = orchestrationOutcome.fallbackTriggered();
 
         // 9. 构建 ReactAgent
-        ReactAgent agent = ReactAgent.builder()
+        var reactBuilder = ReactAgent.builder()
                 .name("hermes_agent")
                 .model(agentModel)
                 .hooks(ModelCallLimitHook.builder()
@@ -831,8 +916,14 @@ public class AgentOrchestrator {
                 .systemPrompt(systemPrompt)
                 .toolNames(toolNames)
                 .tools(guardedTools)
-                .resolver(guardedResolver)
-                .build();
+                .resolver(guardedResolver);
+        if (toolCallDispatch != null && toolCallDispatch.isAvailable()) {
+            reactBuilder.interceptors(toolCallDispatch);
+            if (toolCallDispatch.isEnforce()) {
+                reactBuilder.parallelToolExecution(false);
+            }
+        }
+        ReactAgent agent = reactBuilder.build();
 
         // 8. 执行推理并映射为 ChatEvent 流
         if (!enterCapacity(ACTIVE_REACT_RUNS, maxConcurrentReactRuns())) {
@@ -849,6 +940,7 @@ public class AgentOrchestrator {
         final ChatModel finalAgentModel = agentModel;
         final boolean finalFallbackFromMultiAgent = fallbackFromMultiAgent;
         final List<Message> finalMessagesSnapshot = new ArrayList<>(messages);
+        final ToolCallDispatch activeDfaDispatch = toolCallDispatch;
         Flux<NodeOutput> stream = agent.stream(messages);
 
         // 关键时序修复：必须在 stream.subscribe() 之前注册 onDispose！
@@ -928,7 +1020,8 @@ public class AgentOrchestrator {
                     log.error("Agent 推理错误", error);
                     String recovered = finalFallbackFromMultiAgent
                             ? callSingleModelFallback(finalAgentModel, supervisedSystemPrompt, finalMessagesSnapshot)
-                            : recoverReactFailure(request.getQuestion(), supervisedSystemPrompt, error, finalAgentModel);
+                            : recoverReactFailure(request.getQuestion(), supervisedSystemPrompt, error,
+                                    finalAgentModel, guardedTools, guardedResolver, activeDfaDispatch);
                     if (StrUtil.isBlank(recovered) && error instanceof NullPointerException) {
                         recovered = callSingleModelFallback(finalAgentModel, supervisedSystemPrompt, finalMessagesSnapshot);
                     }
@@ -1040,7 +1133,9 @@ public class AgentOrchestrator {
                 && request.getConversationId() > 0;
     }
 
-    private String planAndSolve(String question, String systemPrompt, List<ToolCallback> tools, ChatModel chatModel) {
+    private String planAndSolve(String question, String systemPrompt, List<ToolCallback> tools,
+                                ToolCallbackResolver effectiveResolver, ChatModel chatModel,
+                                ToolCallDispatch toolCallDispatch) {
         if (planSolveConfig == null || !planSolveConfig.isEnabled() || !isComplexQuestion(question)) {
             return null;
         }
@@ -1053,7 +1148,8 @@ public class AgentOrchestrator {
             if (tasks.isEmpty()) {
                 return null;
             }
-            Map<String, String> workerResults = executePlanTasks(tasks, systemPrompt, tools, chatModel);
+            Map<String, String> workerResults = executePlanTasks(tasks, systemPrompt, tools,
+                    effectiveResolver, chatModel, toolCallDispatch);
             if (workerResults.isEmpty()) {
                 return null;
             }
@@ -1069,6 +1165,20 @@ public class AgentOrchestrator {
             log.warn("Plan-and-Solve failed, falling back to ReAct", e);
             return null;
         }
+    }
+
+    static ToolCallbackResolver selectPlanResolver(ToolActionDfaMode mode, Set<String> allowedToolNames,
+                                                    ToolCallbackResolver originalResolver,
+                                                    ToolCallbackResolver bridgeResolver) {
+        if (mode == ToolActionDfaMode.OFF) {
+            return originalResolver;
+        }
+        ToolCallbackResolver effectiveResolver = bridgeResolver == null ? originalResolver : bridgeResolver;
+        if (mode != ToolActionDfaMode.ENFORCE) {
+            return effectiveResolver;
+        }
+        return name -> allowedToolNames.contains(name) && effectiveResolver != null
+                ? effectiveResolver.resolve(name) : null;
     }
 
     private boolean isComplexQuestion(String question) {
@@ -1133,9 +1243,11 @@ public class AgentOrchestrator {
     }
 
     private Map<String, String> executePlanTasks(List<PlanTask> tasks, String systemPrompt,
-                                                 List<ToolCallback> tools, ChatModel chatModel) {
+                                                 List<ToolCallback> tools, ToolCallbackResolver effectiveResolver,
+                                                 ChatModel chatModel, ToolCallDispatch toolCallDispatch) {
         Map<String, String> results = new LinkedHashMap<>();
         List<PlanTask> remaining = new ArrayList<>(tasks);
+        boolean serializeReadyTasks = toolCallDispatch != null && toolCallDispatch.isEnforce();
         while (!remaining.isEmpty()) {
             List<PlanTask> ready = remaining.stream()
                     .filter(task -> results.keySet().containsAll(task.dependencies()))
@@ -1143,30 +1255,18 @@ public class AgentOrchestrator {
             if (ready.isEmpty()) {
                 throw new IllegalStateException("Plan contains unresolved dependencies");
             }
+            if (serializeReadyTasks) {
+                for (PlanTask task : ready) {
+                    Map.Entry<String, String> entry = executePlanTask(
+                            task, systemPrompt, tools, effectiveResolver, chatModel, toolCallDispatch, results);
+                    results.put(entry.getKey(), entry.getValue());
+                }
+                remaining.removeAll(ready);
+                continue;
+            }
             List<CompletableFuture<Map.Entry<String, String>>> futures = ready.stream()
-                    .map(task -> CompletableFuture.supplyAsync(() -> {
-                        if (!enterCapacity(ACTIVE_PLAN_TASKS, maxConcurrentPlanTasks())) {
-                            return Map.entry(task.taskId(), "执行失败: capacity gate open");
-                        }
-                        try {
-                            LLM_CALL_SEMAPHORE.acquire();
-                            try {
-                                // 每次 plan 任务独立构造 WorkerAgent：禁止复用注册表中的历史 worker，
-                                // 否则会沿用首个请求的 systemPrompt/tools/chatModel，造成跨请求数据与凭据污染 (N4)
-                                WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker",
-                                        systemPrompt, tools, chatModel, resolver);
-                                String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(results)));
-                                return Map.entry(task.taskId(), result);
-                            } finally {
-                                LLM_CALL_SEMAPHORE.release();
-                            }
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            return Map.entry(task.taskId(), "执行失败: interrupted");
-                        } finally {
-                            leaveCapacity(ACTIVE_PLAN_TASKS);
-                        }
-                    }, PLAN_EXECUTOR))
+                    .map(task -> CompletableFuture.supplyAsync(() -> executePlanTask(
+                            task, systemPrompt, tools, effectiveResolver, chatModel, toolCallDispatch, results), PLAN_EXECUTOR))
                     .toList();
             for (CompletableFuture<Map.Entry<String, String>> future : futures) {
                 Map.Entry<String, String> entry = future.join();
@@ -1175,6 +1275,39 @@ public class AgentOrchestrator {
             remaining.removeAll(ready);
         }
         return results;
+    }
+
+    private Map.Entry<String, String> executePlanTask(PlanTask task, String systemPrompt,
+                                                       List<ToolCallback> tools,
+                                                       ToolCallbackResolver effectiveResolver,
+                                                       ChatModel chatModel,
+                                                       ToolCallDispatch toolCallDispatch,
+                                                       Map<String, String> previousResults) {
+        if (!enterCapacity(ACTIVE_PLAN_TASKS, maxConcurrentPlanTasks())) {
+            return Map.entry(task.taskId(), "执行失败: capacity gate open");
+        }
+        try {
+            LLM_CALL_SEMAPHORE.acquire();
+            try {
+                WorkerAgent worker = new WorkerAgent(task.worker(), "Plan task worker",
+                        systemPrompt, tools, chatModel, effectiveResolver);
+                if (toolCallDispatch != null && toolCallDispatch.isAvailable()) {
+                    worker = worker.withToolInterceptors(List.of(toolCallDispatch));
+                    if (toolCallDispatch.isEnforce()) {
+                        worker = worker.withSerialToolExecution(true);
+                    }
+                }
+                String result = worker.chat(task.objective(), Map.of("previousResults", new LinkedHashMap<>(previousResults)));
+                return Map.entry(task.taskId(), result);
+            } finally {
+                LLM_CALL_SEMAPHORE.release();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Map.entry(task.taskId(), "执行失败: interrupted");
+        } finally {
+            leaveCapacity(ACTIVE_PLAN_TASKS);
+        }
     }
 
     private String createPlannerSupervision(String question, String systemPrompt, ChatModel chatModel) {
@@ -1205,7 +1338,9 @@ public class AgentOrchestrator {
         }
     }
 
-    private String recoverReactFailure(String question, String systemPrompt, Throwable error, ChatModel chatModel) {
+    private String recoverReactFailure(String question, String systemPrompt, Throwable error, ChatModel chatModel,
+                                       List<ToolCallback> tools, ToolCallbackResolver effectiveResolver,
+                                       ToolCallDispatch toolCallDispatch) {
         if (planSolveConfig == null || !planSolveConfig.isEnabled() || !planSolveConfig.isRpReactEnabled()
                 || chatModel == null || !isComplexQuestion(question)) {
             return null;
@@ -1214,7 +1349,8 @@ public class AgentOrchestrator {
             // Self-Healing: 尝试重新规划并执行
             List<PlanTask> revisedTasks = createPlan(question, systemPrompt, chatModel);
             if (!revisedTasks.isEmpty()) {
-                Map<String, String> results = executePlanTasks(revisedTasks, systemPrompt, List.of(), chatModel);
+                Map<String, String> results = executePlanTasks(revisedTasks, systemPrompt, tools,
+                        effectiveResolver, chatModel, toolCallDispatch);
                 if (!results.isEmpty() && !hasFailedWorkerResult(results)) {
                     return aggregatePlanResults(question, systemPrompt, results, chatModel);
                 }
