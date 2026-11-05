@@ -5,7 +5,7 @@
 - 冻结任务书：`86-harness20-taskbook.md`
 - 任务书 `body_sha256`：`7bea2b054787513656b69fa3642883c5d1ffade67642ab1acd328c2f7166767f`
 - 任务书 `full_file_sha256`：`707241f8a13cafbe7056c98526b955e04226f731b67818f400824aa693f45cc7`；从 acceptance 目录执行 `shasum -a 256 -c 86-harness20-taskbook.md.sha256` 为 `OK`。
-- 当前状态：实施和当前工作树全量测试通过；提交后全新 APFS 检出复验待完成，复验通过后再建议 `CLOSED`。
+- 当前状态：Stage 20 `CLOSED`。实现提交 `7f817a693d19f708b56c48f257bb5de01229d19e` 已在全新本地 APFS 检出通过单步全量测试；本报告与日志校验和作为后续文档证据提交。
 - 本阶段新增 14 个 DFA/dispatch 主干 Java 文件、10 个定向测试文件；没有新增外部依赖。
 
 ## Checkpoint
@@ -58,7 +58,8 @@ Java 使用局部 `JAVA_HOME=/Users/achilles/.sdkman/candidates/java/21.0.5-tem`
 | AgentOrchestrator ReAct fake-model dispatch | `2 tests, 0 failures, 0 errors, 0 skipped` |
 | 初始工作树全量单步 `clean test`（回执清理修正前） | `2273 tests, 0 failures, 0 errors, 10 skipped`；`BUILD SUCCESS` |
 | 回执清理修正后定向测试 | `AgentOrchestratorToolActionDfaTest`：`2 tests, 0 failures, 0 errors, 0 skipped`；`BUILD SUCCESS` |
-| 初始全量日志 | `evidence/harness20/full-clean-test.log.gz`；gzip 完整性检查通过，模块测试数汇总为 2273 |
+| 实现提交的全新本地 APFS 检出 | Java `21.0.5`、Maven `3.9.16`；`2273 tests, 0 failures, 0 errors, 10 skipped`；`BUILD SUCCESS`；测试后工作区 clean |
+| APFS 全量日志 | `evidence/harness20/apfs-clean-test-7f817a69.log.gz`；gzip 完整性检查通过；SHA-256 `f60854d74ed4fde740bb1ee576f5802927e53370459ba33d43d8e03ef1886623` |
 | `git diff --check` | 通过 |
 
 全量命令：
@@ -72,5 +73,5 @@ mvn -B -ntp -f backend/pom.xml -pl tests -am clean test
 ## 限制与最终门禁
 
 - Stage 19 之前观测到的 proto/clean 间歇故障根因仍为 `UNPROVEN`；本次当前工作树 clean test 通过不构成根因修复证明。
-- 回执清理修正后，尚未做最终源码树的提交后全新本地 APFS 检出复验；在该复验单步 `clean test`、计数匹配且工作区 clean 前，不建议标记 `CLOSED`。
-- 复验通过后，Stage 20 结论限于：静态批准、request-local 工具转移守卫在覆盖矩阵列出的 ReAct、Plan worker 与 Kernel ENFORCE 路径具备确定性契约；不代表 MultiAgent/direct helper 全局覆盖、真实模型效果、业务语义安全、外部 exactly-once 或生产可用性。
+- APFS 复验针对实现提交 `7f817a69`；后续仅报告和证据校验和文档进入单独提交，Java 源码与测试未再变化。
+- Stage 20 结论限于：静态批准、request-local 工具转移守卫在覆盖矩阵列出的 ReAct、Plan worker 与 Kernel ENFORCE 路径具备确定性契约；不代表 MultiAgent/direct helper 全局覆盖、真实模型效果、业务语义安全、外部 exactly-once 或生产可用性。
