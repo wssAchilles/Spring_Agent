@@ -4,10 +4,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class DefaultExperienceLibrary implements ExperienceLibrary {
     private static final double RETIRE_THRESHOLD = 0.20;
     private final ExperienceStore store;
+    private final ConcurrentHashMap<ExperienceDomain, ReentrantLock> mutationLocks = new ConcurrentHashMap<>();
 
     public DefaultExperienceLibrary(ExperienceStore store) {
         this.store = Objects.requireNonNull(store, "store");
@@ -37,10 +40,84 @@ public final class DefaultExperienceLibrary implements ExperienceLibrary {
     }
 
     @Override
+    public java.util.Optional<ExperienceEntry> find(ExperienceDomain domain, String entryId) {
+        return store.find(Objects.requireNonNull(domain, "domain"), entryId);
+    }
+
+    @Override
     public ExperienceEntry recordExperience(ExperienceEntry entry) {
         Objects.requireNonNull(entry, "entry");
-        ExperienceLeakageGuard.assertSafeEntry(entry);
-        return store.save(entry);
+        ReentrantLock lock = lock(entry.domain());
+        lock.lock();
+        try {
+            ExperienceLeakageGuard.assertSafeEntry(entry);
+            return store.save(entry);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public ExperienceEntry adoptRuntimeStrategy(ExperienceEntry candidate) {
+        Objects.requireNonNull(candidate, "candidate");
+        ReentrantLock lock = lock(candidate.domain());
+        lock.lock();
+        try {
+            ExperienceEntry current = store.find(candidate.domain(), candidate.entryId()).orElse(null);
+            if (current == null) {
+                ExperienceLeakageGuard.assertSafeEntry(candidate);
+                return store.save(candidate);
+            }
+            if (current.retired()) {
+                throw new IllegalStateException("cannot auto-adopt a retired strategy");
+            }
+            ExperienceEntry confirmed = current.withFeedback(true, candidate.evidenceRef(),
+                    candidate.sourceRunId(), candidate.harnessFingerprint());
+            ExperienceLeakageGuard.assertSafeEntry(confirmed);
+            return store.save(confirmed);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public ExperienceEntry recordFeedback(ExperienceDomain domain, String entryId, boolean success,
+                                          EvidenceReference evidence, String runId,
+                                          String harnessFingerprint) {
+        Objects.requireNonNull(domain, "domain");
+        Objects.requireNonNull(evidence, "evidence");
+        ReentrantLock lock = lock(domain);
+        lock.lock();
+        try {
+            ExperienceEntry current = store.find(domain, entryId)
+                    .orElseThrow(() -> new IllegalArgumentException("unknown experience " + entryId));
+            if (current.retired()) {
+                throw new IllegalStateException("cannot update retired experience " + entryId);
+            }
+            ExperienceEntry updated = current.withFeedback(success, evidence, runId, harnessFingerprint);
+            ExperienceLeakageGuard.assertSafeEntry(updated);
+            return store.save(updated);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public ExperienceEntry restore(ExperienceDomain domain, String entryId, int version) {
+        Objects.requireNonNull(domain, "domain");
+        ReentrantLock lock = lock(domain);
+        lock.lock();
+        try {
+            ExperienceEntry current = store.find(domain, entryId)
+                    .orElseThrow(() -> new IllegalArgumentException("unknown experience " + entryId));
+            ExperienceEntry archived = store.findVersion(domain, entryId, version)
+                    .orElseThrow(() -> new IllegalArgumentException("unknown experience version " + version));
+            ExperienceEntry restored = archived.restoredAsVersion(current.version() + 1);
+            ExperienceLeakageGuard.assertSafeEntry(restored);
+            return store.save(restored);
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -49,13 +126,23 @@ public final class DefaultExperienceLibrary implements ExperienceLibrary {
         if (retirementReason == null || retirementReason.isBlank()) {
             throw new IllegalArgumentException("retirementReason is required");
         }
-        ExperienceEntry current = store.find(domain, entryId).orElse(null);
-        if (current == null || current.retired()) {
-            return false;
+        ReentrantLock lock = lock(domain);
+        lock.lock();
+        try {
+            ExperienceEntry current = store.find(domain, entryId).orElse(null);
+            if (current == null || current.retired()) {
+                return false;
+            }
+            ExperienceEntry updated = current.retired(retirementReason);
+            ExperienceLeakageGuard.assertSafeEntry(updated);
+            store.save(updated);
+            return true;
+        } finally {
+            lock.unlock();
         }
-        ExperienceEntry updated = current.retired(retirementReason);
-        ExperienceLeakageGuard.assertSafeEntry(updated);
-        store.save(updated);
-        return true;
+    }
+
+    private ReentrantLock lock(ExperienceDomain domain) {
+        return mutationLocks.computeIfAbsent(domain, ignored -> new ReentrantLock());
     }
 }

@@ -96,6 +96,41 @@ public final class FileSystemExperienceStore implements ExperienceStore {
     }
 
     @Override
+    public Optional<ExperienceEntry> findVersion(ExperienceDomain domain, String entryId, int version) {
+        Objects.requireNonNull(domain, "domain");
+        validateEntryId(entryId);
+        if (version < 1) {
+            return Optional.empty();
+        }
+        ReentrantLock lock = lock(domain);
+        lock.lock();
+        try {
+            checkNotSymlink(root);
+            Path domainPath = domainPath(domain);
+            if (!Files.exists(domainPath)) {
+                return Optional.empty();
+            }
+            checkNotSymlink(domainPath);
+            verifyDomain(domainPath, domain);
+            Path entryPath = entryPath(domainPath, entryId);
+            Path archivedJson = entryPath.resolve("versions").resolve(Integer.toString(version)).resolve("ENTRY.json");
+            if (!Files.exists(archivedJson)) {
+                return Optional.empty();
+            }
+            checkNotSymlink(entryPath);
+            checkNotSymlink(entryPath.resolve("versions"));
+            checkNotSymlink(archivedJson.getParent());
+            checkNotSymlink(archivedJson);
+            return Files.isRegularFile(archivedJson)
+                    ? Optional.of(readEntry(archivedJson, domain)) : Optional.empty();
+        } catch (IOException error) {
+            throw new UncheckedIOException("Cannot read experience version " + version, error);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
     public List<ExperienceEntry> list(ExperienceDomain domain) {
         Objects.requireNonNull(domain, "domain");
         ReentrantLock lock = lock(domain);

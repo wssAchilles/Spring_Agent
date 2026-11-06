@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -35,6 +36,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class AgentOrchestratorPlanResolverTest {
+    @Test
+    void workerAgentTypedResultPreservesLegacyFailureTextAsFailure() {
+        ChatModel model = mock(ChatModel.class);
+        when(model.call(any(Prompt.class))).thenReturn(new ChatResponse(
+                List.of(new Generation(new AssistantMessage("Exception: model failure")))));
+        WorkerAgent worker = new WorkerAgent("typed-worker", "fixture worker", "prompt",
+                List.of(), model, name -> null);
+
+        WorkerAgent.ExecutionResult result = worker.execute("run fixture", Map.of());
+
+        assertFalse(result.succeeded());
+        assertEquals("Exception: model failure", result.failureCode());
+        assertNull(result.output());
+    }
+
     @Test
     void offKeepsOriginalResolver() {
         ToolCallbackResolver original = name -> null;

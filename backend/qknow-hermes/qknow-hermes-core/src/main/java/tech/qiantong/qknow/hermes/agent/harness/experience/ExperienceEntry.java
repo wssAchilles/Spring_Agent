@@ -19,7 +19,10 @@ public record ExperienceEntry(
         int version,
         boolean retired,
         String retirementReason,
-        Instant createdAt
+        Instant createdAt,
+        int feedbackAttempts,
+        int feedbackSuccesses,
+        int consecutiveFailures
 ) {
     public enum AttributionStatus {
         NOT_APPLICABLE,
@@ -51,6 +54,10 @@ public record ExperienceEntry(
         if (version < 1) {
             throw new IllegalArgumentException("version must be positive");
         }
+        if (feedbackAttempts < 0 || feedbackSuccesses < 0 || feedbackSuccesses > feedbackAttempts
+                || consecutiveFailures < 0 || consecutiveFailures > feedbackAttempts - feedbackSuccesses) {
+            throw new IllegalArgumentException("feedback counts must satisfy 0 <= successes <= attempts");
+        }
         if (disposition == ExperienceDisposition.INVALID_FIXTURE
                 && attributionStatus != AttributionStatus.FIXTURE_CONFIRMED) {
             throw new IllegalArgumentException("INVALID_FIXTURE requires confirmed attribution");
@@ -66,6 +73,27 @@ public record ExperienceEntry(
         }
     }
 
+    public ExperienceEntry(String entryId, ExperienceDomain domain, String cue, String lesson,
+                           String evidenceSummary, EvidenceReference evidenceRef, double confidence,
+                           String sourceRunId, String harnessFingerprint, ExperienceDisposition disposition,
+                           boolean failureObserved, AttributionStatus attributionStatus, int version,
+                           boolean retired, String retirementReason, Instant createdAt) {
+        this(entryId, domain, cue, lesson, evidenceSummary, evidenceRef, confidence, sourceRunId,
+                harnessFingerprint, disposition, failureObserved, attributionStatus, version, retired,
+                retirementReason, createdAt, 0, 0, 0);
+    }
+
+    public ExperienceEntry(String entryId, ExperienceDomain domain, String cue, String lesson,
+                           String evidenceSummary, EvidenceReference evidenceRef, double confidence,
+                           String sourceRunId, String harnessFingerprint, ExperienceDisposition disposition,
+                           boolean failureObserved, AttributionStatus attributionStatus, int version,
+                           boolean retired, String retirementReason, Instant createdAt,
+                           int feedbackAttempts, int feedbackSuccesses) {
+        this(entryId, domain, cue, lesson, evidenceSummary, evidenceRef, confidence, sourceRunId,
+                harnessFingerprint, disposition, failureObserved, attributionStatus, version, retired,
+                retirementReason, createdAt, feedbackAttempts, feedbackSuccesses, 0);
+    }
+
     public boolean isSoftRetired(double retireThreshold) {
         return retired || confidence < retireThreshold
                 || disposition == ExperienceDisposition.INVALID_FIXTURE
@@ -79,6 +107,27 @@ public record ExperienceEntry(
     public ExperienceEntry retired(String reason) {
         return new ExperienceEntry(entryId, domain, cue, lesson, evidenceSummary, evidenceRef,
                 confidence, sourceRunId, harnessFingerprint, disposition, failureObserved,
-                attributionStatus, version + 1, true, reason, createdAt);
+                attributionStatus, version + 1, true, reason, createdAt, feedbackAttempts, feedbackSuccesses,
+                consecutiveFailures);
+    }
+
+    public ExperienceEntry withFeedback(boolean success, EvidenceReference latestEvidence,
+                                        String latestRunId, String latestHarnessFingerprint) {
+        int attempts = feedbackAttempts + 1;
+        int successes = feedbackSuccesses + (success ? 1 : 0);
+        int failuresInARow = success ? 0 : consecutiveFailures + 1;
+        boolean shouldRetire = failuresInARow >= 3;
+        return new ExperienceEntry(entryId, domain, cue, lesson, evidenceSummary, latestEvidence,
+                (successes + 1.0) / (attempts + 2.0), latestRunId, latestHarnessFingerprint,
+                disposition, false, attributionStatus, version + 1, shouldRetire,
+                shouldRetire ? "runtime_strategy_failed_3_consecutive_times" : null,
+                createdAt, attempts, successes, failuresInARow);
+    }
+
+    public ExperienceEntry restoredAsVersion(int nextVersion) {
+        return new ExperienceEntry(entryId, domain, cue, lesson, evidenceSummary, evidenceRef,
+                confidence, sourceRunId, harnessFingerprint, disposition, failureObserved,
+                attributionStatus, nextVersion, false, null, createdAt,
+                feedbackAttempts, feedbackSuccesses, consecutiveFailures);
     }
 }

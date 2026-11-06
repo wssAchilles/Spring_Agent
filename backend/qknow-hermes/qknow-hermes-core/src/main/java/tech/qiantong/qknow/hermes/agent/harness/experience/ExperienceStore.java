@@ -8,5 +8,7 @@ public interface ExperienceStore {
 
     Optional<ExperienceEntry> find(ExperienceDomain domain, String entryId);
 
+    Optional<ExperienceEntry> findVersion(ExperienceDomain domain, String entryId, int version);
+
     List<ExperienceEntry> list(ExperienceDomain domain);
 }

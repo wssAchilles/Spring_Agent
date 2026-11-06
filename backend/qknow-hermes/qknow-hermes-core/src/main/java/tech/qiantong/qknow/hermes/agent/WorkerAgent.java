@@ -106,6 +106,14 @@ public class WorkerAgent extends BaseAgent {
 
     @Override
     public String chat(String question, Map<String, Object> context) {
+        ExecutionResult result = execute(question, context);
+        if (result.succeeded()) {
+            return result.output();
+        }
+        return "执行失败: " + getName() + " - " + result.failureCode();
+    }
+
+    public ExecutionResult execute(String question, Map<String, Object> context) {
         try {
             List<Message> messages = new ArrayList<>();
 
@@ -135,13 +143,25 @@ public class WorkerAgent extends BaseAgent {
             Object result = reactAgent.call(messages);
 
             String text = extractText(result);
-            if (text != null && (text.startsWith("Exception:") || text.startsWith("Empty response from model"))) {
-                return "执行失败: " + getName() + " - " + text;
-            }
-            return text;
+            return isLegacyFailureText(text)
+                    ? ExecutionResult.failed(text) : ExecutionResult.succeeded(text);
         } catch (Exception e) {
             log.error("WorkerAgent {} 执行失败", getName(), e);
-            return "执行失败: " + getName() + " - " + e.getMessage();
+            return ExecutionResult.failed(e.getMessage());
+        }
+    }
+
+    private boolean isLegacyFailureText(String text) {
+        return text != null && (text.startsWith("Exception:") || text.startsWith("Empty response from model"));
+    }
+
+    public record ExecutionResult(boolean succeeded, String output, String failureCode) {
+        public static ExecutionResult succeeded(String output) {
+            return new ExecutionResult(true, output, null);
+        }
+
+        public static ExecutionResult failed(String failureCode) {
+            return new ExecutionResult(false, null, failureCode == null ? "EXECUTION_FAILED" : failureCode);
         }
     }
 

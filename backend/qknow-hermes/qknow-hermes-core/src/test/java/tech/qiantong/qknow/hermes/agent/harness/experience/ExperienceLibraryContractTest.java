@@ -3,6 +3,7 @@ package tech.qiantong.qknow.hermes.agent.harness.experience;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -42,6 +43,28 @@ class ExperienceLibraryContractTest {
                 .matchedEntries().getFirst().entryId());
         assertFalse(library.recallForProposer(replay, "abstract reusable cue", 10).hasRelevantExperience());
         assertEquals(1, store.list(replay).size());
+    }
+
+    @Test
+    void runtimeScopesRemainIsolatedAcrossBotsAndKnowledgeSets() {
+        ExperienceDomain noKnowledge = ExperienceDomain.cognitiveScope(101, List.of());
+        ExperienceDomain otherBot = ExperienceDomain.cognitiveScope(102, List.of());
+        ExperienceDomain oneKnowledge = ExperienceDomain.cognitiveScope(101, List.of("kb-alpha"));
+        ExperienceDomain anotherKnowledge = ExperienceDomain.cognitiveScope(101, List.of("kb-beta"));
+        ExperienceDomain sameKnowledgeSet = ExperienceDomain.cognitiveScope(101,
+                List.of("kb-beta", "kb-alpha", "kb-alpha"));
+        ExperienceDomain reorderedKnowledgeSet = ExperienceDomain.cognitiveScope(101,
+                List.of("kb-alpha", "kb-beta"));
+        ExperienceDomain delimiterInOneId = ExperienceDomain.cognitiveScope(101, List.of("alpha\nbeta"));
+        ExperienceDomain twoIds = ExperienceDomain.cognitiveScope(101, List.of("alpha", "beta"));
+
+        assertNotEquals(noKnowledge.toSlug(), otherBot.toSlug());
+        assertNotEquals(oneKnowledge.toSlug(), anotherKnowledge.toSlug());
+        assertNotEquals(noKnowledge.toSlug(), oneKnowledge.toSlug());
+        assertNotEquals(delimiterInOneId.toSlug(), twoIds.toSlug());
+        assertEquals(reorderedKnowledgeSet.toSlug(), sameKnowledgeSet.toSlug());
+        assertFalse(noKnowledge.isUnscopedReplay());
+        assertEquals(0, noKnowledge.knowledgeBaseId());
     }
 
     @Test
@@ -85,6 +108,68 @@ class ExperienceLibraryContractTest {
         ExperienceLibrary linked = new DefaultExperienceLibrary(new FileSystemExperienceStore(link));
         assertThrows(java.io.UncheckedIOException.class, () -> linked.recordExperience(safe));
         assertFalse(Files.exists(target.resolve(domain.toSlug())));
+    }
+
+    @Test
+    void runtimeFeedbackRetiresAfterThreeConsecutiveFailuresAndRestoresArchivedVersion() {
+        ExperienceDomain domain = new ExperienceDomain(101, 202, "finance");
+        FileSystemExperienceStore store = new FileSystemExperienceStore(temp);
+        ExperienceLibrary library = new DefaultExperienceLibrary(store);
+        ExperienceEntry initial = entry("runtime-strategy", domain, ExperienceDisposition.ADOPTED, false);
+        library.recordExperience(initial);
+        EvidenceReference nextEvidence = new EvidenceReference("cognitive-2", "request-2",
+                "a".repeat(64), "COGNITIVE_EVOLUTION_RUNTIME");
+
+        ExperienceEntry first = library.recordFeedback(domain, initial.entryId(), false,
+                nextEvidence, "request-2", "b".repeat(64));
+        assertFalse(first.retired());
+        assertEquals(1, first.feedbackAttempts());
+        assertEquals(0, first.feedbackSuccesses());
+        assertEquals(1, first.consecutiveFailures());
+        assertTrue(first.confidence() > 0.20);
+
+        library.recordFeedback(domain, initial.entryId(), false, nextEvidence,
+                "request-3", "c".repeat(64));
+        ExperienceEntry third = library.recordFeedback(domain, initial.entryId(), false,
+                nextEvidence, "request-4", "d".repeat(64));
+        assertTrue(third.retired());
+        assertEquals(3, third.feedbackAttempts());
+        assertEquals(0, third.feedbackSuccesses());
+        assertEquals(3, third.consecutiveFailures());
+
+        ExperienceEntry restored = library.restore(domain, initial.entryId(), 1);
+        assertEquals(5, restored.version());
+        assertFalse(restored.retired());
+        assertEquals(initial.lesson(), restored.lesson());
+        assertEquals(0, restored.feedbackAttempts());
+        assertEquals(0, restored.consecutiveFailures());
+    }
+
+    @Test
+    void successfulFeedbackResetsConsecutiveFailureRetirementCounter() {
+        ExperienceDomain domain = new ExperienceDomain(101, 202, "finance");
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        ExperienceEntry initial = entry("intermittent-strategy", domain, ExperienceDisposition.ADOPTED, false);
+        library.recordExperience(initial);
+
+        EvidenceReference evidence = new EvidenceReference("cognitive-reset", "request-reset",
+                "c".repeat(64), "COGNITIVE_EVOLUTION_RUNTIME");
+        library.recordFeedback(domain, initial.entryId(), false, evidence, "request-fail-1", "d".repeat(64));
+        ExperienceEntry secondFailure = library.recordFeedback(domain, initial.entryId(), false, evidence,
+                "request-fail-2", "e".repeat(64));
+        assertEquals(2, secondFailure.consecutiveFailures());
+
+        ExperienceEntry recovered = library.recordFeedback(domain, initial.entryId(), true, evidence,
+                "request-success", "f".repeat(64));
+        assertEquals(0, recovered.consecutiveFailures());
+        assertFalse(recovered.retired());
+
+        library.recordFeedback(domain, initial.entryId(), false, evidence,
+                "request-fail-3", "1".repeat(64));
+        ExperienceEntry finalFailure = library.recordFeedback(domain, initial.entryId(), false, evidence,
+                "request-fail-4", "2".repeat(64));
+        assertEquals(2, finalFailure.consecutiveFailures());
+        assertFalse(finalFailure.retired());
     }
 
     @Test

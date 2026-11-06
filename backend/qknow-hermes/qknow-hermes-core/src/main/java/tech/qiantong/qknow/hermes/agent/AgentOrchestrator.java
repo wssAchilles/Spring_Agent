@@ -39,7 +39,12 @@ import tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction.ToolAct
 import tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction.ToolActionDfaReceipt;
 import tech.qiantong.qknow.hermes.agent.harness.neurosymbolic.toolaction.ToolCallDispatch;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
+import tech.qiantong.qknow.hermes.config.CognitiveEvolutionConfig;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
+import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
+import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveSelfEvolutionEngine;
+import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
+import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveTrace;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
 import tech.qiantong.qknow.hermes.eval.RagasEvaluator;
 import tech.qiantong.qknow.hermes.judge.AiJudgeService;
@@ -125,6 +130,9 @@ public class AgentOrchestrator {
     private final tech.qiantong.qknow.hermes.config.ToolRoutingConfig toolRoutingConfig;
     private final MemoryManager memoryManager;
 
+    private CognitiveEvolutionConfig cognitiveEvolutionConfig;
+    private CognitiveSelfEvolutionEngine cognitiveSelfEvolutionEngine;
+
     private HermesHarnessAssembler harnessAssembler = new HermesHarnessAssembler();
     private HarnessKernelBridge harnessKernelBridge = HarnessKernelBridge.disabledInstance();
     private PipelineRuntimeBridge pipelineRuntimeBridge = PipelineRuntimeBridge.disabledInstance();
@@ -189,6 +197,19 @@ public class AgentOrchestrator {
             new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.Map<String, HarnessEvidenceRecord.ExecutionMode> requestExecutionModes =
             new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, CognitiveTrace> latestCognitiveTraceMap =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    @Autowired(required = false)
+    public void setCognitiveEvolution(CognitiveEvolutionConfig config,
+                                     CognitiveSelfEvolutionEngine engine) {
+        this.cognitiveEvolutionConfig = config;
+        this.cognitiveSelfEvolutionEngine = engine;
+    }
+
+    public CognitiveTrace getLatestCognitiveTrace(String requestId) {
+        return requestId == null ? null : latestCognitiveTraceMap.get(requestId);
+    }
 
     public HarnessEvidenceRecord getLatestEvidence(String requestId) {
         if (requestId == null) {
@@ -813,7 +834,61 @@ public class AgentOrchestrator {
             return;
         }
 
-        String plannerSupervision = createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
+        boolean cognitivePathRequested = cognitiveEvolutionConfig != null
+                && cognitiveEvolutionConfig.isEnabled()
+                && cognitiveSelfEvolutionEngine != null
+                && orchestrationMode.effectiveMode() == OrchestrationMode.ORCHESTRATION_MODE_SINGLE
+                && isComplexQuestion(request.getQuestion());
+        if (cognitivePathRequested) {
+            ExperienceDomain domain = cognitiveExperienceDomain(request);
+            int maxTasks = planSolveConfig == null ? 5 : Math.max(1, planSolveConfig.getMaxTasks());
+            int maxRepairs = Math.max(0, cognitiveEvolutionConfig.getMaxRepairAttempts());
+            List<ToolCallback> cognitiveTools = bridgeTools;
+            ToolCallbackResolver cognitiveResolver = planResolver;
+            ChatModel cognitiveModel = chatModel;
+            ToolCallDispatch cognitiveDispatch = toolCallDispatch;
+            List<Message> cognitiveHistory = List.copyOf(messages);
+            var cognitiveResult = cognitiveSelfEvolutionEngine.execute(
+                    request.getRequestId(), finalUserPrompt, systemPrompt, cognitiveModel, domain,
+                    harnessFingerprint, maxTasks, maxRepairs,
+                    (step, workerSystemPrompt, previousResults) -> executeCognitiveStep(
+                            step.stepId(), step.objective(), workerSystemPrompt, cognitiveTools,
+                            cognitiveResolver, cognitiveModel, cognitiveDispatch, cognitiveHistory, previousResults));
+            rememberCognitiveTrace(request.getRequestId(), cognitiveResult.trace());
+            if (cognitiveResult.status() == CognitiveExecutionResult.Status.COMPLETED) {
+                String answer = cognitiveResult.answer() == null ? "" : cognitiveResult.answer();
+                fullAnswer.append(answer);
+                HarnessUsageSnapshot usage = meteredModel.snapshot();
+                long pt = usage.promptTokens() > 0 ? usage.promptTokens() : estimateTokenCount(finalUserPrompt);
+                long ct = usage.completionTokens() > 0 ? usage.completionTokens() : estimateTokenCount(answer);
+                promptTokens.set(pt);
+                completionTokens.set(ct);
+                evidenceCollector.recordFinalOutput(answer);
+                evidenceCollector.recordCostAndTokens(pt + ct, calculateEstimatedCostCny(pt, ct));
+                recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                        request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION)));
+                unregisterRequestVoucher(request.getRequestId());
+                emitSingleAnswer(request, emitter, answer, effectiveVoucher);
+                return;
+            }
+            if (cognitiveResult.status() == CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION) {
+                String failureCode = "COGNITIVE_EVOLUTION_FAILED:" + cognitiveResult.trace().terminationCode();
+                evidenceCollector.recordFinalOutput(failureCode);
+                HarnessUsageSnapshot usage = meteredModel.snapshot();
+                long pt = usage.promptTokens() > 0 ? usage.promptTokens() : estimateTokenCount(finalUserPrompt);
+                evidenceCollector.recordCostAndTokens(pt, calculateEstimatedCostCny(pt, 0L));
+                recordEvidence(evidenceCollector.finalizeEvidence(executionModeFor(
+                        request.getRequestId(), HarnessEvidenceRecord.ExecutionMode.REAL_PRODUCTION)));
+                unregisterRequestVoucher(request.getRequestId());
+                emitter.next(ChatEvent.newBuilder().setRequestId(request.getRequestId())
+                        .setError(ErrorEvent.newBuilder().setCode(500).setMessage(failureCode).build()).build());
+                emitter.complete();
+                return;
+            }
+        }
+
+        String plannerSupervision = cognitivePathRequested ? ""
+                : createPlannerSupervision(request.getQuestion(), systemPrompt, chatModel);
         if (StrUtil.isNotBlank(plannerSupervision)) {
             systemPrompt = systemPrompt + plannerSupervision;
         }
@@ -821,7 +896,7 @@ public class AgentOrchestrator {
                 harnessVersion, harnessFingerprint,
                 systemPrompt.length() > 500 ? systemPrompt.substring(0, 500) + "..." : systemPrompt);
 
-        String planAnswer = planAndSolve(request.getQuestion(), systemPrompt, bridgeTools,
+        String planAnswer = cognitivePathRequested ? null : planAndSolve(request.getQuestion(), systemPrompt, bridgeTools,
                 planResolver, chatModel, toolCallDispatch);
         if (planAnswer != null) {
             fullAnswer.append(planAnswer);
@@ -1164,6 +1239,62 @@ public class AgentOrchestrator {
         } catch (Exception e) {
             log.warn("Plan-and-Solve failed, falling back to ReAct", e);
             return null;
+        }
+    }
+
+    private CognitiveSelfEvolutionEngine.StepExecution executeCognitiveStep(
+            String stepId, String objective, String systemPrompt, List<ToolCallback> tools,
+            ToolCallbackResolver effectiveResolver, ChatModel chatModel, ToolCallDispatch toolCallDispatch,
+            List<Message> history, Map<String, String> previousResults) {
+        if (!enterCapacity(ACTIVE_PLAN_TASKS, maxConcurrentPlanTasks())) {
+            return CognitiveSelfEvolutionEngine.StepExecution.failed("CAPACITY_GATE_OPEN");
+        }
+        try {
+            LLM_CALL_SEMAPHORE.acquire();
+            try {
+                WorkerAgent worker = new WorkerAgent(stepId, "Cognitive self-evolution task",
+                        systemPrompt, tools, chatModel, effectiveResolver);
+                if (toolCallDispatch != null && toolCallDispatch.isAvailable()) {
+                    worker = worker.withToolInterceptors(List.of(toolCallDispatch));
+                    if (toolCallDispatch.isEnforce()) {
+                        worker = worker.withSerialToolExecution(true);
+                    }
+                }
+                WorkerAgent.ExecutionResult result = worker.execute(objective,
+                        Map.of("history", history, "previousResults", new LinkedHashMap<>(previousResults)));
+                return result.succeeded()
+                        ? CognitiveSelfEvolutionEngine.StepExecution.success(result.output())
+                        : CognitiveSelfEvolutionEngine.StepExecution.failed(result.failureCode());
+            } finally {
+                LLM_CALL_SEMAPHORE.release();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return CognitiveSelfEvolutionEngine.StepExecution.failed("INTERRUPTED");
+        } finally {
+            leaveCapacity(ACTIVE_PLAN_TASKS);
+        }
+    }
+
+    private ExperienceDomain cognitiveExperienceDomain(ChatRequest request) {
+        if (request.getBotId() <= 0) {
+            return null;
+        }
+        List<String> knowledgeIds = new ArrayList<>(request.getKnowledgeIdsList());
+        request.getRagContextsList().stream().map(RAGContext::getKnowledgeId).forEach(knowledgeIds::add);
+        return ExperienceDomain.cognitiveScope(request.getBotId(), knowledgeIds);
+    }
+
+    private void rememberCognitiveTrace(String requestId, CognitiveTrace trace) {
+        if (requestId == null || trace == null) {
+            return;
+        }
+        latestCognitiveTraceMap.put(requestId, trace);
+        if (latestCognitiveTraceMap.size() > 100) {
+            java.util.Iterator<String> iterator = latestCognitiveTraceMap.keySet().iterator();
+            if (iterator.hasNext()) {
+                latestCognitiveTraceMap.remove(iterator.next());
+            }
         }
     }
 
