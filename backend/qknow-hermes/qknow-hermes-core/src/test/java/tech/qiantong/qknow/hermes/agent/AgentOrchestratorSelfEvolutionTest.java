@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -36,7 +37,7 @@ class AgentOrchestratorSelfEvolutionTest {
     @TempDir Path temp;
 
     @Test
-    void enabledEvolutionOwnsComplexRequestAndAutomaticallyPersistsStrategy() {
+    void missingExpectedOutcomePreventsModelSelfEvaluationFromAdoptingStrategy() {
         ChatModelFactory factory = mock(ChatModelFactory.class);
         ChatModel model = mock(ChatModel.class);
         when(factory.getChatModel(anyString(), any(), any(), anyString())).thenReturn(model);
@@ -88,12 +89,12 @@ class AgentOrchestratorSelfEvolutionTest {
         assertEquals(4, modelCalls.get(), "old planner supervision and plan-and-solve must not run");
         var trace = orchestrator.getLatestCognitiveTrace(request.getRequestId());
         assertNotNull(trace);
-        assertEquals("STRATEGY_ADOPTED", trace.states().get(trace.states().size() - 2));
+        assertEquals("OUTCOME_VERIFIED_UNKNOWN", trace.terminationCode());
+        assertEquals("REQUIRED_EVIDENCE_MISSING", trace.outcomeSignal().reasonCode());
+        assertTrue(trace.states().contains("STRATEGY_ADOPTION_DEFERRED_OUTCOME_UNKNOWN"));
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(71, List.of());
         var persisted = new FileSystemExperienceStore(temp).list(domain);
-        assertEquals(1, persisted.size());
-        assertEquals("For repeated analysis, compare each claim with its supporting source.",
-                persisted.getFirst().lesson());
+        assertTrue(persisted.isEmpty());
     }
 
     @Test

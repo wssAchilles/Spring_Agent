@@ -17,6 +17,10 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.PlanStep;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.ExpectedOutcome;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeSignal;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeTaskFamily;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.TaskOutcomeSpec;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,7 +51,7 @@ class CognitiveSelfEvolutionEngineTest {
                         + "{\"stepId\":\"s2\",\"objective\":\"update\",\"dependencies\":[\"s1\"]}]}",
                 "{\"accepted\":false,\"repair\":{\"stepId\":\"s2\",\"objective\":\"validate then update\"},"
                         + "\"strategy\":\"" + lesson + "\"}",
-                "completed output",
+                "{\"completed\":true}",
                 "{\"accepted\":true,\"repair\":null,\"strategy\":\"Keep a concise task checklist.\"}");
         AtomicInteger firstCalls = new AtomicInteger();
         AtomicReference<String> repairPrompt = new AtomicReference<>();
@@ -68,9 +72,10 @@ class CognitiveSelfEvolutionEngineTest {
                     firstCalls.incrementAndGet();
                     assertEquals("inspected", previous.get("s1"));
                     return CognitiveSelfEvolutionEngine.StepExecution.success("updated");
-                });
+                }, structuredOutcome("{\"assertions\":{\"completed\":{\"type\":\"BOOLEAN\",\"equals\":true}}}"));
 
         assertEquals(CognitiveExecutionResult.Status.COMPLETED, first.status());
+        assertEquals(OutcomeSignal.Status.PASS, first.trace().outcomeSignal().status());
         assertEquals(3, firstCalls.get());
         assertTrue(repairPrompt.get().contains(lesson));
         assertEquals(2, first.trace().reflections().size());
@@ -94,13 +99,63 @@ class CognitiveSelfEvolutionEngineTest {
                 });
 
         assertEquals(CognitiveExecutionResult.Status.COMPLETED, next.status());
+        assertEquals(OutcomeSignal.Status.UNKNOWN, next.trace().outcomeSignal().status());
         assertTrue(reusedPrompt.get().contains(lesson));
         ExperienceEntryView feedback = ExperienceEntryView.from(
                 library.find(domain, adopted.getFirst().entryId()).orElseThrow());
-        assertEquals(1, feedback.attempts());
-        assertEquals(1, feedback.successes());
-        assertTrue(library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().stream()
+        assertEquals(0, feedback.attempts());
+        assertEquals(0, feedback.successes());
+        assertFalse(library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().stream()
                 .anyMatch(entry -> entry.lesson().equals("Another candidate lesson that is not yet applied.")));
+    }
+
+    @Test
+    void failedIndependentOutcomeRejectsCandidateAndRecordsNegativeFeedback() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(72, List.of("kb-outcomes"));
+        ExperienceEntry existing = strategy("existing-outcome-strategy", domain, 0, 0, 0.8);
+        library.recordExperience(existing);
+        ChatModel model = model(
+                "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}",
+                "{\"done\":false}",
+                "{\"accepted\":true,\"repair\":null,\"strategy\":\"Do not adopt this failing candidate.\"}");
+
+        CognitiveExecutionResult result = engine.execute("request-fail-outcome", "run task", "prompt", model,
+                domain, "f".repeat(64), 3, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("checked"),
+                structuredOutcome("{\"assertions\":{\"done\":{\"type\":\"BOOLEAN\",\"equals\":true}}}"));
+
+        assertEquals(OutcomeSignal.Status.FAIL, result.trace().outcomeSignal().status());
+        assertEquals("OUTCOME_VERIFIED_FAIL", result.trace().terminationCode());
+        ExperienceEntry updated = library.find(domain, existing.entryId()).orElseThrow();
+        assertEquals(1, updated.feedbackAttempts());
+        assertEquals(0, updated.feedbackSuccesses());
+        assertFalse(library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().stream()
+                .anyMatch(entry -> entry.lesson().equals("Do not adopt this failing candidate.")));
+    }
+
+    @Test
+    void toolStateOutcomeUsesTheDeclaredStepOutput() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(73, List.of("kb-tool-outcome"));
+        ChatModel model = model(
+                "{\"steps\":[{\"stepId\":\"tool-step\",\"objective\":\"run tool\",\"dependencies\":[]}]}",
+                "tool completed",
+                "{\"accepted\":true,\"repair\":null,\"strategy\":\"Check tool completion before reporting success.\"}");
+        TaskOutcomeSpec spec = new TaskOutcomeSpec(
+                new ExpectedOutcome(OutcomeTaskFamily.TOOL_STATE_ASSERTION, "{\"status\":\"COMPLETED\"}"),
+                List.of("fixture:tool-state"), "tool-step");
+
+        CognitiveExecutionResult result = engine.execute("request-tool-outcome", "run tool", "prompt", model,
+                domain, "9".repeat(64), 2, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("COMPLETED"),
+                spec);
+
+        assertEquals(OutcomeSignal.Status.PASS, result.trace().outcomeSignal().status());
+        assertEquals("OUTCOME_VERIFIED_PASS", result.trace().terminationCode());
+        assertEquals(1, library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().size());
     }
 
     @Test
@@ -217,6 +272,11 @@ class CognitiveSelfEvolutionEngineTest {
                 new EvidenceReference("evidence-" + id, "request-" + id, "e".repeat(64), "COGNITIVE"),
                 confidence, "request-" + id, "f".repeat(64), ExperienceDisposition.ADOPTED, false,
                 AttributionStatus.UNRESOLVED, 1, false, null, Instant.now(), attempts, successes);
+    }
+
+    private TaskOutcomeSpec structuredOutcome(String expectedJson) {
+        return new TaskOutcomeSpec(new ExpectedOutcome(OutcomeTaskFamily.STRUCTURED_OUTPUT_ASSERTION,
+                expectedJson), List.of("fixture:expected-outcome"), null);
     }
 
     private record ExperienceEntryView(int attempts, int successes) {

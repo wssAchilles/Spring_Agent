@@ -1,5 +1,7 @@
 package tech.qiantong.qknow.hermes.cognitive.core.model;
 
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeSignal;
+
 import java.util.List;
 
 public record CognitiveTrace(
@@ -8,8 +10,15 @@ public record CognitiveTrace(
         List<ReflectionEvent> reflections,
         List<RepairEvent> repairs,
         List<ExperienceEvent> experienceEvents,
-        String terminationCode
+        String terminationCode,
+        OutcomeSignal outcomeSignal
 ) {
+    public CognitiveTrace(List<String> states, List<StrategyScore> strategyScores,
+                          List<ReflectionEvent> reflections, List<RepairEvent> repairs,
+                          List<ExperienceEvent> experienceEvents, String terminationCode) {
+        this(states, strategyScores, reflections, repairs, experienceEvents, terminationCode, null);
+    }
+
     public CognitiveTrace {
         states = List.copyOf(states);
         strategyScores = List.copyOf(strategyScores);

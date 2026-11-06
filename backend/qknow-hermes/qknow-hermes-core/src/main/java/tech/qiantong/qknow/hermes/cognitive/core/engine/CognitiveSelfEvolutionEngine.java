@@ -22,6 +22,12 @@ import tech.qiantong.qknow.hermes.cognitive.core.model.PlanStep;
 import tech.qiantong.qknow.hermes.cognitive.core.model.PlanVerificationResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.ReflectionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.RepairProposal;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeSignal;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeTaskFamily;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeVerificationRequest;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeVerifier;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.RuleBasedOutcomeVerifier;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.TaskOutcomeSpec;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -42,6 +48,7 @@ public final class CognitiveSelfEvolutionEngine {
     private static final int MAX_STRATEGY_LENGTH = 1000;
 
     private final ExperienceLibrary experienceLibrary;
+    private final OutcomeVerifier outcomeVerifier = new RuleBasedOutcomeVerifier();
     private final PlanVerifier planVerifier = new PlanVerifier();
     private final ExperienceStrategySelector strategySelector = new ExperienceStrategySelector();
 
@@ -53,6 +60,15 @@ public final class CognitiveSelfEvolutionEngine {
                                             ChatModel chatModel, ExperienceDomain domain,
                                             String harnessFingerprint, int maxTasks,
                                             int maxRepairAttempts, StepExecutor stepExecutor) {
+        return execute(requestId, question, systemPrompt, chatModel, domain, harnessFingerprint, maxTasks,
+                maxRepairAttempts, stepExecutor, null);
+    }
+
+    public CognitiveExecutionResult execute(String requestId, String question, String systemPrompt,
+                                            ChatModel chatModel, ExperienceDomain domain,
+                                            String harnessFingerprint, int maxTasks,
+                                            int maxRepairAttempts, StepExecutor stepExecutor,
+                                            TaskOutcomeSpec taskOutcomeSpec) {
         var states = new ArrayList<String>();
         var reflections = new ArrayList<CognitiveTrace.ReflectionEvent>();
         var repairs = new ArrayList<CognitiveTrace.RepairEvent>();
@@ -182,18 +198,32 @@ public final class CognitiveSelfEvolutionEngine {
             reflections.add(new CognitiveTrace.ReflectionEvent("FINAL", finalReflection.accepted(),
                     finalReflection.accepted() ? "ANSWER_ACCEPTED" : "ANSWER_REPAIR_REQUIRED"));
             if (finalReflection.accepted()) {
-                recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
-                        states, strategyScores, repairs, experienceEvents);
-                String strategyToAdopt = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
-                        : finalReflection.reusableStrategy();
-                if (!strategyToAdopt.isBlank() && (selectedStrategy == null
-                        || !entryIdForStrategy(strategyToAdopt).equals(selectedStrategy.entryId()))) {
-                    adoptStrategy(strategyToAdopt, requestId, harnessFingerprint, domain,
-                            states, strategyScores, repairs, experienceEvents);
+                OutcomeSignal outcome = verifyOutcome(requestId, taskOutcomeSpec, outputs, answer);
+                states.add("OUTCOME_" + outcome.status() + ":" + outcome.reasonCode());
+                String terminationCode;
+                if (outcome.status() == OutcomeSignal.Status.PASS) {
+                    recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
+                            states, strategyScores, repairs, experienceEvents, outcome);
+                    String strategyToAdopt = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
+                            : finalReflection.reusableStrategy();
+                    if (!strategyToAdopt.isBlank() && (selectedStrategy == null
+                            || !entryIdForStrategy(strategyToAdopt).equals(selectedStrategy.entryId()))) {
+                        adoptStrategy(strategyToAdopt, requestId, harnessFingerprint, domain,
+                                states, strategyScores, repairs, experienceEvents, outcome);
+                    }
+                    terminationCode = "OUTCOME_VERIFIED_PASS";
+                } else if (outcome.status() == OutcomeSignal.Status.FAIL) {
+                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                            states, strategyScores, repairs, experienceEvents, outcome);
+                    states.add("STRATEGY_ADOPTION_REJECTED_OUTCOME_FAIL");
+                    terminationCode = "OUTCOME_VERIFIED_FAIL";
+                } else {
+                    states.add("STRATEGY_ADOPTION_DEFERRED_OUTCOME_UNKNOWN");
+                    terminationCode = "OUTCOME_VERIFIED_UNKNOWN";
                 }
                 states.add("COMPLETED");
                 return result(CognitiveExecutionResult.Status.COMPLETED, answer,
-                        states, strategyScores, reflections, repairs, experienceEvents, "REFLECTION_ACCEPTED");
+                        states, strategyScores, reflections, repairs, experienceEvents, terminationCode, outcome);
             }
 
             RepairProposal proposal = finalReflection.repairProposal();
@@ -229,6 +259,21 @@ public final class CognitiveSelfEvolutionEngine {
             throw new IllegalStateException("experience library is unavailable");
         }
         return experienceLibrary.restore(domain, entryId, version);
+    }
+
+    private OutcomeSignal verifyOutcome(String requestId, TaskOutcomeSpec spec,
+                                        Map<String, String> outputs, String answer) {
+        String familyId = spec == null ? OutcomeTaskFamily.STRUCTURED_OUTPUT_ASSERTION
+                : spec.expectedOutcome().familyId();
+        String expected = spec == null ? null : spec.expectedOutcome().value();
+        List<String> evidenceRefs = spec == null ? List.of() : spec.evidenceRefs();
+        Map<String, String> toolOutputs = Map.of();
+        if (spec != null && spec.toolStatusStepId() != null
+                && outputs.containsKey(spec.toolStatusStepId())) {
+            toolOutputs = Map.of("status", outputs.get(spec.toolStatusStepId()));
+        }
+        return outcomeVerifier.verify(new OutcomeVerificationRequest(requestId, familyId,
+                expected, summarizeOutputs(outputs), toolOutputs, answer, evidenceRefs));
     }
 
     private CognitivePlan generatePlan(String question, String systemPrompt, String lesson,
@@ -374,11 +419,21 @@ public final class CognitiveSelfEvolutionEngine {
                                 List<CognitiveTrace.StrategyScore> scores,
                                 List<CognitiveTrace.RepairEvent> repairs,
                                 List<CognitiveTrace.ExperienceEvent> events) {
+        recordFeedback(selected, success, requestId, harnessFingerprint, states, scores, repairs, events, null);
+    }
+
+    private void recordFeedback(ExperienceEntry selected, boolean success, String requestId,
+                                String harnessFingerprint, List<String> states,
+                                List<CognitiveTrace.StrategyScore> scores,
+                                List<CognitiveTrace.RepairEvent> repairs,
+                                List<CognitiveTrace.ExperienceEvent> events,
+                                OutcomeSignal outcomeSignal) {
         if (selected == null || experienceLibrary == null || requestId == null || requestId.isBlank()
                 || harnessFingerprint == null || !harnessFingerprint.matches("[0-9a-f]{64}")) {
             return;
         }
-        EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs);
+        EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs,
+                outcomeSignal);
         try {
             ExperienceEntry updated = experienceLibrary.recordFeedback(selected.domain(), selected.entryId(),
                     success, evidence, requestId, harnessFingerprint);
@@ -397,7 +452,8 @@ public final class CognitiveSelfEvolutionEngine {
                                ExperienceDomain domain, List<String> states,
                                List<CognitiveTrace.StrategyScore> scores,
                                List<CognitiveTrace.RepairEvent> repairs,
-                               List<CognitiveTrace.ExperienceEvent> events) {
+                               List<CognitiveTrace.ExperienceEvent> events,
+                               OutcomeSignal outcomeSignal) {
         if (strategy == null || strategy.isBlank() || experienceLibrary == null || domain == null
                 || requestId == null || requestId.isBlank()
                 || harnessFingerprint == null || !harnessFingerprint.matches("[0-9a-f]{64}")) {
@@ -406,9 +462,10 @@ public final class CognitiveSelfEvolutionEngine {
         String lesson = boundedStrategy(strategy);
         String entryId = entryIdForStrategy(lesson);
         try {
-            EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs);
+            EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs,
+                    outcomeSignal);
             ExperienceEntry candidate = new ExperienceEntry(entryId, domain, EXPERIENCE_CUE, lesson,
-                    "Model-reflected successful runtime execution; not an external correctness label.", evidence,
+                    "Independent OutcomeVerifier PASS; model reflection alone is not correctness evidence.", evidence,
                     0.5, requestId, harnessFingerprint, ExperienceDisposition.ADOPTED, false,
                     AttributionStatus.UNRESOLVED, 1, false, null, Instant.now());
             ExperienceEntry saved = experienceLibrary.adoptRuntimeStrategy(candidate);
@@ -433,7 +490,18 @@ public final class CognitiveSelfEvolutionEngine {
                                                 List<String> states,
                                                 List<CognitiveTrace.StrategyScore> scores,
                                                 List<CognitiveTrace.RepairEvent> repairs) {
-        String evidenceSha = sha256(String.join("|", states) + scores + repairs);
+        return evidenceReference(requestId, fingerprint, states, scores, repairs, null);
+    }
+
+    private EvidenceReference evidenceReference(String requestId, String fingerprint,
+                                                List<String> states,
+                                                List<CognitiveTrace.StrategyScore> scores,
+                                                List<CognitiveTrace.RepairEvent> repairs,
+                                                OutcomeSignal outcomeSignal) {
+        String outcomeEvidence = outcomeSignal == null ? "" : outcomeSignal.status() + "|"
+                + outcomeSignal.reasonCode() + "|" + outcomeSignal.expectedDigest() + "|"
+                + outcomeSignal.observedDigest() + "|" + outcomeSignal.evidenceDigest();
+        String evidenceSha = sha256(String.join("|", states) + scores + repairs + outcomeEvidence);
         return new EvidenceReference("cognitive-" + sha256(requestId).substring(0, 24),
                 requestId, evidenceSha, "COGNITIVE_EVOLUTION_RUNTIME");
     }
@@ -471,8 +539,19 @@ public final class CognitiveSelfEvolutionEngine {
                                             List<CognitiveTrace.RepairEvent> repairs,
                                             List<CognitiveTrace.ExperienceEvent> events,
                                             String reason) {
+        return result(status, answer, states, scores, reflections, repairs, events, reason, null);
+    }
+
+    private CognitiveExecutionResult result(CognitiveExecutionResult.Status status, String answer,
+                                            List<String> states,
+                                            List<CognitiveTrace.StrategyScore> scores,
+                                            List<CognitiveTrace.ReflectionEvent> reflections,
+                                            List<CognitiveTrace.RepairEvent> repairs,
+                                            List<CognitiveTrace.ExperienceEvent> events,
+                                            String reason,
+                                            OutcomeSignal outcomeSignal) {
         return new CognitiveExecutionResult(status, answer,
-                new CognitiveTrace(states, scores, reflections, repairs, events, reason));
+                new CognitiveTrace(states, scores, reflections, repairs, events, reason, outcomeSignal));
     }
 
     @FunctionalInterface
