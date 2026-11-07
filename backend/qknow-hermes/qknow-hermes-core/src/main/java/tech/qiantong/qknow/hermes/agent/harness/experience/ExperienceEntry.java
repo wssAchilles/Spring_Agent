@@ -28,7 +28,9 @@ public record ExperienceEntry(
         int probationSuccesses,
         Instant lastUsedAt,
         Instant promotedAt,
-        Instant retiredAt
+        Instant retiredAt,
+        StrategyTemplate strategyTemplate,
+        StrategyVariant strategyVariant
 ) {
     public enum AttributionStatus {
         NOT_APPLICABLE,
@@ -103,6 +105,11 @@ public record ExperienceEntry(
         if (lifecycleStatus == StrategyLifecycleStatus.ADOPTED && promotedAt == null) {
             promotedAt = createdAt;
         }
+        if (strategyVariant != null && (strategyTemplate == null
+                || !strategyVariant.variantId().equals(strategyTemplate.templateId())
+                || !strategyVariant.parentTemplateId().equals(strategyTemplate.parentTemplateId()))) {
+            throw new IllegalArgumentException("variant and template lineage must agree");
+        }
     }
 
     public ExperienceEntry(String entryId, ExperienceDomain domain, String cue, String lesson,
@@ -116,7 +123,7 @@ public record ExperienceEntry(
                 retirementReason, createdAt, feedbackAttempts, feedbackSuccesses, consecutiveFailures,
                 retired ? StrategyLifecycleStatus.RETIRED : initialStatus(disposition), 0, 0, null,
                 disposition == ExperienceDisposition.ADOPTED ? createdAt : null,
-                retired ? createdAt : null);
+                retired ? createdAt : null, null, null);
     }
 
     public ExperienceEntry(String entryId, ExperienceDomain domain, String cue, String lesson,
@@ -207,14 +214,15 @@ public record ExperienceEntry(
                 shouldRetire ? "runtime_strategy_failed_3_consecutive_times" : null,
                 createdAt, attempts, successes, failuresInARow, nextStatus, nextProbationUses,
                 nextProbationSuccesses, usedAt, shouldPromote ? usedAt : priorPromotedAt,
-                shouldRetire ? usedAt : null);
+                shouldRetire ? usedAt : null, strategyTemplate, strategyVariant);
     }
 
     public ExperienceEntry probationary(int nextVersion) {
         return new ExperienceEntry(entryId, domain, cue, lesson, evidenceSummary, evidenceRef,
                 confidence, sourceRunId, harnessFingerprint, ExperienceDisposition.OBSERVED, false,
                 attributionStatus, nextVersion, false, null, createdAt, feedbackAttempts,
-                feedbackSuccesses, 0, StrategyLifecycleStatus.PROBATION, 0, 0, null, null, null);
+                feedbackSuccesses, 0, StrategyLifecycleStatus.PROBATION, 0, 0, null, null, null,
+                strategyTemplate, strategyVariant);
     }
 
     public ExperienceEntry promoted(int nextVersion, Instant now) {
@@ -230,7 +238,7 @@ public record ExperienceEntry(
                 confidence, latestRunId, latestHarnessFingerprint, ExperienceDisposition.ADOPTED,
                 false, attributionStatus, nextVersion, false, null, createdAt, feedbackAttempts,
                 feedbackSuccesses, 0, StrategyLifecycleStatus.ADOPTED, probationUses,
-                probationSuccesses, lastUsedAt, now, null);
+                probationSuccesses, lastUsedAt, now, null, strategyTemplate, strategyVariant);
     }
 
     public ExperienceEntry retired(String reason) {
@@ -239,7 +247,8 @@ public record ExperienceEntry(
                 confidence, sourceRunId, harnessFingerprint, disposition, failureObserved,
                 attributionStatus, version + 1, true, reason, createdAt, feedbackAttempts,
                 feedbackSuccesses, consecutiveFailures, StrategyLifecycleStatus.RETIRED,
-                probationUses, probationSuccesses, lastUsedAt, promotedAt, now);
+                probationUses, probationSuccesses, lastUsedAt, promotedAt, now,
+                strategyTemplate, strategyVariant);
     }
 
     public ExperienceEntry restoredAsVersion(int nextVersion) {
@@ -249,13 +258,23 @@ public record ExperienceEntry(
                 attributionStatus, nextVersion, false, null, createdAt, feedbackAttempts,
                 feedbackSuccesses, consecutiveFailures, restoredStatus, probationUses,
                 probationSuccesses, lastUsedAt,
-                restoredStatus == StrategyLifecycleStatus.ADOPTED ? promotedAt : null, null);
+                restoredStatus == StrategyLifecycleStatus.ADOPTED ? promotedAt : null, null,
+                strategyTemplate, strategyVariant);
     }
 
     public ExperienceEntry restoredAsProbation(int nextVersion) {
         return new ExperienceEntry(entryId, domain, cue, lesson, evidenceSummary, evidenceRef,
                 confidence, sourceRunId, harnessFingerprint, ExperienceDisposition.OBSERVED, false,
                 attributionStatus, nextVersion, false, null, createdAt, feedbackAttempts,
-                feedbackSuccesses, 0, StrategyLifecycleStatus.PROBATION, 0, 0, null, null, null);
+                feedbackSuccesses, 0, StrategyLifecycleStatus.PROBATION, 0, 0, null, null, null,
+                strategyTemplate, strategyVariant);
+    }
+
+    public ExperienceEntry withStrategy(StrategyTemplate template, StrategyVariant variant) {
+        return new ExperienceEntry(entryId, domain, cue, lesson, evidenceSummary, evidenceRef,
+                confidence, sourceRunId, harnessFingerprint, disposition, failureObserved,
+                attributionStatus, version, retired, retirementReason, createdAt, feedbackAttempts,
+                feedbackSuccesses, consecutiveFailures, lifecycleStatus, probationUses,
+                probationSuccesses, lastUsedAt, promotedAt, retiredAt, template, variant);
     }
 }

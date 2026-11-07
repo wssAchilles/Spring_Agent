@@ -15,6 +15,12 @@ public interface ExperienceLibrary {
 
     ExperienceEntry createProbation(ExperienceEntry candidate);
 
+    ExperienceEntry createVariant(ExperienceEntry candidate);
+
+    java.util.Optional<StrategyLineage> lineage(ExperienceDomain domain, String templateId);
+
+    java.util.Optional<ExperienceEntry> rollbackToParent(ExperienceDomain domain, String variantId);
+
     ExperienceEntry recordProbationFeedback(ExperienceDomain domain, String entryId, boolean success,
                                             EvidenceReference evidence, String runId,
                                             String harnessFingerprint);

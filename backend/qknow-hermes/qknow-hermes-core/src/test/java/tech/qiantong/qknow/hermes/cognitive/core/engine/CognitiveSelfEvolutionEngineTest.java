@@ -16,6 +16,8 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry.Attri
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTemplate;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyVariant;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.PlanStep;
 import tech.qiantong.qknow.hermes.cognitive.core.verification.ExpectedOutcome;
@@ -114,6 +116,7 @@ class CognitiveSelfEvolutionEngineTest {
                 .filter(entry -> entry.lesson().equals("Another candidate lesson that is not yet applied."))
                 .findFirst().orElseThrow();
         assertEquals(StrategyLifecycleStatus.PROBATION, probation.lifecycleStatus());
+        assertTrue(probation.strategyVariant() != null);
     }
 
     @Test
@@ -167,6 +170,123 @@ class CognitiveSelfEvolutionEngineTest {
         ExperienceEntry adopted = library.recallForProposer(domain, "cognitive-evolution", 10)
                 .matchedEntries().getFirst();
         assertEquals(StrategyLifecycleStatus.ADOPTED, adopted.lifecycleStatus());
+    }
+
+    @Test
+    void reflectionCreatesVersionedVariantInProbationAndUcbCanSelectIt() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(74, List.of("kb-template-evolution"));
+        String parentTemplateId = "template-parent";
+        ExperienceEntry parent = strategy("parent-entry", domain, 0, 0, 0.9).withStrategy(
+                StrategyTemplate.create(parentTemplateId, 1, null,
+                        List.of("task has a declared outcome"), List.of("inspect", "act"),
+                        List.of("use task-provided tools"), List.of("check each step result"),
+                        List.of("all declared assertions hold")), null);
+        library.recordExperience(parent);
+        String mutation = "Check each tool result before reporting task completion.";
+        ChatModel model = model(
+                "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}",
+                "{\"completed\":true}",
+                "{\"accepted\":true,\"repair\":null,\"strategy\":\"" + mutation + "\"}");
+
+        CognitiveExecutionResult result = engine.execute("request-template-variant", "inspect the task",
+                "base prompt", model, domain, "9".repeat(64), 2, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done"),
+                structuredOutcome("{\"assertions\":{\"completed\":{\"type\":\"BOOLEAN\",\"equals\":true}}}"));
+
+        ExperienceEntry variant = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream().filter(entry -> entry.strategyVariant() != null)
+                .findFirst().orElseThrow();
+        assertEquals(OutcomeSignal.Status.PASS, result.trace().outcomeSignal().status());
+        assertEquals(StrategyLifecycleStatus.PROBATION, variant.lifecycleStatus());
+        assertEquals(parentTemplateId, variant.strategyVariant().parentTemplateId());
+        assertEquals(2, variant.strategyTemplate().version());
+        assertEquals("reflectionRules", variant.strategyVariant().changedFields().getFirst());
+        assertTrue(result.trace().experienceEvents().stream().anyMatch(event ->
+                event.entryId().equals(variant.entryId()) && event.action().equals("VARIANT_PROBATION_CREATED")));
+        assertTrue(result.trace().states().contains("STRATEGY_VARIANT_REMAINS_PROBATION"));
+        assertEquals(variant.entryId(), new ExperienceStrategySelector()
+                .select(library.recallForStrategySelection(domain, "cognitive-evolution", 10).matchedEntries())
+                .selected().entryId());
+    }
+
+    @Test
+    void threeVariantFailuresRetireItAndTraceRollbackToParent() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(75, List.of("kb-variant-rollback"));
+        String parentTemplateId = "template-rollback-parent";
+        ExperienceEntry parent = strategy("rollback-parent-entry", domain, 10, 0, 0.21).withStrategy(
+                StrategyTemplate.create(parentTemplateId, 1, null,
+                        List.of("task has a declared outcome"), List.of("inspect", "act"),
+                        List.of("use task-provided tools"), List.of("check each step result"),
+                        List.of("all declared assertions hold")), null);
+        library.recordExperience(parent);
+        String variantId = "variant-rollback-child";
+        StrategyTemplate childTemplate = StrategyTemplate.create(variantId, 2, parentTemplateId,
+                List.of("task has a declared outcome"), List.of("inspect", "act"),
+                List.of("use task-provided tools"), List.of("check each tool result"),
+                List.of("all declared assertions hold"));
+        ExperienceEntry variant = new ExperienceEntry(variantId, domain, "cognitive-evolution",
+                "Check each tool result before reporting task completion.", "failure-derived variant",
+                new EvidenceReference("evidence-variant", "variant-run", "a".repeat(64), "COGNITIVE"),
+                0.5, "variant-run", "b".repeat(64), ExperienceDisposition.OBSERVED, false,
+                AttributionStatus.UNRESOLVED, 1, false, null, Instant.now())
+                .withStrategy(childTemplate, new StrategyVariant(variantId, parentTemplateId,
+                        "failure attribution: missing output verification", List.of("reflectionRules"),
+                        "Prevent reporting completion before checking tool output."));
+        library.createVariant(variant);
+
+        CognitiveExecutionResult last = null;
+        for (int i = 1; i <= 3; i++) {
+            last = engine.execute("variant-failure-" + i, "inspect the task", "base prompt",
+                    model("{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}",
+                            "{\"accepted\":false,\"repair\":null,\"strategy\":\"\"}"),
+                    domain, "c".repeat(64), 2, 0,
+                    (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.failed("TOOL_FAILED"));
+        }
+
+        assertEquals(StrategyLifecycleStatus.RETIRED,
+                library.find(domain, variantId).orElseThrow().lifecycleStatus());
+        assertTrue(last.trace().states().contains("VARIANT_ROLLED_BACK_TO_PARENT"));
+        assertTrue(last.trace().experienceEvents().stream().anyMatch(event ->
+                event.entryId().equals("rollback-parent-entry")
+                        && event.action().equals("VARIANT_ROLLBACK_TO_PARENT")));
+    }
+
+    @Test
+    void verifierPassesAccumulateBeforeVariantPromotion() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(76, List.of("kb-variant-promotion"));
+        ExperienceEntry parent = templateParent("promotion-parent-entry", "template-promotion-parent",
+                domain, 10, 0, 0.21);
+        library.recordExperience(parent);
+        String variantId = "variant-promotion-child";
+        library.createVariant(variantCandidate(parent, variantId,
+                "Verify tool output before composing a final answer."));
+
+        CognitiveExecutionResult last = null;
+        for (int i = 1; i <= 3; i++) {
+            last = engine.execute("variant-pass-" + i, "inspect the task", "base prompt",
+                    model("{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}",
+                            "{\"completed\":true}",
+                            "{\"accepted\":true,\"repair\":null,\"strategy\":\"\"}"),
+                    domain, "d".repeat(64), 2, 0,
+                    (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done"),
+                    structuredOutcome("{\"assertions\":{\"completed\":{\"type\":\"BOOLEAN\",\"equals\":true}}}"));
+            ExperienceEntry current = library.find(domain, variantId).orElseThrow();
+            if (i < 3) {
+                assertEquals(StrategyLifecycleStatus.PROBATION, current.lifecycleStatus());
+            }
+        }
+
+        ExperienceEntry promoted = library.find(domain, variantId).orElseThrow();
+        assertEquals(OutcomeSignal.Status.PASS, last.trace().outcomeSignal().status());
+        assertEquals(3, promoted.probationUses());
+        assertEquals(3, promoted.probationSuccesses());
+        assertEquals(StrategyLifecycleStatus.ADOPTED, promoted.lifecycleStatus());
     }
 
     @Test
@@ -284,6 +404,32 @@ class CognitiveSelfEvolutionEngineTest {
                 new EvidenceReference("evidence-" + id, "request-" + id, "e".repeat(64), "COGNITIVE"),
                 confidence, "request-" + id, "f".repeat(64), ExperienceDisposition.ADOPTED, false,
                 AttributionStatus.UNRESOLVED, 1, false, null, Instant.now(), attempts, successes);
+    }
+
+    private ExperienceEntry templateParent(String entryId, String templateId, ExperienceDomain domain,
+                                           int attempts, int successes, double confidence) {
+        return strategy(entryId, domain, attempts, successes, confidence).withStrategy(
+                StrategyTemplate.create(templateId, 1, null,
+                        List.of("task has a declared outcome"), List.of("inspect", "act"),
+                        List.of("use task-provided tools"), List.of("check each step result"),
+                        List.of("all declared assertions hold")), null);
+    }
+
+    private ExperienceEntry variantCandidate(ExperienceEntry parent, String variantId, String mutation) {
+        StrategyTemplate parentTemplate = parent.strategyTemplate();
+        List<String> reflectionRules = new ArrayList<>(parentTemplate.reflectionRules());
+        reflectionRules.add(mutation);
+        StrategyTemplate template = StrategyTemplate.create(variantId, parentTemplate.version() + 1,
+                parentTemplate.templateId(), parentTemplate.preconditions(), parentTemplate.planSkeleton(),
+                parentTemplate.toolPolicy(), reflectionRules, parentTemplate.successCriteria());
+        return new ExperienceEntry(variantId, parent.domain(), "cognitive-evolution", mutation,
+                "Failure-derived strategy variant awaiting execution feedback.",
+                new EvidenceReference("evidence-" + variantId, "request-" + variantId, "a".repeat(64), "COGNITIVE"),
+                0.5, "run-" + variantId, "b".repeat(64), ExperienceDisposition.OBSERVED, false,
+                AttributionStatus.UNRESOLVED, 1, false, null, Instant.now())
+                .withStrategy(template, new StrategyVariant(variantId, parentTemplate.templateId(),
+                        "failure attribution: " + mutation, List.of("reflectionRules"),
+                        "Reduce task errors by applying the learned check: " + mutation));
     }
 
     private TaskOutcomeSpec structuredOutcome(String expectedJson) {
