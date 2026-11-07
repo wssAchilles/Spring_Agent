@@ -38,9 +38,11 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,7 +54,6 @@ public final class SelfEvolutionEvaluationRunner {
     private static final int EPISODES = 3;
     private static final String CUE = "cognitive-evolution";
     private static final String VARIANT_MUTATION = "对边界和多步骤结果进行二次核验。";
-    private static final Pattern TASK_NUMBER = Pattern.compile("([STL])(\\d{2})");
     private static final Pattern STRUCTURED_INPUT = Pattern.compile(
             "caseId=(S\\d{2}), score=(\\d+), accepted=(true|false)");
     private static final Pattern LOGIC_INPUT = Pattern.compile("Compute expression (-?\\d+) ([+*]) (-?\\d+)");
@@ -117,17 +118,21 @@ public final class SelfEvolutionEvaluationRunner {
 
         int promptLeaks = countOutcomePayloadLeaks(dataset, prompts);
         int evidenceLeaks = countEvidenceLeaks(dataset, prompts);
+        int armLabelLeaks = countArmLabelLeaks(prompts);
+        int splitLabelLeaks = countSplitLabelLeaks(prompts);
         int experienceLeaks = countExperienceLeaks(dataset, storesByArm);
         int evidenceExperienceLeaks = countEvidenceExperienceLeaks(dataset, storesByArm);
         List<EvaluationReport.ArmMetrics> armMetrics = java.util.Arrays.stream(EvaluationArm.values())
                 .map(arm -> summarize(arm, results)).toList();
         EvaluationReport.PairedComparison comparison = compareVariantToTemplate(results);
         List<EvaluationReport.ThresholdReplay> thresholdReplay = replayThresholds(results);
-        return new EvaluationReport("OFFLINE_FAKE_RULE_MODEL",
-                "Deterministic harness simulation only; strategy cues map to fixed stub behavior. "
-                        + "It does not establish real-model gains or API token/latency costs.",
-                dataset.tasks().size(), EPISODES, 0, promptLeaks, evidenceLeaks, experienceLeaks,
-                evidenceExperienceLeaks,
+        return new EvaluationReport("BLINDED_FAKE_MODEL",
+                "Deterministic prompt-only fake; it receives no runner-side arm, episode, split, or expected-outcome metadata. "
+                        + "Its answers are derived from user-task inputs and do not vary with strategy guidance; "
+                        + "this cannot establish real-model gains "
+                        + "or API token/latency costs.",
+                dataset.tasks().size(), EPISODES, 0, promptLeaks, evidenceLeaks, armLabelLeaks, splitLabelLeaks,
+                experienceLeaks, evidenceExperienceLeaks,
                 armMetrics, comparison, thresholdReplay, results);
     }
 
@@ -153,6 +158,9 @@ public final class SelfEvolutionEvaluationRunner {
                                 List.of("输出前检查每个请求字段与步骤结果。"),
                                 List.of("all requested assertions hold")), null);
                 library.recordExperience(parent);
+                if (arm == EvaluationArm.TEMPLATE_VARIANT_PROBATION) {
+                    library.createVariant(variantCandidate(parent, VARIANT_MUTATION));
+                }
             }
             arms.put(arm, new ArmState(domain, library, store));
         }
@@ -173,13 +181,26 @@ public final class SelfEvolutionEvaluationRunner {
         return template == null ? entry : entry.withStrategy(template, variant);
     }
 
+    private ExperienceEntry variantCandidate(ExperienceEntry parent, String mutation) {
+        StrategyTemplate parentTemplate = parent.strategyTemplate();
+        String id = variantId(parentTemplate.templateId(), mutation);
+        List<String> reflectionRules = new ArrayList<>(parentTemplate.reflectionRules());
+        reflectionRules.add(mutation);
+        StrategyTemplate template = StrategyTemplate.create(id, parentTemplate.version() + 1,
+                parentTemplate.templateId(), parentTemplate.preconditions(), parentTemplate.planSkeleton(),
+                parentTemplate.toolPolicy(), reflectionRules, parentTemplate.successCriteria());
+        return entry(id, parent.domain(), mutation, ExperienceDisposition.OBSERVED, template,
+                new StrategyVariant(id, parentTemplate.templateId(), "controlled evaluation variant",
+                        List.of("reflectionRules"), "Apply an additional check to boundary and multi-step results"));
+    }
+
     private EvaluationReport.TaskResult runTask(EvaluationTaskLoader.Dataset dataset,
                                                  EvaluationTaskLoader.EvaluationTask task,
                                                  int episode, EvaluationArm arm,
                                                  ExperienceLibrary library, ExperienceDomain domain,
                                                  List<String> allPrompts, InMemoryExperienceStore store) {
         EvaluationTaskLoader.ExpectedOutcomeFixture expected = dataset.expectedOutcomes().get(task.taskId());
-        RecordingFakeChatModel fake = new RecordingFakeChatModel(arm, episode, task, allPrompts);
+        BlindedFakeChatModel fake = new BlindedFakeChatModel(allPrompts::add);
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
         Map<String, StrategyLifecycleStatus> before = variantStatuses(store, domain);
         long started = System.nanoTime();
@@ -187,10 +208,8 @@ public final class SelfEvolutionEvaluationRunner {
                         + "-" + episode + "-" + task.taskId(), task.question(), "offline evaluation system",
                 fake.chatModel(), domain, fingerprint(arm, episode, task.taskId()), 4, 1,
                 (step, systemPrompt, previous) -> {
-                    if ("TOOL_STATE_ASSERTION".equals(task.familyId()) && "s1".equals(step.stepId())) {
-                        int limit = guidanceLimit(systemPrompt);
-                        String status = taskNumber(task.taskId()) <= limit ? "COMPLETED" : "STARTED";
-                        return CognitiveSelfEvolutionEngine.StepExecution.success(status);
+                    if (Objects.equals(task.toolStatusStepId(), step.stepId())) {
+                        return CognitiveSelfEvolutionEngine.StepExecution.success("COMPLETED");
                     }
                     return CognitiveSelfEvolutionEngine.StepExecution.success("fixture observation available");
                 }, expected.evaluatorSpec());
@@ -355,6 +374,22 @@ public final class SelfEvolutionEvaluationRunner {
                 .filter(evidence -> prompts.stream().anyMatch(prompt -> prompt.contains(evidence))).count();
     }
 
+    private int countArmLabelLeaks(List<String> prompts) {
+        return (int) prompts.stream().filter(prompt -> {
+            String normalized = prompt.toUpperCase(Locale.ROOT);
+            return java.util.Arrays.stream(EvaluationArm.values())
+                    .anyMatch(arm -> normalized.contains(arm.name()));
+        }).count();
+    }
+
+    private int countSplitLabelLeaks(List<String> prompts) {
+        return (int) prompts.stream().filter(prompt -> {
+            String normalized = prompt.toUpperCase(Locale.ROOT);
+            return java.util.Arrays.stream(EvaluationTaskLoader.Split.values())
+                    .anyMatch(split -> normalized.contains(split.name()));
+        }).count();
+    }
+
     private int countExperienceLeaks(EvaluationTaskLoader.Dataset dataset,
                                      Map<EvaluationArm, List<InMemoryExperienceStore>> storesByArm) {
         List<String> experienceContent = storesByArm.values().stream().flatMap(List::stream)
@@ -387,27 +422,6 @@ public final class SelfEvolutionEvaluationRunner {
         return denominator == 0 ? 0.0 : (double) numerator / denominator;
     }
 
-    private int guidanceLimit(String systemPrompt) {
-        if (systemPrompt != null && systemPrompt.contains("二次核验")) {
-            return 10;
-        }
-        if (systemPrompt != null && systemPrompt.contains("检查每个请求字段")) {
-            return 6;
-        }
-        if (systemPrompt != null && systemPrompt.contains("逐项复核最终结果")) {
-            return 4;
-        }
-        return 2;
-    }
-
-    private int taskNumber(String taskId) {
-        Matcher matcher = TASK_NUMBER.matcher(taskId);
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("unsupported task id " + taskId);
-        }
-        return Integer.parseInt(matcher.group(2));
-    }
-
     private String fingerprint(EvaluationArm arm, int episode, String taskId) {
         try {
             return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
@@ -433,20 +447,12 @@ public final class SelfEvolutionEvaluationRunner {
     private record ArmState(ExperienceDomain domain, ExperienceLibrary library,
                             InMemoryExperienceStore store) { }
 
-    private final class RecordingFakeChatModel {
-        private final EvaluationArm arm;
-        private final int episode;
-        private final EvaluationTaskLoader.EvaluationTask task;
-        private final List<String> allPrompts;
+    private static final class BlindedFakeChatModel {
+        private final Consumer<String> recordPrompt;
         private final AtomicLong tokens = new AtomicLong();
 
-        private RecordingFakeChatModel(EvaluationArm arm, int episode,
-                                       EvaluationTaskLoader.EvaluationTask task,
-                                       List<String> allPrompts) {
-            this.arm = arm;
-            this.episode = episode;
-            this.task = task;
-            this.allPrompts = allPrompts;
+        private BlindedFakeChatModel(Consumer<String> recordPrompt) {
+            this.recordPrompt = recordPrompt;
         }
 
         private ChatModel chatModel() {
@@ -456,9 +462,9 @@ public final class SelfEvolutionEvaluationRunner {
                 String system = text(prompt, SystemMessage.class);
                 String user = text(prompt, UserMessage.class);
                 String combined = system + "\n" + user;
-                allPrompts.add(combined);
+                recordPrompt.accept(combined);
                 tokens.addAndGet(Math.max(1, combined.length() / 4));
-                return response(responseText(user, system));
+                return response(responseText(user));
             });
             return model;
         }
@@ -467,56 +473,47 @@ public final class SelfEvolutionEvaluationRunner {
             return tokens.get();
         }
 
-        private String responseText(String user, String system) {
+        private String responseText(String user) {
             if (user.startsWith("将用户任务拆解")) {
                 return "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect task input\",\"dependencies\":[]},"
                         + "{\"stepId\":\"s2\",\"objective\":\"derive and verify result\",\"dependencies\":[\"s1\"]}]}";
             }
             if (user.startsWith("根据已完成的步骤结果回答用户任务")) {
-                return answer(system);
+                return answer(user);
             }
             if (user.startsWith("根据原任务和执行结果评估")) {
-                String strategy = arm == EvaluationArm.TEMPLATE_VARIANT_PROBATION
-                        && episode == 1 && "S01".equals(task.taskId())
-                        ? VARIANT_MUTATION : "";
-                return "{\"accepted\":true,\"repair\":null,\"strategy\":\""
-                        + strategy + "\"}";
+                return "{\"accepted\":true,\"repair\":null,\"strategy\":\"\"}";
             }
             throw new IllegalStateException("unexpected cognitive prompt type");
         }
 
-        private String answer(String system) {
-            int number = taskNumber(task.taskId());
-            boolean modeledCorrectly = number <= guidanceLimit(system);
-            if ("STRUCTURED_OUTPUT_ASSERTION".equals(task.familyId())) {
-                Matcher matcher = STRUCTURED_INPUT.matcher(task.question());
-                if (!matcher.find()) {
-                    throw new IllegalArgumentException("structured task question is not parseable");
-                }
-                int score = Integer.parseInt(matcher.group(2)) + (modeledCorrectly ? 0 : 1);
-                boolean accepted = Boolean.parseBoolean(matcher.group(3)) && modeledCorrectly;
-                return "{\"caseId\":\"" + matcher.group(1) + "\",\"score\":" + score
-                        + ",\"accepted\":" + accepted + "}";
+        private String answer(String user) {
+            Matcher structured = STRUCTURED_INPUT.matcher(user);
+            if (structured.find()) {
+                int score = Integer.parseInt(structured.group(2));
+                return "{\"caseId\":\"" + structured.group(1) + "\",\"score\":" + score
+                        + ",\"accepted\":" + structured.group(3) + "}";
             }
-            if ("TOOL_STATE_ASSERTION".equals(task.familyId())) {
-                return "The operation was run and its observed status is summarized in the tool trace.";
+            if (user.contains("Execute operation")) {
+                Matcher status = Pattern.compile("s1: ([A-Z_]+)").matcher(user);
+                return status.find() ? status.group(1) : "UNKNOWN";
             }
-            Matcher matcher = LOGIC_INPUT.matcher(task.question());
-            if (!matcher.find()) {
-                throw new IllegalArgumentException("logic task question is not parseable");
+            Matcher matcher = LOGIC_INPUT.matcher(user);
+            if (matcher.find()) {
+                long left = Long.parseLong(matcher.group(1));
+                long right = Long.parseLong(matcher.group(3));
+                long value = "+".equals(matcher.group(2)) ? left + right : left * right;
+                return Long.toString(value);
             }
-            long left = Long.parseLong(matcher.group(1));
-            long right = Long.parseLong(matcher.group(3));
-            long value = "+".equals(matcher.group(2)) ? left + right : left * right;
-            return Long.toString(value + (modeledCorrectly ? 0 : 1));
+            throw new IllegalArgumentException("task prompt is not parseable");
         }
 
-        private String text(Prompt prompt, Class<? extends Message> messageType) {
+        private static String text(Prompt prompt, Class<? extends Message> messageType) {
             return prompt.getInstructions().stream().filter(messageType::isInstance)
                     .map(Message::getText).filter(Objects::nonNull).findFirst().orElse("");
         }
 
-        private ChatResponse response(String text) {
+        private static ChatResponse response(String text) {
             return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
         }
     }

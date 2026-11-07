@@ -46,23 +46,27 @@ class SelfEvolutionEvaluationRunnerTest {
         assertEquals(30, report.uniqueTasks());
         assertEquals(3, report.episodesPerArm());
         assertEquals(360, report.taskResults().size());
+        assertEquals("BLINDED_FAKE_MODEL", report.evaluationMode());
         assertEquals(0, report.realApiCalls());
         assertEquals(0, report.expectedOutcomePromptLeaks());
         assertEquals(0, report.expectedEvidencePromptLeaks());
+        assertEquals(0, report.armLabelPromptLeaks());
+        assertEquals(0, report.splitLabelPromptLeaks());
         assertEquals(0, report.expectedOutcomeExperienceLeaks());
         assertEquals(0, report.expectedEvidenceExperienceLeaks());
-        assertEquals(18, arms.get(EvaluationArm.BASELINE).successes());
-        assertEquals(36, arms.get(EvaluationArm.LESSON_ONLY).successes());
-        assertEquals(54, arms.get(EvaluationArm.STRATEGY_TEMPLATE).successes());
-        assertEquals(84, arms.get(EvaluationArm.TEMPLATE_VARIANT_PROBATION).successes());
-        assertEquals(0.0, arms.get(EvaluationArm.BASELINE).holdoutSuccessRate());
-        assertEquals(0.8333333333333334,
+        assertEquals(90, arms.get(EvaluationArm.BASELINE).successes());
+        assertEquals(90, arms.get(EvaluationArm.LESSON_ONLY).successes());
+        assertEquals(90, arms.get(EvaluationArm.STRATEGY_TEMPLATE).successes());
+        assertEquals(90, arms.get(EvaluationArm.TEMPLATE_VARIANT_PROBATION).successes());
+        assertEquals(1.0, arms.get(EvaluationArm.BASELINE).holdoutSuccessRate());
+        assertEquals(1.0, arms.get(EvaluationArm.STRATEGY_TEMPLATE).holdoutSuccessRate());
+        assertEquals(1.0,
                 arms.get(EvaluationArm.TEMPLATE_VARIANT_PROBATION).holdoutSuccessRate());
         assertEquals(1, arms.get(EvaluationArm.TEMPLATE_VARIANT_PROBATION).variantPromotions());
         assertEquals(0, arms.get(EvaluationArm.TEMPLATE_VARIANT_PROBATION).variantRetirements());
         assertEquals(36, report.variantVsTemplateHoldout().taskEpisodePairs());
-        assertEquals(30, report.variantVsTemplateHoldout().variantWins());
-        assertEquals(6, report.variantVsTemplateHoldout().ties());
+        assertEquals(0, report.variantVsTemplateHoldout().variantWins());
+        assertEquals(36, report.variantVsTemplateHoldout().ties());
         assertEquals(0, report.variantVsTemplateHoldout().variantLosses());
         assertTrue(report.taskResults().stream().anyMatch(result ->
                 result.variantLifecycleStatus() == StrategyLifecycleStatus.ADOPTED
@@ -71,13 +75,14 @@ class SelfEvolutionEvaluationRunnerTest {
         assertTrue(report.thresholdReplay().stream().allMatch(EvaluationReport.ThresholdReplay::promoted));
         assertEquals(2, report.thresholdReplay().get(0).promotionUse());
         assertEquals(3, report.thresholdReplay().get(1).promotionUse());
-        assertTrue(report.taskResults().stream().anyMatch(result -> result.modelSelfAccepted()
-                && result.outcomeStatus() == EvaluationReport.OutcomeStatus.FAIL));
+        assertTrue(report.taskResults().stream().allMatch(result -> result.modelSelfAccepted()
+                && result.outcomeStatus() == EvaluationReport.OutcomeStatus.PASS));
         assertTrue(arms.values().stream()
                 .allMatch(metrics -> metrics.averageFakePromptTokenEstimate() > 0));
+        assertTrue(arms.values().stream().allMatch(metrics -> metrics.learningCurve().size() == 3));
         assertTrue(Files.exists(reportPath));
         JSONObject json = JSON.parseObject(Files.readString(reportPath));
         assertNotNull(json.getJSONArray("arms"));
-        assertTrue(report.interpretation().contains("does not establish real-model gains"));
+        assertTrue(report.interpretation().contains("cannot establish real-model gains"));
     }
 }

@@ -12,6 +12,8 @@ public record EvaluationReport(
         int realApiCalls,
         int expectedOutcomePromptLeaks,
         int expectedEvidencePromptLeaks,
+        int armLabelPromptLeaks,
+        int splitLabelPromptLeaks,
         int expectedOutcomeExperienceLeaks,
         int expectedEvidenceExperienceLeaks,
         List<ArmMetrics> arms,
