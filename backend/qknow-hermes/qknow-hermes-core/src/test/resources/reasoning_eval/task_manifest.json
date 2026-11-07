@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "taskCount": 30,
+  "expectedOutcomeCount": 30,
+  "familyCounts": {
+    "STRUCTURED_OUTPUT_ASSERTION": 10,
+    "TOOL_STATE_ASSERTION": 10,
+    "DETERMINISTIC_LOGIC_ASSERTION": 10
+  },
+  "splitCounts": {
+    "BOOTSTRAP": 18,
+    "HOLDOUT": 12
+  },
+  "splitPolicy": "six bootstrap and four holdout tasks per task family"
+}
