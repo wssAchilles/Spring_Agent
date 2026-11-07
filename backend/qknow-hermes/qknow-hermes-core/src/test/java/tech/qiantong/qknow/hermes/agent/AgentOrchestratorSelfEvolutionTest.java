@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import tech.qiantong.qknow.hermes.agent.harness.experience.DefaultExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
 import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveSelfEvolutionEngine;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.CognitiveEvolutionConfig;
@@ -91,10 +92,12 @@ class AgentOrchestratorSelfEvolutionTest {
         assertNotNull(trace);
         assertEquals("OUTCOME_VERIFIED_UNKNOWN", trace.terminationCode());
         assertEquals("REQUIRED_EVIDENCE_MISSING", trace.outcomeSignal().reasonCode());
-        assertTrue(trace.states().contains("STRATEGY_ADOPTION_DEFERRED_OUTCOME_UNKNOWN"));
+        assertTrue(trace.states().contains("STRATEGY_ENTERED_PROBATION_OUTCOME_UNKNOWN"));
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(71, List.of());
         var persisted = new FileSystemExperienceStore(temp).list(domain);
-        assertTrue(persisted.isEmpty());
+        assertEquals(1, persisted.size());
+        assertEquals(StrategyLifecycleStatus.PROBATION, persisted.getFirst().lifecycleStatus());
+        assertEquals("UNKNOWN", trace.experienceEvents().getFirst().outcomeStatus().name());
     }
 
     @Test

@@ -15,6 +15,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry.AttributionStatus;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitivePlan;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveTrace;
@@ -86,7 +87,8 @@ public final class CognitiveSelfEvolutionEngine {
         if (domain != null && experienceLibrary != null) {
             states.add("RECALLING");
             try {
-                var recall = experienceLibrary.recallForProposer(domain, EXPERIENCE_CUE, MAX_RECALLED_STRATEGIES);
+                var recall = experienceLibrary.recallForStrategySelection(
+                        domain, EXPERIENCE_CUE, MAX_RECALLED_STRATEGIES);
                 var selection = strategySelector.select(recall.matchedEntries());
                 selectedStrategy = selection.selected();
                 strategyScores.addAll(selection.scores());
@@ -204,6 +206,7 @@ public final class CognitiveSelfEvolutionEngine {
                 if (outcome.status() == OutcomeSignal.Status.PASS) {
                     recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
                             states, strategyScores, repairs, experienceEvents, outcome);
+                    promoteProbationAfterVerifiedPass(selectedStrategy, states, experienceEvents, outcome);
                     String strategyToAdopt = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
                             : finalReflection.reusableStrategy();
                     if (!strategyToAdopt.isBlank() && (selectedStrategy == null
@@ -218,7 +221,22 @@ public final class CognitiveSelfEvolutionEngine {
                     states.add("STRATEGY_ADOPTION_REJECTED_OUTCOME_FAIL");
                     terminationCode = "OUTCOME_VERIFIED_FAIL";
                 } else {
-                    states.add("STRATEGY_ADOPTION_DEFERRED_OUTCOME_UNKNOWN");
+                    recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
+                            states, strategyScores, repairs, experienceEvents, outcome);
+                    String strategyToTry = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
+                            : finalReflection.reusableStrategy();
+                    if (!strategyToTry.isBlank() && (selectedStrategy == null
+                            || !entryIdForStrategy(strategyToTry).equals(selectedStrategy.entryId()))) {
+                        ExperienceEntry probation = createProbation(strategyToTry, requestId,
+                                harnessFingerprint, domain, states, strategyScores, repairs,
+                                experienceEvents, outcome);
+                        if (probation != null && probation.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
+                                && strategyToTry.equals(appliedRepairStrategy)) {
+                            recordFeedback(probation, true, requestId, harnessFingerprint,
+                                    states, strategyScores, repairs, experienceEvents, outcome);
+                        }
+                    }
+                    states.add("STRATEGY_ENTERED_PROBATION_OUTCOME_UNKNOWN");
                     terminationCode = "OUTCOME_VERIFIED_UNKNOWN";
                 }
                 states.add("COMPLETED");
@@ -258,7 +276,7 @@ public final class CognitiveSelfEvolutionEngine {
         if (experienceLibrary == null) {
             throw new IllegalStateException("experience library is unavailable");
         }
-        return experienceLibrary.restore(domain, entryId, version);
+        return experienceLibrary.restoreToProbation(domain, entryId, version);
     }
 
     private OutcomeSignal verifyOutcome(String requestId, TaskOutcomeSpec spec,
@@ -435,16 +453,89 @@ public final class CognitiveSelfEvolutionEngine {
         EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs,
                 outcomeSignal);
         try {
-            ExperienceEntry updated = experienceLibrary.recordFeedback(selected.domain(), selected.entryId(),
-                    success, evidence, requestId, harnessFingerprint);
-            events.add(new CognitiveTrace.ExperienceEvent(updated.entryId(), updated.version(),
-                    updated.retired() ? "FEEDBACK_AND_RETIRE" : "FEEDBACK", updated.feedbackAttempts(),
-                    updated.feedbackSuccesses(), updated.retired()));
+            ExperienceEntry updated = selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
+                    ? experienceLibrary.recordProbationFeedback(selected.domain(), selected.entryId(),
+                    success, evidence, requestId, harnessFingerprint)
+                    : experienceLibrary.recordFeedback(selected.domain(), selected.entryId(), success,
+                    evidence, requestId, harnessFingerprint);
+            String action = updated.lifecycleStatus() == StrategyLifecycleStatus.RETIRED
+                    ? selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
+                    ? "PROBATION_RETIRED" : "FEEDBACK_AND_RETIRE"
+                    : updated.lifecycleStatus() == StrategyLifecycleStatus.ADOPTED
+                    && selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
+                    ? "PROBATION_PROMOTED" : selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
+                    ? "PROBATION_FEEDBACK" : "FEEDBACK";
+            events.add(experienceEvent(updated, action, outcomeSignal));
+            if (action.equals("PROBATION_FEEDBACK")) {
+                states.add("PROBATION_FEEDBACK_RECORDED");
+            } else if (action.equals("PROBATION_PROMOTED")) {
+                states.add("STRATEGY_PROMOTED_AFTER_PROBATION");
+            }
             if (updated.retired()) {
                 states.add("STRATEGY_RETIRED");
             }
         } catch (RuntimeException error) {
             states.add("EXPERIENCE_FEEDBACK_FAILED");
+        }
+    }
+
+    private void promoteProbationAfterVerifiedPass(ExperienceEntry selected, List<String> states,
+                                                   List<CognitiveTrace.ExperienceEvent> events,
+                                                   OutcomeSignal outcomeSignal) {
+        if (selected == null || selected.lifecycleStatus() != StrategyLifecycleStatus.PROBATION
+                || experienceLibrary == null) {
+            return;
+        }
+        try {
+            ExperienceEntry latest = experienceLibrary.find(selected.domain(), selected.entryId()).orElse(null);
+            if (latest == null || latest.lifecycleStatus() != StrategyLifecycleStatus.PROBATION) {
+                return;
+            }
+            ExperienceEntry promoted = experienceLibrary.promote(selected.domain(), selected.entryId());
+            events.add(experienceEvent(promoted, "VERIFIER_PASS_PROMOTION", outcomeSignal));
+            states.add("STRATEGY_PROMOTED_BY_OUTCOME_VERIFIER");
+        } catch (RuntimeException error) {
+            states.add("EXPERIENCE_PROMOTION_FAILED");
+        }
+    }
+
+    private ExperienceEntry createProbation(String strategy, String requestId, String harnessFingerprint,
+                                            ExperienceDomain domain, List<String> states,
+                                            List<CognitiveTrace.StrategyScore> scores,
+                                            List<CognitiveTrace.RepairEvent> repairs,
+                                            List<CognitiveTrace.ExperienceEvent> events,
+                                            OutcomeSignal outcomeSignal) {
+        if (strategy == null || strategy.isBlank() || experienceLibrary == null || domain == null
+                || requestId == null || requestId.isBlank()
+                || harnessFingerprint == null || !harnessFingerprint.matches("[0-9a-f]{64}")) {
+            return null;
+        }
+        String lesson = boundedStrategy(strategy);
+        String entryId = entryIdForStrategy(lesson);
+        try {
+            EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs,
+                    outcomeSignal);
+            ExperienceEntry candidate = new ExperienceEntry(entryId, domain, EXPERIENCE_CUE, lesson,
+                    "OutcomeVerifier UNKNOWN; lifecycle promotion requires empirical probation feedback.", evidence,
+                    0.5, requestId, harnessFingerprint, ExperienceDisposition.OBSERVED, false,
+                    AttributionStatus.UNRESOLVED, 1, false, null, Instant.now());
+            ExperienceEntry existing = experienceLibrary.find(domain, entryId).orElse(null);
+            if (existing == null || existing.lifecycleStatus() == StrategyLifecycleStatus.CANDIDATE) {
+                events.add(experienceEvent(candidate, "CANDIDATE_CREATED", outcomeSignal));
+            }
+            ExperienceEntry saved = experienceLibrary.createProbation(candidate);
+            String action = saved.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
+                    ? "PROBATION_CREATED" : "STRATEGY_REUSED_" + saved.lifecycleStatus();
+            events.add(experienceEvent(saved, action, outcomeSignal));
+            states.add(saved.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
+                    ? "STRATEGY_PROBATION_CREATED" : "STRATEGY_ALREADY_" + saved.lifecycleStatus());
+            return saved;
+        } catch (IllegalStateException error) {
+            states.add("STRATEGY_ALREADY_RETIRED");
+            return null;
+        } catch (RuntimeException error) {
+            states.add("EXPERIENCE_PROBATION_FAILED");
+            return null;
         }
     }
 
@@ -470,8 +561,7 @@ public final class CognitiveSelfEvolutionEngine {
                     AttributionStatus.UNRESOLVED, 1, false, null, Instant.now());
             ExperienceEntry saved = experienceLibrary.adoptRuntimeStrategy(candidate);
             String action = saved.version() == 1 ? "AUTO_ADOPTED" : "RECONFIRMED";
-            events.add(new CognitiveTrace.ExperienceEvent(saved.entryId(), saved.version(), action,
-                    saved.feedbackAttempts(), saved.feedbackSuccesses(), saved.retired()));
+            events.add(experienceEvent(saved, action, outcomeSignal));
             if (saved.version() == 1) {
                 states.add("STRATEGY_ADOPTED");
             }
@@ -480,6 +570,15 @@ public final class CognitiveSelfEvolutionEngine {
         } catch (RuntimeException error) {
             states.add("EXPERIENCE_ADOPTION_FAILED");
         }
+    }
+
+    private CognitiveTrace.ExperienceEvent experienceEvent(ExperienceEntry entry, String action,
+                                                           OutcomeSignal outcomeSignal) {
+        return new CognitiveTrace.ExperienceEvent(entry.entryId(), entry.version(), action,
+                entry.feedbackAttempts(), entry.feedbackSuccesses(), entry.retired(),
+                entry.lifecycleStatus(), entry.probationUses(), entry.probationSuccesses(),
+                entry.consecutiveFailures(), outcomeSignal == null
+                ? OutcomeSignal.Status.UNKNOWN : outcomeSignal.status());
     }
 
     private String entryIdForStrategy(String strategy) {

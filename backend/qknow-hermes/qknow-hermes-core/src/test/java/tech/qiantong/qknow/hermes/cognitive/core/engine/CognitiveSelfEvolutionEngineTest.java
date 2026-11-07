@@ -15,6 +15,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry.AttributionStatus;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.PlanStep;
 import tech.qiantong.qknow.hermes.cognitive.core.verification.ExpectedOutcome;
@@ -83,6 +84,7 @@ class CognitiveSelfEvolutionEngineTest {
         var adopted = library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries();
         assertEquals(1, adopted.size());
         assertEquals(ExperienceDisposition.ADOPTED, adopted.getFirst().disposition());
+        assertEquals(StrategyLifecycleStatus.ADOPTED, adopted.getFirst().lifecycleStatus());
         assertEquals(lesson, adopted.getFirst().lesson());
         assertTrue(first.trace().experienceEvents().stream().anyMatch(e -> e.action().equals("AUTO_ADOPTED")));
 
@@ -103,10 +105,15 @@ class CognitiveSelfEvolutionEngineTest {
         assertTrue(reusedPrompt.get().contains(lesson));
         ExperienceEntryView feedback = ExperienceEntryView.from(
                 library.find(domain, adopted.getFirst().entryId()).orElseThrow());
-        assertEquals(0, feedback.attempts());
-        assertEquals(0, feedback.successes());
+        assertEquals(1, feedback.attempts());
+        assertEquals(1, feedback.successes());
         assertFalse(library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().stream()
                 .anyMatch(entry -> entry.lesson().equals("Another candidate lesson that is not yet applied.")));
+        ExperienceEntry probation = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream()
+                .filter(entry -> entry.lesson().equals("Another candidate lesson that is not yet applied."))
+                .findFirst().orElseThrow();
+        assertEquals(StrategyLifecycleStatus.PROBATION, probation.lifecycleStatus());
     }
 
     @Test
@@ -133,6 +140,8 @@ class CognitiveSelfEvolutionEngineTest {
         assertEquals(0, updated.feedbackSuccesses());
         assertFalse(library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().stream()
                 .anyMatch(entry -> entry.lesson().equals("Do not adopt this failing candidate.")));
+        assertEquals(1, library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().size());
     }
 
     @Test
@@ -155,7 +164,9 @@ class CognitiveSelfEvolutionEngineTest {
 
         assertEquals(OutcomeSignal.Status.PASS, result.trace().outcomeSignal().status());
         assertEquals("OUTCOME_VERIFIED_PASS", result.trace().terminationCode());
-        assertEquals(1, library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().size());
+        ExperienceEntry adopted = library.recallForProposer(domain, "cognitive-evolution", 10)
+                .matchedEntries().getFirst();
+        assertEquals(StrategyLifecycleStatus.ADOPTED, adopted.lifecycleStatus());
     }
 
     @Test
@@ -234,8 +245,9 @@ class CognitiveSelfEvolutionEngineTest {
         ExperienceEntry restored = engine.restoreStrategy(domain, initial.entryId(), 1);
         assertFalse(restored.retired());
         assertEquals(5, restored.version());
+        assertEquals(StrategyLifecycleStatus.PROBATION, restored.lifecycleStatus());
         assertEquals(0, restored.consecutiveFailures());
-        assertTrue(library.recallForProposer(domain, "cognitive-evolution", 10).hasRelevantExperience());
+        assertTrue(library.recallForStrategySelection(domain, "cognitive-evolution", 10).hasRelevantExperience());
     }
 
     @Test
