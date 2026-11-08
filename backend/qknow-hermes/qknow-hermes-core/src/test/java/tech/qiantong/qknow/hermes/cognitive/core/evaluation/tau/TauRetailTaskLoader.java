@@ -40,7 +40,12 @@ public final class TauRetailTaskLoader {
     }
 
     public List<TaskCase> realAgentSmokeTasks() throws IOException {
-        List<String> ids = List.of("76", "113", "67", "43", "0");
+        return realAgentSmokeTasks(Boolean.parseBoolean(System.getenv("TAU_SMOKE_INCLUDE_COMPLEX")));
+    }
+
+    public List<TaskCase> realAgentSmokeTasks(boolean includeComplex) throws IOException {
+        List<String> ids = includeComplex ? List.of("76", "113", "67", "43", "0")
+                : List.of("76", "113", "67");
         JSONArray rawTasks = JSON.parseArray(read("tasks.json"));
         JSONObject splits = JSON.parseObject(read("split_tasks.json"));
         Set<String> trainIds = stringSet(splits.getJSONArray("train"));

@@ -15,7 +15,8 @@ public final class TauRetailToolAdapter implements ToolCallbackResolver {
     private static final List<String> SMOKE_TOOL_NAMES = List.of(
             "calculate", "cancel_pending_order", "exchange_delivered_order_items",
             "find_user_id_by_name_zip", "get_order_details", "get_product_details",
-            "get_user_details", "modify_user_address");
+            "get_user_details", "modify_pending_order_address", "modify_pending_order_items",
+            "modify_user_address");
     private static final Map<String, ToolSpec> SPECS = specs();
 
     private final TauRetailTools tools;
@@ -112,6 +113,10 @@ public final class TauRetailToolAdapter implements ToolCallbackResolver {
                 "{\"type\":\"object\",\"properties\":{\"user_id\":{\"type\":\"string\"}},\"required\":[\"user_id\"],\"additionalProperties\":false}");
         add(result, "modify_user_address", "Update a customer's address.",
                 "{\"type\":\"object\",\"properties\":{\"user_id\":{\"type\":\"string\"},\"address1\":{\"type\":\"string\"},\"address2\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"},\"country\":{\"type\":\"string\"},\"state\":{\"type\":\"string\"},\"zip\":{\"type\":\"string\"}},\"required\":[\"user_id\",\"address1\",\"address2\",\"city\",\"country\",\"state\",\"zip\"],\"additionalProperties\":false}");
+        add(result, "modify_pending_order_address", "Update the shipping address for a pending order.",
+                "{\"type\":\"object\",\"properties\":{\"order_id\":{\"type\":\"string\"},\"address1\":{\"type\":\"string\"},\"address2\":{\"type\":\"string\"},\"city\":{\"type\":\"string\"},\"country\":{\"type\":\"string\"},\"state\":{\"type\":\"string\"},\"zip\":{\"type\":\"string\"}},\"required\":[\"order_id\",\"address1\",\"address2\",\"city\",\"country\",\"state\",\"zip\"],\"additionalProperties\":false}");
+        add(result, "modify_pending_order_items", "Update items in a pending order.",
+                "{\"type\":\"object\",\"properties\":{\"order_id\":{\"type\":\"string\"},\"item_ids\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"new_item_ids\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"order_id\",\"item_ids\",\"new_item_ids\"],\"additionalProperties\":false}");
         return Map.copyOf(result);
     }
 

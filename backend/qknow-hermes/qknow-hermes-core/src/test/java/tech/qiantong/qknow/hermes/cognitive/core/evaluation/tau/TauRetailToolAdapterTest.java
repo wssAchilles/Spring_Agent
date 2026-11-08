@@ -13,19 +13,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TauRetailToolAdapterTest {
     @Test
-    void smokeSelectionUsesFiveTrainingTasksAcrossRequestedTaskShapes() throws Exception {
-        List<TauRetailTaskLoader.TaskCase> tasks = new TauRetailTaskLoader().realAgentSmokeTasks();
+    void realAgentSmokeCanSelectThreeSimpleTrainingTasks() throws Exception {
+        List<TauRetailTaskLoader.TaskCase> tasks = new TauRetailTaskLoader().realAgentSmokeTasks(false);
 
-        assertEquals(List.of("76", "113", "67", "43", "0"),
+        assertEquals(List.of("76", "113", "67"),
                 tasks.stream().map(task -> task.scenario().taskId()).toList());
         assertTrue(tasks.stream().allMatch(task -> task.scenario().split() == TauRetailTaskLoader.Split.BOOTSTRAP));
         assertTrue(tasks.get(0).referenceActions().stream().anyMatch(call -> call.name().equals("cancel_pending_order")));
         assertTrue(tasks.get(1).referenceActions().stream().anyMatch(call -> call.name().equals("cancel_pending_order")));
-        assertTrue(tasks.get(2).referenceActions().stream().noneMatch(call -> call.name().equals("cancel_pending_order")));
-        assertTrue(tasks.get(3).referenceActions().stream().anyMatch(call -> call.name().equals("modify_user_address")));
-        assertTrue(tasks.get(4).referenceActions().size() > 1);
-        assertTrue(tasks.get(4).referenceActions().stream()
-                .anyMatch(call -> call.name().equals("exchange_delivered_order_items")));
+        assertTrue(tasks.get(2).referenceActions().stream()
+                .anyMatch(call -> call.name().equals("get_order_details")));
+        assertEquals(List.of("76", "113", "67", "43", "0"),
+                new TauRetailTaskLoader().realAgentSmokeTasks(true).stream()
+                        .map(task -> task.scenario().taskId()).toList());
     }
 
     @Test
