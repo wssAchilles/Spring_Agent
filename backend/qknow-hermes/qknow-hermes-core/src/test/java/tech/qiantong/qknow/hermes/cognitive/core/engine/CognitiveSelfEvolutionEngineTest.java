@@ -131,9 +131,15 @@ class CognitiveSelfEvolutionEngineTest {
                 StrategyTemplate.create("mutation-template", 1, null,
                         List.of("direct state mutation request"), List.of("inspect", "mutate", "verify"),
                         List.of("use task-provided mutation tools"), List.of("verify resulting state"),
-                        List.of("requested state transition completed"), StrategyTaskType.STATE_MUTATION), null);
+                        List.of("requested state transition completed"), StrategyTaskType.CANCELLATION), null);
+        ExperienceEntry refund = strategy("refund-entry", domain, 8, 8, 0.99).withStrategy(
+                StrategyTemplate.create("refund-template", 1, null,
+                        List.of("refund request"), List.of("inspect", "refund", "verify"),
+                        List.of("use task-provided refund tools"), List.of("verify refund status"),
+                        List.of("refund completed"), StrategyTaskType.RETURN_REFUND), null);
         library.recordExperience(general);
         library.recordExperience(mutation);
+        library.recordExperience(refund);
         AtomicReference<String> usedPrompt = new AtomicReference<>();
         CognitiveExecutionResult result = engine.execute("request-mutation-type", "Please cancel my order",
                 "base prompt", model(
@@ -144,14 +150,16 @@ class CognitiveSelfEvolutionEngineTest {
                 (step, systemPrompt, previous) -> {
                     usedPrompt.set(systemPrompt);
                     return CognitiveSelfEvolutionEngine.StepExecution.success("cancelled");
-                }, null, StrategyTaskType.STATE_MUTATION);
+                }, null, StrategyTaskType.CANCELLATION);
 
         assertEquals(CognitiveExecutionResult.Status.COMPLETED, result.status());
         assertTrue(usedPrompt.get().contains(mutation.strategyTemplate().renderGuidance()));
         assertFalse(usedPrompt.get().contains(general.strategyTemplate().renderGuidance()));
+        assertFalse(usedPrompt.get().contains(refund.strategyTemplate().renderGuidance()));
         assertEquals(8, library.find(domain, general.entryId()).orElseThrow().feedbackAttempts());
+        assertEquals(8, library.find(domain, refund.entryId()).orElseThrow().feedbackAttempts());
         assertEquals(1, library.find(domain, mutation.entryId()).orElseThrow().feedbackAttempts());
-        assertTrue(result.trace().states().contains("TASK_TYPE:STATE_MUTATION"));
+        assertTrue(result.trace().states().contains("TASK_TYPE:CANCELLATION"));
     }
 
     @Test
@@ -171,23 +179,26 @@ class CognitiveSelfEvolutionEngineTest {
                 model(plan, "complete", "{\"accepted\":true,\"repair\":null,\"strategy\":\""
                         + lesson + "\"}"), domain, "2".repeat(64), 3, 0,
                 (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done"),
-                null, StrategyTaskType.STATE_MUTATION);
+                null, StrategyTaskType.UPDATE);
 
         List<ExperienceEntry> strategies = library.recallForStrategySelection(
                 domain, "cognitive-evolution", 10).matchedEntries();
         assertEquals(2, strategies.size());
-        assertEquals(StrategyTaskType.GENERAL, strategies.get(0).strategyTemplate().taskType());
-        assertEquals(StrategyTaskType.STATE_MUTATION, strategies.get(1).strategyTemplate().taskType());
+        assertEquals(java.util.Set.of(StrategyTaskType.GENERAL, StrategyTaskType.UPDATE), strategies.stream()
+                .map(entry -> entry.strategyTemplate().taskType()).collect(java.util.stream.Collectors.toSet()));
         assertFalse(strategies.get(0).entryId().equals(strategies.get(1).entryId()));
     }
 
     @Test
-    void generalAdoptedStrategyIsReadOnlyFallbackForMutationLearning() {
+    void broadAdoptedStrategySeedsSpecificMutationVariantWithoutReceivingFeedback() {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(702, List.of("kb-task-fallback"));
         ExperienceEntry general = templateParent("fallback-entry", "fallback-template", domain,
-                2, 2, 0.8);
+                2, 2, 0.8).withStrategy(StrategyTemplate.create("fallback-template", 1, null,
+                List.of("broad state-changing request"), List.of("inspect", "act", "verify"),
+                List.of("use tools for the requested action"), List.of("verify the final state"),
+                List.of("requested transition completed"), StrategyTaskType.STATE_MUTATION), null);
         library.recordExperience(general);
         AtomicReference<String> usedPrompt = new AtomicReference<>();
         CognitiveExecutionResult result = engine.execute("request-mutation-fallback", "Please modify my address",
@@ -199,7 +210,7 @@ class CognitiveSelfEvolutionEngineTest {
                 (step, systemPrompt, previous) -> {
                     usedPrompt.set(systemPrompt);
                     return CognitiveSelfEvolutionEngine.StepExecution.success("updated");
-                }, null, StrategyTaskType.STATE_MUTATION);
+                }, null, StrategyTaskType.UPDATE);
 
         assertEquals(CognitiveExecutionResult.Status.COMPLETED, result.status());
         assertTrue(usedPrompt.get().contains(general.strategyTemplate().renderGuidance()));
@@ -207,7 +218,7 @@ class CognitiveSelfEvolutionEngineTest {
         assertEquals(2, library.find(domain, general.entryId()).orElseThrow().feedbackAttempts());
         ExperienceEntry mutation = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
                 .matchedEntries().stream().filter(entry -> entry.strategyTemplate() != null
-                        && entry.strategyTemplate().taskType() == StrategyTaskType.STATE_MUTATION)
+                        && entry.strategyTemplate().taskType() == StrategyTaskType.UPDATE)
                 .findFirst().orElseThrow();
         assertEquals(StrategyLifecycleStatus.PROBATION, mutation.lifecycleStatus());
         assertEquals("fallback-template", mutation.strategyTemplate().parentTemplateId());

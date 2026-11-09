@@ -110,7 +110,7 @@ public final class CognitiveSelfEvolutionEngine {
                 selectedStrategy = selection.selected();
                 lineageParent = selectedStrategy;
                 strategyScores.addAll(selection.scores());
-                if (selectedStrategy == null && effectiveTaskType == StrategyTaskType.STATE_MUTATION) {
+                if (selectedStrategy == null && effectiveTaskType.isMutationFamily()) {
                     List<ExperienceEntry> fallback = recall.matchedEntries().stream()
                             .filter(entry -> entry.lifecycleStatus() == StrategyLifecycleStatus.ADOPTED)
                             .filter(entry -> entry.strategyTemplate() != null)

@@ -154,9 +154,9 @@ class AgentOrchestratorSelfEvolutionTest {
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(73, List.of());
         var strategies = store.list(domain);
         assertEquals(1, strategies.size());
-        assertEquals(StrategyTaskType.STATE_MUTATION, strategies.getFirst().strategyTemplate().taskType());
+        assertEquals(StrategyTaskType.CANCELLATION, strategies.getFirst().strategyTemplate().taskType());
         assertTrue(orchestrator.getLatestCognitiveTrace(request.getRequestId()).states()
-                .contains("TASK_TYPE:STATE_MUTATION"));
+                .contains("TASK_TYPE:CANCELLATION"));
     }
 
     @Test

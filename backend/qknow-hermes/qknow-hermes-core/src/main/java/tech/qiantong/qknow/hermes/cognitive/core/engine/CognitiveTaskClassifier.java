@@ -16,15 +16,16 @@ public final class CognitiveTaskClassifier {
                     + "(?:取消|换货|退货|退款|修改|更改|更新|替换|删除|移除|更换|编辑))");
     private static final List<MutationToolFamily> TOOL_FAMILIES = List.of(
             new MutationToolFamily(Pattern.compile("(?iu)^(?:cancel)(?:_|[A-Z]|$)"),
-                    Pattern.compile("(?iu)\\b(?:cancel)\\b|取消")),
+                    Pattern.compile("(?iu)\\b(?:cancel)\\b|取消"), StrategyTaskType.CANCELLATION),
             new MutationToolFamily(Pattern.compile("(?iu)^(?:exchange|replace)(?:_|[A-Z]|$)"),
-                    Pattern.compile("(?iu)\\b(?:exchange|replace)\\b|换货|替换|更换")),
+                    Pattern.compile("(?iu)\\b(?:exchange|replace)\\b|换货|替换|更换"), StrategyTaskType.EXCHANGE),
             new MutationToolFamily(Pattern.compile("(?iu)^(?:return|refund)(?:_|[A-Z]|$)"),
-                    Pattern.compile("(?iu)\\b(?:return|refund)\\b|退货|退款")),
+                    Pattern.compile("(?iu)\\b(?:return|refund)\\b|退货|退款"), StrategyTaskType.RETURN_REFUND),
             new MutationToolFamily(Pattern.compile("(?iu)^(?:modify|update|change|edit)(?:_|[A-Z]|$)"),
-                    Pattern.compile("(?iu)\\b(?:modify|update|change|edit)\\b|修改|更改|更新|编辑")),
+                    Pattern.compile("(?iu)\\b(?:modify|update|change|edit)\\b|修改|更改|更新|编辑"),
+                    StrategyTaskType.UPDATE),
             new MutationToolFamily(Pattern.compile("(?iu)^(?:delete|remove)(?:_|[A-Z]|$)"),
-                    Pattern.compile("(?iu)\\b(?:delete|remove)\\b|删除|移除")));
+                    Pattern.compile("(?iu)\\b(?:delete|remove)\\b|删除|移除"), StrategyTaskType.DELETION));
 
     private CognitiveTaskClassifier() { }
 
@@ -33,12 +34,14 @@ public final class CognitiveTaskClassifier {
                 || !EXPLICIT_MUTATION_REQUEST.matcher(question).find()) {
             return StrategyTaskType.GENERAL;
         }
-        return TOOL_FAMILIES.stream().anyMatch(family ->
-                family.intent().matcher(question).find()
+        List<StrategyTaskType> matchingFamilies = TOOL_FAMILIES.stream()
+                .filter(family -> family.intent().matcher(question).find()
                         && toolNames.stream().filter(name -> name != null)
                         .anyMatch(name -> family.tool().matcher(name).find()))
-                ? StrategyTaskType.STATE_MUTATION : StrategyTaskType.GENERAL;
+                .map(MutationToolFamily::taskType).distinct().toList();
+        return matchingFamilies.isEmpty() ? StrategyTaskType.GENERAL
+                : matchingFamilies.size() == 1 ? matchingFamilies.getFirst() : StrategyTaskType.STATE_MUTATION;
     }
 
-    private record MutationToolFamily(Pattern tool, Pattern intent) { }
+    private record MutationToolFamily(Pattern tool, Pattern intent, StrategyTaskType taskType) { }
 }
