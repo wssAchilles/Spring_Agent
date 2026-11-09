@@ -18,6 +18,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry.Attri
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTemplate;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyVariant;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTaskType;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitivePlan;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveTrace;
@@ -72,6 +73,16 @@ public final class CognitiveSelfEvolutionEngine {
                                             String harnessFingerprint, int maxTasks,
                                             int maxRepairAttempts, StepExecutor stepExecutor,
                                             TaskOutcomeSpec taskOutcomeSpec) {
+        return execute(requestId, question, systemPrompt, chatModel, domain, harnessFingerprint, maxTasks,
+                maxRepairAttempts, stepExecutor, taskOutcomeSpec, StrategyTaskType.GENERAL);
+    }
+
+    public CognitiveExecutionResult execute(String requestId, String question, String systemPrompt,
+                                            ChatModel chatModel, ExperienceDomain domain,
+                                            String harnessFingerprint, int maxTasks,
+                                            int maxRepairAttempts, StepExecutor stepExecutor,
+                                            TaskOutcomeSpec taskOutcomeSpec, StrategyTaskType taskType) {
+        StrategyTaskType effectiveTaskType = taskType == null ? StrategyTaskType.GENERAL : taskType;
         var states = new ArrayList<String>();
         var reflections = new ArrayList<CognitiveTrace.ReflectionEvent>();
         var repairs = new ArrayList<CognitiveTrace.RepairEvent>();
@@ -85,18 +96,35 @@ public final class CognitiveSelfEvolutionEngine {
         }
 
         ExperienceEntry selectedStrategy = null;
+        ExperienceEntry lineageParent = null;
         String selectedLesson = "";
         if (domain != null && experienceLibrary != null) {
             states.add("RECALLING");
+            states.add("TASK_TYPE:" + effectiveTaskType);
             try {
                 var recall = experienceLibrary.recallForStrategySelection(
                         domain, EXPERIENCE_CUE, MAX_RECALLED_STRATEGIES);
-                var selection = strategySelector.select(recall.matchedEntries());
+                List<ExperienceEntry> applicable = recall.matchedEntries().stream()
+                        .filter(entry -> strategyTaskType(entry).appliesTo(effectiveTaskType)).toList();
+                var selection = strategySelector.select(applicable);
                 selectedStrategy = selection.selected();
+                lineageParent = selectedStrategy;
                 strategyScores.addAll(selection.scores());
+                if (selectedStrategy == null && effectiveTaskType == StrategyTaskType.STATE_MUTATION) {
+                    List<ExperienceEntry> fallback = recall.matchedEntries().stream()
+                            .filter(entry -> entry.lifecycleStatus() == StrategyLifecycleStatus.ADOPTED)
+                            .filter(entry -> entry.strategyTemplate() != null)
+                            .filter(entry -> strategyTaskType(entry).canSeedCrossTaskVariant()).toList();
+                    var fallbackSelection = strategySelector.select(fallback);
+                    strategyScores.addAll(fallbackSelection.scores());
+                    if (fallbackSelection.selected() != null) {
+                        lineageParent = fallbackSelection.selected();
+                        selectedLesson = strategyGuidance(lineageParent);
+                        states.add("STRATEGY_CROSS_TASK_SEED_SELECTED");
+                    }
+                }
                 if (selectedStrategy != null) {
-                    selectedLesson = selectedStrategy.strategyTemplate() == null
-                            ? selectedStrategy.lesson() : selectedStrategy.strategyTemplate().renderGuidance();
+                    selectedLesson = strategyGuidance(selectedStrategy);
                 }
             } catch (RuntimeException error) {
                 states.add("EXPERIENCE_RECALL_FAILED");
@@ -213,11 +241,11 @@ public final class CognitiveSelfEvolutionEngine {
                     String strategyToAdopt = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
                             : finalReflection.reusableStrategy();
                     if (!strategyToAdopt.isBlank() && (selectedStrategy == null
-                            || !strategyCandidateId(strategyToAdopt, selectedStrategy)
+                            || !strategyCandidateId(strategyToAdopt, lineageParent, effectiveTaskType)
                             .equals(selectedStrategy.entryId()))) {
-                        ExperienceEntry learned = createStrategy(strategyToAdopt, selectedStrategy,
+                        ExperienceEntry learned = createStrategy(strategyToAdopt, lineageParent,
                                 requestId, harnessFingerprint, domain, true, states, strategyScores,
-                                repairs, experienceEvents, outcome);
+                                repairs, experienceEvents, outcome, effectiveTaskType);
                         if (learned != null && learned.lifecycleStatus() == StrategyLifecycleStatus.PROBATION) {
                             states.add("STRATEGY_VARIANT_REMAINS_PROBATION");
                         }
@@ -235,11 +263,11 @@ public final class CognitiveSelfEvolutionEngine {
                             : finalReflection.reusableStrategy();
                     boolean enteredProbation = false;
                     if (!strategyToTry.isBlank() && (selectedStrategy == null
-                            || !strategyCandidateId(strategyToTry, selectedStrategy)
+                            || !strategyCandidateId(strategyToTry, lineageParent, effectiveTaskType)
                             .equals(selectedStrategy.entryId()))) {
-                        ExperienceEntry probation = createStrategy(strategyToTry, selectedStrategy,
+                        ExperienceEntry probation = createStrategy(strategyToTry, lineageParent,
                                 requestId, harnessFingerprint, domain, false, states, strategyScores,
-                                repairs, experienceEvents, outcome);
+                                repairs, experienceEvents, outcome, effectiveTaskType);
                         enteredProbation = probation != null
                                 && probation.lifecycleStatus() == StrategyLifecycleStatus.PROBATION;
                         if (enteredProbation && strategyToTry.equals(appliedRepairStrategy)) {
@@ -531,7 +559,7 @@ public final class CognitiveSelfEvolutionEngine {
                                            List<CognitiveTrace.StrategyScore> scores,
                                            List<CognitiveTrace.RepairEvent> repairs,
                                            List<CognitiveTrace.ExperienceEvent> events,
-                                           OutcomeSignal outcomeSignal) {
+                                           OutcomeSignal outcomeSignal, StrategyTaskType taskType) {
         if (strategy == null || strategy.isBlank() || experienceLibrary == null || domain == null
                 || requestId == null || requestId.isBlank()
                 || harnessFingerprint == null || !harnessFingerprint.matches("[0-9a-f]{64}")) {
@@ -540,8 +568,8 @@ public final class CognitiveSelfEvolutionEngine {
         String lesson = boundedStrategy(strategy);
         ExperienceEntry parent = selected != null && selected.strategyTemplate() != null ? selected : null;
         boolean variant = parent != null;
-        String entryId = variant ? variantId(parent.strategyTemplate().templateId(), lesson)
-                : templateIdForStrategy(lesson);
+        String entryId = variant ? variantId(parent.strategyTemplate().templateId(), lesson, taskType)
+                : templateIdForStrategy(lesson, taskType);
         try {
             EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs,
                     outcomeSignal);
@@ -549,11 +577,14 @@ public final class CognitiveSelfEvolutionEngine {
             if (existing != null) {
                 return existing;
             }
-            StrategyTemplate template = strategyTemplate(entryId, parent, lesson);
+            StrategyTemplate template = strategyTemplate(entryId, parent, lesson, taskType);
+            List<String> changedFields = parent != null && parent.strategyTemplate() != null
+                    && parent.strategyTemplate().taskType() != taskType
+                    ? List.of("reflectionRules", "taskType") : List.of("reflectionRules");
             StrategyVariant strategyVariant = variant
                     ? new StrategyVariant(entryId, parent.strategyTemplate().templateId(),
                     "reflection_or_failure_attribution:" + lesson,
-                    List.of("reflectionRules"), "Improve behavior for the observed task without changing tool policy")
+                    changedFields, "Improve behavior for the observed task without changing tool policy")
                     : null;
             ExperienceDisposition initialDisposition = verifierPass && !variant
                     ? ExperienceDisposition.ADOPTED : ExperienceDisposition.OBSERVED;
@@ -593,7 +624,8 @@ public final class CognitiveSelfEvolutionEngine {
         }
     }
 
-    private StrategyTemplate strategyTemplate(String templateId, ExperienceEntry parent, String lesson) {
+    private StrategyTemplate strategyTemplate(String templateId, ExperienceEntry parent, String lesson,
+                                              StrategyTaskType taskType) {
         StrategyTemplate.Content content = parent == null || parent.strategyTemplate() == null
                 ? StrategyTemplate.Content.fromLesson(lesson) : parent.strategyTemplate().content();
         String parentId = parent == null || parent.strategyTemplate() == null
@@ -611,7 +643,13 @@ public final class CognitiveSelfEvolutionEngine {
                     content.successCriteria());
         }
         return StrategyTemplate.create(templateId, version, parentId, content.preconditions(),
-                content.planSkeleton(), content.toolPolicy(), content.reflectionRules(), content.successCriteria());
+                content.planSkeleton(), content.toolPolicy(), content.reflectionRules(), content.successCriteria(),
+                taskType);
+    }
+
+    private StrategyTaskType strategyTaskType(ExperienceEntry entry) {
+        return entry.strategyTemplate() == null ? StrategyTaskType.UNCLASSIFIED
+                : entry.strategyTemplate().taskType();
     }
 
     private boolean hasParentTemplate(ExperienceEntry selected) {
@@ -635,18 +673,24 @@ public final class CognitiveSelfEvolutionEngine {
         return "cog-" + sha256(boundedStrategy(strategy)).substring(0, 24);
     }
 
-    private String strategyCandidateId(String strategy, ExperienceEntry parent) {
+    private String strategyCandidateId(String strategy, ExperienceEntry parent, StrategyTaskType taskType) {
         return parent != null && parent.strategyTemplate() != null
-                ? variantId(parent.strategyTemplate().templateId(), strategy)
-                : templateIdForStrategy(strategy);
+                ? variantId(parent.strategyTemplate().templateId(), strategy, taskType)
+                : templateIdForStrategy(strategy, taskType);
     }
 
-    private String templateIdForStrategy(String strategy) {
-        return "tpl-" + sha256(boundedStrategy(strategy)).substring(0, 24);
+    private String templateIdForStrategy(String strategy, StrategyTaskType taskType) {
+        return "tpl-" + sha256(strategyIdentity(strategy, taskType)).substring(0, 24);
     }
 
-    private String variantId(String parentTemplateId, String strategy) {
-        return "var-" + sha256(parentTemplateId + "|" + boundedStrategy(strategy)).substring(0, 24);
+    private String variantId(String parentTemplateId, String strategy, StrategyTaskType taskType) {
+        return "var-" + sha256(parentTemplateId + "|" + strategyIdentity(strategy, taskType)).substring(0, 24);
+    }
+
+    private String strategyIdentity(String strategy, StrategyTaskType taskType) {
+        String bounded = boundedStrategy(strategy);
+        return taskType == StrategyTaskType.GENERAL || taskType == StrategyTaskType.UNCLASSIFIED
+                ? bounded : taskType.name() + "|" + bounded;
     }
 
     private EvidenceReference evidenceReference(String requestId, String fingerprint,

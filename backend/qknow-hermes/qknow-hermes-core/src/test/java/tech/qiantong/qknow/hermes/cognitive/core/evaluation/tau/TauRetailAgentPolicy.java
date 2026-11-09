@@ -54,6 +54,22 @@ public final class TauRetailAgentPolicy implements TauRetailEvaluationRunner.Age
     }
 
     public static TauRetailAgentPolicy fromEnvironment(ChatModelFactory factory) {
+        return fromEnvironment(factory, LIVE_BUDGET);
+    }
+
+    static TauRetailAgentPolicy fromEnvironment(BudgetLimits budgetLimits) {
+        ChatModelFactory factory = new ChatModelFactory() {
+            @Override
+            public org.springframework.ai.chat.model.ChatModel getChatModel(
+                    String platform, String baseUrl, String apiKey, String modelName) {
+                return new DeepSeekCompatibleChatModel(baseUrl, apiKey, modelName, null,
+                        budgetLimits.maxOutputTokensPerCall());
+            }
+        };
+        return fromEnvironment(factory, budgetLimits);
+    }
+
+    private static TauRetailAgentPolicy fromEnvironment(ChatModelFactory factory, BudgetLimits budgetLimits) {
         String apiKey = System.getenv("DEEPSEEK_API_KEY");
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("DEEPSEEK_API_KEY is required for tau live smoke");
@@ -64,18 +80,11 @@ public final class TauRetailAgentPolicy implements TauRetailEvaluationRunner.Age
             model = envOrDefault("DEEPSEEK_MODEL", "deepseek-flash");
         }
         return new TauRetailAgentPolicy(factory, "DeepSeek", baseUrl, apiKey, model,
-                LIVE_BUDGET, true);
+                budgetLimits, true);
     }
 
     public static TauRetailAgentPolicy fromEnvironment() {
-        return fromEnvironment(new ChatModelFactory() {
-            @Override
-            public org.springframework.ai.chat.model.ChatModel getChatModel(
-                    String platform, String baseUrl, String apiKey, String modelName) {
-                return new DeepSeekCompatibleChatModel(baseUrl, apiKey, modelName, null,
-                        LIVE_BUDGET.maxOutputTokensPerCall());
-            }
-        });
+        return fromEnvironment(LIVE_BUDGET);
     }
 
     @Override

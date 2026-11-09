@@ -16,6 +16,7 @@ public record StrategyTemplate(
         List<String> toolPolicy,
         List<String> reflectionRules,
         List<String> successCriteria,
+        StrategyTaskType taskType,
         String fingerprint
 ) {
     public record Content(List<String> preconditions, List<String> planSkeleton,
@@ -52,21 +53,41 @@ public record StrategyTemplate(
         toolPolicy = immutableNonBlank(toolPolicy, "toolPolicy");
         reflectionRules = immutableNonBlank(reflectionRules, "reflectionRules");
         successCriteria = immutableNonBlank(successCriteria, "successCriteria");
+        taskType = taskType == null ? StrategyTaskType.UNCLASSIFIED : taskType;
         String expected = digest(version, parentTemplateId, preconditions, planSkeleton,
-                toolPolicy, reflectionRules, successCriteria);
-        if (fingerprint == null || !MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.US_ASCII), fingerprint.getBytes(StandardCharsets.US_ASCII))) {
+                toolPolicy, reflectionRules, successCriteria, taskType);
+        String legacy = taskType == StrategyTaskType.UNCLASSIFIED
+                ? digestLegacy(version, parentTemplateId, preconditions, planSkeleton,
+                toolPolicy, reflectionRules, successCriteria) : null;
+        if (fingerprint == null || !matches(fingerprint, expected)
+                && (legacy == null || !matches(fingerprint, legacy))) {
             throw new IllegalArgumentException("template fingerprint does not match its content");
         }
+    }
+
+    public StrategyTemplate(String templateId, int version, String parentTemplateId,
+                            List<String> preconditions, List<String> planSkeleton,
+                            List<String> toolPolicy, List<String> reflectionRules,
+                            List<String> successCriteria, String fingerprint) {
+        this(templateId, version, parentTemplateId, preconditions, planSkeleton,
+                toolPolicy, reflectionRules, successCriteria, StrategyTaskType.UNCLASSIFIED, fingerprint);
     }
 
     public static StrategyTemplate create(String templateId, int version, String parentTemplateId,
                                           List<String> preconditions, List<String> planSkeleton,
                                           List<String> toolPolicy, List<String> reflectionRules,
                                           List<String> successCriteria) {
+        return create(templateId, version, parentTemplateId, preconditions, planSkeleton, toolPolicy,
+                reflectionRules, successCriteria, StrategyTaskType.UNCLASSIFIED);
+    }
+
+    public static StrategyTemplate create(String templateId, int version, String parentTemplateId,
+                                          List<String> preconditions, List<String> planSkeleton,
+                                          List<String> toolPolicy, List<String> reflectionRules,
+                                          List<String> successCriteria, StrategyTaskType taskType) {
         return new StrategyTemplate(templateId, version, parentTemplateId, preconditions, planSkeleton,
-                toolPolicy, reflectionRules, successCriteria, digest(version, parentTemplateId,
-                preconditions, planSkeleton, toolPolicy, reflectionRules, successCriteria));
+                toolPolicy, reflectionRules, successCriteria, taskType, digest(version, parentTemplateId,
+                preconditions, planSkeleton, toolPolicy, reflectionRules, successCriteria, taskType));
     }
 
     public String renderGuidance() {
@@ -93,11 +114,31 @@ public record StrategyTemplate(
 
     private static String digest(int version, String parentTemplateId, List<String> preconditions,
                                  List<String> planSkeleton, List<String> toolPolicy,
-                                 List<String> reflectionRules, List<String> successCriteria) {
+                                 List<String> reflectionRules, List<String> successCriteria,
+                                 StrategyTaskType taskType) {
+        String canonical = version + "|" + Objects.toString(parentTemplateId, "") + "|"
+                + canonicalList(preconditions) + "|" + canonicalList(planSkeleton) + "|"
+                + canonicalList(toolPolicy) + "|" + canonicalList(reflectionRules) + "|"
+                + canonicalList(successCriteria) + "|" + taskType.name();
+        return hash(canonical);
+    }
+
+    private static String digestLegacy(int version, String parentTemplateId, List<String> preconditions,
+                                       List<String> planSkeleton, List<String> toolPolicy,
+                                       List<String> reflectionRules, List<String> successCriteria) {
         String canonical = version + "|" + Objects.toString(parentTemplateId, "") + "|"
                 + canonicalList(preconditions) + "|" + canonicalList(planSkeleton) + "|"
                 + canonicalList(toolPolicy) + "|" + canonicalList(reflectionRules) + "|"
                 + canonicalList(successCriteria);
+        return hash(canonical);
+    }
+
+    private static boolean matches(String fingerprint, String expected) {
+        return MessageDigest.isEqual(expected.getBytes(StandardCharsets.US_ASCII),
+                fingerprint.getBytes(StandardCharsets.US_ASCII));
+    }
+
+    private static String hash(String canonical) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(canonical.getBytes(StandardCharsets.UTF_8)));

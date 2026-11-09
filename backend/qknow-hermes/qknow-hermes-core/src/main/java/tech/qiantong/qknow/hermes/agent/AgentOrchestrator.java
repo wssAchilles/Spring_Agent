@@ -42,6 +42,8 @@ import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.CognitiveEvolutionConfig;
 import tech.qiantong.qknow.hermes.config.PlanSolveConfig;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTaskType;
+import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveTaskClassifier;
 import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveSelfEvolutionEngine;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveTrace;
@@ -843,6 +845,8 @@ public class AgentOrchestrator {
             ExperienceDomain domain = cognitiveExperienceDomain(request);
             int maxTasks = planSolveConfig == null ? 5 : Math.max(1, planSolveConfig.getMaxTasks());
             int maxRepairs = Math.max(0, cognitiveEvolutionConfig.getMaxRepairAttempts());
+            StrategyTaskType taskType = CognitiveTaskClassifier.classify(
+                    request.getQuestion(), enabledToolNames);
             List<ToolCallback> cognitiveTools = bridgeTools;
             ToolCallbackResolver cognitiveResolver = planResolver;
             ChatModel cognitiveModel = chatModel;
@@ -853,7 +857,8 @@ public class AgentOrchestrator {
                     harnessFingerprint, maxTasks, maxRepairs,
                     (step, workerSystemPrompt, previousResults) -> executeCognitiveStep(
                             step.stepId(), step.objective(), workerSystemPrompt, cognitiveTools,
-                            cognitiveResolver, cognitiveModel, cognitiveDispatch, cognitiveHistory, previousResults));
+                            cognitiveResolver, cognitiveModel, cognitiveDispatch, cognitiveHistory, previousResults),
+                    null, taskType);
             rememberCognitiveTrace(request.getRequestId(), cognitiveResult.trace());
             if (cognitiveResult.status() == CognitiveExecutionResult.Status.COMPLETED) {
                 String answer = cognitiveResult.answer() == null ? "" : cognitiveResult.answer();

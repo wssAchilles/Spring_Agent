@@ -12,6 +12,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.DefaultExperienceLibr
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTaskType;
 import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveSelfEvolutionEngine;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.CognitiveEvolutionConfig;
@@ -98,6 +99,64 @@ class AgentOrchestratorSelfEvolutionTest {
         assertEquals(1, persisted.size());
         assertEquals(StrategyLifecycleStatus.PROBATION, persisted.getFirst().lifecycleStatus());
         assertEquals("UNKNOWN", trace.experienceEvents().getFirst().outcomeStatus().name());
+    }
+
+    @Test
+    void explicitMutationRequestStoresStrategyUnderMutationTaskType() {
+        ChatModelFactory factory = mock(ChatModelFactory.class);
+        ChatModel model = mock(ChatModel.class);
+        when(factory.getChatModel(anyString(), any(), any(), anyString())).thenReturn(model);
+        when(model.call(any(Prompt.class))).thenAnswer(invocation -> {
+            String userPrompt = invocation.getArgument(0, Prompt.class).getInstructions().stream()
+                    .filter(org.springframework.ai.chat.messages.UserMessage.class::isInstance)
+                    .map(org.springframework.ai.chat.messages.UserMessage.class::cast)
+                    .map(org.springframework.ai.chat.messages.UserMessage::getText)
+                    .reduce((first, next) -> next).orElse("");
+            if (userPrompt.contains("拆解为最多")) {
+                return response("{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect order\",\"dependencies\":[]}]}");
+            }
+            if (userPrompt.contains("inspect order")) {
+                return response("order inspected");
+            }
+            if (userPrompt.contains("根据已完成的步骤结果回答")) {
+                return response("order cancelled");
+            }
+            if (userPrompt.contains("评估当前答案")) {
+                return response("{\"accepted\":true,\"repair\":null,"
+                        + "\"strategy\":\"Read the order state after cancellation.\"}");
+            }
+            throw new AssertionError("unexpected model prompt: " + userPrompt);
+        });
+        when(model.stream(any(Prompt.class))).thenReturn(Flux.just(response("order inspected")));
+
+        PlanSolveConfig planConfig = new PlanSolveConfig();
+        planConfig.setEnabled(true);
+        planConfig.setComplexKeywords(List.of("分析"));
+        AgentOrchestrator orchestrator = new AgentOrchestrator(factory, name -> null, null, planConfig,
+                null, null, null, null, null);
+        var store = new FileSystemExperienceStore(temp);
+        CognitiveEvolutionConfig evolutionConfig = new CognitiveEvolutionConfig();
+        evolutionConfig.setEnabled(true);
+        orchestrator.setCognitiveEvolution(evolutionConfig,
+                new CognitiveSelfEvolutionEngine(new DefaultExperienceLibrary(store)));
+        ChatRequest request = ChatRequest.newBuilder().setRequestId("self-evolution-mutation")
+                .setBotId(73).setQuestion("请取消订单并分析结果")
+                .setSystemPrompt("Use available order tools")
+                .addToolMethodIds("cancel_pending_order")
+                .setModelConfig(ModelConfig.newBuilder().setPlatform("test")
+                        .setModelName("deterministic-test").build())
+                .build();
+
+        var events = orchestrator.chat(request).collectList().block();
+
+        assertEquals("order cancelled", events.stream().filter(event -> event.hasFinished())
+                .findFirst().orElseThrow().getFinished().getFullText());
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(73, List.of());
+        var strategies = store.list(domain);
+        assertEquals(1, strategies.size());
+        assertEquals(StrategyTaskType.STATE_MUTATION, strategies.getFirst().strategyTemplate().taskType());
+        assertTrue(orchestrator.getLatestCognitiveTrace(request.getRequestId()).states()
+                .contains("TASK_TYPE:STATE_MUTATION"));
     }
 
     @Test

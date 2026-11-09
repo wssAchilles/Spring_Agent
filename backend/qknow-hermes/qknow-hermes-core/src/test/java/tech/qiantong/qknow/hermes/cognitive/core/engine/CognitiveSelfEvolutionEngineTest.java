@@ -17,6 +17,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTemplate;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTaskType;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyVariant;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.PlanStep;
@@ -117,6 +118,100 @@ class CognitiveSelfEvolutionEngineTest {
                 .findFirst().orElseThrow();
         assertEquals(StrategyLifecycleStatus.PROBATION, probation.lifecycleStatus());
         assertTrue(probation.strategyVariant() != null);
+    }
+
+    @Test
+    void ucbFiltersToMatchingTaskTypeBeforeScoring() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(701, List.of("kb-task-type"));
+        ExperienceEntry general = templateParent("general-entry", "general-template", domain,
+                8, 8, 0.99);
+        ExperienceEntry mutation = strategy("mutation-entry", domain, 0, 0, 0.4).withStrategy(
+                StrategyTemplate.create("mutation-template", 1, null,
+                        List.of("direct state mutation request"), List.of("inspect", "mutate", "verify"),
+                        List.of("use task-provided mutation tools"), List.of("verify resulting state"),
+                        List.of("requested state transition completed"), StrategyTaskType.STATE_MUTATION), null);
+        library.recordExperience(general);
+        library.recordExperience(mutation);
+        AtomicReference<String> usedPrompt = new AtomicReference<>();
+        CognitiveExecutionResult result = engine.execute("request-mutation-type", "Please cancel my order",
+                "base prompt", model(
+                        "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}",
+                        "answer", "{\"accepted\":true,\"repair\":null,"
+                                + "\"strategy\":\"Persist the mutation result before completion.\"}"),
+                domain, "d".repeat(64), 3, 0,
+                (step, systemPrompt, previous) -> {
+                    usedPrompt.set(systemPrompt);
+                    return CognitiveSelfEvolutionEngine.StepExecution.success("cancelled");
+                }, null, StrategyTaskType.STATE_MUTATION);
+
+        assertEquals(CognitiveExecutionResult.Status.COMPLETED, result.status());
+        assertTrue(usedPrompt.get().contains(mutation.strategyTemplate().renderGuidance()));
+        assertFalse(usedPrompt.get().contains(general.strategyTemplate().renderGuidance()));
+        assertEquals(8, library.find(domain, general.entryId()).orElseThrow().feedbackAttempts());
+        assertEquals(1, library.find(domain, mutation.entryId()).orElseThrow().feedbackAttempts());
+        assertTrue(result.trace().states().contains("TASK_TYPE:STATE_MUTATION"));
+    }
+
+    @Test
+    void identicalLessonsRemainSeparateAcrossTaskTypes() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(703, List.of("kb-task-identity"));
+        String lesson = "Verify the resulting state after applying the requested change.";
+        String plan = "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}";
+
+        engine.execute("request-general-identity", "Analyze this request", "base prompt",
+                model(plan, "complete", "{\"accepted\":true,\"repair\":null,\"strategy\":\""
+                        + lesson + "\"}"), domain, "1".repeat(64), 3, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done"),
+                null, StrategyTaskType.GENERAL);
+        engine.execute("request-mutation-identity", "Please modify my address", "base prompt",
+                model(plan, "complete", "{\"accepted\":true,\"repair\":null,\"strategy\":\""
+                        + lesson + "\"}"), domain, "2".repeat(64), 3, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done"),
+                null, StrategyTaskType.STATE_MUTATION);
+
+        List<ExperienceEntry> strategies = library.recallForStrategySelection(
+                domain, "cognitive-evolution", 10).matchedEntries();
+        assertEquals(2, strategies.size());
+        assertEquals(StrategyTaskType.GENERAL, strategies.get(0).strategyTemplate().taskType());
+        assertEquals(StrategyTaskType.STATE_MUTATION, strategies.get(1).strategyTemplate().taskType());
+        assertFalse(strategies.get(0).entryId().equals(strategies.get(1).entryId()));
+    }
+
+    @Test
+    void generalAdoptedStrategyIsReadOnlyFallbackForMutationLearning() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(702, List.of("kb-task-fallback"));
+        ExperienceEntry general = templateParent("fallback-entry", "fallback-template", domain,
+                2, 2, 0.8);
+        library.recordExperience(general);
+        AtomicReference<String> usedPrompt = new AtomicReference<>();
+        CognitiveExecutionResult result = engine.execute("request-mutation-fallback", "Please modify my address",
+                "base prompt", model(
+                        "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}",
+                        "answer", "{\"accepted\":true,\"repair\":null,"
+                                + "\"strategy\":\"Re-read the address after the requested update.\"}"),
+                domain, "e".repeat(64), 3, 0,
+                (step, systemPrompt, previous) -> {
+                    usedPrompt.set(systemPrompt);
+                    return CognitiveSelfEvolutionEngine.StepExecution.success("updated");
+                }, null, StrategyTaskType.STATE_MUTATION);
+
+        assertEquals(CognitiveExecutionResult.Status.COMPLETED, result.status());
+        assertTrue(usedPrompt.get().contains(general.strategyTemplate().renderGuidance()));
+        assertTrue(result.trace().states().contains("STRATEGY_CROSS_TASK_SEED_SELECTED"));
+        assertEquals(2, library.find(domain, general.entryId()).orElseThrow().feedbackAttempts());
+        ExperienceEntry mutation = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream().filter(entry -> entry.strategyTemplate() != null
+                        && entry.strategyTemplate().taskType() == StrategyTaskType.STATE_MUTATION)
+                .findFirst().orElseThrow();
+        assertEquals(StrategyLifecycleStatus.PROBATION, mutation.lifecycleStatus());
+        assertEquals("fallback-template", mutation.strategyTemplate().parentTemplateId());
+        assertEquals("fallback-template", mutation.strategyVariant().parentTemplateId());
     }
 
     @Test

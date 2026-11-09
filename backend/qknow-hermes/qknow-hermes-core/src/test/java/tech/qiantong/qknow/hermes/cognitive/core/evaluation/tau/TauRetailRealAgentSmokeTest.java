@@ -18,6 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TauRetailRealAgentSmokeTest {
+    private static final TauRetailAgentPolicy.BudgetLimits TASK_76_BUDGET =
+            new TauRetailAgentPolicy.BudgetLimits(8, 8, 15_000, 60_000, 1_024);
+
     @Test
     void classifiesNoToolCallsAndMissingMutation() {
         var task = new TauRetailTaskLoader.TaskCase(
@@ -42,8 +45,54 @@ class TauRetailRealAgentSmokeTest {
     }
 
     @Test
-    @EnabledIfEnvironmentVariable(named = "RUN_TAU_REAL_API", matches = "true")
+    void selectsOnlyTask76AndUsesRequestedBudget() throws IOException {
+        var tasks = task76Only(new TauRetailTaskLoader());
+
+        assertEquals(1, tasks.size());
+        assertEquals("76", tasks.getFirst().scenario().taskId());
+        assertEquals(new TauRetailAgentPolicy.BudgetLimits(8, 8, 15_000, 60_000, 1_024), TASK_76_BUDGET);
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "RUN_TAU_TASK_76", matches = "true")
+    void runsOnlyTask76WhenExplicitlyEnabled() throws IOException {
+        requireLiveApiGate();
+        String apiKey = System.getenv("DEEPSEEK_API_KEY");
+        assertNotNull(apiKey);
+        assertTrue(!apiKey.isBlank(), "DEEPSEEK_API_KEY must be supplied through the process environment");
+
+        TauRetailTaskLoader loader = new TauRetailTaskLoader();
+        List<TauRetailTaskLoader.TaskCase> tasks = task76Only(loader);
+        String policyText = loader.policy();
+        var initialDatabase = TauRetailEnvironment.fromResource().snapshot();
+        TauRetailAgentPolicy agent = TauRetailAgentPolicy.fromEnvironment(TASK_76_BUDGET);
+        TauRetailStateEvaluator evaluator = new TauRetailStateEvaluator();
+        TaskSmokeResult result = runTask(tasks.getFirst(), initialDatabase, policyText, evaluator, agent);
+        SmokeReport report = new SmokeReport(UUID.randomUUID().toString(), "DeepSeek", agent.modelName(),
+                result.realApiCalls(), agent.budgetSnapshot(), List.of(result));
+        writeReport(report);
+
+        assertEquals(1, report.tasks().size());
+        assertEquals("76", report.tasks().getFirst().taskId());
+        TaskSmokeResult task = report.tasks().getFirst();
+        assertTrue(task.toolCallSequence().stream().anyMatch(call ->
+                        "cancel_pending_order".equals(call.name()) && call.success()),
+                "task 76 must execute cancel_pending_order successfully");
+        assertEquals("PASS", task.evaluatorStatus(), "task 76 must satisfy the state evaluator");
+        assertTrue(task.failureCode() == null || !task.failureCode().startsWith("AGENT_ERROR_500"),
+                "task 76 must not fail with Agent error 500");
+        assertTrue(task.modelCalls() <= TASK_76_BUDGET.maxCallsPerTask());
+        assertTrue(task.tokens() <= TASK_76_BUDGET.maxTotalTokens());
+        assertTrue(task.latencyMs() <= TASK_76_BUDGET.maxWallClockMs());
+        assertTrue(report.realApiCalls() <= TASK_76_BUDGET.maxTotalCalls());
+        assertTrue(report.budget().observedTokens() <= TASK_76_BUDGET.maxTotalTokens());
+        assertTrue(report.budget().elapsedMs() <= TASK_76_BUDGET.maxWallClockMs());
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "RUN_TAU_MULTI_TASK_API", matches = "true")
     void runsThreeSimpleRealAgentRetailTasksWhenExplicitlyEnabled() throws IOException {
+        requireLiveApiGate();
         String apiKey = System.getenv("DEEPSEEK_API_KEY");
         assertNotNull(apiKey);
         assertTrue(!apiKey.isBlank(), "DEEPSEEK_API_KEY must be supplied through the process environment");
@@ -64,32 +113,54 @@ class TauRetailRealAgentSmokeTest {
                 results.add(TaskSmokeResult.notRun(task.scenario().taskId()));
                 continue;
             }
-            TauRetailEnvironment environment = new TauRetailEnvironment(initialDatabase);
-            TauRetailTools tools = new TauRetailTools(environment);
-            TauRetailUserSimulator.Session user = new TauRetailUserSimulator().start(task.scenario());
-            agent.execute(policyText, user.initialMessage(), "", tools, user);
-            TauRetailAgentPolicy.RunResult run = agent.lastRun();
-            TauRetailStateEvaluator.Evaluation evaluation = evaluator.evaluate(task, initialDatabase, environment);
-            results.add(new TaskSmokeResult(task.scenario().taskId(), run.modelCalls(), run.toolCalls(),
-                    run.rounds(), evaluation.status().name(),
-                    evaluation.reasonCode(), evaluation.observedDigest(), run.totalTokens(),
-                    run.tokenUsageKnown(), run.latencyMs(), run.failureCode(),
-                    diagnosticCode(task, run, evaluation), run.agentVisibleTools(),
-                    run.failureDetail(), run.modelCalls()));
+            results.add(runTask(task, initialDatabase, policyText, evaluator, agent));
             stoppedForBudget = agent.budgetSnapshot().stoppedReason() != null;
         }
 
-        int realApiCalls = results.stream().mapToInt(TaskSmokeResult::realApiCalls).sum();
         SmokeReport report = new SmokeReport(UUID.randomUUID().toString(), "DeepSeek", agent.modelName(),
-                realApiCalls, agent.budgetSnapshot(), results);
-        Path reportPath = Path.of("target", "tau-retail-real-agent-smoke.json");
-        Files.createDirectories(reportPath.getParent());
-        Files.writeString(reportPath, JSON.toJSONString(report), StandardCharsets.UTF_8);
+                results.stream().mapToInt(TaskSmokeResult::realApiCalls).sum(), agent.budgetSnapshot(), results);
+        writeReport(report);
         assertEquals(includeComplex ? 5 : 3, report.tasks().size());
         if (!includeComplex) {
             assertTrue(report.tasks().stream().filter(task -> "PASS".equals(task.evaluatorStatus())).count() >= 2,
                     "the three-task smoke must reach 2/3 PASS before expanding");
         }
+    }
+
+    private static void requireLiveApiGate() {
+        assertEquals("true", System.getenv("RUN_TAU_REAL_API"), "set RUN_TAU_REAL_API=true to enable live calls");
+        assertEquals("true", System.getenv("TAU_DEEPSEEK_KEY_ROTATED"),
+                "rotate the DeepSeek key and set TAU_DEEPSEEK_KEY_ROTATED=true before live calls");
+    }
+
+    private static List<TauRetailTaskLoader.TaskCase> task76Only(TauRetailTaskLoader loader) throws IOException {
+        return loader.realAgentSmokeTasks(false).stream()
+                .filter(task -> "76".equals(task.scenario().taskId())).toList();
+    }
+
+    private static TaskSmokeResult runTask(TauRetailTaskLoader.TaskCase task,
+                                           com.alibaba.fastjson2.JSONObject initialDatabase,
+                                           String policyText, TauRetailStateEvaluator evaluator,
+                                           TauRetailAgentPolicy agent) {
+        TauRetailEnvironment environment = new TauRetailEnvironment(initialDatabase);
+        TauRetailTools tools = new TauRetailTools(environment);
+        TauRetailUserSimulator.Session user = new TauRetailUserSimulator().start(task.scenario());
+        agent.execute(policyText, user.initialMessage(), "", tools, user);
+        TauRetailAgentPolicy.RunResult run = agent.lastRun();
+        TauRetailStateEvaluator.Evaluation evaluation = evaluator.evaluate(task, initialDatabase, environment);
+        return new TaskSmokeResult(task.scenario().taskId(), run.modelCalls(), run.toolCalls(), run.rounds(),
+                evaluation.status().name(), evaluation.reasonCode(), evaluation.observedDigest(), run.totalTokens(),
+                run.tokenUsageKnown(), run.latencyMs(), run.failureCode(), diagnosticCode(task, run, evaluation),
+                run.agentVisibleTools(), run.failureDetail(), run.modelCalls());
+    }
+
+    private static void writeReport(SmokeReport report) throws IOException {
+        String prefix = report.tasks().size() == 1 && "76".equals(report.tasks().getFirst().taskId())
+                ? "task76-" : "tau-retail-";
+        Path reportPath = Path.of("..", "..", "..", "artifacts", "tau-smoke",
+                prefix + report.runId() + ".json").toAbsolutePath().normalize();
+        Files.createDirectories(reportPath.getParent());
+        Files.writeString(reportPath, JSON.toJSONString(report), StandardCharsets.UTF_8);
     }
 
     static String diagnosticCode(TauRetailTaskLoader.TaskCase task, TauRetailAgentPolicy.RunResult run,

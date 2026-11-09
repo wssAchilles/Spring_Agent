@@ -1,10 +1,15 @@
 package tech.qiantong.qknow.hermes.agent.harness.experience;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,6 +21,33 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StrategyTemplateLineageTest {
     @TempDir Path temp;
+
+    @Test
+    void legacyTemplateWithoutTaskTypeLoadsAsUnclassified() throws Exception {
+        List<String> preconditions = List.of("request has required evidence");
+        List<String> plan = List.of("inspect", "act");
+        List<String> tools = List.of("use declared tools only");
+        List<String> reflection = List.of("check preconditions");
+        List<String> success = List.of("independent verifier pass");
+        String legacyCanonical = "1||" + canonicalList(preconditions) + "|" + canonicalList(plan)
+                + "|" + canonicalList(tools) + "|" + canonicalList(reflection) + "|" + canonicalList(success);
+        String legacyFingerprint = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(legacyCanonical.getBytes(StandardCharsets.UTF_8)));
+        JSONObject legacyJson = new JSONObject();
+        legacyJson.put("templateId", "legacy-template");
+        legacyJson.put("version", 1);
+        legacyJson.put("preconditions", preconditions);
+        legacyJson.put("planSkeleton", plan);
+        legacyJson.put("toolPolicy", tools);
+        legacyJson.put("reflectionRules", reflection);
+        legacyJson.put("successCriteria", success);
+        legacyJson.put("fingerprint", legacyFingerprint);
+
+        StrategyTemplate restored = JSON.parseObject(legacyJson.toJSONString(), StrategyTemplate.class);
+
+        assertEquals(StrategyTaskType.UNCLASSIFIED, restored.taskType());
+        assertEquals(legacyFingerprint, restored.fingerprint());
+    }
 
     @Test
     void templateFingerprintAndVersionedParentLineageAreDeterministic() {
@@ -142,6 +174,11 @@ class StrategyTemplateLineageTest {
                 evidence("root"), 0.9, "root-run", "a".repeat(64), ExperienceDisposition.ADOPTED,
                 false, ExperienceEntry.AttributionStatus.UNRESOLVED, 1, false, null, Instant.now())
                 .withStrategy(template, null);
+    }
+
+    private String canonicalList(List<String> values) {
+        return values.stream().map(value -> value.length() + ":" + value)
+                .collect(java.util.stream.Collectors.joining());
     }
 
     private ExperienceEntry variant(ExperienceDomain domain, ExperienceEntry parent,
