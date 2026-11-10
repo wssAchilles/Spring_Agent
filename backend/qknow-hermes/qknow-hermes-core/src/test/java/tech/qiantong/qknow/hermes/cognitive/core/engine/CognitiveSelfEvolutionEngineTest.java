@@ -364,6 +364,31 @@ class CognitiveSelfEvolutionEngineTest {
     }
 
     @Test
+    void unknownGeneralTaskUsesExecutionCompletionToFeedProbation() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(712, List.of("kb-general-probation"));
+
+        CognitiveExecutionResult result = engine.execute("general-probation", "整理这份材料",
+                "base prompt", model(
+                        "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"整理材料\",\"dependencies\":[]}]}",
+                        "材料已整理。",
+                        "{\"accepted\":true,\"repair\":null,"
+                                + "\"strategy\":\"先提取事实，再按主题归纳。\"}"),
+                domain, "7".repeat(64), 2, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("完成"),
+                null, StrategyTaskType.GENERAL);
+
+        ExperienceEntry probation = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream().findFirst().orElseThrow();
+        assertEquals(OutcomeSignal.Status.UNKNOWN, result.trace().outcomeStatus());
+        assertEquals(StrategyLifecycleStatus.PROBATION, probation.lifecycleStatus());
+        assertEquals(1, probation.probationUses());
+        assertEquals(1, probation.probationSuccesses());
+        assertTrue(result.trace().states().contains("PROBATION_FEEDBACK_RECORDED"));
+    }
+
+    @Test
     void structuredMutationOutcomeDrivesProbationFeedback() {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);

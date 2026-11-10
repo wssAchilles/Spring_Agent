@@ -360,7 +360,7 @@ public final class CognitiveSelfEvolutionEngine {
                     boolean hasToolExecution = !finalToolExecutionEvents.isEmpty();
                     boolean noToolFailures = finalToolExecutionEvents.stream().noneMatch(event ->
                             event.status() == CognitiveTrace.ToolExecutionEvent.Status.ERROR);
-                    boolean operationalSuccess = hasToolExecution && noToolFailures
+                    boolean operationalSuccess = noToolFailures
                             && !effectiveTaskType.isMutationFamily()
                             && !intentObservedTaskType.isMutationFamily()
                             && !observedTaskType.isMutationFamily();
@@ -398,10 +398,16 @@ public final class CognitiveSelfEvolutionEngine {
                         } else {
                             states.add("MUTATION_FEEDBACK_DEFERRED_OUTCOME_UNKNOWN");
                         }
-                    } else if (hasToolExecution) {
-                        if (!selectedStrategyFailureRecorded) {
+                    } else if (operationalSuccess || hasToolExecution) {
+                        boolean selectedCanUseOperationalFeedback = hasToolExecution
+                                || selectedStrategy != null
+                                && selectedStrategy.lifecycleStatus() == StrategyLifecycleStatus.PROBATION;
+                        if (selectedCanUseOperationalFeedback && !selectedStrategyFailureRecorded) {
                             recordFeedback(selectedStrategy, operationalSuccess, requestId, harnessFingerprint,
                                     states, strategyScores, repairs, experienceEvents, outcome);
+                        }
+                        if (operationalSuccess && selectedCanUseOperationalFeedback) {
+                            states.add("STRATEGY_FEEDBACK_RECORDED_OPERATIONAL_SUCCESS");
                         }
                     } else {
                         states.add("STRATEGY_FEEDBACK_SKIPPED_NO_TOOL_EXECUTION");
@@ -425,8 +431,7 @@ public final class CognitiveSelfEvolutionEngine {
                                 repairs, experienceEvents, outcome, feedbackTaskType);
                         enteredProbation = probation != null
                                 && probation.lifecycleStatus() == StrategyLifecycleStatus.PROBATION;
-                        if (enteredProbation && (operationalSuccess || mutationApplied)
-                                && strategyToTry.equals(appliedRepairStrategy)) {
+                        if (enteredProbation && (operationalSuccess || mutationApplied)) {
                             recordFeedback(probation, true, requestId, harnessFingerprint, states,
                                     strategyScores, repairs, experienceEvents, outcome);
                         }
