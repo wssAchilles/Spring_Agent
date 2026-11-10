@@ -254,6 +254,9 @@ public final class CognitiveSelfEvolutionEngine {
                 if (!repairVerification.valid()) {
                     repairs.add(new CognitiveTrace.RepairEvent(step.stepId(), repairAttempts,
                             false, repairVerification.reasonCodes().getFirst()));
+                    persistFailureInsight(reflection.reusableStrategy(), reflection.insightEdits(),
+                            lineageParent, requestId, harnessFingerprint, domain, effectiveTaskType,
+                            states, strategyScores, repairs, experienceEvents);
                     if (!selectedStrategyFailureRecorded) {
                         recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
                                 states, strategyScores, repairs, experienceEvents);

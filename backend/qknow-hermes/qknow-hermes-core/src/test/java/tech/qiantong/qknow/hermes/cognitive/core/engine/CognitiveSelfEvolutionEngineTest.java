@@ -603,7 +603,12 @@ class CognitiveSelfEvolutionEngineTest {
         assertEquals(2, result.trace().repairs().stream().filter(CognitiveTrace.RepairEvent::proposalAccepted).count());
         assertEquals(List.of(0, 1, 2), result.trace().toolExecutionEvents().stream()
                 .map(CognitiveTrace.ToolExecutionEvent::callIndex).toList());
-        assertTrue(library.recallForStrategySelection(domain, "cognitive-evolution", 10).matchedEntries().isEmpty());
+        ExperienceEntry failedInsight = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream().findFirst().orElseThrow();
+        assertEquals(StrategyLifecycleStatus.PROBATION, failedInsight.lifecycleStatus());
+        assertEquals(1, failedInsight.probationUses());
+        assertEquals(0, failedInsight.probationSuccesses());
+        assertTrue(result.trace().states().contains("STRATEGY_FAILURE_INSIGHT_PROBATION"));
     }
 
     @Test
