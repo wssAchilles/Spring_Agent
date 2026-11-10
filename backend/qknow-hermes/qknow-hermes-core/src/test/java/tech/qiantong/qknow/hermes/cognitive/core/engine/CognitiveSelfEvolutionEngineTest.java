@@ -397,12 +397,15 @@ class CognitiveSelfEvolutionEngineTest {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(716, List.of("kb-applied-repair-feedback"));
+        ExperienceEntry parent = templateParent("applied-repair-parent", "applied-repair-template",
+                domain, 0, 0, 0.5);
+        library.recordExperience(parent);
         String lesson = "Check the missing source before retrying the task.";
         ChatModel model = model(
                 "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"complete task\",\"dependencies\":[]}]}",
                 "{\"accepted\":false,\"repair\":{\"stepId\":\"s1\",\"objective\":\"retry after checking source\"},"
                         + "\"strategy\":\"" + lesson + "\"}",
-                "Task completed.",
+                "{\"completed\":true}",
                 "{\"accepted\":true,\"repair\":null,\"strategy\":\"\"}");
         AtomicInteger attempts = new AtomicInteger();
 
@@ -414,16 +417,19 @@ class CognitiveSelfEvolutionEngineTest {
                     }
                     assertTrue(systemPrompt.contains(lesson));
                     return CognitiveSelfEvolutionEngine.StepExecution.success("完成");
-                }, null, StrategyTaskType.GENERAL);
+                }, structuredOutcome("{\"assertions\":{\"completed\":{\"type\":\"BOOLEAN\",\"equals\":true}}}"),
+                StrategyTaskType.GENERAL);
 
         ExperienceEntry applied = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
-                .matchedEntries().getFirst();
+                .matchedEntries().stream().filter(entry -> entry.lesson().equals(lesson))
+                .findFirst().orElseThrow();
         assertEquals(CognitiveExecutionResult.Status.COMPLETED, result.status());
-        assertEquals(OutcomeSignal.Status.UNKNOWN, result.trace().outcomeStatus());
+        assertEquals(OutcomeSignal.Status.PASS, result.trace().outcomeStatus());
         assertEquals(1, applied.probationUses());
         assertEquals(1, applied.probationSuccesses());
         assertEquals(1, applied.feedbackAttempts());
-        assertEquals(FeedbackProvenance.EMPIRICAL_SUCCESS, applied.feedbackProvenance());
+        assertEquals(FeedbackProvenance.VERIFIED_PASS, applied.feedbackProvenance());
+        assertEquals(parent.strategyTemplate().templateId(), applied.strategyVariant().parentTemplateId());
     }
 
     @Test
@@ -683,6 +689,9 @@ class CognitiveSelfEvolutionEngineTest {
         assertEquals(StrategyLifecycleStatus.PROBATION, failedInsight.lifecycleStatus());
         assertEquals(1, failedInsight.probationUses());
         assertEquals(0, failedInsight.probationSuccesses());
+        assertEquals(1, failedInsight.feedbackAttempts());
+        assertEquals(1, failedInsight.consecutiveFailures());
+        assertEquals(FeedbackProvenance.VERIFIED_FAIL, failedInsight.feedbackProvenance());
         assertTrue(result.trace().states().contains("STRATEGY_FAILURE_INSIGHT_PROBATION"));
     }
 
@@ -715,17 +724,25 @@ class CognitiveSelfEvolutionEngineTest {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(72, List.of("kb-outcomes"));
-        ExperienceEntry existing = strategy("existing-outcome-strategy", domain, 0, 0, 0.8);
+        ExperienceEntry existing = templateParent("existing-outcome-strategy", "existing-outcome-template",
+                domain, 0, 0, 0.8);
         library.recordExperience(existing);
+        String repairLesson = "Validate task output against its declared postcondition.";
         ChatModel model = model(
                 "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}",
+                "{\"accepted\":false,\"repair\":{\"stepId\":\"s1\",\"objective\":\"inspect and validate output\"},"
+                        + "\"strategy\":\"" + repairLesson + "\"}",
                 "{\"done\":false}",
-                "{\"accepted\":true,\"repair\":null,\"strategy\":\"Do not adopt this failing candidate.\"}");
+                "{\"accepted\":true,\"repair\":null,\"strategy\":\"\"}");
+        AtomicInteger attempts = new AtomicInteger();
 
         CognitiveExecutionResult result = engine.execute("request-fail-outcome", "run task", "prompt", model,
-                domain, "f".repeat(64), 3, 0,
-                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("checked"),
-                structuredOutcome("{\"assertions\":{\"done\":{\"type\":\"BOOLEAN\",\"equals\":true}}}"));
+                domain, "f".repeat(64), 3, 1,
+                (step, systemPrompt, previous) -> attempts.getAndIncrement() == 0
+                        ? CognitiveSelfEvolutionEngine.StepExecution.failed("INITIAL_ATTEMPT_FAILED")
+                        : CognitiveSelfEvolutionEngine.StepExecution.success("checked"),
+                structuredOutcome("{\"assertions\":{\"done\":{\"type\":\"BOOLEAN\",\"equals\":true}}}"),
+                StrategyTaskType.GENERAL);
 
         assertEquals(OutcomeSignal.Status.FAIL, result.trace().outcomeSignal().status());
         assertEquals("OUTCOME_VERIFIED_FAIL", result.trace().terminationCode());
@@ -736,10 +753,22 @@ class CognitiveSelfEvolutionEngineTest {
         assertTrue(result.trace().experienceEvents().stream().anyMatch(event ->
                 event.entryId().equals(existing.entryId())
                         && event.feedbackProvenance() == FeedbackProvenance.VERIFIED_FAIL));
+        ExperienceEntry rejectedRepair = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream().filter(entry -> entry.lesson().equals(repairLesson))
+                .findFirst().orElseThrow();
+        assertEquals(StrategyLifecycleStatus.PROBATION, rejectedRepair.lifecycleStatus());
+        assertEquals(existing.strategyTemplate().templateId(), rejectedRepair.strategyVariant().parentTemplateId());
+        assertEquals(1, rejectedRepair.probationUses());
+        assertEquals(0, rejectedRepair.probationSuccesses());
+        assertEquals(1, rejectedRepair.consecutiveFailures());
+        assertEquals(FeedbackProvenance.VERIFIED_FAIL, rejectedRepair.feedbackProvenance());
+        assertTrue(result.trace().experienceEvents().stream().anyMatch(event ->
+                event.entryId().equals(rejectedRepair.entryId())
+                        && event.feedbackProvenance() == FeedbackProvenance.VERIFIED_FAIL));
         assertFalse(library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().stream()
-                .anyMatch(entry -> entry.lesson().equals("Do not adopt this failing candidate.")));
+                .anyMatch(entry -> entry.lesson().equals(repairLesson)));
         assertEquals(1, library.recallForStrategySelection(domain, "cognitive-evolution", 10)
-                .matchedEntries().size());
+                .matchedEntries().stream().filter(entry -> entry.entryId().equals(existing.entryId())).count());
     }
 
     @Test
