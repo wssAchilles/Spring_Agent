@@ -25,10 +25,30 @@ public interface ExperienceLibrary {
                                             EvidenceReference evidence, String runId,
                                             String harnessFingerprint);
 
+    default ExperienceEntry recordProbationFeedback(ExperienceDomain domain, String entryId, boolean success,
+                                                    EvidenceReference evidence, String runId,
+                                                    String harnessFingerprint, FeedbackProvenance provenance) {
+        provenance.validate(success);
+        if (!provenance.supportsLegacyApi()) {
+            throw new UnsupportedOperationException("explicit feedback provenance is not supported");
+        }
+        return recordProbationFeedback(domain, entryId, success, evidence, runId, harnessFingerprint);
+    }
+
     ExperienceEntry promote(ExperienceDomain domain, String entryId);
 
     ExperienceEntry recordFeedback(ExperienceDomain domain, String entryId, boolean success,
                                    EvidenceReference evidence, String runId, String harnessFingerprint);
+
+    default ExperienceEntry recordFeedback(ExperienceDomain domain, String entryId, boolean success,
+                                           EvidenceReference evidence, String runId, String harnessFingerprint,
+                                           FeedbackProvenance provenance) {
+        provenance.validate(success);
+        if (!provenance.supportsLegacyApi()) {
+            throw new UnsupportedOperationException("explicit feedback provenance is not supported");
+        }
+        return recordFeedback(domain, entryId, success, evidence, runId, harnessFingerprint);
+    }
 
     ExperienceEntry restore(ExperienceDomain domain, String entryId, int version);
 

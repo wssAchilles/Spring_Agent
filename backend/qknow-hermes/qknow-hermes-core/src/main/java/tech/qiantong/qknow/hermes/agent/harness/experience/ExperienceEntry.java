@@ -30,7 +30,8 @@ public record ExperienceEntry(
         Instant promotedAt,
         Instant retiredAt,
         StrategyTemplate strategyTemplate,
-        StrategyVariant strategyVariant
+        StrategyVariant strategyVariant,
+        FeedbackProvenance feedbackProvenance
 ) {
     public enum AttributionStatus {
         NOT_APPLICABLE,
@@ -68,6 +69,9 @@ public record ExperienceEntry(
         }
         if (probationUses < 0 || probationSuccesses < 0 || probationSuccesses > probationUses) {
             throw new IllegalArgumentException("probation counts must satisfy 0 <= successes <= uses");
+        }
+        if (feedbackProvenance == null) {
+            feedbackProvenance = FeedbackProvenance.NONE;
         }
         if (lifecycleStatus == null) {
             lifecycleStatus = retired ? StrategyLifecycleStatus.RETIRED : initialStatus(disposition);
@@ -123,7 +127,7 @@ public record ExperienceEntry(
                 retirementReason, createdAt, feedbackAttempts, feedbackSuccesses, consecutiveFailures,
                 retired ? StrategyLifecycleStatus.RETIRED : initialStatus(disposition), 0, 0, null,
                 disposition == ExperienceDisposition.ADOPTED ? createdAt : null,
-                retired ? createdAt : null, null, null);
+                retired ? createdAt : null, null, null, FeedbackProvenance.NONE);
     }
 
     public ExperienceEntry(String entryId, ExperienceDomain domain, String cue, String lesson,
@@ -170,51 +174,77 @@ public record ExperienceEntry(
 
     public ExperienceEntry withFeedback(boolean success, EvidenceReference latestEvidence,
                                         String latestRunId, String latestHarnessFingerprint) {
+        return withFeedback(success, latestEvidence, latestRunId, latestHarnessFingerprint,
+                FeedbackProvenance.empirical(success));
+    }
+
+    public ExperienceEntry withFeedback(boolean success, EvidenceReference latestEvidence,
+                                        String latestRunId, String latestHarnessFingerprint,
+                                        FeedbackProvenance provenance) {
         if (lifecycleStatus != StrategyLifecycleStatus.ADOPTED) {
             throw new IllegalStateException("general feedback requires an adopted strategy");
         }
+        Objects.requireNonNull(provenance, "provenance");
+        provenance.validate(success);
         return updatedFeedback(success, latestEvidence, latestRunId, latestHarnessFingerprint,
                 StrategyLifecycleStatus.ADOPTED, probationUses, probationSuccesses, promotedAt,
-                Instant.now(), Integer.MAX_VALUE, Integer.MAX_VALUE);
+                Instant.now(), Integer.MAX_VALUE, Integer.MAX_VALUE, provenance);
     }
 
     public ExperienceEntry withProbationFeedback(boolean success, EvidenceReference latestEvidence,
                                                  String latestRunId, String latestHarnessFingerprint,
                                                  int minUses, int minSuccesses) {
+        return withProbationFeedback(success, latestEvidence, latestRunId, latestHarnessFingerprint,
+                minUses, minSuccesses, FeedbackProvenance.empirical(success));
+    }
+
+    public ExperienceEntry withProbationFeedback(boolean success, EvidenceReference latestEvidence,
+                                                  String latestRunId, String latestHarnessFingerprint,
+                                                  int minUses, int minSuccesses,
+                                                  FeedbackProvenance provenance) {
         if (lifecycleStatus != StrategyLifecycleStatus.PROBATION) {
             throw new IllegalStateException("probation feedback requires a probation strategy");
         }
         if (minUses < 1 || minSuccesses < 1 || minSuccesses > minUses) {
             throw new IllegalArgumentException("invalid probation promotion thresholds");
         }
+        Objects.requireNonNull(provenance, "provenance");
+        provenance.validate(success);
         return updatedFeedback(success, latestEvidence, latestRunId, latestHarnessFingerprint,
                 StrategyLifecycleStatus.PROBATION, probationUses + 1,
-                probationSuccesses + (success ? 1 : 0), promotedAt, Instant.now(), minUses, minSuccesses);
+                probationSuccesses + (success && provenance.contributesSuccess() ? 1 : 0),
+                promotedAt, Instant.now(), minUses, minSuccesses, provenance);
     }
 
     private ExperienceEntry updatedFeedback(boolean success, EvidenceReference latestEvidence,
                                              String latestRunId, String latestHarnessFingerprint,
                                              StrategyLifecycleStatus priorStatus, int nextProbationUses,
                                              int nextProbationSuccesses, Instant priorPromotedAt,
-                                             Instant usedAt, int minUses, int minSuccesses) {
-        int attempts = feedbackAttempts + 1;
-        int successes = feedbackSuccesses + (success ? 1 : 0);
-        int failuresInARow = success ? 0 : consecutiveFailures + 1;
+                                             Instant usedAt, int minUses, int minSuccesses,
+                                             FeedbackProvenance provenance) {
+        boolean countsSuccess = success && provenance.contributesSuccess();
+        boolean countsFailure = !success && provenance.contributesFailure();
+        int attempts = feedbackAttempts + (provenance.isIndependent() ? 1 : 0);
+        int successes = feedbackSuccesses + (countsSuccess ? 1 : 0);
+        int failuresInARow = countsFailure ? consecutiveFailures + 1
+                : countsSuccess ? 0 : consecutiveFailures;
         boolean shouldRetire = failuresInARow >= 3;
-        boolean shouldPromote = !shouldRetire && priorStatus == StrategyLifecycleStatus.PROBATION
+        boolean shouldPromote = countsSuccess && !shouldRetire && priorStatus == StrategyLifecycleStatus.PROBATION
                 && nextProbationUses >= minUses && nextProbationSuccesses >= minSuccesses;
+        double nextConfidence = provenance.isIndependent()
+                ? (successes + 1.0) / (attempts + 2.0) : confidence;
         StrategyLifecycleStatus nextStatus = shouldRetire ? StrategyLifecycleStatus.RETIRED
                 : shouldPromote ? StrategyLifecycleStatus.ADOPTED : priorStatus;
         ExperienceDisposition nextDisposition = nextStatus == StrategyLifecycleStatus.ADOPTED
                 ? ExperienceDisposition.ADOPTED
                 : nextStatus == StrategyLifecycleStatus.PROBATION ? ExperienceDisposition.OBSERVED : disposition;
         return new ExperienceEntry(entryId, domain, cue, lesson, evidenceSummary, latestEvidence,
-                (successes + 1.0) / (attempts + 2.0), latestRunId, latestHarnessFingerprint,
+                nextConfidence, latestRunId, latestHarnessFingerprint,
                 nextDisposition, false, attributionStatus, version + 1, shouldRetire,
                 shouldRetire ? "runtime_strategy_failed_3_consecutive_times" : null,
                 createdAt, attempts, successes, failuresInARow, nextStatus, nextProbationUses,
                 nextProbationSuccesses, usedAt, shouldPromote ? usedAt : priorPromotedAt,
-                shouldRetire ? usedAt : null, strategyTemplate, strategyVariant);
+                shouldRetire ? usedAt : null, strategyTemplate, strategyVariant, provenance);
     }
 
     public ExperienceEntry probationary(int nextVersion) {
@@ -222,7 +252,7 @@ public record ExperienceEntry(
                 confidence, sourceRunId, harnessFingerprint, ExperienceDisposition.OBSERVED, false,
                 attributionStatus, nextVersion, false, null, createdAt, feedbackAttempts,
                 feedbackSuccesses, 0, StrategyLifecycleStatus.PROBATION, 0, 0, null, null, null,
-                strategyTemplate, strategyVariant);
+                strategyTemplate, strategyVariant, FeedbackProvenance.NONE);
     }
 
     public ExperienceEntry promoted(int nextVersion, Instant now) {
@@ -238,7 +268,8 @@ public record ExperienceEntry(
                 confidence, latestRunId, latestHarnessFingerprint, ExperienceDisposition.ADOPTED,
                 false, attributionStatus, nextVersion, false, null, createdAt, feedbackAttempts,
                 feedbackSuccesses, 0, StrategyLifecycleStatus.ADOPTED, probationUses,
-                probationSuccesses, lastUsedAt, now, null, strategyTemplate, strategyVariant);
+                probationSuccesses, lastUsedAt, now, null, strategyTemplate, strategyVariant,
+                feedbackProvenance);
     }
 
     public ExperienceEntry retired(String reason) {
@@ -248,7 +279,7 @@ public record ExperienceEntry(
                 attributionStatus, version + 1, true, reason, createdAt, feedbackAttempts,
                 feedbackSuccesses, consecutiveFailures, StrategyLifecycleStatus.RETIRED,
                 probationUses, probationSuccesses, lastUsedAt, promotedAt, now,
-                strategyTemplate, strategyVariant);
+                strategyTemplate, strategyVariant, feedbackProvenance);
     }
 
     public ExperienceEntry restoredAsVersion(int nextVersion) {
@@ -259,7 +290,7 @@ public record ExperienceEntry(
                 feedbackSuccesses, consecutiveFailures, restoredStatus, probationUses,
                 probationSuccesses, lastUsedAt,
                 restoredStatus == StrategyLifecycleStatus.ADOPTED ? promotedAt : null, null,
-                strategyTemplate, strategyVariant);
+                strategyTemplate, strategyVariant, feedbackProvenance);
     }
 
     public ExperienceEntry restoredAsProbation(int nextVersion) {
@@ -267,7 +298,7 @@ public record ExperienceEntry(
                 confidence, sourceRunId, harnessFingerprint, ExperienceDisposition.OBSERVED, false,
                 attributionStatus, nextVersion, false, null, createdAt, feedbackAttempts,
                 feedbackSuccesses, 0, StrategyLifecycleStatus.PROBATION, 0, 0, null, null, null,
-                strategyTemplate, strategyVariant);
+                strategyTemplate, strategyVariant, FeedbackProvenance.NONE);
     }
 
     public ExperienceEntry withStrategy(StrategyTemplate template, StrategyVariant variant) {
@@ -275,6 +306,7 @@ public record ExperienceEntry(
                 confidence, sourceRunId, harnessFingerprint, disposition, failureObserved,
                 attributionStatus, version, retired, retirementReason, createdAt, feedbackAttempts,
                 feedbackSuccesses, consecutiveFailures, lifecycleStatus, probationUses,
-                probationSuccesses, lastUsedAt, promotedAt, retiredAt, template, variant);
+                probationSuccesses, lastUsedAt, promotedAt, retiredAt, template, variant,
+                feedbackProvenance);
     }
 }

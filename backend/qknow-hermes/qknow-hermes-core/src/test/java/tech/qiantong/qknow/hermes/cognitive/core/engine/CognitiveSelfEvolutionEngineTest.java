@@ -14,6 +14,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry.AttributionStatus;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
+import tech.qiantong.qknow.hermes.agent.harness.experience.FeedbackProvenance;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTemplate;
@@ -360,11 +361,12 @@ class CognitiveSelfEvolutionEngineTest {
         assertEquals(OutcomeSignal.Status.UNKNOWN, result.trace().outcomeStatus());
         assertEquals(1, updated.feedbackAttempts());
         assertEquals(0, updated.feedbackSuccesses());
+        assertEquals(FeedbackProvenance.EMPIRICAL_FAIL, updated.feedbackProvenance());
         assertTrue(result.trace().states().contains("MUTATION_FEEDBACK_RECORDED_TOOL_ERROR"));
     }
 
     @Test
-    void unknownGeneralTaskUsesExecutionCompletionToFeedProbation() {
+    void unappliedFinalReflectionDoesNotReceiveExecutionFeedback() {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(712, List.of("kb-general-probation"));
@@ -383,9 +385,45 @@ class CognitiveSelfEvolutionEngineTest {
                 .matchedEntries().stream().findFirst().orElseThrow();
         assertEquals(OutcomeSignal.Status.UNKNOWN, result.trace().outcomeStatus());
         assertEquals(StrategyLifecycleStatus.PROBATION, probation.lifecycleStatus());
-        assertEquals(1, probation.probationUses());
-        assertEquals(1, probation.probationSuccesses());
-        assertTrue(result.trace().states().contains("PROBATION_FEEDBACK_RECORDED"));
+        assertEquals(0, probation.probationUses());
+        assertEquals(0, probation.probationSuccesses());
+        assertEquals(0, probation.feedbackAttempts());
+        assertEquals(FeedbackProvenance.NONE, probation.feedbackProvenance());
+        assertFalse(result.trace().states().contains("PROBATION_FEEDBACK_RECORDED"));
+    }
+
+    @Test
+    void appliedRepairStrategyReceivesExecutionFeedback() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(716, List.of("kb-applied-repair-feedback"));
+        String lesson = "Check the missing source before retrying the task.";
+        ChatModel model = model(
+                "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"complete task\",\"dependencies\":[]}]}",
+                "{\"accepted\":false,\"repair\":{\"stepId\":\"s1\",\"objective\":\"retry after checking source\"},"
+                        + "\"strategy\":\"" + lesson + "\"}",
+                "Task completed.",
+                "{\"accepted\":true,\"repair\":null,\"strategy\":\"\"}");
+        AtomicInteger attempts = new AtomicInteger();
+
+        CognitiveExecutionResult result = engine.execute("applied-repair-feedback", "整理材料",
+                "base prompt", model, domain, "6".repeat(64), 2, 1,
+                (step, systemPrompt, previous) -> {
+                    if (attempts.getAndIncrement() == 0) {
+                        return CognitiveSelfEvolutionEngine.StepExecution.failed("INITIAL_ATTEMPT_FAILED");
+                    }
+                    assertTrue(systemPrompt.contains(lesson));
+                    return CognitiveSelfEvolutionEngine.StepExecution.success("完成");
+                }, null, StrategyTaskType.GENERAL);
+
+        ExperienceEntry applied = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().getFirst();
+        assertEquals(CognitiveExecutionResult.Status.COMPLETED, result.status());
+        assertEquals(OutcomeSignal.Status.UNKNOWN, result.trace().outcomeStatus());
+        assertEquals(1, applied.probationUses());
+        assertEquals(1, applied.probationSuccesses());
+        assertEquals(1, applied.feedbackAttempts());
+        assertEquals(FeedbackProvenance.EMPIRICAL_SUCCESS, applied.feedbackProvenance());
     }
 
     @Test
@@ -412,7 +450,7 @@ class CognitiveSelfEvolutionEngineTest {
     }
 
     @Test
-    void failedReflectionPersistsAProbationaryFailureInsight() {
+    void failedReflectionPersistsAnUntriedProbationaryInsight() {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(714, List.of("kb-failure-insight"));
@@ -430,9 +468,42 @@ class CognitiveSelfEvolutionEngineTest {
                 .matchedEntries().stream().findFirst().orElseThrow();
         assertEquals(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, result.status());
         assertEquals(StrategyLifecycleStatus.PROBATION, failedInsight.lifecycleStatus());
-        assertEquals(1, failedInsight.probationUses());
+        assertEquals(0, failedInsight.probationUses());
         assertEquals(0, failedInsight.probationSuccesses());
+        assertEquals(0, failedInsight.feedbackAttempts());
+        assertEquals(0, failedInsight.consecutiveFailures());
+        assertEquals(FeedbackProvenance.NONE, failedInsight.feedbackProvenance());
+        assertTrue(result.trace().experienceEvents().stream().anyMatch(event ->
+                event.entryId().equals(failedInsight.entryId())
+                        && event.feedbackProvenance() == FeedbackProvenance.NONE));
         assertTrue(result.trace().states().contains("STRATEGY_FAILURE_INSIGHT_PROBATION"));
+    }
+
+    @Test
+    void modelApiFailureDoesNotCountAgainstSelectedStrategy() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(715, List.of("kb-model-error"));
+        ExperienceEntry adopted = templateParent("model-error-strategy", "model-error-template",
+                domain, 0, 0, 0.5);
+        library.recordExperience(adopted);
+        ChatModel failingModel = mock(ChatModel.class);
+        when(failingModel.call(any(Prompt.class)))
+                .thenReturn(response("{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"inspect\",\"dependencies\":[]}]}"))
+                .thenThrow(new IllegalStateException("offline fake model failure"));
+
+        CognitiveExecutionResult result = engine.execute("model-error-run", "inspect the task", "base prompt",
+                failingModel, domain, "8".repeat(64), 2, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done"));
+
+        ExperienceEntry unchanged = library.find(domain, adopted.entryId()).orElseThrow();
+        assertEquals(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, result.status());
+        assertEquals("COMPOSITION_FAILED", result.trace().terminationCode());
+        assertEquals(0, unchanged.feedbackAttempts());
+        assertEquals(0, unchanged.feedbackSuccesses());
+        assertEquals(0, unchanged.consecutiveFailures());
+        assertEquals(FeedbackProvenance.NONE, unchanged.feedbackProvenance());
+        assertTrue(result.trace().states().contains("STRATEGY_FEEDBACK_SKIPPED_MODEL_ERROR"));
     }
 
     @Test
@@ -467,6 +538,10 @@ class CognitiveSelfEvolutionEngineTest {
         assertEquals(OutcomeSignal.Status.UNKNOWN, result.trace().outcomeStatus());
         assertEquals(1, updated.probationUses(), result.trace().states().toString());
         assertEquals(1, updated.probationSuccesses());
+        assertEquals(FeedbackProvenance.VERIFIED_PASS, updated.feedbackProvenance());
+        assertTrue(result.trace().experienceEvents().stream().anyMatch(event ->
+                event.entryId().equals(probation.entryId())
+                        && event.feedbackProvenance() == FeedbackProvenance.VERIFIED_PASS));
         assertTrue(result.trace().states().contains("MUTATION_FEEDBACK_RECORDED_OUTCOME_APPLIED"));
     }
 
@@ -657,6 +732,10 @@ class CognitiveSelfEvolutionEngineTest {
         ExperienceEntry updated = library.find(domain, existing.entryId()).orElseThrow();
         assertEquals(1, updated.feedbackAttempts());
         assertEquals(0, updated.feedbackSuccesses());
+        assertEquals(FeedbackProvenance.VERIFIED_FAIL, updated.feedbackProvenance());
+        assertTrue(result.trace().experienceEvents().stream().anyMatch(event ->
+                event.entryId().equals(existing.entryId())
+                        && event.feedbackProvenance() == FeedbackProvenance.VERIFIED_FAIL));
         assertFalse(library.recallForProposer(domain, "cognitive-evolution", 10).matchedEntries().stream()
                 .anyMatch(entry -> entry.lesson().equals("Do not adopt this failing candidate.")));
         assertEquals(1, library.recallForStrategySelection(domain, "cognitive-evolution", 10)

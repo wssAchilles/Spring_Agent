@@ -272,8 +272,18 @@ public final class DefaultExperienceLibrary implements ExperienceLibrary {
     public ExperienceEntry recordFeedback(ExperienceDomain domain, String entryId, boolean success,
                                           EvidenceReference evidence, String runId,
                                           String harnessFingerprint) {
+        return recordFeedback(domain, entryId, success, evidence, runId, harnessFingerprint,
+                FeedbackProvenance.empirical(success));
+    }
+
+    @Override
+    public ExperienceEntry recordFeedback(ExperienceDomain domain, String entryId, boolean success,
+                                          EvidenceReference evidence, String runId,
+                                          String harnessFingerprint, FeedbackProvenance provenance) {
         Objects.requireNonNull(domain, "domain");
         Objects.requireNonNull(evidence, "evidence");
+        Objects.requireNonNull(provenance, "provenance");
+        provenance.validate(success);
         ReentrantLock lock = lock(domain);
         lock.lock();
         try {
@@ -282,10 +292,13 @@ public final class DefaultExperienceLibrary implements ExperienceLibrary {
             if (current.retired()) {
                 throw new IllegalStateException("cannot update retired experience " + entryId);
             }
+            if (isDuplicateFeedback(current, evidence, runId)) {
+                return current;
+            }
             ExperienceEntry updated = current.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
                     ? current.withProbationFeedback(success, evidence, runId, harnessFingerprint,
-                    probationMinUses, probationMinSuccesses)
-                    : current.withFeedback(success, evidence, runId, harnessFingerprint);
+                    probationMinUses, probationMinSuccesses, provenance)
+                    : current.withFeedback(success, evidence, runId, harnessFingerprint, provenance);
             ExperienceLeakageGuard.assertSafeEntry(updated);
             return store.save(updated);
         } finally {
@@ -297,8 +310,18 @@ public final class DefaultExperienceLibrary implements ExperienceLibrary {
     public ExperienceEntry recordProbationFeedback(ExperienceDomain domain, String entryId, boolean success,
                                                    EvidenceReference evidence, String runId,
                                                    String harnessFingerprint) {
+        return recordProbationFeedback(domain, entryId, success, evidence, runId, harnessFingerprint,
+                FeedbackProvenance.empirical(success));
+    }
+
+    @Override
+    public ExperienceEntry recordProbationFeedback(ExperienceDomain domain, String entryId, boolean success,
+                                                   EvidenceReference evidence, String runId,
+                                                   String harnessFingerprint, FeedbackProvenance provenance) {
         Objects.requireNonNull(domain, "domain");
         Objects.requireNonNull(evidence, "evidence");
+        Objects.requireNonNull(provenance, "provenance");
+        provenance.validate(success);
         ReentrantLock lock = lock(domain);
         lock.lock();
         try {
@@ -307,13 +330,23 @@ public final class DefaultExperienceLibrary implements ExperienceLibrary {
             if (current.lifecycleStatus() != StrategyLifecycleStatus.PROBATION) {
                 throw new IllegalStateException("strategy is not in probation " + entryId);
             }
+            if (isDuplicateFeedback(current, evidence, runId)) {
+                return current;
+            }
             ExperienceEntry updated = current.withProbationFeedback(success, evidence, runId,
-                    harnessFingerprint, probationMinUses, probationMinSuccesses);
+                    harnessFingerprint, probationMinUses, probationMinSuccesses, provenance);
             ExperienceLeakageGuard.assertSafeEntry(updated);
             return store.save(updated);
         } finally {
             lock.unlock();
         }
+    }
+
+    private boolean isDuplicateFeedback(ExperienceEntry current, EvidenceReference evidence, String runId) {
+        // 仅当条目已实际记录过至少一次反馈后，才对相同运行与证据的重复反馈进行幂等拦截
+        return current.feedbackProvenance() != FeedbackProvenance.NONE
+                && runId != null && runId.equals(current.sourceRunId())
+                && evidence.evidenceId().equals(current.evidenceRef().evidenceId());
     }
 
     @Override

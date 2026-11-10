@@ -10,6 +10,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Component;
 import tech.qiantong.qknow.hermes.agent.harness.experience.EvidenceReference;
+import tech.qiantong.qknow.hermes.agent.harness.experience.FeedbackProvenance;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDisposition;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry;
@@ -179,11 +180,14 @@ public final class CognitiveSelfEvolutionEngine {
                 PlanStep step = steps.get(index);
                 states.add("EXECUTING:" + step.stepId());
                 StepExecution execution;
+                boolean stepExecutionException = false;
                 try {
                     execution = stepExecutor.execute(step, composeSystemPrompt(systemPrompt, selectedLesson,
                             appliedRepairStrategy), Map.copyOf(outputs));
                 } catch (Exception error) {
+                    stepExecutionException = true;
                     execution = StepExecution.failed(error.getClass().getSimpleName());
+                    states.add("STEP_EXECUTION_EXCEPTION:" + error.getClass().getSimpleName());
                 }
                 List<CognitiveTrace.ToolExecutionEvent> executionToolEvents = execution == null
                         ? List.of() : execution.toolExecutionEvents();
@@ -218,7 +222,8 @@ public final class CognitiveSelfEvolutionEngine {
                     states.add("TOOL_OUTCOME_REQUIRES_REPAIR");
                     if (!selectedStrategyFailureRecorded && selectedStrategy != null) {
                         recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                                states, strategyScores, repairs, experienceEvents);
+                                states, strategyScores, repairs, experienceEvents, null,
+                                toolFailureProvenance(executionToolEvents));
                         selectedStrategyFailureRecorded = true;
                         states.add("STRATEGY_FEEDBACK_RECORDED_STEP_FAILURE");
                     }
@@ -232,11 +237,7 @@ public final class CognitiveSelfEvolutionEngine {
                     reflection = reflect(question, step, outputs, reflectionExecution,
                             systemPrompt, selectedLesson, chatModel);
                 } catch (RuntimeException error) {
-                    if (!selectedStrategyFailureRecorded) {
-                        recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                                states, strategyScores, repairs, experienceEvents);
-                        selectedStrategyFailureRecorded = true;
-                    }
+                    states.add("STRATEGY_FEEDBACK_SKIPPED_MODEL_ERROR");
                     return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
                             states, strategyScores, reflections, repairs, experienceEvents,
                             "REFLECTION_FAILED", null, toolExecutionEvents);
@@ -252,6 +253,8 @@ public final class CognitiveSelfEvolutionEngine {
                         ? planVerifier.verifyReplacement(step, replacement, completed)
                         : new PlanVerificationResult(false, List.of("REPAIR_BUDGET_OR_PROPOSAL_MISSING"));
                 if (!repairVerification.valid()) {
+                    FeedbackProvenance failureProvenance = repairFailureProvenance(
+                            stepExecutionException, proposal, repairAttempts, maxRepairAttempts);
                     repairs.add(new CognitiveTrace.RepairEvent(step.stepId(), repairAttempts,
                             false, repairVerification.reasonCodes().getFirst()));
                     persistFailureInsight(reflection.reusableStrategy(), reflection.insightEdits(),
@@ -259,7 +262,7 @@ public final class CognitiveSelfEvolutionEngine {
                             states, strategyScores, repairs, experienceEvents);
                     if (!selectedStrategyFailureRecorded) {
                         recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                                states, strategyScores, repairs, experienceEvents);
+                                states, strategyScores, repairs, experienceEvents, null, failureProvenance);
                         selectedStrategyFailureRecorded = true;
                     }
                     return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
@@ -280,10 +283,7 @@ public final class CognitiveSelfEvolutionEngine {
             try {
                 answer = composeAnswer(question, outputs, systemPrompt, selectedLesson, chatModel);
             } catch (RuntimeException error) {
-                if (!selectedStrategyFailureRecorded) {
-                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                            states, strategyScores, repairs, experienceEvents);
-                }
+                states.add("STRATEGY_FEEDBACK_SKIPPED_MODEL_ERROR");
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
                         states, strategyScores, reflections, repairs, experienceEvents,
                         "COMPOSITION_FAILED", null, toolExecutionEvents);
@@ -294,10 +294,7 @@ public final class CognitiveSelfEvolutionEngine {
                 finalReflection = reflectAnswer(question, answer, outputs, systemPrompt,
                         selectedLesson, chatModel);
             } catch (RuntimeException error) {
-                if (!selectedStrategyFailureRecorded) {
-                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                            states, strategyScores, repairs, experienceEvents);
-                }
+                states.add("STRATEGY_FEEDBACK_SKIPPED_MODEL_ERROR");
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
                         states, strategyScores, reflections, repairs, experienceEvents,
                         "FINAL_REFLECTION_FAILED", null, toolExecutionEvents);
@@ -353,6 +350,11 @@ public final class CognitiveSelfEvolutionEngine {
                                 repairs, experienceEvents, outcome, feedbackTaskType, insightEdits);
                         if (learned != null && learned.lifecycleStatus() == StrategyLifecycleStatus.PROBATION) {
                             states.add("STRATEGY_VARIANT_REMAINS_PROBATION");
+                            if (!appliedRepairStrategy.isBlank()) {
+                                recordFeedback(learned, true, requestId, harnessFingerprint, states,
+                                        strategyScores, repairs, experienceEvents, outcome,
+                                        FeedbackProvenance.VERIFIED_PASS);
+                            }
                         }
                     }
                     terminationCode = "OUTCOME_VERIFIED_PASS";
@@ -389,19 +391,22 @@ public final class CognitiveSelfEvolutionEngine {
                         if (hasToolExecution && !noToolFailures) {
                             if (!selectedStrategyFailureRecorded) {
                                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                                        states, strategyScores, repairs, experienceEvents, outcome);
+                                        states, strategyScores, repairs, experienceEvents, outcome,
+                                        toolFailureProvenance(finalToolExecutionEvents));
                             }
                             states.add("MUTATION_FEEDBACK_RECORDED_TOOL_ERROR");
                         } else if (mutationRejected) {
                             if (!selectedStrategyFailureRecorded) {
                                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                                        states, strategyScores, repairs, experienceEvents, outcome);
+                                        states, strategyScores, repairs, experienceEvents, outcome,
+                                        FeedbackProvenance.VERIFIED_FAIL);
                             }
                             states.add("MUTATION_FEEDBACK_RECORDED_OUTCOME_REJECTED");
                         } else if (mutationApplied) {
                             if (!selectedStrategyFailureRecorded) {
                                 recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
-                                        states, strategyScores, repairs, experienceEvents, outcome);
+                                        states, strategyScores, repairs, experienceEvents, outcome,
+                                        FeedbackProvenance.VERIFIED_PASS);
                             }
                             states.add("MUTATION_FEEDBACK_RECORDED_OUTCOME_APPLIED");
                         } else {
@@ -413,7 +418,8 @@ public final class CognitiveSelfEvolutionEngine {
                                 && selectedStrategy.lifecycleStatus() == StrategyLifecycleStatus.PROBATION;
                         if (selectedCanUseOperationalFeedback && !selectedStrategyFailureRecorded) {
                             recordFeedback(selectedStrategy, operationalSuccess, requestId, harnessFingerprint,
-                                    states, strategyScores, repairs, experienceEvents, outcome);
+                                    states, strategyScores, repairs, experienceEvents, outcome,
+                                    FeedbackProvenance.empirical(operationalSuccess));
                         }
                         if (operationalSuccess && selectedCanUseOperationalFeedback) {
                             states.add("STRATEGY_FEEDBACK_RECORDED_OPERATIONAL_SUCCESS");
@@ -426,6 +432,7 @@ public final class CognitiveSelfEvolutionEngine {
                     List<StrategyInsightEdit> insightEdits = appliedRepairStrategy.isBlank()
                             ? finalReflection.insightEdits() : appliedInsightEdits;
                     boolean enteredProbation = false;
+                    boolean repairStrategyWasApplied = !appliedRepairStrategy.isBlank();
                     ExperienceEntry candidateParent = strategyParentForTaskType(lineageParent, feedbackTaskType);
                     boolean candidateCanEnterProbation = noToolFailures && !mutationRejected
                             && (!effectiveTaskType.isMutationFamily()
@@ -442,9 +449,12 @@ public final class CognitiveSelfEvolutionEngine {
                                 repairs, experienceEvents, outcome, feedbackTaskType, insightEdits);
                         enteredProbation = probation != null
                                 && probation.lifecycleStatus() == StrategyLifecycleStatus.PROBATION;
-                        if (enteredProbation && (operationalSuccess || mutationApplied)) {
+                        if (enteredProbation && repairStrategyWasApplied
+                                && (operationalSuccess || mutationApplied)) {
+                            FeedbackProvenance source = mutationApplied
+                                    ? FeedbackProvenance.VERIFIED_PASS : FeedbackProvenance.EMPIRICAL_SUCCESS;
                             recordFeedback(probation, true, requestId, harnessFingerprint, states,
-                                    strategyScores, repairs, experienceEvents, outcome);
+                                    strategyScores, repairs, experienceEvents, outcome, source);
                         }
                     }
                     if (returnedToolNames.isEmpty() && !taskFamilyMismatch && effectiveTaskType.isMutationFamily()) {
@@ -462,11 +472,12 @@ public final class CognitiveSelfEvolutionEngine {
 
             RepairProposal proposal = finalReflection.repairProposal();
             if (repairAttempts >= maxRepairAttempts || proposal == null) {
+                FeedbackProvenance selfReport = FeedbackProvenance.MODEL_SELF_REPORT;
                 persistFailureInsight(finalReflection.reusableStrategy(), finalReflection.insightEdits(),
                         lineageParent, requestId, harnessFingerprint, domain, effectiveTaskType,
                         states, strategyScores, repairs, experienceEvents);
                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                        states, strategyScores, repairs, experienceEvents);
+                        states, strategyScores, repairs, experienceEvents, null, selfReport);
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
                         states, strategyScores, reflections, repairs, experienceEvents,
                         "FINAL_REFLECTION_REJECTED", null, toolExecutionEvents);
@@ -481,7 +492,8 @@ public final class CognitiveSelfEvolutionEngine {
                         lineageParent, requestId, harnessFingerprint, domain, effectiveTaskType,
                         states, strategyScores, repairs, experienceEvents);
                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                        states, strategyScores, repairs, experienceEvents);
+                        states, strategyScores, repairs, experienceEvents, null,
+                        FeedbackProvenance.VERIFIED_FAIL);
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
                         states, strategyScores, reflections, repairs, experienceEvents,
                         "FINAL_REPAIR_REJECTED", null, toolExecutionEvents);
@@ -696,7 +708,8 @@ public final class CognitiveSelfEvolutionEngine {
                                 List<CognitiveTrace.StrategyScore> scores,
                                 List<CognitiveTrace.RepairEvent> repairs,
                                 List<CognitiveTrace.ExperienceEvent> events) {
-        recordFeedback(selected, success, requestId, harnessFingerprint, states, scores, repairs, events, null);
+        recordFeedback(selected, success, requestId, harnessFingerprint, states, scores, repairs, events,
+                null, FeedbackProvenance.empirical(success));
     }
 
     private void recordFeedback(ExperienceEntry selected, boolean success, String requestId,
@@ -705,18 +718,29 @@ public final class CognitiveSelfEvolutionEngine {
                                 List<CognitiveTrace.RepairEvent> repairs,
                                 List<CognitiveTrace.ExperienceEvent> events,
                                 OutcomeSignal outcomeSignal) {
+        recordFeedback(selected, success, requestId, harnessFingerprint, states, scores, repairs, events,
+                outcomeSignal, provenanceForOutcome(success, outcomeSignal));
+    }
+
+    private void recordFeedback(ExperienceEntry selected, boolean success, String requestId,
+                                String harnessFingerprint, List<String> states,
+                                List<CognitiveTrace.StrategyScore> scores,
+                                List<CognitiveTrace.RepairEvent> repairs,
+                                List<CognitiveTrace.ExperienceEvent> events,
+                                OutcomeSignal outcomeSignal, FeedbackProvenance provenance) {
         if (selected == null || experienceLibrary == null || requestId == null || requestId.isBlank()
                 || harnessFingerprint == null || !harnessFingerprint.matches("[0-9a-f]{64}")) {
             return;
         }
+        provenance.validate(success);
         EvidenceReference evidence = evidenceReference(requestId, harnessFingerprint, states, scores, repairs,
                 outcomeSignal);
         try {
             ExperienceEntry updated = selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
                     ? experienceLibrary.recordProbationFeedback(selected.domain(), selected.entryId(),
-                    success, evidence, requestId, harnessFingerprint)
+                    success, evidence, requestId, harnessFingerprint, provenance)
                     : experienceLibrary.recordFeedback(selected.domain(), selected.entryId(), success,
-                    evidence, requestId, harnessFingerprint);
+                    evidence, requestId, harnessFingerprint, provenance);
             String action = updated.lifecycleStatus() == StrategyLifecycleStatus.RETIRED
                     ? selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
                     ? "PROBATION_RETIRED" : "FEEDBACK_AND_RETIRE"
@@ -724,7 +748,7 @@ public final class CognitiveSelfEvolutionEngine {
                     && selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
                     ? "PROBATION_PROMOTED" : selected.lifecycleStatus() == StrategyLifecycleStatus.PROBATION
                     ? "PROBATION_FEEDBACK" : "FEEDBACK";
-            events.add(experienceEvent(updated, action, outcomeSignal));
+            events.add(experienceEvent(updated, action, outcomeSignal, updated.feedbackProvenance()));
             if (action.equals("PROBATION_FEEDBACK")) {
                 states.add("PROBATION_FEEDBACK_RECORDED");
             } else if (action.equals("PROBATION_PROMOTED")) {
@@ -736,7 +760,8 @@ public final class CognitiveSelfEvolutionEngine {
                     try {
                         var parent = experienceLibrary.rollbackToParent(selected.domain(), selected.entryId());
                         if (parent.isPresent()) {
-                            events.add(experienceEvent(parent.get(), "VARIANT_ROLLBACK_TO_PARENT", outcomeSignal));
+                            events.add(experienceEvent(parent.get(), "VARIANT_ROLLBACK_TO_PARENT", outcomeSignal,
+                                    updated.feedbackProvenance()));
                             states.add("VARIANT_ROLLED_BACK_TO_PARENT");
                         } else {
                             states.add("VARIANT_PARENT_UNAVAILABLE");
@@ -749,6 +774,35 @@ public final class CognitiveSelfEvolutionEngine {
         } catch (RuntimeException error) {
             states.add("EXPERIENCE_FEEDBACK_FAILED");
         }
+    }
+
+    private FeedbackProvenance provenanceForOutcome(boolean success, OutcomeSignal outcomeSignal) {
+        if (outcomeSignal == null) {
+            return FeedbackProvenance.empirical(success);
+        }
+        return switch (outcomeSignal.status()) {
+            case PASS -> FeedbackProvenance.VERIFIED_PASS;
+            case FAIL -> FeedbackProvenance.VERIFIED_FAIL;
+            case UNKNOWN -> FeedbackProvenance.empirical(success);
+        };
+    }
+
+    private FeedbackProvenance toolFailureProvenance(List<CognitiveTrace.ToolExecutionEvent> events) {
+        return events.stream().anyMatch(event -> event.businessOutcome()
+                == CognitiveTrace.ToolExecutionEvent.BusinessOutcome.REJECTED)
+                ? FeedbackProvenance.VERIFIED_FAIL : FeedbackProvenance.EMPIRICAL_FAIL;
+    }
+
+    private FeedbackProvenance repairFailureProvenance(boolean stepExecutionException,
+                                                       RepairProposal proposal,
+                                                       int repairAttempts, int maxRepairAttempts) {
+        if (stepExecutionException) {
+            return FeedbackProvenance.MODEL_SELF_REPORT;
+        }
+        if (proposal == null || repairAttempts >= maxRepairAttempts) {
+            return FeedbackProvenance.EMPIRICAL_FAIL;
+        }
+        return FeedbackProvenance.VERIFIED_FAIL;
     }
 
     private void promoteProbationAfterVerifiedPass(ExperienceEntry selected, List<String> states,
@@ -764,7 +818,8 @@ public final class CognitiveSelfEvolutionEngine {
                 return;
             }
             ExperienceEntry promoted = experienceLibrary.promote(selected.domain(), selected.entryId());
-            events.add(experienceEvent(promoted, "VERIFIER_PASS_PROMOTION", outcomeSignal));
+            events.add(experienceEvent(promoted, "VERIFIER_PASS_PROMOTION", outcomeSignal,
+                    FeedbackProvenance.VERIFIED_PASS));
             states.add("STRATEGY_PROMOTED_BY_OUTCOME_VERIFIER");
         } catch (RuntimeException error) {
             states.add("EXPERIENCE_PROMOTION_FAILED");
@@ -863,7 +918,6 @@ public final class CognitiveSelfEvolutionEngine {
                 false, states, scores, repairs, events, null, taskType,
                 insightEdits == null ? List.of() : insightEdits);
         if (candidate != null && candidate.lifecycleStatus() == StrategyLifecycleStatus.PROBATION) {
-            recordFeedback(candidate, false, requestId, harnessFingerprint, states, scores, repairs, events);
             states.add("STRATEGY_FAILURE_INSIGHT_PROBATION");
         }
         return candidate;
@@ -917,11 +971,17 @@ public final class CognitiveSelfEvolutionEngine {
 
     private CognitiveTrace.ExperienceEvent experienceEvent(ExperienceEntry entry, String action,
                                                            OutcomeSignal outcomeSignal) {
+        return experienceEvent(entry, action, outcomeSignal, FeedbackProvenance.NONE);
+    }
+
+    private CognitiveTrace.ExperienceEvent experienceEvent(ExperienceEntry entry, String action,
+                                                           OutcomeSignal outcomeSignal,
+                                                           FeedbackProvenance feedbackProvenance) {
         return new CognitiveTrace.ExperienceEvent(entry.entryId(), entry.version(), action,
                 entry.feedbackAttempts(), entry.feedbackSuccesses(), entry.retired(),
                 entry.lifecycleStatus(), entry.probationUses(), entry.probationSuccesses(),
                 entry.consecutiveFailures(), outcomeSignal == null
-                ? OutcomeSignal.Status.UNKNOWN : outcomeSignal.status());
+                ? OutcomeSignal.Status.UNKNOWN : outcomeSignal.status(), feedbackProvenance);
     }
 
     private String entryIdForStrategy(String strategy) {

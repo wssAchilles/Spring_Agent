@@ -1,7 +1,8 @@
 package tech.qiantong.qknow.hermes.cognitive.core.model;
 
-import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeSignal;
+import tech.qiantong.qknow.hermes.agent.harness.experience.FeedbackProvenance;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeSignal;
 
 import java.util.List;
 
@@ -84,12 +85,23 @@ public record CognitiveTrace(
                                   int attempts, int successes, boolean retired,
                                   StrategyLifecycleStatus lifecycleStatus, int probationUses,
                                   int probationSuccesses, int consecutiveFailures,
-                                  OutcomeSignal.Status outcomeStatus) {
+                                  OutcomeSignal.Status outcomeStatus,
+                                  FeedbackProvenance feedbackProvenance) {
+        public ExperienceEvent(String entryId, int version, String action,
+                               int attempts, int successes, boolean retired,
+                               StrategyLifecycleStatus lifecycleStatus, int probationUses,
+                               int probationSuccesses, int consecutiveFailures,
+                               OutcomeSignal.Status outcomeStatus) {
+            this(entryId, version, action, attempts, successes, retired, lifecycleStatus,
+                    probationUses, probationSuccesses, consecutiveFailures, outcomeStatus,
+                    FeedbackProvenance.NONE);
+        }
+
         public ExperienceEvent(String entryId, int version, String action,
                                int attempts, int successes, boolean retired) {
             this(entryId, version, action, attempts, successes, retired,
                     retired ? StrategyLifecycleStatus.RETIRED : null, 0, 0, 0,
-                    OutcomeSignal.Status.UNKNOWN);
+                    OutcomeSignal.Status.UNKNOWN, FeedbackProvenance.NONE);
         }
     }
 }

@@ -13,7 +13,12 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 class DefaultExperienceLibraryTest {
     @TempDir Path temp;
@@ -56,6 +61,86 @@ class DefaultExperienceLibraryTest {
         assertEquals(ExperienceDisposition.ADOPTED, promoted.disposition());
         assertNotNull(promoted.promotedAt());
         assertEquals(0, promoted.consecutiveFailures());
+    }
+
+    @Test
+    void modelSelfReportIsObservableButCannotPromoteProbation() {
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(731, List.of("kb-provenance"));
+        DefaultExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp), 3, 2);
+        ExperienceEntry initial = library.createProbation(candidate("self-report-only", domain));
+
+        ExperienceEntry selfReported = library.recordProbationFeedback(domain, "self-report-only", true,
+                evidence("self-report"), "self-report-run", "1".repeat(64),
+                FeedbackProvenance.MODEL_SELF_REPORT);
+        assertEquals(1, selfReported.probationUses());
+        assertEquals(0, selfReported.probationSuccesses());
+        assertEquals(0, selfReported.feedbackAttempts());
+        assertEquals(0, selfReported.feedbackSuccesses());
+        assertEquals(0, selfReported.consecutiveFailures());
+        assertEquals(initial.confidence(), selfReported.confidence());
+        assertEquals(StrategyLifecycleStatus.PROBATION, selfReported.lifecycleStatus());
+        assertEquals(FeedbackProvenance.MODEL_SELF_REPORT, selfReported.feedbackProvenance());
+
+        library.recordProbationFeedback(domain, "self-report-only", true, evidence("verified-1"),
+                "verified-run-1", "2".repeat(64), FeedbackProvenance.VERIFIED_PASS);
+        ExperienceEntry promoted = library.recordProbationFeedback(domain, "self-report-only", true,
+                evidence("verified-2"), "verified-run-2", "3".repeat(64),
+                FeedbackProvenance.VERIFIED_PASS);
+        assertEquals(3, promoted.probationUses());
+        assertEquals(2, promoted.probationSuccesses());
+        assertEquals(StrategyLifecycleStatus.ADOPTED, promoted.lifecycleStatus());
+    }
+
+    @Test
+    void noneAndMismatchedOutcomeProvenanceAreRejected() {
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(733, List.of("kb-invalid-provenance"));
+        DefaultExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        library.createProbation(candidate("invalid-provenance", domain));
+
+        assertThrows(IllegalArgumentException.class, () -> library.recordProbationFeedback(domain,
+                "invalid-provenance", true, evidence("none"), "run-none", "a".repeat(64),
+                FeedbackProvenance.NONE));
+        assertThrows(IllegalArgumentException.class, () -> library.recordProbationFeedback(domain,
+                "invalid-provenance", false, evidence("wrong-pass"), "run-pass", "b".repeat(64),
+                FeedbackProvenance.VERIFIED_PASS));
+        assertThrows(IllegalArgumentException.class, () -> library.recordProbationFeedback(domain,
+                "invalid-provenance", true, evidence("wrong-fail"), "run-fail", "c".repeat(64),
+                FeedbackProvenance.EMPIRICAL_FAIL));
+
+        ExperienceEntry unchanged = library.find(domain, "invalid-provenance").orElseThrow();
+        assertEquals(0, unchanged.probationUses());
+        assertEquals(0, unchanged.feedbackAttempts());
+    }
+
+    @Test
+    void legacyInterfaceDefaultDoesNotDowngradeExplicitProvenance() {
+        ExperienceLibrary legacy = mock(ExperienceLibrary.class, CALLS_REAL_METHODS);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(734, List.of("kb-legacy-provenance"));
+        EvidenceReference evidence = evidence("legacy-interface");
+
+        assertThrows(UnsupportedOperationException.class, () -> legacy.recordFeedback(domain, "legacy-entry", true,
+                evidence, "legacy-run", "d".repeat(64), FeedbackProvenance.MODEL_SELF_REPORT));
+        verify(legacy, never()).recordFeedback(domain, "legacy-entry", true,
+                evidence, "legacy-run", "d".repeat(64));
+    }
+
+    @Test
+    void duplicateFeedbackIsIdempotentButSameEvidenceAcrossRunsIsNot() {
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(732, List.of("kb-idempotency"));
+        DefaultExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        library.adoptRuntimeStrategy(candidate("idempotent-feedback", domain));
+        EvidenceReference evidence = evidence("same-evidence");
+
+        ExperienceEntry first = library.recordFeedback(domain, "idempotent-feedback", true, evidence,
+                "same-run", "4".repeat(64), FeedbackProvenance.VERIFIED_PASS);
+        ExperienceEntry duplicate = library.recordFeedback(domain, "idempotent-feedback", true, evidence,
+                "same-run", "4".repeat(64), FeedbackProvenance.VERIFIED_PASS);
+        ExperienceEntry nextRun = library.recordFeedback(domain, "idempotent-feedback", true, evidence,
+                "next-run", "5".repeat(64), FeedbackProvenance.VERIFIED_PASS);
+
+        assertEquals(first.version(), duplicate.version());
+        assertEquals(1, duplicate.feedbackAttempts());
+        assertEquals(2, nextRun.feedbackAttempts());
     }
 
     @Test
@@ -104,12 +189,14 @@ class DefaultExperienceLibraryTest {
         legacyJson.remove("lastUsedAt");
         legacyJson.remove("promotedAt");
         legacyJson.remove("retiredAt");
+        legacyJson.remove("feedbackProvenance");
         Files.writeString(entryJson, legacyJson.toJSONString());
 
         ExperienceEntry reloaded = store.find(domain, "legacy-entry").orElseThrow();
 
         assertEquals(StrategyLifecycleStatus.ADOPTED, reloaded.lifecycleStatus());
         assertEquals(0, reloaded.probationUses());
+        assertEquals(FeedbackProvenance.NONE, reloaded.feedbackProvenance());
         assertTrue(library.recallForProposer(domain, "cognitive-evolution", 10).hasRelevantExperience());
     }
 
