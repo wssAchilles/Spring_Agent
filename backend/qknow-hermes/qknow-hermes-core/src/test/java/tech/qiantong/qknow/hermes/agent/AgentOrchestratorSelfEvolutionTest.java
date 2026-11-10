@@ -12,7 +12,6 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.DefaultExperienceLibr
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
-import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTaskType;
 import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveSelfEvolutionEngine;
 import tech.qiantong.qknow.hermes.config.ChatModelFactory;
 import tech.qiantong.qknow.hermes.config.CognitiveEvolutionConfig;
@@ -102,7 +101,7 @@ class AgentOrchestratorSelfEvolutionTest {
     }
 
     @Test
-    void explicitMutationRequestStoresStrategyUnderMutationTaskType() {
+    void explicitMutationWithoutExecutedToolDoesNotCreateSuccessfulStrategy() {
         ChatModelFactory factory = mock(ChatModelFactory.class);
         ChatModel model = mock(ChatModel.class);
         when(factory.getChatModel(anyString(), any(), any(), anyString())).thenReturn(model);
@@ -153,10 +152,10 @@ class AgentOrchestratorSelfEvolutionTest {
                 .findFirst().orElseThrow().getFinished().getFullText());
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(73, List.of());
         var strategies = store.list(domain);
-        assertEquals(1, strategies.size());
-        assertEquals(StrategyTaskType.CANCELLATION, strategies.getFirst().strategyTemplate().taskType());
-        assertTrue(orchestrator.getLatestCognitiveTrace(request.getRequestId()).states()
-                .contains("TASK_TYPE:CANCELLATION"));
+        assertTrue(strategies.isEmpty());
+        var trace = orchestrator.getLatestCognitiveTrace(request.getRequestId());
+        assertTrue(trace.states().contains("TASK_TYPE:CANCELLATION"));
+        assertTrue(trace.states().contains("MUTATION_FEEDBACK_REJECTED_NO_MATCHING_TOOL_EXECUTION"));
     }
 
     @Test

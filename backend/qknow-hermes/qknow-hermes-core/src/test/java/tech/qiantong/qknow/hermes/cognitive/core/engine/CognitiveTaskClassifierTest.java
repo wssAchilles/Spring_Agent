@@ -35,4 +35,15 @@ class CognitiveTaskClassifierTest {
                 "Please cancel and return these items",
                 List.of("cancel_pending_order", "return_delivered_order_items")));
     }
+
+    @Test
+    void classifiesObservedMutationToolsWithoutQuestionText() {
+        assertEquals(StrategyTaskType.CANCELLATION,
+                CognitiveTaskClassifier.classifyObservedTools(List.of("get_order_details", "cancel_pending_order")));
+        assertEquals(StrategyTaskType.STATE_MUTATION,
+                CognitiveTaskClassifier.classifyObservedTools(List.of(
+                        "cancel_pending_order", "modify_pending_order_address")));
+        assertEquals(StrategyTaskType.GENERAL,
+                CognitiveTaskClassifier.classifyObservedTools(List.of("get_order_details")));
+    }
 }

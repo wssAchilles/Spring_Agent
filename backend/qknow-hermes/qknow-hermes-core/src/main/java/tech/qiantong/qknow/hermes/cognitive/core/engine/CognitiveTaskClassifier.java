@@ -43,5 +43,17 @@ public final class CognitiveTaskClassifier {
                 : matchingFamilies.size() == 1 ? matchingFamilies.getFirst() : StrategyTaskType.STATE_MUTATION;
     }
 
+    public static StrategyTaskType classifyObservedTools(Collection<String> toolNames) {
+        if (toolNames == null || toolNames.isEmpty()) {
+            return StrategyTaskType.GENERAL;
+        }
+        List<StrategyTaskType> observedFamilies = TOOL_FAMILIES.stream()
+                .filter(family -> toolNames.stream().filter(name -> name != null)
+                        .anyMatch(name -> family.tool().matcher(name).find()))
+                .map(MutationToolFamily::taskType).distinct().toList();
+        return observedFamilies.isEmpty() ? StrategyTaskType.GENERAL
+                : observedFamilies.size() == 1 ? observedFamilies.getFirst() : StrategyTaskType.STATE_MUTATION;
+    }
+
     private record MutationToolFamily(Pattern tool, Pattern intent, StrategyTaskType taskType) { }
 }

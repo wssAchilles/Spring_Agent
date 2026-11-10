@@ -32,6 +32,8 @@ import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeVerificatio
 import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeVerifier;
 import tech.qiantong.qknow.hermes.cognitive.core.verification.RuleBasedOutcomeVerifier;
 import tech.qiantong.qknow.hermes.cognitive.core.verification.TaskOutcomeSpec;
+import tech.qiantong.qknow.hermes.cognitive.core.verification.CognitiveToolOutcomeRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -52,12 +54,25 @@ public final class CognitiveSelfEvolutionEngine {
     private static final int MAX_STRATEGY_LENGTH = 1000;
 
     private final ExperienceLibrary experienceLibrary;
+    private final CognitiveToolOutcomeRegistry toolOutcomeRegistry;
     private final OutcomeVerifier outcomeVerifier = new RuleBasedOutcomeVerifier();
     private final PlanVerifier planVerifier = new PlanVerifier();
     private final ExperienceStrategySelector strategySelector = new ExperienceStrategySelector();
 
     public CognitiveSelfEvolutionEngine(ExperienceLibrary experienceLibrary) {
+        this(experienceLibrary, CognitiveToolOutcomeRegistry.empty());
+    }
+
+    @Autowired
+    public CognitiveSelfEvolutionEngine(ExperienceLibrary experienceLibrary,
+                                        CognitiveToolOutcomeRegistry toolOutcomeRegistry) {
         this.experienceLibrary = experienceLibrary;
+        this.toolOutcomeRegistry = toolOutcomeRegistry == null
+                ? CognitiveToolOutcomeRegistry.empty() : toolOutcomeRegistry;
+    }
+
+    public CognitiveToolExecutionObserver newToolExecutionObserver(String stepId) {
+        return new CognitiveToolExecutionObserver(stepId, toolOutcomeRegistry);
     }
 
     public CognitiveExecutionResult execute(String requestId, String question, String systemPrompt,
@@ -88,6 +103,9 @@ public final class CognitiveSelfEvolutionEngine {
         var repairs = new ArrayList<CognitiveTrace.RepairEvent>();
         var experienceEvents = new ArrayList<CognitiveTrace.ExperienceEvent>();
         var strategyScores = new ArrayList<CognitiveTrace.StrategyScore>();
+        var toolExecutionEvents = new ArrayList<CognitiveTrace.ToolExecutionEvent>();
+        var latestToolExecutionEventsByStep = new LinkedHashMap<String, List<CognitiveTrace.ToolExecutionEvent>>();
+        boolean selectedStrategyFailureRecorded = false;
         states.add("ANALYZING");
         if (chatModel == null || stepExecutor == null || question == null || question.isBlank()
                 || maxTasks < 1 || maxRepairAttempts < 0) {
@@ -150,6 +168,7 @@ public final class CognitiveSelfEvolutionEngine {
         var outputs = new LinkedHashMap<String, String>();
         var completed = new LinkedHashSet<String>();
         int repairAttempts = 0;
+        int nextToolCallIndex = 0;
         String appliedRepairStrategy = "";
         int index = 0;
         while (true) {
@@ -163,7 +182,25 @@ public final class CognitiveSelfEvolutionEngine {
                 } catch (Exception error) {
                     execution = StepExecution.failed(error.getClass().getSimpleName());
                 }
-                if (execution != null && execution.succeeded()) {
+                List<CognitiveTrace.ToolExecutionEvent> executionToolEvents = execution == null
+                        ? List.of() : execution.toolExecutionEvents();
+                latestToolExecutionEventsByStep.put(step.stepId(), executionToolEvents);
+                if (execution != null) {
+                    for (CognitiveTrace.ToolExecutionEvent event : executionToolEvents) {
+                        CognitiveTrace.ToolExecutionEvent observed = new CognitiveTrace.ToolExecutionEvent(
+                                nextToolCallIndex++, event.stepId(), event.toolName(), event.status(),
+                                event.businessOutcome(), event.reasonCode(), event.outcomeEvidenceDigest());
+                        toolExecutionEvents.add(observed);
+                        states.add("TOOL_EXECUTION:" + observed.stepId() + ':' + observed.callIndex() + ':'
+                                + observed.toolName() + ':' + observed.status() + ':' + observed.reasonCode());
+                    }
+                }
+                boolean knownToolFailure = executionToolEvents.stream().anyMatch(event ->
+                        event.status() == CognitiveTrace.ToolExecutionEvent.Status.ERROR
+                                || event.businessOutcome()
+                                == CognitiveTrace.ToolExecutionEvent.BusinessOutcome.REJECTED);
+                boolean stepSucceeded = execution != null && execution.succeeded() && !knownToolFailure;
+                if (stepSucceeded) {
                     outputs.put(step.stepId(), execution.output() == null ? "" : execution.output());
                     completed.add(step.stepId());
                     index++;
@@ -171,15 +208,35 @@ public final class CognitiveSelfEvolutionEngine {
                 }
 
                 states.add("REFLECTING");
+                StepExecution reflectionExecution = execution;
+                if (knownToolFailure && execution != null && execution.succeeded()) {
+                    reflectionExecution = StepExecution.failed(
+                            toolFailureCode(executionToolEvents), executionToolEvents);
+                    states.add("TOOL_OUTCOME_REQUIRES_REPAIR");
+                    if (!selectedStrategyFailureRecorded && selectedStrategy != null) {
+                        recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                                states, strategyScores, repairs, experienceEvents);
+                        selectedStrategyFailureRecorded = true;
+                        states.add("STRATEGY_FEEDBACK_RECORDED_STEP_FAILURE");
+                    }
+                    if (executionToolEvents.stream().anyMatch(event ->
+                            event.status() == CognitiveTrace.ToolExecutionEvent.Status.ERROR)) {
+                        states.add("MUTATION_FEEDBACK_RECORDED_TOOL_ERROR");
+                    }
+                }
                 ReflectionResult reflection;
                 try {
-                    reflection = reflect(question, step, outputs, execution,
+                    reflection = reflect(question, step, outputs, reflectionExecution,
                             systemPrompt, selectedLesson, chatModel);
                 } catch (RuntimeException error) {
-                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                            states, strategyScores, repairs, experienceEvents);
+                    if (!selectedStrategyFailureRecorded) {
+                        recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                                states, strategyScores, repairs, experienceEvents);
+                        selectedStrategyFailureRecorded = true;
+                    }
                     return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
-                            states, strategyScores, reflections, repairs, experienceEvents, "REFLECTION_FAILED");
+                            states, strategyScores, reflections, repairs, experienceEvents,
+                            "REFLECTION_FAILED", null, toolExecutionEvents);
                 }
                 reflections.add(new CognitiveTrace.ReflectionEvent(step.stepId(), reflection.accepted(),
                         "STEP_FAILURE_REFLECTION"));
@@ -194,10 +251,14 @@ public final class CognitiveSelfEvolutionEngine {
                 if (!repairVerification.valid()) {
                     repairs.add(new CognitiveTrace.RepairEvent(step.stepId(), repairAttempts,
                             false, repairVerification.reasonCodes().getFirst()));
-                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                            states, strategyScores, repairs, experienceEvents);
+                    if (!selectedStrategyFailureRecorded) {
+                        recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                                states, strategyScores, repairs, experienceEvents);
+                        selectedStrategyFailureRecorded = true;
+                    }
                     return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
-                            states, strategyScores, reflections, repairs, experienceEvents, "REPAIR_REJECTED");
+                            states, strategyScores, reflections, repairs, experienceEvents,
+                            "REPAIR_REJECTED", null, toolExecutionEvents);
                 }
                 repairAttempts++;
                 repairs.add(new CognitiveTrace.RepairEvent(step.stepId(), repairAttempts, true, "REPAIR_ACCEPTED"));
@@ -212,10 +273,13 @@ public final class CognitiveSelfEvolutionEngine {
             try {
                 answer = composeAnswer(question, outputs, systemPrompt, selectedLesson, chatModel);
             } catch (RuntimeException error) {
-                recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                        states, strategyScores, repairs, experienceEvents);
+                if (!selectedStrategyFailureRecorded) {
+                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                            states, strategyScores, repairs, experienceEvents);
+                }
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
-                        states, strategyScores, reflections, repairs, experienceEvents, "COMPOSITION_FAILED");
+                        states, strategyScores, reflections, repairs, experienceEvents,
+                        "COMPOSITION_FAILED", null, toolExecutionEvents);
             }
             states.add("REFLECTING");
             ReflectionResult finalReflection;
@@ -223,57 +287,152 @@ public final class CognitiveSelfEvolutionEngine {
                 finalReflection = reflectAnswer(question, answer, outputs, systemPrompt,
                         selectedLesson, chatModel);
             } catch (RuntimeException error) {
-                recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                        states, strategyScores, repairs, experienceEvents);
+                if (!selectedStrategyFailureRecorded) {
+                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                            states, strategyScores, repairs, experienceEvents);
+                }
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
-                        states, strategyScores, reflections, repairs, experienceEvents, "FINAL_REFLECTION_FAILED");
+                        states, strategyScores, reflections, repairs, experienceEvents,
+                        "FINAL_REFLECTION_FAILED", null, toolExecutionEvents);
             }
             reflections.add(new CognitiveTrace.ReflectionEvent("FINAL", finalReflection.accepted(),
                     finalReflection.accepted() ? "ANSWER_ACCEPTED" : "ANSWER_REPAIR_REQUIRED"));
             if (finalReflection.accepted()) {
                 OutcomeSignal outcome = verifyOutcome(requestId, taskOutcomeSpec, outputs, answer);
                 states.add("OUTCOME_" + outcome.status() + ":" + outcome.reasonCode());
+                List<CognitiveTrace.ToolExecutionEvent> finalToolExecutionEvents = latestToolExecutionEventsByStep
+                        .values().stream().flatMap(List::stream).toList();
+                List<String> returnedToolNames = toolExecutionEvents.stream()
+                        .filter(event -> event.status() == CognitiveTrace.ToolExecutionEvent.Status.RESPONSE_RECEIVED)
+                        .map(CognitiveTrace.ToolExecutionEvent::toolName).toList();
+                StrategyTaskType observedTaskType = CognitiveTaskClassifier.classifyObservedTools(returnedToolNames);
+                StrategyTaskType intentObservedTaskType = CognitiveTaskClassifier.classify(question, returnedToolNames);
+                StrategyTaskType feedbackTaskType = intentObservedTaskType.isMutationFamily()
+                        ? intentObservedTaskType : effectiveTaskType;
+                boolean taskFamilyMismatch = effectiveTaskType.isMutationFamily()
+                        ? observedTaskType.isMutationFamily() && observedTaskType != effectiveTaskType
+                        : intentObservedTaskType.isMutationFamily() || observedTaskType.isMutationFamily();
+                boolean candidateFamilyVerified = !observedTaskType.isMutationFamily()
+                        || intentObservedTaskType.isMutationFamily();
+                states.add("OBSERVED_TOOL_TASK_TYPE:" + observedTaskType);
+                states.add("INTENT_OBSERVED_TASK_TYPE:" + intentObservedTaskType);
+                if (taskFamilyMismatch) {
+                    states.add("STRATEGY_TASK_FAMILY_MISMATCH:" + effectiveTaskType + "->"
+                            + feedbackTaskType + ":OBSERVED_" + observedTaskType);
+                }
+                if (!candidateFamilyVerified) {
+                    states.add("MUTATION_TOOL_WITHOUT_EXPLICIT_INTENT");
+                }
                 String terminationCode;
                 if (outcome.status() == OutcomeSignal.Status.PASS) {
-                    recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
-                            states, strategyScores, repairs, experienceEvents, outcome);
-                    promoteProbationAfterVerifiedPass(selectedStrategy, states, experienceEvents, outcome);
+                    if (taskFamilyMismatch) {
+                        states.add("STRATEGY_FEEDBACK_SKIPPED_TASK_FAMILY_MISMATCH");
+                    } else if (!selectedStrategyFailureRecorded) {
+                        recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
+                                states, strategyScores, repairs, experienceEvents, outcome);
+                        promoteProbationAfterVerifiedPass(selectedStrategy, states, experienceEvents, outcome);
+                    }
                     String strategyToAdopt = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
                             : finalReflection.reusableStrategy();
-                    if (!strategyToAdopt.isBlank() && (selectedStrategy == null
-                            || !strategyCandidateId(strategyToAdopt, lineageParent, effectiveTaskType)
+                    ExperienceEntry candidateParent = strategyParentForTaskType(lineageParent, feedbackTaskType);
+                    if (candidateFamilyVerified && !strategyToAdopt.isBlank() && (selectedStrategy == null
+                            || taskFamilyMismatch
+                            || !strategyCandidateId(strategyToAdopt, candidateParent, feedbackTaskType)
                             .equals(selectedStrategy.entryId()))) {
-                        ExperienceEntry learned = createStrategy(strategyToAdopt, lineageParent,
+                        ExperienceEntry learned = createStrategy(strategyToAdopt, candidateParent,
                                 requestId, harnessFingerprint, domain, true, states, strategyScores,
-                                repairs, experienceEvents, outcome, effectiveTaskType);
+                                repairs, experienceEvents, outcome, feedbackTaskType);
                         if (learned != null && learned.lifecycleStatus() == StrategyLifecycleStatus.PROBATION) {
                             states.add("STRATEGY_VARIANT_REMAINS_PROBATION");
                         }
                     }
                     terminationCode = "OUTCOME_VERIFIED_PASS";
                 } else if (outcome.status() == OutcomeSignal.Status.FAIL) {
-                    recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
-                            states, strategyScores, repairs, experienceEvents, outcome);
+                    if (taskFamilyMismatch) {
+                        states.add("STRATEGY_FEEDBACK_SKIPPED_TASK_FAMILY_MISMATCH");
+                    } else if (!selectedStrategyFailureRecorded) {
+                        recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                                states, strategyScores, repairs, experienceEvents, outcome);
+                    }
                     states.add("STRATEGY_ADOPTION_REJECTED_OUTCOME_FAIL");
                     terminationCode = "OUTCOME_VERIFIED_FAIL";
                 } else {
-                    recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
-                            states, strategyScores, repairs, experienceEvents, outcome);
+                    boolean hasToolExecution = !finalToolExecutionEvents.isEmpty();
+                    boolean noToolFailures = finalToolExecutionEvents.stream().noneMatch(event ->
+                            event.status() == CognitiveTrace.ToolExecutionEvent.Status.ERROR);
+                    boolean operationalSuccess = hasToolExecution && noToolFailures
+                            && !effectiveTaskType.isMutationFamily()
+                            && !intentObservedTaskType.isMutationFamily()
+                            && !observedTaskType.isMutationFamily();
+                    List<CognitiveTrace.ToolExecutionEvent> mutationEvents = finalToolExecutionEvents.stream()
+                            .filter(event -> CognitiveTaskClassifier.classifyObservedTools(List.of(event.toolName()))
+                                    .isMutationFamily())
+                            .toList();
+                    boolean mutationApplied = !mutationEvents.isEmpty() && mutationEvents.stream().allMatch(event ->
+                            event.businessOutcome() == CognitiveTrace.ToolExecutionEvent.BusinessOutcome.APPLIED);
+                    boolean mutationRejected = mutationEvents.stream().anyMatch(event ->
+                            event.businessOutcome() == CognitiveTrace.ToolExecutionEvent.BusinessOutcome.REJECTED);
+                    boolean observedMutationReturned = taskFamilyMismatch && candidateFamilyVerified
+                            && observedTaskType.isMutationFamily() && mutationApplied;
+                    if (taskFamilyMismatch) {
+                        states.add("STRATEGY_FEEDBACK_SKIPPED_TASK_FAMILY_MISMATCH");
+                    } else if (effectiveTaskType.isMutationFamily()) {
+                        if (hasToolExecution && !noToolFailures) {
+                            if (!selectedStrategyFailureRecorded) {
+                                recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                                        states, strategyScores, repairs, experienceEvents, outcome);
+                            }
+                            states.add("MUTATION_FEEDBACK_RECORDED_TOOL_ERROR");
+                        } else if (mutationRejected) {
+                            if (!selectedStrategyFailureRecorded) {
+                                recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
+                                        states, strategyScores, repairs, experienceEvents, outcome);
+                            }
+                            states.add("MUTATION_FEEDBACK_RECORDED_OUTCOME_REJECTED");
+                        } else if (mutationApplied) {
+                            if (!selectedStrategyFailureRecorded) {
+                                recordFeedback(selectedStrategy, true, requestId, harnessFingerprint,
+                                        states, strategyScores, repairs, experienceEvents, outcome);
+                            }
+                            states.add("MUTATION_FEEDBACK_RECORDED_OUTCOME_APPLIED");
+                        } else {
+                            states.add("MUTATION_FEEDBACK_DEFERRED_OUTCOME_UNKNOWN");
+                        }
+                    } else if (hasToolExecution) {
+                        if (!selectedStrategyFailureRecorded) {
+                            recordFeedback(selectedStrategy, operationalSuccess, requestId, harnessFingerprint,
+                                    states, strategyScores, repairs, experienceEvents, outcome);
+                        }
+                    } else {
+                        states.add("STRATEGY_FEEDBACK_SKIPPED_NO_TOOL_EXECUTION");
+                    }
                     String strategyToTry = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
                             : finalReflection.reusableStrategy();
                     boolean enteredProbation = false;
-                    if (!strategyToTry.isBlank() && (selectedStrategy == null
-                            || !strategyCandidateId(strategyToTry, lineageParent, effectiveTaskType)
+                    ExperienceEntry candidateParent = strategyParentForTaskType(lineageParent, feedbackTaskType);
+                    boolean candidateCanEnterProbation = noToolFailures && !mutationRejected
+                            && (!effectiveTaskType.isMutationFamily()
+                            || observedTaskType == effectiveTaskType || observedMutationReturned
+                            || mutationEvents.stream().anyMatch(event -> event.businessOutcome()
+                            == CognitiveTrace.ToolExecutionEvent.BusinessOutcome.UNKNOWN));
+                    if (candidateCanEnterProbation && candidateFamilyVerified
+                            && !strategyToTry.isBlank()
+                            && (selectedStrategy == null || taskFamilyMismatch
+                            || !strategyCandidateId(strategyToTry, candidateParent, feedbackTaskType)
                             .equals(selectedStrategy.entryId()))) {
-                        ExperienceEntry probation = createStrategy(strategyToTry, lineageParent,
+                        ExperienceEntry probation = createStrategy(strategyToTry, candidateParent,
                                 requestId, harnessFingerprint, domain, false, states, strategyScores,
-                                repairs, experienceEvents, outcome, effectiveTaskType);
+                                repairs, experienceEvents, outcome, feedbackTaskType);
                         enteredProbation = probation != null
                                 && probation.lifecycleStatus() == StrategyLifecycleStatus.PROBATION;
-                        if (enteredProbation && strategyToTry.equals(appliedRepairStrategy)) {
+                        if (enteredProbation && (operationalSuccess || mutationApplied)
+                                && strategyToTry.equals(appliedRepairStrategy)) {
                             recordFeedback(probation, true, requestId, harnessFingerprint, states,
                                     strategyScores, repairs, experienceEvents, outcome);
                         }
+                    }
+                    if (returnedToolNames.isEmpty() && !taskFamilyMismatch && effectiveTaskType.isMutationFamily()) {
+                        states.add("MUTATION_FEEDBACK_REJECTED_NO_MATCHING_TOOL_EXECUTION");
                     }
                     states.add(enteredProbation ? "STRATEGY_ENTERED_PROBATION_OUTCOME_UNKNOWN"
                             : "STRATEGY_NOT_ENTERED_PROBATION_OUTCOME_UNKNOWN");
@@ -281,7 +440,8 @@ public final class CognitiveSelfEvolutionEngine {
                 }
                 states.add("COMPLETED");
                 return result(CognitiveExecutionResult.Status.COMPLETED, answer,
-                        states, strategyScores, reflections, repairs, experienceEvents, terminationCode, outcome);
+                        states, strategyScores, reflections, repairs, experienceEvents,
+                        terminationCode, outcome, toolExecutionEvents);
             }
 
             RepairProposal proposal = finalReflection.repairProposal();
@@ -289,7 +449,8 @@ public final class CognitiveSelfEvolutionEngine {
                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
                         states, strategyScores, repairs, experienceEvents);
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
-                        states, strategyScores, reflections, repairs, experienceEvents, "FINAL_REFLECTION_REJECTED");
+                        states, strategyScores, reflections, repairs, experienceEvents,
+                        "FINAL_REFLECTION_REJECTED", null, toolExecutionEvents);
             }
             PlanStep appended = new PlanStep(proposal.stepId(), proposal.objective(), List.copyOf(completed));
             PlanVerificationResult appendVerification = planVerifier.verifyAppend(
@@ -300,7 +461,8 @@ public final class CognitiveSelfEvolutionEngine {
                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
                         states, strategyScores, repairs, experienceEvents);
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
-                        states, strategyScores, reflections, repairs, experienceEvents, "FINAL_REPAIR_REJECTED");
+                        states, strategyScores, reflections, repairs, experienceEvents,
+                        "FINAL_REPAIR_REJECTED", null, toolExecutionEvents);
             }
             repairAttempts++;
             repairs.add(new CognitiveTrace.RepairEvent(proposal.stepId(), repairAttempts,
@@ -379,9 +541,12 @@ public final class CognitiveSelfEvolutionEngine {
                 已完成步骤摘要：%s
                 失败步骤：%s / %s
                 失败码：%s
+                工具结果摘要：%s
                 """.formatted(failedStep.stepId(), failedStep.stepId(), question,
                 summarizeOutputs(outputs), failedStep.stepId(), failedStep.objective(),
-                failedExecution == null ? "UNKNOWN" : failedExecution.failureCode());
+                failedExecution == null ? "UNKNOWN" : failedExecution.failureCode(),
+                failedExecution == null ? "NONE" : summarizeToolExecutionEvents(
+                        failedExecution.toolExecutionEvents()));
         return parseReflection(call(chatModel, systemPromptWithLesson(systemPrompt, lesson), prompt));
     }
 
@@ -652,6 +817,14 @@ public final class CognitiveSelfEvolutionEngine {
                 : entry.strategyTemplate().taskType();
     }
 
+    private ExperienceEntry strategyParentForTaskType(ExperienceEntry candidate, StrategyTaskType taskType) {
+        if (candidate == null || candidate.strategyTemplate() == null) {
+            return null;
+        }
+        StrategyTaskType parentType = strategyTaskType(candidate);
+        return parentType == taskType || parentType.canSeedCrossTaskVariant() ? candidate : null;
+    }
+
     private boolean hasParentTemplate(ExperienceEntry selected) {
         return selected != null && selected.strategyTemplate() != null;
     }
@@ -721,6 +894,27 @@ public final class CognitiveSelfEvolutionEngine {
         return normalized;
     }
 
+    private String toolFailureCode(List<CognitiveTrace.ToolExecutionEvent> events) {
+        return events.stream()
+                .filter(event -> event.status() == CognitiveTrace.ToolExecutionEvent.Status.ERROR
+                        || event.businessOutcome() == CognitiveTrace.ToolExecutionEvent.BusinessOutcome.REJECTED)
+                .map(event -> event.status() == CognitiveTrace.ToolExecutionEvent.Status.ERROR
+                        ? "TOOL_EXECUTION_ERROR:" + event.reasonCode()
+                        : "TOOL_OUTCOME_REJECTED:" + event.reasonCode())
+                .findFirst().orElse("TOOL_EXECUTION_FAILED");
+    }
+
+    private String summarizeToolExecutionEvents(List<CognitiveTrace.ToolExecutionEvent> events) {
+        if (events == null || events.isEmpty()) {
+            return "NONE";
+        }
+        return events.stream()
+                .map(event -> event.toolName() + "|" + event.status() + "|"
+                        + event.businessOutcome() + "|" + event.reasonCode() + "|"
+                        + event.outcomeEvidenceDigest())
+                .collect(java.util.stream.Collectors.joining(";"));
+    }
+
     private String sha256(String value) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
@@ -757,8 +951,22 @@ public final class CognitiveSelfEvolutionEngine {
                                             List<CognitiveTrace.ExperienceEvent> events,
                                             String reason,
                                             OutcomeSignal outcomeSignal) {
+        return result(status, answer, states, scores, reflections, repairs, events,
+                reason, outcomeSignal, List.of());
+    }
+
+    private CognitiveExecutionResult result(CognitiveExecutionResult.Status status, String answer,
+                                            List<String> states,
+                                            List<CognitiveTrace.StrategyScore> scores,
+                                            List<CognitiveTrace.ReflectionEvent> reflections,
+                                            List<CognitiveTrace.RepairEvent> repairs,
+                                            List<CognitiveTrace.ExperienceEvent> events,
+                                            String reason,
+                                            OutcomeSignal outcomeSignal,
+                                            List<CognitiveTrace.ToolExecutionEvent> toolExecutionEvents) {
         return new CognitiveExecutionResult(status, answer,
-                new CognitiveTrace(states, scores, reflections, repairs, events, reason, outcomeSignal));
+                new CognitiveTrace(states, scores, reflections, repairs, events, reason,
+                        outcomeSignal, toolExecutionEvents));
     }
 
     @FunctionalInterface
@@ -766,13 +974,33 @@ public final class CognitiveSelfEvolutionEngine {
         StepExecution execute(PlanStep step, String systemPrompt, Map<String, String> previousResults) throws Exception;
     }
 
-    public record StepExecution(boolean succeeded, String output, String failureCode) {
+    public record StepExecution(boolean succeeded, String output, String failureCode,
+                                List<CognitiveTrace.ToolExecutionEvent> toolExecutionEvents) {
+        public StepExecution(boolean succeeded, String output, String failureCode) {
+            this(succeeded, output, failureCode, List.of());
+        }
+
+        public StepExecution {
+            toolExecutionEvents = toolExecutionEvents == null ? List.of() : List.copyOf(toolExecutionEvents);
+        }
+
         public static StepExecution success(String output) {
             return new StepExecution(true, output, null);
         }
 
+        public static StepExecution success(String output,
+                                            List<CognitiveTrace.ToolExecutionEvent> toolExecutionEvents) {
+            return new StepExecution(true, output, null, toolExecutionEvents);
+        }
+
         public static StepExecution failed(String failureCode) {
             return new StepExecution(false, null, failureCode == null ? "STEP_FAILED" : failureCode);
+        }
+
+        public static StepExecution failed(String failureCode,
+                                           List<CognitiveTrace.ToolExecutionEvent> toolExecutionEvents) {
+            return new StepExecution(false, null,
+                    failureCode == null ? "STEP_FAILED" : failureCode, toolExecutionEvents);
         }
     }
 }

@@ -2,6 +2,7 @@ package tech.qiantong.qknow.hermes.agent;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
@@ -45,6 +46,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceDomain;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTaskType;
 import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveTaskClassifier;
 import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveSelfEvolutionEngine;
+import tech.qiantong.qknow.hermes.cognitive.core.engine.CognitiveToolExecutionObserver;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveTrace;
 import tech.qiantong.qknow.hermes.eval.MetricScores;
@@ -1259,17 +1261,24 @@ public class AgentOrchestrator {
             try {
                 WorkerAgent worker = new WorkerAgent(stepId, "Cognitive self-evolution task",
                         systemPrompt, tools, chatModel, effectiveResolver);
+                CognitiveToolExecutionObserver toolObserver = cognitiveSelfEvolutionEngine
+                        .newToolExecutionObserver(stepId);
+                List<ToolInterceptor> cognitiveInterceptors = new ArrayList<>();
+                cognitiveInterceptors.add(toolObserver);
                 if (toolCallDispatch != null && toolCallDispatch.isAvailable()) {
-                    worker = worker.withToolInterceptors(List.of(toolCallDispatch));
+                    cognitiveInterceptors.add(toolCallDispatch);
                     if (toolCallDispatch.isEnforce()) {
                         worker = worker.withSerialToolExecution(true);
                     }
                 }
+                worker = worker.withToolInterceptors(cognitiveInterceptors);
                 WorkerAgent.ExecutionResult result = worker.execute(objective,
                         Map.of("history", history, "previousResults", new LinkedHashMap<>(previousResults)));
                 return result.succeeded()
-                        ? CognitiveSelfEvolutionEngine.StepExecution.success(result.output())
-                        : CognitiveSelfEvolutionEngine.StepExecution.failed(result.failureCode());
+                        ? CognitiveSelfEvolutionEngine.StepExecution.success(result.output(),
+                        toolObserver.eventsSnapshot())
+                        : CognitiveSelfEvolutionEngine.StepExecution.failed(result.failureCode(),
+                        toolObserver.eventsSnapshot());
             } finally {
                 LLM_CALL_SEMAPHORE.release();
             }

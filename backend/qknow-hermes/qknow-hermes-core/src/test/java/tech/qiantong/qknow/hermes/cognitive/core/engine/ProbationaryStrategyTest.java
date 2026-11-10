@@ -16,6 +16,7 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry.Attri
 import tech.qiantong.qknow.hermes.agent.harness.experience.FileSystemExperienceStore;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
 import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveExecutionResult;
+import tech.qiantong.qknow.hermes.cognitive.core.model.CognitiveTrace;
 import tech.qiantong.qknow.hermes.cognitive.core.model.PlanStep;
 import tech.qiantong.qknow.hermes.cognitive.core.verification.OutcomeSignal;
 
@@ -53,7 +54,9 @@ class ProbationaryStrategyTest {
             ChatModel model = successfulUnknownModel();
             last = engine.execute("probation-run-" + run, "complete a short task", "base prompt",
                     model, domain, "c".repeat(64), 2, 0,
-                    (step, prompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done"));
+                    (step, prompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("done",
+                            List.of(new CognitiveTrace.ToolExecutionEvent(0, step.stepId(), "complete_task",
+                                    CognitiveTrace.ToolExecutionEvent.Status.RESPONSE_RECEIVED, ""))));
             assertEquals(CognitiveExecutionResult.Status.COMPLETED, last.status());
             assertEquals(OutcomeSignal.Status.UNKNOWN, last.trace().outcomeStatus());
             verify(model, times(3)).call(any(Prompt.class));
