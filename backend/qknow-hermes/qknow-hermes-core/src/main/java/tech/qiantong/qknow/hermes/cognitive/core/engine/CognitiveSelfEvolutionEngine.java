@@ -459,6 +459,9 @@ public final class CognitiveSelfEvolutionEngine {
 
             RepairProposal proposal = finalReflection.repairProposal();
             if (repairAttempts >= maxRepairAttempts || proposal == null) {
+                persistFailureInsight(finalReflection.reusableStrategy(), finalReflection.insightEdits(),
+                        lineageParent, requestId, harnessFingerprint, domain, effectiveTaskType,
+                        states, strategyScores, repairs, experienceEvents);
                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
                         states, strategyScores, repairs, experienceEvents);
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
@@ -471,6 +474,9 @@ public final class CognitiveSelfEvolutionEngine {
             if (!appendVerification.valid()) {
                 repairs.add(new CognitiveTrace.RepairEvent(proposal.stepId(), repairAttempts,
                         false, appendVerification.reasonCodes().getFirst()));
+                persistFailureInsight(finalReflection.reusableStrategy(), finalReflection.insightEdits(),
+                        lineageParent, requestId, harnessFingerprint, domain, effectiveTaskType,
+                        states, strategyScores, repairs, experienceEvents);
                 recordFeedback(selectedStrategy, false, requestId, harnessFingerprint,
                         states, strategyScores, repairs, experienceEvents);
                 return result(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, null,
@@ -833,6 +839,31 @@ public final class CognitiveSelfEvolutionEngine {
             states.add("STRATEGY_TEMPLATE_CREATION_FAILED");
             return null;
         }
+    }
+
+    private ExperienceEntry persistFailureInsight(String strategy,
+                                                   List<StrategyInsightEdit> insightEdits,
+                                                   ExperienceEntry lineageParent,
+                                                   String requestId,
+                                                   String harnessFingerprint,
+                                                   ExperienceDomain domain,
+                                                   StrategyTaskType taskType,
+                                                   List<String> states,
+                                                   List<CognitiveTrace.StrategyScore> scores,
+                                                   List<CognitiveTrace.RepairEvent> repairs,
+                                                   List<CognitiveTrace.ExperienceEvent> events) {
+        if (strategy == null || strategy.isBlank()) {
+            return null;
+        }
+        ExperienceEntry parent = strategyParentForTaskType(lineageParent, taskType);
+        ExperienceEntry candidate = createStrategy(strategy, parent, requestId, harnessFingerprint, domain,
+                false, states, scores, repairs, events, null, taskType,
+                insightEdits == null ? List.of() : insightEdits);
+        if (candidate != null && candidate.lifecycleStatus() == StrategyLifecycleStatus.PROBATION) {
+            recordFeedback(candidate, false, requestId, harnessFingerprint, states, scores, repairs, events);
+            states.add("STRATEGY_FAILURE_INSIGHT_PROBATION");
+        }
+        return candidate;
     }
 
     private StrategyTemplate strategyTemplate(String templateId, ExperienceEntry parent, String lesson,

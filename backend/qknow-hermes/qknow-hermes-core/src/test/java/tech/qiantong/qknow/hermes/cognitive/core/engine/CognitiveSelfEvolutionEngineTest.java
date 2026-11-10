@@ -412,6 +412,30 @@ class CognitiveSelfEvolutionEngineTest {
     }
 
     @Test
+    void failedReflectionPersistsAProbationaryFailureInsight() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(714, List.of("kb-failure-insight"));
+
+        CognitiveExecutionResult result = engine.execute("failure-insight", "整理材料", "base prompt", model(
+                        "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"整理材料\",\"dependencies\":[]}]}",
+                        "材料未完成。",
+                        "{\"accepted\":false,\"repair\":null,"
+                                + "\"strategy\":\"失败后先定位缺失信息，再重新组织任务步骤。\"}"),
+                domain, "9".repeat(64), 2, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("部分完成"),
+                null, StrategyTaskType.GENERAL);
+
+        ExperienceEntry failedInsight = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream().findFirst().orElseThrow();
+        assertEquals(CognitiveExecutionResult.Status.FAILED_AFTER_EXECUTION, result.status());
+        assertEquals(StrategyLifecycleStatus.PROBATION, failedInsight.lifecycleStatus());
+        assertEquals(1, failedInsight.probationUses());
+        assertEquals(0, failedInsight.probationSuccesses());
+        assertTrue(result.trace().states().contains("STRATEGY_FAILURE_INSIGHT_PROBATION"));
+    }
+
+    @Test
     void structuredMutationOutcomeDrivesProbationFeedback() {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
