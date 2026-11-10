@@ -389,6 +389,29 @@ class CognitiveSelfEvolutionEngineTest {
     }
 
     @Test
+    void reflectionInsightEditsAreConsolidatedIntoTheNewTemplate() {
+        ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
+        CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);
+        ExperienceDomain domain = ExperienceDomain.cognitiveScope(713, List.of("kb-insight-edits"));
+        String insight = "完成后必须复核输出与任务目标";
+
+        CognitiveExecutionResult result = engine.execute("insight-edit", "整理材料", "base prompt", model(
+                        "{\"steps\":[{\"stepId\":\"s1\",\"objective\":\"整理材料\",\"dependencies\":[]}]}",
+                        "已整理。",
+                        "{\"accepted\":true,\"repair\":null,\"strategy\":\"先提取事实，再按主题归纳整理。\","
+                                + "\"insights\":[{\"operation\":\"ADD\",\"insight\":\""
+                                + insight + "\"}]}"),
+                domain, "8".repeat(64), 2, 0,
+                (step, systemPrompt, previous) -> CognitiveSelfEvolutionEngine.StepExecution.success("完成"),
+                null, StrategyTaskType.GENERAL);
+
+        assertEquals(CognitiveExecutionResult.Status.COMPLETED, result.status(), result.trace().states().toString());
+        ExperienceEntry created = library.recallForStrategySelection(domain, "cognitive-evolution", 10)
+                .matchedEntries().stream().findFirst().orElseThrow();
+        assertTrue(created.strategyTemplate().reflectionRules().contains(insight));
+    }
+
+    @Test
     void structuredMutationOutcomeDrivesProbationFeedback() {
         ExperienceLibrary library = new DefaultExperienceLibrary(new FileSystemExperienceStore(temp));
         CognitiveSelfEvolutionEngine engine = new CognitiveSelfEvolutionEngine(library);

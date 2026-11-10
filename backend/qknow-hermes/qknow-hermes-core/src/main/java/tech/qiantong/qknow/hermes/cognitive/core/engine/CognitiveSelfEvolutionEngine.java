@@ -16,6 +16,8 @@ import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceLibrary;
 import tech.qiantong.qknow.hermes.agent.harness.experience.ExperienceEntry.AttributionStatus;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyLifecycleStatus;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyInsightEdit;
+import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyInsightConsolidator;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTemplate;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyVariant;
 import tech.qiantong.qknow.hermes.agent.harness.experience.StrategyTaskType;
@@ -170,6 +172,7 @@ public final class CognitiveSelfEvolutionEngine {
         int repairAttempts = 0;
         int nextToolCallIndex = 0;
         String appliedRepairStrategy = "";
+        List<StrategyInsightEdit> appliedInsightEdits = List.of();
         int index = 0;
         while (true) {
             while (index < steps.size()) {
@@ -266,6 +269,7 @@ public final class CognitiveSelfEvolutionEngine {
                 if (!reflection.reusableStrategy().isBlank()) {
                     appliedRepairStrategy = boundedStrategy(reflection.reusableStrategy());
                 }
+                appliedInsightEdits = reflection.insightEdits();
             }
 
             states.add("COMPOSING");
@@ -335,13 +339,15 @@ public final class CognitiveSelfEvolutionEngine {
                     String strategyToAdopt = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
                             : finalReflection.reusableStrategy();
                     ExperienceEntry candidateParent = strategyParentForTaskType(lineageParent, feedbackTaskType);
+                    List<StrategyInsightEdit> insightEdits = appliedRepairStrategy.isBlank()
+                            ? finalReflection.insightEdits() : appliedInsightEdits;
                     if (candidateFamilyVerified && !strategyToAdopt.isBlank() && (selectedStrategy == null
                             || taskFamilyMismatch
                             || !strategyCandidateId(strategyToAdopt, candidateParent, feedbackTaskType)
                             .equals(selectedStrategy.entryId()))) {
                         ExperienceEntry learned = createStrategy(strategyToAdopt, candidateParent,
                                 requestId, harnessFingerprint, domain, true, states, strategyScores,
-                                repairs, experienceEvents, outcome, feedbackTaskType);
+                                repairs, experienceEvents, outcome, feedbackTaskType, insightEdits);
                         if (learned != null && learned.lifecycleStatus() == StrategyLifecycleStatus.PROBATION) {
                             states.add("STRATEGY_VARIANT_REMAINS_PROBATION");
                         }
@@ -414,6 +420,8 @@ public final class CognitiveSelfEvolutionEngine {
                     }
                     String strategyToTry = !appliedRepairStrategy.isBlank() ? appliedRepairStrategy
                             : finalReflection.reusableStrategy();
+                    List<StrategyInsightEdit> insightEdits = appliedRepairStrategy.isBlank()
+                            ? finalReflection.insightEdits() : appliedInsightEdits;
                     boolean enteredProbation = false;
                     ExperienceEntry candidateParent = strategyParentForTaskType(lineageParent, feedbackTaskType);
                     boolean candidateCanEnterProbation = noToolFailures && !mutationRejected
@@ -428,7 +436,7 @@ public final class CognitiveSelfEvolutionEngine {
                             .equals(selectedStrategy.entryId()))) {
                         ExperienceEntry probation = createStrategy(strategyToTry, candidateParent,
                                 requestId, harnessFingerprint, domain, false, states, strategyScores,
-                                repairs, experienceEvents, outcome, feedbackTaskType);
+                                repairs, experienceEvents, outcome, feedbackTaskType, insightEdits);
                         enteredProbation = probation != null
                                 && probation.lifecycleStatus() == StrategyLifecycleStatus.PROBATION;
                         if (enteredProbation && (operationalSuccess || mutationApplied)) {
@@ -476,6 +484,7 @@ public final class CognitiveSelfEvolutionEngine {
             if (!finalReflection.reusableStrategy().isBlank()) {
                 appliedRepairStrategy = boundedStrategy(finalReflection.reusableStrategy());
             }
+            appliedInsightEdits = finalReflection.insightEdits();
         }
     }
 
@@ -539,9 +548,11 @@ public final class CognitiveSelfEvolutionEngine {
                                      String systemPrompt, String lesson, ChatModel chatModel) {
         String prompt = """
                 反思本次步骤失败，判断能否通过替代该步骤修复。只返回 JSON：
-                {"accepted":false,"repair":{"stepId":"%s","objective":"..."},"strategy":"可复用策略"}
+                {"accepted":false,"repair":{"stepId":"%s","objective":"..."},"strategy":"可复用策略",
+                 "insights":[{"operation":"ADD","insight":"..."}]}
                 repair.stepId 必须保持为 %s；没有可验证修复时 repair 设为 null。
                 strategy 写成简洁、可复用的行为规则；不要包含原始问题中的隐私或答案。
+                insights 可选，使用 ADD、EDIT、AGREE、REMOVE 整理已有反思规则。
                 原任务：%s
                 已完成步骤摘要：%s
                 失败步骤：%s / %s
@@ -560,9 +571,11 @@ public final class CognitiveSelfEvolutionEngine {
         String prompt = """
                 根据原任务和执行结果评估当前答案是否完成任务。你不是外部真值裁判，必须保守判断。
                 只返回 JSON：
-                {"accepted":true,"repair":null,"strategy":"可复用策略"}
+                {"accepted":true,"repair":null,"strategy":"可复用策略",
+                 "insights":[{"operation":"ADD","insight":"..."}]}
                 若未完成且可用一个补充步骤修复，返回 {"accepted":false,"repair":{"stepId":"repair1","objective":"..."},"strategy":"..."}。
                 strategy 只写可复用行为规则，不得写对答案正确性的绝对保证。
+                insights 可选，使用 ADD、EDIT、AGREE、REMOVE 整理已有反思规则。
                 原任务：%s
                 步骤结果摘要：%s
                 当前答案：%s
@@ -583,7 +596,34 @@ public final class CognitiveSelfEvolutionEngine {
         if (strategy != null && strategy.length() > MAX_STRATEGY_LENGTH) {
             throw new IllegalArgumentException("reflection strategy exceeds limit");
         }
-        return new ReflectionResult(accepted, proposal, strategy);
+        return new ReflectionResult(accepted, proposal, strategy, parseInsightEdits(object));
+    }
+
+    private List<StrategyInsightEdit> parseInsightEdits(JSONObject object) {
+        JSONArray array = object.getJSONArray("insights");
+        if (array == null) {
+            return List.of();
+        }
+        if (array.size() > 16) {
+            throw new IllegalArgumentException("reflection insights exceed limit");
+        }
+        var edits = new ArrayList<StrategyInsightEdit>();
+        for (int i = 0; i < array.size(); i++) {
+            JSONObject item = array.getJSONObject(i);
+            if (item == null || item.getString("operation") == null) {
+                throw new IllegalArgumentException("invalid reflection insight");
+            }
+            StrategyInsightEdit.Operation operation;
+            try {
+                operation = StrategyInsightEdit.Operation.valueOf(
+                        item.getString("operation").trim().toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException("invalid reflection insight operation", error);
+            }
+            edits.add(new StrategyInsightEdit(operation, item.getString("target"),
+                    item.getString("insight")));
+        }
+        return List.copyOf(edits);
     }
 
     private String composeAnswer(String question, Map<String, String> outputs, String systemPrompt,
@@ -729,7 +769,8 @@ public final class CognitiveSelfEvolutionEngine {
                                            List<CognitiveTrace.StrategyScore> scores,
                                            List<CognitiveTrace.RepairEvent> repairs,
                                            List<CognitiveTrace.ExperienceEvent> events,
-                                           OutcomeSignal outcomeSignal, StrategyTaskType taskType) {
+                                             OutcomeSignal outcomeSignal, StrategyTaskType taskType,
+                                             List<StrategyInsightEdit> insightEdits) {
         if (strategy == null || strategy.isBlank() || experienceLibrary == null || domain == null
                 || requestId == null || requestId.isBlank()
                 || harnessFingerprint == null || !harnessFingerprint.matches("[0-9a-f]{64}")) {
@@ -747,7 +788,7 @@ public final class CognitiveSelfEvolutionEngine {
             if (existing != null) {
                 return existing;
             }
-            StrategyTemplate template = strategyTemplate(entryId, parent, lesson, taskType);
+            StrategyTemplate template = strategyTemplate(entryId, parent, lesson, taskType, insightEdits);
             List<String> changedFields = parent != null && parent.strategyTemplate() != null
                     && parent.strategyTemplate().taskType() != taskType
                     ? List.of("reflectionRules", "taskType") : List.of("reflectionRules");
@@ -795,9 +836,11 @@ public final class CognitiveSelfEvolutionEngine {
     }
 
     private StrategyTemplate strategyTemplate(String templateId, ExperienceEntry parent, String lesson,
-                                              StrategyTaskType taskType) {
+                                              StrategyTaskType taskType,
+                                              List<StrategyInsightEdit> insightEdits) {
         StrategyTemplate.Content content = parent == null || parent.strategyTemplate() == null
                 ? StrategyTemplate.Content.fromLesson(lesson) : parent.strategyTemplate().content();
+        content = StrategyInsightConsolidator.apply(content, insightEdits);
         String parentId = parent == null || parent.strategyTemplate() == null
                 ? null : parent.strategyTemplate().templateId();
         int version = parent == null || parent.strategyTemplate() == null
