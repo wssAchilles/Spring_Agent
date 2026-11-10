@@ -114,7 +114,7 @@ class DefaultExperienceLibraryTest {
     }
 
     @Test
-    void activeStrategyPoolIsBoundedWithoutDeletingRetiredHistory() {
+    void activeStrategyPoolEvictsLowestValueWithoutDeletingRetiredHistory() {
         ExperienceDomain domain = ExperienceDomain.cognitiveScope(76, List.of("kb-capacity"));
         FileSystemExperienceStore store = new FileSystemExperienceStore(temp);
         DefaultExperienceLibrary library = new DefaultExperienceLibrary(store);
@@ -123,10 +123,15 @@ class DefaultExperienceLibraryTest {
         }
         library.recordExperience(candidate("bounded-recorded", domain));
 
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
-                () -> library.recordExperience(candidate("bounded-overflow", domain)));
+        ExperienceEntry overflow = library.recordExperience(candidate("bounded-overflow", domain));
 
-        assertEquals(32, store.list(domain).size());
+        assertEquals(33, store.list(domain).size());
+        assertEquals(32, store.list(domain).stream()
+                .filter(entry -> !entry.retired()).count());
+        ExperienceEntry evicted = store.find(domain, "bounded-0").orElseThrow();
+        assertTrue(evicted.retired());
+        assertEquals("active_strategy_capacity_eviction", evicted.retirementReason());
+        assertFalse(overflow.retired());
     }
 
     private ExperienceEntry feedback(DefaultExperienceLibrary library, ExperienceDomain domain,

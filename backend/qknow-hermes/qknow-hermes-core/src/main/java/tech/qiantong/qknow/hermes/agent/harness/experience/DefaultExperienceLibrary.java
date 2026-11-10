@@ -405,12 +405,23 @@ public final class DefaultExperienceLibrary implements ExperienceLibrary {
     }
 
     private void ensureActiveCapacity(ExperienceDomain domain) {
-        long activeStrategies = store.list(domain).stream()
-                .filter(this::isActiveStrategy)
-                .count();
-        if (activeStrategies >= MAX_ACTIVE_STRATEGIES_PER_DOMAIN) {
-            throw new IllegalStateException("active strategy capacity reached for domain " + domain.toSlug());
+        List<ExperienceEntry> activeStrategies = store.list(domain).stream()
+                .filter(this::isActiveStrategy).toList();
+        if (activeStrategies.size() < MAX_ACTIVE_STRATEGIES_PER_DOMAIN) {
+            return;
         }
+        Comparator<ExperienceEntry> evictionOrder = Comparator
+                .comparingInt((ExperienceEntry entry) ->
+                        entry.lifecycleStatus() == StrategyLifecycleStatus.PROBATION ? 0 : 1)
+                .thenComparingDouble(ExperienceEntry::confidence)
+                .thenComparing(entry -> entry.lastUsedAt() == null ? Instant.MIN : entry.lastUsedAt())
+                .thenComparing(ExperienceEntry::entryId);
+        ExperienceEntry victim = activeStrategies.stream().min(evictionOrder)
+                .orElseThrow(() -> new IllegalStateException("active strategy capacity reached for domain "
+                        + domain.toSlug()));
+        ExperienceEntry retired = victim.retired("active_strategy_capacity_eviction");
+        ExperienceLeakageGuard.assertSafeEntry(retired);
+        store.save(retired);
     }
 
     private boolean isActiveStrategy(ExperienceEntry entry) {
