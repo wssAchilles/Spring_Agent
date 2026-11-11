@@ -581,11 +581,11 @@ public final class ControlledPpcRunner {
     private static final class ProbeHook implements UsageCapturingChatModel.ModelCallBudgetHook {
         private final ControlledFixture fixture;
         private final BudgetWatchdog budget;
-        private HarnessUsageSnapshot snapshot = HarnessUsageSnapshot.unknown();
-        private boolean firstPromptChecked;
-        private String firstPromptSha256;
-        private boolean ragConsumed;
-        private boolean historyConsumed;
+        private volatile HarnessUsageSnapshot snapshot = HarnessUsageSnapshot.unknown();
+        private volatile boolean firstPromptChecked;
+        private volatile String firstPromptSha256;
+        private volatile boolean ragConsumed;
+        private volatile boolean historyConsumed;
 
         private ProbeHook(ControlledFixture fixture, BudgetWatchdog budget) {
             this.fixture = fixture;
@@ -593,7 +593,7 @@ public final class ControlledPpcRunner {
         }
 
         @Override
-        public void beforeCall(Prompt prompt, HarnessUsageSnapshot current) {
+        public synchronized void beforeCall(Prompt prompt, HarnessUsageSnapshot current) {
             if (!firstPromptChecked && fixture != null) {
                 String joined = prompt.getInstructions().stream()
                         .map(message -> message.getText() == null ? "" : message.getText())
@@ -615,7 +615,7 @@ public final class ControlledPpcRunner {
         }
 
         @Override
-        public void afterCall(HarnessUsageSnapshot current) {
+        public synchronized void afterCall(HarnessUsageSnapshot current) {
             HarnessUsageSnapshot previous = snapshot;
             snapshot = current;
             budget.after(current, previous);

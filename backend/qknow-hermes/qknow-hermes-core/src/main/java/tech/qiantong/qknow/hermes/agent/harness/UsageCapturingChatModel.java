@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -76,25 +77,51 @@ public final class UsageCapturingChatModel implements ChatModel {
         return Flux.defer(() -> {
             beforeCall(prompt);
             AtomicReference<Usage> lastUsage = new AtomicReference<>();
+            AtomicBoolean callFinalized = new AtomicBoolean(false);
             Flux<ChatResponse> stream;
             try {
                 stream = delegate.stream(prompt);
             } catch (RuntimeException | Error failure) {
-                markIncomplete();
-                afterCall();
+                if (callFinalized.compareAndSet(false, true)) {
+                    markIncomplete();
+                    afterCall();
+                }
                 return Flux.error(failure);
             }
+            // 使用 hide() 阻止同步源融合，并在 doOnComplete/doOnError 中提前完成计量与预算回调，
+            // 杜绝下游 publishOn 线程在 doFinally 执行前抢先完成导致的跨线程竞态与取消误判。
             return stream
+                    .hide()
                     .doOnNext(response -> {
                         Usage current = usage(response);
                         if (current != null) {
                             lastUsage.set(current);
                         }
                     })
-                    .doOnComplete(() -> record(lastUsage.get()))
-                    .doOnError(failure -> markIncomplete())
-                    .doOnCancel(this::markIncomplete)
-                    .doFinally(signal -> afterCall());
+                    .doOnComplete(() -> {
+                        if (callFinalized.compareAndSet(false, true)) {
+                            record(lastUsage.get());
+                            afterCall();
+                        }
+                    })
+                    .doOnError(failure -> {
+                        if (callFinalized.compareAndSet(false, true)) {
+                            markIncomplete();
+                            afterCall();
+                        }
+                    })
+                    .doOnCancel(() -> {
+                        if (callFinalized.compareAndSet(false, true)) {
+                            markIncomplete();
+                            afterCall();
+                        }
+                    })
+                    .doFinally(signal -> {
+                        if (callFinalized.compareAndSet(false, true)) {
+                            markIncomplete();
+                            afterCall();
+                        }
+                    });
         });
     }
 

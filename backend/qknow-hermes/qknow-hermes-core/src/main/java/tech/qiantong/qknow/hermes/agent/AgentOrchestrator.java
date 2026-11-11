@@ -420,26 +420,12 @@ public class AgentOrchestrator {
                 new java.util.concurrent.atomic.AtomicReference<>(RagAttributionSummary::noRag);
         java.util.concurrent.atomic.AtomicReference<ToolCallDispatch> toolCallDispatch =
                 new java.util.concurrent.atomic.AtomicReference<>();
-        return Flux.<ChatEvent>create(emitter -> {
-            latestToolActionDfaReceipts.remove(request.getRequestId());
-            try {
-                executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens,
-                        bridgeHandle, usageModel, ragAttribution, toolCallDispatch);
-            } catch (Exception e) {
-                if (usageModel.get() != null) {
-                    usageModel.get().markIncomplete();
-                }
-                log.error("Hermes Agent 执行失败", e);
-                emitter.next(ChatEvent.newBuilder()
-                        .setRequestId(request.getRequestId())
-                        .setError(ErrorEvent.newBuilder()
-                                .setCode(500)
-                                .setMessage(e.getMessage())
-                                .build())
-                        .build());
-                emitter.complete();
+        java.util.concurrent.atomic.AtomicBoolean requestFinalized =
+                new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.function.Consumer<reactor.core.publisher.SignalType> finalizeRequest = signalType -> {
+            if (!requestFinalized.compareAndSet(false, true)) {
+                return;
             }
-        }).doFinally(signalType -> {
             budgetHookMap.remove(request.getRequestId());
             unregisterControlledFixtureRequest(request.getRequestId());
             ToolCallDispatch dispatch = toolCallDispatch.getAndSet(null);
@@ -470,7 +456,31 @@ public class AgentOrchestrator {
             if (deepSeekCostGovernor != null) {
                 deepSeekCostGovernor.markRequestEnd();
             }
-        }).doOnComplete(() -> {
+        };
+        return Flux.<ChatEvent>create(emitter -> {
+            latestToolActionDfaReceipts.remove(request.getRequestId());
+            try {
+                executeAgent(request, emitter, finalTraceId, fullAnswer, promptTokens, completionTokens,
+                        bridgeHandle, usageModel, ragAttribution, toolCallDispatch);
+            } catch (Exception e) {
+                if (usageModel.get() != null) {
+                    usageModel.get().markIncomplete();
+                }
+                log.error("Hermes Agent 执行失败", e);
+                emitter.next(ChatEvent.newBuilder()
+                        .setRequestId(request.getRequestId())
+                        .setError(ErrorEvent.newBuilder()
+                                .setCode(500)
+                                .setMessage(e.getMessage())
+                                .build())
+                        .build());
+                emitter.complete();
+            }
+        }).doOnError(err -> finalizeRequest.accept(reactor.core.publisher.SignalType.ON_ERROR))
+        .doOnCancel(() -> finalizeRequest.accept(reactor.core.publisher.SignalType.CANCEL))
+        .doFinally(finalizeRequest)
+        .doOnComplete(() -> {
+            finalizeRequest.accept(reactor.core.publisher.SignalType.ON_COMPLETE);
             long latencyMs = System.currentTimeMillis() - finalStartTime;
             long totalNs = System.nanoTime() - finalStartNs;
             String answer = fullAnswer.toString();
@@ -1028,8 +1038,11 @@ public class AgentOrchestrator {
         // 关键时序修复：必须在 stream.subscribe() 之前注册 onDispose！
         // 杜绝同步阻塞执行模型下，流未结束导致 onDispose 无法注册的结构性时序失效！
         java.util.concurrent.atomic.AtomicReference<reactor.core.Disposable> streamSubscriptionRef = new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicBoolean reactStreamTerminated = new java.util.concurrent.atomic.AtomicBoolean(false);
         emitter.onDispose(() -> {
-            StreamSubscriptionGuard.disposeIfPresent(streamSubscriptionRef);
+            if (!reactStreamTerminated.get()) {
+                StreamSubscriptionGuard.disposeIfPresent(streamSubscriptionRef);
+            }
             releaseReactCapacity.run();
         });
 
@@ -1097,6 +1110,7 @@ public class AgentOrchestrator {
                     }
                 },
                 error -> {
+                    reactStreamTerminated.set(true);
                     releaseReactCapacity.run();
                     attributionAllowed.set(false);
                     log.error("Agent 推理错误", error);
@@ -1137,6 +1151,7 @@ public class AgentOrchestrator {
                     }
                 },
                 () -> {
+                    reactStreamTerminated.set(true);
                     releaseReactCapacity.run();
                     long pt = promptTokens.get();
                     long ct = completionTokens.get();

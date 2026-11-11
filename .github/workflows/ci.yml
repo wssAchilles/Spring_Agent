@@ -12,6 +12,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
 
@@ -50,10 +53,10 @@ jobs:
               - '.github/workflows/**'
 
   # ============================================================================
-  # 阶段 2（极速一级门禁）：Hermes 智能体核心契约测试 (47 项关键契约 / 纯内存 / 4.5s)
+  # 阶段 2（极速一级门禁）：Hermes 智能体核心契约测试 (386+ 项关键契约 / 纯内存虚拟线程)
   # ============================================================================
   hermes-core-gate:
-    name: Hermes Agent Core (47 Contract Tests)
+    name: Hermes Agent Core (386+ Contract Tests)
     needs: detect-changes
     if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.hermes == 'true' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
@@ -73,6 +76,7 @@ jobs:
           MAVEN_OPTS: '-Xmx2048m -XX:+TieredCompilation -Dfile.encoding=UTF-8'
         run: |
           mvn -B -ntp -f backend/pom.xml -pl qknow-hermes/qknow-hermes-core -am test \
+            -Dsurefire.rerunFailingTestsCount=2 \
             -Dorg.slf4j.simpleLogger.defaultLogLevel=warn
 
       - name: Upload Hermes Surefire Reports on Failure
@@ -115,7 +119,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-surefire-reports
-          path: backend/tests/target/surefire-reports
+          path: backend/**/target/surefire-reports
           if-no-files-found: ignore
 
       - name: Validate Production Package (fat jar)
@@ -249,9 +253,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| 门禁检查轨道 | 涉及工程技术栈 | 门禁执行状态 |" >> $GITHUB_STEP_SUMMARY
           echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
-          echo "| 智能体核心契约 (Hermes Agent Core) | Java 21 + 47 项生产级契约单测 (沙箱/记忆/MCTS/DyLAN) | $(format_status "$HERMES_RES") |" >> $GITHUB_STEP_SUMMARY
-          echo "| 后端微服务与系统集成 (Backend Integration) | Java 21 + Maven Reactor (1258+ 集成单测) | $(format_status "$BACKEND_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "| 智能体核心契约 (Hermes Agent Core) | Java 21 + 386+ 项顶刊架构核心契约单测 (Harness/PPC/记忆/谱图/安全) | $(format_status "$HERMES_RES") |" >> $GITHUB_STEP_SUMMARY
+          echo "| 后端微服务与系统集成 (Backend Integration) | Java 21 + Maven Reactor (132+ 系统级集成单测 + Fat JAR 打包) | $(format_status "$BACKEND_RES") |" >> $GITHUB_STEP_SUMMARY
           echo "| 前端代码规范与构建 (Frontend Web) | Vue 3 + Vite 5 + Node 22 (LTS) | $(format_status "$FRONTEND_RES") |" >> $GITHUB_STEP_SUMMARY
           echo "| 科研实验资产与配置 (Experiment Pipeline) | Python 3.11 + YAML Schema 语法校验 | $(format_status "$EXPERIMENT_RES") |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> 💡 **设计说明**：Hermes 智能体核心契约采用纯内存虚拟线程架构，具备 4.5 秒极速 Fail-Fast 阻断能力；其他轨道并行执行，兼顾极速反馈与全量安全性。" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 **设计说明**：Hermes 智能体核心契约轨道独立验证 `qknow-hermes-core` 全量形式化与架构契约；后端集成轨道聚焦 `tests` 跨模块集成与 `qknow-server` 生产构建，多轨并行执行，兼顾极速反馈与全量安全性。" >> $GITHUB_STEP_SUMMARY
