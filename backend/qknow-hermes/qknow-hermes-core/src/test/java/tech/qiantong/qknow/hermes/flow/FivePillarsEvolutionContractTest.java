@@ -117,10 +117,10 @@ public class FivePillarsEvolutionContractTest {
     }
 
     @Test
-    @DisplayName("支柱三契约测试: 千问 1536 维超球面单位向量、SIMD 角距离与 HNSW 量化图索引")
+    @DisplayName("支柱三契约测试: 千问 1024 维超球面单位向量、SIMD 角距离与 HNSW 量化图索引")
     void testHypersphericalHnswToolIndexAndCosineMetric() {
         int dim = HypersphericalCosineMetric.VECTOR_DIMENSION;
-        assertEquals(1536, dim, "千问向量维度必须锁定为严格 1536 维");
+        assertEquals(1024, dim, "千问向量维度必须锁定为严格 1024 维");
 
         // 1. 构建两个单位超球面向量
         float[] vecA = new float[dim];
@@ -138,7 +138,7 @@ public class FivePillarsEvolutionContractTest {
 
         // 2. SQ8 标量量化压缩与保真度验证
         byte[] sq8A = HypersphericalCosineMetric.quantizeSq8(vecA);
-        assertEquals(1536, sq8A.length, "SQ8 量化字节大小应为 1536 (相比 float 节省 75% 内存)");
+        assertEquals(1024, sq8A.length, "SQ8 量化字节大小应为 1024 (相比 float 节省 75% 内存)");
         float[] deqA = HypersphericalCosineMetric.dequantizeSq8(sq8A);
         float distDequant = HypersphericalCosineMetric.angularDistance(vecA, deqA);
         assertTrue(distDequant < 0.05f, "SQ8 解量化后的角距离扰动应严格 < 0.05");

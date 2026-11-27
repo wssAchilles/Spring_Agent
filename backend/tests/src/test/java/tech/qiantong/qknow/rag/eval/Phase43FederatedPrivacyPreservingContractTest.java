@@ -167,7 +167,7 @@ public class Phase43FederatedPrivacyPreservingContractTest {
     }
 
     @Test
-    @DisplayName("契约 7: 1536 维向量局部差分隐私拉普拉斯加噪与超球面保模 (定理 3.1)")
+    @DisplayName("契约 7: 1024 维向量局部差分隐私拉普拉斯加噪与超球面保模 (定理 3.1)")
     public void test07_DifferentialPrivacyLaplaceNoiseAndNormConservation() {
         int dim = DifferentialPrivacyPerturber.EMBEDDING_DIM;
         double[] original = new double[dim];
@@ -221,8 +221,8 @@ public class Phase43FederatedPrivacyPreservingContractTest {
         weights.put("AgentAlice", 1L);
         weights.put("AgentBob", 1L);
 
-        double[] dummyVector = new double[1536];
-        Arrays.fill(dummyVector, 1.0 / Math.sqrt(1536));
+        double[] dummyVector = new double[1024];
+        Arrays.fill(dummyVector, 1.0 / Math.sqrt(1024));
 
         FederatedTaskResultVO result = coordinator.coordinateFederatedCollaboration(
                 "FED-TASK-001",
@@ -263,8 +263,8 @@ public class Phase43FederatedPrivacyPreservingContractTest {
         weights.put("AgentB", 2L);
         weights.put("AgentC", 1L);
 
-        double[] dummyVector = new double[1536];
-        Arrays.fill(dummyVector, 1.0 / Math.sqrt(1536));
+        double[] dummyVector = new double[1024];
+        Arrays.fill(dummyVector, 1.0 / Math.sqrt(1024));
 
         long start = System.currentTimeMillis();
         FederatedTaskResultVO result = coordinator.coordinateFederatedCollaboration(

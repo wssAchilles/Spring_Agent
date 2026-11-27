@@ -77,12 +77,16 @@ class ReflectiveAgentContractTest {
         ChatRequest firstCall = requestCaptor.getAllValues().get(0);
         ChatRequest secondCall = requestCaptor.getAllValues().get(1);
 
-        // 断言第 1 次为原始输入
+        // 断言第 1 次与第 2 次 SystemPrompt 严格恒等（保护 DeepSeek 64-Token 前缀缓存）
         assertEquals("你是一个严谨的科学助手", firstCall.getSystemPrompt());
+        assertEquals("你是一个严谨的科学助手", secondCall.getSystemPrompt(),
+                "重试轮次严禁篡改 SystemPrompt 破坏 DeepSeek Context Cache 前缀！");
 
-        // 核心契约断言：第 2 次重试必须将上一轮的失败评价与反馈注入到系统提示或上下文中！
-        String secondPrompt = secondCall.getSystemPrompt();
-        assertTrue(secondPrompt.contains("缺少关键技术细节与具体算法名称") || secondPrompt.contains("reflection_critique"),
-                "第 2 轮提示词必须包含上一轮 AI Judge 的反馈指导！实际为: " + secondPrompt);
+        // 核心契约断言：第 2 次重试必须将上一轮失败回答与 AI Judge 批判反馈追加至对话历史尾部！
+        boolean critiqueInjectedInHistory = secondCall.getHistoryList().stream()
+                .anyMatch(msg -> msg.getContent().contains("缺少关键技术细节与具体算法名称")
+                        && msg.getContent().contains("reflection_critique"));
+        assertTrue(critiqueInjectedInHistory,
+                "第 2 轮对话历史尾部必须包含上一轮 AI Judge 的反馈指导！实际历史为: " + secondCall.getHistoryList());
     }
 }

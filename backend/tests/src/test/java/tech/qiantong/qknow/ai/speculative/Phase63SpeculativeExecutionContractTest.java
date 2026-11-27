@@ -91,7 +91,7 @@ public class Phase63SpeculativeExecutionContractTest {
     }
 
     @Test
-    @DisplayName("契约 3: 千问 1536 维超球面投机预检索保模与维度校验测试 (定理 1.3)")
+    @DisplayName("契约 3: 千问 1024 维超球面投机预检索保模与维度校验测试 (定理 1.3)")
     void test03_SpeculativePipelineHyperspherePreRetrievalSpeedup() {
         float[] queryVec = createDummyHypersphereVector(42);
 
@@ -100,12 +100,12 @@ public class Phase63SpeculativeExecutionContractTest {
         for (float v : queryVec) {
             sumSq += v * v;
         }
-        assertEquals(1.0, Math.sqrt(sumSq), 1e-5, "千问 1536 维超球面嵌入向量必须精确归一化");
+        assertEquals(1.0, Math.sqrt(sumSq), 1e-5, "千问 1024 维超球面嵌入向量必须精确归一化");
 
-        // 验证非 1536 维向量抛出 IllegalArgumentException
+        // 验证非 1024 维向量抛出 IllegalArgumentException
         assertThrows(IllegalArgumentException.class, () -> {
             SpeculativeIntentPipeline.normalizeHypersphere(new float[128]);
-        }, "非 1536 维向量必须被严格阻断");
+        }, "非 1024 维向量必须被严格阻断");
 
         // 模拟知识库切片向量
         Map<String, float[]> kbEmbeddings = new HashMap<>();

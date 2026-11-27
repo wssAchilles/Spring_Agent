@@ -25,14 +25,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Phase88WorkflowHitlContractTest {
 
     private double[] createNormalizedSphericalEmbedding(int seed) {
-        double[] vec = new double[1536];
+        double[] vec = new double[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = Math.sin(seed + i * 0.137);
             sumSq += vec[i] * vec[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] /= norm;
         }
         return vec;

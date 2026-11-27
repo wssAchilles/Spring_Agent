@@ -15,10 +15,10 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class Phase127GraphRagCausalAlignmentContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     /**
-     * 生成测试用的 1536 维超球面单位向量 (L2 范数 = 1.0)
+     * 生成测试用的 1024 维超球面单位向量 (L2 范数 = 1.0)
      */
     private float[] createUnitVector(int seed) {
         float[] vec = new float[DIM];
@@ -36,7 +36,7 @@ public class Phase127GraphRagCausalAlignmentContractTest {
     }
 
     @Test
-    @DisplayName("契约 1：千问 1536 维超球面测地角距离与时序有效性联合打分严格有界保单调")
+    @DisplayName("契约 1：千问 1024 维超球面测地角距离与时序有效性联合打分严格有界保单调")
     void test01_SpatiotemporalScoreGeodesicAngleAndFreshness() {
         SpatiotemporalManifoldAligner aligner = new SpatiotemporalManifoldAligner();
         float[] queryVec = createUnitVector(42);

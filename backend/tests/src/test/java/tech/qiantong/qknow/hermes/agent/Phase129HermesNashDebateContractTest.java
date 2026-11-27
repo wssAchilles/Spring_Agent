@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>
  * 严格覆盖 8 大高烈度工业场景与学术定理：
  * 1. 四角色高对抗辩论在硬编码 T_max <= 5 轮内必然收敛 (定理 1.1)
- * 2. 千问 1536 维超球面测地线内积处于 [-1.0, 1.0]，正交/平行映射严格无误 (定理 1.2)
+ * 2. 千问 1024 维超球面测地线内积处于 [-1.0, 1.0]，正交/平行映射严格无误 (定理 1.2)
  * 3. 拒绝单模型一票否决，动态推导纳什均衡置信度期望最优决策
  * 4. 合谋伪共识 (Sycophancy Score >= 0.85) 毫秒级高灵敏度检出
  * 5. 合谋场景下 100% 自动注入魔鬼代言人 (CRITIC) 反事实对抗视角 (定理 1.3)
@@ -77,7 +77,7 @@ public class Phase129HermesNashDebateContractTest {
     }
 
     @Test
-    @DisplayName("契约 2：千问 1536 维超球面测地线内积处于 [-1.0, 1.0]，正交/平行映射严格无误 (定理 1.2)")
+    @DisplayName("契约 2：千问 1024 维超球面测地线内积处于 [-1.0, 1.0]，正交/平行映射严格无误 (定理 1.2)")
     void testContract2_QwenGeodesicProjection_Precision() {
         double[] v1 = judge.embedTextWithQwen("企业通用合规风险与稳健经营管理红线规范");
         double[] v2 = judge.embedTextWithQwen("企业通用合规风险与稳健经营管理红线规范"); // 完全相同文本

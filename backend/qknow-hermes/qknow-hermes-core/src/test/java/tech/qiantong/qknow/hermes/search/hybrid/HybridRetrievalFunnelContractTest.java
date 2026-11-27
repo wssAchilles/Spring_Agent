@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class HybridRetrievalFunnelContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     @Test
     @DisplayName("契约一：精确代码错误码标识符挽救与精准召回契约")
@@ -53,7 +53,7 @@ public class HybridRetrievalFunnelContractTest {
     }
 
     @Test
-    @DisplayName("契约二：抽象语义泛化召回与千问 1536 维超球面稠密通道契约")
+    @DisplayName("契约二：抽象语义泛化召回与千问 1024 维超球面稠密通道契约")
     public void testSemanticGeneralizationByDenseChannel() {
         ResilientHybridRetrievalFunnel funnel = new ResilientHybridRetrievalFunnel();
         Random random = new Random(202);
@@ -131,7 +131,7 @@ public class HybridRetrievalFunnelContractTest {
             String docId = "scale-doc-" + i;
             String text = "企业知识库工程第 " + i + " 篇集群节点状态与分布式日志追踪文档，错误码 ERR_LOG_" + (i % 20);
             float[] dense = generateNormalizedVector(DIM, random);
-            // 每篇文档配置 4 个 Token 的连续嵌入向量 (4 * 1536)
+            // 每篇文档配置 4 个 Token 的连续嵌入向量 (4 * 1024)
             float[] multiTokens = generateNormalizedVector(4 * DIM, random);
             funnel.indexDocument(docId, text, dense, multiTokens, 4);
         }

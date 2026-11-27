@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 严格验证 5 大核心契约：
  * 1. 2-跳有界子图抽取与超级节点截断 (B_max <= 16, N_max <= 32)
  * 2. Kahn 算法因果拓扑排序与 Token 压缩率 (>= 75%)
- * 3. 阿里千问 1536 维超球面测地内积与毫秒级时序指数衰减 (单次 <= 200us, 过期权重 <= 0.05)
+ * 3. 阿里千问 1024 维超球面测地内积与毫秒级时序指数衰减 (单次 <= 200us, 过期权重 <= 0.05)
  * 4. 思考脚手架结构化注入 (<thinking_scaffold>) 与时效状态标注
  * 5. 纯 Java 21 Record 密码学不可变存证凭单自签名与防篡改验真
  */
@@ -32,14 +32,14 @@ class Phase116GraphRagScaffoldContractTest {
     }
 
     private float[] createNormalized1536Vector(float seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) Math.sin(seed + i * 0.1);
             sumSq += v[i] * v[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) (v[i] / norm);
         }
         return v;

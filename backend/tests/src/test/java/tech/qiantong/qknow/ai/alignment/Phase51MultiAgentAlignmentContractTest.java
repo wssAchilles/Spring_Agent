@@ -76,18 +76,18 @@ public class Phase51MultiAgentAlignmentContractTest {
     }
 
     @Test
-    @DisplayName("契约 3: 验证千问 1536 维超球面目标漂移度量器(GoalDriftDetector)精准判定")
+    @DisplayName("契约 3: 验证千问 1024 维超球面目标漂移度量器(GoalDriftDetector)精准判定")
     void test3_GoalDriftDetectorAlignmentAndDetection() {
-        float[] rootVec = new float[1536];
+        float[] rootVec = new float[1024];
         Arrays.fill(rootVec, 0.025f);
 
         // 构造高度对齐动作向量 (同向)
-        float[] alignedVec = Arrays.copyOf(rootVec, 1536);
+        float[] alignedVec = Arrays.copyOf(rootVec, 1024);
         alignedVec[0] += 0.005f;
 
         // 构造严重漂移动作向量 (接近正交或反向)
-        float[] driftedVec = new float[1536];
-        for (int i = 0; i < 1536; i++) {
+        float[] driftedVec = new float[1024];
+        for (int i = 0; i < 1024; i++) {
             driftedVec[i] = (i % 2 == 0) ? 0.025f : -0.025f;
         }
 
@@ -158,7 +158,7 @@ public class Phase51MultiAgentAlignmentContractTest {
     @Test
     @DisplayName("契约 6: 验证多智能体目标对齐总控中枢端到端调度链路与毫秒级延迟预算")
     void test6_MultiAgentAlignmentGovernorEndToEndPipeline() {
-        float[] rootVec = new float[1536];
+        float[] rootVec = new float[1024];
         Arrays.fill(rootVec, 0.025f);
         GoalDriftDetector.IntentVector root = new GoalDriftDetector.IntentVector("R001", rootVec, "Legal advice");
         GoalDriftDetector.IntentVector action = new GoalDriftDetector.IntentVector("A001", rootVec, "Legal advice");

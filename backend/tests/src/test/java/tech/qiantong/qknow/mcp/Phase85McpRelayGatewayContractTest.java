@@ -48,17 +48,17 @@ public class Phase85McpRelayGatewayContractTest {
     }
 
     /**
-     * 辅助方法：生成归一化的 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * 辅助方法：生成归一化的 1024 维超球面单位向量 (||v||_2 = 1.0)
      */
     private double[] createNormalizedEmbedding(int primeIndex) {
-        double[] vec = new double[1536];
-        vec[primeIndex % 1536] = 0.8;
-        vec[(primeIndex + 1) % 1536] = 0.6; // 0.8^2 + 0.6^2 = 1.0
+        double[] vec = new double[1024];
+        vec[primeIndex % 1024] = 0.8;
+        vec[(primeIndex + 1) % 1024] = 0.6; // 0.8^2 + 0.6^2 = 1.0
         return vec;
     }
 
     @Test
-    @DisplayName("契约1：多源契约动态转译与千问 1536 维超球面测地线索引 (<= 50us 检索)")
+    @DisplayName("契约1：多源契约动态转译与千问 1024 维超球面测地线索引 (<= 50us 检索)")
     void contract1_DynamicContractRegistry_MultiSourceRegistrationAndHypersphereIndexing() {
         // 注册 4 种异构契约
         double[] vecRest = createNormalizedEmbedding(10);
@@ -246,7 +246,7 @@ public class Phase85McpRelayGatewayContractTest {
                 "frame-001", "mcp-server-1", "calculateMetric", "EXECUTE_START",
                 validEmbedding, System.currentTimeMillis(), 1L
         );
-        assertTrue(frame.isValidEmbedding(), "千问 1536 维超球面单位向量必须满足归一化要求");
+        assertTrue(frame.isValidEmbedding(), "千问 1024 维超球面单位向量必须满足归一化要求");
 
         // 纳秒级高频发布 1000 帧
         for (int i = 0; i < 1000; i++) {

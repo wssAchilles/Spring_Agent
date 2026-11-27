@@ -34,15 +34,15 @@ class Phase57FederatedExecutionContractTest {
     }
 
     private static float[] generateNormalizedVector(int seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         Random rnd = new Random(seed);
         float norm = 0.0f;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = rnd.nextFloat() - 0.5f;
             norm += v[i] * v[i];
         }
         norm = (float) Math.sqrt(norm);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] /= norm;
         }
         return v;
@@ -132,7 +132,7 @@ class Phase57FederatedExecutionContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 5: 本地私有记忆映射至千问 1536 维超球面流形单位向量")
+    @DisplayName("契约测试 5: 本地私有记忆映射至千问 1024 维超球面流形单位向量")
     void testLocalMemoryDistillationAnchorMapping() {
         List<String> privateMem = List.of(
                 "User preferred Java 21 LTS",
@@ -148,7 +148,7 @@ class Phase57FederatedExecutionContractTest {
         assertEquals("AgentAlpha", insight.agentId());
         assertEquals(3, insight.localMemoryCount());
         assertNotNull(insight.embeddingVector());
-        assertEquals(1536, insight.embeddingVector().length);
+        assertEquals(1024, insight.embeddingVector().length);
 
         // 验证模长为 1.0 (超球面保模归一化)
         float norm = 0.0f;
@@ -174,7 +174,7 @@ class Phase57FederatedExecutionContractTest {
 
         assertNotNull(metaCard);
         assertEquals(2, metaCard.participatingAgentCount());
-        assertEquals(1536, metaCard.aggregatedVector().length);
+        assertEquals(1024, metaCard.aggregatedVector().length);
 
         float norm = 0.0f;
         for (float val : metaCard.aggregatedVector()) {

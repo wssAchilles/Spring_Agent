@@ -318,4 +318,51 @@ class DeepSeekCompatibleChatModelContractTest {
         assertEquals("queryDb", finalToolCall.name());
         assertEquals("{\"sql\":\"SELECT 1\"}", finalToolCall.arguments(), "跨 chunk arguments 必须无缝拼接完整");
     }
+
+    @Test
+    @DisplayName("契约10: Phase 11.1 三参 ReasoningEffortOverride 在百炼端点动态注入 max_completion_tokens 且禁设非法采样参数")
+    void dashScopeEndpointShouldHonorThreeArgOverrideMaxCompletionTokens() {
+        DeepSeekCompatibleChatModel bailianModel = new DeepSeekCompatibleChatModel(
+                "https://dashscope.aliyuncs.com/compatible-mode", "sk-test", "deepseek-v4.1-flash", 0.2, 4096);
+        Prompt prompt = new Prompt("请一步步分析多跳实体关系");
+
+        Map<String, Object> body = DeepSeekCompatibleChatModel.runWithEffortOverride(
+                new DeepSeekCompatibleChatModel.ReasoningEffortOverride(true, "medium", 1536),
+                () -> bailianModel.buildRequestBody(prompt, false)
+        );
+
+        assertEquals(Boolean.TRUE, body.get("enable_thinking"));
+        assertEquals("medium", body.get("reasoning_effort"));
+        assertEquals(1536, body.get("max_completion_tokens"));
+        assertFalse(body.containsKey("thinking"), "百炼兼容端点应自动将 thinking 转换为 enable_thinking");
+        assertFalse(body.containsKey("max_tokens"), "百炼兼容端点应自动将 max_tokens 转换为 max_completion_tokens");
+        assertFalse(body.containsKey("temperature"), "思考模式下严禁写入 temperature");
+        assertFalse(body.containsKey("presence_penalty"), "思考模式下严禁写入 presence_penalty");
+        assertFalse(body.containsKey("frequency_penalty"), "思考模式下严禁写入 frequency_penalty");
+    }
+
+    @Test
+    @DisplayName("契约11: 步级 maxCompletionTokensOverride 受实例硬上限钳制且两参旧构造保持向后兼容")
+    void overrideCapMustRespectInstanceHardCeilingAndTwoArgBackcompat() {
+        DeepSeekCompatibleChatModel bounded = new DeepSeekCompatibleChatModel(
+                "https://dashscope.aliyuncs.com/compatible-mode", "sk-test", "deepseek-v4.1-flash", 0.2, 1024);
+
+        Map<String, Object> clampedBody = DeepSeekCompatibleChatModel.runWithEffortOverride(
+                new DeepSeekCompatibleChatModel.ReasoningEffortOverride(true, "high", 3072),
+                () -> bounded.buildRequestBody(new Prompt("test cap"), false)
+        );
+        assertEquals(1024, clampedBody.get("max_completion_tokens"), "步级覆盖不得突破实例级 maxOutputTokens 硬上限");
+
+        // 两参旧构造器兼容（overrideCap == null）
+        DeepSeekCompatibleChatModel.ReasoningEffortOverride legacyOverride =
+                new DeepSeekCompatibleChatModel.ReasoningEffortOverride(false, null);
+        assertNull(legacyOverride.maxCompletionTokensOverride());
+        Map<String, Object> legacyBody = DeepSeekCompatibleChatModel.runWithEffortOverride(
+                legacyOverride,
+                () -> bounded.buildRequestBody(new Prompt("legacy"), false)
+        );
+        assertEquals(1024, legacyBody.get("max_completion_tokens"));
+        assertEquals(Boolean.FALSE, legacyBody.get("enable_thinking"));
+        assertFalse(legacyBody.containsKey("reasoning_effort"), "非思考模式下必须移除 reasoning_effort");
+    }
 }

@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Phase89CognitiveKernelContractTest {
 
     private double[] createNormalizedSphericalEmbedding(int seed) {
-        double[] vec = new double[1536];
+        double[] vec = new double[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = Math.sin(seed + i * 0.173);
             sumSq += vec[i] * vec[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] /= norm;
         }
         return vec;
@@ -58,14 +58,14 @@ public class Phase89CognitiveKernelContractTest {
         fsm.transitionTo(CognitiveState.JUDGING);
 
         double[] emb1 = createNormalizedSphericalEmbedding(101);
-        double[] emb2 = new double[1536];
+        double[] emb2 = new double[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             emb2[i] = emb1[i] + 0.01 * Math.cos(i);
             sumSq += emb2[i] * emb2[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             emb2[i] /= norm;
         }
 

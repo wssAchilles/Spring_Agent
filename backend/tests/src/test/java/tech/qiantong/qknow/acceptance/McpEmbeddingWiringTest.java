@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * MCP3 回归防护：控制面语义工具路由必须能按平台解析出千问 1536 维 EmbeddingModel，
+ * MCP3 回归防护：控制面语义工具路由必须能按平台解析出千问 1024 维 EmbeddingModel，
  * 不再因缺失 EmbeddingModel 静默降级为关键词匹配。
  */
 class McpEmbeddingWiringTest {
@@ -45,22 +45,22 @@ class McpEmbeddingWiringTest {
         when(apiKeyMapper.selectList(any())).thenReturn(List.of(fallbackKey, qwenKey));
         when(apiKeyMapper.selectById(7L)).thenReturn(qwenKey);
         when(embeddingService.getEmbeddingModel(
-                eq("TongYi"), eq(qwenKey.getUrl()), eq("sk-qwen-unit-test"), eq("text-embedding-v2")))
+                eq("TongYi"), eq(qwenKey.getUrl()), eq("sk-qwen-unit-test"), eq("text-embedding-v4")))
                 .thenReturn(embeddingModel);
 
         AiModelApiServiceImpl service = new AiModelApiServiceImpl();
         ReflectionTestUtils.setField(service, "apiKeyMapper", apiKeyMapper);
         ReflectionTestUtils.setField(service, "embeddingService", embeddingService);
 
-        EmbeddingModel resolved = service.getEmbeddingModelByPlatform("TongYi", "text-embedding-v2");
+        EmbeddingModel resolved = service.getEmbeddingModelByPlatform("TongYi", "text-embedding-v4");
 
         assertSame(embeddingModel, resolved);
         verify(embeddingService).getEmbeddingModel(
-                eq("TongYi"), eq(qwenKey.getUrl()), eq("sk-qwen-unit-test"), eq("text-embedding-v2"));
+                eq("TongYi"), eq(qwenKey.getUrl()), eq("sk-qwen-unit-test"), eq("text-embedding-v4"));
     }
 
     @Test
-    @DisplayName("平台缺省时回退到任意可用 Key，但必须选择非空密钥")
+    @DisplayName("平台缺省时回退到默认向量平台可用 Key，且必须跳过空白密钥")
     void fallbackToAvailableKeyWhenPlatformMissing() {
         AiApiKeyMapper apiKeyMapper = mock(AiApiKeyMapper.class);
         IEmbeddingService embeddingService = mock(IEmbeddingService.class);
@@ -73,20 +73,20 @@ class McpEmbeddingWiringTest {
 
         AiApiKeyDO usableKey = new AiApiKeyDO();
         usableKey.setId(2L);
-        usableKey.setPlatform("DeepSeek");
-        usableKey.setUrl("https://api.deepseek.com");
+        usableKey.setPlatform("TongYi");
+        usableKey.setUrl("https://dashscope.aliyuncs.com/compatible-mode");
         usableKey.setApiKey("sk-usable");
 
         when(apiKeyMapper.selectList(any())).thenReturn(List.of(emptyKey, usableKey));
         when(apiKeyMapper.selectById(2L)).thenReturn(usableKey);
         when(embeddingService.getEmbeddingModel(
-                eq("DeepSeek"), eq("https://api.deepseek.com"), eq("sk-usable"), eq("text-embedding-v2")))
+                eq("TongYi"), eq("https://dashscope.aliyuncs.com/compatible-mode"), eq("sk-usable"), eq("text-embedding-v4")))
                 .thenReturn(embeddingModel);
 
         AiModelApiServiceImpl service = new AiModelApiServiceImpl();
         ReflectionTestUtils.setField(service, "apiKeyMapper", apiKeyMapper);
         ReflectionTestUtils.setField(service, "embeddingService", embeddingService);
 
-        assertSame(embeddingModel, service.getEmbeddingModelByPlatform("TongYi", "text-embedding-v2"));
+        assertSame(embeddingModel, service.getEmbeddingModelByPlatform(null, "text-embedding-v4"));
     }
 }

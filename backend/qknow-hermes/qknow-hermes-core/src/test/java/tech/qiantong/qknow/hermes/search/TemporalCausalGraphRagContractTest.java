@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 时间感知语义三元组因果知识图谱与 GraphRAG 深度融合引擎专项契约测试
  * (TemporalCausalGraphRagContractTest)
  * 验证 5 项严格物理断言：
- * 1. 纯不可变三元组数据结构、1536 维超球面单位向量与时间有效性半衰期单调衰减；
+ * 1. 纯不可变三元组数据结构、1024 维超球面单位向量与时间有效性半衰期单调衰减；
  * 2. 两阶段检索与 Kahn 算法因果拓扑偏序确定性保序；
  * 3. 时空半衰期衰减对陈旧过期知识倒挂的 100% 阻断；
  * 4. 存证凭单 SHA-256 常量时间自验真与防侧信道比对；
@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class TemporalCausalGraphRagContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
     private static final String SECRET_KEY = "CONTRACT_TEST_TKG_SECRET_2026";
 
     private float[] createUnitVector(int seed) {
@@ -44,12 +44,12 @@ public class TemporalCausalGraphRagContractTest {
     }
 
     @Test
-    @DisplayName("断言一：验证纯不可变三元组、1536 维向量约束与半衰期指数衰减单调性")
+    @DisplayName("断言一：验证纯不可变三元组、1024 维向量约束与半衰期指数衰减单调性")
     void testTemporalCausalTripletImmutabilityAndDefensiveCopy() {
         long now = System.currentTimeMillis();
         float[] validVec = createUnitVector(101);
 
-        // 1. 验证非 1536 维向量抛出异常
+        // 1. 验证非 1024 维向量抛出异常
         assertThrows(IllegalArgumentException.class, () ->
                 TemporalCausalTriplet.of("err", "s", "p", "o", now, null, now - 1000, now + 1000, 86400000L, 0.9, new float[512])
         );

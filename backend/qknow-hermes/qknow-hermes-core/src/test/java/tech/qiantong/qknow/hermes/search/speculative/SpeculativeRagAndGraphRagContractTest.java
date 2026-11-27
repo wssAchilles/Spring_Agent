@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class SpeculativeRagAndGraphRagContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     @Test
     @DisplayName("契约一：Speculative RAG 并行分片草稿生成与 DeepSeek 思考模式集中校验契约")
@@ -158,7 +158,7 @@ public class SpeculativeRagAndGraphRagContractTest {
     }
 
     @Test
-    @DisplayName("契约五：千问 1536 维超球面单位向量强类型与防侧信道时序攻击验签契约")
+    @DisplayName("契约五：千问 1024 维超球面单位向量强类型与防侧信道时序攻击验签契约")
     public void testVectorDimensionAndReceiptSecurity() {
         Random random = new Random(505);
         float[] validVec = generateNormalizedVector(DIM, random);
@@ -169,11 +169,11 @@ public class SpeculativeRagAndGraphRagContractTest {
         );
         assertNotNull(node);
 
-        // 验证非法维度防御 (非 1536 维抛出 IllegalArgumentException)
+        // 验证非法维度防御 (非 1024 维抛出 IllegalArgumentException)
         float[] invalidVec = new float[128];
         assertThrows(IllegalArgumentException.class, () -> HierarchicalCommunityNode.of(
                 "comm-bad", 1, List.of("ent-1"), "非法维度测试", invalidVec, List.of()
-        ), "非 1536 维千问向量必须被强类型防御拒绝");
+        ), "非 1024 维千问向量必须被强类型防御拒绝");
 
         // 验证凭单伪造签名被常量时间防御拒绝
         GraphRagCommunityReceipt receipt = GraphRagCommunityReceipt.create(

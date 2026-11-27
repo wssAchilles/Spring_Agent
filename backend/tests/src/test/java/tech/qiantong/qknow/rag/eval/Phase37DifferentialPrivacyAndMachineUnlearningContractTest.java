@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * (Differential Privacy Retrieval, Machine Unlearning & Compliance Isolation)
  *
  * 覆盖 10 项严苛核心契约：
- * 1. contract01: 阿里千问 1536 维超球面高斯差分隐私加噪与有界敏感度契约
+ * 1. contract01: 阿里千问 1024 维超球面高斯差分隐私加噪与有界敏感度契约
  * 2. contract02: 差分隐私检索效用与召回折损受限契约 (效用保持率 >= 85%, 召回率 >= 88%)
  * 3. contract03: 异构存储六层级联注销引擎原子性与零残留契约 (含 SimHash unindex)
  * 4. contract04: 墓碑标记 (Tombstone) 与秒级异步物理擦除管道契约 (前台 <= 20ms)
@@ -82,19 +82,19 @@ public class Phase37DifferentialPrivacyAndMachineUnlearningContractTest {
     }
 
     @Test
-    @DisplayName("Contract 01: 阿里千问 1536 维超球面高斯差分隐私加噪与有界敏感度契约")
+    @DisplayName("Contract 01: 阿里千问 1024 维超球面高斯差分隐私加噪与有界敏感度契约")
     void contract01_hypersphereGaussianPerturbationAndBoundedSensitivity() {
         Random rand = new Random(42);
         float[] originalVector = generateNormalizedVector(rand);
 
         // 验证原始向量归一化范数为 1.0
         assertEquals(1.0, computeVectorNorm(originalVector), 1e-5);
-        assertEquals(1536, originalVector.length);
+        assertEquals(1024, originalVector.length);
 
-        // 1. 验证加噪后向量严格保持 1536 维且处于单位超球面上
+        // 1. 验证加噪后向量严格保持 1024 维且处于单位超球面上
         float[] perturbedStandard = dpScorer.perturbVector(originalVector, DifferentialPrivacyScorer.PrivacyLevel.STANDARD);
         assertNotNull(perturbedStandard);
-        assertEquals(1536, perturbedStandard.length);
+        assertEquals(1024, perturbedStandard.length);
         assertEquals(1.0, computeVectorNorm(perturbedStandard), 1e-5, "扰动后向量必须经超球面重投影归一化至 1.0");
 
         // 2. 验证敏感度固定为 Delta_2 = 2.0
@@ -128,16 +128,16 @@ public class Phase37DifferentialPrivacyAndMachineUnlearningContractTest {
             float[] docVec;
             if (i < 15) {
                 // 生成与 query 高度相关的向量 (混入较多 query 权重)
-                docVec = new float[1536];
+                docVec = new float[1024];
                 double weight = 0.5 + (15 - i) * 0.03; // 相似度从 0.95 降至 0.5
                 float[] noise = generateNormalizedVector(rand);
                 double normSq = 0.0;
-                for (int j = 0; j < 1536; j++) {
+                for (int j = 0; j < 1024; j++) {
                     docVec[j] = (float) (weight * queryVector[j] + (1 - weight) * noise[j]);
                     normSq += docVec[j] * docVec[j];
                 }
                 float inv = (float) (1.0 / Math.sqrt(normSq));
-                for (int j = 0; j < 1536; j++) {
+                for (int j = 0; j < 1024; j++) {
                     docVec[j] *= inv;
                 }
             } else {
@@ -356,10 +356,10 @@ public class Phase37DifferentialPrivacyAndMachineUnlearningContractTest {
         float[] noisyVector = dpScorer.perturbVector(sensitivePIIVector, DifferentialPrivacyScorer.PrivacyLevel.HIGH);
 
         // 3. 模拟反演重构模型解码器的重建困惑度（Perplexity）评估
-        // 根据 Theorem 1.1: PPL(X | noisy) >= exp(H(X) + (1536 * sigma^2)/(2*(1 + 1536*sigma^2)))
+        // 根据 Theorem 1.1: PPL(X | noisy) >= exp(H(X) + (1024 * sigma^2)/(2*(1 + 1024*sigma^2)))
         double sigma = dpScorer.calculateGaussianSigma(2.0, 0.5, 1e-5);
         double sigmaSq = sigma * sigma;
-        double noiseEnergyRatio = (1536.0 * sigmaSq) / (1.0 + 1536.0 * sigmaSq);
+        double noiseEnergyRatio = (1024.0 * sigmaSq) / (1.0 + 1024.0 * sigmaSq);
 
         // 困惑度增长倍率估算
         double perplexityGrowthMultiplier = Math.exp(noiseEnergyRatio * 2.0); // 理论指数下界增长
@@ -368,7 +368,7 @@ public class Phase37DifferentialPrivacyAndMachineUnlearningContractTest {
 
         // 验证加噪后向量与原向量的直接欧氏距离存在明显位移，阻止确定性逆向精确匹配
         double distSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             double diff = sensitivePIIVector[i] - noisyVector[i];
             distSq += diff * diff;
         }

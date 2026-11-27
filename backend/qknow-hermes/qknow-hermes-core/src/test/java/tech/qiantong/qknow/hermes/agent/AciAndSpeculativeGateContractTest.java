@@ -16,14 +16,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * (AciAndSpeculativeGateContractTest)
  * 验证：
  * 1. 紧凑 ACI 前置拦截与单步自纠错闭环契约；
- * 2. 阿里千问 1536 维超球面置信度硬门禁与拒绝采样契约；
+ * 2. 阿里千问 1024 维超球面置信度硬门禁与拒绝采样契约；
  * 3. 双流推测引擎防注意力污染零泄露契约；
  * 4. 常驻守护进程物理探针端到端分发契约。
  */
 public class AciAndSpeculativeGateContractTest {
 
     private static final String TEST_SECRET = "HERMES_ACI_SPEC_TEST_SECRET_2026";
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     private float[] generateUnitVector(long seed) {
         Random rnd = new Random(seed);
@@ -107,7 +107,7 @@ public class AciAndSpeculativeGateContractTest {
     }
 
     @Test
-    @DisplayName("契约二：阿里千问 1536 维超球面置信度硬门禁与拒绝采样契约")
+    @DisplayName("契约二：阿里千问 1024 维超球面置信度硬门禁与拒绝采样契约")
     public void testHypersphericalConfidenceGatedFilter() {
         ConfidenceGatedPrefetchFilter filter = new ConfidenceGatedPrefetchFilter(0.85, TEST_SECRET);
 

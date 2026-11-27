@@ -13,7 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("ToolRagFilter 千问 1536 维超球面工具语义动态路由测试")
+@DisplayName("ToolRagFilter 千问 1024 维超球面工具语义动态路由测试")
 class ToolRagFilterTest {
 
     private SemanticToolRegistry registry;
@@ -26,7 +26,7 @@ class ToolRagFilterTest {
     }
 
     private float[] createUnitHypersphereVector(double angleRad) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         v[0] = (float) Math.cos(angleRad);
         v[1] = (float) Math.sin(angleRad);
         // 验证模长为 1.0

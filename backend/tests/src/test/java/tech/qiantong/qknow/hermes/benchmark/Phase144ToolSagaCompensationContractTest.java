@@ -17,12 +17,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Phase 144 核心契约测试套件：
- * 分布式工具链有界事务补偿 (Saga) 逆拓扑执行器、千问 1536 维超球面多意图正交解耦与超时租约自愈中枢
+ * 分布式工具链有界事务补偿 (Saga) 逆拓扑执行器、千问 1024 维超球面多意图正交解耦与超时租约自愈中枢
  * (Tool Saga Reverse Topological Compensation, Intent Disentanglement & Bounded Lease-based Healing Hub)
  * <p>
  * 严格按照 AGENTS.md 规范与八大核心契约验证：
  * 1. Kahn 逆拓扑偏序单调性与因果抵消验证：死锁率 0.0%，耗时 <= 3.0ms (TC-144-1)
- * 2. 千问 1536 维超球面改进 Gram-Schmidt 正交解耦：残差 <= 1e-6，保真度 >= 0.85 (TC-144-2)
+ * 2. 千问 1024 维超球面改进 Gram-Schmidt 正交解耦：残差 <= 1e-6，保真度 >= 0.85 (TC-144-2)
  * 3. 互斥工具写写冲突消歧与因果 DAG 依赖边生成：消歧率 100.0% (TC-144-3)
  * 4. 带 Fencing Token 的有界超时租约与墓碑防幽灵写：拦截率 100.0% (TC-144-4)
  * 5. 三级冷备隔离环形缓冲区异常软隔离与免崩溃机制 (TC-144-5)
@@ -90,10 +90,10 @@ public class Phase144ToolSagaCompensationContractTest {
     }
 
     /**
-     * TC-144-2: 千问 1536 维超球面改进 Gram-Schmidt 正交意图解耦精度验证 (Lemma 144.2)
+     * TC-144-2: 千问 1024 维超球面改进 Gram-Schmidt 正交意图解耦精度验证 (Lemma 144.2)
      */
     @Test
-    @DisplayName("TC-144-2: 千问 1536 维超球面改进 Gram-Schmidt 正交意图解耦精度验证")
+    @DisplayName("TC-144-2: 千问 1024 维超球面改进 Gram-Schmidt 正交意图解耦精度验证")
     void testHypersphericalIntentDisentanglementPrecision() {
         double[] rawTask = createPerturbedEmbedding(42, 0.2);
 

@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 性能与规模双核架构升级契约测试：
  * 覆盖：
- * 1. 动态拓扑稀疏化自组织激活、千问 1536 维超球面测地大圆弧度量与夏普利动态剪枝
+ * 1. 动态拓扑稀疏化自组织激活、千问 1024 维超球面测地大圆弧度量与夏普利动态剪枝
  * 2. 智能体因果时序向量时钟 (Vector Clock) 偏序传递与防失序事件总线
  * 3. DeepSeek 思考流模式识别 DFA 状态机与前向预取待命池秒级命中
  * 4. 纯 Java 21 Record 凭单与常量时间 MessageDigest.isEqual 验签防侧信道

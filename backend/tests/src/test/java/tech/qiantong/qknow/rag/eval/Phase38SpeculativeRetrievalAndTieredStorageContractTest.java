@@ -219,20 +219,20 @@ public class Phase38SpeculativeRetrievalAndTieredStorageContractTest {
     @Test
     @DisplayName("Contract 08: 三级存储 (Hot/Warm/Cold) 物理分层读写契约")
     void contract08_multiTieredStorageHotWarmColdRouting() {
-        float[] sampleVec = new float[1536];
+        float[] sampleVec = new float[1024];
         Arrays.fill(sampleVec, 0.025f);
 
         // 写入 3 个不同层级的切片
         MultiTieredStorageManager.TieredSegmentVO hotSeg = MultiTieredStorageManager.TieredSegmentVO.builder()
-                .segmentId(1001L).kbId(10L).content("热点制度切片").vector1536(sampleVec)
+                .segmentId(1001L).kbId(10L).content("热点制度切片").vector1024(sampleVec)
                 .storageTier(MultiTieredStorageManager.StorageTier.HOT).heatScore(100.0).build();
 
         MultiTieredStorageManager.TieredSegmentVO warmSeg = MultiTieredStorageManager.TieredSegmentVO.builder()
-                .segmentId(1002L).kbId(10L).content("温存切片").vector1536(sampleVec)
+                .segmentId(1002L).kbId(10L).content("温存切片").vector1024(sampleVec)
                 .storageTier(MultiTieredStorageManager.StorageTier.WARM).heatScore(20.0).build();
 
         MultiTieredStorageManager.TieredSegmentVO coldSeg = MultiTieredStorageManager.TieredSegmentVO.builder()
-                .segmentId(1003L).kbId(10L).content("冷归档切片").vector1536(sampleVec)
+                .segmentId(1003L).kbId(10L).content("冷归档切片").vector1024(sampleVec)
                 .storageTier(MultiTieredStorageManager.StorageTier.COLD).heatScore(0.5).build();
 
         storageManager.putSegment(hotSeg);
@@ -253,13 +253,13 @@ public class Phase38SpeculativeRetrievalAndTieredStorageContractTest {
     @Test
     @DisplayName("Contract 09: 基于 LFU-K 与半衰期时序衰减的自动降温归档与双写防悬挂契约")
     void contract09_temporalDecayDemotionAndSafeDualWriteProtocol() {
-        float[] sampleVec = new float[1536];
+        float[] sampleVec = new float[1024];
         Arrays.fill(sampleVec, 0.01f);
 
         // 初始写入 5 个活跃切片至 HOT 层
         for (long id = 2001L; id <= 2005L; id++) {
             storageManager.putSegment(MultiTieredStorageManager.TieredSegmentVO.builder()
-                    .segmentId(id).kbId(20L).content("活跃切片正文 " + id).vector1536(sampleVec)
+                    .segmentId(id).kbId(20L).content("活跃切片正文 " + id).vector1024(sampleVec)
                     .storageTier(MultiTieredStorageManager.StorageTier.HOT).heatScore(10.0).build());
         }
 

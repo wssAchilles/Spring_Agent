@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 严格验证 8 大核心学术定理与工业工程契约：
  * 1. 契约 1: 四级金字塔树状文档切分与自底向上语义质心聚合，祖先层级路径继承完整率 100%
  * 2. 契约 2: 自顶向下分支定界剪枝 (Branch & Bound)，跨章节语义召回率 100%，非相关路径剪枝率 >= 75%
- * 3. 契约 3: 阿里千问 1536 维超球面测地内积加权局部 PPR 迭代 15 步平稳收敛，收敛残差 <= 0.10
+ * 3. 契约 3: 阿里千问 1024 维超球面测地内积加权局部 PPR 迭代 15 步平稳收敛，收敛残差 <= 0.10
  * 4. 契约 4: KMB 2-近似 Steiner 最小因果树剪枝，节点规模严格钳制在 |V_S| <= 15，噪声抑制比 >= 70%~90%
  * 5. 契约 5: 双轨因果骨架 Prompt 构建保真度，DeepSeek 双轨结构化注入无损对齐
  * 6. 契约 6: 图谱事实保真度与反幻觉接地门禁，非事实断言与关系倒置 100% 物理阻断 (S_{ground} < 0.88)
@@ -140,12 +140,12 @@ class Phase123HierarchicalGraphRagContractTest {
         assertEquals("切片 #1", path.get(3));
 
         // 3. 验证超球面质心单位范数: ||e||_2 = 1.0 +- 1e-4
-        float[] rootEmbedding = root.getCentroidEmbedding1536();
+        float[] rootEmbedding = root.getCentroidEmbedding1024();
         assertNotNull(rootEmbedding);
-        assertEquals(1536, rootEmbedding.length);
+        assertEquals(1024, rootEmbedding.length);
         double sumSq = 0.0;
         for (float val : rootEmbedding) sumSq += (double) val * val;
-        assertEquals(1.0, Math.sqrt(sumSq), 1e-4, "根节点聚合质心必须位于 1536 维单位超球面上");
+        assertEquals(1.0, Math.sqrt(sumSq), 1e-4, "根节点聚合质心必须位于 1024 维单位超球面上");
         System.out.printf("[契约 1] 四级金字塔树构建完毕，叶子路径: %s, 根质心模长: %.6f%n",
                 String.join(" -> ", path), Math.sqrt(sumSq));
     }
@@ -161,7 +161,7 @@ class Phase123HierarchicalGraphRagContractTest {
         // 构造专门针对第一章切片 1 的查询超球面向量 (高度对齐)
         HierarchicalPyramidDocumentChunker.PyramidNode targetChunk =
                 root.getChildren().get(0).getChildren().get(0).getChildren().get(0);
-        float[] queryEmbedding = Arrays.copyOf(targetChunk.getCentroidEmbedding1536(), 1536);
+        float[] queryEmbedding = Arrays.copyOf(targetChunk.getCentroidEmbedding1024(), 1024);
 
         // 执行分支定界搜索，门槛设为 0.30
         HierarchicalPyramidDocumentChunker.SearchResult result = chunker.searchByBranchAndBound(
@@ -179,7 +179,7 @@ class Phase123HierarchicalGraphRagContractTest {
     }
 
     /**
-     * 契约 3: 阿里千问 1536 维超球面测地内积加权局部 PPR 迭代 15 步平稳收敛，残差 <= 0.10
+     * 契约 3: 阿里千问 1024 维超球面测地内积加权局部 PPR 迭代 15 步平稳收敛，残差 <= 0.10
      */
     @Test
     @DisplayName("契约 3: 测地加权局部 PPR 15 步平稳分布与收敛残差 <= 0.10")
@@ -405,7 +405,7 @@ class Phase123HierarchicalGraphRagContractTest {
                 new SteinerCausalSubgraphEngine.GraphEdge("ServiceA", "DatabaseB", "READ_REPLICA", 1.0)
         );
 
-        float[] queryVec = Arrays.copyOf(root.getChildren().get(0).getCentroidEmbedding1536(), 1536);
+        float[] queryVec = Arrays.copyOf(root.getChildren().get(0).getCentroidEmbedding1024(), 1024);
         List<GraphFactGroundingGate.FactTriple> triples = List.of(
                 new GraphFactGroundingGate.FactTriple("ServiceA", "READ_REPLICA", "DatabaseB")
         );

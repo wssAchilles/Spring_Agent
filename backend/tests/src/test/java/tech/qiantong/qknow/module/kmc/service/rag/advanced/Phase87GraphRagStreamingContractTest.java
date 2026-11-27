@@ -94,11 +94,11 @@ public class Phase87GraphRagStreamingContractTest {
     void testGraphRagSubgraphReasoner_PprConvergenceAndAntiDrift() {
         GraphRagSubgraphReasoner reasoner = new GraphRagSubgraphReasoner();
 
-        float[] queryVec = createNormalizedSphericalVector(1536, 111L);
-        float[] seedVec  = Arrays.copyOf(queryVec, 1536); // 与查询完全对齐
-        float[] hop1Vec  = createNormalizedSphericalVector(1536, 222L);
-        float[] hop2Vec  = createNormalizedSphericalVector(1536, 333L);
-        float[] noiseVec = createNormalizedSphericalVector(1536, 999L); // 噪声无关实体
+        float[] queryVec = createNormalizedSphericalVector(1024, 111L);
+        float[] seedVec  = Arrays.copyOf(queryVec, 1024); // 与查询完全对齐
+        float[] hop1Vec  = createNormalizedSphericalVector(1024, 222L);
+        float[] hop2Vec  = createNormalizedSphericalVector(1024, 333L);
+        float[] noiseVec = createNormalizedSphericalVector(1024, 999L); // 噪声无关实体
 
         List<GraphRagSubgraphReasoner.EntityNode> nodes = List.of(
                 new GraphRagSubgraphReasoner.EntityNode("e-seed", "智能体内核", "CORE", seedVec),
@@ -131,14 +131,14 @@ public class Phase87GraphRagStreamingContractTest {
     void testGraphRagSubgraphReasoner_BoundedLatencyWithinFiveMs() {
         GraphRagSubgraphReasoner reasoner = new GraphRagSubgraphReasoner();
 
-        float[] queryVec = createNormalizedSphericalVector(1536, 555L);
+        float[] queryVec = createNormalizedSphericalVector(1024, 555L);
         List<GraphRagSubgraphReasoner.EntityNode> nodes = new ArrayList<>();
         List<GraphRagSubgraphReasoner.RelationEdge> edges = new ArrayList<>();
 
         // 构建 50 个节点与 100 条关系的测试子图
         for (int i = 0; i < 50; i++) {
             nodes.add(new GraphRagSubgraphReasoner.EntityNode(
-                    "node-" + i, "实体-" + i, "CATEGORY", createNormalizedSphericalVector(1536, i + 1000L)
+                    "node-" + i, "实体-" + i, "CATEGORY", createNormalizedSphericalVector(1024, i + 1000L)
             ));
             if (i > 0) {
                 edges.add(new GraphRagSubgraphReasoner.RelationEdge(
@@ -297,10 +297,10 @@ public class Phase87GraphRagStreamingContractTest {
         assertNotNull(expanded.fullEnrichedContext());
 
         // 3. 知识图谱局部子图推理
-        float[] queryVec = createNormalizedSphericalVector(1536, 777L);
+        float[] queryVec = createNormalizedSphericalVector(1024, 777L);
         List<GraphRagSubgraphReasoner.EntityNode> nodes = List.of(
                 new GraphRagSubgraphReasoner.EntityNode("e1", "知识中枢", "ROOT", queryVec),
-                new GraphRagSubgraphReasoner.EntityNode("e2", "PPR算法", "ALGO", createNormalizedSphericalVector(1536, 888L))
+                new GraphRagSubgraphReasoner.EntityNode("e2", "PPR算法", "ALGO", createNormalizedSphericalVector(1024, 888L))
         );
         List<GraphRagSubgraphReasoner.RelationEdge> edges = List.of(
                 new GraphRagSubgraphReasoner.RelationEdge("e1", "e2", "INCLUDES", 0.9)

@@ -21,7 +21,7 @@ class MoAExpertConsensusEngineTest {
     }
 
     private float[] createHypersphereVector(double angleRad) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         // 投影到前两维单位圆，模长为 1.0
         v[0] = (float) Math.cos(angleRad);
         v[1] = (float) Math.sin(angleRad);

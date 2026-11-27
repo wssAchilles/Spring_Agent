@@ -207,6 +207,42 @@ class VectorRetrieverTest {
         verify(jdbcTemplate, times(1)).queryForObject(any(String.class), eq(String.class));
     }
 
+    @Test
+    @DisplayName("原生 VecSim 库未加载时不应重复调用远程 embedQuery")
+    void retrieve_skipsEmbedQueryWhenVecSimNativeUnavailable() throws Exception {
+        VectorRetriever unavailableRetriever = new VectorRetriever() {
+            @Override
+            boolean isVecSimAvailable() {
+                return false;
+            }
+        };
+        Field aiField = VectorRetriever.class.getDeclaredField("aiModelService");
+        aiField.setAccessible(true);
+        aiField.set(unavailableRetriever, aiModelService);
+        Field vsField = VectorRetriever.class.getDeclaredField("vectorStoreService");
+        vsField.setAccessible(true);
+        vsField.set(unavailableRetriever, vectorStoreService);
+        Field kbField = VectorRetriever.class.getDeclaredField("kmcKnowledgeBaseMapper");
+        kbField.setAccessible(true);
+        kbField.set(unavailableRetriever, kmcKnowledgeBaseMapper);
+
+        KmcKnowledgeBaseDO kb = KmcKnowledgeBaseDO.builder()
+                .id(7L)
+                .embeddingModelProvider("1")
+                .embeddingModel("text-embedding")
+                .build();
+        when(kmcKnowledgeBaseMapper.selectById(7L)).thenReturn(kb);
+        when(aiModelService.getEmbeddingModel(eq(1L), eq("text-embedding"))).thenReturn(embeddingModel);
+        when(vectorStoreService.getVectorStore(embeddingModel)).thenReturn(vectorStore);
+        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(
+                vectorDoc("vec-11", 11L, 101L, "alpha", 0.8)
+        ));
+
+        List<RetrievalResult> results = unavailableRetriever.retrieve(7L, "query", 1);
+        assertEquals(1, results.size());
+        verify(embeddingModel, never()).call(any(EmbeddingRequest.class));
+    }
+
     private Document vectorDoc(String id, Long segmentId, Long documentId, String text, double score) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put(WeaviateConstant.METADATA_FIELD_SEGMENT_ID, segmentId);
@@ -244,6 +280,11 @@ class VectorRetrieverTest {
         private float[] lastQueryEmbedding;
         private float[] lastCorpus;
         private int lastDim;
+
+        @Override
+        boolean isVecSimAvailable() {
+            return true;
+        }
 
         @Override
         List<VectorRetriever.CandidateVector> loadCandidateVectors(Long knowledgeBaseId, List<RetrievalResult> results) {

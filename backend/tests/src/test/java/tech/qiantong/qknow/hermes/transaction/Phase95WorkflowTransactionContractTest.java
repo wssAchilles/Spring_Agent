@@ -19,14 +19,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Phase95WorkflowTransactionContractTest {
 
     private double[] createNormalizedSphericalEmbedding(int seed) {
-        double[] vec = new double[1536];
+        double[] vec = new double[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = Math.sin(seed + i * 0.173);
             sumSq += vec[i] * vec[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] /= norm;
         }
         return vec;
@@ -95,7 +95,7 @@ public class Phase95WorkflowTransactionContractTest {
     }
 
     @Test
-    @DisplayName("测试 3: 阿里千问 1536 维超球面单位范数严格强校验，非归一化输入 100% 拒绝 (命题 2.1)")
+    @DisplayName("测试 3: 阿里千问 1024 维超球面单位范数严格强校验，非归一化输入 100% 拒绝 (命题 2.1)")
     void testContractGovernor_InvalidEmbeddingRejection() {
         ContractEvolutionGovernor governor = new ContractEvolutionGovernor();
 
@@ -104,8 +104,8 @@ public class Phase95WorkflowTransactionContractTest {
         assertThrows(IllegalArgumentException.class, () -> governor.validateSphericalEmbedding(badDim));
 
         // 模长非 1.0
-        double[] unnormalized = new double[1536];
-        Arrays.fill(unnormalized, 1.0); // norm = sqrt(1536) != 1.0
+        double[] unnormalized = new double[1024];
+        Arrays.fill(unnormalized, 1.0); // norm = sqrt(1024) != 1.0
         assertThrows(IllegalArgumentException.class, () -> governor.validateSphericalEmbedding(unnormalized));
     }
 

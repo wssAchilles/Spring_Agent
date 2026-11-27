@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Online Node Hot-Plugging & Self-Healing Metacenter)
  *
  * 核心验证范围：
- * 1. 千问 1536 维超球面动态边重连阈值 tau >= 0.75 与耗时 <= 5.0ms (TC-135-1)
+ * 1. 千问 1024 维超球面动态边重连阈值 tau >= 0.75 与耗时 <= 5.0ms (TC-135-1)
  * 2. 智能体在线热插拔两阶段 Drain 优雅排空与零资产悬挂 (TC-135-2)
  * 3. 节点失效反应式自愈与增广轨切换时延 <= 50us (TC-135-3)
  * 4. 前端增量力导向局部平滑布局位移方差降低 >= 85% (TC-135-4)
@@ -41,27 +41,27 @@ public class Phase135SwarmDynamicTopologyContractTest {
     private static final String TEST_TENANT = "tenant_enterprise_swarm";
     private static final String TEST_SESSION = "sess_swarm_p135_001";
 
-    // 辅助生成 1536 维单位超球面向量 (严格满足 ||v||_2 = 1.0 +- 1e-4)
+    // 辅助生成 1024 维单位超球面向量 (严格满足 ||v||_2 = 1.0 +- 1e-4)
     private float[] generateHypersphereVector(long seed) {
-        float[] vec = new float[1536];
+        float[] vec = new float[1024];
         Random rand = new Random(seed);
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) (rand.nextGaussian());
             sumSq += vec[i] * vec[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) (vec[i] / norm);
         }
         return vec;
     }
 
     // =========================================================================
-    // TC-135-1: 千问 1536 维超球面动态边重连阈值 tau >= 0.75 与耗时 <= 5.0ms
+    // TC-135-1: 千问 1024 维超球面动态边重连阈值 tau >= 0.75 与耗时 <= 5.0ms
     // =========================================================================
     @Test
-    @DisplayName("TC-135-1: 千问 1536 维超球面测地线内积重连，相似度 >= 0.75 时重连成功，单次判定耗时 <= 5.0ms")
+    @DisplayName("TC-135-1: 千问 1024 维超球面测地线内积重连，相似度 >= 0.75 时重连成功，单次判定耗时 <= 5.0ms")
     void testHypersphereDynamicEdgeRewiring_thresholdAndLatency() {
         DynamicSwarmEdgeRewiringGovernor governor = new DynamicSwarmEdgeRewiringGovernor();
 
@@ -88,14 +88,14 @@ public class Phase135SwarmDynamicTopologyContractTest {
         governor.registerAgent(leaderCard);
 
         // 生成高相关意图向量 (与 targetEmbedding 夹角极小，内积接近 1.0)
-        float[] intentEmbedding = new float[1536];
+        float[] intentEmbedding = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             intentEmbedding[i] = (float) (targetEmbedding[i] + 0.005 * (i % 2 == 0 ? 1 : -1));
             sumSq += intentEmbedding[i] * intentEmbedding[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             intentEmbedding[i] = (float) (intentEmbedding[i] / norm);
         }
 

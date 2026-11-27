@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 验证完整闭环数据流：
  * 1. StartNodeBO (用户输入与参数注入)
  * 2. MultiKnowledgeConcurrentRetriever (多知识库虚拟线程并发检索与超时隔离)
- * 3. HypersphericalRrfReranker (千问 1536 维超球面 RRF 融合重排与 Token 预算截断)
+ * 3. HypersphericalRrfReranker (千问 1024 维超球面 RRF 融合重排与 Token 预算截断)
  * 4. ContextualRetrievalChunkProcessor (Anthropic 风格语境面包屑前缀增强)
  * 5. LLMNodeBO / DeepSeek API (长思维链 reasoning 与正文引用生成)
  * 6. EvidenceChainStreamPresenter (双轨流式隔离、引文角标核验与多模态证据链卡片渲染)

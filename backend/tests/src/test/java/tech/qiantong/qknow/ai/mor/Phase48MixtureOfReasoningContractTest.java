@@ -34,14 +34,14 @@ public class Phase48MixtureOfReasoningContractTest {
     }
 
     private float[] createHypersphericalVector(float seed) {
-        float[] vec = new float[1536];
+        float[] vec = new float[1024];
         double normSq = 0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) Math.sin(seed + i * 0.05);
             normSq += vec[i] * vec[i];
         }
         float norm = (float) Math.sqrt(normSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] /= norm;
         }
         return vec;

@@ -36,15 +36,15 @@ class Phase56GatewayExecutionContractTest {
     }
 
     private static float[] generateNormalizedVector(int seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         Random rnd = new Random(seed);
         float norm = 0.0f;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = rnd.nextFloat() - 0.5f;
             norm += v[i] * v[i];
         }
         norm = (float) Math.sqrt(norm);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] /= norm;
         }
         return v;
@@ -115,7 +115,7 @@ class Phase56GatewayExecutionContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 3: 千问 1536 维超球面意图测地线路由精准匹配")
+    @DisplayName("契约测试 3: 千问 1024 维超球面意图测地线路由精准匹配")
     void testIntentAdaptiveRoutingAccurateMatch() {
         float[] vecA = generateNormalizedVector(1001);
         float[] vecB = generateNormalizedVector(2002);

@@ -103,8 +103,8 @@ class Phase133E2EChaosBenchmarkContractTest {
         List<String> sagasSteps = List.of("LOCK_INVENTORY", "DEDUCT_WALLET", "CALL_CUSTOMS_API");
 
         // 构建图谱节点与边
-        float[] sampleEmbedding = new float[1536];
-        Arrays.fill(sampleEmbedding, (float) (1.0 / Math.sqrt(1536)));
+        float[] sampleEmbedding = new float[1024];
+        Arrays.fill(sampleEmbedding, (float) (1.0 / Math.sqrt(1024)));
 
         SteinerCausalSubgraphPruner.GraphNode nodeUser = new SteinerCausalSubgraphPruner.GraphNode("node_user", "Consumer", "USER", sampleEmbedding);
         SteinerCausalSubgraphPruner.GraphNode nodeOrder = new SteinerCausalSubgraphPruner.GraphNode("node_order", "Order_1001", "ORDER", sampleEmbedding);

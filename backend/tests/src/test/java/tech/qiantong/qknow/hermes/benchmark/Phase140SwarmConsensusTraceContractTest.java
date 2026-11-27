@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 核心验证范围：
  * 1. 谄媚趋同合谋信息熵崩塌微秒级检测 (TC-140-1)
  * 2. 反事实魔鬼代言人对偶扰动对抗注入与多样性恢复 >= 30% (TC-140-2)
- * 3. 阿里千问 1536 维超球面测地线差分 ε-Nash 早停收敛 <= 5 轮 (TC-140-3)
+ * 3. 阿里千问 1024 维超球面测地线差分 ε-Nash 早停收敛 <= 5 轮 (TC-140-3)
  * 4. 质量、成本与风险三元目标多目标帕累托前沿非支配排序仲裁 (TC-140-4)
  * 5. W3C TraceContext 规范 32位/16位因果 Span 树完整性与零孤儿节点 (TC-140-5)
  * 6. 纯 Java 21 Record 凭单不可变性与 SHA-256 常量时间自验真 (TC-140-6)
@@ -40,12 +40,12 @@ public class Phase140SwarmConsensusTraceContractTest {
     private final EpsilonNashParetoArbitrator paretoArbitrator = new EpsilonNashParetoArbitrator();
 
     /**
-     * 工具方法：生成指定基底、微小噪声的 1536 维阿里千问超球面归一化向量
+     * 工具方法：生成指定基底、微小噪声的 1024 维阿里千问超球面归一化向量
      */
     private double[] createNormalizedEmbedding(double baseVal, double noiseScale, int seed) {
-        double[] vec = new double[1536];
+        double[] vec = new double[1024];
         Random rand = new Random(seed);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = baseVal + (rand.nextDouble() - 0.5) * noiseScale;
         }
         entropyGuard.normalizeVector(vec);
@@ -93,15 +93,15 @@ public class Phase140SwarmConsensusTraceContractTest {
         assertTrue(result.diversityIncreasePercent() >= 30.0,
                 "反事实注入后群体多样性提升率必须 >= 30.0%，实测: " + result.diversityIncreasePercent() + "%");
         assertNotNull(result.counterfactualPerturbationVector(), "对抗扰动向量不可为空");
-        assertEquals(1536, result.counterfactualPerturbationVector().length, "对抗扰动向量必须为 1536 维");
+        assertEquals(1024, result.counterfactualPerturbationVector().length, "对抗扰动向量必须为 1024 维");
         assertTrue(result.injectedCounterfactualContext().contains("魔鬼代言人"), "注入上下文必须包含魔鬼代言人审计说明");
     }
 
     // =========================================================================
-    // TC-140-3: 阿里千问 1536 维超球面测地线差分 ε-Nash 早停收敛 <= 5 轮
+    // TC-140-3: 阿里千问 1024 维超球面测地线差分 ε-Nash 早停收敛 <= 5 轮
     // =========================================================================
     @Test
-    @DisplayName("TC-140-3: 基于千问 1536 维超球面策略欧氏角位移差分 Δσ <= 0.05 判定纳什均衡早停，收敛轮数 <= 5 轮，单轮耗时 <= 3.0ms")
+    @DisplayName("TC-140-3: 基于千问 1024 维超球面策略欧氏角位移差分 Δσ <= 0.05 判定纳什均衡早停，收敛轮数 <= 5 轮，单轮耗时 <= 3.0ms")
     void testEpsilonNash_geodesicConvergenceEarlyStop() {
         // 模拟相邻轮次策略向量几乎不变 (位移差分 < 0.05)
         double[] prevVec1 = createNormalizedEmbedding(0.5, 0.05, 301);

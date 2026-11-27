@@ -37,14 +37,14 @@ class Phase117NashDebateConsensusContractTest {
     }
 
     private float[] createNormalized1536Vector(float seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) Math.sin(seed + i * 0.1);
             sumSq += v[i] * v[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) (v[i] / norm);
         }
         return v;

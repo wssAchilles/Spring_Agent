@@ -21,40 +21,40 @@ public class Phase13DataOpsAndHealthGateTest {
     void testEmbeddingDimensionGuardBlocksMismatchAndNaN() {
         EmbeddingDimensionGuard guard = new EmbeddingDimensionGuard();
 
-        // 1. 测试维度错配拦截 (如 1024 维或 768 维)
-        float[] vector1024 = new float[1024];
+        // 1. 测试维度错配拦截 (如 1536 维或 768 维)
+        float[] vector1536 = new float[1536];
         IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class,
-                () -> guard.validateBeforeWrite(vector1024));
-        assertTrue(ex1.getMessage().contains("Expected: 1536, Actual: 1024"));
+                () -> guard.validateBeforeWrite(vector1536));
+        assertTrue(ex1.getMessage().contains("Expected: 1024, Actual: 1536"));
 
         // 2. 测试 null 向量拦截
         float[] nullVec = null;
         assertThrows(IllegalArgumentException.class, () -> guard.validateBeforeWrite(nullVec));
 
         // 3. 测试含 NaN 异常数值拦截
-        float[] nanVec = new float[1536];
+        float[] nanVec = new float[1024];
         nanVec[42] = Float.NaN;
         IllegalArgumentException exNan = assertThrows(IllegalArgumentException.class,
                 () -> guard.validateBeforeWrite(nanVec));
         assertTrue(exNan.getMessage().contains("NaN or Infinite"));
 
         // 4. 测试含 Infinite 异常数值拦截
-        float[] infVec = new float[1536];
+        float[] infVec = new float[1024];
         infVec[100] = Float.POSITIVE_INFINITY;
         IllegalArgumentException exInf = assertThrows(IllegalArgumentException.class,
                 () -> guard.validateBeforeWrite(infVec));
         assertTrue(exInf.getMessage().contains("NaN or Infinite"));
 
-        // 5. 测试合法 1536 维标准向量通过
-        float[] validVec = new float[1536];
+        // 5. 测试合法 1024 维标准向量通过
+        float[] validVec = new float[1024];
         Arrays.fill(validVec, 0.01f);
         assertDoesNotThrow(() -> guard.validateBeforeWrite(validVec));
 
         // 6. 测试模型元数据不可变指纹构建
-        Map<String, Object> meta = guard.buildModelMetadata("dashscope", "text-embedding-v3");
+        Map<String, Object> meta = guard.buildModelMetadata("dashscope", "text-embedding-v4");
         assertEquals("dashscope", meta.get(EmbeddingDimensionGuard.KEY_MODEL_PROVIDER));
-        assertEquals("text-embedding-v3", meta.get(EmbeddingDimensionGuard.KEY_MODEL_NAME));
-        assertEquals(1536, meta.get(EmbeddingDimensionGuard.KEY_EMBEDDING_DIM));
+        assertEquals("text-embedding-v4", meta.get(EmbeddingDimensionGuard.KEY_MODEL_NAME));
+        assertEquals(1024, meta.get(EmbeddingDimensionGuard.KEY_EMBEDDING_DIM));
         assertNotNull(meta.get(EmbeddingDimensionGuard.KEY_EMBEDDED_AT));
     }
 

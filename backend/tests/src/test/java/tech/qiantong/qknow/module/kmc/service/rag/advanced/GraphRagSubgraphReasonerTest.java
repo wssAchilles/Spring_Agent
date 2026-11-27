@@ -36,23 +36,23 @@ public class GraphRagSubgraphReasonerTest {
     void testSeedEntityLocalization() {
         GraphRagSubgraphReasoner reasoner = new GraphRagSubgraphReasoner();
 
-        float[] queryEmbedding = createNormalizedSphericalVector(1536, 42L);
+        float[] queryEmbedding = createNormalizedSphericalVector(1024, 42L);
 
         // 构造实体池，其中 entity-target 与 queryEmbedding 极其相似
         List<GraphRagSubgraphReasoner.EntityNode> nodes = new ArrayList<>();
-        nodes.add(new GraphRagSubgraphReasoner.EntityNode("e-other-1", "无关实体1", "CONCEPT", createNormalizedSphericalVector(1536, 100L)));
-        nodes.add(new GraphRagSubgraphReasoner.EntityNode("e-other-2", "无关实体2", "CONCEPT", createNormalizedSphericalVector(1536, 200L)));
+        nodes.add(new GraphRagSubgraphReasoner.EntityNode("e-other-1", "无关实体1", "CONCEPT", createNormalizedSphericalVector(1024, 100L)));
+        nodes.add(new GraphRagSubgraphReasoner.EntityNode("e-other-2", "无关实体2", "CONCEPT", createNormalizedSphericalVector(1024, 200L)));
 
         // 构造几乎同向的 target 向量
-        float[] targetVector = new float[1536];
-        for (int i = 0; i < 1536; i++) {
+        float[] targetVector = new float[1024];
+        for (int i = 0; i < 1024; i++) {
             targetVector[i] = queryEmbedding[i] + 0.001f;
         }
         // 归一化
         double sumSq = 0.0;
         for (float v : targetVector) sumSq += v * v;
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) targetVector[i] /= norm;
+        for (int i = 0; i < 1024; i++) targetVector[i] /= norm;
 
         nodes.add(new GraphRagSubgraphReasoner.EntityNode("e-target", "核心靶向实体", "CORE", targetVector));
 
@@ -69,13 +69,13 @@ public class GraphRagSubgraphReasonerTest {
     void testTwoHopNeighborhoodInduction() {
         GraphRagSubgraphReasoner reasoner = new GraphRagSubgraphReasoner();
 
-        float[] queryEmbedding = createNormalizedSphericalVector(1536, 999L);
+        float[] queryEmbedding = createNormalizedSphericalVector(1024, 999L);
 
         List<GraphRagSubgraphReasoner.EntityNode> nodes = List.of(
                 new GraphRagSubgraphReasoner.EntityNode("e-root", "根种子", "TYPE", queryEmbedding),
-                new GraphRagSubgraphReasoner.EntityNode("e-hop1", "一跳邻居", "TYPE", createNormalizedSphericalVector(1536, 1L)),
-                new GraphRagSubgraphReasoner.EntityNode("e-hop2", "二跳邻居", "TYPE", createNormalizedSphericalVector(1536, 2L)),
-                new GraphRagSubgraphReasoner.EntityNode("e-hop3", "三跳邻居超限", "TYPE", createNormalizedSphericalVector(1536, 3L))
+                new GraphRagSubgraphReasoner.EntityNode("e-hop1", "一跳邻居", "TYPE", createNormalizedSphericalVector(1024, 1L)),
+                new GraphRagSubgraphReasoner.EntityNode("e-hop2", "二跳邻居", "TYPE", createNormalizedSphericalVector(1024, 2L)),
+                new GraphRagSubgraphReasoner.EntityNode("e-hop3", "三跳邻居超限", "TYPE", createNormalizedSphericalVector(1024, 3L))
         );
 
         List<GraphRagSubgraphReasoner.RelationEdge> edges = List.of(
@@ -101,13 +101,13 @@ public class GraphRagSubgraphReasonerTest {
     void testPprConvergenceAndProbabilityConservation() {
         GraphRagSubgraphReasoner reasoner = new GraphRagSubgraphReasoner();
 
-        float[] queryEmbedding = createNormalizedSphericalVector(1536, 777L);
+        float[] queryEmbedding = createNormalizedSphericalVector(1024, 777L);
 
         // 构建一个包含 50 个节点、120 条边的局部复杂子图
         List<GraphRagSubgraphReasoner.EntityNode> nodes = new ArrayList<>();
         nodes.add(new GraphRagSubgraphReasoner.EntityNode("seed", "种子节点", "ROOT", queryEmbedding));
         for (int i = 1; i < 50; i++) {
-            nodes.add(new GraphRagSubgraphReasoner.EntityNode("n-" + i, "实体-" + i, "NODE", createNormalizedSphericalVector(1536, i)));
+            nodes.add(new GraphRagSubgraphReasoner.EntityNode("n-" + i, "实体-" + i, "NODE", createNormalizedSphericalVector(1024, i)));
         }
 
         List<GraphRagSubgraphReasoner.RelationEdge> edges = new ArrayList<>();
@@ -148,12 +148,12 @@ public class GraphRagSubgraphReasonerTest {
     void testDanglingAndIsolatedNodesDefense() {
         GraphRagSubgraphReasoner reasoner = new GraphRagSubgraphReasoner();
 
-        float[] queryEmbedding = createNormalizedSphericalVector(1536, 123L);
+        float[] queryEmbedding = createNormalizedSphericalVector(1024, 123L);
 
         // 极端场景：仅有一批孤立节点，毫无关系边
         List<GraphRagSubgraphReasoner.EntityNode> nodes = List.of(
                 new GraphRagSubgraphReasoner.EntityNode("iso-1", "孤立节点1", "ISO", queryEmbedding),
-                new GraphRagSubgraphReasoner.EntityNode("iso-2", "孤立节点2", "ISO", createNormalizedSphericalVector(1536, 2L))
+                new GraphRagSubgraphReasoner.EntityNode("iso-2", "孤立节点2", "ISO", createNormalizedSphericalVector(1024, 2L))
         );
 
         GraphRagSubgraphReasoner.SubgraphReasoningResult result = reasoner.reasonSubgraph(queryEmbedding, nodes, Collections.emptyList());

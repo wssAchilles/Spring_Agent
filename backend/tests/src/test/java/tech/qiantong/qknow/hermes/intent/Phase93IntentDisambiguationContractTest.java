@@ -30,7 +30,7 @@ public class Phase93IntentDisambiguationContractTest {
     }
 
     /**
-     * 辅助方法：生成归一化阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * 辅助方法：生成归一化阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
      */
     private float[] generateNormalizedQwenEmbedding(int seed) {
         float[] v = new float[HierarchicalIntentState.EXPECTED_DIMENSION];
@@ -87,7 +87,7 @@ public class Phase93IntentDisambiguationContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 2: 阿里千问 1536 维超球面单位向量强校验 (命题 2.1)")
+    @DisplayName("契约测试 2: 阿里千问 1024 维超球面单位向量强校验 (命题 2.1)")
     public void testHierarchicalIntentResolver_QwenEmbeddingDimensionValidation() {
         Map<String, String> modalityInputs = Map.of("natural_language", "测试输入");
 
@@ -99,7 +99,7 @@ public class Phase93IntentDisambiguationContractTest {
 
         // 场景 2: 模长非单位向量 (未归一化) 应抛出 IllegalArgumentException
         float[] unnormalizedEmbedding = new float[HierarchicalIntentState.EXPECTED_DIMENSION];
-        Arrays.fill(unnormalizedEmbedding, 1.0f); // 模长约为 sqrt(1536) ≈ 39.19
+        Arrays.fill(unnormalizedEmbedding, 1.0f); // 模长约为 sqrt(1024) ≈ 39.19
         assertThrows(IllegalArgumentException.class, () ->
                 intentResolver.resolveIntent("intent-err-2", modalityInputs, unnormalizedEmbedding)
         );

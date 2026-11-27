@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Phase 114 核心工程契约综合测试
- * 验证千问 1536 维超球面 MCP 工具动态语义投影、按需裁剪、虚拟线程断路器隔离与存证凭单 (定理 1.1 & 定理 1.2)
+ * 验证千问 1024 维超球面 MCP 工具动态语义投影、按需裁剪、虚拟线程断路器隔离与存证凭单 (定理 1.1 & 定理 1.2)
  */
 class McpToolGovernanceTest {
 
@@ -30,7 +30,7 @@ class McpToolGovernanceTest {
     @Test
     @DisplayName("Contract 1: 超球面向量 MIPS 检索与 Top-5 召回率验证 (定理 1.1)")
     void testHypersphereMipsTopKRetrievalContract() {
-        // 1. 模拟注册 50 个 1536 维超球面工具
+        // 1. 模拟注册 50 个 1024 维超球面工具
         int toolCount = 50;
         int dim = McpToolSemanticRetriever.EMBEDDING_DIM;
 
@@ -54,7 +54,7 @@ class McpToolGovernanceTest {
         // 4. 断言验证
         assertEquals(5, topK.size(), "Top-K 列表长度应为 5");
         assertEquals("mcp.service.target_sql_executor", topK.get(0), "与意图最匹配的目标工具应排在首位");
-        assertTrue(elapsedMs <= 15, "50 个 1536 维向量检索耗时应 <= 15ms (实际: " + elapsedMs + "ms)");
+        assertTrue(elapsedMs <= 15, "50 个 1024 维向量检索耗时应 <= 15ms (实际: " + elapsedMs + "ms)");
     }
 
     @Test

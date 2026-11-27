@@ -176,12 +176,12 @@ public class Phase25UltraScaleContractTest {
     @DisplayName("Contract 04: Fast-Pass 混合保真算子在 100 条候选下打分延迟严格 <= 5ms")
     void contract04_fastPassScorer_executionTimeStrictlyUnderFiveMs() {
         String query = "分布式向量数据库高可用热切换与一致性快照方案";
-        float[] queryEmbedding = generateMockEmbedding(1536, 0.8f);
+        float[] queryEmbedding = generateMockEmbedding(1024, 0.8f);
 
         int candidateCount = 100;
         List<RetrievalResult> candidates = new ArrayList<>(candidateCount);
         for (int i = 1; i <= candidateCount; i++) {
-            float[] candEmb = generateMockEmbedding(1536, 0.1f * (i % 8));
+            float[] candEmb = generateMockEmbedding(1024, 0.1f * (i % 8));
             Map<String, Object> meta = new HashMap<>();
             meta.put("embedding", candEmb);
 
@@ -215,7 +215,7 @@ public class Phase25UltraScaleContractTest {
     @DisplayName("Contract 05: Fast-Pass 粗排降维至 Top-20 时，Top-10 高相关文档召回率 >= 90%")
     void contract05_fastPassScorer_retainsHighRelevanceCandidates() {
         String query = "PostgreSQL pgvector HNSW 并发热切换索引";
-        float[] queryEmbedding = generateMockEmbedding(1536, 0.95f);
+        float[] queryEmbedding = generateMockEmbedding(1024, 0.95f);
 
         int candidateCount = 100;
         List<RetrievalResult> candidates = new ArrayList<>(candidateCount);
@@ -239,7 +239,7 @@ public class Phase25UltraScaleContractTest {
 
         // 构造 90 条噪点干扰切片 (低向量相似度 + 无关词汇)
         for (int i = 11; i <= candidateCount; i++) {
-            float[] noiseEmb = generateMockEmbedding(1536, 0.05f);
+            float[] noiseEmb = generateMockEmbedding(1024, 0.05f);
             Map<String, Object> meta = new HashMap<>();
             meta.put("embedding", noiseEmb);
 
@@ -302,13 +302,13 @@ public class Phase25UltraScaleContractTest {
     @DisplayName("Contract 07: 两阶段级联模式相比全量 100 条精排，精排输入规模削减 80%，延迟大幅降低")
     void contract07_twoStageCascadeRerank_latencyReductionOverSeventyPercent() {
         String query = "阿里千问向量嵌入与深度推理模型蒸馏";
-        float[] queryEmb = generateMockEmbedding(1536, 0.7f);
+        float[] queryEmb = generateMockEmbedding(1024, 0.7f);
 
         int candidateCount = 100;
         List<RetrievalResult> candidates = new ArrayList<>(candidateCount);
         for (int i = 1; i <= candidateCount; i++) {
             Map<String, Object> meta = new HashMap<>();
-            meta.put("embedding", generateMockEmbedding(1536, 0.1f * (i % 9)));
+            meta.put("embedding", generateMockEmbedding(1024, 0.1f * (i % 9)));
             candidates.add(RetrievalResult.builder()
                     .segmentId((long) (4000 + i))
                     .content("深度学习模型加速与蒸馏论文切片 " + i)

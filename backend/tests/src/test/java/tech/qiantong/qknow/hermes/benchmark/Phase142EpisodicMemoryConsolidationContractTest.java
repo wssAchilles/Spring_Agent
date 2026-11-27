@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * (Multi-Agent Hierarchical Episodic Memory Consolidation, Forgetting Pruning & Reflective Deductive Metacenter)
  * <p>
  * 经过三方 ESWA 顶刊专业智能体（理论专审员、实证专审员、工业管理专审员）法医级交叉审计与裁决重构：
- * 1. 阿里千问 1536 维增量超球面聚类：单点测地保真度 min_i <v_i, c_k> >= 0.80 (Lemma 142.1)，压缩率 >= 80.0%，巩固耗时 <= 3.0ms (TC-142-1)
+ * 1. 阿里千问 1024 维增量超球面聚类：单点测地保真度 min_i <v_i, c_k> >= 0.80 (Lemma 142.1)，压缩率 >= 80.0%，巩固耗时 <= 3.0ms (TC-142-1)
  * 2. 对数阻尼艾宾浩斯衰减计算：零点无损、饱和对数访问强化与双曲因果度有界归一化 (TC-142-2)
  * 3. 破除同义反复漏洞：10 条端到端因果决策 DAG 链连通保持率 (CRR) >= 95.0%，修剪耗时 <= 2.0ms (TC-142-3)
  * 4. 跨轮次高阶反思元规则沉淀与全量因果溯源指针检验 (TC-142-4)
@@ -38,21 +38,21 @@ public class Phase142EpisodicMemoryConsolidationContractTest {
     private final AdaptiveEpisodicForgettingPruner pruner = new AdaptiveEpisodicForgettingPruner();
 
     /**
-     * 辅助工具：生成指定基向量带有微小扰动的 1536 维超球面单位向量
+     * 辅助工具：生成指定基向量带有微小扰动的 1024 维超球面单位向量
      */
     private double[] createPerturbedEmbedding(int seedTopic, double perturbationRatio) {
-        double[] vec = new double[1536];
-        int baseIdx = Math.abs(seedTopic * 31) % 1536;
+        double[] vec = new double[1024];
+        int baseIdx = Math.abs(seedTopic * 31) % 1024;
         vec[baseIdx] = 1.0;
         Random rng = new Random(seedTopic * 1000L);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] += (rng.nextDouble() - 0.5) * perturbationRatio;
         }
         return HierarchicalEpisodicMemoryConsolidator.normalizeVector(vec);
     }
 
     // =========================================================================
-    // TC-142-1: 千问 1536 维增量超球面聚类与保真度引理检验
+    // TC-142-1: 千问 1024 维增量超球面聚类与保真度引理检验
     // =========================================================================
     @Test
     @DisplayName("TC-142-1: 增量超球面谱聚类：质心单位模长、单点余弦相似度 >= 0.80 (Lemma 142.1)，压缩率 >= 80.0%，单次巩固耗时 <= 3.0ms")
