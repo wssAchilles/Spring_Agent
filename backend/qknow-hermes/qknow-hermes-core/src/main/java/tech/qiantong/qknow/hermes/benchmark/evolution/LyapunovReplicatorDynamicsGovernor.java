@@ -10,7 +10,7 @@ import java.util.Arrays;
  * <p>
  * 落实 Lemma 151.1 (超球面多智能体复制动态李雅普诺夫收敛引理)：
  * 1. 将参与辩论/协同决策的多智能体信念分布投影至超球面离散单形（Simplex: \sum x_i = 1.0）；
- * 2. 结合千问 1536 维超球面测地线内积 A_ij = u_i · v_j 构建适应度收益矩阵，驱动复制动态方程离散差分更新；
+ * 2. 结合千问 1024 维超球面测地线内积 A_ij = u_i · v_j 构建适应度收益矩阵，驱动复制动态方程离散差分更新；
  * 3. 构造相对熵（Kullback-Leibler 散度）李雅普诺夫能量函数 V(x) = \sum x_i^* ln(x_i^* / x_i)；
  * 4. 证明 \Delta V <= 0 时系统必然在严格有界步数（硬上限 <= 6 轮）内指数级收敛至演化稳定策略 (ESS) 不动点，
  *    彻底终结 AutoGen 等传统框架在多智能体对抗时的死循环振荡缺陷。
@@ -58,7 +58,7 @@ public class LyapunovReplicatorDynamicsGovernor {
      *
      * @param agentIds 参与智能体标识数组
      * @param initialDistribution 初始信念权重分布 (长度为 N，必须非负且将被归一化)
-     * @param payoffMatrix 收益矩阵 (N x N，基于千问 1536D 超球面余弦内积 A_ij = v_i · v_j)
+     * @param payoffMatrix 收益矩阵 (N x N，基于千问 1024D 超球面余弦内积 A_ij = v_i · v_j)
      * @param targetEssDistribution 目标演化稳定策略 (用于计算相对熵能量，若为 null 则以均匀分布作为无偏先验)
      * @return 演化收敛结果凭单
      */

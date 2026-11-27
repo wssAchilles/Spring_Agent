@@ -11,7 +11,7 @@ import java.util.Objects;
  * Phase 152 超球面因果后门截断与反事实反思算子 (Hyperspherical Causal Counterfactual Reflector)
  * <p>
  * 落实 Lemma 152.1 (超球面因果后门截断与反事实反思无偏性引理)：
- * 1. 严格锁定阿里千问 1536 维超球面单位向量空间（||v||_2 = 1.0，cos\theta = u · v）；
+ * 1. 严格锁定阿里千问 1024 维超球面单位向量空间（||v||_2 = 1.0，cos\theta = u · v）；
  * 2. 建立多智能体因果有向图 X -> Y 与后门混杂通路 X <- Z -> Y，提取混杂因子空间 S_Z；
  * 3. 构造正交补投影算子 P_Z^\perp = I - U_Z U_Z^\top，执行去混杂映射 \tilde{x} = P_Z^\perp x / ||P_Z^\perp x||_2，
  *    严格满足 \langle \tilde{x}, z \rangle = 0，从代数几何根源阻断外部偶发偏置向反思归因的渗透；
@@ -27,7 +27,7 @@ public class HypersphericalCausalCounterfactualReflector {
 
     private static final Logger log = LoggerFactory.getLogger(HypersphericalCausalCounterfactualReflector.class);
 
-    public static final int DIMENSIONS = 1536;
+    public static final int DIMENSIONS = 1024;
     private static final double EPSILON = 1e-9;
 
     /**
@@ -43,7 +43,7 @@ public class HypersphericalCausalCounterfactualReflector {
             Objects.requireNonNull(agentId, "agentId 不能为空");
             Objects.requireNonNull(actionEmbedding, "actionEmbedding 不能为空");
             if (actionEmbedding.length != DIMENSIONS) {
-                throw new IllegalArgumentException("actionEmbedding 必须为 1536 维，实际: " + actionEmbedding.length);
+                throw new IllegalArgumentException("actionEmbedding 必须为 1024 维，实际: " + actionEmbedding.length);
             }
         }
     }
@@ -65,7 +65,7 @@ public class HypersphericalCausalCounterfactualReflector {
      *
      * @param trajectory 观测轨迹 (包含原始动作与混杂因子)
      * @param confounderPool 混杂特征池 (表征外部网络、提示词共现、先验偏见)
-     * @param counterfactualAction 反事实备选动作向量 (1536 维单位向量)
+     * @param counterfactualAction 反事实备选动作向量 (1024 维单位向量)
      * @return 无偏反事实纠偏结果
      */
     public CounterfactualAdjustment reflectAndAdjust(
@@ -76,7 +76,7 @@ public class HypersphericalCausalCounterfactualReflector {
         Objects.requireNonNull(trajectory, "trajectory 不能为空");
         Objects.requireNonNull(counterfactualAction, "counterfactualAction 不能为空");
         if (counterfactualAction.length != DIMENSIONS) {
-            throw new IllegalArgumentException("counterfactualAction 必须为 1536 维");
+            throw new IllegalArgumentException("counterfactualAction 必须为 1024 维");
         }
 
         float[] xObs = trajectory.actionEmbedding();
@@ -134,7 +134,7 @@ public class HypersphericalCausalCounterfactualReflector {
     }
 
     /**
-     * 将 1536 维向量正交投影至混杂特征 Z 的正交补空间，并重归一化至单位超球面
+     * 将 1024 维向量正交投影至混杂特征 Z 的正交补空间，并重归一化至单位超球面
      */
     public float[] projectOrthogonalToConfounder(float[] vector, float[] confounder) {
         double dot = computeDotProduct(vector, confounder);
