@@ -8,7 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * 阿里千问 1536 维超球面工具语义动态路由过滤算子 (ToolRagFilter)
+ * 阿里千问 1024 维超球面工具语义动态路由过滤算子 (ToolRagFilter)
  * 执行内存级测地大圆弧距离极速扫描，单次耗时 <= 2ms
  * 动态召回 Top-5 工具并抑制注意力稀释与幻觉误选
  */

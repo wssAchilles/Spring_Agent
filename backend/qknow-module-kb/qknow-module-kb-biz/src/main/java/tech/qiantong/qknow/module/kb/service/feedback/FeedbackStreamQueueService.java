@@ -21,9 +21,12 @@ public class FeedbackStreamQueueService {
 
     private static final int QUEUE_CAPACITY = 10_000;
     private static final int DEFAULT_BATCH_SIZE = 100;
+    private static final int ARCHIVE_RING_CAPACITY = 1024;
 
     private final BlockingQueue<KbChatFeedbackDO> bufferQueue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
-    private final List<KbChatFeedbackDO> inMemoryArchive = new CopyOnWriteArrayList<>();
+    // 定长有界环形冷备队列，消除无界 CopyOnWriteArrayList 写放大与 OOM 风险
+    private final Deque<KbChatFeedbackDO> inMemoryArchive = new ConcurrentLinkedDeque<>();
+    private final java.util.concurrent.atomic.AtomicInteger archiveSize = new java.util.concurrent.atomic.AtomicInteger(0);
     private final AtomicLong totalEnqueued = new AtomicLong(0);
     private final AtomicLong totalFlushed = new AtomicLong(0);
 
@@ -67,7 +70,13 @@ public class FeedbackStreamQueueService {
         boolean offered = bufferQueue.offer(feedback);
         if (offered) {
             totalEnqueued.incrementAndGet();
-            inMemoryArchive.add(feedback);
+            inMemoryArchive.addLast(feedback);
+            while (archiveSize.incrementAndGet() > ARCHIVE_RING_CAPACITY) {
+                if (inMemoryArchive.pollFirst() != null) {
+                    archiveSize.decrementAndGet();
+                }
+                break;
+            }
         } else {
             log.error("反馈缓冲区已满 (capacity={}), 触发限流丢弃: msgId={}", QUEUE_CAPACITY, feedback.getMessageId());
         }
@@ -129,6 +138,7 @@ public class FeedbackStreamQueueService {
     public void clearForTest() {
         bufferQueue.clear();
         inMemoryArchive.clear();
+        archiveSize.set(0);
         totalEnqueued.set(0);
         totalFlushed.set(0);
     }

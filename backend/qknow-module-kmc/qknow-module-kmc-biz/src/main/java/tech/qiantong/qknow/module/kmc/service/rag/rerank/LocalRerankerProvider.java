@@ -136,8 +136,9 @@ public class LocalRerankerProvider implements RerankerProvider {
                     .method("HEAD", HttpRequest.BodyPublishers.noBody())
                     .timeout(Duration.ofSeconds(2))
                     .build();
-            HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-            return true;
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            // 校验 HTTP 状态码位于 2xx/3xx 区间，避免 404/405/500 错误被误判为存活
+            return response.statusCode() >= 200 && response.statusCode() < 400;
         } catch (Exception e) {
             return false;
         }

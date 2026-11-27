@@ -3,6 +3,7 @@ package tech.qiantong.qknow.module.kmc.service.rag.advanced.dto;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -107,6 +108,9 @@ public record GraphRagExecutionReceipt(
         }
         String expected = computeSignature(receiptId, sessionId, queryText, expandedParentCount,
                 subgraphNodeCount, pprTopScore, playbackJitterVariance, latencyUs, busStatus);
-        return signature.equalsIgnoreCase(expected);
+        // 使用常量时间比对校验 GraphRAG 执行凭单签名
+        return MessageDigest.isEqual(
+                signature.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                expected.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 }

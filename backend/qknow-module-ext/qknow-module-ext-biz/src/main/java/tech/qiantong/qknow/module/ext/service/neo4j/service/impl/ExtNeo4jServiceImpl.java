@@ -240,15 +240,23 @@ public class ExtNeo4jServiceImpl implements ExtNeo4jService {
      * @param attributeKey
      * @return
      */
+    private static String sanitizeCypherIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank() || !identifier.matches("^[\\p{L}_][\\p{L}\\p{N}_]*$")) {
+            throw new IllegalArgumentException("非法的图谱标识符: " + identifier);
+        }
+        return identifier;
+    }
+
     @Override
     public AjaxResult deleteNodeAttribute(Long taskId, Integer extractType, String tableName, Integer dataId, String attributeKey) {
-        String nodeQuery = "MATCH (n:ExtExtraction) " +
+        String safeAttributeKey = sanitizeCypherIdentifier(attributeKey);
+        String nodeQuery = "MATCH (n:DynamicEntity) " +
                 "WHERE n.task_id = $task_id AND n.entity_type = $extract_type AND n.table_name = $table_name AND n.data_id = $data_id " +
-                "REMOVE n." + attributeKey + " " +
+                "REMOVE n." + safeAttributeKey + " " +
                 "RETURN n";
         ConcurrentHashMap<String, Object> startParams = new ConcurrentHashMap<>();
         startParams.put("task_id", taskId);
-        startParams.put("entity_type", extractType);
+        startParams.put("extract_type", extractType);
         startParams.put("table_name", tableName);
         startParams.put("data_id", dataId);
         neo4jClient.query(nodeQuery)
@@ -259,9 +267,6 @@ public class ExtNeo4jServiceImpl implements ExtNeo4jService {
 
     /**
      * 删除关系
-     *
-     * @param relationshipId
-     * @return
      */
     @Override
     public AjaxResult deleteRelationship(Long relationshipId) {
@@ -270,24 +275,21 @@ public class ExtNeo4jServiceImpl implements ExtNeo4jService {
     }
 
     /**
-     * 修改关系
-     *
-     * @param
-     * @param
-     * @return
+     * 修改关系（参数化关系 ID 并对关系类型名施加白名单校验防 Cypher 注入）
      */
     @Override
     public AjaxResult updateRelationship(ExtNeo4j.UpdateRelationship updateRelationship) {
-        String deleteQuery = "MATCH ()-[r]->() " +
-                "WHERE ID(r) = " + updateRelationship.getRelationshipId() + " " +
-                "DELETE r";
-        neo4jClient.query(deleteQuery).run();
+        String safeRelType = sanitizeCypherIdentifier(updateRelationship.getRelationship());
+        String deleteQuery = "MATCH ()-[r]->() WHERE ID(r) = $relId DELETE r";
+        neo4jClient.query(deleteQuery)
+                .bind(updateRelationship.getRelationshipId()).to("relId")
+                .run();
 
         if (Integer.valueOf(1).equals(updateRelationship.getExtractType())) {
-            //结构化抽取三元组关系添加
-            String createRelationshipQuery = "MATCH (n:ExtExtraction {data_id: $startId, task_id: $task_id, table_name: $startTableName}), " +
-                    "(m:ExtExtraction {data_id: $endId, task_id: $task_id, table_name: $endTableName}) " +
-                    "MERGE (n)-[r:" + updateRelationship.getRelationship() + "]->(m) " +
+            // 结构化抽取三元组关系添加
+            String createRelationshipQuery = "MATCH (n:DynamicEntity {data_id: $startId, task_id: $task_id, table_name: $startTableName}), " +
+                    "(m:DynamicEntity {data_id: $endId, task_id: $task_id, table_name: $endTableName}) " +
+                    "MERGE (n)-[r:" + safeRelType + "]->(m) " +
                     "ON CREATE SET r.task_id = $task_id " +
                     "RETURN r, ID(r) AS relationshipId;";
             ConcurrentHashMap<String, Object> relationshipParams = new ConcurrentHashMap<>();
@@ -296,15 +298,14 @@ public class ExtNeo4jServiceImpl implements ExtNeo4jService {
             relationshipParams.put("startTableName", updateRelationship.getStartTableName());
             relationshipParams.put("endTableName", updateRelationship.getEndTableName());
             relationshipParams.put("task_id", updateRelationship.getTaskId());
-            // 执行创建关系查询
             neo4jClient.query(createRelationshipQuery)
                     .bindAll(relationshipParams)
                     .run();
         } else if (Integer.valueOf(2).equals(updateRelationship.getExtractType())) {
-            //非结构化抽取三元组关系添加
-            String query = "MATCH (a:ExtExtraction), (b:ExtExtraction) " +
+            // 非结构化抽取三元组关系添加
+            String query = "MATCH (a:DynamicEntity), (b:DynamicEntity) " +
                     "WHERE ID(a) = $startId AND ID(b) = $endId " +
-                    "MERGE (a)-[r:" + updateRelationship.getRelationship() + "]->(b) " +
+                    "MERGE (a)-[r:" + safeRelType + "]->(b) " +
                     "ON CREATE SET r.task_id = $task_id " +
                     "RETURN r, ID(r) AS relationshipId;";
             ConcurrentHashMap<String, Object> relationshipParams = new ConcurrentHashMap<>();

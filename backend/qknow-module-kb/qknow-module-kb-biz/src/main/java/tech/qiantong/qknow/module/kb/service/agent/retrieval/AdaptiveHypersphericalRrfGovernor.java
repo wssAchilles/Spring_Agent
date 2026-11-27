@@ -12,10 +12,10 @@ import java.util.*;
  * 自适应意图超球面 RRF 重排与熵感知门控器 (Adaptive Hyperspherical RRF Governor)
  * <p>
  * 遵循系统工程总纲 (AGENTS.md) 几何与检索基线：
- * 1. 唯一向量模型基线：阿里千问 1536 维超球面单位向量空间 (||v||_2 = 1.0，余弦相似度 cos\theta = u \cdot v)；
+ * 1. 唯一向量模型基线：阿里千问 1024 维超球面单位向量空间 (||v||_2 = 1.0，余弦相似度 cos\theta = u \cdot v)；
  * 2. 意图语义熵动态加权：根据用户 Query 的文本特征与信息熵动态调制 \alpha 权重：
  *    - 针对罕见专有名词、错误码、数字编号等低熵高特异性查询，自动偏向 Sparse 全文匹配；
- *    - 针对长难句、抽象概念等高熵语义查询，自动偏向 Dense 1536 维超球面向量语义；
+ *    - 针对长难句、抽象概念等高熵语义查询，自动偏向 Dense 1024 维超球面向量语义；
  * 3. 超球面几何二次校准：结合余弦保真度动态调制最终排名；
  * 4. 纯 Java 21 Record 格式审计凭单，内嵌 SHA-256 常量时间自验真。
  * </p>
@@ -27,7 +27,7 @@ import java.util.*;
 @Component
 public class AdaptiveHypersphericalRrfGovernor {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double DEFAULT_RRF_K = 60.0;
     public static final double VECTOR_NORM_TOLERANCE = 1e-4;
 
@@ -122,7 +122,7 @@ public class AdaptiveHypersphericalRrfGovernor {
     }
 
     /**
-     * 校验 1536 维超球面单位向量归一化约束 (||v||_2 = 1.0)
+     * 校验 1024 维超球面单位向量归一化约束 (||v||_2 = 1.0)
      */
     public boolean validateHypersphericalNorm(float[] vector) {
         if (vector == null || vector.length != EMBEDDING_DIM) {
@@ -156,8 +156,8 @@ public class AdaptiveHypersphericalRrfGovernor {
      * @param query       用户查询
      * @param denseRanked 向量通道候选列表 (顺序代表初排位次)
      * @param sparseRanked 关键字全文检索候选列表 (顺序代表初排位次)
-     * @param queryVec    Query 1536 维向量 (可选)
-     * @param chunkVectors 切片向量映射 (chunkId -> 1536 维向量，可选)
+     * @param queryVec    Query 1024 维向量 (可选)
+     * @param chunkVectors 切片向量映射 (chunkId -> 1024 维向量，可选)
      * @param topK        最终选取的候选数量
      * @return 排序后的切片列表与审计凭单
      */

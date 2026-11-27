@@ -60,13 +60,16 @@ pub extern "system" fn Java_tech_qiantong_qknow_module_kmc_service_rag_nlp_Jieba
     _class: JClass,
     input: JString,
 ) -> jobjectArray {
-    let text: String = match env.get_string(&input) {
-        Ok(text) => text.into(),
-        Err(_) => return empty_string_array(&mut env),
-    };
-    let words = JIEBA.cut(&text, false); // 精确模式
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let text: String = match env.get_string(&input) {
+            Ok(text) => text.into(),
+            Err(_) => return empty_string_array(&mut env),
+        };
+        let words = JIEBA.cut(&text, false); // 精确模式
 
-    string_array(&mut env, words.iter().copied())
+        string_array(&mut env, words.iter().copied())
+    }))
+    .unwrap_or(ptr::null_mut())
 }
 
 /// JNI 接口：中文分词 + 词性标注
@@ -77,15 +80,18 @@ pub extern "system" fn Java_tech_qiantong_qknow_module_kmc_service_rag_nlp_Jieba
     _class: JClass,
     input: JString,
 ) -> jobjectArray {
-    let text: String = match env.get_string(&input) {
-        Ok(text) => text.into(),
-        Err(_) => return empty_string_array(&mut env),
-    };
-    let tags = JIEBA.tag(&text, false);
-    let tagged: Vec<String> = tags
-        .iter()
-        .map(|tag| format!("{}|{}", tag.word, tag.tag))
-        .collect();
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let text: String = match env.get_string(&input) {
+            Ok(text) => text.into(),
+            Err(_) => return empty_string_array(&mut env),
+        };
+        let tags = JIEBA.tag(&text, false);
+        let tagged: Vec<String> = tags
+            .iter()
+            .map(|tag| format!("{}|{}", tag.word, tag.tag))
+            .collect();
 
-    string_array(&mut env, tagged.iter().map(String::as_str))
+        string_array(&mut env, tagged.iter().map(String::as_str))
+    }))
+    .unwrap_or(ptr::null_mut())
 }

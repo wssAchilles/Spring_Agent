@@ -3,6 +3,7 @@ package tech.qiantong.qknow.module.kmc.service.rag.evolution.dto;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 
 /**
  * 不可变知识图谱演化密码学存证凭单 (命题 2.1)
@@ -39,10 +40,17 @@ public record KnowledgeEvolutionReceipt(
     }
 
     public boolean verifySignature() {
+        if (signature == null || signature.isEmpty()) {
+            return false;
+        }
         String rawData = receiptId + "|" + sessionId + "|" + alignedEntityCount + "|" +
                 resolvedConflictCount + "|" + ontologyContractionRatio + "|" + elapsedMicros + "|" +
                 busStatus + "|" + timestamp;
-        return computeSha256(rawData).equalsIgnoreCase(signature);
+        String expected = computeSha256(rawData);
+        // 使用常量时间比对校验知识演化凭单签名
+        return MessageDigest.isEqual(
+                expected.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                signature.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     private static String computeSha256(String data) {

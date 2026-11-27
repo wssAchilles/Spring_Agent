@@ -61,6 +61,11 @@ public class RuntimeContextBO {
 
     private Flux<CommonResult<String>> resultFlux;
 
+    /**
+     * Step Journal 全局执行轨迹 ID（用于跨进程 PG 增量日志与时间旅行追溯）
+     */
+    private String stepJournalExecutionId;
+
     public RuntimeContextBO(KbRuntimeDO runtimeDO, JSONObject variables) {
         this.runtimeDO = runtimeDO;
         this.variables = variables;

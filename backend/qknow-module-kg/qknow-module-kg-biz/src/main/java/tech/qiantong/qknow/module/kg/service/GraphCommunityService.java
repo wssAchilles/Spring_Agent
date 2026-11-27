@@ -85,20 +85,32 @@ public class GraphCommunityService {
     }
 
     /**
+     * 严格校验工作区标识符，阻断 GDS 投影查询中的 Cypher 注入
+     */
+    private String sanitizeWorkspaceId(String workspaceId) {
+        if (workspaceId == null || !workspaceId.matches("^[a-zA-Z0-9_-]{1,64}$")) {
+            throw new IllegalArgumentException("非法的 workspaceId 格式: " + workspaceId);
+        }
+        return workspaceId;
+    }
+
+    /**
      * 执行 Leiden 社区检测
      * 使用 Neo4j GDS 库的 leiden 算法
      */
     public List<Community> detectCommunities(String workspaceId) {
-        String graphName = "community-graph-" + workspaceId;
+        String safeWorkspaceId = sanitizeWorkspaceId(workspaceId);
+        String cypherWsLiteral = safeWorkspaceId.matches("^\\d+$") ? safeWorkspaceId : "'" + safeWorkspaceId + "'";
+        String graphName = "community-graph-" + safeWorkspaceId;
         try (Session session = driver.session()) {
-            // 1. 创建投影图（仅包含有效实体和关系）
+            // 1. 创建投影图（仅包含有效实体和关系，已通过白名单校验杜绝注入）
             session.run("""
                 CALL gds.graph.project.cypher(
                     '%s',
                     'MATCH (n:KgNode) WHERE n.workspace_id = %s AND n.del_flag = 0 RETURN id(n) AS id, labels(n) AS labels',
                     'MATCH (a:KgNode)-[r:KgEdge]->(b:KgNode) WHERE a.workspace_id = %s AND b.workspace_id = %s RETURN id(a) AS source, id(b) AS target, type(r) AS type'
                 )
-                """.formatted(graphName, workspaceId, workspaceId, workspaceId));
+                """.formatted(graphName, cypherWsLiteral, cypherWsLiteral, cypherWsLiteral));
 
             // 2. 执行 Leiden 算法
             // 首先将有向图转为无向边，因为 Leiden 要求无向图

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 /**
  * 两阶段 MCP 工具流形裁剪路由引擎 (TwoStageToolManifoldRouter)
- * 阶段一: 阿里千问 1536 维超球面测地线语义初筛 (Top-10)
+ * 阶段一: 阿里千问 1024 维超球面测地线语义初筛 (Top-10)
  * 阶段二: 参数槽位满足度与前置依赖 DAG 拓扑动态剪枝 (Top-3~5)
  */
 public class TwoStageToolManifoldRouter {
@@ -33,7 +33,7 @@ public class TwoStageToolManifoldRouter {
     }
 
     /**
-     * 阶段一: 基于千问 1536 维超球面余弦内积快速语义初筛 (零对象分配原生插入排序)
+     * 阶段一: 基于千问 1024 维超球面余弦内积快速语义初筛 (零对象分配原生插入排序)
      */
     public List<McpToolDescriptor> filterByEmbedding(double[] queryVec, int topK) {
         if (queryVec == null || topK <= 0) {

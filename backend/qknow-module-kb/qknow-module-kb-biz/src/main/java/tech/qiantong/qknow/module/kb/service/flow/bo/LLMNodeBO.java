@@ -76,13 +76,15 @@ public class LLMNodeBO extends BaseNodeBO {
         }
 
         if (stream) {
-            Map<String, Flux<String>> fluxMap = context.getFluxMap();
-            if (Objects.isNull(fluxMap)) {
-                fluxMap = new HashMap<>();
-            }
             Flux<String> flux = chatModel.stream(messageArray);
-            fluxMap.put(nodeDefinition.getUuid(), flux);
-            context.setFluxMap(fluxMap);
+            synchronized (context) {
+                Map<String, Flux<String>> fluxMap = context.getFluxMap();
+                if (Objects.isNull(fluxMap)) {
+                    fluxMap = new java.util.concurrent.ConcurrentHashMap<>();
+                    context.setFluxMap(fluxMap);
+                }
+                fluxMap.put(nodeDefinition.getUuid(), flux);
+            }
         } else {
             String call = chatModel.call(messageArray);
             outSb.append(call);

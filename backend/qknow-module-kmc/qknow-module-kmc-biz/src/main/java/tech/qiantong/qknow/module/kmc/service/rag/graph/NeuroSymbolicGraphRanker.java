@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * 双层神经符号图重排器接口 (GraphRAG 2.0)
- * 整合千问 1536 维超球面种子实体检索、神经符号门控剪枝与 Banach 不动点 PPR 扩散
+ * 整合千问 1024 维超球面种子实体检索、神经符号门控剪枝与 Banach 不动点 PPR 扩散
  */
 public interface NeuroSymbolicGraphRanker {
 

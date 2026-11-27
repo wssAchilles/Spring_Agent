@@ -56,7 +56,7 @@ public class TwoStageCascadeRerankEngine {
      *
      * @param query             用户查询
      * @param candidates        粗排候选列表 (例如 Top-100)
-     * @param queryEmbedding    1536 维向量
+     * @param queryEmbedding    1024 维向量
      * @param isTopConsensus    是否达成多路首位共识 (Phase 07 门控信号)
      * @param topMargin         多路融合前两位分值差
      * @param finalTopK         最终目标返回 Top-K 数量

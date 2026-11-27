@@ -74,6 +74,18 @@ public class KbFlowServiceImpl implements IKbFlowService {
     @Autowired(required = false)
     private DagCheckpointManager dagCheckpointManager;
 
+    @Autowired(required = false)
+    private tech.qiantong.qknow.hermes.flow.stategraph.journal.PgStepJournalStateCheckpointer pgStepJournalStateCheckpointer;
+
+    @Autowired(required = false)
+    private tech.qiantong.qknow.hermes.memory.bitemporal.BiTemporalHippocampalGraphEngine biTemporalHippocampalGraphEngine;
+
+    @Autowired(required = false)
+    private tech.qiantong.qknow.hermes.transaction.frontier.FrontierGatedToolTransactionManager frontierGatedToolTransactionManager;
+
+    private final java.util.concurrent.atomic.AtomicLong dagFencingSequence =
+            new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis());
+
     private final ExecutorService dagExecutorService = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
@@ -130,22 +142,16 @@ public class KbFlowServiceImpl implements IKbFlowService {
         RuntimeContextBO runtimeContext = runtimeService.createRuntimeContext(kbFlowBO, input);
         runtimeContext.setBotType(BotTypeEnums.WORK_FLOW);
         runtimeContext.setExecuteMode(BotExecuteModeEnum.STREAM);
+        String journalExecId = resolveOrInitStepJournalExecutionId(runtimeContext, kbFlowBO);
         textExecuteFlow(kbFlowBO, runtimeContext);
-//        Flux<CommonResult<String>> resultFlux = runtimeContext.getResultFlux();
-//        // 添加一条总的数据
-//        Mono<CommonResult<String>> map = resultFlux
-//                .map(CommonResult::getData)
-//                .collectList()
-//                .map(this::margeOutPut)
-//                .map(CommonResult::success);
-//        runtimeContext.setResultFlux(Flux.concat(resultFlux, map));
         Flux<CommonResult<String>> resultFlux = runtimeContext.getResultFlux();
         if (resultFlux == null) {
             String errorMsg = runtimeContext.getRuntimeDO() != null ? runtimeContext.getRuntimeDO().getOutput() : null;
             String msg = (errorMsg != null && !errorMsg.isEmpty()) ? errorMsg : "工作流执行失败，未产生回复";
             return Flux.just(CommonResult.error(new ServiceException(msg, 500)));
         }
-        Flux<CommonResult<String>> started = Flux.just(CommonResult.success("{\"event\":\"started\",\"text\":\"\"}"));
+        String startedPayload = "{\"event\":\"started\",\"text\":\"\",\"executionId\":\"" + journalExecId + "\"}";
+        Flux<CommonResult<String>> started = Flux.just(CommonResult.success(startedPayload));
         return Flux.concat(started, resultFlux).onErrorResume(throwable ->
                 Flux.just(CommonResult.error(new ServiceException("大模型调用异常: " + throwable.getMessage(), 500))));
     }
@@ -163,6 +169,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
         RuntimeContextBO runtimeContext = runtimeService.createRuntimeContext(kbFlowBO, input);
         runtimeContext.setExecuteMode(BotExecuteModeEnum.STREAM);
         runtimeContext.setBotType(BotTypeEnums.CHAT_FLOW);
+        resolveOrInitStepJournalExecutionId(runtimeContext, kbFlowBO);
         if (Objects.nonNull(messageArray) && messageArray.size() > 0) {
             List<Message> messageList = new ArrayList<>(messageArray.size());
             for (int i = 0; i < messageArray.size(); i++) {
@@ -325,6 +332,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
                                                          int startGroupIndex,
                                                          Map<String, NodeRunResultBO> initialResultMap) {
         log.info("[DAG 调度器] 开始执行工作流, botId={}, isTestMode={}, startGroupIndex={}", flowBO.getBotId(), isTestMode, startGroupIndex);
+        resolveOrInitStepJournalExecutionId(runtimeContext, flowBO);
         // 校验工作流基本结构
         validateWorkflow(flowBO);
 
@@ -702,6 +710,7 @@ public class KbFlowServiceImpl implements IKbFlowService {
         if (!isTestMode) {
             runtimeService.saveRuntimeNode(nodeResult, runtimeContext);
         }
+        recordDagNodeToStepJournal(runtimeContext, null, nodeResult);
 
         // 3. 若为条件网关节点（产出了选中的后继分支），递归计算未选中的后继子图并加入剪枝集合
         if (nodeResult.getNextNodeIds() != null) {
@@ -854,6 +863,57 @@ public class KbFlowServiceImpl implements IKbFlowService {
             }
         } catch (Exception e) {
             log.warn("[DAG 调度器] 写入 Redis 审批待办异常: {}", e.getMessage());
+        }
+    }
+
+    private String resolveOrInitStepJournalExecutionId(RuntimeContextBO runtimeContext, KbFlowBO flowBO) {
+        if (runtimeContext == null) {
+            return "flow-unknown-" + System.currentTimeMillis();
+        }
+        String existing = runtimeContext.getStepJournalExecutionId();
+        if (existing != null && !existing.isBlank()) {
+            return existing;
+        }
+        String generated;
+        if (runtimeContext.getRuntimeDO() != null && runtimeContext.getRuntimeDO().getId() != null) {
+            generated = "flow-" + runtimeContext.getRuntimeDO().getId();
+        } else {
+            Long botId = flowBO != null ? flowBO.getBotId() : 0L;
+            generated = "debug-bot-" + botId + "-" + System.currentTimeMillis();
+        }
+        runtimeContext.setStepJournalExecutionId(generated);
+        return generated;
+    }
+
+    private void recordDagNodeToStepJournal(RuntimeContextBO runtimeContext, KbFlowBO flowBO, NodeRunResultBO nodeResult) {
+        if (pgStepJournalStateCheckpointer == null || runtimeContext == null || nodeResult == null) {
+            return;
+        }
+        try {
+            String execId = resolveOrInitStepJournalExecutionId(runtimeContext, flowBO);
+            int step = nodeResult.getStep() != null ? nodeResult.getStep() : 1;
+            String nodeId = nodeResult.getNodeUuid() != null ? nodeResult.getNodeUuid() : ("step_" + step);
+            long fencing = dagFencingSequence.incrementAndGet();
+            String idemKey = "dag-" + execId + "-" + nodeId + "-s" + step;
+            Map<String, Object> delta = new LinkedHashMap<>();
+            delta.put("nodeName", nodeResult.getNodeName() != null ? nodeResult.getNodeName() : nodeId);
+            delta.put("status", String.valueOf(nodeResult.getStatus()));
+            if (nodeResult.getDuration() != null) {
+                delta.put("durationMs", nodeResult.getDuration());
+            }
+            if (nodeResult.getOutput() != null) {
+                delta.put("outputKeys", nodeResult.getOutput().keySet().stream().limit(8).toList());
+            }
+            if (nodeResult.getErrorMessage() != null && !nodeResult.getErrorMessage().isBlank()) {
+                delta.put("errorMessage", nodeResult.getErrorMessage());
+            }
+            pgStepJournalStateCheckpointer.executeOrReplayIdempotentStep(
+                    execId, "main", step, nodeId, idemKey, fencing,
+                    Map.of(nodeId, (long) step),
+                    () -> delta
+            );
+        } catch (Exception e) {
+            log.debug("[StepJournal] DAG 节点增量日志写入跳过: {}", e.getMessage());
         }
     }
 }

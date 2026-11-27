@@ -284,7 +284,9 @@ public class DmDatasourceServiceImpl extends ServiceImpl<DmDatasourceMapper, DmD
             log.error("数据源操作失败", exception);
             throw new RuntimeException("数据库连接失败");
         } finally {
-            dbQuery.close();
+            if (dbQuery != null) {
+                dbQuery.close();
+            }
         }
     }
 
@@ -319,7 +321,9 @@ public class DmDatasourceServiceImpl extends ServiceImpl<DmDatasourceMapper, DmD
             log.error("数据源操作失败", exception);
             throw new RuntimeException("数据库连接失败");
         } finally {
-            dbQuery.close();
+            if (dbQuery != null) {
+                dbQuery.close();
+            }
         }
     }
 
@@ -363,22 +367,29 @@ public class DmDatasourceServiceImpl extends ServiceImpl<DmDatasourceMapper, DmD
     public boolean creaDatasourceTeTable(DatasourceCreaTeTableReqDTO datasourceCreaTeTableReqDTO) {
         DbQueryProperty dbQueryProperty = new DbQueryProperty(datasourceCreaTeTableReqDTO.getDatasourceType()
                 ,datasourceCreaTeTableReqDTO.getIp(),datasourceCreaTeTableReqDTO.getPort(),datasourceCreaTeTableReqDTO.getDatasourceConfig());
-        DbQuery dbQuery = dataSourceFactory.createDbQuery(dbQueryProperty);
-        if (!dbQuery.valid()) {
-            throw new DataQueryException("数据库连接失败");
-        }
+        DbQuery dbQuery = null;
+        try {
+            dbQuery = dataSourceFactory.createDbQuery(dbQueryProperty);
+            if (!dbQuery.valid()) {
+                throw new DataQueryException("数据库连接失败");
+            }
 
-        int tableStatus = dbQuery.generateCheckTableExistsSQL(dbQueryProperty, datasourceCreaTeTableReqDTO.getTableName());
-        if (tableStatus > 0) {
-            return false;
-        }
+            int tableStatus = dbQuery.generateCheckTableExistsSQL(dbQueryProperty, datasourceCreaTeTableReqDTO.getTableName());
+            if (tableStatus > 0) {
+                return false;
+            }
 
-        List<String> tableSQLList = dbQuery.generateCreateTableSQL(dbQueryProperty, datasourceCreaTeTableReqDTO.getTableName(), datasourceCreaTeTableReqDTO.getTableComment(), datasourceCreaTeTableReqDTO.getColumnsList());
+            List<String> tableSQLList = dbQuery.generateCreateTableSQL(dbQueryProperty, datasourceCreaTeTableReqDTO.getTableName(), datasourceCreaTeTableReqDTO.getTableComment(), datasourceCreaTeTableReqDTO.getColumnsList());
 
-        for (String sql : tableSQLList) {
-            dbQuery.execute(sql);
+            for (String sql : tableSQLList) {
+                dbQuery.execute(sql);
+            }
+            return true;
+        } finally {
+            if (dbQuery != null) {
+                dbQuery.close();
+            }
         }
-        return true;
     }
 
 
@@ -471,8 +482,11 @@ public class DmDatasourceServiceImpl extends ServiceImpl<DmDatasourceMapper, DmD
 
     @Override
     public DmDatasourceRespDTO getDatasourceById(Long id) {
-        DmDatasourceRespDTO dto = new DmDatasourceRespDTO();
         DmDatasourceDO daDatasourceDO = dmDatasourceMapper.selectById(id);
+        if (daDatasourceDO == null) {
+            return null;
+        }
+        DmDatasourceRespDTO dto = new DmDatasourceRespDTO();
         org.springframework.beans.BeanUtils.copyProperties(daDatasourceDO, dto);
         return dto;
     }

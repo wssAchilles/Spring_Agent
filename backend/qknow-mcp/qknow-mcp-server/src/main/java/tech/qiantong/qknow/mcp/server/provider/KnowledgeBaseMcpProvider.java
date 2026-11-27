@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * 知识库检索与文档资源 MCP 适配器 (唯一对齐阿里千问 1536 维超球面，杜绝伪造得分)
+ * 知识库检索与文档资源 MCP 适配器 (唯一对齐阿里千问 1024 维超球面，杜绝伪造得分)
  */
 public class KnowledgeBaseMcpProvider {
 
@@ -33,7 +33,7 @@ public class KnowledgeBaseMcpProvider {
         // 1. 注册知识库超球面向量检索工具
         registry.registerTool(
             "qknow_kb_search",
-            "基于阿里千问 1536 维超球面高精度向量索引检索千知知识库核心文档片段",
+            "基于阿里千问 1024 维超球面高精度向量索引检索千知知识库核心文档片段",
             Map.of(
                 "type", "object",
                 "properties", Map.of(
@@ -74,7 +74,7 @@ public class KnowledgeBaseMcpProvider {
                 return new ResourceContent(
                     uri,
                     "text/markdown",
-                    "### 知识库文档 [Corpus=" + corpusId + ", Doc=" + docId + "]\n\n千知企业级核心知识切片：严格对齐阿里千问 1536 维超球面嵌入与 DeepSeek API 生成基线。",
+                    "### 知识库文档 [Corpus=" + corpusId + ", Doc=" + docId + "]\n\n千知企业级核心知识切片：严格对齐阿里千问 1024 维超球面嵌入与 DeepSeek API 生成基线。",
                     null
                 );
             }

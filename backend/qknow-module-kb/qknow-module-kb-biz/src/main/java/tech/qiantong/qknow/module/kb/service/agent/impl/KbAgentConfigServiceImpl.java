@@ -78,6 +78,9 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
     @Resource
     private tech.qiantong.qknow.module.kb.service.agent.retrieval.CrossKbScoreCalibrator crossKbCalibrator;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private tech.qiantong.qknow.ai.guardrail.GuardrailPolicyCoordinator guardrailPolicyCoordinator;
+
     @Override
     public PageResult<KbAgentConfigDO> getKbAgentConfigPage(KbAgentConfigPageReqVO pageReqVO) {
         return kbAgentConfigMapper.selectPage(pageReqVO);
@@ -224,6 +227,17 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
 
     @Override
     public Flux<KbChatMessageSendRespVO> chatMessage(KbAgentConfigReqVO kbAgentConfig) throws Exception {
+        // 0. 输入侧双向安全护栏核验（PII 无感脱敏 + 越狱对抗拦截）
+        if (guardrailPolicyCoordinator != null && kbAgentConfig.getQuestion() != null) {
+            var inputDecision = guardrailPolicyCoordinator.coordinateInput(kbAgentConfig.getQuestion());
+            if (!inputDecision.permitted()) {
+                return blockedAnswerFlux(kbAgentConfig.getQuestion(), inputDecision.processedText());
+            }
+            if (inputDecision.processedText() != null && !inputDecision.processedText().isBlank()) {
+                kbAgentConfig.setQuestion(inputDecision.processedText());
+            }
+        }
+
         // 1. 解析模型配置
         String modelConfig = kbAgentConfig.getModelConfig();
         if (StringUtils.isNull(modelConfig)) {
@@ -455,6 +469,23 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
                 })
                 .doOnComplete(() -> {
                     String answer = answerBuffer.toString();
+                    if (guardrailPolicyCoordinator != null && !answer.isBlank()) {
+                        try {
+                            Set<String> validChunkIds = new LinkedHashSet<>();
+                            for (Object srcObj : sourceRefs) {
+                                if (srcObj instanceof JSONObject src && src.get("segmentId") != null) {
+                                    validChunkIds.add(String.valueOf(src.get("segmentId")));
+                                }
+                            }
+                            List<String> refContexts = ragContexts.stream()
+                                    .map(RAGContext::getPreRetrievedContent)
+                                    .filter(c -> c != null && !c.isBlank())
+                                    .toList();
+                            guardrailPolicyCoordinator.coordinateOutput(answer, validChunkIds, refContexts);
+                        } catch (Exception e) {
+                            log.debug("[Guardrail] 输出侧护栏聚合跳过: {}", e.getMessage());
+                        }
+                    }
                     if (!usedExternalTool.get() && !isFailedAnswer(answer)) {
                         saveSemanticCacheAsync(kbAgentConfig, knowledgeBaseIds,
                                 finalModelName, answer, sourceRefs.toJSONString());
@@ -539,6 +570,22 @@ public class KbAgentConfigServiceImpl  extends ServiceImpl<KbAgentConfigMapper,K
         receive.setContent(cleanCachedAnswer(hit.getAnswer()));
         receive.setCreateTime(DateUtils.getNowDate());
         applySourceRefs(receive, hit.getSourcesJson());
+        resp.setReceive(receive);
+
+        KbChatMessageSendRespVO.Message send = new KbChatMessageSendRespVO.Message();
+        send.setType(MessageTypeEnums.USER.code);
+        send.setContent(question);
+        send.setCreateTime(DateUtils.getNowDate());
+        resp.setSend(send);
+        return Flux.just(resp);
+    }
+
+    private Flux<KbChatMessageSendRespVO> blockedAnswerFlux(String question, String refusalMessage) {
+        KbChatMessageSendRespVO resp = new KbChatMessageSendRespVO();
+        KbChatMessageSendRespVO.Message receive = new KbChatMessageSendRespVO.Message();
+        receive.setType(MessageTypeEnums.ROBOT.code);
+        receive.setContent(refusalMessage != null ? refusalMessage : "抱歉，您的问题触发了系统安全护栏策略，已执行 Fail-Close 拦截。");
+        receive.setCreateTime(DateUtils.getNowDate());
         resp.setReceive(receive);
 
         KbChatMessageSendRespVO.Message send = new KbChatMessageSendRespVO.Message();

@@ -45,22 +45,32 @@ public class DeepSeekR1JudgeEngine {
     }
 
     /**
-     * 解析 DeepSeek-R1 裁判原始响应，抽取思考链与结构化判定
+     * 解析 DeepSeek 裁判原始响应（向后兼容单字符串入参）
      */
     public JudgementResult parseJudgeResponse(String rawResponse) {
+        return parseJudgeResponse(rawResponse, null);
+    }
+
+    /**
+     * 解析 DeepSeek 官方思考模式裁判响应，优先提取独立 reasoning_content 字段，兼容旧版 <think> 标签
+     */
+    public JudgementResult parseJudgeResponse(String rawResponse, String reasoningContent) {
+        String normalizedReasoning = reasoningContent != null ? reasoningContent.trim() : "";
         if (rawResponse == null || rawResponse.isBlank()) {
             return JudgementResult.builder()
                     .winner("TIE")
                     .confidence(0.5)
                     .rationale("裁判响应为空，默认平局")
-                    .thinking("")
+                    .thinking(normalizedReasoning)
                     .build();
         }
 
-        String thinking = "";
-        Matcher thinkMatcher = THINK_PATTERN.matcher(rawResponse);
-        if (thinkMatcher.find()) {
-            thinking = thinkMatcher.group(1).trim();
+        String thinking = normalizedReasoning;
+        if (thinking.isEmpty()) {
+            Matcher thinkMatcher = THINK_PATTERN.matcher(rawResponse);
+            if (thinkMatcher.find()) {
+                thinking = thinkMatcher.group(1).trim();
+            }
         }
 
         String jsonContent = null;

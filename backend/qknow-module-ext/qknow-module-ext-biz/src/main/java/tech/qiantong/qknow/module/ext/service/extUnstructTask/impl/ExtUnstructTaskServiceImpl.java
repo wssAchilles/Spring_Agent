@@ -213,19 +213,18 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
         Map<Long, KgKnowledgeDocumentRespDTO> documentMap = kgDocumentList.stream()
                 .collect(Collectors.toMap(KgKnowledgeDocumentRespDTO::getId, e -> e));
 
+        // 在遍历任务关联文件前一次性清理历史抽取数据，防止多文档循环中后一文档覆盖删除前一文档结果
+        ExtExtractionDO cleanupExtractionDO = new ExtExtractionDO();
+        cleanupExtractionDO.setTaskId(unstructTaskDO.getId());
+        extNeo4jService.deleteExtUnStruck(cleanupExtractionDO);
+        extUnstructTaskTextMapper.deleteByTaskId(unstructTaskDO.getId());
+
         // 遍历任务关联的文件
         for (ExtUnstructTaskDocRelDO extUnstructTaskDocRelDO : taskDocRelDOList) {
             KgKnowledgeDocumentRespDTO kgDocument = documentMap.get(extUnstructTaskDocRelDO.getDocId());
-//
-//            // 拼接文件地址
-//            String fileUrl = "http://127.0.0.1:8090/profile" + kgDocument.getPath();
-
-            // 删除neo4j中之前抽取相关的数据, 如果有的话
-            ExtExtractionDO extractionDO = new ExtExtractionDO();
-            extractionDO.setTaskId(unstructTaskDO.getId());
-            extNeo4jService.deleteExtUnStruck(extractionDO);
-            // 删除mysql中之前抽取的段落相关的数据, 如果有的话
-            extUnstructTaskTextMapper.deleteByTaskId(unstructTaskDO.getId());
+            if (kgDocument == null) {
+                continue;
+            }
 //
 //            // 创建 URL 对象
 //            URL url = new URL(fileUrl);
@@ -333,12 +332,12 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
         List<Long> relationIdList = relationList.stream().map(ExtUnstructTaskRelationDO::getRelationId).collect(Collectors.toList());
         List<ExtSchemaRelationDO> schemaRelationList = extSchemaRelationService.listByIds(relationIdList);
 
-        //  动态实体集合
-        List<DynamicEntity> graphEntityAll = Lists.newArrayList();
+        // 使用线程安全集合承载多线程分段并发写入
+        List<DynamicEntity> graphEntityAll = new java.util.concurrent.CopyOnWriteArrayList<>();
         // 段落文本集合
-        Map<String, List<ExtUnstructTaskTextDO>> textMap = Maps.newHashMap();
+        Map<String, List<ExtUnstructTaskTextDO>> textMap = new java.util.concurrent.ConcurrentHashMap<>();
         // 提示词类型集合
-        Map<String, String> typeMap = Maps.newHashMap();
+        Map<String, String> typeMap = new java.util.concurrent.ConcurrentHashMap<>();
         // 生成提示词
         Map<String, String> callWord = this.callWord(schemaRelationList);
         // 使用本地前缀，取出多余的/
@@ -349,7 +348,6 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
         AtomicBoolean taskCancelled = new AtomicBoolean(false);
         try {
             for (KgKnowledgeDocumentRespDTO documentDO : documentList) {
-                List<DynamicEntity> list = Lists.newArrayList();
                 int fileIndex = documentList.indexOf(documentDO);
                 // 获取文件内容
                 String fileText = FileReader.safeReadFile(base + documentDO.getPath());
@@ -366,6 +364,7 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
                         ServiceException serviceException = new ServiceException();
                         int partIndex = segments.indexOf(segment);
                         String logText = "开始抽取第" + (fileIndex + 1) + "个文件的第" + (partIndex + 1) + "个分段";
+                        List<DynamicEntity> segmentEntities = new ArrayList<>();
                         try {
                             extTaskLogService.recordStep(logId, logText);
                             Map<String, String> entityMap = new HashMap<>();
@@ -378,15 +377,19 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
                                     , entityMap);
                             String output = executeFlow.getOutput();
                             Map<String, Object> map = resultUnstruct2(output, unStructTaskDO, documentDO.getId(), callWord);
-                            //实体数据
+                            // 实体数据局部收集，防止共享 ArrayList 并发扩容损坏
                             if (map.get("entityList") != null) {
-                                list.addAll((List<DynamicEntity>) map.get("entityList"));
+                                segmentEntities.addAll((List<DynamicEntity>) map.get("entityList"));
                             }
-                            //实体对应片段
+                            // 实体对应片段线程安全累加合并
                             if (map.get("textMap") != null) {
-                                textMap.putAll((Map<String, List<ExtUnstructTaskTextDO>>) map.get("textMap"));
+                                Map<String, List<ExtUnstructTaskTextDO>> segTextMap =
+                                        (Map<String, List<ExtUnstructTaskTextDO>>) map.get("textMap");
+                                segTextMap.forEach((entityKey, segTexts) ->
+                                        textMap.computeIfAbsent(entityKey, k -> new java.util.concurrent.CopyOnWriteArrayList<>())
+                                                .addAll(segTexts));
                             }
-                            //实体对应类型
+                            // 实体对应类型
                             if (map.get("typeMap") != null) {
                                 typeMap.putAll((Map<String, String>) map.get("typeMap"));
                             }
@@ -403,8 +406,8 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
                         }
 
                         extTaskLogService.recordStep(logId, logText + ",调用大模型抽取完成");
-                        // 合并多分段相同name的实体
-                        List<DynamicEntity> graphEntityList = mergeEntitiesByName(list, unStructTaskDO.getId());
+                        // 合并当前分段相同名称实体后加入全局线程安全队列
+                        List<DynamicEntity> graphEntityList = mergeEntitiesByName(segmentEntities, unStructTaskDO.getId());
                         graphEntityAll.addAll(graphEntityList);
                         String count = String.valueOf(getCurrentConcurrentCount() - 1);
                         redisService.set("ext_run_model_count", count);
@@ -503,12 +506,18 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
                     workspaceId = workspaceIdObj.toString();
                 }
 
-                // 基础实体（每次循环都新建，彻底修复数据覆盖BUG）
+                // 基础实体（每次循环都新建，读取段落真实 paragraphIndex 而非误赋 docId）
+                List<ExtUnstructTaskTextDO> entityTexts = entity.getName() != null ? textMap.get(entity.getName()) : null;
+                Integer resolvedParagraphIndex = 1;
+                if (entityTexts != null && !entityTexts.isEmpty() && entityTexts.get(0).getParagraphIndex() != null) {
+                    resolvedParagraphIndex = entityTexts.get(0).getParagraphIndex();
+                }
+
                 ExtExtractionDO baseDO = new ExtExtractionDO();
                 baseDO.setHead(entity.getName());
                 baseDO.setTaskId(taskId);
                 baseDO.setDocId(docId);
-                baseDO.setParagraphIndex(docId);
+                baseDO.setParagraphIndex(resolvedParagraphIndex);
                 baseDO.setWorkspaceId(workspaceId);
                 baseDO.setConfidence("");
                 if (entity.getName() != null) {
@@ -516,9 +525,13 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
                     String schemaName = typeMap.get(entity.getName());
                     if (StringUtils.isNotEmpty(schemaName) && schemaMap.get(schemaName) != null) {
                         baseDO.setStartSchemaId(schemaMap.get(schemaName).getId());
-                        // 片段关联
-                        List<ExtUnstructTaskTextDO> unstructTaskTextList = textMap.get(entity.getName());
-                        List<String> textList = unstructTaskTextList.stream().map(ExtUnstructTaskTextDO::getId).map(Object::toString).collect(Collectors.toList());
+                    }
+                    if (entityTexts != null && !entityTexts.isEmpty()) {
+                        List<String> textList = entityTexts.stream()
+                                .map(ExtUnstructTaskTextDO::getId)
+                                .filter(Objects::nonNull)
+                                .map(Object::toString)
+                                .collect(Collectors.toList());
                         baseDO.setStartTextIds(String.join(",", textList));
                     }
                 }
@@ -554,10 +567,16 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
                                 String schemaName = typeMap.get(rel.getEndNode().getName());
                                 if (StringUtils.isNotEmpty(schemaName) && schemaMap.get(schemaName) != null) {
                                     copyDO.setEndSchemaId(schemaMap.get(schemaName).getId());
-                                    // 片段关联
+                                    // 片段关联非空安全提取
                                     List<ExtUnstructTaskTextDO> unstructTaskTextList = textMap.get(rel.getEndNode().getName());
-                                    List<String> textList = unstructTaskTextList.stream().map(ExtUnstructTaskTextDO::getId).map(Object::toString).collect(Collectors.toList());
-                                    copyDO.setEndTextIds(String.join(",", textList));
+                                    if (unstructTaskTextList != null && !unstructTaskTextList.isEmpty()) {
+                                        List<String> textList = unstructTaskTextList.stream()
+                                                .map(ExtUnstructTaskTextDO::getId)
+                                                .filter(Objects::nonNull)
+                                                .map(Object::toString)
+                                                .collect(Collectors.toList());
+                                        copyDO.setEndTextIds(String.join(",", textList));
+                                    }
                                 }
                             }
                             extractionDOList.add(copyDO);
@@ -661,7 +680,6 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
 
             // 实体
             DynamicEntity graphEntity = new DynamicEntity();
-            System.out.println(GraphLabelEnum.UNSTRUCTURED.getLabel());
             graphEntity.addLabels(GraphLabelEnum.UNSTRUCTURED.getLabel());
 
             graphEntity.setDynamicProperties(properties);
@@ -1262,17 +1280,51 @@ public class ExtUnstructTaskServiceImpl extends ServiceImpl<ExtUnstructTaskMappe
      * @return DynamicEntity 的 Properties
      */
     private Map<String, Object> cover2GraphProperties(JSONObject entity, Map<String, String> callWord) {
-        JSONObject attributeObj = entity.getJSONObject("属性");
-        Map<String, Object> result = new HashMap<>();
-
-        JSONObject attribute = JSONObject.parseObject(callWord.get("entityAttributeList"));
-        JSONObject kgDictMap = JSONObject.parseObject(callWord.get("kgDictMap"));
-        if (Objects.isNull(attribute) || Objects.isNull(kgDictMap)) {
+        if (entity == null || callWord == null) {
             return new HashMap<>(0);
         }
-        JSONArray attributeArray = attribute.getJSONArray(entity.getString("实体类型"));
-        if (Objects.isNull(attributeArray) || attributeArray.size() < 1) {
+        JSONObject attributeObj = entity.getJSONObject("属性");
+        if (Objects.isNull(attributeObj) || attributeObj.isEmpty()) {
             return new HashMap<>(0);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        JSONObject attribute = JSONObject.parseObject(callWord.get("entityAttributeList"));
+        JSONObject kgDictMap = JSONObject.parseObject(callWord.get("kgDictMap"));
+        if (Objects.isNull(attribute)) {
+            return result;
+        }
+        JSONArray attributeArray = attribute.getJSONArray(entity.getString("实体类型"));
+        if (Objects.isNull(attributeArray) || attributeArray.isEmpty()) {
+            return result;
+        }
+
+        // 按概念属性定义将大模型抽取的属性值映射到标准图谱属性键
+        for (int i = 0; i < attributeArray.size(); i++) {
+            JSONObject attrDef = attributeArray.getJSONObject(i);
+            if (attrDef == null) {
+                continue;
+            }
+            String attrName = attrDef.getString("name");
+            if (StringUtils.isEmpty(attrName) || !attributeObj.containsKey(attrName)) {
+                continue;
+            }
+            Object rawValue = attributeObj.get(attrName);
+            if (rawValue == null) {
+                continue;
+            }
+            String dictType = attrDef.getString("dictType");
+            if (StringUtils.isNotEmpty(dictType) && kgDictMap != null) {
+                JSONObject dictEntries = kgDictMap.getJSONObject(dictType);
+                if (dictEntries != null && dictEntries.containsKey(String.valueOf(rawValue))) {
+                    rawValue = dictEntries.get(String.valueOf(rawValue));
+                }
+            }
+            Long attrId = attrDef.getLong("id");
+            String propKey = attrId != null
+                    ? "attribute_id_" + attrId
+                    : (StringUtils.isNotEmpty(attrDef.getString("code")) ? attrDef.getString("code") : attrName);
+            result.put(propKey, rawValue);
         }
 
         return result;

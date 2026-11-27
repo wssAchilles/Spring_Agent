@@ -132,11 +132,9 @@ public class AppGraphServiceImpl implements AppGraphService {
         List<DynamicEntity> entityList = Lists.newArrayList();
         for (int i = 0; i < jsonArray.size(); i++) {
             JSONObject jsonObject = jsonArray.getJSONObject(i);
-            String id = jsonObject.getString("id");
-            DynamicEntity graphEntity;
-            if (id != null) {
-                graphEntity = entityMap.get(id);
-            } else {
+            Long id = jsonObject.getLong("id");
+            DynamicEntity graphEntity = id != null ? entityMap.get(id) : null;
+            if (graphEntity == null) {
                 graphEntity = new DynamicEntity();
                 graphEntity.setReleaseStatus(ReleaseStatus.UNPUBLISHED.getValue());
                 graphEntity.setCreatorId(jsonObject.getLong("creatorId"));
@@ -188,8 +186,8 @@ public class AppGraphServiceImpl implements AppGraphService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         if (!relationshipIds.isEmpty()) {
-            // 删除关系
-            repository.deleteNodeByIds(relationshipIds);
+            // 按关系 ID 删除旧关系，严禁误调 deleteNodeByIds 删除节点
+            repository.deleteRelationshipsByIds(relationshipIds);
         }
         // 新增/更新关系
         graphRelationshipSaveReqVOList.forEach(appGraphRelationshipSaveReqVO -> {

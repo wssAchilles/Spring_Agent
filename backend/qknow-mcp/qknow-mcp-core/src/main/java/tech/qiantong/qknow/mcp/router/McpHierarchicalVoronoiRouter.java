@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * 大规模企业级 MCP 工具超球面测地线 Voronoi 层次化索引与自适应 UCB 动态路由中枢
- * 在阿里千问 1536 维超球面单位向量空间上构建两级测地 Voronoi 树，实现 O(log M) 极速对数路由；
+ * 在阿里千问 1024 维超球面单位向量空间上构建两级测地 Voronoi 树，实现 O(log M) 极速对数路由；
  * 融合有界多臂老虎机 (Bounded MAB) 探索利用自适应避障，结合三级冷备隔离环形仓与不可变自验真凭单
  * 采用纯 Java 21 原生 Record 与集合，无第三方 Lombok 侵入
  */
@@ -26,7 +26,7 @@ public class McpHierarchicalVoronoiRouter {
 
     private static final Logger log = LoggerFactory.getLogger(McpHierarchicalVoronoiRouter.class);
 
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final int DEFAULT_TOP_K = 5;
     public static final int DEFAULT_BRANCH_CELLS = 2; // 粗筛选取的最近胞腔数
     public static final int L3_RING_BUFFER_CAPACITY = 256;
@@ -39,7 +39,7 @@ public class McpHierarchicalVoronoiRouter {
      */
     public static class VoronoiCell {
         private final int cellId;
-        private double[] centroid; // 1536 维超球面单位质心 (||c||_2 = 1.0)
+        private double[] centroid; // 1024 维超球面单位质心 (||c||_2 = 1.0)
         private double coverageRadius; // 测地覆盖半角 (rad)
         private final List<McpToolDescriptor> memberTools = new ArrayList<>();
 

@@ -237,11 +237,11 @@ public class AiModelServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO> im
      * @return 操作是否成功
      */
     private Boolean syncModel(AiApiKeyDO aiApiKeyDO) {
-        String redisLock = redisService.get("redisLock");
-        if (StrUtil.isNotBlank(redisLock)) {
+        String lockKey = "sync_model_lock:" + aiApiKeyDO.getId();
+        // 使用带 60 秒 TTL 的原子 SET NX 分布式锁，防止节点崩溃导致永久死锁
+        if (!redisService.setNx(lockKey, "1", 60L)) {
             return true;
         }
-        redisService.set("redisLock", "1");
         try {
             List<AiModelDO> aiModelDOList = this.queryListByKeyId(aiApiKeyDO.getId());
             Set<String> sqlSet = aiModelDOList.stream().map(AiModelDO::getName).collect(Collectors.toSet());
@@ -270,7 +270,7 @@ public class AiModelServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO> im
             log.error("AI 模型操作失败", e);
             throw new ServiceException("同步模型数据失败");
         } finally {
-            redisService.delete("redisLock");
+            redisService.delete(lockKey);
         }
 
         return true;

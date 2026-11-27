@@ -24,14 +24,14 @@ import java.util.*;
 
 /**
  * OpenAPI 3.0 / Swagger 零代码动态逆向适配器 (OpenApiToMcpToolAdapter)
- * 递归解析企业存量微服务 OpenAPI JSON 规范，自动逆向生成符合 MCP 契约的标准工具定义与千问 1536 维超球面单位向量
+ * 递归解析企业存量微服务 OpenAPI JSON 规范，自动逆向生成符合 MCP 契约的标准工具定义与千问 1024 维超球面单位向量
  * 采用纯 Java 21 与 Jackson 实现，零外部重型依赖
  */
 public class OpenApiToMcpToolAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(OpenApiToMcpToolAdapter.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
 
     private final String serverId;
     private final String baseUrl;
@@ -110,7 +110,7 @@ public class OpenApiToMcpToolAdapter {
                     // 构造 MCP Tool 契约
                     McpTool mcpTool = new McpTool(toolName, description, inputSchemaMap);
 
-                    // 生成千问 1536 维超球面单位向量 (基于工具名称与语义描述派生确定性几何特征)
+                    // 生成千问 1024 维超球面单位向量 (基于工具名称与语义描述派生确定性几何特征)
                     double[] embedding = generateDeterministicHypersphericalEmbedding(toolName + " " + summary + " " + description);
 
                     DynamicOpenApiEndpoint endpoint = new DynamicOpenApiEndpoint(
@@ -264,7 +264,7 @@ public class OpenApiToMcpToolAdapter {
     }
 
     /**
-     * 生成千问 1536 维超球面单位向量 (严格满足 ||v||_2 = 1.0)
+     * 生成千问 1024 维超球面单位向量 (严格满足 ||v||_2 = 1.0)
      */
     public static double[] generateDeterministicHypersphericalEmbedding(String seedText) {
         double[] vec = new double[EMBEDDING_DIMENSION];

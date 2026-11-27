@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 动态多模态实体超球面测地线对齐求解引擎 (定理 1.1)
- * 融合阿里千问 1536 维超球面测地内积、Levenshtein 字符编辑相似度与 1-跳局部拓扑 Fréchet 均值，求解实体同构映射
+ * 融合阿里千问 1024 维超球面测地内积、Levenshtein 字符编辑相似度与 1-跳局部拓扑 Fréchet 均值，求解实体同构映射
  */
 @Component
 public class DynamicEntityAlignmentEngine {
@@ -80,8 +80,8 @@ public class DynamicEntityAlignmentEngine {
             // 1. 语义嵌入内积 (超球面大圆弧距离投影: (dot + 1) / 2)
             double semSim = 0.5;
             if (candidate.sphericalEmbedding() != null && target.sphericalEmbedding() != null &&
-                    candidate.sphericalEmbedding().length == 1536 && target.sphericalEmbedding().length == 1536) {
-                double dot = calculateDotProduct1536(candidate.sphericalEmbedding(), target.sphericalEmbedding());
+                    candidate.sphericalEmbedding().length == 1024 && target.sphericalEmbedding().length == 1024) {
+                double dot = calculateDotProduct1024(candidate.sphericalEmbedding(), target.sphericalEmbedding());
                 semSim = (dot + 1.0) * 0.5;
             }
 
@@ -109,8 +109,8 @@ public class DynamicEntityAlignmentEngine {
             // 3. 1-跳局部拓扑 Fréchet 均值内积
             double topoSim = 0.5;
             if (candidate.localTopologyEmbedding() != null && target.localTopologyEmbedding() != null &&
-                    candidate.localTopologyEmbedding().length == 1536 && target.localTopologyEmbedding().length == 1536) {
-                double tDot = calculateDotProduct1536(candidate.localTopologyEmbedding(), target.localTopologyEmbedding());
+                    candidate.localTopologyEmbedding().length == 1024 && target.localTopologyEmbedding().length == 1024) {
+                double tDot = calculateDotProduct1024(candidate.localTopologyEmbedding(), target.localTopologyEmbedding());
                 topoSim = (tDot + 1.0) * 0.5;
             }
 
@@ -126,12 +126,12 @@ public class DynamicEntityAlignmentEngine {
     }
 
     /**
-     * 8路循环展开计算 1536 维超球面单位向量点积
+     * 8路循环展开计算 1024 维超球面单位向量点积
      */
-    public static double calculateDotProduct1536(double[] a, double[] b) {
+    public static double calculateDotProduct1024(double[] a, double[] b) {
         double dot = 0.0;
         int i = 0;
-        for (; i <= 1536 - 8; i += 8) {
+        for (; i <= 1024 - 8; i += 8) {
             dot += a[i] * b[i]
                  + a[i+1] * b[i+1]
                  + a[i+2] * b[i+2]
@@ -141,7 +141,7 @@ public class DynamicEntityAlignmentEngine {
                  + a[i+6] * b[i+6]
                  + a[i+7] * b[i+7];
         }
-        for (; i < 1536; i++) {
+        for (; i < 1024; i++) {
             dot += a[i] * b[i];
         }
         return dot;

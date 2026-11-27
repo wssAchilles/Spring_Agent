@@ -24,6 +24,14 @@ def get_model():
     return _model
 
 class RerankHandler(BaseHTTPRequestHandler):
+    def do_HEAD(self):
+        # 响应客户端 HEAD 探活检查
+        if self.path in ("/rerank", "/health"):
+            self.send_response(200)
+            self.end_headers()
+        else:
+            self.send_error(404)
+
     def do_POST(self):
         if self.path != "/rerank":
             self.send_error(404)

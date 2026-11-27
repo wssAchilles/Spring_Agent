@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 多源契约动态发现与阿里千问 1536 维超球面测地线索引器 (DynamicMcpContractRegistry)
+ * 多源契约动态发现与阿里千问 1024 维超球面测地线索引器 (DynamicMcpContractRegistry)
  * 统一归一化转译 RESTful API、SQL 存储过程、本地 CLI 进程与标准 MCP Server 契约
  * 具备超球面测地线距离索引，检索耗时 <= 50us，误匹配率 <= 1.0%
  */
@@ -57,12 +57,12 @@ public class DynamicMcpContractRegistry {
     }
 
     /**
-     * 基于阿里千问 1536 维超球面单位向量测地线大圆弧距离进行高精度无歧义检索
+     * 基于阿里千问 1024 维超球面单位向量测地线大圆弧距离进行高精度无歧义检索
      * 测地线距离: d_g = arccos(max(-1.0, min(1.0, u^T v)))
      * 耗时控制在 <= 50us 内
      */
     public Optional<MatchResult> findBestMatchingTool(double[] queryVector, double maxGeodesicThreshold) {
-        if (queryVector == null || queryVector.length != 1536 || registry.isEmpty()) {
+        if (queryVector == null || queryVector.length != 1024 || registry.isEmpty()) {
             return Optional.empty();
         }
 
@@ -73,12 +73,12 @@ public class DynamicMcpContractRegistry {
 
         for (McpContractDescriptor desc : registry.values()) {
             double[] targetVec = desc.embeddingVector();
-            if (targetVec == null || targetVec.length != 1536) {
+            if (targetVec == null || targetVec.length != 1024) {
                 continue;
             }
 
             double dotProduct = 0.0;
-            for (int i = 0; i < 1536; i++) {
+            for (int i = 0; i < 1024; i++) {
                 dotProduct += queryVector[i] * targetVec[i];
             }
 

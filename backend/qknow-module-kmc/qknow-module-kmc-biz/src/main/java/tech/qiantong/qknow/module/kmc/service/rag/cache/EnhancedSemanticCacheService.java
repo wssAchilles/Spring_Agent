@@ -31,7 +31,7 @@ public class EnhancedSemanticCacheService {
 
     public static final String EMPTY_SENTINEL = "__EMPTY_CACHE_RESULT__";
     private static final double DEFAULT_SIMILARITY_THRESHOLD = 0.92D;
-    private static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
+    private static final int DEFAULT_EMBEDDING_DIMENSION = 1024;
     private static final int MAX_LOCAL_CACHE_SIZE = 5000;
 
     // 核心否定词与动作反向意图词汇库

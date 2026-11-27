@@ -278,8 +278,10 @@ public class RagRetrievalService {
             // CRAG AMBIGUOUS: 保留第一路结果（不丢弃上下文），标记歧义并注入澄清候选项
             effective.setAmbiguous(true);
             effective.setClarificationOptions(evaluation.getClarificationOptions());
-            debugInfo.put("cragAmbiguous", true);
-            debugInfo.put("clarificationOptions", evaluation.getClarificationOptions());
+            if (debug && debugInfo != null) {
+                debugInfo.put("cragAmbiguous", true);
+                debugInfo.put("clarificationOptions", evaluation.getClarificationOptions());
+            }
 
             // 若开启二次内部扩展检索 (默认关闭以保持低延迟)
             if (ambiguousExpandEnabled

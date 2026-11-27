@@ -281,12 +281,19 @@ public class ExtStructTaskServiceImpl extends ServiceImpl<ExtStructTaskMapper, E
 //            }
 
 
-            // 6. 更新任务状态
+            // 6. 回写概念映射最近同步时间游标，并更新任务状态
+            Date executedAt = new Date();
+            for (ExtSchemaMappingDO schemaMapping : schemaMappings) {
+                schemaMapping.setLastDateTime(executedAt);
+                extSchemaMappingMapper.updateById(schemaMapping);
+            }
             task.setStatus(ExtTaskStatus.EXECUTED.getValue());
             extStructTaskMapper.updateById(task);
 
         } finally {
-            dbQuery.close();
+            if (dbQuery != null) {
+                dbQuery.close();
+            }
         }
     }
 
@@ -539,60 +546,83 @@ public class ExtStructTaskServiceImpl extends ServiceImpl<ExtStructTaskMapper, E
     }
 
     /**
+     * 校验 SQL 动态标识符（表名/列名），防止拼接注入
+     */
+    private String validateSqlIdentifier(String identifier) {
+        if (StringUtils.isEmpty(identifier)
+                || !identifier.matches("^[a-zA-Z0-9_.`\"\\[\\]]+$")
+                || identifier.contains("--")
+                || identifier.contains(";")
+                || identifier.contains("/*")) {
+            throw new IllegalArgumentException("非法的 SQL 标识符: " + identifier);
+        }
+        return identifier;
+    }
+
+    /**
      * 构建关联SQL
      */
     private String buildRelationSQL(ExtSchemaMappingDO schema, ExtRelationMappingDO rel,
                                     DbQuery dbQuery, DbQueryProperty dbQueryProperty,
                                     Map<Long, List<ExtRelationMappingMiddleDO>> middleMap) {
+        String sourceTable = validateSqlIdentifier(schema.getTableName());
+        String targetTable = validateSqlIdentifier(rel.getRelationTable());
+        String sourceJoinField = validateSqlIdentifier(rel.getFieldName());
+        String targetJoinField = validateSqlIdentifier(rel.getRelationField());
 
         // 获取列信息
-        List<DbColumn> sourceCols = dbQuery.getTableColumns(dbQueryProperty, schema.getTableName());
-        List<DbColumn> targetCols = dbQuery.getTableColumns(dbQueryProperty, rel.getRelationTable());
+        List<DbColumn> sourceCols = dbQuery.getTableColumns(dbQueryProperty, sourceTable);
+        List<DbColumn> targetCols = dbQuery.getTableColumns(dbQueryProperty, targetTable);
 
         StringBuilder sql = new StringBuilder("SELECT ");
 
         // 添加源表字段
         for (DbColumn col : sourceCols) {
-            sql.append("t1.").append(col.getColName()).append(" AS a_").append(col.getColName()).append(", ");
+            String colName = validateSqlIdentifier(col.getColName());
+            sql.append("t1.").append(colName).append(" AS a_").append(colName).append(", ");
         }
 
         // 添加目标表字段
         List<ExtRelationMappingMiddleDO> middleList = middleMap.get(rel.getId());
         int targetIndex = CollectionUtils.isEmpty(middleList) ? 2 : middleList.size() + 2;
         for (DbColumn col : targetCols) {
-            sql.append("t").append(targetIndex).append(".").append(col.getColName())
-                    .append(" AS b_").append(col.getColName()).append(", ");
+            String colName = validateSqlIdentifier(col.getColName());
+            sql.append("t").append(targetIndex).append(".").append(colName)
+                    .append(" AS b_").append(colName).append(", ");
         }
 
         // 移除末尾逗号
         sql.delete(sql.length() - 2, sql.length());
 
         // FROM和JOIN
-        sql.append("\nFROM ").append(schema.getTableName()).append(" t1");
+        sql.append("\nFROM ").append(sourceTable).append(" t1");
 
         if (CollectionUtils.isEmpty(middleList)) {
-            sql.append("\nINNER JOIN ").append(rel.getRelationTable()).append(" t2")
-                    .append("\n    ON t1.").append(rel.getFieldName())
-                    .append(" = t2.").append(rel.getRelationField());
+            sql.append("\nINNER JOIN ").append(targetTable).append(" t2")
+                    .append("\n    ON t1.").append(sourceJoinField)
+                    .append(" = t2.").append(targetJoinField);
         } else {
             String prevTable = "t1";
-            String prevField = rel.getFieldName();
+            String prevField = sourceJoinField;
             for (int i = 0; i < middleList.size(); i++) {
                 ExtRelationMappingMiddleDO middle = middleList.get(i);
-                String tableName = dbQuery.buildTableNameByDbType(middle.getTableName());
+                validateSqlIdentifier(middle.getTableName());
+                String tableName = validateSqlIdentifier(dbQuery.buildTableNameByDbType(middle.getTableName()));
+                String middleTableField = validateSqlIdentifier(middle.getTableField());
+                String middleRelField = validateSqlIdentifier(middle.getRelationField());
                 String currTable = "t" + (i + 2);
 
                 sql.append("\nINNER JOIN ").append(tableName).append(" ").append(currTable)
                         .append("\n    ON ").append(prevTable).append(".").append(prevField)
-                        .append(" = ").append(currTable).append(".").append(middle.getTableField());
+                        .append(" = ").append(currTable).append(".").append(middleTableField);
 
                 prevTable = currTable;
-                prevField = middle.getRelationField();
+                prevField = middleRelField;
             }
 
-            sql.append("\nINNER JOIN ").append(rel.getRelationTable()).append(" t").append(targetIndex)
+            sql.append("\nINNER JOIN ").append(targetTable).append(" t").append(targetIndex)
                     .append("\n    ON ").append(prevTable).append(".").append(prevField)
-                    .append(" = t").append(targetIndex).append(".").append(rel.getRelationField());
+                    .append(" = t").append(targetIndex).append(".").append(targetJoinField);
         }
 
         return sql.toString();
@@ -735,13 +765,19 @@ public class ExtStructTaskServiceImpl extends ServiceImpl<ExtStructTaskMapper, E
     }
 
     /**
-     * 加载现有实体
+     * 按当前任务 ID 精确查询现有实体，避免全图 findAll() 导致 OOM
      */
     private Map<String, DynamicEntity> loadExistingEntities(ExtStructTaskDO task) {
-        List<DynamicEntity> graphEntities = dynamicRepository.findAll();
+        tech.qiantong.qknow.neo4j.wrapper.Neo4jQueryWrapper<DynamicEntity> wrapper =
+                new tech.qiantong.qknow.neo4j.wrapper.Neo4jQueryWrapper<>(DynamicEntity.class);
+        wrapper.eq("task_id", task.getId());
+        List<DynamicEntity> graphEntities = dynamicRepository.find(wrapper);
+        if (graphEntities == null || graphEntities.isEmpty()) {
+            return new HashMap<>();
+        }
 
         return graphEntities.stream()
-                .filter(e -> task.getId().equals(e.getDynamicProperties().get("task_id")))
+                .filter(e -> e.getDynamicProperties() != null && task.getId().equals(e.getDynamicProperties().get("task_id")))
                 .collect(Collectors.toMap(
                         e -> e.getDynamicProperties().get("table_name") + "_" + e.getDynamicProperties().get("name"),
                         Function.identity(), (e1, e2) -> e1));

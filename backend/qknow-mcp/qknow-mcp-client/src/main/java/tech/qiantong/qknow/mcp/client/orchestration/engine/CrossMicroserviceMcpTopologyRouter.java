@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 跨微服务 MCP 拓扑加权测地路由引擎 (定理 1.1)
- * 结合阿里千问 1536 维超球面大圆弧测地线语义内积与节点实时负荷/延迟，求解帕累托最优路径
+ * 结合阿里千问 1024 维超球面大圆弧测地线语义内积与节点实时负荷/延迟，求解帕累托最优路径
  */
 @Component
 public class CrossMicroserviceMcpTopologyRouter {
@@ -68,11 +68,11 @@ public class CrossMicroserviceMcpTopologyRouter {
                     simScore = cachedSim;
                 } else {
                     simScore = 0.5;
-                    if (queryEmbedding != null && queryEmbedding.length == 1536 && node.sphericalEmbedding() != null && node.sphericalEmbedding().length == 1536) {
+                    if (queryEmbedding != null && queryEmbedding.length == 1024 && node.sphericalEmbedding() != null && node.sphericalEmbedding().length == 1024) {
                         double dot = 0.0;
                         double[] ne = node.sphericalEmbedding();
                         int i = 0;
-                        for (; i <= 1536 - 8; i += 8) {
+                        for (; i <= 1024 - 8; i += 8) {
                             dot += queryEmbedding[i] * ne[i]
                                  + queryEmbedding[i+1] * ne[i+1]
                                  + queryEmbedding[i+2] * ne[i+2]
@@ -82,7 +82,7 @@ public class CrossMicroserviceMcpTopologyRouter {
                                  + queryEmbedding[i+6] * ne[i+6]
                                  + queryEmbedding[i+7] * ne[i+7];
                         }
-                        for (; i < 1536; i++) {
+                        for (; i < 1024; i++) {
                             dot += queryEmbedding[i] * ne[i];
                         }
                         simScore = (dot + 1.0) * 0.5;

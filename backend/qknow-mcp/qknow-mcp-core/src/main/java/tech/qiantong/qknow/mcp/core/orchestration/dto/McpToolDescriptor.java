@@ -7,7 +7,7 @@ import java.util.Set;
 
 /**
  * 企业级 MCP 工具语义元数据描述符 Java 21 Record
- * 结合阿里千问 1536 维超球面单位向量与参数依赖图，支撑海量企业 API 的两阶段流形裁剪
+ * 结合阿里千问 1024 维超球面单位向量与参数依赖图，支撑海量企业 API 的两阶段流形裁剪
  */
 public record McpToolDescriptor(
         String toolId,
@@ -21,7 +21,7 @@ public record McpToolDescriptor(
         boolean isDestructive
 ) implements Serializable {
 
-    public static final int EXPECTED_DIMENSION = 1536;
+    public static final int EXPECTED_DIMENSION = 1024;
 
     public McpToolDescriptor {
         if (toolId == null || toolId.isBlank()) {

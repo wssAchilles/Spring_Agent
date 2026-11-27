@@ -175,7 +175,7 @@ public abstract class BaseNodeBO {
             if (StrUtil.isEmpty(replacement)) {
                 continue;
             }
-            matcher.appendReplacement(sb, replacement);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(sb);
         return sb.toString();

@@ -109,7 +109,7 @@ pub extern "C" fn get_simd_architecture() -> i32 {
 }
 
 /// 多文档 ColBERT MaxSim 批量打分算子
-/// 依托 Rayon 并发与 SIMD 加速，针对千问 1536 维超球面单位向量进行零拷贝计算
+/// 依托 Rayon 并发与 SIMD 加速，针对千问 1024 维超球面单位向量进行零拷贝计算
 #[no_mangle]
 pub unsafe extern "C" fn maxsim_batch(
     query_ptr: *const f32,
@@ -178,13 +178,172 @@ pub unsafe extern "C" fn maxsim_batch(
     }
 }
 
+/// 稀疏 CSR 二分图个性化 PageRank 算子（HippoRAG 2 双轨阻尼迭代）
+/// 计算稳态分布 pi^{(k+1)} = alpha * p0 + (1 - alpha) * (P^T * pi^{(k)} + dangling_mass * p0)
+#[no_mangle]
+pub unsafe extern "C" fn csr_bipartite_ppr_f32(
+    row_ptr: *const i32,
+    col_idx: *const i32,
+    edge_weights: *const f32,
+    reset_prob: *const f32,
+    num_nodes: usize,
+    alpha: f32,
+    max_iters: usize,
+    tol: f32,
+    scores_out: *mut f32,
+    residual_out: *mut f32,
+) -> i32 {
+    if row_ptr.is_null()
+        || col_idx.is_null()
+        || edge_weights.is_null()
+        || reset_prob.is_null()
+        || scores_out.is_null()
+        || residual_out.is_null()
+    {
+        return STATUS_ERR_NULL_PTR;
+    }
+    if num_nodes == 0 || alpha <= 0.0 || alpha >= 1.0 || max_iters == 0 {
+        return STATUS_ERR_INVALID_PARAM;
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let rows = std::slice::from_raw_parts(row_ptr, num_nodes + 1);
+        if rows[0] < 0 {
+            return STATUS_ERR_INVALID_PARAM;
+        }
+        let nnz = rows[num_nodes] as usize;
+        let cols = std::slice::from_raw_parts(col_idx, nnz);
+        let weights = std::slice::from_raw_parts(edge_weights, nnz);
+        let p0_raw = std::slice::from_raw_parts(reset_prob, num_nodes);
+        let out_pi = std::slice::from_raw_parts_mut(scores_out, num_nodes);
+
+        // 归一化重置概率分布 p0
+        let mut p0 = vec![0.0f32; num_nodes];
+        let p0_sum: f32 = p0_raw.iter().map(|&v| v.max(0.0)).sum();
+        if p0_sum > 1e-12 {
+            for i in 0..num_nodes {
+                p0[i] = p0_raw[i].max(0.0) / p0_sum;
+            }
+        } else {
+            let uniform = 1.0f32 / (num_nodes as f32);
+            p0.fill(uniform);
+        }
+
+        // 预计算每个源节点的出边权重和
+        let mut out_weight_sum = vec![0.0f32; num_nodes];
+        for u in 0..num_nodes {
+            let start = rows[u] as usize;
+            let end = rows[u + 1] as usize;
+            if end < start || end > nnz {
+                return STATUS_ERR_INVALID_PARAM;
+            }
+            let mut sum_w = 0.0f32;
+            for idx in start..end {
+                let v = cols[idx];
+                if v < 0 || (v as usize) >= num_nodes {
+                    return STATUS_ERR_INVALID_PARAM;
+                }
+                sum_w += weights[idx].max(0.0);
+            }
+            out_weight_sum[u] = sum_w;
+        }
+
+        let mut curr = p0.clone();
+        let mut next = vec![0.0f32; num_nodes];
+        let mut last_residual = 1.0f32;
+
+        for _ in 0..max_iters {
+            let mut dangling_mass = 0.0f32;
+            for u in 0..num_nodes {
+                if out_weight_sum[u] <= 1e-12 {
+                    dangling_mass += curr[u];
+                }
+            }
+
+            let base_scale = alpha + (1.0 - alpha) * dangling_mass;
+            for i in 0..num_nodes {
+                next[i] = base_scale * p0[i];
+            }
+
+            for u in 0..num_nodes {
+                let sum_w = out_weight_sum[u];
+                if sum_w > 1e-12 {
+                    let coeff = (1.0 - alpha) * curr[u] / sum_w;
+                    let start = rows[u] as usize;
+                    let end = rows[u + 1] as usize;
+                    for idx in start..end {
+                        let v = cols[idx] as usize;
+                        next[v] += coeff * weights[idx].max(0.0);
+                    }
+                }
+            }
+
+            let mut l1_diff = 0.0f32;
+            for i in 0..num_nodes {
+                l1_diff += (next[i] - curr[i]).abs();
+                curr[i] = next[i];
+            }
+            last_residual = l1_diff;
+            if l1_diff <= tol {
+                break;
+            }
+        }
+
+        out_pi.copy_from_slice(&curr);
+        *residual_out = last_residual;
+        STATUS_SUCCESS
+    }));
+
+    match result {
+        Ok(status) => status,
+        Err(_) => STATUS_ERR_PANIC,
+    }
+}
+
+/// S^1023 超球面 von Mises-Fisher (vMF) 方向核权重批量计算算子
+/// 计算 w_m = exp(kappa * (<q, mu_m> - 1)) <= 1.0，天然杜绝指数上溢
+#[no_mangle]
+pub unsafe extern "C" fn vmf_kernel_weights_f32(
+    query_ptr: *const f32,
+    centroids_ptr: *const f32,
+    num_centroids: usize,
+    dim: usize,
+    kappa: f32,
+    weights_out: *mut f32,
+) -> i32 {
+    if query_ptr.is_null() || centroids_ptr.is_null() || weights_out.is_null() {
+        return STATUS_ERR_NULL_PTR;
+    }
+    if num_centroids == 0 || dim == 0 || kappa < 0.0 {
+        return STATUS_ERR_INVALID_PARAM;
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let q = std::slice::from_raw_parts(query_ptr, dim);
+        let centroids = std::slice::from_raw_parts(centroids_ptr, num_centroids * dim);
+        let out = std::slice::from_raw_parts_mut(weights_out, num_centroids);
+
+        out.par_iter_mut().enumerate().for_each(|(m, w)| {
+            let c_slice = &centroids[m * dim..(m + 1) * dim];
+            let cos_sim = dot_product(q, c_slice, dim).clamp(-1.0, 1.0);
+            *w = (kappa * (cos_sim - 1.0)).exp();
+        });
+        STATUS_SUCCESS
+    }));
+
+    match result {
+        Ok(status) => status,
+        Err(_) => STATUS_ERR_PANIC,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_dot_product_consistency() {
-        let dim = 1536;
+        let dim = 1024;
         let mut q = vec![0.0f32; dim];
         let mut d = vec![0.0f32; dim];
         for i in 0..dim {
@@ -251,5 +410,54 @@ mod tests {
             )
         };
         assert_eq!(status, STATUS_ERR_NULL_PTR);
+    }
+
+    #[test]
+    fn test_csr_bipartite_ppr_convergence() {
+        // 3 节点链 0 -> 1 -> 2
+        let row_ptr = vec![0i32, 1, 2, 2];
+        let col_idx = vec![1i32, 2];
+        let weights = vec![1.0f32, 1.0];
+        let reset = vec![1.0f32, 0.0, 0.0];
+        let mut scores = vec![0.0f32; 3];
+        let mut residual = 1.0f32;
+
+        let status = unsafe {
+            csr_bipartite_ppr_f32(
+                row_ptr.as_ptr(),
+                col_idx.as_ptr(),
+                weights.as_ptr(),
+                reset.as_ptr(),
+                3,
+                0.15,
+                100,
+                1e-6,
+                scores.as_mut_ptr(),
+                &mut residual,
+            )
+        };
+        assert_eq!(status, STATUS_SUCCESS);
+        assert!(residual <= 1e-5);
+        let sum: f32 = scores.iter().sum();
+        assert!((sum - 1.0).abs() < 1e-4, "PPR 稳态概率质量总和必须等于 1.0");
+        assert!(scores[0] > scores[1] && scores[1] > scores[2]);
+    }
+
+    #[test]
+    fn test_vmf_kernel_weights_bounds() {
+        let dim = 1024;
+        let mut q = vec![0.0f32; dim];
+        q[0] = 1.0;
+        let mut centroids = vec![0.0f32; 2 * dim];
+        centroids[0] = 1.0; // 与 q 重合，cos = 1.0 -> weight = 1.0
+        centroids[dim + 1] = 1.0; // 与 q 正交，cos = 0.0 -> weight = exp(-kappa)
+        let mut weights = vec![0.0f32; 2];
+
+        let status = unsafe {
+            vmf_kernel_weights_f32(q.as_ptr(), centroids.as_ptr(), 2, dim, 4.0, weights.as_mut_ptr())
+        };
+        assert_eq!(status, STATUS_SUCCESS);
+        assert!((weights[0] - 1.0).abs() < 1e-6);
+        assert!((weights[1] - (-4.0f32).exp()).abs() < 1e-5);
     }
 }

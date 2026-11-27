@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 百级/千级企业 MCP 工具超球面两阶段语义路由器 (TwoStageDynamicToolRouter)
- * 借鉴 Gorilla / ToolBench 两阶段检索架构 (Neural API Retriever)，在阿里千问 1536 维超球面单位几何上：
+ * 借鉴 Gorilla / ToolBench 两阶段检索架构 (Neural API Retriever)，在阿里千问 1024 维超球面单位几何上：
  * 阶段一：Voronoi 胞腔粗筛选
  * 阶段二：单调测地大圆弧散度精排并截断 Top-K (默认 5 个)，实现 Token 压缩率 >= 85%，路由耗时 <= 3ms
  * 输出经过常量时间验签的不可变凭单 McpToolRoutingAuditReceipt
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TwoStageDynamicToolRouter {
 
     private static final Logger log = LoggerFactory.getLogger(TwoStageDynamicToolRouter.class);
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final int DEFAULT_TOP_K = 5;
 
     private final McpHierarchicalVoronoiRouter voronoiRouter;
@@ -71,7 +71,7 @@ public class TwoStageDynamicToolRouter {
      * 针对用户意图向量执行两阶段动态语义路由与剪枝
      *
      * @param queryText 用户提问或意图文本
-     * @param queryEmbedding 阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * @param queryEmbedding 阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
      * @param topK 需要剪枝输出的目标工具数 (通常为 3~5)
      */
     public ToolRoutingResult routeTools(String queryText, double[] queryEmbedding, int topK) {

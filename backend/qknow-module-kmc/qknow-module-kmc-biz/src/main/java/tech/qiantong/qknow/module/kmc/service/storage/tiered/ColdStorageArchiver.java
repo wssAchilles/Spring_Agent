@@ -111,7 +111,7 @@ public class ColdStorageArchiver {
                 .segmentId(coldSegment.getSegmentId())
                 .kbId(coldSegment.getKbId())
                 .content("已按需解冻正文切片内容: " + coldSegment.getSegmentId())
-                .vector1536(coldSegment.getVector1536())
+                .vector1024(coldSegment.getVector1024())
                 .storageTier(MultiTieredStorageManager.StorageTier.WARM)
                 .heatScore(coldSegment.getHeatScore())
                 .lastAccessTime(System.currentTimeMillis())
@@ -127,7 +127,10 @@ public class ColdStorageArchiver {
     public boolean verifyIntegrity(String expectedMerkleRoot, List<MerkleEvidenceItem> items) {
         if (expectedMerkleRoot == null || items == null || items.isEmpty()) return false;
         MerkleTreeEngine.MerkleTreeBuildResult result = merkleTreeEngine.buildTree("VERIFY", items);
-        return expectedMerkleRoot.equalsIgnoreCase(result.rootHash());
+        // 使用常量时间比对校验归档 Merkle 根哈希
+        return MessageDigest.isEqual(
+                expectedMerkleRoot.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                result.rootHash().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     /**

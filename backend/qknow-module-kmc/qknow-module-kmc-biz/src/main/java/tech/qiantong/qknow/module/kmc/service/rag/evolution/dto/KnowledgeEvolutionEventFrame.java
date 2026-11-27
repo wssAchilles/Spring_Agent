@@ -21,7 +21,7 @@ public record KnowledgeEvolutionEventFrame(
     }
 
     public boolean isValidEmbedding() {
-        if (sphericalEmbedding == null || sphericalEmbedding.length != 1536) {
+        if (sphericalEmbedding == null || sphericalEmbedding.length != 1024) {
             return false;
         }
         double sumSq = 0.0;

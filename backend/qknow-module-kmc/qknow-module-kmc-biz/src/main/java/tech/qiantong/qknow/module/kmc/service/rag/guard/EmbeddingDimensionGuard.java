@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * 向量维度与模型签名防御门禁 (Phase 13 Embedding Drift Guard)
  * 维度来源优先级：显式配置 {@code qknow.embedding.dimension} → 启动时从 vector_store 探测 →
- * 兼容回退 1536。生产语料基线为 text-embedding-v4（1024 维），不得再假设固定 1536。
+ * 兼容回退 1024。生产语料基线为 text-embedding-v4（1024 维），不得再假设固定 1024。
  * 100% 阻断不同维度与不同模型版本向量的混写与跨空间距离计算。
  *
  * @author qknow
@@ -27,7 +27,7 @@ import java.util.Map;
 public class EmbeddingDimensionGuard implements IEmbeddingDimensionProvider {
 
     /** 兼容回退值；用于无数据库/无配置的单测环境回退 */
-    public static final int REQUIRED_DIMENSION = 1536;
+    public static final int REQUIRED_DIMENSION = 1024;
     public static final String DEFAULT_MODEL_NAME = "text-embedding-v4";
     public static final String DEFAULT_PROVIDER = "dashscope";
 
@@ -49,7 +49,7 @@ public class EmbeddingDimensionGuard implements IEmbeddingDimensionProvider {
      * 1. 若配置与探测同时存在且不一致，触发 Fail-Close 异常阻断；
      * 2. 若配置 > 0 则生效配置；
      * 3. 若配置 <= 0，尝试从底层存储探测，若探测成功则生效探测值；
-     * 4. 否则回退 REQUIRED_DIMENSION (1536)。
+     * 4. 否则回退 REQUIRED_DIMENSION (1024)。
      */
     @Override
     public int getEffectiveDimension() {

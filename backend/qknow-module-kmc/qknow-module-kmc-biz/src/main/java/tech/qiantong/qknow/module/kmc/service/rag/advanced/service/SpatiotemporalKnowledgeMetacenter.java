@@ -76,7 +76,7 @@ public class SpatiotemporalKnowledgeMetacenter {
      *
      * @param sessionId       会话唯一 ID
      * @param queryText       用户查询文本
-     * @param queryEmbedding  千问 1536 维超球面单位向量
+     * @param queryEmbedding  千问 1024 维超球面单位向量
      * @param targetChunkId   命中的叶子切片 ID
      * @param allEntities     知识图谱实体池
      * @param allEdges        知识图谱边池

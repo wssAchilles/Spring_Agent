@@ -137,33 +137,36 @@ pub extern "system" fn Java_tech_qiantong_qknow_module_kmc_service_rag_rerank_Co
     d_len: i32,
     dim: i32,
 ) -> jfloat {
-    let q_expected = match expected_len(q_len, dim) {
-        Some(len) => len,
-        None => return 0.0,
-    };
-    let d_expected = match expected_len(d_len, dim) {
-        Some(len) => len,
-        None => return 0.0,
-    };
-    if array_len(&mut env, &query_tokens) != Some(q_expected)
-        || array_len(&mut env, &doc_tokens) != Some(d_expected)
-    {
-        return 0.0;
-    }
-    let q_len = q_len as usize;
-    let d_len = d_len as usize;
-    let dim = dim as usize;
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let q_expected = match expected_len(q_len, dim) {
+            Some(len) => len,
+            None => return 0.0,
+        };
+        let d_expected = match expected_len(d_len, dim) {
+            Some(len) => len,
+            None => return 0.0,
+        };
+        if array_len(&mut env, &query_tokens) != Some(q_expected)
+            || array_len(&mut env, &doc_tokens) != Some(d_expected)
+        {
+            return 0.0;
+        }
+        let q_len = q_len as usize;
+        let d_len = d_len as usize;
+        let dim = dim as usize;
 
-    let q = match unsafe { env.get_array_elements(&query_tokens, ReleaseMode::NoCopyBack) } {
-        Ok(q) => q,
-        Err(_) => return 0.0,
-    };
-    let d = match unsafe { env.get_array_elements(&doc_tokens, ReleaseMode::NoCopyBack) } {
-        Ok(d) => d,
-        Err(_) => return 0.0,
-    };
+        let q = match unsafe { env.get_array_elements(&query_tokens, ReleaseMode::NoCopyBack) } {
+            Ok(q) => q,
+            Err(_) => return 0.0,
+        };
+        let d = match unsafe { env.get_array_elements(&doc_tokens, ReleaseMode::NoCopyBack) } {
+            Ok(d) => d,
+            Err(_) => return 0.0,
+        };
 
-    maxsim_score(&q[..q_len * dim], &d[..d_len * dim], q_len, d_len, dim)
+        maxsim_score(&q[..q_len * dim], &d[..d_len * dim], q_len, d_len, dim)
+    }))
+    .unwrap_or(0.0)
 }
 
 #[no_mangle]
@@ -177,53 +180,58 @@ pub extern "system" fn Java_tech_qiantong_qknow_module_kmc_service_rag_rerank_Co
     q_len: i32,
     dim: i32,
 ) -> jfloatArray {
-    let q_expected = match expected_len(q_len, dim) {
-        Some(len) => len,
-        None => return empty_float_array(&mut env),
-    };
-    if array_len(&mut env, &query_tokens) != Some(q_expected) {
-        return empty_float_array(&mut env);
-    }
-    let doc_count = match int_array_len(&mut env, &doc_offsets) {
-        Some(len) => len,
-        None => return empty_float_array(&mut env),
-    };
-    if int_array_len(&mut env, &doc_lens) != Some(doc_count) {
-        return empty_float_array(&mut env);
-    }
-    let doc_values_len = match array_len(&mut env, &doc_tokens) {
-        Some(len) => len,
-        None => return empty_float_array(&mut env),
-    };
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let q_expected = match expected_len(q_len, dim) {
+            Some(len) => len,
+            None => return empty_float_array(&mut env),
+        };
+        if array_len(&mut env, &query_tokens) != Some(q_expected) {
+            return empty_float_array(&mut env);
+        }
+        let doc_count = match int_array_len(&mut env, &doc_offsets) {
+            Some(len) => len,
+            None => return empty_float_array(&mut env),
+        };
+        if int_array_len(&mut env, &doc_lens) != Some(doc_count) {
+            return empty_float_array(&mut env);
+        }
+        let doc_values_len = match array_len(&mut env, &doc_tokens) {
+            Some(len) => len,
+            None => return empty_float_array(&mut env),
+        };
 
-    let q = match unsafe { env.get_array_elements(&query_tokens, ReleaseMode::NoCopyBack) } {
-        Ok(q) => q,
-        Err(_) => return empty_float_array(&mut env),
-    };
-    let d = match unsafe { env.get_array_elements(&doc_tokens, ReleaseMode::NoCopyBack) } {
-        Ok(d) => d,
-        Err(_) => return empty_float_array(&mut env),
-    };
-    let offsets = match unsafe { env.get_array_elements(&doc_offsets, ReleaseMode::NoCopyBack) } {
-        Ok(offsets) => offsets,
-        Err(_) => return empty_float_array(&mut env),
-    };
-    let lens = match unsafe { env.get_array_elements(&doc_lens, ReleaseMode::NoCopyBack) } {
-        Ok(lens) => lens,
-        Err(_) => return empty_float_array(&mut env),
-    };
+        let scores = {
+            let q = match unsafe { env.get_array_elements(&query_tokens, ReleaseMode::NoCopyBack) } {
+                Ok(q) => q,
+                Err(_) => return empty_float_array(&mut env),
+            };
+            let d = match unsafe { env.get_array_elements(&doc_tokens, ReleaseMode::NoCopyBack) } {
+                Ok(d) => d,
+                Err(_) => return empty_float_array(&mut env),
+            };
+            let offsets = match unsafe { env.get_array_elements(&doc_offsets, ReleaseMode::NoCopyBack) } {
+                Ok(offsets) => offsets,
+                Err(_) => return empty_float_array(&mut env),
+            };
+            let lens = match unsafe { env.get_array_elements(&doc_lens, ReleaseMode::NoCopyBack) } {
+                Ok(lens) => lens,
+                Err(_) => return empty_float_array(&mut env),
+            };
 
-    let q_len = q_len as usize;
-    let dim = dim as usize;
-    let scores = maxsim_batch_scores(
-        &q[..q_expected],
-        &d[..doc_values_len],
-        &offsets[..doc_count],
-        &lens[..doc_count],
-        q_len,
-        dim,
-    );
-    float_array(&mut env, &scores)
+            let q_len = q_len as usize;
+            let dim = dim as usize;
+            maxsim_batch_scores(
+                &q[..q_expected],
+                &d[..doc_values_len],
+                &offsets[..doc_count],
+                &lens[..doc_count],
+                q_len,
+                dim,
+            )
+        };
+        float_array(&mut env, &scores)
+    }))
+    .unwrap_or(ptr::null_mut())
 }
 
 #[cfg(test)]

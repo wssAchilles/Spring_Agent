@@ -10,7 +10,7 @@ import java.util.*;
 
 /**
  * 企业级 MCP 工具返回大结果超球面流形流式质心认知蒸馏引擎
- * 针对海量 JSON/大文本结果进行结构化分块，在千问 1536 维单位超球面上提取加权语义质心，
+ * 针对海量 JSON/大文本结果进行结构化分块，在千问 1024 维单位超球面上提取加权语义质心，
  * 并通过次模贪心骨架提取实现 >= 5x 压缩比，且数学上保持语义保真度 cos(c_S, v_full) >= 0.88
  * 采用纯 Java 21 原生类型，无任何第三方 Lombok 侵入
  */
@@ -18,7 +18,7 @@ public class StreamingToolCentroidDistiller {
 
     private static final Logger log = LoggerFactory.getLogger(StreamingToolCentroidDistiller.class);
 
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final double DEFAULT_MIN_FIDELITY = 0.88;
     public static final double TARGET_COMPRESSION_RATIO = 5.0;
 
@@ -347,7 +347,7 @@ public class StreamingToolCentroidDistiller {
     }
 
     /**
-     * 计算千问 1536 维超球面两向量之间的余弦相似度 (点积内积)
+     * 计算千问 1024 维超球面两向量之间的余弦相似度 (点积内积)
      */
     public static double computeCosineSimilarity(double[] u, double[] v) {
         if (u == null || v == null || u.length != EMBEDDING_DIMENSION || v.length != EMBEDDING_DIMENSION) {
@@ -391,7 +391,7 @@ public class StreamingToolCentroidDistiller {
     }
 
     /**
-     * 生成确定性的超球面 1536 维单位向量 (||v||_2 = 1.0)
+     * 生成确定性的超球面 1024 维单位向量 (||v||_2 = 1.0)
      */
     public static double[] generateDeterministicSphericalEmbedding(String seedText) {
         double[] vec = new double[EMBEDDING_DIMENSION];
