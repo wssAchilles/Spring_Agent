@@ -1,5 +1,7 @@
 package tech.qiantong.qknow.hermes.memory.hippocampus;
 
+import tech.qiantong.qknow.hermes.memory.bitemporal.MultiClusterSleepConsolidationReceipt;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -125,5 +127,187 @@ public class HippocampalSleepConsolidator {
 
     public List<SleepConsolidationReceipt> getHistory(String sessionId) {
         return consolidationHistory.getOrDefault(sessionId, Collections.emptyList());
+    }
+
+    /**
+     * S^1023 多簇球面 k-Means 谱整合与 Wiki / Error-Book 编译（博士论文第 4 章定理 4.1）。
+     * <p>
+     * 消除旧版将全部异构话题坍缩为单一全局均值质心的失真缺陷，严格计算每簇合成长度 R_k、
+     * 精确平方弦重构失真 2*(1 - R_k) 与本征测地 Fréchet 风险球冠紧上界。
+     * </p>
+     */
+    public MultiClusterSleepConsolidationReceipt consolidateMultiClusterWithWiki(
+            String sessionId,
+            List<EpisodicTurnRecord> turns,
+            int maxClusters
+    ) {
+        Objects.requireNonNull(sessionId, "sessionId 不能为空");
+        long startNs = System.nanoTime();
+        String cid = "mc_sleep_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        if (turns == null || turns.isEmpty()) {
+            return new MultiClusterSleepConsolidationReceipt(cid, sessionId, List.of(), 0.0, 0.0, List.of(), List.of(), 1L);
+        }
+
+        int n = turns.size();
+        int dim = EpisodicTurnRecord.VECTOR_DIMENSION;
+        int k = Math.max(1, Math.min(maxClusters, n));
+
+        // 1. 计算单一全局质心坍缩基线失真 2 * (1 - R_global)
+        double[] globalMean = new double[dim];
+        for (EpisodicTurnRecord t : turns) {
+            float[] v = t.sphericalVector();
+            for (int d = 0; d < dim; d++) {
+                globalMean[d] += v[d] / (double) n;
+            }
+        }
+        double rGlobal = Math.min(1.0, l2Norm(globalMean));
+        double singleCollapseDistortion = 2.0 * (1.0 - rGlobal);
+
+        // 2. Farthest-First（最远测地角优先）确定性初始化 K 个球面中心
+        float[][] centroids = new float[k][dim];
+        centroids[0] = turns.get(0).sphericalVector().clone();
+        for (int cIdx = 1; cIdx < k; cIdx++) {
+            int farthestTurn = 0;
+            double minMaxCos = 2.0;
+            for (int i = 0; i < n; i++) {
+                double bestCos = -2.0;
+                for (int prev = 0; prev < cIdx; prev++) {
+                    bestCos = Math.max(bestCos, dot(turns.get(i).sphericalVector(), centroids[prev]));
+                }
+                if (bestCos < minMaxCos) {
+                    minMaxCos = bestCos;
+                    farthestTurn = i;
+                }
+            }
+            centroids[cIdx] = turns.get(farthestTurn).sphericalVector().clone();
+        }
+
+        // 3. 球面 k-Means 迭代收敛（最大化簇内余弦内积和，等价于极小化平方弦失真）
+        int[] assignments = new int[n];
+        for (int iter = 0; iter < 12; iter++) {
+            boolean changed = false;
+            for (int i = 0; i < n; i++) {
+                int bestCluster = 0;
+                double bestCos = -2.0;
+                for (int cIdx = 0; cIdx < k; cIdx++) {
+                    double cos = dot(turns.get(i).sphericalVector(), centroids[cIdx]);
+                    if (cos > bestCos) {
+                        bestCos = cos;
+                        bestCluster = cIdx;
+                    }
+                }
+                if (assignments[i] != bestCluster) {
+                    assignments[i] = bestCluster;
+                    changed = true;
+                }
+            }
+            for (int cIdx = 0; cIdx < k; cIdx++) {
+                double[] sum = new double[dim];
+                int count = 0;
+                for (int i = 0; i < n; i++) {
+                    if (assignments[i] == cIdx) {
+                        float[] v = turns.get(i).sphericalVector();
+                        for (int d = 0; d < dim; d++) {
+                            sum[d] += v[d];
+                        }
+                        count++;
+                    }
+                }
+                if (count > 0) {
+                    double norm = l2Norm(sum);
+                    if (norm > 1e-12) {
+                        for (int d = 0; d < dim; d++) {
+                            centroids[cIdx][d] = (float) (sum[d] / norm);
+                        }
+                    }
+                }
+            }
+            if (!changed) {
+                break;
+            }
+        }
+
+        // 4. 逐簇计算精确弦失真 2*(1-R_k)、本征测地失真与球冠紧上界，并编译 Wiki 页与 Error-Book 笔记
+        List<MultiClusterSleepConsolidationReceipt.SphericalClusterSummary> summaries = new ArrayList<>();
+        List<String> wikiPages = new ArrayList<>();
+        List<String> errorNotes = new ArrayList<>();
+        double weightedTotalChordDistortion = 0.0;
+
+        for (int cIdx = 0; cIdx < k; cIdx++) {
+            List<EpisodicTurnRecord> members = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                if (assignments[i] == cIdx) {
+                    members.add(turns.get(i));
+                }
+            }
+            if (members.isEmpty()) {
+                continue;
+            }
+            int mSize = members.size();
+            double[] meanVec = new double[dim];
+            for (EpisodicTurnRecord t : members) {
+                float[] v = t.sphericalVector();
+                for (int d = 0; d < dim; d++) {
+                    meanVec[d] += v[d] / (double) mSize;
+                }
+            }
+            double rK = Math.min(1.0, l2Norm(meanVec));
+            float[] unitMu = new float[dim];
+            if (rK > 1e-12) {
+                for (int d = 0; d < dim; d++) {
+                    unitMu[d] = (float) (meanVec[d] / rK);
+                }
+            } else {
+                unitMu[0] = 1.0f;
+            }
+
+            double maxTheta = 0.0;
+            double geoDistortion = 0.0;
+            StringBuilder wikiContent = new StringBuilder("## Wiki Cluster #" + cIdx + "\n");
+            for (EpisodicTurnRecord t : members) {
+                double cos = Math.max(-1.0, Math.min(1.0, dot(t.sphericalVector(), unitMu)));
+                double theta = Math.acos(cos);
+                maxTheta = Math.max(maxTheta, theta);
+                geoDistortion += (theta * theta) / mSize;
+                wikiContent.append("- ").append(t.content()).append('\n');
+
+                if (t.keyFacts() != null && t.keyFacts().containsKey("errorTrap")) {
+                    errorNotes.add("ERROR_BOOK[" + sessionId + "]: " + t.keyFacts().get("errorTrap"));
+                }
+            }
+
+            double chordDistortion = 2.0 * (1.0 - rK);
+            double halfTheta = Math.min(Math.PI / 2.0 - 1e-4, maxTheta / 2.0);
+            double ratio = (halfTheta <= 1e-7) ? 1.0 : (halfTheta / Math.sin(halfTheta));
+            double geoUpperBound = (ratio * ratio) * chordDistortion;
+
+            weightedTotalChordDistortion += ((double) mSize / n) * chordDistortion;
+            wikiPages.add(wikiContent.toString());
+            summaries.add(new MultiClusterSleepConsolidationReceipt.SphericalClusterSummary(
+                    cIdx, mSize, unitMu, rK, maxTheta, chordDistortion, geoDistortion, geoUpperBound
+            ));
+        }
+
+        long elapsedUs = Math.max(1L, (System.nanoTime() - startNs) / 1000L);
+        return new MultiClusterSleepConsolidationReceipt(
+                cid, sessionId, summaries, weightedTotalChordDistortion, singleCollapseDistortion,
+                wikiPages, errorNotes, elapsedUs
+        );
+    }
+
+    private static double dot(float[] a, float[] b) {
+        double s = 0.0;
+        for (int i = 0; i < a.length; i++) {
+            s += (double) a[i] * b[i];
+        }
+        return s;
+    }
+
+    private static double l2Norm(double[] v) {
+        double s = 0.0;
+        for (double x : v) {
+            s += x * x;
+        }
+        return Math.sqrt(s);
     }
 }

@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * 记忆流时序衰减与因果对齐器 (TemporalCognitiveMemoryAligner)
  * 遵循 Phase 84 定理 1.3 与命题 2.1：
- * 艾宾浩斯强化时间衰减 R(t) + 重要性激活保护 I(m) + 阿里千问 1536 维超球面测地余弦相关度 + 因果时钟遮蔽
+ * 艾宾浩斯强化时间衰减 R(t) + 重要性激活保护 I(m) + 阿里千问 1024 维超球面测地余弦相关度 + 因果时钟遮蔽
  */
 public class TemporalCognitiveMemoryAligner {
 
@@ -24,7 +24,7 @@ public class TemporalCognitiveMemoryAligner {
      * 单步记忆流时序与因果对齐检索，耗时严格 <= 2ms
      *
      * @param candidates         候选记忆列表
-     * @param queryEmbedding     当前查询的阿里千问 1536 维超球面归一化嵌入向量
+     * @param queryEmbedding     当前查询的阿里千问 1024 维超球面归一化嵌入向量
      * @param currentTimestamp   当前物理时间戳毫秒
      * @param currentSessionId   当前会话 ID
      * @param currentCausalClock 当前因果时钟版本
@@ -104,7 +104,7 @@ public class TemporalCognitiveMemoryAligner {
             double dynamicStrength = 7.0 * (1.0 + 0.20 * Math.log(1.0 + accessCount));
             double recency = Math.exp(-deltaDays / dynamicStrength);
 
-            // 3. 阿里千问 1536 维超球面测地余弦内积
+            // 3. 阿里千问 1024 维超球面测地余弦内积
             double cosine = computeCosine(node.getEmbedding(), queryEmbedding);
             double relevance = Math.max(0.0, cosine);
 
@@ -131,7 +131,7 @@ public class TemporalCognitiveMemoryAligner {
     }
 
     /**
-     * 阿里千问 1536 维超球面单位向量内积计算
+     * 阿里千问 1024 维超球面单位向量内积计算
      */
     public double computeCosine(float[] vecA, float[] vecB) {
         if (vecA == null || vecB == null || vecA.length == 0 || vecB.length == 0) {

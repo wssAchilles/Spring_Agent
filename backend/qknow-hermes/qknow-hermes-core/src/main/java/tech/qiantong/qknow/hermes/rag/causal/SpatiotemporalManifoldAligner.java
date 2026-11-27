@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 阿里千问 1536 维超球面测地线内积与时序半衰期衰减联合对齐器 (定理 1.1)
- * 1. 严格在单位超球面 S^1535 上解算测地角距离与余弦大圆弧流形投影；
+ * 阿里千问 1024 维超球面测地线内积与时序半衰期衰减联合对齐器 (定理 1.1)
+ * 1. 严格在单位超球面 S^1023 上解算测地角距离与余弦大圆弧流形投影；
  * 2. 结合实体有效区间 [t_start, t_end] 与半衰期指数衰减，彻底杜绝历史过期规则倒挂；
  * 3. 采用 8 路循环展开优化点积，单次计算纯内存耗时 <= 20us。
  */
@@ -30,8 +30,8 @@ public class SpatiotemporalManifoldAligner {
     /**
      * 联合时空对齐打分计算 (定理 1.1)
      *
-     * @param queryVec       用户查询超球面单位向量 (1536维)
-     * @param entityVec      实体超球面单位向量 (1536维)
+     * @param queryVec       用户查询超球面单位向量 (1024维)
+     * @param entityVec      实体超球面单位向量 (1024维)
      * @param currentTimeMs  当前时间戳 (ms)
      * @param validStartMs   实体生效起始时间戳 (ms)
      * @param validEndMs     实体有效截止时间戳 (ms)

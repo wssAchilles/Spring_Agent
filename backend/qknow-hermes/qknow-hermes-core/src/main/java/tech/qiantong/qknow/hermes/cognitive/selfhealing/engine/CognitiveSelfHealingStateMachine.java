@@ -53,14 +53,14 @@ public class CognitiveSelfHealingStateMachine {
      * 检测反思中的语义固着死锁：未达标 + 连续两轮语义相似度 >= 0.90
      */
     public boolean checkDeadlock(double[] currEmbedding, double[] prevEmbedding, double passScore) {
-        if (currEmbedding == null || prevEmbedding == null || currEmbedding.length != 1536 || prevEmbedding.length != 1536) {
+        if (currEmbedding == null || prevEmbedding == null || currEmbedding.length != 1024 || prevEmbedding.length != 1024) {
             return false;
         }
         if (passScore >= PASS_SCORE_THRESHOLD) {
             return false;
         }
         double dot = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             dot += currEmbedding[i] * prevEmbedding[i];
         }
         boolean deadlock = dot >= DEADLOCK_SIMILARITY_THRESHOLD;
@@ -98,7 +98,7 @@ public class CognitiveSelfHealingStateMachine {
     }
 
     public synchronized void recordAttemptEmbedding(double[] embedding) {
-        if (embedding != null && embedding.length == 1536) {
+        if (embedding != null && embedding.length == 1024) {
             attemptEmbeddings.add(embedding);
             currentAttempt++;
         }

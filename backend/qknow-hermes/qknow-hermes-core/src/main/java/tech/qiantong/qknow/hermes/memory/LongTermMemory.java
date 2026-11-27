@@ -25,6 +25,11 @@ public class LongTermMemory {
     private static final double SIGMOID_TAU = 0.65;
     private static final double SIGMOID_TEMPERATURE = 0.15;
     private static final double CONSOLIDATION_THRESHOLD = 0.85;
+    private static final int COLD_STANDBY_CAPACITY = 256;
+
+    // 长期记忆合并淘汰三级冷备环形缓冲区，确保旧记忆可逆追溯
+    private final java.util.Deque<Document> coldStandbyArchive = new java.util.concurrent.ConcurrentLinkedDeque<>();
+    private final java.util.concurrent.atomic.AtomicInteger coldStandbyCount = new java.util.concurrent.atomic.AtomicInteger(0);
 
     private final VectorStore vectorStore;
     private final EmbeddingModel embeddingModel;
@@ -130,6 +135,8 @@ public class LongTermMemory {
                 int prevCount = updatedMetadata.containsKey("consolidated_count")
                         ? ((Number) updatedMetadata.get("consolidated_count")).intValue() : 1;
                 updatedMetadata.put("consolidated_count", prevCount + 1);
+                // 先将待合并淘汰的旧记忆归档至定长冷备环形隔离区，再清理活跃向量表
+                archiveToColdStandby(existing);
                 try {
                     vectorStore.delete(List.of(existing.getId()));
                 } catch (Exception e) {
@@ -150,6 +157,25 @@ public class LongTermMemory {
                 .metadata(metadata)
                 .build();
         vectorStore.add(List.of(doc));
+    }
+
+    private void archiveToColdStandby(Document evictedDoc) {
+        if (evictedDoc == null) {
+            return;
+        }
+        coldStandbyArchive.addLast(evictedDoc);
+        if (coldStandbyCount.incrementAndGet() > COLD_STANDBY_CAPACITY) {
+            if (coldStandbyArchive.pollFirst() != null) {
+                coldStandbyCount.decrementAndGet();
+            }
+        }
+    }
+
+    /**
+     * 获取三级冷备环形隔离区快照，用于记忆误合并回滚恢复
+     */
+    public List<Document> getColdStandbySnapshot() {
+        return List.copyOf(coldStandbyArchive);
     }
 
     private boolean hasCompleteIdentity(Map<String, Object> metadata) {

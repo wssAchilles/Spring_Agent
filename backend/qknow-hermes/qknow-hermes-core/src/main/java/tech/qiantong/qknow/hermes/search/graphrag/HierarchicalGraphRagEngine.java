@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  * 对标 Microsoft Research GraphRAG (2024) 架构标准：
  * 1. Leiden 层次化社区树建模 (宏观 Level 2, 中观 Level 1, 微观 Level 0)
  * 2. 宏观全局全景总结 (Global Summarization) 与微观精准事实下钻 (Local Factual) 双层认知覆盖
- * 3. 挂载阿里千问 1536 维超球面单位向量进行超球面几何路由
+ * 3. 挂载阿里千问 1024 维超球面单位向量进行超球面几何路由
  */
 public class HierarchicalGraphRagEngine {
 
@@ -74,7 +74,7 @@ public class HierarchicalGraphRagEngine {
             );
         }
 
-        // 依据千问 1536 维超球面单位向量余弦相似度，寻找最佳匹配社区
+        // 依据千问 1024 维超球面单位向量余弦相似度，寻找最佳匹配社区
         HierarchicalCommunityNode bestNode = null;
         float maxSimilarity = Float.NEGATIVE_INFINITY;
 

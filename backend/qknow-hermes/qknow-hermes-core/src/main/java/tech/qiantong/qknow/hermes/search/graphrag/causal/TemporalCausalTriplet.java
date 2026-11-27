@@ -6,11 +6,11 @@ import java.util.Objects;
 
 /**
  * 时间感知语义三元组实体 (Temporal Causal Triplet)
- * 遵循 Java 21 Record 纯不可变对象规范与阿里千问 1536 维超球面单位球几何约束：
+ * 遵循 Java 21 Record 纯不可变对象规范与阿里千问 1024 维超球面单位球几何约束：
  * 1. 包含主语、谓词、宾语符号级语义与物理生成时间戳；
  * 2. 显式挂载有效时间窗口 (ValidTimeWindow) 与半衰期指数衰减因子；
  * 3. 显式挂载因果前驱偏序指针 (causalPredecessorId)，破除时序倒错；
- * 4. 挂载阿里千问 1536 维超球面单位向量并执行深度防御性拷贝。
+ * 4. 挂载阿里千问 1024 维超球面单位向量并执行深度防御性拷贝。
  */
 public record TemporalCausalTriplet(
         String tripletId,
@@ -24,7 +24,7 @@ public record TemporalCausalTriplet(
         float[] tripletVector
 ) implements Serializable {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     /**
      * 事实有效性时间窗口不可变定义

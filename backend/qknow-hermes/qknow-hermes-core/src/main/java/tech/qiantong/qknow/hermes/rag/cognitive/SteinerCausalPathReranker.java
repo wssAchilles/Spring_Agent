@@ -8,7 +8,7 @@ import java.util.*;
 /**
  * 2-近似度量闭包 Steiner 树因果子图剪枝与拓扑重排序引擎 (Phase 137 防线二)
  * <p>
- * 1. 结合阿里千问 1536 维超球面测地线距离与拓扑有向可达矩阵门控 (Causal Reachability Gate)；
+ * 1. 结合阿里千问 1024 维超球面测地线距离与拓扑有向可达矩阵门控 (Causal Reachability Gate)；
  * 2. 严厉剔除没有因果拓扑可达性的虚假相关边 (Spurious Correlations)，噪声过滤率 >= 70%；
  * 3. 采用 Kou-Markowsky-Berman (KMB) 度量闭包算法，递归剪除非端点叶子冗余节点，确保点集 |V*| <= 16；
  * 4. 拓扑因果逆序生成最短因果推演链，单次抽取端到端耗时严格 <= 8.5ms。

@@ -10,18 +10,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 弹性混合检索漏斗协调器 (Resilient Hybrid Retrieval Funnel)
- * 整合千问 1536 维超球面稠密向量 + 嵌入式 BM25 稀疏倒排 + 无偏 RRF 粗排漏斗 + 第一阶段 ColBERT MaxSim 原生 SIMD 精排
+ * 整合千问 1024 维超球面稠密向量 + 嵌入式 BM25 稀疏倒排 + 无偏 RRF 粗排漏斗 + 第一阶段 ColBERT MaxSim 原生 SIMD 精排
  */
 public class ResilientHybridRetrievalFunnel {
 
     private static final Logger log = LoggerFactory.getLogger(ResilientHybridRetrievalFunnel.class);
     public static final int DEFAULT_ROUGH_POOL_SIZE = 500;
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     private final EmbeddedInvertedIndexEngine invertedIndexEngine;
     private final ReciprocalRankFusionEngine rrfEngine;
 
-    // 内存稠密向量库: docId -> 1536 维单位向量
+    // 内存稠密向量库: docId -> 1024 维单位向量
     private final Map<String, float[]> denseVectorIndex = new ConcurrentHashMap<>();
     // 内存多 Token 嵌入库 (供 ColBERT MaxSim 精排使用): docId -> float[] (连续展平多 Token 向量)
     private final Map<String, float[]> multiTokenDocIndex = new ConcurrentHashMap<>();
@@ -43,22 +43,22 @@ public class ResilientHybridRetrievalFunnel {
      * 注册或更新文档索引
      * @param docId 文档全局唯一标识
      * @param text 文档文本内容
-     * @param dense1536Vector 阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
-     * @param multiTokenVectors 文档多 Token 连续向量 (tokenCount * 1536 维)，若为 null 则自动使用 dense1536Vector 作为单 Token
+     * @param dense1024Vector 阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
+     * @param multiTokenVectors 文档多 Token 连续向量 (tokenCount * 1024 维)，若为 null 则自动使用 dense1024Vector 作为单 Token
      * @param tokenCount 多 Token 数量
      */
     public void indexDocument(
             String docId,
             String text,
-            float[] dense1536Vector,
+            float[] dense1024Vector,
             float[] multiTokenVectors,
             int tokenCount
     ) {
         Objects.requireNonNull(docId, "docId 不能为空");
         Objects.requireNonNull(text, "text 不能为空");
-        Objects.requireNonNull(dense1536Vector, "dense1536Vector 不能为空");
+        Objects.requireNonNull(dense1024Vector, "dense1024Vector 不能为空");
 
-        if (dense1536Vector.length != EMBEDDING_DIM) {
+        if (dense1024Vector.length != EMBEDDING_DIM) {
             throw new IllegalArgumentException("千问稠密向量维度必须严格为 " + EMBEDDING_DIM + " 维");
         }
 
@@ -66,14 +66,14 @@ public class ResilientHybridRetrievalFunnel {
         invertedIndexEngine.indexDocument(docId, text);
 
         // 2. 建立稠密向量索引
-        denseVectorIndex.put(docId, Arrays.copyOf(dense1536Vector, EMBEDDING_DIM));
+        denseVectorIndex.put(docId, Arrays.copyOf(dense1024Vector, EMBEDDING_DIM));
 
         // 3. 建立多 Token 晚期交互向量索引
         if (multiTokenVectors != null && tokenCount > 0) {
             multiTokenDocIndex.put(docId, Arrays.copyOf(multiTokenVectors, multiTokenVectors.length));
             multiTokenDocLens.put(docId, tokenCount);
         } else {
-            multiTokenDocIndex.put(docId, Arrays.copyOf(dense1536Vector, EMBEDDING_DIM));
+            multiTokenDocIndex.put(docId, Arrays.copyOf(dense1024Vector, EMBEDDING_DIM));
             multiTokenDocLens.put(docId, 1);
         }
     }
@@ -95,7 +95,7 @@ public class ResilientHybridRetrievalFunnel {
         // 1. 稀疏通道检索 (BM25)
         List<Map.Entry<String, Float>> sparseHits = invertedIndexEngine.search(query, DEFAULT_ROUGH_POOL_SIZE);
 
-        // 2. 稠密通道检索 (千问 1536 维超球面余弦点积)
+        // 2. 稠密通道检索 (千问 1024 维超球面余弦点积)
         List<Map.Entry<String, Float>> denseHits = searchDense(queryDenseEmbedding, DEFAULT_ROUGH_POOL_SIZE);
 
         // 3. 自适应推断两路通道权重并执行无偏 RRF 融合
@@ -121,9 +121,29 @@ public class ResilientHybridRetrievalFunnel {
         // 4. 截取粗排候选池 (由 50 扩大 10 倍至最多 500)
         int poolSize = Math.min(DEFAULT_ROUGH_POOL_SIZE, rrfCandidates.size());
         List<HybridRetrievalCandidate> pool = rrfCandidates.subList(0, poolSize);
+        int numDocsToRerank = pool.size();
+
+        // 若未提供真实多 Token 晚期交互嵌入，保留自适应双路 RRF 融合排序，避免退化单向量点积抹杀稀疏通道信号
+        if (queryTokenEmbeddings == null || queryTokenCount <= 0) {
+            List<HybridRetrievalCandidate> rrfRankedList = new ArrayList<>(numDocsToRerank);
+            for (HybridRetrievalCandidate original : pool) {
+                rrfRankedList.add(original.withFinalRerankScore((float) original.rrfScore()));
+            }
+            int resultSize = Math.min(finalTopK, rrfRankedList.size());
+            List<HybridRetrievalCandidate> finalTopKList = List.copyOf(rrfRankedList.subList(0, resultSize));
+            long duration = System.nanoTime() - startNanos;
+            return HybridRetrievalReceipt.create(
+                    query,
+                    denseHits.size(),
+                    sparseHits.size(),
+                    numDocsToRerank,
+                    finalTopKList,
+                    duration,
+                    "RRF_ADAPTIVE_FUSION"
+            );
+        }
 
         // 5. 准备 ColBERT MaxSim 5ms 原生精排参数
-        int numDocsToRerank = pool.size();
         int[] docLens = new int[numDocsToRerank];
         int totalDocTokens = 0;
         for (int i = 0; i < numDocsToRerank; i++) {

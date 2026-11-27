@@ -44,8 +44,8 @@ public record ColbertScoreReceipt(
         }
         List<Float> scoreList = List.of(boxed);
 
-        String rawPayload = String.format("%d:%d:%d:%s:%d:%d",
-                queryLength, numDocs, dimension, executionMode, executionDurationNanos, scoresArray.length);
+        String rawPayload = buildScorePayload(
+                queryLength, numDocs, dimension, executionMode, executionDurationNanos, scoreList);
         String signature = generateSha256(rawPayload);
 
         return new ColbertScoreReceipt(
@@ -60,16 +60,43 @@ public record ColbertScoreReceipt(
     }
 
     /**
-     * 使用 MessageDigest.isEqual 进行常量时间签名验签，防范时序侧信道攻击
+     * 使用 MessageDigest.isEqual 进行常量时间签名验签，防范时序侧信道攻击并校验全量分数载荷
      */
     public boolean verifySignature() {
-        String rawPayload = String.format("%d:%d:%d:%s:%d:%d",
-                queryLength, numDocs, dimension, executionMode, executionDurationNanos, scores.size());
+        if (signature == null || signature.isEmpty()) {
+            return false;
+        }
+        String rawPayload = buildScorePayload(
+                queryLength, numDocs, dimension, executionMode, executionDurationNanos, scores);
         String expectedSignature = generateSha256(rawPayload);
         return MessageDigest.isEqual(
                 signature.getBytes(StandardCharsets.UTF_8),
                 expectedSignature.getBytes(StandardCharsets.UTF_8)
         );
+    }
+
+    /**
+     * 构造包含全量分数 IEEE 754 比特位的规范化签名载荷，防止篡改分数值绕过验签
+     */
+    private static String buildScorePayload(
+            int queryLength,
+            int numDocs,
+            int dimension,
+            String executionMode,
+            long executionDurationNanos,
+            List<Float> scoreList
+    ) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(queryLength).append(':')
+                .append(numDocs).append(':')
+                .append(dimension).append(':')
+                .append(executionMode).append(':')
+                .append(executionDurationNanos).append(':')
+                .append(scoreList.size());
+        for (Float score : scoreList) {
+            sb.append(':').append(Float.floatToIntBits(score != null ? score : 0.0f));
+        }
+        return sb.toString();
     }
 
     public float[] getScoresArray() {

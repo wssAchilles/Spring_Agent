@@ -112,14 +112,14 @@ public sealed interface MemoryPage extends Serializable permits MemoryPage.CoreP
     /**
      * 活跃时序交互快轨页 (RecallPage)
      * <p>
-     * 承载当前会话最近活跃的单次回合交互，挂载阿里千问 1536 维超球面单位向量。
+     * 承载当前会话最近活跃的单次回合交互，挂载阿里千问 1024 维超球面单位向量。
      * </p>
      */
     record RecallPage(
             int pageId,
             String role,
             String content,
-            float[] sphericalVector, // 阿里千问 1536 维单位向量 (||v||_2 = 1.0)
+            float[] sphericalVector, // 阿里千问 1024 维单位向量 (||v||_2 = 1.0)
             Map<String, String> episodicFacts,
             long timestamp,
             String pageSignature
@@ -129,8 +129,8 @@ public sealed interface MemoryPage extends Serializable permits MemoryPage.CoreP
             Objects.requireNonNull(role, "role 不能为空");
             Objects.requireNonNull(content, "content 不能为空");
             Objects.requireNonNull(sphericalVector, "sphericalVector 不能为空");
-            if (sphericalVector.length != 1536) {
-                throw new IllegalArgumentException("超球面向量必须严格为阿里千问 1536 维");
+            if (sphericalVector.length != 1024) {
+                throw new IllegalArgumentException("超球面向量必须严格为阿里千问 1024 维");
             }
             sphericalVector = sphericalVector.clone();
             episodicFacts = episodicFacts != null ? Map.copyOf(episodicFacts) : Map.of();

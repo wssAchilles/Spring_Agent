@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 /**
  * 海马体在线快轨情景工作缓冲区 (Hippocampal Working Buffer)
  * 采用环形缓冲区管理短期活跃情境记忆，结合三级冷备可逆隔离机制防物理硬删除；
- * 基于阿里千问 1536 维超球面单位向量进行测地大圆弧相似度检索。
+ * 基于阿里千问 1024 维超球面单位向量进行测地大圆弧相似度检索。
  */
 public class HippocampalWorkingBuffer {
 
@@ -76,7 +76,7 @@ public class HippocampalWorkingBuffer {
     /**
      * 基于超球面测地大圆弧度量检索最相似的情境记忆
      *
-     * @param queryVector 1536 维超球面单位向量
+     * @param queryVector 1024 维超球面单位向量
      * @param topK        最大召回条数
      * @param minSimilarity 最小余弦相似度门禁
      * @return 匹配列表，按余弦相似度降序排序
@@ -84,7 +84,7 @@ public class HippocampalWorkingBuffer {
     public List<RetrievalResult> retrieveSimilar(float[] queryVector, int topK, float minSimilarity) {
         Objects.requireNonNull(queryVector, "queryVector cannot be null");
         if (queryVector.length != EpisodicTurnRecord.VECTOR_DIMENSION) {
-            throw new IllegalArgumentException("queryVector must be 1536 dimensions");
+            throw new IllegalArgumentException("queryVector must be 1024 dimensions");
         }
 
         List<EpisodicTurnRecord> candidates = snapshotActiveTurns();

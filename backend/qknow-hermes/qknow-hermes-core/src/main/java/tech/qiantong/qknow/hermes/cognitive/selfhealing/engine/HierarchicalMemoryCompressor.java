@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 动态分层长程记忆压缩器
- * 基于 Ebbinghaus 遗忘时间指数衰减与阿里千问 1536 维超球面测地线内积重要度打分
+ * 基于 Ebbinghaus 遗忘时间指数衰减与阿里千问 1024 维超球面测地线内积重要度打分
  */
 @Slf4j
 @Component
@@ -53,9 +53,9 @@ public class HierarchicalMemoryCompressor {
         for (MemoryEntry m : entries) {
             double timeDecay = Math.exp(-(now - m.createdAtMillis()) / EBBINGHAUS_HALF_LIFE_MILLIS);
             double simScore = 0.5; // 默认中性
-            if (queryEmbedding != null && queryEmbedding.length == 1536 && m.embedding() != null && m.embedding().length == 1536) {
+            if (queryEmbedding != null && queryEmbedding.length == 1024 && m.embedding() != null && m.embedding().length == 1024) {
                 double dot = 0.0;
-                for (int i = 0; i < 1536; i++) {
+                for (int i = 0; i < 1024; i++) {
                     dot += queryEmbedding[i] * m.embedding()[i];
                 }
                 simScore = (dot + 1.0) / 2.0;

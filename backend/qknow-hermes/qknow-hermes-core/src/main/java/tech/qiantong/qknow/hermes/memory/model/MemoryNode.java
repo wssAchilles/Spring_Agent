@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * 四元组记忆流节点：<t, c, e, I>
- * 包含：创建时间戳、文本内容、阿里千问 1536 维超球面嵌入向量、重要性评分，以及动态衰减衰减因子。
+ * 包含：创建时间戳、文本内容、阿里千问 1024 维超球面嵌入向量、重要性评分，以及动态衰减衰减因子。
  */
 @Data
 @Builder
@@ -37,7 +37,7 @@ public class MemoryNode implements Serializable {
     private String content;
 
     /**
-     * 阿里千问 1536 维单位超球面嵌入向量 e
+     * 阿里千问 1024 维单位超球面嵌入向量 e
      */
     private float[] embedding;
 

@@ -9,7 +9,7 @@ package tech.qiantong.qknow.hermes.cognitive.dto;
  * @param compositeScore  综合效用检索得分 S(m, q)
  * @param recencyScore    艾宾浩斯强化衰减留存率 R(t)
  * @param importanceScore 认知重要性评分 I(m)
- * @param relevanceScore  阿里千问 1536 维超球面测地余弦相关度
+ * @param relevanceScore  阿里千问 1024 维超球面测地余弦相关度
  * @param causalClock     因果版本时钟 Happens-Before 标量
  * @param isMasked        是否被因果时序规则遮蔽剪除
  */

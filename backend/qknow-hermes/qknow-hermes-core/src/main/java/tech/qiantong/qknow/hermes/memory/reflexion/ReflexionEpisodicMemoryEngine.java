@@ -21,7 +21,7 @@ public interface ReflexionEpisodicMemoryEngine {
      * @param trialSequence       试次编号
      * @param executionTrajectory 失败的完整动作与输出轨迹
      * @param environmentFeedback 环境或测试反馈的原始错误报文
-     * @return 异步返回包含反思先验与 1536 维超球面向量的不可变凭单
+     * @return 异步返回包含反思先验与 1024 维超球面向量的不可变凭单
      */
     CompletableFuture<ReflexionEpisodicMemoryReceipt> evaluateAndReflectAsync(
             String tenantId,
@@ -33,17 +33,17 @@ public interface ReflexionEpisodicMemoryEngine {
     );
 
     /**
-     * 在新任务发起时，基于当前任务意图的千问 1536 维超球面向量检索高相关反思先验
+     * 在新任务发起时，基于当前任务意图的千问 1024 维超球面向量检索高相关反思先验
      *
      * @param tenantId            租户隔离域
-     * @param queryVector1536     当前任务描述的千问 1536 维单位向量
+     * @param queryVector1024     当前任务描述的千问 1024 维单位向量
      * @param topK                召回反思条数 (通常为 2~3 条)
      * @param minCosineThreshold  超球面余弦相似度下限 (默认 0.80)
      * @return 匹配的反思经验教训列表
      */
     List<ReflexionEpisodicMemoryReceipt> recallRelevantReflections(
             String tenantId,
-            float[] queryVector1536,
+            float[] queryVector1024,
             int topK,
             double minCosineThreshold
     );

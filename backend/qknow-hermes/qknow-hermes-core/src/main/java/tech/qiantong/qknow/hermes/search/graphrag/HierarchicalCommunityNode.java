@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * GraphRAG 分层社区结构不可变节点
  * 遵循 Java 21 Record 纯不可变对象规范
- * 挂载阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+ * 挂载阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
  */
 public record HierarchicalCommunityNode(
         String communityId,
@@ -17,7 +17,7 @@ public record HierarchicalCommunityNode(
         float[] communityEmbedding,
         List<String> childCommunityIds
 ) {
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     public HierarchicalCommunityNode {
         Objects.requireNonNull(communityId, "communityId 不能为空");
