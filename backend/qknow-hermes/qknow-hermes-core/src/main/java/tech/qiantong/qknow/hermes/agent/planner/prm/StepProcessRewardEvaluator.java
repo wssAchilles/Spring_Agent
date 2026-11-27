@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 /**
  * 细粒度步骤级过程奖励评估器 (Step-Level Process Reward Evaluator - PRM)
- * 遵循多源混合打分方程与阿里千问 1536 维超球面单位几何规范：
+ * 遵循多源混合打分方程与阿里千问 1024 维超球面单位几何规范：
  * 1. 步骤切分协议：基于 DeepSeek 思考流换行与段落标记切分思维步，保障 64-Token 规整门禁；
  * 2. 混合过程奖励打分方程：
  *    r_step = 0.35 * s_contract + 0.25 * s_causal + 0.25 * s_cos + 0.15 * s_llm
@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public class StepProcessRewardEvaluator {
 
     public static final double DEFAULT_PRM_THRESHOLD = 0.60;
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
 
     // 多源混合打分权重契约
     public static final double WEIGHT_CONTRACT = 0.35;
@@ -94,8 +94,8 @@ public class StepProcessRewardEvaluator {
      * @param traceSessionId   链路会话 ID
      * @param stepIndex        步骤序号
      * @param stepContent      步骤推演内容
-     * @param targetEmbedding  目标意图千问 1536 维超球面单位向量
-     * @param stepEmbedding    当前步骤千问 1536 维超球面单位向量
+     * @param targetEmbedding  目标意图千问 1024 维超球面单位向量
+     * @param stepEmbedding    当前步骤千问 1024 维超球面单位向量
      * @param contractValid    Hoare 逻辑前置契约合规标志
      * @param causalOrderValid Kahn 因果拓扑偏序对齐标志
      * @param overrideLlmScore 可选的 LLM 自省打分 (null 则触发轻量自省启发式估算)
@@ -120,7 +120,7 @@ public class StepProcessRewardEvaluator {
         // 2. Kahn 因果拓扑偏序得分
         double sCausal = causalOrderValid ? 1.0 : 0.0;
 
-        // 3. 千问 1536 维超球面余弦相似度得分
+        // 3. 千问 1024 维超球面余弦相似度得分
         double sCosine;
         float[] normalizedStepVec = null;
         if (targetEmbedding != null && stepEmbedding != null) {

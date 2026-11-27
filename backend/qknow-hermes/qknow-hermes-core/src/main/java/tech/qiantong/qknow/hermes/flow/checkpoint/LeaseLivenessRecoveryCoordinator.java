@@ -8,6 +8,7 @@ import tech.qiantong.qknow.hermes.flow.dag.DagCheckpointManager;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 /**
  * 分布式 MCP 断点租约活性自愈中枢 (Lease Liveness Recovery Coordinator)
@@ -29,6 +30,8 @@ public class LeaseLivenessRecoveryCoordinator implements AutoCloseable {
 
     private final ScheduledExecutorService watchdogScheduler;
     private ScheduledFuture<?> scheduledTask;
+    // 自愈接管成功后的执行器恢复回调列表
+    private final CopyOnWriteArrayList<Consumer<LeaseLivenessRecoveryReceipt>> recoveryListeners = new CopyOnWriteArrayList<>();
 
     public LeaseLivenessRecoveryCoordinator() {
         this(null, "node-" + UUID.randomUUID().toString().substring(0, 8), 10_000L);
@@ -47,6 +50,15 @@ public class LeaseLivenessRecoveryCoordinator implements AutoCloseable {
 
     public void setCheckpointManager(DagCheckpointManager checkpointManager) {
         this.checkpointManager = checkpointManager;
+    }
+
+    /**
+     * 注册超时租约抢占成功后的工作流续跑回调监听器
+     */
+    public void registerRecoveryListener(Consumer<LeaseLivenessRecoveryReceipt> listener) {
+        if (listener != null) {
+            this.recoveryListeners.add(listener);
+        }
     }
 
     /**
@@ -91,6 +103,14 @@ public class LeaseLivenessRecoveryCoordinator implements AutoCloseable {
                 log.info("成功自愈接管超时断点: runtimeId={}, prevOwner={}, newOwner={}, fencingToken={}",
                         receipt.runtimeId(), receipt.previousOwnerId(), receipt.newOwnerId(), receipt.newFencingToken());
                 recoveredReceipts.add(receipt);
+                for (Consumer<LeaseLivenessRecoveryReceipt> listener : recoveryListeners) {
+                    try {
+                        listener.accept(receipt);
+                    } catch (Exception listenerEx) {
+                        log.warn("执行断点恢复监听器异常: runtimeId={}, error={}",
+                                receipt.runtimeId(), listenerEx.getMessage());
+                    }
+                }
             });
         }
         return recoveredReceipts;

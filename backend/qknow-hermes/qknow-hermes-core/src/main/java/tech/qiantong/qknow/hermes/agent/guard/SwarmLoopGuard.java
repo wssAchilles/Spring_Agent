@@ -69,17 +69,31 @@ public class SwarmLoopGuard {
 
         LinkedList<String> window = semanticFingerprints.computeIfAbsent(sessionId, k -> new LinkedList<>());
         synchronized (window) {
-            window.addLast(fingerprint);
-            long duplicates = window.stream().filter(fp -> fp.equals(fingerprint)).count();
+            // 先按窗口容量上限 W=6 预估淘汰最老指纹后的真实重复频次，消除 W+1=7 幽灵计数误熔断
+            boolean willEvictOldest = window.size() >= 6;
+            long existingMatches = 0L;
+            int idx = 0;
+            for (String fp : window) {
+                if (willEvictOldest && idx == 0) {
+                    idx++;
+                    continue;
+                }
+                if (fp.equals(fingerprint)) {
+                    existingMatches++;
+                }
+                idx++;
+            }
+            long duplicates = existingMatches + 1L;
             if (duplicates >= MAX_SEMANTIC_REPETITIONS) {
                 log.warn("[SwarmLoopGuard] 会话 {} 触发语义振荡熔断！相同语义输出已出现 {} 次", sessionId, duplicates);
                 throw new SwarmLoopException("SWARM_SEMANTIC_OSCILLATION_BREAKER",
                         "智能体群进入语义无意义循环震荡，已强制熔断并直接收敛当前上下文。");
             }
 
-            if (window.size() > 6) {
+            if (willEvictOldest) {
                 window.removeFirst();
             }
+            window.addLast(fingerprint);
         }
     }
 

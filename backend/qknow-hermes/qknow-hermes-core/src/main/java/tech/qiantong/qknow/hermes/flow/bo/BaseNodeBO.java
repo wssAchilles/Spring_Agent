@@ -140,7 +140,13 @@ public abstract class BaseNodeBO {
      * @return 格式化后的字符串
      */
     public String format(String str, RuntimeContextBO context) {
-        JSONObject contextVariables = context.getVariables();
+        if (str == null) {
+            return "";
+        }
+        JSONObject contextVariables = context != null ? context.getVariables() : null;
+        if (contextVariables == null) {
+            contextVariables = new JSONObject();
+        }
         Pattern pattern = Pattern.compile("\\{\\{\\s*(.+?)\\s*}}");
         Matcher matcher = pattern.matcher(str);
         if (!matcher.find()) {
@@ -154,7 +160,8 @@ public abstract class BaseNodeBO {
             if (StrUtil.isEmpty(replacement)) {
                 continue;
             }
-            matcher.appendReplacement(sb, replacement);
+            // 转义替换串中的 $ 与反斜杠，避免正则分组反向引用异常
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(sb);
         return sb.toString();

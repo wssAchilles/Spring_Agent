@@ -138,10 +138,12 @@ public class DagExecutor {
         // 尝试加载检查点
         DagCheckpointManager.DagCheckpoint checkpoint = checkpointManager.loadCheckpoint(runtimeId);
         int startGroupIndex = 0;
+        long activeFencingToken = 0L;
         Map<String, NodeRunResultBO> restoredResults = new LinkedHashMap<>();
 
         if (checkpoint != null) {
             startGroupIndex = checkpoint.getGroupIndex();
+            activeFencingToken = checkpoint.getFencingToken();
             restoredResults = checkpointManager.restoreCompletedResults(checkpoint);
             // 恢复上下文环境变量
             Map<String, Object> restoredVars = checkpointManager.restoreVariables(checkpoint);
@@ -195,15 +197,13 @@ public class DagExecutor {
                 resultMap.put(pending.get(0), result);
 
                 if (isError(result)) {
-                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
-                            context != null ? context.getVariables() : Collections.emptyMap());
+                    persistCheckpointSafely(runtimeId, flowId, groupIndex, resultMap, context, activeFencingToken);
                     log.error("节点执行失败，检查点已保存，终止工作流: {}", result.getNodeName());
                     completedSuccessfully = false;
                     break;
                 }
                 if (isSuspended(result)) {
-                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
-                            context != null ? context.getVariables() : Collections.emptyMap());
+                    persistCheckpointSafely(runtimeId, flowId, groupIndex, resultMap, context, activeFencingToken);
                     log.info("节点挂起，检查点已保存: runtimeId={}, node={}", runtimeId, result.getNodeName());
                     completedSuccessfully = false;
                     break;
@@ -237,31 +237,47 @@ public class DagExecutor {
                 }
 
                 if (hasError) {
-                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
-                            context != null ? context.getVariables() : Collections.emptyMap());
+                    persistCheckpointSafely(runtimeId, flowId, groupIndex, resultMap, context, activeFencingToken);
                     log.error("并行执行组中存在失败节点，检查点已保存，终止工作流");
                     completedSuccessfully = false;
                     break;
                 }
                 if (hasSuspended) {
-                    checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap,
-                            context != null ? context.getVariables() : Collections.emptyMap());
+                    persistCheckpointSafely(runtimeId, flowId, groupIndex, resultMap, context, activeFencingToken);
                     log.info("并行执行组中存在挂起节点，检查点已保存");
                     completedSuccessfully = false;
                     break;
                 }
             }
 
-            // 每组执行完后保存检查点（包含变量环境）
-            checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex + 1, resultMap,
-                    context != null ? context.getVariables() : Collections.emptyMap());
+            // 每组执行完后通过写屏障保存检查点；若租约已被其他节点抢占则立即中止僵尸执行
+            if (!persistCheckpointSafely(runtimeId, flowId, groupIndex + 1, resultMap, context, activeFencingToken)) {
+                log.warn("检测到 Fencing Token 已被新节点抢占递增，当前执行器主动中止防止脑裂: runtimeId={}", runtimeId);
+                completedSuccessfully = false;
+                break;
+            }
         }
 
-        // 只在全部成功时删除检查点
+        // 只在全部成功时软删除归档检查点
         if (completedSuccessfully) {
             checkpointManager.deleteCheckpoint(runtimeId);
         }
         return allResults;
+    }
+
+    /**
+     * 优先使用 Fencing Token 写屏障持久化检查点，首次无令牌时回退创建初始检查点
+     */
+    private boolean persistCheckpointSafely(String runtimeId, String flowId, int groupIndex,
+                                            Map<String, NodeRunResultBO> resultMap,
+                                            RuntimeContextBO context, long activeFencingToken) {
+        Map<String, Object> vars = context != null ? context.getVariables() : Collections.emptyMap();
+        if (activeFencingToken > 0L) {
+            return checkpointManager.saveCheckpointWithFencingToken(
+                    runtimeId, flowId, groupIndex, resultMap, vars, activeFencingToken);
+        }
+        checkpointManager.saveCheckpointWithVariables(runtimeId, flowId, groupIndex, resultMap, vars);
+        return true;
     }
 
     public boolean wakeSuspended(String runtimeId, Map<String, Object> humanInput) {

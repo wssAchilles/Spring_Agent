@@ -7,7 +7,7 @@ import tech.qiantong.qknow.hermes.agent.governor.SphericalDyLANRoleGovernor;
 import java.util.*;
 
 /**
- * 生产级千问 1536 维超球面动态角色涌现与修剪治理器实现 (DefaultSphericalDyLANRoleGovernor)
+ * 生产级千问 1024 维超球面动态角色涌现与修剪治理器实现 (DefaultSphericalDyLANRoleGovernor)
  * 基于余弦测地度量与信息熵动态调整角色激活拓扑，防止负收益智能体复读。
  */
 @Slf4j
@@ -43,7 +43,7 @@ public class DefaultSphericalDyLANRoleGovernor implements SphericalDyLANRoleGove
 
         for (BaseAgent agent : candidates) {
             String name = agent.getName();
-            // 计算智能体描述的合成千问 1536 维超球面单位向量
+            // 计算智能体描述的合成千问 1024 维超球面单位向量
             float[] agentEmbedding = synthesizeAgentHypersphericalVector(agent.getDescription() != null ? agent.getDescription() : name);
             double cosine = computeHypersphericalCosine(currentTaskEmbedding, agentEmbedding);
             maxCosineSim = Math.max(maxCosineSim, cosine);
@@ -83,11 +83,11 @@ public class DefaultSphericalDyLANRoleGovernor implements SphericalDyLANRoleGove
     }
 
     private double computeHypersphericalCosine(float[] u, float[] v) {
-        if (u == null || v == null || u.length != 1536 || v.length != 1536) {
+        if (u == null || v == null || u.length != 1024 || v.length != 1024) {
             return 0.5; // 缺省正交中立值
         }
         double dot = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             dot += u[i] * v[i];
         }
         // 限制在 [-1.0, 1.0] 内，归一化映射至 [0.0, 1.0] 相似度区间
@@ -95,15 +95,15 @@ public class DefaultSphericalDyLANRoleGovernor implements SphericalDyLANRoleGove
     }
 
     private float[] synthesizeAgentHypersphericalVector(String text) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         int hash = text.hashCode();
         double normSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) Math.cos(hash * 31 + i);
             normSq += v[i] * v[i];
         }
         float invNorm = (float) (1.0 / Math.sqrt(normSq));
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] *= invNorm; // L2 严格归一化为 1.0 (超球面单位向量)
         }
         return v;

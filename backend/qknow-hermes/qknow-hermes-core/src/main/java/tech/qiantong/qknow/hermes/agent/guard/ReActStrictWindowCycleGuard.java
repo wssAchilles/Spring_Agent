@@ -128,51 +128,56 @@ public class ReActStrictWindowCycleGuard {
                 return new StrictCheckResult(ReActCycleGuard.CycleCheckResult.breaker(reason), receipt);
             }
 
-            // 阶段 2：严格先淘汰最老指纹 (Eviction-Precedence)
-            // 保证参与后续断言的窗口元素总数在纳入当前提议后严格不超过 windowCapacity
-            if (callFingerprints.size() >= windowCapacity) {
-                String evictedFp = callFingerprints.removeFirst();
-                fingerprintCounts.computeIfPresent(evictedFp, (k, v) -> v > 1 ? v - 1 : null);
-
-                // 同步淘汰最老的二元转移对
-                if (!transitionPairs.isEmpty()) {
-                    String evictedTrans = transitionPairs.removeFirst();
-                    transitionCounts.computeIfPresent(evictedTrans, (k, v) -> v > 1 ? v - 1 : null);
-                }
-            }
+            // 阶段 2：无副作用预计算淘汰最老指纹与最老转移对后的有效计数
+            // 仅在阶段 6 校验全部通过决定放行时才真正执行淘汰与入队，防止被拒调用缩减有效窗口容量
+            boolean shouldEvictOldest = callFingerprints.size() >= windowCapacity && !callFingerprints.isEmpty();
+            String candidateEvictedFp = shouldEvictOldest ? callFingerprints.getFirst() : null;
+            String candidateEvictedTrans = (shouldEvictOldest && !transitionPairs.isEmpty()) ? transitionPairs.getFirst() : null;
+            int effectiveWindowAfterEvict = shouldEvictOldest ? callFingerprints.size() - 1 : callFingerprints.size();
 
             // 阶段 3：计算淘汰后的当前提议指纹有效频次
-            int proposedCount = fingerprintCounts.getOrDefault(fp, 0) + 1;
+            int baseFpCount = fingerprintCounts.getOrDefault(fp, 0) - (fp.equals(candidateEvictedFp) ? 1 : 0);
+            int proposedCount = Math.max(0, baseFpCount) + 1;
 
             // 阶段 4：滑动窗口单指纹高频振荡阈值判定 (Oscillation Threshold Evaluation)
             if (proposedCount >= maxRepeatedCalls) {
                 String reason = String.format("【系统纠偏提示】：检测到在当前滑动窗口中循环调用工具 '%s' 达到 %d 次。请停止尝试该工具，基于当前已知全部信息进行归纳总结，并明确向用户说明局限性。", toolName, maxRepeatedCalls);
                 log.warn("[ReActStrictGuard] 触发严格滑动窗口高频振荡熔断: tool={}, proposedCount={}, limit={}", toolName, proposedCount, maxRepeatedCalls);
                 ReActCycleGuardReceipt receipt = ReActCycleGuardReceipt.create(
-                        receiptId, sessionId, toolName, fp, windowCapacity, callFingerprints.size(),
+                        receiptId, sessionId, toolName, fp, windowCapacity, effectiveWindowAfterEvict,
                         proposedCount, true, reason
                 );
                 return new StrictCheckResult(ReActCycleGuard.CycleCheckResult.breaker(reason), receipt);
             }
 
             // 阶段 5：二元交错死循环判定 (Interleaved Oscillation Detection, e.g. A -> B -> A -> B -> A -> B)
-            if (!callFingerprints.isEmpty()) {
+            if (effectiveWindowAfterEvict > 0 && !callFingerprints.isEmpty()) {
                 String lastFp = callFingerprints.getLast();
                 String transitionKey = lastFp + "->" + fp;
-                int currentTransCount = transitionCounts.getOrDefault(transitionKey, 0) + 1;
+                int baseTransCount = transitionCounts.getOrDefault(transitionKey, 0)
+                        - (transitionKey.equals(candidateEvictedTrans) ? 1 : 0);
+                int currentTransCount = Math.max(0, baseTransCount) + 1;
                 if (currentTransCount >= maxTransitionRepeats) {
                     // 若前驱转移交错重复，且当前形成交错振荡循环
                     String reason = String.format("【系统纠偏提示】：检测到跨工具交错死循环与高频重复循环调用 (Interleaved Oscillation Cycle: %s)。请停止在固定工具间来回震荡，重新梳理解决思路！", toolName);
                     log.warn("[ReActStrictGuard] 触发跨工具交错死循环熔断: transition={}, count={}", transitionKey, currentTransCount);
                     ReActCycleGuardReceipt receipt = ReActCycleGuardReceipt.create(
-                            receiptId, sessionId, toolName, fp, windowCapacity, callFingerprints.size(),
+                            receiptId, sessionId, toolName, fp, windowCapacity, effectiveWindowAfterEvict,
                             proposedCount, true, reason
                     );
                     return new StrictCheckResult(ReActCycleGuard.CycleCheckResult.breaker(reason), receipt);
                 }
             }
 
-            // 阶段 6：通过校验，原子提交状态变更入队
+            // 阶段 6：通过校验，原子执行旧元素淘汰并提交新调用入队
+            if (shouldEvictOldest) {
+                String evictedFp = callFingerprints.removeFirst();
+                fingerprintCounts.computeIfPresent(evictedFp, (k, v) -> v > 1 ? v - 1 : null);
+                if (!transitionPairs.isEmpty()) {
+                    String evictedTrans = transitionPairs.removeFirst();
+                    transitionCounts.computeIfPresent(evictedTrans, (k, v) -> v > 1 ? v - 1 : null);
+                }
+            }
             callFingerprints.addLast(fp);
             fingerprintCounts.put(fp, proposedCount);
 

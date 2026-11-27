@@ -9,12 +9,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 千问 1536 维超球面测地线与 ACL 动态边重连治理器 (DynamicSwarmEdgeRewiringGovernor)
+ * 千问 1024 维超球面测地线与 ACL 动态边重连治理器 (DynamicSwarmEdgeRewiringGovernor)
  * 遵循 Phase 135 规范与零信任安全架构
- * 1. 约束阿里千问 Embedding 1536 维超球面向量流形范数 ||v||_2 = 1.0 +/- 10^-4
+ * 1. 约束阿里千问 Embedding 1024 维超球面向量流形范数 ||v||_2 = 1.0 +/- 10^-4
  * 2. 测地内积相似度门禁 tau >= 0.75，结合迟滞回线阈值 (建立 >= 0.75, 断开 <= 0.65)
  * 3. 租户角色调用图 ACL 白名单强校验，越权幽灵边缘拦截率 100.0%
- * 4. 纯内存重连计算时间复杂度严格有界于 O(|V_t| * 1536 + |E_t|)，耗时 <= 5.0ms
+ * 4. 纯内存重连计算时间复杂度严格有界于 O(|V_t| * 1024 + |E_t|)，耗时 <= 5.0ms
  *
  * @author Achilles
  * @since 2026-09-25
@@ -26,7 +26,7 @@ public class DynamicSwarmEdgeRewiringGovernor {
 
     public static final double DEFAULT_SIMILARITY_THRESHOLD = 0.75;
     public static final double DISCONNECT_HYSTERESIS_THRESHOLD = 0.65;
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final int MAX_HANDOFF_DEPTH = 5;
 
     // 智能体能力卡定义 (AgentCard)
@@ -43,7 +43,7 @@ public class DynamicSwarmEdgeRewiringGovernor {
             Objects.requireNonNull(tenantId, "tenantId must not be null");
             Objects.requireNonNull(embedding, "embedding must not be null");
             if (embedding.length != EMBEDDING_DIMENSION) {
-                throw new IllegalArgumentException("Embedding dimension must be 1536, but was " + embedding.length);
+                throw new IllegalArgumentException("Embedding dimension must be 1024, but was " + embedding.length);
             }
         }
     }
@@ -136,7 +136,7 @@ public class DynamicSwarmEdgeRewiringGovernor {
             return new RewireDecision(false, 0.0, sourceAgentId, targetAgentId, "ROLE_ACL_FORBIDDEN", null);
         }
 
-        // 2. 阿里千问 1536 维超球面单位向量测地内积计算
+        // 2. 阿里千问 1024 维超球面单位向量测地内积计算
         verifyHypersphericalNorm(intentEmbedding);
         double similarity = computeDotProduct(intentEmbedding, target.embedding());
 
@@ -181,7 +181,7 @@ public class DynamicSwarmEdgeRewiringGovernor {
      */
     public static void verifyHypersphericalNorm(float[] v) {
         if (v == null || v.length != EMBEDDING_DIMENSION) {
-            throw new IllegalArgumentException("Embedding vector must be 1536-dimensional");
+            throw new IllegalArgumentException("Embedding vector must be 1024-dimensional");
         }
         double sumSq = 0.0;
         for (float val : v) {
@@ -189,12 +189,12 @@ public class DynamicSwarmEdgeRewiringGovernor {
         }
         double norm = Math.sqrt(sumSq);
         if (Math.abs(norm - 1.0) > 1e-3) { // 考虑浮点精度容差
-            throw new IllegalArgumentException(String.format("Vector is not unit normalized on S^1535: ||v||_2 = %.6f", norm));
+            throw new IllegalArgumentException(String.format("Vector is not unit normalized on S^1023: ||v||_2 = %.6f", norm));
         }
     }
 
     /**
-     * 1536 维测地线点积计算 (单位向量点积等于余弦相似度)
+     * 1024 维测地线点积计算 (单位向量点积等于余弦相似度)
      */
     public static double computeDotProduct(float[] a, float[] b) {
         double dot = 0.0;

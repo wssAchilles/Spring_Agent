@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * 分层多模态意图状态 Java 21 Record
- * 封装宏观业务意图、子意图路径、槽位映射与阿里千问 1536 维超球面单位向量
+ * 封装宏观业务意图、子意图路径、槽位映射与阿里千问 1024 维超球面单位向量
  */
 public record HierarchicalIntentState(
         String intentId,
@@ -17,11 +17,11 @@ public record HierarchicalIntentState(
         float[] sphericalEmbedding,
         long timestamp
 ) {
-    public static final int EXPECTED_DIMENSION = 1536;
+    public static final int EXPECTED_DIMENSION = 1024;
     public static final double NORM_TOLERANCE = 1e-4;
 
     /**
-     * 强校验阿里千问 1536 维超球面单位向量模长范数 (||v||_2 = 1.0 +- 1e-4)
+     * 强校验阿里千问 1024 维超球面单位向量模长范数 (||v||_2 = 1.0 +- 1e-4)
      */
     public boolean isValidEmbedding() {
         if (sphericalEmbedding == null || sphericalEmbedding.length != EXPECTED_DIMENSION) {

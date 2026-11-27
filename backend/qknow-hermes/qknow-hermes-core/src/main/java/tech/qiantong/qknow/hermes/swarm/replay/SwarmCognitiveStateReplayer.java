@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 多智能体全局认知状态捕获、写时复制结构共享与双向步进回放引擎 (SwarmCognitiveStateReplayer)
  * <p>
  * 核心机制：
- * 1. 纳秒级捕获多智能体集群（含角色认知、工作记忆、千问 1536 维超球面策略向量与共享黑板）的不可变快照；
+ * 1. 纳秒级捕获多智能体集群（含角色认知、工作记忆、千问 1024 维超球面策略向量与共享黑板）的不可变快照；
  * 2. 基于持久化结构共享 (Persistent Structural Sharing) 记录单步增量，空间节约率 >= 75.0%，快照耗时 <= 1.0ms；
  * 3. 支持向前（Forward-Step）与向后（Backward-Step）双向无损状态寻址与回滚重构，耗时 <= 2.0ms；
  * 4. 彻底杜绝幽灵变量跨步污染，全状态以不可变视图严格隔离。
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class SwarmCognitiveStateReplayer {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     /**
      * 单个智能体的认知快照状态
@@ -31,7 +31,7 @@ public class SwarmCognitiveStateReplayer {
      * @param role 智能体角色 (如 "PRO", "CON", "CRITIC", "ARBITRATOR")
      * @param currentThought 当前思考链摘要
      * @param workingMemory 工作记忆键值对 (不可变)
-     * @param qwenEmbedding 阿里千问 1536 维超球面归一化向量
+     * @param qwenEmbedding 阿里千问 1024 维超球面归一化向量
      */
     public record SwarmAgentSnapshotState(
             String agentId,

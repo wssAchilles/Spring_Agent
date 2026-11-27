@@ -19,7 +19,7 @@ public interface HypersphericalHnswToolIndex {
      * 增量注册工具向量节点
      *
      * @param toolCode        工具编码
-     * @param unitVector      1536 维超球面单位向量
+     * @param unitVector      1024 维超球面单位向量
      * @param useQuantization 是否启用 SQ8 标量量化压缩
      */
     void insert(String toolCode, float[] unitVector, boolean useQuantization);
@@ -27,7 +27,7 @@ public interface HypersphericalHnswToolIndex {
     /**
      * 亚毫秒级 Top-K 意图投影近邻检索
      *
-     * @param queryUnitVector 1536 维查询单位向量
+     * @param queryUnitVector 1024 维查询单位向量
      * @param topK            返回候选数量
      * @param efSearch        搜索动态候选束宽
      * @return 排序后的候选工具列表

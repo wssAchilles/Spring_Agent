@@ -54,12 +54,14 @@ public interface StateCheckpointRepository {
                 long fencingToken
         ) {
             long now = System.currentTimeMillis();
-            String payload = String.format("%s|%s|%s|%d|%d|%d",
-                    checkpointId, executionId, branchId, superstep, fencingToken, now);
+            Map<String, Object> safeState = Map.copyOf(state != null ? state : Map.of());
+            List<String> safeNodes = List.copyOf(nodes != null ? nodes : List.of());
+            String payload = buildCanonicalPayload(
+                    checkpointId, executionId, branchId, superstep, safeState, safeNodes, fencingToken, now);
             String checksum = computeSha256(payload);
             return new StateCheckpointRecord(
                     checkpointId, executionId, branchId, superstep,
-                    state, nodes, fencingToken, now, checksum
+                    safeState, safeNodes, fencingToken, now, checksum
             );
         }
 
@@ -67,11 +69,41 @@ public interface StateCheckpointRepository {
             if (checksumSha256 == null || checksumSha256.isBlank()) {
                 return false;
             }
-            String payload = String.format("%s|%s|%s|%d|%d|%d",
-                    checkpointId, executionId, branchId, superstep, fencingToken, createdAtEpochMs);
+            String payload = buildCanonicalPayload(
+                    checkpointId, executionId, branchId, superstep,
+                    fullStateSnapshot, pendingNodes, fencingToken, createdAtEpochMs);
             byte[] expected = computeSha256(payload).getBytes(StandardCharsets.UTF_8);
             byte[] actual = checksumSha256.getBytes(StandardCharsets.UTF_8);
             return MessageDigest.isEqual(expected, actual);
+        }
+
+        /**
+         * 构造覆盖完整状态快照字典与待执行节点列表的规范化签名载荷
+         */
+        private static String buildCanonicalPayload(
+                String checkpointId,
+                String executionId,
+                String branchId,
+                int superstep,
+                Map<String, Object> state,
+                List<String> nodes,
+                long fencingToken,
+                long createdAtEpochMs
+        ) {
+            StringBuilder stateBuilder = new StringBuilder();
+            if (state != null && !state.isEmpty()) {
+                TreeMap<String, Object> sortedState = new TreeMap<>(state);
+                for (Map.Entry<String, Object> entry : sortedState.entrySet()) {
+                    if (stateBuilder.length() > 0) {
+                        stateBuilder.append(';');
+                    }
+                    stateBuilder.append(entry.getKey()).append('=').append(String.valueOf(entry.getValue()));
+                }
+            }
+            String joinedNodes = (nodes != null && !nodes.isEmpty()) ? String.join(",", nodes) : "";
+            return String.format("%s|%s|%s|%d|%d|%d|{%s}|[%s]",
+                    checkpointId, executionId, branchId, superstep, fencingToken, createdAtEpochMs,
+                    stateBuilder, joinedNodes);
         }
 
         private static String computeSha256(String text) {

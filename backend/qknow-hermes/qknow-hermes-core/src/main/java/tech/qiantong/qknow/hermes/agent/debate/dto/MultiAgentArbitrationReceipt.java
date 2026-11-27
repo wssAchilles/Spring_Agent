@@ -3,6 +3,7 @@ package tech.qiantong.qknow.hermes.agent.debate.dto;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -125,6 +126,9 @@ public record MultiAgentArbitrationReceipt(
         }
         String expected = computeSignature(receiptId, debateId, taskId, winnerAgentId,
                 consensusStatus, finalRounds, finalShannonEntropy, vcgCost, latencyUs, busStatus);
-        return signature.equalsIgnoreCase(expected);
+        // 使用常量时间比对防止时序侧信道泄漏
+        return MessageDigest.isEqual(
+                signature.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                expected.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 }

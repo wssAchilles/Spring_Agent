@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 分层多模态意图解析引擎
  * 基于定理 1.1 分层多模态意图流形拓扑同胚分解与无偏映射定理
- * 融合阿里千问 1536 维超球面大圆弧测地内积与分层纤维丛投影，单步求解耗时 <= 50μs，准确率 >= 99.0%
+ * 融合阿里千问 1024 维超球面大圆弧测地内积与分层纤维丛投影，单步求解耗时 <= 50μs，准确率 >= 99.0%
  */
 @Component
 public class HierarchicalIntentResolver {
@@ -28,7 +28,7 @@ public class HierarchicalIntentResolver {
     }
 
     private void initDefaultPrototypes() {
-        // 预装载财务与通用领域默认原型中心 (1536 维超球面归一化)
+        // 预装载财务与通用领域默认原型中心 (1024 维超球面归一化)
         registerMacroPrototype("FINANCE", generateDefaultPrototype(1), List.of("AUDIT", "VOUCHER", "EXPORT_AUDIT_VOUCHERS"));
         registerMacroPrototype("SYSTEM_OPS", generateDefaultPrototype(2), List.of("MAINTENANCE", "CLUSTER_CONFIG"));
         registerMacroPrototype("KNOWLEDGE_SEARCH", generateDefaultPrototype(3), List.of("DOCUMENT_RETRIEVAL", "QA"));
@@ -58,7 +58,7 @@ public class HierarchicalIntentResolver {
 
     private void validateEmbedding(float[] embedding) {
         if (embedding == null || embedding.length != HierarchicalIntentState.EXPECTED_DIMENSION) {
-            throw new IllegalArgumentException("Query 嵌入向量必须为 1536 维阿里千问超球面单位向量");
+            throw new IllegalArgumentException("Query 嵌入向量必须为 1024 维阿里千问超球面单位向量");
         }
         double sumSq = 0.0;
         for (float v : embedding) {
@@ -128,7 +128,7 @@ public class HierarchicalIntentResolver {
     }
 
     /**
-     * 高性能 8 路展开计算 1536 维向量内积
+     * 高性能 8 路展开计算 1024 维向量内积
      */
     private double computeDotProduct(float[] v1, float[] v2) {
         double dot = 0.0;

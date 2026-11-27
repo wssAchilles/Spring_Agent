@@ -6,16 +6,16 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- * 阿里千问 1536 维超球面置信度门禁推测预取过滤器 (Confidence-Gated Prefetch Filter)
+ * 阿里千问 1024 维超球面置信度门禁推测预取过滤器 (Confidence-Gated Prefetch Filter)
  * 遵循超球面余弦几何律与拒绝采样防注意力污染工程铁律：
- * 1. 严格校验意图与草稿向量满足 S^{1535} 单位超球面范数约束 (||v||_2 = 1.0)；
+ * 1. 严格校验意图与草稿向量满足 S^{1023} 单位超球面范数约束 (||v||_2 = 1.0)；
  * 2. 计算余弦内积 cos theta = u · v，执行硬门禁 cos theta >= 0.85 判定；
  * 3. 拒绝采样的假阳性草稿平滑拦截并隔离入容量为 32 的 L3 冷备环形仓，绝不污染大模型上下文；
  * 4. 签发纯 Java 21 Record 密码学自验真凭单。
  */
 public class ConfidenceGatedPrefetchFilter {
 
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
     public static final double DEFAULT_ACCEPTANCE_THRESHOLD = 0.85;
     public static final int COLD_BUFFER_CAPACITY = 32;
 
@@ -130,7 +130,7 @@ public class ConfidenceGatedPrefetchFilter {
     }
 
     /**
-     * 计算千问 1536 维超球面单位向量内积 (余弦相似度)
+     * 计算千问 1024 维超球面单位向量内积 (余弦相似度)
      */
     public static double computeCosineSimilarity(float[] u, float[] v) {
         float[] normU = validateAndNormalize(u);
@@ -178,8 +178,8 @@ public class ConfidenceGatedPrefetchFilter {
      *
      * @param targetKey       目标意图键 (如 "doc:manual_user_guide")
      * @param draftKey        候选草稿键 (如 "doc:manual_user_guide_v2")
-     * @param targetEmbedding 目标意图超球面嵌入向量 (1536 维)
-     * @param draftEmbedding  推测草稿超球面嵌入向量 (1536 维)
+     * @param targetEmbedding 目标意图超球面嵌入向量 (1024 维)
+     * @param draftEmbedding  推测草稿超球面嵌入向量 (1024 维)
      * @return GateEvaluationResult 包含接受判定与不可变凭单
      */
     public synchronized GateEvaluationResult evaluateDraft(

@@ -34,13 +34,11 @@ spring:
     openai:
       api-key: ${HERMES_OPENAI_API_KEY:sk-placeholder}
       base-url: ${HERMES_OPENAI_BASE_URL:https://api.deepseek.com}
-    ollama:
-      base-url: ${HERMES_OLLAMA_BASE_URL:http://localhost:11434}
     vectorstore:
       pgvector:
         index-type: HNSW
         distance-type: COSINE_DISTANCE
-        dimensions: 1536
+        dimensions: 1024
         # [溯源] 算法优化指南 §5.1: HNSW 参数调优 P0
         # m=32 提升召回率 ~4%, ef_construction=128 提升索引质量
         index:

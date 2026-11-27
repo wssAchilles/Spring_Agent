@@ -8,7 +8,7 @@ import java.util.*;
  * 松弛纳什均衡 (ε-Nash) 早停收敛与多目标帕累托前沿权衡仲裁器 (EpsilonNashParetoArbitrator)
  * <p>
  * 核心机制：
- * 1. 追踪相邻辩论轮次智能体策略向量在阿里千问 1536 维超球面上的测地欧氏角位移差分 Δσ；
+ * 1. 追踪相邻辩论轮次智能体策略向量在阿里千问 1024 维超球面上的测地欧氏角位移差分 Δσ；
  * 2. 当 Δσ <= 0.05 时，精准判定达到 ε-Nash 纳什均衡稳态，立即果断早停退出辩论循环，博弈轮次强制锁定在 <= 5 轮；
  * 3. 针对候选方案构建包含“质量得分、成本节约得分、安全低风险得分”的三元效用向量；
  * 4. 执行多目标帕累托非支配排序 (Pareto Dominance Filter)，剔除被绝对支配的劣解，从帕累托前沿中推选全局最优折中解；
@@ -21,7 +21,7 @@ import java.util.*;
 @Slf4j
 public class EpsilonNashParetoArbitrator {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double EPSILON_NASH_TOLERANCE = 0.05;
     public static final int MAX_DEBATE_ROUNDS = 5;
 
@@ -35,7 +35,7 @@ public class EpsilonNashParetoArbitrator {
      *
      * @param solutionId 方案全局唯一编号
      * @param proposalTitle 方案标题/摘要
-     * @param qwenEmbedding 阿里千问 1536 维超球面归一化向量
+     * @param qwenEmbedding 阿里千问 1024 维超球面归一化向量
      * @param qualityScore 方案质量得分 [0.0, 1.0] (越大越优)
      * @param costScore 成本优势得分 [0.0, 1.0] (越大代表成本越低/越节约)
      * @param riskScore 安全稳健性得分 [0.0, 1.0] (越大代表风险越低/越安全)
@@ -223,7 +223,7 @@ public class EpsilonNashParetoArbitrator {
     }
 
     /**
-     * 计算两个 1536 维超球面向量的内积
+     * 计算两个 1024 维超球面向量的内积
      */
     private double computeDotProduct(double[] u, double[] v) {
         if (u == null || v == null || u.length != EMBEDDING_DIM || v.length != EMBEDDING_DIM) {

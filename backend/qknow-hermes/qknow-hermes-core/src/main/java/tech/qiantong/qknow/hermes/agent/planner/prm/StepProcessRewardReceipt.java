@@ -9,9 +9,9 @@ import java.util.Objects;
 
 /**
  * 步骤级过程奖励评估不可变存证凭单 (StepProcessRewardReceipt)
- * 遵循 Java 21 Record 规范、阿里千问 1536 维超球面单位球几何约束与零时序泄漏工程铁律：
+ * 遵循 Java 21 Record 规范、阿里千问 1024 维超球面单位球几何约束与零时序泄漏工程铁律：
  * 1. 记录单步推演内容、过程质量得分 r_step in [0.0, 1.0] 与评估状态；
- * 2. 挂载 1536 维超球面状态向量并进行防御性拷贝；
+ * 2. 挂载 1024 维超球面状态向量并进行防御性拷贝；
  * 3. 采用 SHA-256 与 MessageDigest.isEqual 进行密码学自验真，防御时序侧信道攻击。
  */
 public record StepProcessRewardReceipt(
@@ -38,8 +38,8 @@ public record StepProcessRewardReceipt(
         Objects.requireNonNull(traceSessionId, "traceSessionId cannot be null");
         Objects.requireNonNull(status, "status cannot be null");
         stepContent = stepContent != null ? stepContent : "";
-        if (hypersphericalVector != null && hypersphericalVector.length != 1536) {
-            throw new IllegalArgumentException("Vector dimension must be strictly 1536, got: " + hypersphericalVector.length);
+        if (hypersphericalVector != null && hypersphericalVector.length != 1024) {
+            throw new IllegalArgumentException("Vector dimension must be strictly 1024, got: " + hypersphericalVector.length);
         }
         hypersphericalVector = hypersphericalVector != null ? hypersphericalVector.clone() : null;
         signatureSha256 = signatureSha256 != null ? signatureSha256 : "";

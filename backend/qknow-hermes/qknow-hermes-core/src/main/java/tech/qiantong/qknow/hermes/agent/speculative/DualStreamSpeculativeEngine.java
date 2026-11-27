@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 /**
  * DeepSeek 思考链引导的双流推测执行与前向预取引擎 (Dual-Stream Speculative Engine)
- * 升级：集成阿里千问 1536 维超球面置信度硬门禁与拒绝采样防注意力污染机制
+ * 升级：集成阿里千问 1024 维超球面置信度硬门禁与拒绝采样防注意力污染机制
  * 1. System 1 (本地轻量推测器)：基于本地规则/堆外索引在 <5ms 内生成候选工具草稿 (Draft Candidates)；
  * 2. System 2 (DeepSeek 思考慢流)：流式接收 reasoning_content 并由 ThinkingPatternDfa 动态识别前向决策意图；
  * 3. 测地置信度门禁过滤：在草稿注入前，通过 ConfidenceGatedPrefetchFilter (cos theta >= 0.85) 剔除假阳性伪相关草稿；

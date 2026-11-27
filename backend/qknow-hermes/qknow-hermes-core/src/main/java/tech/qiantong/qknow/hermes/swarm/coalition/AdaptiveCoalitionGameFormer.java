@@ -12,14 +12,14 @@ import java.util.TreeMap;
 
 /**
  * 自适应合作博弈多智能体联盟组建与夏普利收益分配引擎 (Adaptive Coalition Game Former)
- * 基于阿里千问 1536 维超球面单位向量空间，严格满足 Lemma 143.1 核稳定性与次模性贪心近似。
+ * 基于阿里千问 1024 维超球面单位向量空间，严格满足 Lemma 143.1 核稳定性与次模性贪心近似。
  *
  * @author Achilles
  * @since Phase 143
  */
 public class AdaptiveCoalitionGameFormer {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     /**
      * 智能体博弈参选档案
@@ -28,7 +28,7 @@ public class AdaptiveCoalitionGameFormer {
             String agentId,
             String tenantId,
             String agentRole,
-            double[] qwenEmbedding,   // 阿里千问 1536 维超球面单位向量
+            double[] qwenEmbedding,   // 阿里千问 1024 维超球面单位向量
             double reputationScore,    // 动态信誉分 (in [0.0, 1.0])
             double baseCost,           // 基础调用开销
             boolean isPinned           // 是否具有永久免死钉扎特权
@@ -78,7 +78,7 @@ public class AdaptiveCoalitionGameFormer {
      * @param tenantId      租户隔离标识
      * @param taskId        任务标识
      * @param traceId       W3C 32位十六进制因果 TraceId
-     * @param taskEmbedding 任务语义向量 (阿里千问 1536 维超球面单位向量)
+     * @param taskEmbedding 任务语义向量 (阿里千问 1024 维超球面单位向量)
      * @param candidatePool 候选智能体池
      * @return 决策完备的联盟博弈成果与不可变存证凭单
      */
@@ -139,7 +139,7 @@ public class AdaptiveCoalitionGameFormer {
                 double residualNorm = computeVectorNorm(residual);
 
                 // 任务亲和度 (超球面余弦)
-                double taskCosine = Math.max(0.0, dotProduct1536(candVec, normalizedTask));
+                double taskCosine = Math.max(0.0, dotProduct1024(candVec, normalizedTask));
 
                 // 综合有效信誉权重 (结合 tracker 与档案)
                 double effectiveRep = Math.max(0.1, reputationTracker.getProfile(tenantId, cand.agentId()).currentReputation());
@@ -178,7 +178,7 @@ public class AdaptiveCoalitionGameFormer {
         // 投影覆盖度: ||P_W q|| = sqrt( sum( (q . e_k)^2 ) )
         double projectedSumSq = 0.0;
         for (double[] basis : orthogonalBasis) {
-            double dot = dotProduct1536(normalizedTask, basis);
+            double dot = dotProduct1024(normalizedTask, basis);
             projectedSumSq += dot * dot;
         }
         double rawCoverage = Math.sqrt(Math.min(1.0, projectedSumSq));
@@ -187,7 +187,7 @@ public class AdaptiveCoalitionGameFormer {
         // 计算单兵 baseline 参照（取成员中单兵最大能力）
         double maxSingleCapability = 0.0;
         for (AgentGameProfile p : selected) {
-            double singleDot = Math.max(0.0, dotProduct1536(p.qwenEmbedding(), normalizedTask));
+            double singleDot = Math.max(0.0, dotProduct1024(p.qwenEmbedding(), normalizedTask));
             if (singleDot > maxSingleCapability) {
                 maxSingleCapability = singleDot;
             }
@@ -257,7 +257,7 @@ public class AdaptiveCoalitionGameFormer {
 
         for (int i = 0; i < selected.size(); i++) {
             AgentGameProfile p = selected.get(i);
-            double taskCosine = Math.max(0.0, dotProduct1536(p.qwenEmbedding(), normalizedTask));
+            double taskCosine = Math.max(0.0, dotProduct1024(p.qwenEmbedding(), normalizedTask));
 
             // 虚拟玩家判定：若与任务完全正交且边际贡献为 0，分配权重严格为 0
             if (taskCosine <= 1e-7 || marginalGains.get(i) <= 1e-7) {
@@ -295,7 +295,7 @@ public class AdaptiveCoalitionGameFormer {
     private double[] computeOrthogonalComplement(double[] target, List<double[]> basisList) {
         double[] residual = target.clone();
         for (double[] basis : basisList) {
-            double proj = dotProduct1536(target, basis);
+            double proj = dotProduct1024(target, basis);
             for (int d = 0; d < EMBEDDING_DIM; d++) {
                 residual[d] -= proj * basis[d];
             }
@@ -304,9 +304,9 @@ public class AdaptiveCoalitionGameFormer {
     }
 
     /**
-     * 高性能 8 路展开 1536 维向量点积 (SIMD Friendly)
+     * 高性能 8 路展开 1024 维向量点积 (SIMD Friendly)
      */
-    public static double dotProduct1536(double[] a, double[] b) {
+    public static double dotProduct1024(double[] a, double[] b) {
         double sum0 = 0.0, sum1 = 0.0, sum2 = 0.0, sum3 = 0.0;
         double sum4 = 0.0, sum5 = 0.0, sum6 = 0.0, sum7 = 0.0;
 
@@ -332,7 +332,7 @@ public class AdaptiveCoalitionGameFormer {
      * 计算向量 L2 模长
      */
     public static double computeVectorNorm(double[] vec) {
-        return Math.sqrt(Math.max(0.0, dotProduct1536(vec, vec)));
+        return Math.sqrt(Math.max(0.0, dotProduct1024(vec, vec)));
     }
 
     /**

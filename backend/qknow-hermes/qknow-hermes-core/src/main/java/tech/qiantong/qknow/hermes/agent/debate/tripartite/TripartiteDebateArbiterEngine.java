@@ -58,7 +58,7 @@ public class TripartiteDebateArbiterEngine {
                     proposerClaim,
                     "None (Constructive proposition)",
                     proposerConfidence,
-                    "sha256_mock_qwen_1536_p" + round
+                    "sha256_mock_qwen_1024_p" + round
             ));
             proposerContributionScore += 1.0;
 
@@ -75,7 +75,7 @@ public class TripartiteDebateArbiterEngine {
                     "Critique statement: " + critique,
                     critique,
                     0.88,
-                    "sha256_mock_qwen_1536_r" + round
+                    "sha256_mock_qwen_1024_r" + round
             ));
 
             if (unaddressedRisks > 0) {
@@ -92,7 +92,7 @@ public class TripartiteDebateArbiterEngine {
                     String.format("Arbiter Evaluation: divergence=%.4f, consensusScore=%.4f", divergence, arbiterConfidence),
                     "None",
                     arbiterConfidence,
-                    "sha256_mock_qwen_1536_j" + round
+                    "sha256_mock_qwen_1024_j" + round
             ));
             arbiterContributionScore += 0.8;
 

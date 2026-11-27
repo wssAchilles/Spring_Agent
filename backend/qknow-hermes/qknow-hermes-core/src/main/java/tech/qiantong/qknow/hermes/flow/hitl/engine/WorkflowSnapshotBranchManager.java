@@ -143,19 +143,19 @@ public class WorkflowSnapshotBranchManager {
     }
 
     /**
-     * 基于阿里千问 1536 维超球面测地线内积检索最相似历史快照
+     * 基于阿里千问 1024 维超球面测地线内积检索最相似历史快照
      */
     public Optional<WorkflowNodeStateSnapshot> findNearestSnapshotByEmbedding(double[] queryEmbedding) {
-        if (queryEmbedding == null || queryEmbedding.length != 1536) {
+        if (queryEmbedding == null || queryEmbedding.length != 1024) {
             return Optional.empty();
         }
         WorkflowNodeStateSnapshot nearest = null;
         double maxSimilarity = -1.0;
 
         for (WorkflowNodeStateSnapshot s : snapshotRegistry.values()) {
-            if (s.sphericalEmbedding() != null && s.sphericalEmbedding().length == 1536) {
+            if (s.sphericalEmbedding() != null && s.sphericalEmbedding().length == 1024) {
                 double dot = 0.0;
-                for (int i = 0; i < 1536; i++) {
+                for (int i = 0; i < 1024; i++) {
                     dot += queryEmbedding[i] * s.sphericalEmbedding()[i];
                 }
                 if (dot > maxSimilarity) {

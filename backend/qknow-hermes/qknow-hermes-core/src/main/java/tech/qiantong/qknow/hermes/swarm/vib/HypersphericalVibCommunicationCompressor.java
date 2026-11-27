@@ -8,10 +8,10 @@ import tech.qiantong.qknow.hermes.benchmark.simd.SimdVectorHypersphericalKernel;
 import java.util.*;
 
 /**
- * 阿里千问 1536 维超球面变分信息瓶颈 (VIB) 认知通信压缩与 Shapley 因果信用归因器
+ * 阿里千问 1024 维超球面变分信息瓶颈 (VIB) 认知通信压缩与 Shapley 因果信用归因器
  * <p>
  * 核心理论契约 (Lemma 150.1)：
- * 1. 变分信息瓶颈 (VIB)：在千问 1536 维超球面流形上寻找最小充分表示 Z，
+ * 1. 变分信息瓶颈 (VIB)：在千问 1024 维超球面流形上寻找最小充分表示 Z，
  *    使互信息压缩率满足理论上界，削减跨 Agent 文本消息传递冗余度 >= 50.0%；
  * 2. 合作博弈因果 Shapley 信用归因：量化每个智能体决策对团队终态因果质量的边际贡献，
  *    精准定位幻觉注入源与高价值认知节点，指导自适应情景遗忘修剪；
@@ -35,7 +35,7 @@ public class HypersphericalVibCommunicationCompressor {
             String agentId,
             String agentRole,
             String rawMessage,
-            double[] messageEmbedding1536,
+            double[] messageEmbedding1024,
             long tokenCount
     ) {}
 
@@ -63,13 +63,13 @@ public class HypersphericalVibCommunicationCompressor {
      * 执行跨 Agent 通信变分信息瓶颈压缩与 Shapley 信用归因
      *
      * @param frames 跨智能体多轮通信帧集合
-     * @param targetTaskEmbedding1536 终态任务目标的超球面向量表示
+     * @param targetTaskEmbedding1024 终态任务目标的超球面向量表示
      * @param betaRateDistortion 速率失真拉格朗日乘子 \beta (建议 1.8 ~ 2.5)
      * @return 认知压缩产物与各智能体因果信用评估
      */
     public VibCompressedCommunication compressAndAssignCredits(
             List<AgentMessageFrame> frames,
-            double[] targetTaskEmbedding1536,
+            double[] targetTaskEmbedding1024,
             double betaRateDistortion
     ) {
         if (frames == null || frames.isEmpty()) {
@@ -89,14 +89,14 @@ public class HypersphericalVibCommunicationCompressor {
         List<double[]> embeddings = new ArrayList<>(frames.size());
         long totalOriginalTokens = 0;
         for (AgentMessageFrame frame : frames) {
-            embeddings.add(frame.messageEmbedding1536());
+            embeddings.add(frame.messageEmbedding1024());
             totalOriginalTokens += Math.max(1, frame.tokenCount());
         }
 
         double[] compressedCentroid = simdKernel.computeCentroid(embeddings);
 
         // 2. 估计保留的互信息 I(Z; Y)：测地余弦内积
-        double taskRelevance = simdKernel.cosineSimilarity(compressedCentroid, targetTaskEmbedding1536);
+        double taskRelevance = simdKernel.cosineSimilarity(compressedCentroid, targetTaskEmbedding1024);
         double mutualInformationRetained = Math.min(1.0, Math.max(0.0, (taskRelevance + 1.0) / 2.0));
 
         // 3. 计算 VIB 压缩比率 (依据 Lemma 150.1 速率失真上界)
@@ -106,7 +106,7 @@ public class HypersphericalVibCommunicationCompressor {
         double compressionRatio = Math.max(0.50, Math.min(0.85, theoreticalCompression));
 
         // 4. 计算合作博弈因果 Shapley 边际贡献度
-        Map<String, Double> shapleyMap = computeCausalShapleyValues(frames, targetTaskEmbedding1536);
+        Map<String, Double> shapleyMap = computeCausalShapleyValues(frames, targetTaskEmbedding1024);
 
         // 5. 计算因果信用分布熵 \mathcal{H} = -\sum p_i \ln p_i
         double entropy = computeCreditEntropy(shapleyMap.values());
@@ -147,7 +147,7 @@ public class HypersphericalVibCommunicationCompressor {
         if (n == 0) return creditMap;
 
         // 全集基准相似度
-        List<double[]> allVecs = frames.stream().map(AgentMessageFrame::messageEmbedding1536).toList();
+        List<double[]> allVecs = frames.stream().map(AgentMessageFrame::messageEmbedding1024).toList();
         double fullValue = simdKernel.cosineSimilarity(simdKernel.computeCentroid(allVecs), targetVec);
 
         // 逐一剔除反事实估算其边际损失: \Delta_i = v(N) - v(N \setminus {i})
@@ -158,7 +158,7 @@ public class HypersphericalVibCommunicationCompressor {
             List<double[]> subset = new ArrayList<>(n - 1);
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    subset.add(frames.get(j).messageEmbedding1536());
+                    subset.add(frames.get(j).messageEmbedding1024());
                 }
             }
             double subValue = subset.isEmpty() ? 0.0 : simdKernel.cosineSimilarity(simdKernel.computeCentroid(subset), targetVec);

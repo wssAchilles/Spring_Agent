@@ -7,10 +7,10 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * 阿里千问 1536 维超球面状态差异测地线核与置信度门控投机估算器
+ * 阿里千问 1024 维超球面状态差异测地线核与置信度门控投机估算器
  * <p>
  * 严格遵循系统架构模型与超球面几何基线 (Hyperspherical Geometry Baseline)：
- * 1. 向量空间维度锁定为 1536 维，向量严格满足 L2 范数单位归一化约束 (||v||_2 = 1.0)；
+ * 1. 向量空间维度锁定为 1024 维，向量严格满足 L2 范数单位归一化约束 (||v||_2 = 1.0)；
  * 2. 状态差异度量基于超球面测地线核：K_diff(S_i, S_j) = 1.0 - arccos(u · v) / π；
  * 3. 严格遵循欧氏与余弦几何度规恒等式：d_Euc^2 = 2(1 - cos θ)；
  * 4. 置信度门控投机执行阈值锁定为 γ_spec = 0.88，投机保真度损失严格满足 Lemma 148.2：L_fid <= 4 * sin^2(π * (1 - γ) / 2)。
@@ -23,7 +23,7 @@ public class StateDifferentialKernelEstimator {
     /**
      * 阿里千问 (Qwen) Embedding 官方固定向量维度
      */
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
 
     /**
      * 投机执行置信度准入门控临界阈值 (γ_spec = 0.88)
@@ -36,7 +36,7 @@ public class StateDifferentialKernelEstimator {
     public static final double THEORETICAL_MAX_FIDELITY_LOSS = 0.15;
 
     /**
-     * 计算两个 1536 维超球面单位向量的内积 (Cosine Similarity)
+     * 计算两个 1024 维超球面单位向量的内积 (Cosine Similarity)
      *
      * @param u 单位向量 u
      * @param v 单位向量 v
@@ -61,7 +61,7 @@ public class StateDifferentialKernelEstimator {
     }
 
     /**
-     * 计算两个超球面状态节点之间的测地线角度距离 (Geodesic Distance on S^1535)
+     * 计算两个超球面状态节点之间的测地线角度距离 (Geodesic Distance on S^1023)
      *
      * @param u 节点状态向量 u
      * @param v 节点状态向量 v
@@ -82,7 +82,7 @@ public class StateDifferentialKernelEstimator {
     }
 
     /**
-     * 阿里千问 1536 维超球面状态差异测地线核函数 (State Differential Geodesic Kernel)
+     * 阿里千问 1024 维超球面状态差异测地线核函数 (State Differential Geodesic Kernel)
      * K_diff(S_i, S_j) = 1.0 - θ / π ∈ [0.0, 1.0]
      * <p>
      * 性质：
@@ -197,10 +197,10 @@ public class StateDifferentialKernelEstimator {
     }
 
     /**
-     * 基于种子字符串确定性生成阿里千问 1536 维超球面单位向量 (用于基准测试与模拟)
+     * 基于种子字符串确定性生成阿里千问 1024 维超球面单位向量 (用于基准测试与模拟)
      *
      * @param seed 确定性种子文本
-     * @return 1536 维超球面单位向量
+     * @return 1024 维超球面单位向量
      */
     public static double[] generateDeterministicSphericalEmbedding(String seed) {
         Objects.requireNonNull(seed, "种子文本不能为空");

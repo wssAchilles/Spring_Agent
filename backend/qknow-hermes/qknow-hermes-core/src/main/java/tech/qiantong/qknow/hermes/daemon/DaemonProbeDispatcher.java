@@ -59,7 +59,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class DaemonProbeDispatcher {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     private DaemonProbeDispatcher() {}
 
@@ -449,8 +449,8 @@ public final class DaemonProbeDispatcher {
 
         engine.recordTurn(sessionId, "user", "如何配置生产级 DeepSeek 思考流？", v1, Map.of("FRAMEWORK", "hermes", "MODEL", "deepseek-flash"));
         engine.recordTurn(sessionId, "assistant", "传入 extra_body thinking 参数", v2, Map.of("FRAMEWORK", "hermes", "MODEL", "deepseek-flash"));
-        engine.recordTurn(sessionId, "user", "千问超球面向量维度是多少？", v3, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1536"));
-        engine.recordTurn(sessionId, "assistant", "固定为 1536 维超球面单位向量", v4, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1536"));
+        engine.recordTurn(sessionId, "user", "千问超球面向量维度是多少？", v3, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1024"));
+        engine.recordTurn(sessionId, "assistant", "固定为 1024 维超球面单位向量", v4, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1024"));
         engine.recordTurn(sessionId, "system", "基线检查完成", v5, Map.of("FRAMEWORK", "hermes", "STATUS", "active"));
 
         List<tech.qiantong.qknow.hermes.memory.hippocampus.HippocampalWorkingBuffer.RetrievalResult> recalled = engine.retrieveSimilarMemories(sessionId, v1, 2, 0.0f);
@@ -888,7 +888,7 @@ public final class DaemonProbeDispatcher {
         String testSecret = "HERMES_PROBE_SECRET_SKILL_2026";
         LifelongSkillBankEngine engine = new LifelongSkillBankEngine(testSecret);
 
-        // 构造千问 1536 维超球面基准单位向量与高相似度查询向量 (cos theta >= 0.93)
+        // 构造千问 1024 维超球面基准单位向量与高相似度查询向量 (cos theta >= 0.93)
         float[] uSkill = createUnitVector(DIM, 8001);
         float[] uQuery = ConfidenceGatedPrefetchFilter.createCorrelatedUnitVector(uSkill, 0.93, 8002L);
 

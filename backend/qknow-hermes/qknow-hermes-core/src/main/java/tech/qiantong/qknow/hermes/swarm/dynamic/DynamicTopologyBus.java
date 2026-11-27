@@ -7,14 +7,14 @@ import java.util.function.Consumer;
 
 /**
  * 动态拓扑稀疏化通信网络与因果时序消息总线 (Dynamic Topology & Causal Event Bus)
- * 1. 基于阿里千问 1536 维超球面测地大圆弧散度只激活 Top-K 专家智能体，规避 O(N^2) 广播风暴；
+ * 1. 基于阿里千问 1024 维超球面测地大圆弧散度只激活 Top-K 专家智能体，规避 O(N^2) 广播风暴；
  * 2. 结合夏普利边际贡献率平滑剪枝冗余智能体；
  * 3. 基于因果时序向量时钟 (Vector Clock) 保障跨智能体异步通信的偏序与无冲突；
  * 4. 签发带常量时间防伪验签的不可变审计凭单。
  */
 public class DynamicTopologyBus {
 
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
     private static final double NORM_TOLERANCE = 1e-3;
 
     public record AgentProfile(String agentId, String role, float[] capabilityVector) {
@@ -64,7 +64,7 @@ public class DynamicTopologyBus {
      * 基于超球面测地大圆弧散度自组织激活 Top-K 专家智能体拓扑
      *
      * @param taskId     任务唯一标识
-     * @param taskVector 1536 维超球面任务需求向量
+     * @param taskVector 1024 维超球面任务需求向量
      * @param topK       最大激活专家数
      * @return 拓扑激活审计凭单
      */

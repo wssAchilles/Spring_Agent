@@ -9,11 +9,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 阿里千问 1536 维超球面两阶段 MCP 工具动态投影与剪枝治理器 (McpTwoPhaseProjectionGovernor)
+ * 阿里千问 1024 维超球面两阶段 MCP 工具动态投影与剪枝治理器 (McpTwoPhaseProjectionGovernor)
  * <p>
  * 对标 Anthropic / OpenAI 大规模工具网关最佳实践：
  * 1. 解决静态全量注入 30+ 工具引发的上下文膨胀 (Token 冗余增加 30%~60%) 与工具模式混淆幻觉；
- * 2. 阶段一 (超球面 MIPS 意图检索)：基于千问 1536 维超球面单位向量 (||v||_2 = 1.0) 进行余弦几何检索，筛选 Top-K 核心候选集；
+ * 2. 阶段一 (超球面 MIPS 意图检索)：基于千问 1024 维超球面单位向量 (||v||_2 = 1.0) 进行余弦几何检索，筛选 Top-K 核心候选集；
  * 3. 阶段二 (安全 Schema 剪枝 Safe Schema Pruning)：剔除冗余修饰与长篇注释，精炼参数字段模式，使单工具 Token 消耗压缩 60% 以上；
  * 4. 严格适配 DeepSeek 官方 64-token 上下文前缀对齐规约。
  * </p>
@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class McpTwoPhaseProjectionGovernor {
 
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final int DEFAULT_TOP_K = 5;
 
     /**
@@ -32,7 +32,7 @@ public class McpTwoPhaseProjectionGovernor {
             String toolCode,
             String toolName,
             String briefDescription,
-            float[] normalizedEmbedding1536,
+            float[] normalizedEmbedding1024,
             JSONObject fullInputSchema
     ) {}
 
@@ -67,7 +67,7 @@ public class McpTwoPhaseProjectionGovernor {
      * @param toolCode        全局唯一标识 (如 mcp.github.create_issue)
      * @param toolName        工具方法名
      * @param description     工具说明
-     * @param rawEmbedding    千问 1536 维向量 (将自动执行 L2 归一化)
+     * @param rawEmbedding    千问 1024 维向量 (将自动执行 L2 归一化)
      * @param fullInputSchema 完整 JSON Schema
      */
     public void registerTool(String toolCode, String toolName, String description,
@@ -91,7 +91,7 @@ public class McpTwoPhaseProjectionGovernor {
     /**
      * 执行两阶段动态投影与剪枝
      *
-     * @param queryVector 用户当前意图的 1536 维超球面单位向量
+     * @param queryVector 用户当前意图的 1024 维超球面单位向量
      * @param topK        检索保留候选数
      * @return 投影治理报告
      */
@@ -108,7 +108,7 @@ public class McpTwoPhaseProjectionGovernor {
         // 阶段一：超球面余弦几何 MIPS 计算 (cosθ = u · v)
         List<Map.Entry<RegisteredToolMetadata, Double>> scoredTools = new ArrayList<>();
         for (RegisteredToolMetadata meta : toolRegistry.values()) {
-            double cosSim = dotProduct(normQuery, meta.normalizedEmbedding1536());
+            double cosSim = dotProduct(normQuery, meta.normalizedEmbedding1024());
             scoredTools.add(Map.entry(meta, cosSim));
         }
 

@@ -120,9 +120,11 @@ public class WorkflowHitlReactiveGovernor {
             throw new IllegalArgumentException("未找到待决审批工单或工单已结案: " + ticketId);
         }
 
-        // 状态守恒检验
+        // 状态守恒检验（使用常量时间比对校验状态摘要）
         String currentHash = computeStateHash(ticket.baselineVariables());
-        boolean isConserved = ticket.suspendedStateHash().equalsIgnoreCase(currentHash);
+        boolean isConserved = ticket.suspendedStateHash() != null && MessageDigest.isEqual(
+                ticket.suspendedStateHash().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                currentHash.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
         if (!isConserved) {
             log.error("[HITL Governor] 状态守恒检验失败! 原始哈希={}, 当前哈希={}", ticket.suspendedStateHash(), currentHash);
         }
@@ -172,9 +174,11 @@ public class WorkflowHitlReactiveGovernor {
             throw new IllegalArgumentException("未找到待决审批工单或工单已结案: " + ticketId);
         }
 
-        // 验证前序上下文守恒不变量
+        // 验证前序上下文守恒不变量（使用常量时间比对校验状态摘要）
         String currentHash = computeStateHash(ticket.baselineVariables());
-        boolean isConserved = ticket.suspendedStateHash().equalsIgnoreCase(currentHash);
+        boolean isConserved = ticket.suspendedStateHash() != null && MessageDigest.isEqual(
+                ticket.suspendedStateHash().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                currentHash.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
 
         // 合并变量并计算热补丁 SHA-256 变更指纹
         Map<String, Object> mergedVariables = new HashMap<>(ticket.baselineVariables());
