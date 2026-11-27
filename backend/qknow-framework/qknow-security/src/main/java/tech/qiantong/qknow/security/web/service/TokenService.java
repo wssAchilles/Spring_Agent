@@ -65,7 +65,8 @@ public class TokenService
         }
         boolean devProfile = isDevProfile();
         if ("qknow-jwt-secret-key-32bytes-secure-2026".equals(secret) ||
-            "qknow-production-jwt-token-secret-key-secure-2026".equals(secret)) {
+            "qknow-production-jwt-token-secret-key-secure-2026".equals(secret) ||
+            "qknow-local-dev-jwt-secret-32bytes-2026".equals(secret)) {
             if (devProfile) {
                 log.warn("================================================================================");
                 log.warn("SECURITY WARNING: token.secret 正在使用公开默认密钥（仅允许 dev profile）！");

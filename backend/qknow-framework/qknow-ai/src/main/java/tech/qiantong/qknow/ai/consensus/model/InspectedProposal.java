@@ -7,7 +7,7 @@ public record InspectedProposal(
         WorkerProposal proposal,
         ByzantineFaultType faultType,
         String violationDetail,
-        float[] embedding1536,
+        float[] embedding1024,
         double reputationWeight
 ) {
     public boolean isHonest() {

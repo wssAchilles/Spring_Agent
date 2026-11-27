@@ -7,14 +7,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 阿里千问 1536 维超球面高精度意图自适应委托匹配器
+ * 阿里千问 1024 维超球面高精度意图自适应委托匹配器
  * 施加单位超球面归一化校验与 tau_intent >= 0.82 严格门禁
  */
 public class HypersphericalIntentMatcher {
 
     private static final Logger log = LoggerFactory.getLogger(HypersphericalIntentMatcher.class);
 
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final double NORM_TOLERANCE = 1e-4;
     public static final double INTENT_CONFIDENCE_THRESHOLD = 0.82; // 严格门禁
 
@@ -56,7 +56,7 @@ public class HypersphericalIntentMatcher {
     }
 
     /**
-     * 严格校验向量维度为 1536 且位于超球面流形 S^1535 (模长 1.0 +- 1e-4)
+     * 严格校验向量维度为 1024 且位于超球面流形 S^1023 (模长 1.0 +- 1e-4)
      */
     public void validateHypersphericalConstraint(float[] vector) {
         if (vector == null || vector.length != EMBEDDING_DIMENSION) {
@@ -69,7 +69,7 @@ public class HypersphericalIntentMatcher {
         }
         double norm = Math.sqrt(sumSq);
         if (Math.abs(norm - 1.0) > NORM_TOLERANCE) {
-            throw new IllegalStateException("向量未落在单位超球面流形 (hypersphere manifold S^1535) 上! 模长: " + norm);
+            throw new IllegalStateException("向量未落在单位超球面流形 (hypersphere manifold S^1023) 上! 模长: " + norm);
         }
     }
 

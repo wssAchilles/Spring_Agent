@@ -7,7 +7,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 
 /**
- * 阿里千问 1536 维超球面向量动态加噪与差分隐私打分器 (DifferentialPrivacyScorer)
+ * 阿里千问 1024 维超球面向量动态加噪与差分隐私打分器 (DifferentialPrivacyScorer)
  *
  * 数学保证：满足严格的 (epsilon, delta)-差分隐私保证。
  * 几何约束：采用超球面保模归一化（Projection to Unit Hypersphere），消除模长发散，
@@ -19,7 +19,7 @@ import java.util.Arrays;
 @Component
 public class DifferentialPrivacyScorer {
 
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
     public static final double SENSITIVITY_L2 = 2.0; // 单位超球面上两点最大 L2 距离上界
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -50,11 +50,11 @@ public class DifferentialPrivacyScorer {
     }
 
     /**
-     * 对千问 1536 维超球面向量执行差分隐私高斯加噪与保模归一化投影
+     * 对千问 1024 维超球面向量执行差分隐私高斯加噪与保模归一化投影
      *
-     * @param originalVector 原始归一化向量 (1536 维, ||v||_2 = 1.0)
+     * @param originalVector 原始归一化向量 (1024 维, ||v||_2 = 1.0)
      * @param level          隐私等级配置
-     * @return 满足 (epsilon, delta)-DP 且位于单位超球面 S^1535 上的扰动向量
+     * @return 满足 (epsilon, delta)-DP 且位于单位超球面 S^1023 上的扰动向量
      */
     public float[] perturbVector(float[] originalVector, PrivacyLevel level) {
         if (originalVector == null || originalVector.length != VECTOR_DIMENSION) {
@@ -71,7 +71,7 @@ public class DifferentialPrivacyScorer {
     /**
      * 自定义 (epsilon, delta) 差分隐私加噪与保模重投影
      *
-     * @param originalVector 原始 1536 维单位向量
+     * @param originalVector 原始 1024 维单位向量
      * @param epsilon        隐私预算 epsilon > 0
      * @param delta          松弛参数 delta in (0, 1)
      * @return 扰动后单位超球面向量
@@ -90,7 +90,7 @@ public class DifferentialPrivacyScorer {
         double sigmaGlobal = calculateGaussianSigma(SENSITIVITY_L2, epsilon, delta);
         double sigmaCoord = sigmaGlobal / Math.sqrt(VECTOR_DIMENSION);
 
-        // 2. 利用 Box-Muller 极坐标算法生成 1536 维独立同分布高斯噪声
+        // 2. 利用 Box-Muller 极坐标算法生成 1024 维独立同分布高斯噪声
         float[] perturbed = new float[VECTOR_DIMENSION];
         double normSquare = 0.0;
 
@@ -116,7 +116,7 @@ public class DifferentialPrivacyScorer {
             }
         }
 
-        // 3. 超球面保模归一化投影 (Projection to S^1535)
+        // 3. 超球面保模归一化投影 (Projection to S^1023)
         double norm = Math.sqrt(normSquare);
         if (norm > 1e-12) {
             float invNorm = (float) (1.0 / norm);

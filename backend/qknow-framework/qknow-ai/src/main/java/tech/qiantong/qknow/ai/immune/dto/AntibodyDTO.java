@@ -21,7 +21,7 @@ public class AntibodyDTO {
     private String targetMutationPattern;
 
     /**
-     * 抗体特征中心向量（阿里千问 1536 维超球面）
+     * 抗体特征中心向量（阿里千问 1024 维超球面）
      */
     private float[] featureVector;
 

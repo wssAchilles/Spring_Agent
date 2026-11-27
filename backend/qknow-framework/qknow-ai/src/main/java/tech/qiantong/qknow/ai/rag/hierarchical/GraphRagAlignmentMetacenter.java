@@ -11,7 +11,7 @@ import java.util.*;
 
 /**
  * 高保真 RAG 知识引擎与多模态图谱对齐中枢
- * 1. 协调层次化文档切分展开与千问 1536 维超球面子图启发式剪枝；
+ * 1. 协调层次化文档切分展开与千问 1024 维超球面子图启发式剪枝；
  * 2. 构造因果拓扑骨架 (Causal Scaffold) 注入 Prompt；
  * 3. 严格遵循 DeepSeek 官方多轮思考回传协议 (带 tools 保留 reasoning_content，不带 tools 剥离)；
  * 4. 签发纯 Java 21 Record 格式的 SHA-256 密码学防篡改存证凭单。
@@ -47,7 +47,7 @@ public class GraphRagAlignmentMetacenter {
      *
      * @param sessionId           会话 ID
      * @param query               用户查询文本
-     * @param queryEmbedding1536  千问 1536 维查询向量
+     * @param queryEmbedding1024  千问 1024 维查询向量
      * @param seedEntities        初始种子实体 ID 集合
      * @param nodeRegistry        堆内图节点注册表
      * @param adjacencyList       堆内邻接表
@@ -58,7 +58,7 @@ public class GraphRagAlignmentMetacenter {
     public AlignmentContext alignContextAndIssueReceipt(
             String sessionId,
             String query,
-            float[] queryEmbedding1536,
+            float[] queryEmbedding1024,
             Set<String> seedEntities,
             Map<String, InMemoryHeuristicSubgraphPruner.GraphNodeRecord> nodeRegistry,
             Map<String, List<InMemoryHeuristicSubgraphPruner.AdjacencyEdge>> adjacencyList,
@@ -69,7 +69,7 @@ public class GraphRagAlignmentMetacenter {
 
         // 1. 启发式子图剪枝
         InMemoryHeuristicSubgraphPruner.PruningResult pruningResult = pruner.pruneSubgraph(
-                queryEmbedding1536,
+                queryEmbedding1024,
                 seedEntities,
                 nodeRegistry,
                 adjacencyList
@@ -128,7 +128,7 @@ public class GraphRagAlignmentMetacenter {
         StringBuilder sb = new StringBuilder();
         sb.append("<thinking_scaffold>\n");
         sb.append("### [GraphRAG 局部因果拓扑推理骨架]\n");
-        sb.append("已基于千问 1536 维超球面测地距离完成启发式剪枝，请严格依据以下经核实的实体因果拓扑链进行思考推导：\n\n");
+        sb.append("已基于千问 1024 维超球面测地距离完成启发式剪枝，请严格依据以下经核实的实体因果拓扑链进行思考推导：\n\n");
 
         sb.append("#### 1. 核心实体上下文\n");
         for (SubgraphReasoningReceipt.PrunedGraphNode node : nodes) {
@@ -192,7 +192,7 @@ public class GraphRagAlignmentMetacenter {
         messages.add(Map.of("role", "user", "content", alignedPrompt));
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("model", "deepseek-chat");
+        payload.put("model", "deepseek-flash");
         payload.put("messages", messages);
         payload.put("thinking", Map.of("type", "enabled"));
         payload.put("reasoning_effort", "high");

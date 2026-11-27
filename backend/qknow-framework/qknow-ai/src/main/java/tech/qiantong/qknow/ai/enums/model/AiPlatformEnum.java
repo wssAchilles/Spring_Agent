@@ -18,7 +18,7 @@ public enum AiPlatformEnum {
 
     TONG_YI("TongYi", "通义千问", "1,2,3,4,5,6","通义千问提供的模型。","https://dashscope.aliyuncs.com/api/v1"), // 阿里
     YI_YAN("YiYan", "文心一言", "","",""), // 百度
-    DEEP_SEEK("DeepSeek", "DeepSeek", "1,2,3","深度求索提供的模型，例如 deepseek-chat、deepseek-coder 。","https://api.deepseek.com/v1"), // DeepSeek
+    DEEP_SEEK("DeepSeek", "DeepSeek", "1,2,3","深度求索提供的模型，例如 deepseek-flash 。","https://api.deepseek.com/v1"), // DeepSeek
     ZHI_PU("ZhiPu", "智谱", "","",""), // 智谱 AI
     XING_HUO("XingHuo", "星火","","", ""), // 讯飞
     DOU_BAO("DouBao", "豆包", "","",""), // 字节

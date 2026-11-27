@@ -4,9 +4,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Phase 62: 基于测地线余弦内积的千问 1536 维超球面技能流形索引
+ * Phase 62: 基于测地线余弦内积的千问 1024 维超球面技能流形索引
  * <p>
- * 基于定理 1.1，在紧致超球面流形 S^1535 上实现毫秒级高精度意图检索与拓扑覆盖。
+ * 基于定理 1.1，在紧致超球面流形 S^1023 上实现毫秒级高精度意图检索与拓扑覆盖。
  */
 public class GeodesicSkillManifoldIndex {
 

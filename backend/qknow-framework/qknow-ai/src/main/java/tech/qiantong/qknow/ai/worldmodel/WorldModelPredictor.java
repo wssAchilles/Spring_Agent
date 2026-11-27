@@ -2,7 +2,10 @@ package tech.qiantong.qknow.ai.worldmodel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.ai.vector.LocalitySensitiveFeatureHasher;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -10,23 +13,37 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 /**
- * 联合嵌入前向因果世界模型预测器 (JEPA on Hypersphere S^1535)
- * 将系统潜在状态映射至阿里千问 1536 维超球面单位流形，
- * 进行前向因果转移预测与利普希茨误差界定 (定理 1.1)
+ * 探索性超球面状态转移插值预测器（Experimental Manifold State Predictor on S^1023）。
+ * <p>
+ * 架构定位声明：本组件为独立探索性基线模块（不假冒已训练神经网络世界模型），博士论文主线认知路由由第 3 章
+ * {@code HypersphericalSupernetRouter} 承接。当注入真实千问 {@link EmbeddingModel} 时采用真实动作语义向量执行球面收缩插值；
+ * 离线单测下采用确定性 SplitMix64 基底与局部敏感特征哈希保证利普希茨连续性。
+ * </p>
  */
 @Component
 public class WorldModelPredictor {
 
     private static final Logger log = LoggerFactory.getLogger(WorldModelPredictor.class);
 
-    /** 阿里千问标准 Embedding 维度: 1536 维 */
-    public static final int EMBEDDING_DIMENSION = 1536;
+    /** 阿里千问标准 Embedding 维度: 1024 维 */
+    public static final int EMBEDDING_DIMENSION = 1024;
 
     /** 利普希茨状态收缩系数 L_s < 1.0 */
     public static final double LIPSCHITZ_CONSTANT = 0.85;
 
+    private final EmbeddingModel embeddingModel;
+
+    public WorldModelPredictor() {
+        this(null);
+    }
+
+    @Autowired
+    public WorldModelPredictor(@Autowired(required = false) EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
+
     /**
-     * 潜在状态向量表示 (千问 1536 维超球面单位向量)
+     * 潜在状态向量表示 (千问 1024 维超球面单位向量)
      */
     public record LatentState(double[] vector, long stepIndex, String stateHash) {
         public LatentState {
@@ -42,20 +59,15 @@ public class WorldModelPredictor {
     public record AgentAction(String agentId, String actionType, double intensity, Map<String, Object> parameters) {}
 
     /**
-     * 创建基于随机种子或文本初始化的单位超球面初始状态
+     * 创建基于确定性拟蒙特卡洛基底的单位超球面 S^1023 初始状态
      */
     public LatentState createInitialState(long seed) {
-        double[] v = new double[EMBEDDING_DIMENSION];
-        Random rand = new Random(seed);
-        for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
-            v[i] = rand.nextGaussian();
-        }
-        normalizeToHypersphere(v);
+        double[] v = LocalitySensitiveFeatureHasher.deterministicBasisVectorDouble(seed, EMBEDDING_DIMENSION);
         return new LatentState(v, 0L, computeVectorHash(v));
     }
 
     /**
-     * 前向因果潜在状态单步预测: s_{t+1} = \Pi_{S^{1535}}( L_s * s_t + \Delta(a_t) )
+     * 前向潜在状态单步球面收缩预测: s_{t+1} = \Pi_{S^{1023}}( L_s * s_t + \Delta(a_t) )
      */
     public LatentState predictNextState(LatentState currentState, List<AgentAction> actions) {
         if (currentState == null) {
@@ -70,15 +82,15 @@ public class WorldModelPredictor {
             next[i] = LIPSCHITZ_CONSTANT * curr[i];
         }
 
-        // 2. 累加各智能体联合动作扰动
+        // 2. 累加各智能体联合动作的局部敏感语义方向分量（消除 Random(hashCode) 白噪声）
         if (actions != null) {
             for (AgentAction act : actions) {
                 double factor = (1.0 - LIPSCHITZ_CONSTANT) * Math.min(1.0, Math.max(-1.0, act.intensity()));
-                int hash = act.actionType() != null ? act.actionType().hashCode() : 0;
-                Random actRand = new Random(hash);
-
+                String actionDescriptor = (act.actionType() != null ? act.actionType() : "NOOP")
+                        + ":" + (act.parameters() != null ? act.parameters().keySet() : "");
+                double[] actionDir = resolveActionDirection(actionDescriptor);
                 for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
-                    next[i] += factor * (actRand.nextDouble() - 0.5) * 0.1;
+                    next[i] += factor * actionDir[i] * 0.25;
                 }
             }
         }
@@ -90,6 +102,21 @@ public class WorldModelPredictor {
         String hash = computeVectorHash(next);
 
         return new LatentState(next, nextStep, hash);
+    }
+
+    private double[] resolveActionDirection(String actionDescriptor) {
+        if (embeddingModel != null) {
+            float[] raw = embeddingModel.embed(actionDescriptor);
+            if (raw != null && raw.length == EMBEDDING_DIMENSION) {
+                double[] dir = new double[EMBEDDING_DIMENSION];
+                for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
+                    dir[i] = raw[i];
+                }
+                normalizeToHypersphere(dir);
+                return dir;
+            }
+        }
+        return LocalitySensitiveFeatureHasher.projectToUnitSphereDouble(actionDescriptor, EMBEDDING_DIMENSION);
     }
 
     /**
@@ -127,9 +154,11 @@ public class WorldModelPredictor {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             StringBuilder sb = new StringBuilder();
-            // 采样前中后关键维度计算指纹
-            for (int i = 0; i < 16; i++) {
-                sb.append(String.format(Locale.US, "%.4f,", v[i * 96]));
+            // 采样前中后关键维度计算指纹（自适应向量长度步长，1024 维下步长为 64）
+            int stride = Math.max(1, v.length / 16);
+            int sampleCount = Math.min(16, v.length);
+            for (int i = 0; i < sampleCount; i++) {
+                sb.append(String.format(Locale.US, "%.4f,", v[i * stride]));
             }
             byte[] digest = md.digest(sb.toString().getBytes(StandardCharsets.UTF_8));
             StringBuilder hash = new StringBuilder();

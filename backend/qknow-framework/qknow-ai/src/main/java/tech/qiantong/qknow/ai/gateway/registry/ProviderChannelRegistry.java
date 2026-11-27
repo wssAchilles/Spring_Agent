@@ -56,6 +56,7 @@ public class ProviderChannelRegistry {
                         ApiKeyEntry.builder().keyId("k_volc_01").secretKey("sk-volc-endpoint-key").weight(10).build()
                 )))
                 .modelMapping(Map.of(
+                        "deepseek-flash", "ep-20250210-chat-v3",
                         "deepseek-chat", "ep-20250210-chat-v3",
                         "deepseek-reasoner", "ep-20250210-reasoner-r1"
                 ))
@@ -74,6 +75,7 @@ public class ProviderChannelRegistry {
                         ApiKeyEntry.builder().keyId("k_silicon_01").secretKey("sk-silicon-standard-key").weight(10).build()
                 )))
                 .modelMapping(Map.of(
+                        "deepseek-flash", "deepseek-ai/DeepSeek-V3",
                         "deepseek-chat", "deepseek-ai/DeepSeek-V3",
                         "deepseek-reasoner", "deepseek-ai/DeepSeek-R1"
                 ))
@@ -92,6 +94,7 @@ public class ProviderChannelRegistry {
                         ApiKeyEntry.builder().keyId("k_ali_01").secretKey("sk-ali-dashscope-key").weight(10).build()
                 )))
                 .modelMapping(Map.of(
+                        "deepseek-flash", "deepseek-v3",
                         "deepseek-chat", "deepseek-v3",
                         "deepseek-reasoner", "deepseek-r1"
                 ))

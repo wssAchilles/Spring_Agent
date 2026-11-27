@@ -45,7 +45,7 @@ public class MultiAgentDebateCoordinator {
     public record DebateSessionRequest(
             String sessionId,
             String debateTopic,
-            float[] topicEmbedding1536,
+            float[] topicEmbedding1024,
             List<AgentProposal> initialProposals,
             long requestTimestamp
     ) {}
@@ -132,7 +132,7 @@ public class MultiAgentDebateCoordinator {
             executionLog.append("[Result] 达到最大轮次上限 (").append(MAX_DEBATE_ROUNDS)
                     .append(" 轮) 触发发散熔断, 移交独立仲裁者...\n");
             AdaptiveJudgeArbiter.ArbitrationResult arbResult =
-                    judgeArbiter.arbitrate(request.topicEmbedding1536(), accumulatedArguments);
+                    judgeArbiter.arbitrate(request.topicEmbedding1024(), accumulatedArguments);
             winningStrategy = arbResult.winningStrategy();
             arbitratorVerdict = arbResult.justification();
             executionLog.append("  -> 仲裁者裁决: ").append(winningStrategy)

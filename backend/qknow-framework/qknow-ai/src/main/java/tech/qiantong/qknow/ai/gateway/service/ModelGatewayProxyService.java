@@ -281,13 +281,13 @@ public class ModelGatewayProxyService {
     }
 
     /**
-     * 统一千问 1536 维向量化代理
+     * 统一千问 1024 维向量化代理
      */
     public GatewayDto.GatewayEmbeddingResponse executeEmbedding(GatewayDto.GatewayEmbeddingRequest request) {
-        // 构建标准 1536 维归一化向量响应
-        List<Float> mockVec = new ArrayList<>(1536);
-        for (int i = 0; i < 1536; i++) {
-            mockVec.add((float) (1.0 / Math.sqrt(1536.0)));
+        // 构建标准 1024 维归一化向量响应
+        List<Float> mockVec = new ArrayList<>(1024);
+        for (int i = 0; i < 1024; i++) {
+            mockVec.add((float) (1.0 / Math.sqrt(1024.0)));
         }
 
         return GatewayDto.GatewayEmbeddingResponse.builder()

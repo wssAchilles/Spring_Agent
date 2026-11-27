@@ -13,7 +13,7 @@ import java.util.*;
  * 局部语义认知熵与超球面曲率感知自适应 RAG 动态门控器 (EpistemicEntropyAdaptiveRagGovernor)
  * <p>
  * 核心理论契约 (Lemma 150.2)：
- * 1. 语义认知局部熵 (Epistemic Entropy)：代数计算输入查询在千问 1536 维超球面流形上的局部密度分布熵与曲率散度；
+ * 1. 语义认知局部熵 (Epistemic Entropy)：代数计算输入查询在千问 1024 维超球面流形上的局部密度分布熵与曲率散度；
  * 2. 动态自适应按需分流：彻底替代刚性硬编码规则，自动在【快速直答 (FAST_DIRECT)】、
  *    【单跳标准检索 (SINGLE_HOP_VECTOR)】与【深度因果图谱展开 (DEEP_GRAPH_RAG)】之间最优路由；
  * 3. 确定性 Merkle 前缀生成器：严格遵循 DeepSeek 官方 Context Caching 规范，
@@ -28,7 +28,7 @@ public class EpistemicEntropyAdaptiveRagGovernor {
 
     private static final Logger log = LoggerFactory.getLogger(EpistemicEntropyAdaptiveRagGovernor.class);
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     /**
      * 认知熵阈值门禁
@@ -90,7 +90,7 @@ public class EpistemicEntropyAdaptiveRagGovernor {
      * 执行自适应认知熵门控路由分析
      *
      * @param query 用户查询
-     * @param queryVec1536 千问 1536 维超球面单位向量
+     * @param queryVec1536 千问 1024 维超球面单位向量
      * @param candidateSliceVecs 候选先验切片向量集合 (取 Top-8 ~ Top-16 邻域切片)
      * @return 路由决策与确定性前缀哈希
      */
@@ -124,8 +124,8 @@ public class EpistemicEntropyAdaptiveRagGovernor {
         String prefixHash = generateDeterministicPrefixHash(query, path);
 
         long latencyUs = (System.nanoTime() - startNs) / 1000;
-        log.info("自适应 RAG 门控决策完成: 路径={}, 局部熵={:.4f}, 曲率={:.4f}, 耗时={}us",
-                path, entropy, curvature, latencyUs);
+        log.info("自适应 RAG 门控决策完成: 路径={}, 局部熵={}, 曲率={}, 耗时={}us",
+                path, String.format("%.4f", entropy), String.format("%.4f", curvature), latencyUs);
 
         return new AdaptiveRoutingDecision(
                 query, path, entropy, curvature, counterfactual, prefixHash, latencyUs

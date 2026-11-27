@@ -36,7 +36,7 @@ public class MixtureOfReasoningGovernor {
      */
     public ReasoningDecision evaluateRoute(
             String userQuery,
-            float[] queryEmbedding1536,
+            float[] queryEmbedding1024,
             List<String> recalledSliceSignatures,
             double meanRecallScore,
             boolean hasTemporalConflict,
@@ -68,8 +68,8 @@ public class MixtureOfReasoningGovernor {
 
         // 5. 分支判断逻辑
         // 分支 A: 若命中认知脚手架且具有中度以上复杂度或存在冲突/不确定性，以 Flash 挂载脚手架极速复用品质 (thinking: disabled)
-        if (queryEmbedding1536 != null && queryEmbedding1536.length == 1536) {
-            Optional<CognitiveScaffold> cachedScaffold = cognitiveCacheService.getScaffold(queryEmbedding1536, recalledSliceSignatures);
+        if (queryEmbedding1024 != null && queryEmbedding1024.length == 1024) {
+            Optional<CognitiveScaffold> cachedScaffold = cognitiveCacheService.getScaffold(queryEmbedding1024, recalledSliceSignatures);
             if (cachedScaffold.isPresent() && (compositeScore >= 0.15 || semanticComplexity >= 0.15 || conflictFactor > 0.0)) {
                 return new ReasoningDecision(
                         ReasoningDecision.RoutingBranch.FLASH_WITH_SCAFFOLD,

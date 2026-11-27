@@ -39,6 +39,47 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String DEFAULT_MODEL_NAME = "deepseek-flash";
 
+    /**
+     * 请求作用域思考深度覆盖声明（解决 Spring AI ToolCallingChatOptions 覆盖 DeepSeekChatOptions 的陷阱；
+     * Phase 11.1 新增可选步级输出预算上限覆盖）。
+     */
+    public record ReasoningEffortOverride(
+            boolean thinkingEnabled,
+            String reasoningEffort,
+            Integer maxCompletionTokensOverride
+    ) {
+        /**
+         * 向后兼容 Phase 6-10 的两参构造器（不覆盖步级输出预算上限）。
+         */
+        public ReasoningEffortOverride(boolean thinkingEnabled, String reasoningEffort) {
+            this(thinkingEnabled, reasoningEffort, null);
+        }
+    }
+
+    private static final ThreadLocal<ReasoningEffortOverride> SCOPED_EFFORT_OVERRIDE = new ThreadLocal<>();
+
+    /**
+     * 在当前线程调用作用域内注入 DeepSeek 思考控制覆盖，并保证在退出时清理线程上下文防止泄漏。
+     */
+    public static <T> T runWithEffortOverride(ReasoningEffortOverride override, java.util.function.Supplier<T> action) {
+        if (action == null) {
+            throw new IllegalArgumentException("action must not be null");
+        }
+        ReasoningEffortOverride previous = SCOPED_EFFORT_OVERRIDE.get();
+        if (override != null) {
+            SCOPED_EFFORT_OVERRIDE.set(override);
+        }
+        try {
+            return action.get();
+        } finally {
+            if (previous != null) {
+                SCOPED_EFFORT_OVERRIDE.set(previous);
+            } else {
+                SCOPED_EFFORT_OVERRIDE.remove();
+            }
+        }
+    }
+
     private final HttpClient httpClient;
     private final String endpoint;
     private final String apiKey;
@@ -227,6 +268,8 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
         Map<String, Object> body = new LinkedHashMap<>();
         String targetModel = (this.modelName != null && !this.modelName.isBlank()) ? this.modelName : DEFAULT_MODEL_NAME;
         Double targetTemperature = this.temperature;
+        Double targetTopP = null;
+        List<String> targetStopSequences = null;
         Integer requestedMaxTokens = null;
 
         // 从 Prompt Options 中提取运行时覆盖配置与思考控制
@@ -237,6 +280,12 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
             }
             if (options.getTemperature() != null) {
                 targetTemperature = options.getTemperature();
+            }
+            if (options.getTopP() != null) {
+                targetTopP = options.getTopP();
+            }
+            if (options.getStopSequences() != null && !options.getStopSequences().isEmpty()) {
+                targetStopSequences = options.getStopSequences();
             }
             requestedMaxTokens = options.getMaxTokens();
             if (options instanceof DeepSeekChatOptions dsOptions) {
@@ -282,17 +331,37 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
             }
         }
 
+        ReasoningEffortOverride scopedOverride = SCOPED_EFFORT_OVERRIDE.get();
+        Integer overrideMaxTokens = (scopedOverride != null
+                && scopedOverride.maxCompletionTokensOverride() != null
+                && scopedOverride.maxCompletionTokensOverride() > 0)
+                ? scopedOverride.maxCompletionTokensOverride()
+                : null;
+
         if (forcedThinkingEnabled != null) {
             targetModel = modelName;
             body.put("thinking", Map.of("type", forcedThinkingEnabled ? "enabled" : "disabled"));
+        } else {
+            // 当调用方未通过 DeepSeekChatOptions 显式指定思考控制（例如 ReactAgent 使用了 ToolCallingChatOptions）时，
+            // 从请求作用域上下文透传控制面下发的 thinking 与 reasoning_effort 参数
+            if (scopedOverride != null) {
+                if (!body.containsKey("thinking")) {
+                    body.put("thinking", Map.of("type", scopedOverride.thinkingEnabled() ? "enabled" : "disabled"));
+                }
+                if (!body.containsKey("reasoning_effort")
+                        && scopedOverride.reasoningEffort() != null
+                        && !scopedOverride.reasoningEffort().isBlank()) {
+                    body.put("reasoning_effort", scopedOverride.reasoningEffort());
+                }
+            }
         }
 
         body.put("model", targetModel);
         body.put("messages", messages);
         body.put("stream", stream);
-        if (requestedMaxTokens != null || maxOutputTokens != null) {
-            body.put("max_tokens", requestedMaxTokens == null ? maxOutputTokens
-                    : maxOutputTokens == null ? requestedMaxTokens : Math.min(requestedMaxTokens, maxOutputTokens));
+        Integer effectiveMaxTokens = minNonNull(requestedMaxTokens, maxOutputTokens, overrideMaxTokens);
+        if (effectiveMaxTokens != null) {
+            body.put("max_tokens", effectiveMaxTokens);
         }
         boolean isThinkingEnabled = false;
         if (body.containsKey("thinking")) {
@@ -301,13 +370,66 @@ public class DeepSeekCompatibleChatModel implements ChatModel {
                 isThinkingEnabled = true;
             }
         }
+        // 当显式传入非 none 的 reasoning_effort 时同样激活官方思考模式约束
+        if (body.containsKey("reasoning_effort")) {
+            String effort = String.valueOf(body.get("reasoning_effort")).trim();
+            if (!effort.isEmpty() && !"none".equalsIgnoreCase(effort) && !"disabled".equalsIgnoreCase(effort)) {
+                isThinkingEnabled = true;
+            }
+        }
+        // 关键防御 3 (Phase 9.1): 若当前轮开启思考模式且历史消息中存在带 tool_calls 但缺失 reasoning_content 的助手轮次
+        // （例如前几轮以 NONE 非思考模式探索工具，后续升档至 LOW/MEDIUM/HIGH 思考态），防御性补入空串防止上游 400 拒绝
+        if (isThinkingEnabled) {
+            for (Map<String, Object> m : messages) {
+                if ("assistant".equals(m.get("role"))
+                        && m.containsKey("tool_calls")
+                        && !m.containsKey("reasoning_content")) {
+                    m.put("reasoning_content", "");
+                }
+            }
+        }
         if (targetTemperature != null && !isThinkingEnabled) {
             body.put("temperature", targetTemperature);
+        }
+        if (targetTopP != null) {
+            // DeepSeek 官方思考模式下 top_p 必须限制在 [0.95, 1.0] 区间
+            double safeTopP = isThinkingEnabled ? Math.max(0.95, Math.min(1.0, targetTopP)) : targetTopP;
+            body.put("top_p", safeTopP);
+        }
+        if (targetStopSequences != null && !targetStopSequences.isEmpty()) {
+            body.put("stop", targetStopSequences);
         }
         if (stream) {
             body.put("stream_options", Map.of("include_usage", true));
         }
+        // 阿里云百炼 OpenAI 兼容协议原生自适应（dashscope.aliyuncs.com）：
+        // 自动切换 enable_thinking 与 max_completion_tokens，非思考模式下剔除 reasoning_effort
+        if (isDashScopeEndpoint()) {
+            body.remove("thinking");
+            body.put("enable_thinking", isThinkingEnabled);
+            if (!isThinkingEnabled) {
+                body.remove("reasoning_effort");
+            }
+            Object maxTok = body.remove("max_tokens");
+            if (maxTok != null) {
+                body.put("max_completion_tokens", maxTok);
+            }
+        }
         return body;
+    }
+
+    private boolean isDashScopeEndpoint() {
+        return endpoint != null && endpoint.contains("dashscope.aliyuncs.com");
+    }
+
+    private static Integer minNonNull(Integer a, Integer b, Integer c) {
+        Integer res = null;
+        for (Integer v : new Integer[]{a, b, c}) {
+            if (v != null && v > 0) {
+                res = (res == null) ? v : Math.min(res, v);
+            }
+        }
+        return res;
     }
 
     /**

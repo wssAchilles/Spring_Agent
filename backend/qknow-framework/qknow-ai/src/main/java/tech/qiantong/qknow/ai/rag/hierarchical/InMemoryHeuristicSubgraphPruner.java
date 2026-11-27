@@ -8,8 +8,8 @@ import tech.qiantong.qknow.ai.rag.hierarchical.model.SubgraphReasoningReceipt;
 import java.util.*;
 
 /**
- * 堆内轻量级千问 1536 维超球面子图启发式剪枝算子 (定理 1.2)
- * 1. 采用千问 1536 维超球面测地距离构建启发式单调势能函数；
+ * 堆内轻量级千问 1024 维超球面子图启发式剪枝算子 (定理 1.2)
+ * 1. 采用千问 1024 维超球面测地距离构建启发式单调势能函数；
  * 2. 实施严格的工程剪枝边界：K <= 2 跳，单节点分支度数 B_max <= 16，全局节点上限 N_max <= 32；
  * 3. 算法时间复杂度严格有界于 O(|V_k| + |E_k| log |V_k|)，纯内存堆内耗时 <= 10ms，零外部图数据库 RPC 依赖。
  */
@@ -24,7 +24,7 @@ public class InMemoryHeuristicSubgraphPruner {
     public static final double HOP_DECAY = 0.6;
 
     public record AdjacencyEdge(String targetId, String relationName, double relationWeight) {}
-    public record GraphNodeRecord(String nodeId, String nodeName, String nodeType, float[] embedding1536) {}
+    public record GraphNodeRecord(String nodeId, String nodeName, String nodeType, float[] embedding1024) {}
 
     public record PruningResult(
             List<SubgraphReasoningReceipt.PrunedGraphNode> nodes,
@@ -35,14 +35,14 @@ public class InMemoryHeuristicSubgraphPruner {
     /**
      * 执行堆内启发式子图剪枝搜索
      *
-     * @param queryEmbedding1536 千问 1536 维查询向量
+     * @param queryEmbedding1024 千问 1024 维查询向量
      * @param seedNodeIds         种子实体 ID 集合
      * @param nodeRegistry        堆内节点注册表
      * @param adjacencyList       堆内邻接表
      * @return 剪枝后的节点清单与拓扑命题链条
      */
     public PruningResult pruneSubgraph(
-            float[] queryEmbedding1536,
+            float[] queryEmbedding1024,
             Set<String> seedNodeIds,
             Map<String, GraphNodeRecord> nodeRegistry,
             Map<String, List<AdjacencyEdge>> adjacencyList
@@ -64,7 +64,7 @@ public class InMemoryHeuristicSubgraphPruner {
         for (String seedId : seedNodeIds) {
             GraphNodeRecord seedRecord = nodeRegistry.get(seedId);
             if (seedRecord != null) {
-                double score = computeGeodesicCosineSimilarity(queryEmbedding1536, seedRecord.embedding1536());
+                double score = computeGeodesicCosineSimilarity(queryEmbedding1024, seedRecord.embedding1024());
                 SubgraphReasoningReceipt.PrunedGraphNode node = new SubgraphReasoningReceipt.PrunedGraphNode(
                         seedRecord.nodeId(),
                         seedRecord.nodeName(),
@@ -113,7 +113,7 @@ public class InMemoryHeuristicSubgraphPruner {
                     continue;
                 }
 
-                double geoSim = computeGeodesicCosineSimilarity(queryEmbedding1536, targetRecord.embedding1536());
+                double geoSim = computeGeodesicCosineSimilarity(queryEmbedding1024, targetRecord.embedding1024());
                 double heuristicScore = geoSim * edge.relationWeight() * Math.pow(HOP_DECAY, current.hop() + 1);
                 evaluatedNeighbors.add(new ScoredNeighbor(targetRecord, edge, heuristicScore));
             }
@@ -166,14 +166,14 @@ public class InMemoryHeuristicSubgraphPruner {
     }
 
     /**
-     * 千问 1536 维超球面单位向量内积 (余弦相似度)
+     * 千问 1024 维超球面单位向量内积 (余弦相似度)
      */
     public double computeGeodesicCosineSimilarity(float[] v1, float[] v2) {
-        if (v1 == null || v2 == null || v1.length != 1536 || v2.length != 1536) {
+        if (v1 == null || v2 == null || v1.length != 1024 || v2.length != 1024) {
             return 0.0;
         }
         float dot = 0.0f;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             dot += v1[i] * v2[i];
         }
         return Math.max(0.0, dot);

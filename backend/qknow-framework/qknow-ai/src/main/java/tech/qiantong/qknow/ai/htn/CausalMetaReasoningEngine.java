@@ -2,14 +2,18 @@ package tech.qiantong.qknow.ai.htn;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 /**
- * Pearl 结构因果诊断与 Reflexion 元反思自愈引擎 (Causal Meta-Reasoning Engine)
- * 分析原子动作执行异常，区分可恢复与非可恢复错误，
- * 驱动 DeepSeek-R1 链式推理生成元补丁，3 轮内指数收敛自愈 (定理 1.2)
+ * 动作异常错误分类与结构化自愈补丁引擎（Causal Error Classifier & Meta-Patch Engine）。
+ * <p>
+ * 区分可恢复瞬态/语法参数异常与不可恢复权限/资源缺失异常；当注入真实 DeepSeek {@link ChatModel} 时生成针对性修复建议，
+ * 无网络单测环境下执行确定性分类与退避策略（形式化约束级极小冲突核自愈由第 5 章 {@code DbmLtlFormalMicroSolver} 承接）。
+ * </p>
  */
 @Component
 public class CausalMetaReasoningEngine {
@@ -17,6 +21,17 @@ public class CausalMetaReasoningEngine {
     private static final Logger log = LoggerFactory.getLogger(CausalMetaReasoningEngine.class);
 
     public static final int MAX_HEALING_ROUNDS = 3;
+
+    private final ChatModel chatModel;
+
+    public CausalMetaReasoningEngine() {
+        this(null);
+    }
+
+    @Autowired
+    public CausalMetaReasoningEngine(@Autowired(required = false) ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
 
     /** 错误分类枚举 */
     public enum ErrorCategory {
@@ -83,6 +98,18 @@ public class CausalMetaReasoningEngine {
         } else {
             patch.put("exponential_backoff_ms", (long) Math.pow(2, context.currentRound()) * 150L);
             patch.put("jitter_ratio", 0.15);
+        }
+
+        if (chatModel != null) {
+            try {
+                String llmAdvice = chatModel.call("请用一句话给出工具动作 [" + context.actionName()
+                        + "] 报错 [" + context.rawErrorMessage() + "] 的参数修正建议");
+                if (llmAdvice != null && !llmAdvice.isBlank()) {
+                    patch.put("llm_remediation_hint", llmAdvice.trim());
+                }
+            } catch (Exception ex) {
+                log.debug("DeepSeek 辅助诊断不可用，沿用确定性修复策略: {}", ex.getMessage());
+            }
         }
 
         int nextRound = context.currentRound() + 1;

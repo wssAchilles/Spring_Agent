@@ -3,7 +3,7 @@ package tech.qiantong.qknow.ai.gateway;
 import java.util.*;
 
 /**
- * 千问 1536 维超球面动态意图路由器
+ * 千问 1024 维超球面动态意图路由器
  * <p>
  * 基于单位超球面测地线余弦相似度与节点健康度、实时负载的多目标帕累托加权选拔。
  *
@@ -22,7 +22,7 @@ public class IntentAdaptiveRouter {
      * 根据意图特征与负载选拔最优目标智能体
      *
      * @param intentQuery      自然语言意图描述
-     * @param queryEmbedding   千问 1536 维超球面嵌入向量（已归一化，模长为 1.0）
+     * @param queryEmbedding   千问 1024 维超球面嵌入向量（已归一化，模长为 1.0）
      * @param currentLoads     各智能体当前并发负载因子 [0.0, 1.0]
      * @return 最优智能体元数据
      */

@@ -63,7 +63,7 @@ public class DebateStateMachine {
         }
 
         List<InspectedProposal> valid = honestProposals.stream()
-                .filter(p -> p.embedding1536() != null)
+                .filter(p -> p.embedding1024() != null)
                 .toList();
         int m = valid.size();
         if (m < 2) {
@@ -73,9 +73,9 @@ public class DebateStateMachine {
         double totalSim = 0.0;
         int pairCount = 0;
         for (int i = 0; i < m; i++) {
-            float[] vi = valid.get(i).embedding1536();
+            float[] vi = valid.get(i).embedding1024();
             for (int j = i + 1; j < m; j++) {
-                float[] vj = valid.get(j).embedding1536();
+                float[] vj = valid.get(j).embedding1024();
                 totalSim += ByzantineWorkerFilter.dotProduct(vi, vj);
                 pairCount++;
             }

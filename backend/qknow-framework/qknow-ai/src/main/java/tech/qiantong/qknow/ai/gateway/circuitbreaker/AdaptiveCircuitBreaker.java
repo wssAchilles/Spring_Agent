@@ -62,10 +62,11 @@ public class AdaptiveCircuitBreaker {
             if (now - openTime >= waitDurationInOpenStateMillis) {
                 if (state.compareAndSet(ChannelStatus.OPEN, ChannelStatus.HALF_OPEN)) {
                     lastStateChangeTimestamp.set(now);
-                    halfOpenProbeCounter.set(0);
+                    // 当前成功竞争转换至 HALF_OPEN 的请求即消耗第 1 次半开探针配额，防止放行 N+1 次
+                    halfOpenProbeCounter.set(1);
                     halfOpenSuccessCounter.set(0);
                     log.info("断路器 [{}] 冷却期结束，自适应切换至 HALF_OPEN 半开探活状态", name);
-                    return true;
+                    return permittedNumberOfCallsInHalfOpenState >= 1;
                 }
             }
             return false;

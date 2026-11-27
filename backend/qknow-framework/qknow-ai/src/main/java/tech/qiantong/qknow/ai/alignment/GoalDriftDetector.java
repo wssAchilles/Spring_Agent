@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * 阿里千问 1536 维超球面目标漂移度量器 (定理 1.2: 测地线偏角距离监控)
+ * 阿里千问 1024 维超球面目标漂移度量器 (定理 1.2: 测地线偏角距离监控)
  */
 @Component
 public class GoalDriftDetector {
@@ -34,7 +34,7 @@ public class GoalDriftDetector {
     ) {}
 
     /**
-     * 在千问 1536 维超球面上计算余弦相似度与测地线偏角
+     * 在千问 1024 维超球面上计算余弦相似度与测地线偏角
      */
     public DriftEvaluation evaluateDrift(
             IntentVector rootIntent,

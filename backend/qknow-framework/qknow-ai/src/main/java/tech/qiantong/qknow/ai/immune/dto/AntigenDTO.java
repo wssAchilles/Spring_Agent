@@ -16,7 +16,7 @@ public class AntigenDTO {
     private String rawPayload;
 
     /**
-     * 阿里千问 1536 维超球面单位特征向量
+     * 阿里千问 1024 维超球面单位特征向量
      */
     private float[] semanticEmbedding;
 

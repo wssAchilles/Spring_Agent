@@ -52,7 +52,7 @@ public class SchemaCatalogService {
      *
      * @param datasourceId 数据源标识
      * @param queryText    用户自然语言查询文本
-     * @param queryVector  用户自然语言提问的 1536 维超球面嵌入 (若为 null 则降级为关键词与拓扑检索)
+     * @param queryVector  用户自然语言提问的 1024 维超球面嵌入 (若为 null 则降级为关键词与拓扑检索)
      * @param topK         核心候选表数量上限 (默认 3~5)
      * @return 剪枝后的紧凑 DDL / Schema 描述字符串，体积严格 <= 4096 字节
      */

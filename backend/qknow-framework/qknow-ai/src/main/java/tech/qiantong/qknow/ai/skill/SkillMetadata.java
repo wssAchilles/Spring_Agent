@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * Phase 62: 技能语义卡片与超球面嵌入元数据 (Record)
  * <p>
- * 严格锁定阿里千问 1536 维超球面归一化向量 (||v||_2 = 1.0)。
+ * 严格锁定阿里千问 1024 维超球面归一化向量 (||v||_2 = 1.0)。
  */
 public record SkillMetadata(
         String skillId,
@@ -22,7 +22,7 @@ public record SkillMetadata(
         boolean isDeprecated
 ) {
 
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
 
     public SkillMetadata {
         Objects.requireNonNull(skillId, "技能 ID 不能为空");

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 
 /**
- * 阿里千问 1536 维超球面测地距离与毫秒级时钟指数半衰期衰减对齐器 (定理 1.1)
+ * 阿里千问 1024 维超球面测地距离与毫秒级时钟指数半衰期衰减对齐器 (定理 1.1)
  * 结合超球面流形角距离与动态时序生命周期，计算复合时空对齐得分，彻底杜绝陈旧知识倒挂
  */
 @Component
@@ -15,17 +15,17 @@ public class SpatiotemporalDecayAligner {
 
     private static final Logger log = LoggerFactory.getLogger(SpatiotemporalDecayAligner.class);
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double DEFAULT_HALF_LIFE_DAYS = 180.0; // 默认半衰期 180 天
     public static final double EXPIRED_PENALTY = 0.01; // 过期失效事实惩罚因子
     public static final double ALPHA_GEO_WEIGHT = 0.65; // 几何测地相似度权重
 
     /**
-     * 计算阿里千问 1536 维超球面测地余弦相似度
-     * 在单位超球面 S^1535 (||v||_2 = 1.0) 上，内积等价于测地余弦值
+     * 计算阿里千问 1024 维超球面测地余弦相似度
+     * 在单位超球面 S^1023 (||v||_2 = 1.0) 上，内积等价于测地余弦值
      *
-     * @param queryEmb  查询向量 (1536 维归一化向量)
-     * @param entityEmb 实体向量 (1536 维归一化向量)
+     * @param queryEmb  查询向量 (1024 维归一化向量)
+     * @param entityEmb 实体向量 (1024 维归一化向量)
      * @return 几何测地相似度 [0.0, 1.0]
      */
     public double calculateGeodesicSimilarity(float[] queryEmb, float[] entityEmb) {
@@ -78,8 +78,8 @@ public class SpatiotemporalDecayAligner {
     /**
      * 计算复合时空对齐得分 S_st = (α * S_geo + (1 - α) * S_ppr) * D(Δt)
      *
-     * @param queryEmb            查询 1536 维超球面向量
-     * @param entityEmb           实体 1536 维超球面向量
+     * @param queryEmb            查询 1024 维超球面向量
+     * @param entityEmb           实体 1024 维超球面向量
      * @param pprScore            局部子图 PPR 拓扑得分 [0.0, 1.0]
      * @param factTimestampMs     事实有效时间戳 (毫秒)
      * @param currentEpochMs      当前查询时间戳 (毫秒)

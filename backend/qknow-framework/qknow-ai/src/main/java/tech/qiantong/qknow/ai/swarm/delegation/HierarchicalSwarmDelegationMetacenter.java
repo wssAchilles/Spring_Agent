@@ -36,7 +36,7 @@ public class HierarchicalSwarmDelegationMetacenter {
             String sessionId,
             String sourceAgentId,
             String taskDescription,
-            float[] queryVector1536,
+            float[] queryVector1024,
             List<HypersphericalIntentMatcher.AgentCard> candidateAgents,
             String antecedentReasoningContent,
             String antecedentConclusion
@@ -73,9 +73,9 @@ public class HierarchicalSwarmDelegationMetacenter {
 
         log.info("[SwarmMetacenter] 收到委托请求, 会话: {}, 发起方: {}", request.sessionId(), request.sourceAgentId());
 
-        // 1. 防线一：阿里千问 1536 维超球面测地意图匹配
+        // 1. 防线一：阿里千问 1024 维超球面测地意图匹配
         HypersphericalIntentMatcher.IntentMatchResult matchResult =
-                intentMatcher.matchTargetAgent(request.queryVector1536(), request.candidateAgents());
+                intentMatcher.matchTargetAgent(request.queryVector1024(), request.candidateAgents());
 
         if (!matchResult.delegated()) {
             log.warn("[SwarmMetacenter] 意图未达置信度门禁, 安全上浮: {}", matchResult.escalationReason());

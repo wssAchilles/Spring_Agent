@@ -11,7 +11,7 @@ import java.util.*;
  * Phase 123 核心资产：高保真 GraphRAG 深度融合总控中枢 (HierarchicalGraphRagMetacenter)
  * 落实“支柱三：高保真 RAG 知识引擎与多模态图谱”战略定位：
  * 1. 统一调度四级文档金字塔分支定界剪枝与自底向上语义质心聚合；
- * 2. 调度千问 1536 维测地 PPR 与 Steiner 最小因果树剪枝，消除多跳组合爆炸；
+ * 2. 调度千问 1024 维测地 PPR 与 Steiner 最小因果树剪枝，消除多跳组合爆炸；
  * 3. 构造双轨因果骨架 Prompt 并注入 DeepSeek API 思考流规范；
  * 4. 实施 \tau_{ground} >= 0.88 反幻觉接地安全硬门禁；
  * 5. 全链路自动化签发并校验不可变存证凭单 {@link HierarchicalGraphRagReceipt}。
@@ -62,7 +62,7 @@ public class HierarchicalGraphRagMetacenter {
      *
      * @param sessionId                会话唯一标识
      * @param query                    用户查询文本
-     * @param queryEmbedding1536       阿里千问 1536 维超球面单位查询向量
+     * @param queryEmbedding1024       阿里千问 1024 维超球面单位查询向量
      * @param docRoot                  长文档四级金字塔树根节点
      * @param allGraphNodes            知识图谱候选实体全集
      * @param allGraphEdges            知识图谱候选边全集
@@ -74,7 +74,7 @@ public class HierarchicalGraphRagMetacenter {
     public GraphRagContext executeFusionPipeline(
             String sessionId,
             String query,
-            float[] queryEmbedding1536,
+            float[] queryEmbedding1024,
             HierarchicalPyramidDocumentChunker.PyramidNode docRoot,
             Collection<SteinerCausalSubgraphEngine.GraphEntity> allGraphNodes,
             Collection<SteinerCausalSubgraphEngine.GraphEdge> allGraphEdges,
@@ -93,7 +93,7 @@ public class HierarchicalGraphRagMetacenter {
         List<String> representativePath = List.of("UNKNOWN_DOC_PATH");
 
         if (docRoot != null) {
-            searchResult = chunker.searchByBranchAndBound(docRoot, queryEmbedding1536, 0.20, 5);
+            searchResult = chunker.searchByBranchAndBound(docRoot, queryEmbedding1024, 0.20, 5);
             hitChunks = searchResult.hitLeafNodes();
             if (!hitChunks.isEmpty()) {
                 representativePath = hitChunks.get(0).getPath();
@@ -102,7 +102,7 @@ public class HierarchicalGraphRagMetacenter {
 
         // 2. 测地 PPR 与 Steiner 最小因果树紧致提取 (Step 2: Geodesic PPR & Steiner Causal Tree)
         SteinerCausalSubgraphEngine.SteinerSubgraphResult steinerResult = steinerEngine.extractSteinerCausalSubgraph(
-                allGraphNodes, allGraphEdges, seedEntityIds, queryEmbedding1536
+                allGraphNodes, allGraphEdges, seedEntityIds, queryEmbedding1024
         );
 
         // 3. 构建双轨对齐结构化 Prompt (Step 3: Dual-track Prompt Construction)

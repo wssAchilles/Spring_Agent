@@ -6,13 +6,13 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * 基于阿里千问 1536 维超球面测地投影与论据因果覆盖率的自适应置信度争议仲裁者 (定理 1.2)
+ * 基于阿里千问 1024 维超球面测地投影与论据因果覆盖率的自适应置信度争议仲裁者 (定理 1.2)
  * 复杂度严格有界于 O(|N| * |Arguments|)，纯内存计算耗时 <= 10ms，保障合规/风控硬约束不被多数票穿透
  */
 public class AdaptiveJudgeArbiter {
 
     private static final Logger log = LoggerFactory.getLogger(AdaptiveJudgeArbiter.class);
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double CONFIDENCE_THRESHOLD = 0.55;
 
     /**
@@ -22,7 +22,7 @@ public class AdaptiveJudgeArbiter {
             String argumentId,
             String agentRole, // PROCURER, RISK_CONTROL, LEGAL_COMPLIANCE
             String content,
-            float[] embedding1536,
+            float[] embedding1024,
             double causalCoverage, // 因果覆盖率 [0.0, 1.0]
             boolean hasVetoHardConstraint // 是否包含合规/风控一票否决硬约束
     ) {}
@@ -43,15 +43,15 @@ public class AdaptiveJudgeArbiter {
     /**
      * 执行争议仲裁判定
      *
-     * @param topicEmbedding1536 议题 1536 维超球面归一化嵌入向量
+     * @param topicEmbedding1024 议题 1024 维超球面归一化嵌入向量
      * @param arguments          各方提交的论据清单
      * @return 仲裁结果
      */
-    public ArbitrationResult arbitrate(float[] topicEmbedding1536, List<Argument> arguments) {
+    public ArbitrationResult arbitrate(float[] topicEmbedding1024, List<Argument> arguments) {
         long startNano = System.nanoTime();
 
-        if (topicEmbedding1536 == null || topicEmbedding1536.length < EMBEDDING_DIM) {
-            throw new IllegalArgumentException("议题向量必须为 1536 维超球面向量");
+        if (topicEmbedding1024 == null || topicEmbedding1024.length < EMBEDDING_DIM) {
+            throw new IllegalArgumentException("议题向量必须为 1024 维超球面向量");
         }
         if (arguments == null || arguments.isEmpty()) {
             return new ArbitrationResult("ARBITRATOR", "STATUS_QUO", 0.0, Map.of(), false,
@@ -80,7 +80,7 @@ public class AdaptiveJudgeArbiter {
         double totalScore = 0.0;
 
         for (Argument arg : arguments) {
-            double sGeo = calculateGeodesicProjection(arg.embedding1536(), topicEmbedding1536);
+            double sGeo = calculateGeodesicProjection(arg.embedding1024(), topicEmbedding1024);
             double effectiveWeight = sGeo * Math.max(0.0, Math.min(1.0, arg.causalCoverage()));
 
             double current = agentScoreMap.getOrDefault(arg.agentRole(), 0.0);
@@ -108,7 +108,7 @@ public class AdaptiveJudgeArbiter {
 
         long durationMs = (System.nanoTime() - startNano) / 1_000_000L;
         String justification = String.format(
-                "仲裁者基于千问 1536 维超球面测地投影与因果覆盖率判定胜出者为 %s (综合强度: %.2f, 置信度: %.2f%%)",
+                "仲裁者基于千问 1024 维超球面测地投影与因果覆盖率判定胜出者为 %s (综合强度: %.2f, 置信度: %.2f%%)",
                 winner, maxScore, confidence * 100
         );
 
@@ -124,7 +124,7 @@ public class AdaptiveJudgeArbiter {
     }
 
     /**
-     * 计算阿里千问 1536 维超球面测地内积投影: S_geo = (dot(v_a, v_topic) + 1) / 2
+     * 计算阿里千问 1024 维超球面测地内积投影: S_geo = (dot(v_a, v_topic) + 1) / 2
      */
     private double calculateGeodesicProjection(float[] vA, float[] vTopic) {
         if (vA == null || vTopic == null) {

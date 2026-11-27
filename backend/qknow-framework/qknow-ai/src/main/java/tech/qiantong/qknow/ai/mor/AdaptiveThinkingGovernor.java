@@ -24,7 +24,7 @@ public class AdaptiveThinkingGovernor {
      */
     public ReasoningDecision evaluate(
             String userQuery,
-            float[] queryEmbedding1536,
+            float[] queryEmbedding1024,
             List<String> recalledSliceSignatures,
             double meanRecallScore,
             boolean hasTemporalConflict,
@@ -32,7 +32,7 @@ public class AdaptiveThinkingGovernor {
     ) {
         return underlyingGovernor.evaluateRoute(
                 userQuery,
-                queryEmbedding1536,
+                queryEmbedding1024,
                 recalledSliceSignatures,
                 meanRecallScore,
                 hasTemporalConflict,

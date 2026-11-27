@@ -53,8 +53,8 @@ public class ComplianceIsolationCoordinator {
      * @param docTenantId     目标文档所属租户 ID (必须严格匹配)
      * @param docId           文档 ID
      * @param segmentId       切片 ID
-     * @param docVector       文档向量 (1536 维)
-     * @param queryVector     查询向量 (1536 维)
+     * @param docVector       文档向量 (1024 维)
+     * @param queryVector     查询向量 (1024 维)
      * @param level           隐私保护等级
      * @return 校准后的合规检索得分；若已被注销或跨租户越权则拦截返回 -1.0
      */

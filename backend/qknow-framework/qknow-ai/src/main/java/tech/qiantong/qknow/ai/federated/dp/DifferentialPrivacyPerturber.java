@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
 
 /**
- * 阿里千问 1536 维超球面保模局部差分隐私 (LDP) 特征扰动器
+ * 阿里千问 1024 维超球面保模局部差分隐私 (LDP) 特征扰动器
  * 
  * 核心数学定理 (Theorem 3.1 LDP Feature Perturbation & Norm Conservation):
  * 为特征向量各维度注入拉普拉斯噪声 eta ~ Laplace(0, scale)，
@@ -21,7 +21,7 @@ public class DifferentialPrivacyPerturber {
     private static final Logger log = LoggerFactory.getLogger(DifferentialPrivacyPerturber.class);
 
     /** 阿里千问标准 Embedding 维度 */
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     /** 默认隐私预算 epsilon */
     public static final double DEFAULT_EPSILON = 2.0;
 
@@ -40,7 +40,7 @@ public class DifferentialPrivacyPerturber {
     /**
      * 对高维向量施加局部差分隐私扰动并保模重投影
      *
-     * @param originalVector 原始归一化向量 (1536 维)
+     * @param originalVector 原始归一化向量 (1024 维)
      * @param epsilon 隐私预算 (推荐 1.0 ~ 4.0)
      * @return 扰动后严格保模重投影的归一化向量 (模长为 1.0)
      */

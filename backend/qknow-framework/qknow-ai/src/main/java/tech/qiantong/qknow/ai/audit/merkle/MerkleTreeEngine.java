@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 密码学平衡二叉 Merkle 树构建、证明生成与离线验真引擎 (MerkleTreeEngine)
@@ -107,7 +108,10 @@ public class MerkleTreeEngine {
             }
         }
 
-        return rootHash.equalsIgnoreCase(currentHash);
+        // 使用常量时间比对校验 Merkle 根哈希防止时序侧信道
+        return MessageDigest.isEqual(
+                rootHash.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                currentHash.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     /**

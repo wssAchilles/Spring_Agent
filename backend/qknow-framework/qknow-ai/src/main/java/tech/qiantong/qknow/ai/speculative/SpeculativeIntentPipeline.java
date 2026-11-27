@@ -8,12 +8,12 @@ import java.util.*;
 /**
  * Phase 63: 流式意图投机管道与影子快照隔离执行器
  * <p>
- * 基于定理 1.3，基于千问 1536 维超球面测地线内积并行预检索，结合 DeepSeek 64-token 规整前缀对齐。
+ * 基于定理 1.3，基于千问 1024 维超球面测地线内积并行预检索，结合 DeepSeek 64-token 规整前缀对齐。
  * 严格写时隔离 (COW)，影子分支绝对不污染全局生产状态！
  */
 public class SpeculativeIntentPipeline {
 
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final int PREFIX_BLOCK_SIZE = 64;
 
     /**
@@ -30,7 +30,7 @@ public class SpeculativeIntentPipeline {
     ) {}
 
     /**
-     * 规范化并校验千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * 规范化并校验千问 1024 维超球面单位向量 (||v||_2 = 1.0)
      */
     public static float[] normalizeHypersphere(float[] vec) {
         if (vec == null || vec.length != EMBEDDING_DIMENSION) {

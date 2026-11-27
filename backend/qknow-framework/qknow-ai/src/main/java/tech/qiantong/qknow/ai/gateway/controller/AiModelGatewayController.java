@@ -39,7 +39,7 @@ public class AiModelGatewayController {
     }
 
     /**
-     * 统一 1536 维向量化端点 (阿里千问)
+     * 统一 1024 维向量化端点 (阿里千问)
      */
     @PostMapping("/embeddings")
     public ResponseEntity<GatewayDto.GatewayEmbeddingResponse> createEmbedding(@RequestBody GatewayDto.GatewayEmbeddingRequest request) {
@@ -54,9 +54,8 @@ public class AiModelGatewayController {
     public ResponseEntity<Map<String, Object>> listModels() {
         List<ProviderChannel> channels = proxyService.getChannelRegistry().getAllChannels();
         List<Map<String, Object>> modelsList = List.of(
-                Map.of("id", "deepseek-chat", "object", "model", "owned_by", "deepseek"),
-                Map.of("id", "deepseek-reasoner", "object", "model", "owned_by", "deepseek"),
-                Map.of("id", "text-embedding-v2", "object", "model", "owned_by", "ali-qwen")
+                Map.of("id", "deepseek-flash", "object", "model", "owned_by", "deepseek"),
+                Map.of("id", "text-embedding-v4", "object", "model", "owned_by", "ali-qwen")
         );
 
         return ResponseEntity.ok(Map.of(

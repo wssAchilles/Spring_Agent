@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 企业跨境智能采购与多维合规审批端到端编排执行引擎
- * 联动四大技术支柱，严格遵循 DeepSeek 官方最新思考模式 (Thinking Mode) 规范与阿里千问 1536 维超球面基线
+ * 联动四大技术支柱，严格遵循 DeepSeek 官方最新思考模式 (Thinking Mode) 规范与阿里千问 1024 维超球面基线
  */
 public class CrossBorderProcurementScenarioEngine {
 

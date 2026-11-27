@@ -8,10 +8,10 @@ import java.security.MessageDigest;
 import java.util.*;
 
 /**
- * Phase 123 核心资产：千问 1536 维测地加权局部 PPR 与 Steiner 最小因果树剪枝引擎 (SteinerCausalSubgraphEngine)
+ * Phase 123 核心资产：千问 1024 维测地加权局部 PPR 与 Steiner 最小因果树剪枝引擎 (SteinerCausalSubgraphEngine)
  * 落实定理 1.2 局部测地加权 PPR 平稳分布与 Steiner 最小因果树紧致收敛定理：
  * 1. 局部个性化 PageRank (PPR) 动力学迭代：\alpha = 0.85，15 步快速收敛至全局唯一不动点，残差 <= 0.10；
- * 2. 边权重自适应结合阿里千问 1536 维超球面测地内积 W_{ij} = \max(0.01, \langle \mathbf{v}_i, \mathbf{v}_j \rangle)；
+ * 2. 边权重自适应结合阿里千问 1024 维超球面测地内积 W_{ij} = \max(0.01, \langle \mathbf{v}_i, \mathbf{v}_j \rangle)；
  * 3. 2-近似 Steiner 最小因果树算法 (KMB)：以极低代价寻找连通种子实体的最小因果骨架；
  * 4. 节点规模严格钳位在 |V_S| <= 15，消除组合爆炸，非相关噪声节点抑制比 >= 90%；
  * 5. 计算不可变拓扑因果摘要哈希 (SHA-256 前 16 位)。
@@ -36,7 +36,7 @@ public class SteinerCausalSubgraphEngine {
             String id,
             String name,
             String category,
-            float[] embedding1536
+            float[] embedding1024
     ) {
         public GraphEntity {
             Objects.requireNonNull(id, "实体 ID 不能为空");
@@ -82,7 +82,7 @@ public class SteinerCausalSubgraphEngine {
      * @param allNodes       图谱全量/候选实体集合
      * @param allEdges       候选边集合
      * @param seedEntityIds  命中的初始种子实体 ID 集合 S
-     * @param queryEmbedding 用户查询的 1536 维超球面向量
+     * @param queryEmbedding 用户查询的 1024 维超球面向量
      * @return 紧致的因果连通子图结果
      */
     public SteinerSubgraphResult extractSteinerCausalSubgraph(
@@ -115,8 +115,8 @@ public class SteinerCausalSubgraphEngine {
                 // 结合两端实体的超球面内积增强边权重
                 GraphEntity src = nodeMap.get(edge.sourceId());
                 GraphEntity tgt = nodeMap.get(edge.targetId());
-                if (src.embedding1536() != null && tgt.embedding1536() != null) {
-                    double dot = HierarchicalPyramidDocumentChunker.computeDotProduct(src.embedding1536(), tgt.embedding1536());
+                if (src.embedding1024() != null && tgt.embedding1024() != null) {
+                    double dot = HierarchicalPyramidDocumentChunker.computeDotProduct(src.embedding1024(), tgt.embedding1024());
                     weight = Math.max(0.01, (weight + Math.max(0.0, dot)) / 2.0);
                 }
                 adj.get(edge.sourceId()).add(new WeightedNeighbor(edge.targetId(), edge.relation(), weight));

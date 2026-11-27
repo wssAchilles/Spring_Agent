@@ -67,12 +67,15 @@ public class Neo4jQueryWrapper<T> {
         return this;
     }
 
-    // 处理between的特殊情况
+    // 处理 between 闭区间查询（补齐右边界漏写的 propertyName 并校验合法标识符）
     private <R extends Comparable<R>> Neo4jQueryWrapper<T> addBetweenCondition(String propertyName, R start, R end) {
+        if (propertyName == null || !propertyName.matches("^[\\p{L}_][\\p{L}\\p{N}_]*$")) {
+            throw new IllegalArgumentException("非法的属性名: " + propertyName);
+        }
         String prefixName = LambdaUtils.processCompositeProperties(this.entityClass);
         String startKey = propertyName + "Start";
         String endKey = propertyName + "End";
-        conditions.add("n." + prefixName + propertyName + " >= $" + startKey + " AND n." + prefixName + " <= $" + endKey);
+        conditions.add("n." + prefixName + propertyName + " >= $" + startKey + " AND n." + prefixName + propertyName + " <= $" + endKey);
         params.put(startKey, start);
         params.put(endKey, end);
         return this;

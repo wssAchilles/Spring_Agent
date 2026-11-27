@@ -1,25 +1,36 @@
 package tech.qiantong.qknow.ai.immune.engine;
 
+import org.springframework.ai.embedding.EmbeddingModel;
 import tech.qiantong.qknow.ai.immune.dto.AntigenDTO;
+import tech.qiantong.qknow.ai.vector.LocalitySensitiveFeatureHasher;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
 /**
  * 抗原多维特征提取引擎
  * <p>
- * 提取输入文本的千问 1536 维超球面单位向量、64 位 SimHash 词法位图与语法控制风险得分。
+ * 提取输入文本的千问 1024 维超球面单位向量、64 位 SimHash 词法位图与语法控制风险得分。
  *
  * @author Achilles
  * @since Phase 45
  */
 public class AntigenExtractor {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
+
+    private final EmbeddingModel embeddingModel;
+
+    public AntigenExtractor() {
+        this(null);
+    }
+
+    public AntigenExtractor(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
 
     private static final Pattern BASE64_PATTERN = Pattern.compile("([A-Za-z0-9+/]{4}){6,}={0,2}");
     private static final Pattern INJECTION_KEYWORD_PATTERN = Pattern.compile(
@@ -45,46 +56,22 @@ public class AntigenExtractor {
     }
 
     /**
-     * 计算确定性局部敏感千问 1536 维超球面单位嵌入（保证模长精确为 1.0）
-     * 采用词袋与局部敏感正态基底叠加，同源文本天然具备高余弦相似度
+     * 计算千问 1024 维单位超球面 S^1023 嵌入向量（保证模长精确为 1.0）。
+     * 若已注入真实千问 {@link EmbeddingModel} 则优先远程调用；离线测试下采用 Weinberger 有符号特征哈希投影。
      */
     public float[] computeDeterministicQwenEmbedding(String text) {
-        float[] vector = new float[EMBEDDING_DIM];
         if (text == null || text.trim().isEmpty()) {
-            return vector;
+            return new float[EMBEDDING_DIM];
         }
-
-        // 提取中英文混排与双字 n-grams
-        List<String> grams = extractNgrams(text);
-
-        // 1. 局部敏感词汇/字叠加
-        for (String gram : grams) {
-            long tokenSeed = fnv1a64(gram);
-            java.util.Random tokenRng = new java.util.Random(tokenSeed);
-            for (int i = 0; i < EMBEDDING_DIM; i++) {
-                vector[i] += (float) tokenRng.nextGaussian();
+        if (embeddingModel != null) {
+            float[] raw = embeddingModel.embed(text);
+            if (raw != null && raw.length == EMBEDDING_DIM) {
+                float[] copy = Arrays.copyOf(raw, EMBEDDING_DIM);
+                LocalitySensitiveFeatureHasher.normalizeInPlace(copy);
+                return copy;
             }
         }
-
-        // 2. 混合少量全局文本指纹基底 (权重 0.2)，提供唯一性支撑
-        long globalSeed = fnv1a64(text.toLowerCase());
-        java.util.Random globalRng = new java.util.Random(globalSeed);
-        for (int i = 0; i < EMBEDDING_DIM; i++) {
-            vector[i] += (float) (0.2 * globalRng.nextGaussian());
-        }
-
-        // 3. L2 范数精确归一化至 1535 维超球面
-        double normSq = 0.0;
-        for (int i = 0; i < EMBEDDING_DIM; i++) {
-            normSq += vector[i] * vector[i];
-        }
-        double norm = Math.sqrt(normSq);
-        if (norm > 1e-12) {
-            for (int i = 0; i < EMBEDDING_DIM; i++) {
-                vector[i] = (float) (vector[i] / norm);
-            }
-        }
-        return vector;
+        return LocalitySensitiveFeatureHasher.projectToUnitSphereFloat(text, EMBEDDING_DIM);
     }
 
     /**
