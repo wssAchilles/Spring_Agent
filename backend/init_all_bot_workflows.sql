@@ -29,10 +29,10 @@ VALUES (
 INSERT INTO kb_flow_node (workspace_id, bot_id, uuid, name, type, config, input, output, style, valid_flag, del_flag, create_by, creator_id)
 VALUES (
     1001, 9, 'knowledge_1', '知识库检索', 5,
-    '{"label":"因果图谱与学术向量召回","description":"基于阿里千问 1536 维超球面向量与因果图谱检索高保真背景事实","matchThreshold":0.85,"topK":5,"retrievalMode":"hybrid"}',
+    '{"label":"因果图谱与学术向量召回","description":"基于阿里千问 1024 维超球面向量与因果图谱检索高保真背景事实","matchThreshold":0.85,"topK":5,"retrievalMode":"hybrid","knowledgeBaseId":3,"knowledgeBaseIds":[3]}',
     '[]',
     '[{"id":"chunks","name":"chunks","label":"召回知识片段","type":"array"}]',
-    '{"id":"knowledge_1","type":"knowledge","position":{"x":440,"y":280},"data":{"input":[],"config":{"label":"因果图谱与学术向量召回","description":"基于阿里千问 1536 维超球面向量与因果图谱检索高保真背景事实","matchThreshold":0.85,"topK":5,"retrievalMode":"hybrid"},"output":[{"id":"chunks","name":"chunks","label":"召回知识片段","type":"array"}]}}',
+    '{"id":"knowledge_1","type":"knowledge","position":{"x":440,"y":280},"data":{"input":[],"config":{"label":"因果图谱与学术向量召回","description":"基于阿里千问 1024 维超球面向量与因果图谱检索高保真背景事实","matchThreshold":0.85,"topK":5,"retrievalMode":"hybrid","knowledgeBaseId":3,"knowledgeBaseIds":[3]},"output":[{"id":"chunks","name":"chunks","label":"召回知识片段","type":"array"}]}}',
     0, 0, '管理员', 1
 );
 
@@ -118,17 +118,17 @@ VALUES
  0, 0, '管理员', 1),
 
 (1001, 3, 'knowledge_1', '知识库检索', 5,
- '{"label":"组织政策与规章制度库","description":"针对组织制度与规范条目进行稠密向量检索","matchThreshold":0.80,"topK":4}',
+ '{"label":"组织政策与规章制度库","description":"针对组织制度与规范条目进行稠密向量检索","matchThreshold":0.80,"topK":4,"knowledgeBaseId":5,"knowledgeBaseIds":[5]}',
  '[]',
  '[{"id":"chunks_rule","name":"chunks_rule","label":"制度切片","type":"array"}]',
- '{"id":"knowledge_1","type":"knowledge","position":{"x":440,"y":140},"data":{"input":[],"config":{"label":"组织政策与规章制度库","description":"针对组织制度与规范条目进行稠密向量检索","matchThreshold":0.80,"topK":4},"output":[{"id":"chunks_rule","name":"chunks_rule","label":"制度切片","type":"array"}]}}',
+ '{"id":"knowledge_1","type":"knowledge","position":{"x":440,"y":140},"data":{"input":[],"config":{"label":"组织政策与规章制度库","description":"针对组织制度与规范条目进行稠密向量检索","matchThreshold":0.80,"topK":4,"knowledgeBaseId":5,"knowledgeBaseIds":[5]},"output":[{"id":"chunks_rule","name":"chunks_rule","label":"制度切片","type":"array"}]}}',
  0, 0, '管理员', 1),
 
 (1001, 3, 'knowledge_2', '知识库检索', 5,
- '{"label":"核心技术与研发架构库","description":"针对技术架构与代码实现进行超球面余弦检索","matchThreshold":0.80,"topK":4}',
+ '{"label":"核心技术与研发架构库","description":"针对技术架构与代码实现进行超球面余弦检索","matchThreshold":0.80,"topK":4,"knowledgeBaseId":3,"knowledgeBaseIds":[3]}',
  '[]',
  '[{"id":"chunks_tech","name":"chunks_tech","label":"架构切片","type":"array"}]',
- '{"id":"knowledge_2","type":"knowledge","position":{"x":440,"y":380},"data":{"input":[],"config":{"label":"核心技术与研发架构库","description":"针对技术架构与代码实现进行超球面余弦检索","matchThreshold":0.80,"topK":4},"output":[{"id":"chunks_tech","name":"chunks_tech","label":"架构切片","type":"array"}]}}',
+ '{"id":"knowledge_2","type":"knowledge","position":{"x":440,"y":380},"data":{"input":[],"config":{"label":"核心技术与研发架构库","description":"针对技术架构与代码实现进行超球面余弦检索","matchThreshold":0.80,"topK":4,"knowledgeBaseId":3,"knowledgeBaseIds":[3]},"output":[{"id":"chunks_tech","name":"chunks_tech","label":"架构切片","type":"array"}]}}',
  0, 0, '管理员', 1),
 
 (1001, 3, 'llm_merge_1', '大模型推理', 2,
@@ -170,10 +170,10 @@ VALUES
  0, 0, '管理员', 1),
 
 (1001, 4, 'knowledge_1', '知识库检索', 5,
- '{"label":"长文档全文分段检索","description":"多段落分块召回核心段落","topK":6}',
+ '{"label":"长文档全文分段检索","description":"多段落分块召回核心段落","topK":6,"knowledgeBaseId":1,"knowledgeBaseIds":[1]}',
  '[]',
  '[{"id":"chunks","name":"chunks","label":"文档分块","type":"array"}]',
- '{"id":"knowledge_1","type":"knowledge","position":{"x":460,"y":240},"data":{"input":[],"config":{"label":"长文档全文分段检索","description":"多段落分块召回核心段落","topK":6},"output":[{"id":"chunks","name":"chunks","label":"文档分块","type":"array"}]}}',
+ '{"id":"knowledge_1","type":"knowledge","position":{"x":460,"y":240},"data":{"input":[],"config":{"label":"长文档全文分段检索","description":"多段落分块召回核心段落","topK":6,"knowledgeBaseId":1,"knowledgeBaseIds":[1]},"output":[{"id":"chunks","name":"chunks","label":"文档分块","type":"array"}]}}',
  0, 0, '管理员', 1),
 
 (1001, 4, 'llm_1', '大模型推理', 2,
@@ -184,10 +184,10 @@ VALUES
  0, 0, '管理员', 1),
 
 (1001, 4, 'reply_1', '回复', 3,
- '{"label":"流式摘要答复输出","replyType":"text"}',
+ '{"label":"流式摘要答复输出","replyType":"text","content":"{{llm_1.text}}"}',
  '[]',
  '[]',
- '{"id":"reply_1","type":"reply","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"流式摘要答复输出","replyType":"text"},"output":[]}}',
+ '{"id":"reply_1","type":"reply","position":{"x":1220,"y":240},"data":{"input":[],"config":{"label":"流式摘要答复输出","replyType":"text","content":"{{llm_1.text}}"},"output":[]}}',
  0, 0, '管理员', 1);
 
 -- Bot 4 连线

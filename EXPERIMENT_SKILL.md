@@ -29,7 +29,7 @@ skill_metadata:
 2. **智能体 B（记忆检索与工具系统法医核验员）**：
    - **物理会话标识 (Conversation ID)**: `0e1909c3-47c6-4dda-90a9-e00e54f7f120`
    - **运行日志链接 (Transcript URI)**: [transcript.jsonl](file:///Users/achilles/.gemini/antigravity/brain/0e1909c3-47c6-4dda-90a9-e00e54f7f120/.system_generated/logs/transcript.jsonl)
-   - **核心审计成果**: 还原了阿里千问 1536 维超球面单位向量（$\mathbb{S}^{1535}$）空间几何、四级优先级自适应工作记忆压缩（$L_0 \sim L_3$ 队列）、MCP 工具超球面 MIPS 动态投影及 Java 21 虚拟线程断路器隔离。
+   - **核心审计成果**: 还原了阿里千问 1024 维超球面单位向量（$\mathbb{S}^{1023}$）空间几何、四级优先级自适应工作记忆压缩（$L_0 \sim L_3$ 队列）、MCP 工具超球面 MIPS 动态投影及 Java 21 虚拟线程断路器隔离。
 3. **智能体 C（顶刊实验契约与评测套件架构师）**：
    - **物理会话标识 (Conversation ID)**: `eb842d12-13f7-45c5-8145-fed1fee33831`
    - **运行日志链接 (Transcript URI)**: [transcript.jsonl](file:///Users/achilles/.gemini/antigravity/brain/eb842d12-13f7-45c5-8145-fed1fee33831/.system_generated/logs/transcript.jsonl)
@@ -41,7 +41,7 @@ skill_metadata:
 
 ### 1.1 架构组件与核心执行拓扑
 
-本项目定位为**企业级 AI-Native RAG 知识库与 Hermes 智能体编排平台**。前端基于 Vue 3，控制面基于 Spring Boot 3.5.8，认知核心由基于 gRPC 通信的 Hermes 引擎驱动。
+本项目定位为**面向毕业学术论文研究与顶会/顶刊论文孵化的 Agent 创新优化架构与可复现实验核心工具平台**。前端基于 Vue 3，控制面基于 Spring Boot 3.5.8，认知核心由基于 gRPC 通信的 Hermes 引擎驱动。
 
 ```mermaid
 flowchart TB
@@ -59,13 +59,13 @@ flowchart TB
         Orchestrator --> Reflector
     end
 
-    subgraph Memory_Space [超球面几何记忆空间 S¹⁵³⁵]
+    subgraph Memory_Space [超球面几何记忆空间 S¹⁰²³]
         ShortTerm[ShortTermMemory: Redis List 滑动窗口 + 摘要]
         WorkingMem[WorkingMemory: 四级队列自适应压缩 + 字节预算]
-        LongTerm[LongTermMemory: 1536维千问向量 + 4维Pareto重排]
+        LongTerm[LongTermMemory: 1024维千问向量 + 4维Pareto重排]
     end
 
-    subgraph Tool_Ecosystem [企业级 MCP 工具生态]
+    subgraph Tool_Ecosystem [学术基准与可验证 MCP 工具生态]
         Retriever[McpToolSemanticRetriever 超球面MIPS投影]
         Validator[McpSchemaValidator 入参契约前置强校验]
         Breaker[McpVirtualThreadCircuitBreaker Java 21虚拟线程断路器]
@@ -96,7 +96,7 @@ flowchart TB
    - 形式化时序：先淘汰窗口最老指纹并递减计数，再计算当前提议指纹频次，最后进行阈值判定。彻底消除了传统滑动计数器因并发或时序漂移产生的“暂态 W+1 幽灵计数 (Transient Ghost Count)”假熔断缺陷；
    - 长周期交错死循环消解：追踪二元状态转移对 ($lastFp \to fp$)，识别并打断 $A \to B \to A \to B$ 式的多工具交错循环。
 3. **超球面单位几何与四级自适应工作记忆**：
-   - 空间规范：阿里千问 1536 维超球面单位向量空间，满足严格 $L_2$ 范数单位归一化（$\|\mathbf{v}\|_2 = 1.0$），所有度量恒等为超球面余弦几何；
+   - 空间规范：阿里千问 1024 维超球面单位向量空间（`text-embedding-v4`），满足严格 $L_2$ 范数单位归一化（$\|\mathbf{v}\|_2 = 1.0$），所有度量恒等为超球面余弦几何；
    - 四级工作记忆压缩器：`backend/qknow-hermes/.../memory/compress/ContextAdaptiveWorkingMemoryCompressor.java`，将记忆划分为：
      * $L_0$ 系统硬锚点（System Anchor）
      * $L_1$ 因果决策事实（Causal Decision Fact）
@@ -121,7 +121,7 @@ flowchart TB
 | :--- | :--- | :--- | :--- |
 | **Contrib-1** | **严格时序淘汰前置滑动窗口循环守卫**<br>*(Eviction-Precedence Window Guard)* | **痛点**：传统 ReAct 计数器在滑动更新时由于“暂态 $W+1$ 计数”产生假阳性熔断，且无法识别多工具交错震荡。<br>**突破**：形式化证明了淘汰前置原则，并构建二元转移马尔可夫对，消除幽灵计数与交错循环。 | $\text{count}(fp) \le \tau, \quad \forall t$ 严格有界；<br>二元状态转移矩阵谱半径约束。 |
 | **Contrib-2** | **超球面自适应工作记忆与四级队列压缩**<br>*(Hyperspherical Adaptive Working Memory with 4-Tier Queue)* | **痛点**：多工具复杂长程对话中工具原始报文膨胀迅速，挤出系统契约导致大模型注意力分散 (Lost in the Middle)。<br>**突破**：构建 $L_0 \sim L_3$ 优先级队列，在物理字节预算下对 $L_3$ 模式投影，因果决策事实保真度达到 100%。 | 状态机分层保真度引理：<br>$\mathcal{I}(S; L_0 \cup L_1) \ge 1 - \epsilon$；<br>64-token 边界对齐缓存。 |
-| **Contrib-3** | **高维超球面动态工具投影与虚拟线程断路器**<br>*(Geodesic Dynamic Tool MIPS & VT Circuit Breaker)* | **痛点**：企业级数百个工具全量注入导致 Schema 幻觉与上下文冗余，外部工具异常易阻塞核心线程池。<br>**突破**：将工具投影至 $\mathbb{S}^{1535}$ 超球面通过测地余弦检索动态选优，并利用 Java 21 虚拟线程构建毫秒级无损降级断路器。 | 超球面余弦几何内积检索：<br>$\cos\theta = \mathbf{q} \cdot \mathbf{t}_i$；<br>虚拟线程非阻塞 Unmount 隔离。 |
+| **Contrib-3** | **高维超球面动态工具投影与虚拟线程断路器**<br>*(Geodesic Dynamic Tool MIPS & VT Circuit Breaker)* | **痛点**：数百个工具全量注入导致 Schema 幻觉与上下文冗余，外部工具异常易阻塞核心线程池。<br>**突破**：将工具投影至 $\mathbb{S}^{1023}$ 超球面通过测地余弦检索动态选优，并利用 Java 21 虚拟线程构建毫秒级无损降级断路器。 | 超球面余弦几何内积检索：<br>$\cos\theta = \mathbf{q} \cdot \mathbf{t}_i$；<br>虚拟线程非阻塞 Unmount 隔离。 |
 | **Contrib-4** | **基于分层 DAG 的拓扑推进与双层反思自纠**<br>*(Hierarchical Phased DAG Planning with Dual Reflection)* | **痛点**：单步 ReAct 贪心决策在复合任务中步骤冗余率高，单层反思易陷入无意义词汇微调震荡。<br>**突破**：基于 Kahn 拓扑排序实现无依赖任务自适应并发推进，配合 AI Judge 三维量化打分与反事实变异自愈。 | 有向无环图收敛定理；<br>三维评分矩阵 $\mathcal{S} \in [0, 1]^3$ 门禁。 |
 
 **学术基线对比组 (Baselines)**：
@@ -141,7 +141,7 @@ flowchart TB
 - $M_{planning}$ (P)：分层任务分解与 Kahn 拓扑阶段推进（Plan-and-Solve / DAG）
 - $M_{reflection}$ (R)：外层与内层 AI Judge 批判验证与自愈重试
 - $M_{memory}$ (M)：超球面工作记忆与四级队列自适应压缩
-- $M_{dynamic\_tools}$ (T)：阿里千问 1536 维超球面动态工具检索与 Schema 裁剪
+- $M_{dynamic\_tools}$ (T)：阿里千问 1024 维超球面动态工具检索与 Schema 裁剪
 
 #### 2. 正交消融配置矩阵
 构建 6 大核心实验组，确保覆盖完整方案、单变量消融与退化基线：
@@ -324,7 +324,7 @@ $$\mathcal{S} = \{42, 1024, 2024, 3407, 777\}$$
 ### 3.1 配置文件规格：`eval_config.yaml`
 未来 Agent 实现该文件时，必须包含以下配置节：
 1. `environment`: Java 21 隔离环境绝对路径 (`/Users/achilles/.sdkman/candidates/java/21.0.5-tem`)、gRPC 主机端口、沙箱隔离模式（会话回滚/清空）、任务执行超时时间（60s）；
-2. `models`: 生成模型锁定 `deepseek-flash`（思考模式开启，禁传 `temperature`），向量模型锁定阿里千问 1536 维超球面单位向量；
+2. `models`: 生成模型锁定 `deepseek-flash`（思考模式开启，禁传 `temperature`），向量模型锁定阿里千问 1024 维超球面单位向量；
 3. `seeds`: 严格固定 `[42, 1024, 2024, 3407, 777]`；
 4. `ablation_matrix`: 严格包含前述定义的 6 大消融组配置项；
 5. `statistics`: Bootstrap 次数 (10,000)、显著性水平 ($\alpha = 0.05, 0.01$)；
@@ -334,7 +334,7 @@ $$\mathcal{S} = \{42, 1024, 2024, 3407, 777\}$$
 必须提供至少 8 个高区分度、复合型的智能体评测任务用例，覆盖：
 - `complex_reasoning`（多步逻辑推理与偏序算法验证）
 - `multi_tool_orchestration`（多工具链式依赖与物理计算）
-- `domain_rag_inquiry`（企业高可用运维红线与超球面知识检索）
+- `domain_rag_inquiry`（复杂知识推理与双时态超球面知识检索）
 - `fault_diagnosis_healing`（日志分析、慢查询排查与自愈修复）
 每个 Task 包含 `task_id`, `category`, `instruction`, `required_tools`, `ground_truth_criteria`, `complexity_level`。
 
@@ -412,7 +412,7 @@ python3 .experiments/error_classifier.py
 
 后续承接任务的 Agent 在交付任何实验结论或图表数据前，必须对照本清单自检，**全部勾选通过方可结束任务**：
 
-- [ ] **模型与几何基线铁律**：生成模型是否严格锁定 DeepSeek 官方活跃模型（`deepseek-flash`）？向量模型是否严格锁定阿里千问 1536 维超球面单位向量？
+- [ ] **模型与几何基线铁律**：生成模型是否严格锁定 DeepSeek 官方活跃模型（`deepseek-flash`）？向量模型是否严格锁定阿里千问 1024 维超球面单位向量？
 - [ ] **隔离运行环境铁律**：Java 编译与运行是否严格限制在 `/Users/achilles/.sdkman/candidates/java/21.0.5-tem`？有无污染宿主 Mac 系统全局 JDK？
 - [ ] **多随机种子验证**：评测是否覆盖了至少 5 个独立的随机种子（`[42, 1024, 2024, 3407, 777]`）？严禁单一 Seed 宣称结论！
 - [ ] **单变量无副作用消融**：消融矩阵的切换是否仅通过参数/配置实现？有无私自修改项目核心业务逻辑代码？
