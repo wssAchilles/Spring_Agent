@@ -402,6 +402,7 @@
 </template>
 
 <script setup name="Document">
+import { API_BASE_URL } from '@/utils/request';
 import DeptTree from "@/components/DeptTree";
 import {
   getFileTypes,
@@ -744,7 +745,7 @@ function handleDownload(row) {
   if (row.path === "") {
     proxy.$modal.msgError("没有文件");
   } else {
-    let path = import.meta.env.VITE_APP_BASE_API + "/profile" + row.path;
+    let path = API_BASE_URL + "/profile" + row.path;
     fetch(path) // 使用 fetch 获取文件数据
       .then((response) => response.blob()) // 将文件数据转换为 Blob
       .then((blob) => {
@@ -764,7 +765,7 @@ function handleDownload(row) {
 }
 
 function previewRefactoring(row) {
-  let path = import.meta.env.VITE_APP_BASE_API + "/profile" + row.path;
+  let path = API_BASE_URL + "/profile" + row.path;
   filePreview(path);
 }
 

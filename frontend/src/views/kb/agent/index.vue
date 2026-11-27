@@ -182,6 +182,17 @@
             >
               删除
             </el-button>
+            <el-button
+              v-ripple
+              class="glass-btn"
+              size="small"
+              plain
+              style="margin-left: 8px;"
+              @click="openApprovalStudio"
+            >
+              Plan-as-PR 审批台
+              <span v-if="pendingApprovalCount > 0" style="color: #ff383c; margin-left: 4px;">({{ pendingApprovalCount }})</span>
+            </el-button>
           </div>
         </div>
         <el-container>
@@ -218,6 +229,14 @@
         ref="agentRecallPreviewRef"
         :knowledges="form.knowledges"
     />
+
+    <!-- Plan-as-PR 高危副作用人工审批台 -->
+    <approval-dialog
+        ref="approvalDialogRef"
+        v-model="approvalDialogVisible"
+        :approval="currentPendingApproval"
+        @pending-count="pendingApprovalCount = $event"
+    />
   </div>
 </template>
 
@@ -231,6 +250,7 @@ import {getConversations, createConversation, deleteConversation, getMessages, s
 import AgentMessageList from './components/MessageList.vue';
 import AgentChatInput from './components/ChatInput.vue';
 import AgentRecallPreview from './components/AgentRecallPreview.vue';
+import ApprovalDialog from './components/ApprovalDialog.vue';
 import SvgIcon from "@/components/SvgIcon/index.vue";
 const { proxy } = getCurrentInstance();
 
@@ -240,6 +260,18 @@ const knowledgeBaseMultipleRef = ref(null);
 const methodMultipleSelectionRef = ref(null);
 const messageListRef = ref(null); // 消息列表引用
 const agentRecallPreviewRef = ref(null);
+const approvalDialogRef = ref(null);
+const approvalDialogVisible = ref(false);
+const currentPendingApproval = ref(null);
+const pendingApprovalCount = ref(0);
+
+const openApprovalStudio = () => {
+  if (approvalDialogRef.value) {
+    approvalDialogRef.value.show(currentPendingApproval.value);
+  } else {
+    approvalDialogVisible.value = true;
+  }
+};
 
 const handlePreviewRecall = () => {
   if (agentRecallPreviewRef.value) {

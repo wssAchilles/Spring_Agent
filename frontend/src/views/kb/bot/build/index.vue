@@ -165,6 +165,15 @@
     <div class="status-bar">
       <span>{{ nodes.length }} 个节点</span>
       <span>{{ edges.length }} 条连接</span>
+      <el-button
+        size="small"
+        plain
+        round
+        style="margin-left: auto;"
+        @click="showTelemetryDrawer = true"
+      >
+        H-NSCDS 认知遥测台
+      </el-button>
     </div>
 
     <!-- 复制弹窗 -->
@@ -198,8 +207,19 @@
       class="virtual-canvas-drawer"
     >
       <div style="width: 100%; height: calc(100vh - 120px); position: relative;">
-        <VirtualizedDagCanvasEngine />
+        <VirtualizedDagCanvasEngine :nodes="virtualizedNodes" :edges="virtualizedEdges" />
       </div>
+    </el-drawer>
+
+    <!-- H-NSCDS 认知超网与持久化事务遥测抽屉 -->
+    <el-drawer
+      v-model="showTelemetryDrawer"
+      size="62%"
+      direction="rtl"
+      :append-to-body="true"
+      title="H-NSCDS 博士工作台实时遥测中枢"
+    >
+      <EnterpriseSwarmObservabilityWidget />
     </el-drawer>
   </div>
 </template>
@@ -222,6 +242,7 @@ import StartFieldEditDialog from "./components/dialog/StartFieldEditDialog.vue";
 import WorkflowDebugRunPanel from "./components/WorkflowDebugRunPanel.vue";
 import ChatflowDebugRunPanel from "./components/ChatflowDebugRunPanel.vue";
 import VirtualizedDagCanvasEngine from "./components/canvas/VirtualizedDagCanvasEngine.vue";
+import EnterpriseSwarmObservabilityWidget from "./components/EnterpriseSwarmObservabilityWidget.vue";
 
 import { useWorkflowGraphState } from "./composables/useWorkflowGraphState.js";
 import { useWorkflowAddNode } from "./composables/useWorkflowAddNode.js";
@@ -249,9 +270,34 @@ const flowBuiltinFlag = ref(0);
 const loading = ref(false);
 const saving = ref(false);
 const showVirtualizedCanvasDrawer = ref(false);
+const showTelemetryDrawer = ref(false);
 const chatflowDebugSectionsVisible = ref(true);
 
 const isChatflowWorkflow = computed(() => Number(workflowType.value) === 1);
+
+const virtualizedNodes = computed(() =>
+  (nodes.value || []).map((node, index) => ({
+    id: String(node.id),
+    title: node.data?.config?.label || node.data?.label || node.label || String(node.id),
+    type: String(node.type || "WORKFLOW_NODE").toUpperCase(),
+    status: "COMPLETED",
+    x: Number.isFinite(Number(node.position?.x)) ? Number(node.position.x) : 80 + index * 320,
+    y: Number.isFinite(Number(node.position?.y)) ? Number(node.position.y) : 140,
+    width: 240,
+    height: 112,
+    summary: node.data?.config?.description || "",
+    version: 1,
+  }))
+);
+
+const virtualizedEdges = computed(() =>
+  (edges.value || []).map((edge, index) => ({
+    id: String(edge.id || `edge_${edge.source}_${edge.target}_${index}`),
+    sourceId: String(edge.source),
+    targetId: String(edge.target),
+    active: true,
+  }))
+);
 
 // 1. 模型与工具元数据
 const {

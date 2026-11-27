@@ -102,7 +102,8 @@
             <div v-if="node.summary" class="node-summary-line">{{ node.summary }}</div>
           </div>
           <div class="node-footer font-mono">
-            <span>置信度: {{ ((node.confidence || 0.95) * 100).toFixed(0) }}%</span>
+            <span v-if="node.confidence != null">置信度: {{ (node.confidence * 100).toFixed(0) }}%</span>
+            <span v-else>工作流实时节点</span>
             <span>v{{ node.version || 1 }}</span>
           </div>
         </template>
@@ -121,6 +122,12 @@
             <span class="status-indicator-dot" :class="`dot-${(node.status || 'IDLE').toLowerCase()}`"></span>
           </div>
         </template>
+      </div>
+    </div>
+
+    <div v-if="allNodes.length === 0" class="canvas-empty-overlay">
+      <div class="empty-pill-card">
+        当前工作流暂无可虚拟化渲染的节点，请先在画布中编排节点
       </div>
     </div>
 
@@ -144,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import {
   VirtualizedDagCanvasEngine,
   RenderLodLevel,
@@ -221,27 +228,26 @@ const currentLod = computed<RenderLodLevel>(() => {
   return virtualEngine.getRenderLodLevel(currentViewport.value.zoom);
 });
 
-// 默认兜底节点数据（若外部未注入时自包含展示）
-const fallbackNodes: CanvasNodeItem[] = [
-  { id: 'node_input', title: '用户意图输入分流', type: 'INPUT_DISPATCH', status: 'COMPLETED', x: 100, y: 150, width: 220, height: 110, confidence: 0.99, version: 1 },
-  { id: 'node_retrieval', title: '千问 1536维超球面检索', type: 'RETRIEVAL_CORE', status: 'COMPLETED', x: 420, y: 150, width: 240, height: 110, confidence: 0.96, version: 1 },
-  { id: 'node_reasoning', title: 'DeepSeek 思考模式推理', type: 'THINKING_ENGINE', status: 'RUNNING', x: 760, y: 150, width: 250, height: 110, confidence: 0.94, version: 2 },
-  { id: 'node_hitl_gate', title: '人机协同二次审批网关', type: 'HITL_GATEWAY', status: 'SUSPENDED_HITL', x: 1110, y: 150, width: 240, height: 110, confidence: 0.88, version: 2 }
-];
-
-const fallbackEdges: CanvasEdgeItem[] = [
-  { id: 'edge_1', sourceId: 'node_input', targetId: 'node_retrieval', active: true },
-  { id: 'edge_2', sourceId: 'node_retrieval', targetId: 'node_reasoning', active: true },
-  { id: 'edge_3', sourceId: 'node_reasoning', targetId: 'node_hitl_gate', active: true }
-];
-
 const allNodes = computed<CanvasNodeItem[]>(() => {
-  return props.nodes && props.nodes.length > 0 ? props.nodes : fallbackNodes;
+  return props.nodes || [];
 });
 
 const allEdges = computed<CanvasEdgeItem[]>(() => {
-  return props.edges && props.edges.length > 0 ? props.edges : fallbackEdges;
+  return props.edges || [];
 });
+
+// 当外部真实工作流节点变化时自动调整视口偏移，确保首个节点落在可视区域内
+watch(
+  () => props.nodes,
+  (nodeList) => {
+    if (!nodeList || nodeList.length === 0) return;
+    const minX = Math.min(...nodeList.map((n) => Number(n.x || 0)));
+    const minY = Math.min(...nodeList.map((n) => Number(n.y || 0)));
+    currentViewport.value.x = Math.round(80 - minX * currentViewport.value.zoom);
+    currentViewport.value.y = Math.round(80 - minY * currentViewport.value.zoom);
+  },
+  { immediate: true, deep: true }
+);
 
 // AABB 视口可见节点裁剪 (硬性收敛活跃 DOM <= 25)
 const visibleNodes = computed<CanvasNodeItem[]>(() => {
@@ -472,6 +478,7 @@ onBeforeUnmount(() => {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 1;
     border-radius: inherit;
     background: rgba(255, 255, 255, 0.72);
     mix-blend-mode: plus-lighter;
@@ -483,6 +490,7 @@ onBeforeUnmount(() => {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 2;
     border-radius: inherit;
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
@@ -650,6 +658,26 @@ onBeforeUnmount(() => {
   }
   &.dot-idle {
     background: #8e8e93;
+  }
+}
+
+.canvas-empty-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  .empty-pill-card {
+    padding: 10px 18px;
+    border-radius: 1000px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 0.5px solid rgba(0, 0, 0, 0.12);
+    color: rgba(60, 60, 67, 0.78);
+    font-size: 13px;
+    white-space: nowrap;
   }
 }
 

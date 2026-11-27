@@ -5,9 +5,10 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import iFrame from '@/components/iFrame/index.vue'
 
 import { ref } from 'vue';
 
-const url = ref(import.meta.env.VITE_APP_BASE_API + '/druid/index.html');
+const url = ref(API_BASE_URL + '/druid/index.html');
 </script>

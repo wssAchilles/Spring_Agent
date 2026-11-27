@@ -59,7 +59,7 @@
         <div class="knowledge-item-label">检索模式</div>
         <el-radio-group v-model="retrievalModel" size="small" @change="updateConfigField('retrievalModel', retrievalModel)">
           <el-radio-button label="hybrid">超球面混合检索 (推荐)</el-radio-button>
-          <el-radio-button label="dense">千问 1536D 向量</el-radio-button>
+          <el-radio-button label="dense">千问 1024D 向量</el-radio-button>
           <el-radio-button label="sparse">BM25 关键字</el-radio-button>
         </el-radio-group>
       </div>
@@ -144,11 +144,11 @@
             </div>
           </div>
 
-          <!-- 千问 1536 维超球面几何调制 -->
+          <!-- 千问 1024 维超球面几何调制 -->
           <div class="advanced-item mt12">
             <div class="advanced-switch-row">
               <div>
-                <div class="advanced-switch-title">千问 1536D 超球面几何加权</div>
+                <div class="advanced-switch-title">千问 1024D 超球面几何加权</div>
                 <div class="knowledge-subtip">在 RRF 倒数排名融合基础上，利用超球面余弦测度对切片进行非线性调制。</div>
               </div>
               <el-switch

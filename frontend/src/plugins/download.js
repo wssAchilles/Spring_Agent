@@ -5,8 +5,9 @@ import { saveAs } from 'file-saver'
 import { getToken } from '@/utils/auth'
 import errorCode from '@/utils/errorCode'
 import { blobValidate } from '@/utils/anivia.js'
+import { API_BASE_URL } from '@/utils/request'
 
-const baseURL = import.meta.env.VITE_APP_BASE_API
+const baseURL = API_BASE_URL
 let downloadLoadingInstance;
 
 export default {

@@ -1,230 +1,394 @@
 <template>
-  <div class="phase156-swarm-dashboard">
-    <!-- 顶栏：标题与不可变凭单自验真徽标 -->
-    <header class="dashboard-header">
+  <div class="phd-ios26-studio">
+    <!-- 顶栏：Apple iOS 26 双层光学材质 + Headline 590 唯一字重 -->
+    <header class="studio-header ios26-surface-thin">
       <div class="header-left">
-        <span class="ios26-pill-badge">企业集群控制台 · Sovereign Cluster</span>
-        <h2 class="dashboard-title">企业级多智能体编排与全双工 RAG 观测中枢</h2>
+        <span class="ios26-pill-tag">H-NSCDS · PhD Dissertation Observatory</span>
+        <h2 class="ios26-text-headline studio-headline">
+          超球面认知超网与持久化事务实时遥测中枢
+        </h2>
       </div>
       <div class="header-right">
-        <div class="receipt-verifier" :class="{ verified: receiptVerified }">
-          <span class="verifier-dot"></span>
-          <span class="verifier-text">{{ receiptVerified ? 'SHA-256 常量时间自验真通过' : '待验真' }}</span>
-        </div>
+        <span class="connection-pill" :class="{ online: backendConnected }">
+          <span class="signal-dot" :class="{ online: backendConnected }"></span>
+          <span class="ios26-text-caption-1">
+            {{ backendConnected ? '真实控制面在线' : '控制面未连接（零伪造离线基线）' }}
+          </span>
+        </span>
+        <span class="connection-pill" :class="{ online: telemetry.hermesRemoteReachable }">
+          <span class="signal-dot" :class="{ online: telemetry.hermesRemoteReachable }"></span>
+          <span class="ios26-text-caption-1">
+            {{ telemetry.hermesRemoteReachable ? 'Hermes 联邦在线' : '本地单点模式' }}
+          </span>
+        </span>
+        <span class="connection-pill" :class="{ online: telemetry.nativeFfmLoaded }">
+          <span class="signal-dot" :class="{ online: telemetry.nativeFfmLoaded }"></span>
+          <span class="ios26-text-caption-1">
+            {{ telemetry.nativeFfmLoaded ? 'Rust FFM SIMD 已激活' : 'JVM 向量回退模式' }}
+          </span>
+        </span>
+        <button type="button" class="ios26-refresh-btn" :disabled="loading" @click="loadTelemetry">
+          {{ loading ? '采样中...' : '刷新遥测' }}
+        </button>
       </div>
     </header>
 
-    <!-- 四大战略攻坚支柱监控网格 -->
+    <!-- 四大核心学术支柱监控卡片网格（Strict Apple iOS 26：双层 50px + 零投影 + 无层叠污染） -->
     <div class="pillars-grid">
-      <!-- 支柱一：Agent Infra 状态机与分布式 Checkpoint -->
-      <section class="glass-card">
-        <div class="card-caption">支柱一 · Agent Infra 认知编排</div>
+      <!-- 第 3 章：S^1023 Meta-MDP 认知超网路由 -->
+      <section class="ios26-widget-card">
+        <div class="ios26-text-subheadline card-title">第 3 章 · S^1023 Meta-MDP 认知超网路由</div>
         <div class="metric-row">
           <div class="metric-item">
-            <span class="metric-value">{{ currentSuperstep }}</span>
-            <span class="metric-label">状态图当前超步</span>
+            <span class="ios26-text-title-2 metric-num num-blue">{{ telemetry.supernet.totalRoutingDecisions }}</span>
+            <span class="ios26-text-caption-1 metric-cap">超网选路总决策</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value">{{ handoffHops }}/5</span>
-            <span class="metric-label">交接跃点 (Lemma 155.1)</span>
+            <span class="ios26-text-title-2 metric-num num-orange">{{ telemetry.supernet.totalReplansTriggered }}</span>
+            <span class="ios26-text-caption-1 metric-cap">弦漂移重规划次数</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value">{{ activeCheckpoints }}</span>
-            <span class="metric-label">持久化快照 (O(1)寻址)</span>
+            <span class="ios26-text-title-2 metric-num num-green">{{ telemetry.supernet.totalEarlyExits }}</span>
+            <span class="ios26-text-caption-1 metric-cap">置信早退 (EARLY_EXIT)</span>
           </div>
         </div>
-        <div class="card-status-bar">
-          <span class="status-indicator active"></span>
-          <span class="status-text">双轨 HybridEngine: CYCLIC_STATEGRAPH (熔断阈值: 30)</span>
+        <div class="card-footer-line">
+          <span class="ios26-text-footnote">
+            当前算子: {{ telemetry.supernet.activeTopologyOperator }} · DeepSeek Effort: {{ telemetry.supernet.activeReasoningEffort }} · Δ²={{ formatNumber(telemetry.supernet.lastChordDriftSquared) }}
+          </span>
         </div>
       </section>
 
-      <!-- 支柱二：企业级生产 MCP 生态与安全网关 -->
-      <section class="glass-card">
-        <div class="card-caption">支柱二 · 生产级 MCP 全双工网关</div>
+      <!-- 第 4 章：双时态四层海马体持续记忆超图 -->
+      <section class="ios26-widget-card">
+        <div class="ios26-text-subheadline card-title">第 4 章 · 双时态海马体持续记忆超图</div>
         <div class="metric-row">
           <div class="metric-item">
-            <span class="metric-value text-accent">{{ sseConnections }}</span>
-            <span class="metric-label">Streamable HTTP 会话</span>
+            <span class="ios26-text-title-2 metric-num">{{ telemetry.hippocampal.vertexCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">四层图谱顶点数</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value">{{ maskedFieldsCount }}</span>
-            <span class="metric-label">DFA 敏感数据脱敏</span>
+            <span class="ios26-text-title-2 metric-num num-blue">{{ telemetry.hippocampal.activeEdgeCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">当前活跃有效边</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value">{{ pendingApprovals }}</span>
-            <span class="metric-label">L4 破坏性待审工单</span>
+            <span class="ios26-text-title-2 metric-num num-orange">{{ telemetry.hippocampal.coldRingCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">冷备软隔离截断边</span>
           </div>
         </div>
-        <div class="card-status-bar">
-          <span class="status-indicator active"></span>
-          <span class="status-text">传输协议: Streamable HTTP POST + SSE (双向全双工)</span>
+        <div class="card-footer-line">
+          <span class="ios26-text-footnote">
+            {{ telemetry.hippocampal.nativeFfmLoaded ? 'Rust FFM 稀疏 CSR-PPR 已激活' : 'JVM 稀疏 CSR-PPR 回退' }} · 段落重置阻尼 β = {{ telemetry.hippocampal.pprDampingBeta }} · 零硬删除
+          </span>
         </div>
       </section>
 
-      <!-- 支柱三：高保真 RAG 知识引擎与 DeepSeek 原生加速 -->
-      <section class="glass-card">
-        <div class="card-caption">支柱三 · 超球面图谱与思维链净化</div>
+      <!-- 第 5 章：双向形式化思维 BFoT 守卫与 Code-Mode MCP -->
+      <section class="ios26-widget-card">
+        <div class="ios26-text-subheadline card-title">第 5 章 · DBM + LTLf 双向形式化守卫</div>
         <div class="metric-row">
           <div class="metric-item">
-            <span class="metric-value">{{ pprActivatedCount }}</span>
-            <span class="metric-label">Hippo-PPR 拓扑激活实体</span>
+            <span class="ios26-text-title-2 metric-num">{{ telemetry.formalGuard.registeredFormulaCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">形式化规约数</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value text-success">{{ noiseRejectionRatio }}%</span>
-            <span class="metric-label">思维链因果噪声剔除率</span>
+            <span class="ios26-text-title-2 metric-num num-green">{{ telemetry.formalGuard.totalFormalChecks }}</span>
+            <span class="ios26-text-caption-1 metric-cap">UNSAT 验签总次</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value">64-Token</span>
-            <span class="metric-label">DeepSeek 缓存对齐基数</span>
+            <span class="ios26-text-title-2 metric-num num-red">{{ telemetry.formalGuard.blockedFormalCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">MUC 反例拦截次</span>
           </div>
         </div>
-        <div class="card-status-bar">
-          <span class="status-indicator active"></span>
-          <span class="status-text">几何空间: 千问 1536 维超球面单位流形 (||v||₂=1.0)</span>
+        <div class="card-footer-line">
+          <span class="ios26-text-footnote">
+            合约执行 {{ telemetry.formalGuard.totalToolContractsExecuted }} 次 · 64-Token 前缀对齐 {{ ((telemetry.prefixCache.preservationRate || 0) * 100).toFixed(1) }}% ({{ telemetry.prefixCache.lastAligned64TokenBlocks }}块) · Code-Mode 发现 {{ telemetry.codeModeSandbox.totalDiscoveries }} 次
+          </span>
         </div>
       </section>
 
-      <!-- 支柱四：响应式 Signal 异步总线与时光旅行 -->
-      <section class="glass-card">
-        <div class="card-caption">支柱四 · 响应式 Signal 异步中枢</div>
+      <!-- 第 6 章：嵌入式 PG Step Journal 与 Frontier 事务 -->
+      <section class="ios26-widget-card">
+        <div class="ios26-text-subheadline card-title">第 6 章 · PG Step Journal 与 Epoch-Frontier</div>
         <div class="metric-row">
           <div class="metric-item">
-            <span class="metric-value">{{ activeSignals }}</span>
-            <span class="metric-label">异步等待 Signal 锁</span>
+            <span class="ios26-text-title-2 metric-num">{{ telemetry.stepJournal.committedEntryCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">幂等已提交步数</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value">{{ forkedBranches }}</span>
-            <span class="metric-label">时光旅行隔离分叉分支</span>
+            <span class="ios26-text-title-2 metric-num num-green">{{ telemetry.frontierTx.committedCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">纪元可串行化提交</span>
           </div>
           <div class="metric-item">
-            <span class="metric-value text-success">0.0%</span>
-            <span class="metric-label">幽灵变量污染率</span>
+            <span class="ios26-text-title-2 metric-num num-red">{{ telemetry.frontierTx.pendingHitlCount }}</span>
+            <span class="ios26-text-caption-1 metric-cap">Plan-as-PR 挂起审批</span>
           </div>
         </div>
-        <div class="card-status-bar">
-          <span class="status-indicator active"></span>
-          <span class="status-text">事件总线: CompletableFuture + CAS 乐观写屏障</span>
+        <div class="card-footer-line">
+          <span class="ios26-text-footnote">
+            最新逻辑纪元 e = {{ telemetry.frontierTx.latestGlobalEpoch }} · 冷备事务环 = {{ telemetry.frontierTx.coldRingCount }}
+          </span>
         </div>
       </section>
     </div>
 
-    <!-- 底部状态流水与控制台存证 -->
-    <footer class="dashboard-footer">
-      <div class="footer-left">
-        <span class="footer-tag">JVM 运行基线</span>
-        <span class="footer-spec">Java 21 虚拟线程 (SDKMAN 隔离环境)</span>
-        <span class="footer-divider">/</span>
-        <span class="footer-tag">活跃大模型</span>
-        <span class="footer-spec">DeepSeek API 官方活跃主干 (deepseek-flash)</span>
-      </div>
-      <div class="footer-right">
-        <span class="footer-receipt-id">凭单编号: {{ currentReceiptId }}</span>
-      </div>
+    <footer class="studio-footer">
+      <span class="ios26-text-caption-1">
+        向量流形: {{ telemetry.embeddingManifold }}
+      </span>
+      <span class="ios26-text-caption-1">
+        生成基线: {{ telemetry.llmBaseline }}
+      </span>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue';
+import { getPhdStudioTelemetry } from '@/api/audit';
 
-// 模拟实时代数指标与监控数据
-const receiptVerified = ref(true)
-const currentSuperstep = ref(4)
-const handoffHops = ref(2)
-const activeCheckpoints = ref(18)
+const loading = ref(false);
+const backendConnected = ref(false);
 
-const sseConnections = ref(3)
-const maskedFieldsCount = ref(12)
-const pendingApprovals = ref(0)
+const createEmptyTelemetry = () => ({
+  supernet: {
+    totalRoutingDecisions: 0,
+    totalReplansTriggered: 0,
+    totalEarlyExits: 0,
+    lastChordDriftSquared: 0,
+    activeTopologyOperator: 'IDLE',
+    activeReasoningEffort: 'NONE',
+    averageExpectedUtility: 0,
+  },
+  stepJournal: {
+    activeBranchScopeCount: 0,
+    committedEntryCount: 0,
+    totalJournalEntries: 0,
+    baseSnapshotBranchCount: 0,
+    coldRingCount: 0,
+  },
+  frontierTx: {
+    activeBranchCount: 0,
+    pendingHitlCount: 0,
+    committedCount: 0,
+    coldRingCount: 0,
+    latestGlobalEpoch: 0,
+  },
+  hippocampal: {
+    vertexCount: 0,
+    activeEdgeCount: 0,
+    historicalEdgeCount: 0,
+    coldRingCount: 0,
+    pprDampingBeta: 0.05,
+    nativeFfmLoaded: false,
+    nativeLibPath: '',
+  },
+  formalGuard: {
+    registeredFormulaCount: 0,
+    totalFormalChecks: 0,
+    blockedFormalCount: 0,
+    preconditionGuards: 0,
+    totalToolContractsExecuted: 0,
+  },
+  prefixCache: {
+    totalAudits: 0,
+    preservedCount: 0,
+    driftedCount: 0,
+    preservationRate: 0,
+    lastAligned64TokenBlocks: 0,
+    lastPrefixHash: '',
+  },
+  codeModeSandbox: {
+    staticMetaToolCount: 0,
+    deferredExecutorCount: 0,
+    totalDiscoveries: 0,
+    totalPlanExecutions: 0,
+    totalDeferredToolCalls: 0,
+    blockedScriptCount: 0,
+  },
+  nativeFfmLoaded: false,
+  hermesRemoteReachable: false,
+  embeddingManifold: 'S^1023 (Qwen text-embedding-v4, L2=1.0)',
+  llmBaseline: 'DeepSeek API (deepseek-flash, 64-token prefix invariant)',
+});
 
-const pprActivatedCount = ref(7)
-const noiseRejectionRatio = ref(64.5)
+const telemetry = ref(createEmptyTelemetry());
 
-const activeSignals = ref(1)
-const forkedBranches = ref(2)
-const currentReceiptId = ref('REC_P156_9FA381B204')
-</script>
-
-<style scoped>
-/* 严格贯彻 Apple iOS 26 Liquid Glass 规范 (自适应高对比度液态毛玻璃) */
-.phase156-swarm-dashboard {
-  position: relative;
-  width: 100%;
-  padding: 24px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.04);
-  color: #1d1d1f;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-  box-sizing: border-box;
+function formatNumber(val) {
+  const num = Number(val || 0);
+  return Number.isFinite(num) ? num.toFixed(3) : '0.000';
 }
 
-/* 顶栏 */
-.dashboard-header {
+async function loadTelemetry() {
+  loading.value = true;
+  try {
+    const res = await getPhdStudioTelemetry();
+    const data = res?.data || res;
+    const base = createEmptyTelemetry();
+    if (data && data.supernet) {
+      telemetry.value = {
+        ...base,
+        ...data,
+        supernet: { ...base.supernet, ...(data.supernet || {}) },
+        stepJournal: { ...base.stepJournal, ...(data.stepJournal || {}) },
+        frontierTx: { ...base.frontierTx, ...(data.frontierTx || {}) },
+        hippocampal: { ...base.hippocampal, ...(data.hippocampal || {}) },
+        formalGuard: { ...base.formalGuard, ...(data.formalGuard || {}) },
+        prefixCache: { ...base.prefixCache, ...(data.prefixCache || {}) },
+        codeModeSandbox: { ...base.codeModeSandbox, ...(data.codeModeSandbox || {}) },
+        nativeFfmLoaded: Boolean(data.nativeFfmLoaded || data.hippocampal?.nativeFfmLoaded),
+        hermesRemoteReachable: Boolean(data.hermesRemoteReachable),
+      };
+      backendConnected.value = true;
+    } else {
+      backendConnected.value = false;
+    }
+  } catch {
+    backendConnected.value = false;
+    telemetry.value = createEmptyTelemetry();
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(() => {
+  loadTelemetry();
+});
+</script>
+
+<style scoped lang="scss">
+.phd-ios26-studio {
+  width: 100%;
+  padding: 20px;
+  border-radius: 34px;
+  background: #f2f2f7;
+  color: #000000;
+  font-family: var(--ios26-font-family);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ios26-surface-thin {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    background: rgba(255, 255, 255, 0.4);
+    mix-blend-mode: color-dodge;
+    pointer-events: none;
+  }
+
+  > :where(*) {
+    position: relative;
+    z-index: 3;
+  }
+}
+
+.studio-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 16px 20px;
 }
 
-.ios26-pill-badge {
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ios26-pill-tag {
   display: inline-block;
-  padding: 3px 10px;
+  width: fit-content;
+  padding: 2px 10px;
+  border-radius: 1000px;
+  background: rgba(0, 136, 255, 0.12);
+  color: #0088ff;
   font-size: 11px;
-  font-weight: 590;
-  letter-spacing: -0.015em;
-  color: #0071e3;
-  background: rgba(0, 113, 227, 0.1);
-  border: 1px solid rgba(0, 113, 227, 0.22);
-  border-radius: 999px;
-  margin-bottom: 8px;
+  font-weight: 400;
+  letter-spacing: 0.06px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.dashboard-title {
+.studio-headline {
   margin: 0;
-  font-size: 20px;
   font-weight: 590;
-  letter-spacing: -0.02em;
-  color: #1d1d1f;
+  color: #000000;
 }
 
-.receipt-verifier {
+.header-right {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  font-size: 12px;
-  font-weight: 590;
 }
 
-.verifier-dot {
-  width: 8px;
-  height: 8px;
+.connection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 1000px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.signal-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #8e8e93;
+  background: #ff8d28;
+  flex-shrink: 0;
+
+  &.online {
+    background: #34c759;
+  }
 }
 
-.receipt-verifier.verified .verifier-dot {
-  background: #28cd41;
+.ios26-refresh-btn {
+  padding: 6px 14px;
+  border-radius: 1000px;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
+  background: #0088ff;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.receipt-verifier.verified .verifier-text {
-  color: #1e8235;
-}
-
-/* 四大支柱卡片网格 */
 .pillars-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 14px;
 }
 
 @media (max-width: 900px) {
@@ -233,31 +397,57 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
   }
 }
 
-.glass-card {
+/* iOS 26 双层 50px + color-dodge 卡片，绝对零投影 */
+.ios26-widget-card {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
   padding: 18px 20px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+  background: transparent;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   gap: 14px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.25);
+    mix-blend-mode: plus-lighter;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    background: rgba(255, 255, 255, 0.6);
+    mix-blend-mode: color-dodge;
+    pointer-events: none;
+  }
+
+  > :where(*) {
+    position: relative;
+    z-index: 3;
+  }
 }
 
-.card-caption {
-  font-size: 13px;
-  font-weight: 590;
-  letter-spacing: -0.015em;
-  color: #6e6e73;
-  text-transform: uppercase;
+.card-title {
+  color: #3d3d3d;
+  font-weight: 400;
 }
 
 .metric-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
 .metric-item {
@@ -266,83 +456,34 @@ const currentReceiptId = ref('REC_P156_9FA381B204')
   gap: 4px;
 }
 
-.metric-value {
-  font-size: 24px;
-  font-weight: 590;
-  letter-spacing: -0.025em;
-  color: #1d1d1f;
-}
-
-.text-accent {
-  color: #2997ff;
-}
-
-.text-success {
-  color: #30d158;
-}
-
-.metric-label {
-  font-size: 11px;
+.metric-num {
   font-weight: 400;
-  color: #86868b;
+  color: #000000;
+
+  &.num-blue { color: #0088ff; }
+  &.num-green { color: #34c759; }
+  &.num-orange { color: #ff8d28; }
+  &.num-red { color: #ff383c; }
 }
 
-.card-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.metric-cap {
+  color: rgba(60, 60, 67, 0.6);
+  font-weight: 400;
+}
+
+.card-footer-line {
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.12);
+  color: #3d3d3d;
+  font-weight: 400;
 }
 
-.status-indicator {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #8e8e93;
-}
-
-.status-indicator.active {
-  background: #30d158;
-}
-
-.status-text {
-  font-size: 11px;
-  color: #86868b;
-}
-
-/* 底栏 */
-.dashboard-footer {
+.studio-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
-  color: #86868b;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.footer-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.footer-tag {
-  color: #a1a1a6;
-  font-weight: 590;
-}
-
-.footer-spec {
-  color: #1d1d1f;
-}
-
-.footer-divider {
-  color: #48484a;
-}
-
-.footer-receipt-id {
-  font-family: "SF Mono", Menlo, monospace;
-  color: #2997ff;
+  padding: 6px 8px;
+  color: rgba(60, 60, 67, 0.6);
+  font-weight: 400;
 }
 </style>

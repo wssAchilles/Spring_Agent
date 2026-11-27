@@ -211,7 +211,7 @@ function loadSampleCertificate() {
     traceId: 'tr-deepseek-rfc6962-sample-01',
     leafIndex: 2,
     leafHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    merkleRoot: 'd5786440b6e921d743a6d47b0e51ee127b4094e9f7cd59d33b8782a2e47c1a8e',
+    merkleRoot: 'ebcdaaba1b5ae1176bc89a037c6f1383d58b56eefc934da09e13d1149043225e',
     proofPath: [
       { hash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', isLeft: true },
       { hash: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a', isLeft: false }
@@ -230,56 +230,89 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   padding: 24px;
-  background: var(--mono-bg, #0A0A0C);
+  background: transparent;
   overflow-y: auto;
   box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "PingFang SC", sans-serif;
 
+  /* Apple iOS 26 双层高透玻璃卡片（零扩散阴影 + z-index 分层隔离） */
   .validator-card {
-    max-width: 900px;
+    position: relative;
+    max-width: 920px;
     margin: 0 auto;
-    background: var(--glass-l2-bg, rgba(28, 28, 34, 0.9));
-    backdrop-filter: blur(var(--glass-l2-blur, 8px));
-    border: 1px solid var(--mono-border-strong, rgba(255, 255, 255, 0.15));
-    border-radius: 12px;
+    background: transparent;
+    border: 0.5px solid rgba(255, 255, 255, 0.92);
+    border-radius: 24px;
     padding: 28px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: none;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      background: rgba(255, 255, 255, 0.72);
+      mix-blend-mode: plus-lighter;
+      pointer-events: none;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: inherit;
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      background: rgba(255, 255, 255, 0.25);
+      mix-blend-mode: color-dodge;
+      pointer-events: none;
+    }
+
+    > :where(*) {
+      position: relative;
+      z-index: 3;
+    }
 
     .card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
       margin-bottom: 24px;
       padding-bottom: 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
 
       .header-left {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 14px;
 
         .header-icon-box {
           width: 44px;
           height: 44px;
-          border-radius: 10px;
-          background: rgba(99, 102, 241, 0.12);
-          border: 1px solid rgba(99, 102, 241, 0.25);
+          border-radius: 14px;
+          background: rgba(0, 122, 255, 0.1);
+          border: 0.5px solid rgba(0, 122, 255, 0.22);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #818CF8;
+          color: #007aff;
         }
 
         .header-meta {
           h3 {
             margin: 0 0 4px 0;
             font-size: 16px;
-            font-weight: 700;
-            color: #EDEDEF;
+            font-weight: 590;
+            color: #000000;
           }
           p {
             margin: 0;
             font-size: 12px;
-            color: #9E9EA4;
+            color: #6e6e73;
           }
         }
       }
@@ -293,46 +326,51 @@ onMounted(() => {
 
     .cert-summary-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 1.2fr 0.6fr 2fr;
       gap: 12px;
       margin-bottom: 24px;
 
       .summary-item {
-        background: rgba(0, 0, 0, 0.35);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 6px;
-        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.68);
+        border: 0.5px solid rgba(0, 0, 0, 0.08);
+        border-radius: 14px;
+        padding: 12px 14px;
+        min-width: 0;
 
         .label {
           display: block;
           font-size: 10px;
-          font-weight: 700;
-          color: #71717A;
+          font-weight: 600;
+          color: #6e6e73;
           margin-bottom: 4px;
+          letter-spacing: 0.04em;
         }
 
         .value {
+          display: block;
           font-size: 12px;
-          color: #EDEDEF;
+          font-weight: 500;
+          color: #1d1d1f;
+          word-break: break-all;
 
           &.mono {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
           }
         }
       }
     }
 
     .steps-progress-wrapper {
-      margin-bottom: 28px;
+      margin-bottom: 24px;
 
       .progress-title {
         display: flex;
         align-items: center;
         justify-content: space-between;
         font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        color: #9E9EA4;
+        font-weight: 590;
+        letter-spacing: 0.02em;
+        color: #3c3c43;
         margin-bottom: 12px;
       }
 
@@ -345,25 +383,25 @@ onMounted(() => {
           display: flex;
           align-items: center;
           gap: 14px;
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          border-radius: 6px;
-          padding: 10px 14px;
+          background: rgba(255, 255, 255, 0.65);
+          border: 0.5px solid rgba(0, 0, 0, 0.08);
+          border-radius: 14px;
+          padding: 12px 14px;
           transition: all 0.25s ease;
 
           .step-num {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
             font-size: 12px;
             font-weight: 700;
-            color: #6366F1;
-            width: 28px;
+            color: #007aff;
+            width: 30px;
           }
 
           .step-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 5px;
 
             .hash-row {
               display: flex;
@@ -373,21 +411,21 @@ onMounted(() => {
 
               .tag {
                 font-size: 9px;
-                font-weight: 700;
-                padding: 1px 4px;
-                border-radius: 3px;
-                background: rgba(255, 255, 255, 0.06);
-                color: #A1A1AA;
+                font-weight: 600;
+                padding: 2px 6px;
+                border-radius: 6px;
+                background: rgba(118, 118, 128, 0.12);
+                color: #3c3c43;
 
                 &.formula {
-                  background: rgba(99, 102, 241, 0.15);
-                  color: #818CF8;
+                  background: rgba(0, 122, 255, 0.1);
+                  color: #007aff;
                 }
               }
 
               .mono {
-                font-family: 'JetBrains Mono', monospace;
-                color: #D4D4D8;
+                font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+                color: #1d1d1f;
               }
 
               &.result .text-success {
@@ -404,46 +442,44 @@ onMounted(() => {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 18px;
-      padding-top: 10px;
+      gap: 16px;
+      padding-top: 8px;
 
       .digital-seal {
-        padding: 16px 32px;
-        border-radius: 12px;
+        padding: 16px 36px;
+        border-radius: 18px;
         text-align: center;
         transition: all 0.3s ease;
 
         &.verified {
-          background: rgba(16, 185, 129, 0.08);
-          border: 2px solid #10B981;
-          color: #10B981;
-          box-shadow: 0 0 30px rgba(16, 185, 129, 0.25);
+          background: rgba(52, 199, 89, 0.1);
+          border: 1.5px solid #34c759;
+          color: #1f8f3d;
         }
 
         &.tampered {
-          background: rgba(239, 68, 68, 0.08);
-          border: 2px solid #EF4444;
-          color: #EF4444;
-          box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);
+          background: rgba(255, 59, 48, 0.1);
+          border: 1.5px solid #ff3b30;
+          color: #d92d20;
         }
 
         .seal-text-bold {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
           font-size: 18px;
-          font-weight: 800;
-          letter-spacing: 0.1em;
+          font-weight: 700;
+          letter-spacing: 0.08em;
           margin-top: 6px;
         }
 
         .seal-subtext {
           font-size: 11px;
-          opacity: 0.85;
+          opacity: 0.9;
           margin-top: 2px;
         }
       }
 
       .seal-actions {
-        margin-top: 6px;
+        margin-top: 4px;
       }
     }
   }

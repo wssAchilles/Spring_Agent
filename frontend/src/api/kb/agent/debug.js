@@ -1,12 +1,13 @@
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { getToken } from '@/utils/auth';
+import { API_BASE_URL } from '@/utils/request';
 
 // 调试 Agent（流式输出）
 export function debugAgent(data, onMessage, onError, onClose) {
     const token = getToken();
     const ctrl = new AbortController();
     
-    return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/kb/agent/testChatMessages`, {
+    return fetchEventSource(`${API_BASE_URL}/kb/agent/testChatMessages`, {
         method: 'post',
         headers: {
             'Content-Type': 'application/json',

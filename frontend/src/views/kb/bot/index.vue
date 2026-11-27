@@ -378,6 +378,7 @@
 </template>
 
 <script setup name="Bot">
+import { API_BASE_URL } from '@/utils/request';
 import {listBot, getBot, delBot, addBot, updateBot} from "@/api/kb/bot/bot";
 import {getToken} from "@/utils/auth.js";
 import {useRoute, useRouter} from "vue-router";
@@ -440,7 +441,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: {Authorization: "Bearer " + getToken()},
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/kb/bot/importData",
+  url: API_BASE_URL + "/kb/bot/importData",
 });
 
 const data = reactive({

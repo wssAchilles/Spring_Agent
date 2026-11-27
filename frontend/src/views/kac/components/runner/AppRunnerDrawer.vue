@@ -284,7 +284,7 @@
                 <span class="step-status-tag pending">待触发</span>
               </div>
               <div class="step-content">
-                <div class="step-title">千问 1536 维超球面召回</div>
+                <div class="step-title">千问 1024 维超球面召回</div>
                 <div class="step-desc">本地高保真向量语义召回、知识图谱关联对齐与跨库评分重排</div>
               </div>
             </div>
@@ -332,7 +332,7 @@
               </div>
               <div class="spec-info">
                 <div class="spec-label">唯一高维向量底座</div>
-                <div class="spec-value">阿里千问 1536 维超球面向量</div>
+                <div class="spec-value">阿里千问 1024 维超球面向量</div>
               </div>
             </div>
 

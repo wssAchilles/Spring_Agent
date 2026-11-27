@@ -411,6 +411,7 @@
 </template>
 
 <script setup name="Mapping">
+import { API_BASE_URL } from '@/utils/request';
   import { listMapping, getMapping, delMapping, addMapping, updateMapping } from "@/api/ext/extAttributeMapping/mapping";
   import {getToken} from "@/utils/auth.js";
 
@@ -473,7 +474,7 @@
     // 设置上传的请求头部
     headers: { Authorization: "Bearer " + getToken() },
     // 上传的地址
-    url: import.meta.env.VITE_APP_BASE_API + "/ext/mapping/importData"
+    url: API_BASE_URL + "/ext/mapping/importData"
   });
 
   const data = reactive({

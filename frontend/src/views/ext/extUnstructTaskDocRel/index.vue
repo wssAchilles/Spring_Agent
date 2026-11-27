@@ -308,6 +308,7 @@
 </template>
 
 <script setup name="UnstructTaskDocRel">
+import { API_BASE_URL } from '@/utils/request';
   import { listUnstructTaskDocRel, getUnstructTaskDocRel, delUnstructTaskDocRel, addUnstructTaskDocRel, updateUnstructTaskDocRel } from "@/api/ext/extUnstructTaskDocRel/unstructTaskDocRel";
   import {getToken} from "@/utils/auth.js";
 
@@ -366,7 +367,7 @@
     // 设置上传的请求头部
     headers: { Authorization: "Bearer " + getToken() },
     // 上传的地址
-    url: import.meta.env.VITE_APP_BASE_API + "/ext/unstructTaskDocRel/importData"
+    url: API_BASE_URL + "/ext/unstructTaskDocRel/importData"
   });
 
   const data = reactive({

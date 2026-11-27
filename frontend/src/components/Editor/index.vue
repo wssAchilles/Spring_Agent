@@ -27,6 +27,7 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import { QuillEditor } from "@vueup/vue-quill";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
 import { getToken } from "@/utils/auth";
@@ -34,7 +35,7 @@ import { getToken } from "@/utils/auth";
 const { proxy } = getCurrentInstance();
 
 const quillEditorRef = ref();
-const uploadUrl = ref(import.meta.env.VITE_APP_BASE_API + "/upload"); // 上传的图片服务器地址
+const uploadUrl = ref(API_BASE_URL + "/upload"); // 上传的图片服务器地址
 const headers = ref({
   Authorization: "Bearer " + getToken()
 });
@@ -169,7 +170,7 @@ function handleUploadSuccess(res, file) {
     // 获取光标位置
     let length = quill.selection.savedRange.index;
     // 插入图片，res.url为服务器返回的图片链接地址
-    quill.insertEmbed(length, "image", import.meta.env.VITE_APP_BASE_API + '/profile/' + res.path + res.filename);
+    quill.insertEmbed(length, "image", API_BASE_URL + '/profile/' + res.path + res.filename);
     // 调整光标到最后
     quill.setSelection(length + 1);
   } else {

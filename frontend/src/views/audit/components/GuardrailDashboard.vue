@@ -1,5 +1,8 @@
 <template>
   <div class="guardrail-dashboard-container">
+    <div v-if="loadError" class="load-error-banner">
+      {{ loadError }}
+    </div>
     <!-- 4 大核心指标卡片 (Level 2 Glass) -->
     <div class="metrics-grid">
       <div class="metric-card">
@@ -45,19 +48,22 @@
         </div>
         <!-- PII 实体频次进度 -->
         <div class="pii-dist-list">
-          <div
-            v-for="(count, typeName) in metricsData?.piiTypeDistribution"
-            :key="typeName"
-            class="pii-item"
-          >
-            <div class="pii-meta">
-              <span class="type-name">{{ formatPiiType(typeName) }}</span>
-              <span class="type-count mono">{{ count }} 次</span>
+          <template v-if="Object.keys(metricsData?.piiTypeDistribution || {}).length > 0">
+            <div
+              v-for="(count, typeName) in metricsData?.piiTypeDistribution"
+              :key="typeName"
+              class="pii-item"
+            >
+              <div class="pii-meta">
+                <span class="type-name">{{ formatPiiType(String(typeName)) }}</span>
+                <span class="type-count mono">{{ count }} 次</span>
+              </div>
+              <div class="pii-bar">
+                <div class="pii-fill" :style="{ width: `${Math.min(100, (Number(count) / maxPiiCount) * 100)}%` }" />
+              </div>
             </div>
-            <div class="pii-bar">
-              <div class="pii-fill" :style="{ width: `${Math.min(100, (count / 500) * 100)}%` }" />
-            </div>
-          </div>
+          </template>
+          <div v-else class="pii-empty-hint">暂无 PII 实体脱敏记录</div>
         </div>
         <!-- 防御雷达图 -->
         <div class="radar-box" ref="radarChartRef" />
@@ -67,13 +73,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import { getGuardrailMetrics, GuardrailMetricsVO } from '@/api/audit';
 
+function createEmptyMetrics(): GuardrailMetricsVO {
+  return {
+    totalRequests: 0,
+    sanitizedCount: 0,
+    blockedCount: 0,
+    redactionRate: 0,
+    averageFaithfulness: 0,
+    piiTypeDistribution: {},
+    hourlyRiskEvents: [],
+    timestamp: Date.now()
+  };
+}
+
 const metricsData = ref<GuardrailMetricsVO | null>(null);
+const loadError = ref('');
 const trendChartRef = ref<HTMLDivElement | null>(null);
 const radarChartRef = ref<HTMLDivElement | null>(null);
+
+const maxPiiCount = computed(() => {
+  const values = Object.values(metricsData.value?.piiTypeDistribution || {});
+  return values.length > 0 ? Math.max(1, ...values) : 1;
+});
 
 let trendChart: echarts.ECharts | null = null;
 let radarChart: echarts.ECharts | null = null;
@@ -91,31 +116,14 @@ function formatPiiType(type: string): string {
 }
 
 async function loadMetrics() {
+  loadError.value = '';
   try {
     const res: any = await getGuardrailMetrics();
-    metricsData.value = res?.data || res;
+    metricsData.value = res?.data || res || createEmptyMetrics();
   } catch {
-    // 模拟兜底数据
-    metricsData.value = {
-      totalRequests: 12480,
-      sanitizedCount: 1066,
-      blockedCount: 89,
-      redactionRate: 0.092,
-      averageFaithfulness: 0.965,
-      piiTypeDistribution: {
-        PHONE: 412,
-        ID_CARD: 188,
-        BANK_CARD: 96,
-        EMAIL: 325,
-        API_TOKEN: 45
-      },
-      hourlyRiskEvents: Array.from({ length: 24 }).map((_, i) => ({
-        hourLabel: `${String(i).padStart(2, '0')}:00`,
-        interceptionCount: Math.floor(Math.sin(i / 3) * 8 + 12),
-        averageFaithfulness: 0.94 + Math.cos(i / 4) * 0.04
-      })),
-      timestamp: Date.now()
-    };
+    // 严格遵守零伪造指标约束：请求失败时归零并展示错误提示
+    loadError.value = '安全护栏实时指标获取失败，已归零展示';
+    metricsData.value = createEmptyMetrics();
   } finally {
     await nextTick();
     renderCharts();
@@ -141,9 +149,9 @@ function renderTrendChart() {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(28, 28, 34, 0.95)',
-      borderColor: 'rgba(255, 255, 255, 0.15)',
-      textStyle: { color: '#EDEDEF', fontSize: 12 }
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      borderColor: 'rgba(0, 0, 0, 0.08)',
+      textStyle: { color: '#1d1d1f', fontSize: 12 }
     },
     grid: {
       top: 24,
@@ -154,13 +162,13 @@ function renderTrendChart() {
     xAxis: {
       type: 'category',
       data: hours,
-      axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.15)' } },
-      axisLabel: { color: '#71717A', fontSize: 10, fontFamily: 'JetBrains Mono' }
+      axisLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.12)' } },
+      axisLabel: { color: '#6e6e73', fontSize: 10, fontFamily: 'JetBrains Mono' }
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)' } },
-      axisLabel: { color: '#71717A', fontSize: 10, fontFamily: 'JetBrains Mono' }
+      splitLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.06)' } },
+      axisLabel: { color: '#6e6e73', fontSize: 10, fontFamily: 'JetBrains Mono' }
     },
     series: [
       {
@@ -189,6 +197,26 @@ function renderRadarChart() {
     radarChart = echarts.init(radarChartRef.value);
   }
 
+  const m = metricsData.value;
+  const total = Number(m?.totalRequests || 0);
+  const clamp100 = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+  let radarValues = [0, 0, 0, 0, 0];
+  if (m && total > 0) {
+    const blockedRate = Math.min(1, Number(m.blockedCount || 0) / total);
+    const passRateScore = (1 - blockedRate) * 100;
+    const faithfulnessScore = Number(m.averageFaithfulness || 0) * 100;
+    const redactionCoverage = Number(m.sanitizedCount || 0) > 0
+      ? Math.max(passRateScore, Math.min(100, Number(m.redactionRate || 0) * 100 + faithfulnessScore * 0.5))
+      : passRateScore;
+    radarValues = [
+      clamp100(redactionCoverage),
+      clamp100(passRateScore),
+      clamp100((1 - blockedRate) * 100),
+      clamp100(faithfulnessScore),
+      clamp100(faithfulnessScore)
+    ];
+  }
+
   const option: echarts.EChartsOption = {
     backgroundColor: 'transparent',
     radar: {
@@ -201,17 +229,17 @@ function renderRadarChart() {
       ],
       radius: '65%',
       splitNumber: 4,
-      axisName: { color: '#9E9EA4', fontSize: 10 },
-      splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.08)' } },
+      axisName: { color: '#3c3c43', fontSize: 10 },
+      splitLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.08)' } },
       splitArea: { show: false },
-      axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+      axisLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.1)' } }
     },
     series: [
       {
         type: 'radar',
         data: [
           {
-            value: [96, 99, 100, 94, 97],
+            value: radarValues,
             name: '安全护栏综合评分',
             symbol: 'none',
             lineStyle: { color: '#10B981', width: 2 },
@@ -250,10 +278,28 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   padding: 24px;
-  background: var(--mono-bg, #0A0A0C);
+  background: transparent;
   overflow-y: auto;
   box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro", "PingFang SC", sans-serif;
 
+  .load-error-banner {
+    margin-bottom: 14px;
+    padding: 8px 14px;
+    border-radius: 12px;
+    background: rgba(255, 59, 48, 0.1);
+    border: 0.5px solid rgba(255, 59, 48, 0.3);
+    color: #c62828;
+    font-size: 12px;
+  }
+
+  .pii-empty-hint {
+    font-size: 12px;
+    color: rgba(60, 60, 67, 0.6);
+    padding: 6px 0;
+  }
+
+  /* Apple iOS 26 双层玻璃混合 mixin（零扩散阴影 + z-index 分层隔离） */
   .metrics-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -261,37 +307,66 @@ onBeforeUnmount(() => {
     margin-bottom: 24px;
 
     .metric-card {
-      background: var(--glass-l2-bg, rgba(28, 28, 34, 0.9));
-      backdrop-filter: blur(var(--glass-l2-blur, 8px));
-      border: 1px solid var(--mono-border-strong, rgba(255, 255, 255, 0.12));
-      border-radius: 10px;
+      position: relative;
+      background: transparent;
+      border: 0.5px solid rgba(255, 255, 255, 0.92);
+      border-radius: 20px;
       padding: 18px 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: none;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border-radius: inherit;
+        background: rgba(255, 255, 255, 0.72);
+        mix-blend-mode: plus-lighter;
+        pointer-events: none;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        backdrop-filter: blur(50px);
+        -webkit-backdrop-filter: blur(50px);
+        background: rgba(255, 255, 255, 0.25);
+        mix-blend-mode: color-dodge;
+        pointer-events: none;
+      }
+
+      > :where(*) {
+        position: relative;
+        z-index: 3;
+      }
 
       .metric-label {
         font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        color: var(--mono-text-muted, #71717A);
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: #6e6e73;
         margin-bottom: 8px;
       }
 
       .metric-value {
-        font-size: 26px;
-        font-weight: 800;
-        color: #EDEDEF;
+        font-size: 28px;
+        font-weight: 700;
+        color: #000000;
         margin-bottom: 4px;
 
         &.mono {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
         }
 
         &.text-warning {
-          color: #F59E0B;
+          color: #ff9500;
         }
 
         &.text-danger {
-          color: #EF4444;
+          color: #ff3b30;
         }
 
         &.text-success {
@@ -301,7 +376,7 @@ onBeforeUnmount(() => {
 
       .metric-sub {
         font-size: 11px;
-        color: #9E9EA4;
+        color: #3c3c43;
       }
     }
   }
@@ -312,12 +387,41 @@ onBeforeUnmount(() => {
     gap: 16px;
 
     .chart-panel {
-      background: var(--glass-l2-bg, rgba(28, 28, 34, 0.9));
-      backdrop-filter: blur(var(--glass-l2-blur, 8px));
-      border: 1px solid var(--mono-border-strong, rgba(255, 255, 255, 0.12));
-      border-radius: 10px;
+      position: relative;
+      background: transparent;
+      border: 0.5px solid rgba(255, 255, 255, 0.92);
+      border-radius: 22px;
       padding: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: none;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border-radius: inherit;
+        background: rgba(255, 255, 255, 0.72);
+        mix-blend-mode: plus-lighter;
+        pointer-events: none;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        backdrop-filter: blur(50px);
+        -webkit-backdrop-filter: blur(50px);
+        background: rgba(255, 255, 255, 0.25);
+        mix-blend-mode: color-dodge;
+        pointer-events: none;
+      }
+
+      > :where(*) {
+        position: relative;
+        z-index: 3;
+      }
 
       .panel-header {
         display: flex;
@@ -327,16 +431,16 @@ onBeforeUnmount(() => {
 
         .panel-title {
           font-size: 13px;
-          font-weight: 700;
-          color: #EDEDEF;
-          letter-spacing: 0.05em;
+          font-weight: 590;
+          color: #000000;
+          letter-spacing: 0.02em;
         }
 
         .mono-badge {
-          font-family: 'JetBrains Mono', monospace;
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.15);
-          color: #D4D4D8;
+          font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+          background: rgba(0, 122, 255, 0.08);
+          border-color: rgba(0, 122, 255, 0.22);
+          color: #007aff;
         }
       }
 
@@ -360,25 +464,25 @@ onBeforeUnmount(() => {
             margin-bottom: 4px;
 
             .type-name {
-              color: #A1A1AA;
+              color: #3c3c43;
             }
 
             .type-count {
-              color: #EDEDEF;
-              font-weight: 700;
+              color: #000000;
+              font-weight: 600;
             }
           }
 
           .pii-bar {
             width: 100%;
             height: 4px;
-            background: rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.08);
             border-radius: 2px;
             overflow: hidden;
 
             .pii-fill {
               height: 100%;
-              background: #6366F1;
+              background: #007aff;
               border-radius: 2px;
               transition: width 0.3s ease;
             }

@@ -475,6 +475,7 @@
 </template>
 
 <script setup name="UnstructTask">
+import { API_BASE_URL } from '@/utils/request';
 import {
   listUnstructTask,
   getUnstructTask,
@@ -562,7 +563,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/ext/unstructTask/importData",
+  url: API_BASE_URL + "/ext/unstructTask/importData",
 });
 
 const data = reactive({

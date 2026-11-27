@@ -120,6 +120,7 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import { nextTick, onMounted, watch } from "vue";
 import KnowledgeCover from "@/assets/kmc/knowledgeCover.png";
 import { staggerEnter } from "@/composables/useGsapMotion";
@@ -192,7 +193,7 @@ function getImage(row) {
   if (!row.coverImage) {
     return KnowledgeCover;
   }
-  return import.meta.env.VITE_APP_BASE_API + "/profile" + row.coverImage;
+  return API_BASE_URL + "/profile" + row.coverImage;
 }
 
 // 查看详情

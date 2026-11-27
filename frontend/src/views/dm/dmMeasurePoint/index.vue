@@ -411,6 +411,7 @@
 </template>
 
 <script setup name="Point">
+import { API_BASE_URL } from '@/utils/request';
 import { listPoint, getPoint, delPoint, addPoint, updatePoint } from "@/api/dm/dmMeasurePoint/point";
 import {getToken} from "@/utils/auth.js";
 import moment from "moment/moment.js";
@@ -470,7 +471,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/dm/point/importData"
+  url: API_BASE_URL + "/dm/point/importData"
 });
 
 const data = reactive({

@@ -259,6 +259,7 @@
 </template>
 
 <script setup name="Horizontal">
+import { API_BASE_URL } from '@/utils/request';
 import { useRoute, useRouter } from "vue-router";
 import {
   computed,
@@ -420,7 +421,7 @@ function getAppIcon(row = {}) {
   // if (!row.icon) {
   //   return appFeather;
   // }
-  return `${import.meta.env.VITE_APP_BASE_API}/profile${row.icon}`;
+  return `${API_BASE_URL}/profile${row.icon}`;
 }
 
 const resourceDialogTitle = computed(() => {

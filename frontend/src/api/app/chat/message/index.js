@@ -1,4 +1,4 @@
-import request from '@/utils/request.js';
+import request, { API_BASE_URL } from '@/utils/request.js';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { getToken } from '@/utils/auth';
 // import { data } from 'vis-network';
@@ -33,7 +33,7 @@ export const ChatMessageApi = {
         onClose
     ) => {
         const token = getToken();
-        return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/app/message/send-stream`, {
+        return fetchEventSource(`${API_BASE_URL}/app/message/send-stream`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ export const ChatMessageApi = {
     ) => {
         const token = getToken();
         return fetchEventSource(
-            `${import.meta.env.VITE_APP_BASE_API}/app/complianceCheck/checkStream`,
+            `${API_BASE_URL}/app/complianceCheck/checkStream`,
             {
                 method: 'post',
                 headers: {
@@ -106,7 +106,7 @@ export const ChatMessageApi = {
         onClose
     ) => {
         const token = getToken();
-        return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/app/writing/outline-stream`, {
+        return fetchEventSource(`${API_BASE_URL}/app/writing/outline-stream`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -145,7 +145,7 @@ export const ChatMessageApi = {
         onClose
     ) => {
         const token = getToken();
-        return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/app/writing/outline-optimize-stream`, {
+        return fetchEventSource(`${API_BASE_URL}/app/writing/outline-optimize-stream`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ export const ChatMessageApi = {
     ) => {
         const token = getToken();
         return fetchEventSource(
-            `${import.meta.env.VITE_APP_BASE_API}/app/writing/template-stream`,
+            `${API_BASE_URL}/app/writing/template-stream`,
             {
                 method: 'post',
                 headers: {
@@ -221,7 +221,7 @@ export const ChatMessageApi = {
         onClose
     ) => {
         const token = getToken();
-        return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/app/writing/writing-stream`, {
+        return fetchEventSource(`${API_BASE_URL}/app/writing/writing-stream`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -261,7 +261,7 @@ export const ChatMessageApi = {
         onClose
     ) => {
         const token = getToken();
-        return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/app/writing/writing-optimize-stream`, {
+        return fetchEventSource(`${API_BASE_URL}/app/writing/writing-optimize-stream`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -297,7 +297,7 @@ export const ChatMessageApi = {
     ) => {
         const token = getToken();
         return fetchEventSource(
-            `${import.meta.env.VITE_APP_BASE_API}/app/writing/rewrite-suggestion-stream`,
+            `${API_BASE_URL}/app/writing/rewrite-suggestion-stream`,
             {
                 method: 'post',
                 headers: {
@@ -335,7 +335,7 @@ export const ChatMessageApi = {
         onClose
     ) => {
         const token = getToken();
-        return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/app/report/report-stream`, {
+        return fetchEventSource(`${API_BASE_URL}/app/report/report-stream`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',

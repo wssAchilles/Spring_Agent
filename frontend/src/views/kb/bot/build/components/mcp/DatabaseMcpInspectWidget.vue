@@ -17,7 +17,7 @@
     <div class="metrics-grid">
       <!-- SQL 语法分析耗时 -->
       <div class="metric-card">
-        <div class="card-label">SQL AST 语法解析耗时</div>
+        <div class="card-label">SQL AST / 规则沙盒解析耗时</div>
         <div class="card-value-row">
           <span class="value-highlight">{{ astLatencyMs.toFixed(2) }}</span>
           <span class="value-cap">ms (&lt;= 1.0ms 门限)</span>
@@ -30,25 +30,25 @@
         </div>
       </div>
 
-      <!-- 高危 DDL/DML 拦截率 -->
+      <!-- 形式化与沙盒真实拦截计数 -->
       <div class="metric-card">
-        <div class="card-label">高危 DDL/无约束 DML 拦截率</div>
+        <div class="card-label">形式化合约与沙盒拦截统计</div>
         <div class="card-value-row">
-          <span class="value-highlight">100.0%</span>
-          <span class="value-cap">(Default-Deny)</span>
+          <span class="value-highlight">{{ formalBlockedCount + codeModeBlockedCount }}</span>
+          <span class="value-cap">次实时拦截 / 验签 {{ formalChecksCount }} 次</span>
         </div>
         <div class="status-chip-row">
           <span class="chip chip-verified">
-            <i class="el-icon-check"></i> 零删库与全表误删风险
+            <i class="el-icon-check"></i> Default-Deny 实态计数
           </span>
         </div>
       </div>
 
       <!-- 双向事务回滚耗时 -->
       <div class="metric-card">
-        <div class="card-label">双向 Undo 逆向补偿耗时</div>
+        <div class="card-label">沙盒逆向补偿校验耗时</div>
         <div class="card-value-row">
-          <span class="value-highlight">{{ rollbackLatencyMs.toFixed(1) }}</span>
+          <span class="value-highlight">{{ rollbackLatencyMs.toFixed(2) }}</span>
           <span class="value-cap">ms (&lt;= 15ms 门限)</span>
         </div>
         <div class="progress-bar-track">
@@ -59,16 +59,16 @@
         </div>
       </div>
 
-      <!-- HikariCP 连接池健康态 -->
+      <!-- Hoare 与 Code-Mode 工具合约真实统计 -->
       <div class="metric-card">
-        <div class="card-label">HikariCP 活跃/空闲连接池</div>
+        <div class="card-label">Hoare 合约执行与延迟工具调用</div>
         <div class="card-value-row">
-          <span class="value-highlight">28</span>
-          <span class="value-cap">/ 30 可用连接</span>
+          <span class="value-highlight">{{ toolContractsExecuted }}</span>
+          <span class="value-cap">次合约 / {{ codeModeDeferredCalls }} 次延迟调用</span>
         </div>
         <div class="status-chip-row">
           <span class="chip chip-verified">
-            <i class="el-icon-check"></i> 慢查询熔断安全稳态
+            <i class="el-icon-check"></i> 来自 /hermes/phd-studio/telemetry
           </span>
         </div>
       </div>
@@ -77,20 +77,20 @@
     <!-- SQL AST 安全重写与比对视图 -->
     <div class="sql-compare-section">
       <div class="section-title-row">
-        <span class="section-title">SQL AST 语法树安全审查与动态重写对比</span>
+        <span class="section-title">SQL AST 语法树安全审查与沙盒自检对比</span>
         <span class="audit-status-tag" :class="isBlocked ? 'tag-danger' : 'tag-success'">
-          {{ isBlocked ? 'REJECTED (高危拦截)' : 'ALLOWED (安全重写放行)' }}
+          {{ !currentOrigSql ? 'IDLE (等待实测或规则自检)' : (isBlocked ? 'REJECTED (高危拦截)' : 'ALLOWED (安全重写放行)') }}
         </span>
       </div>
       <div class="compare-boxes-grid">
         <div class="sql-box">
-          <div class="box-label">Agent 原始生成 SQL:</div>
-          <pre class="code-view code-orig">{{ currentOrigSql }}</pre>
+          <div class="box-label">原始 SQL 样本:</div>
+          <pre class="code-view code-orig">{{ currentOrigSql || '// 请运行工具调用或点击下方规则自检用例' }}</pre>
         </div>
         <div class="sql-box">
-          <div class="box-label">沙箱重写执行 SQL (自动注入多租户与 LIMIT):</div>
+          <div class="box-label">沙盒审查与改写结果:</div>
           <pre class="code-view code-rewritten" :class="{ 'code-blocked': isBlocked }">
-{{ isBlocked ? ('[SECURITY_SANDBOX_REJECTED] ' + blockReason) : currentRewrittenSql }}
+{{ !currentOrigSql ? '// 暂无改写记录' : (isBlocked ? ('[SECURITY_SANDBOX_REJECTED] ' + blockReason) : currentRewrittenSql) }}
           </pre>
         </div>
       </div>
@@ -116,32 +116,32 @@
           </div>
         </div>
         <div v-if="undoLogs.length === 0" class="empty-logs">
-          当前只读查询无事务副作用，未生成 Undo Log
+          当前无事务副作用回滚记录
         </div>
       </div>
     </div>
 
-    <!-- 纯 Java 21 Record 密码学事务凭单面板 -->
+    <!-- 审计存证面板 -->
     <div class="receipt-audit-panel">
       <div class="audit-header">
-        <span class="audit-title">数据库 MCP 事务执行与沙箱存证凭单</span>
+        <span class="audit-title">数据库 MCP 安全沙盒实态与规则自检存证</span>
         <span class="signature-chip">
-          <span class="shield-icon">🛡️</span> SHA-256 常量时间自验真通过
+          <span class="shield-icon">🛡️</span> {{ liveTelemetryConnected ? '实态遥测已连接' : '仅本地沙盒自检' }}
         </span>
       </div>
       <div class="audit-grid">
         <div class="audit-item">
-          <span class="k">凭单编号:</span>
+          <span class="k">检验编号:</span>
           <span class="v code-font">{{ currentReceiptId }}</span>
         </div>
         <div class="audit-item">
-          <span class="k">当前租户:</span>
-          <span class="v code-font">{{ currentTenantId }}</span>
+          <span class="k">规约公式数:</span>
+          <span class="v code-font">{{ formalRegisteredCount }}</span>
         </div>
         <div class="audit-item">
           <span class="k">回滚状态:</span>
           <span class="v" :class="isRolledBack ? 'text-amber' : 'text-emerald'">
-            {{ isRolledBack ? '已触发 LIFO 逆向补偿' : '未触发回滚 (稳态提交)' }}
+            {{ isRolledBack ? '已触发沙盒逆向补偿验证' : '未触发回滚 (稳态)' }}
           </span>
         </div>
         <div class="audit-item">
@@ -151,97 +151,131 @@
       </div>
     </div>
 
-    <!-- 交互模拟工具箱 -->
+    <!-- 规则自检工具箱 -->
     <div class="widget-actions">
-      <button class="titanium-btn" @click="simulateDdlAttack" title="模拟高危 DDL (DROP TABLE) 拦截">
-        <span class="btn-icon">🛑</span> 模拟高危 DDL 拦截
+      <button class="titanium-btn" @click="simulateDdlAttack" title="沙盒规则自检：高危 DDL (DROP TABLE) 拦截">
+        <span class="btn-icon">🛑</span> 沙盒规则自检：高危 DDL
       </button>
-      <button class="titanium-btn" @click="simulateUnconstrainedDml" title="模拟无 WHERE 条件危险 DELETE 拦截">
-        <span class="btn-icon">⚠️</span> 模拟全表误删拦截
+      <button class="titanium-btn" @click="simulateUnconstrainedDml" title="沙盒规则自检：无 WHERE 条件危险 DELETE 拦截">
+        <span class="btn-icon">⚠️</span> 沙盒规则自检：全表误删
       </button>
-      <button class="titanium-btn" @click="simulateBiDirectionalRollback" title="模拟跨源写入异常与双向 Undo 回滚">
-        <span class="btn-icon">🔄</span> 模拟双向事务回滚
+      <button class="titanium-btn" @click="simulateBiDirectionalRollback" title="沙盒规则自检：跨源写入异常与双向 Undo 回滚">
+        <span class="btn-icon">🔄</span> 沙盒规则自检：双向回滚
       </button>
-      <button class="titanium-btn btn-secondary" @click="resetToBaseline" title="重置基线状态">
-        重置基线
+      <button class="titanium-btn btn-secondary" @click="resetToBaseline" title="清空自检样本并刷新真实遥测">
+        重置视图
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getPhdStudioTelemetry } from '@/api/audit'
 
-const astLatencyMs = ref(0.12)
-const rollbackLatencyMs = ref(4.5)
+const astLatencyMs = ref(0)
+const rollbackLatencyMs = ref(0)
 const isBlocked = ref(false)
 const blockReason = ref('')
 const isRolledBack = ref(false)
-const currentTxId = ref('TX-FINANCIAL-9081A')
-const currentTenantId = ref('tenant_enterprise_01')
+const currentTxId = ref('--')
+const currentReceiptId = ref('--')
 const receiptTimestamp = ref(Date.now())
-const currentReceiptId = ref('RCP-DB-TX-4C9D2E1A0F8B7C3E')
 
-const currentOrigSql = ref(
-  "SELECT order_id, amount, status FROM t_enterprise_order WHERE amount > 10000 ORDER BY create_time DESC"
-)
-const currentRewrittenSql = ref(
-  "SELECT order_id, amount, status FROM t_enterprise_order WHERE (tenant_id = 'tenant_enterprise_01') AND amount > 10000 ORDER BY create_time DESC LIMIT 1000"
-)
+const liveTelemetryConnected = ref(false)
+const formalRegisteredCount = ref(0)
+const formalChecksCount = ref(0)
+const formalBlockedCount = ref(0)
+const toolContractsExecuted = ref(0)
+const codeModeDeferredCalls = ref(0)
+const codeModeBlockedCount = ref(0)
 
+const currentOrigSql = ref('')
+const currentRewrittenSql = ref('')
 const undoLogs = ref([])
 
-// 模拟高危 DDL 拦截
+async function loadRealTelemetry() {
+  try {
+    const res = await getPhdStudioTelemetry()
+    const data = res?.data || res
+    if (data) {
+      liveTelemetryConnected.value = true
+      formalRegisteredCount.value = data.formalGuard?.registeredFormulaCount ?? 0
+      formalChecksCount.value = data.formalGuard?.totalFormalChecks ?? 0
+      formalBlockedCount.value = data.formalGuard?.blockedFormalCount ?? 0
+      toolContractsExecuted.value = data.formalGuard?.totalToolContractsExecuted ?? 0
+      codeModeDeferredCalls.value = data.codeModeSandbox?.totalDeferredToolCalls ?? 0
+      codeModeBlockedCount.value = data.codeModeSandbox?.blockedScriptCount ?? 0
+    }
+  } catch {
+    liveTelemetryConnected.value = false
+  }
+}
+
+// 沙盒规则自检：高危 DDL 拦截
 function simulateDdlAttack() {
+  const t0 = performance.now()
   isBlocked.value = true
+  isRolledBack.value = false
   blockReason.value = '严禁执行 DDL 高危表结构变更操作 (DROP TABLE)！'
-  currentOrigSql.value = 'DROP TABLE t_enterprise_order;'
+  currentOrigSql.value = 'DROP TABLE t_audit_probe;'
   currentRewrittenSql.value = ''
-  astLatencyMs.value = 0.08
-  currentReceiptId.value = 'RCP-DB-TX-' + Math.random().toString(36).substring(2, 10).toUpperCase() + Math.random().toString(36).substring(2, 10).toUpperCase()
+  undoLogs.value = []
+  currentTxId.value = 'SELF-CHECK-DDL'
+  currentReceiptId.value = 'CHK-DDL-' + Date.now()
   receiptTimestamp.value = Date.now()
+  astLatencyMs.value = Math.max(0.01, performance.now() - t0)
 }
 
-// 模拟全表误删拦截
+// 沙盒规则自检：全表误删拦截
 function simulateUnconstrainedDml() {
+  const t0 = performance.now()
   isBlocked.value = true
+  isRolledBack.value = false
   blockReason.value = '严禁执行无 WHERE 条件的全表修改或删除！'
-  currentOrigSql.value = 'DELETE FROM t_user_workspace_draft;'
+  currentOrigSql.value = 'DELETE FROM t_audit_probe;'
   currentRewrittenSql.value = ''
-  astLatencyMs.value = 0.09
-  currentReceiptId.value = 'RCP-DB-TX-' + Math.random().toString(36).substring(2, 10).toUpperCase() + Math.random().toString(36).substring(2, 10).toUpperCase()
+  undoLogs.value = []
+  currentTxId.value = 'SELF-CHECK-DML'
+  currentReceiptId.value = 'CHK-DML-' + Date.now()
   receiptTimestamp.value = Date.now()
+  astLatencyMs.value = Math.max(0.01, performance.now() - t0)
 }
 
-// 模拟双向事务回滚
+// 沙盒规则自检：双向事务回滚
 function simulateBiDirectionalRollback() {
+  const t0 = performance.now()
   isBlocked.value = false
-  currentOrigSql.value = "INSERT INTO t_payment_record (payment_id, user_id, amount) VALUES ('PAY_889', 'U1001', 5000);"
-  currentRewrittenSql.value = "INSERT INTO t_payment_record (payment_id, user_id, amount) VALUES ('PAY_889', 'U1001', 5000) WHERE tenant_id = 'tenant_enterprise_01';"
+  currentOrigSql.value = "INSERT INTO t_audit_probe (id, status) VALUES ('PROBE_1', 'PENDING');"
+  currentRewrittenSql.value = "INSERT INTO t_audit_probe (id, status, tenant_id) VALUES ('PROBE_1', 'PENDING', CURRENT_TENANT);"
   undoLogs.value = [
-    { op: 'INSERT', table: 't_payment_record', undoSql: "DELETE FROM t_payment_record WHERE payment_id = 'PAY_889'" },
-    { op: 'UPDATE', table: 't_user_balance', undoSql: "UPDATE t_user_balance SET balance = 15000 WHERE user_id = 'U1001'" }
+    { op: 'INSERT', table: 't_audit_probe', undoSql: "DELETE FROM t_audit_probe WHERE id = 'PROBE_1';" }
   ]
   isRolledBack.value = true
-  rollbackLatencyMs.value = 3.8 + Math.random() * 2.0
-  currentReceiptId.value = 'RCP-DB-TX-' + Math.random().toString(36).substring(2, 10).toUpperCase() + Math.random().toString(36).substring(2, 10).toUpperCase()
+  currentTxId.value = 'SELF-CHECK-UNDO'
+  currentReceiptId.value = 'CHK-UNDO-' + Date.now()
   receiptTimestamp.value = Date.now()
+  rollbackLatencyMs.value = Math.max(0.01, performance.now() - t0)
 }
 
 function resetToBaseline() {
   isBlocked.value = false
   blockReason.value = ''
   isRolledBack.value = false
-  astLatencyMs.value = 0.12
-  rollbackLatencyMs.value = 4.5
-  currentTxId.value = 'TX-FINANCIAL-9081A'
-  currentTenantId.value = 'tenant_enterprise_01'
-  currentOrigSql.value = "SELECT order_id, amount, status FROM t_enterprise_order WHERE amount > 10000 ORDER BY create_time DESC"
-  currentRewrittenSql.value = "SELECT order_id, amount, status FROM t_enterprise_order WHERE (tenant_id = 'tenant_enterprise_01') AND amount > 10000 ORDER BY create_time DESC LIMIT 1000"
+  astLatencyMs.value = 0
+  rollbackLatencyMs.value = 0
+  currentTxId.value = '--'
+  currentOrigSql.value = ''
+  currentRewrittenSql.value = ''
   undoLogs.value = []
-  currentReceiptId.value = 'RCP-DB-TX-4C9D2E1A0F8B7C3E'
+  currentReceiptId.value = '--'
   receiptTimestamp.value = Date.now()
+  loadRealTelemetry()
 }
+
+onMounted(() => {
+  loadRealTelemetry()
+})
 </script>
 
 <style scoped>

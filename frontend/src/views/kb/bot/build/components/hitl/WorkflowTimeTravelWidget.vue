@@ -5,181 +5,187 @@
       <div class="header-left">
         <div class="aurora-pulse-dot" :class="activeSpecBranch ? 'pulse-speculating' : 'pulse-stable'"></div>
         <div class="header-title-group">
-          <div class="headline-title">时间旅行与置信度门控投机推演</div>
-          <div class="sub-headline">Merkle DAG 增量因果树 · 超球面测地状态回溯</div>
+          <div class="headline-title">Step Journal 时间旅行与 Frontier 事务中枢</div>
+          <div class="sub-headline">PG 预写步骤日志 · DeltaChannel 零幽灵分叉重构</div>
         </div>
         <div class="version-chip font-mono">
           <span class="chip-dot"></span>
-          活跃主干: v{{ activeVersion }}
+          活跃超步: S{{ versionHistory.length > 0 ? activeVersion : 0 }}
         </div>
       </div>
 
       <div class="header-right">
-        <!-- 虚拟内存分页胶囊 -->
-        <div class="telemetry-capsule" title="操作系统级虚拟内存分层活跃页">
+        <div class="telemetry-capsule" title="双时态海马体图谱实时顶点与边计数">
           <span class="capsule-icon">🧠</span>
-          <span class="capsule-key">虚拟内存页</span>
-          <span class="capsule-val font-mono highlight-blue">Core 2 / Recall 6 / Archival 18</span>
+          <span class="capsule-key">海马体图谱</span>
+          <span class="capsule-val font-mono highlight-blue">V={{ hippoVertexCount }} / E={{ hippoEdgeCount }} / Cold={{ hippoColdCount }}</span>
         </div>
 
-        <!-- Prompt Cache 缓存经济学胶囊 -->
-        <div class="telemetry-capsule" title="DeepSeek 上下文前缀缓存 (Prompt Cache) 命中率">
+        <div class="telemetry-capsule" title="DeepSeek 64-Token 前缀缓存稳态保留率">
           <span class="capsule-icon">⚡</span>
-          <span class="capsule-key">Cache 命中</span>
+          <span class="capsule-key">Prefix 复用</span>
           <span class="capsule-val font-mono highlight-green">{{ (promptCacheHitRate * 100).toFixed(1) }}%</span>
         </div>
 
-        <!-- Merkle 根胶囊 -->
-        <div class="telemetry-capsule" :title="'状态版本 Merkle DAG 根散列: ' + merkleRootHash">
+        <div class="telemetry-capsule" title="PG Step Journal 累计持久化幂等步骤数">
           <span class="capsule-icon">🌿</span>
-          <span class="capsule-key">Merkle 根</span>
-          <span class="capsule-val font-mono">{{ truncateHash(merkleRootHash) }}</span>
+          <span class="capsule-key">PG 步数</span>
+          <span class="capsule-val font-mono">{{ committedStepCount }} 步</span>
         </div>
 
-        <!-- 测地核分胶囊 -->
-        <div class="telemetry-capsule">
+        <div class="telemetry-capsule" title="S^1023 认知超网累计路由决策">
           <span class="capsule-icon">🧭</span>
-          <span class="capsule-key">测地核分</span>
-          <span class="capsule-val font-mono highlight-green">{{ (kernelSimilarity * 100).toFixed(1) }}%</span>
+          <span class="capsule-key">超网决策</span>
+          <span class="capsule-val font-mono highlight-green">{{ totalSupernetDecisions }} 次</span>
         </div>
 
-        <!-- 关闭抽屉按钮 -->
         <button class="close-capsule-btn" title="关闭中枢" @click="$emit('close')">
           <span>✕</span>
         </button>
       </div>
     </header>
 
-    <!-- 2. 主视口双栏布局：左栏 Merkle DAG 因果版本轴，右栏投机推演与时间旅行中枢 -->
+    <!-- 2. 主视口双栏布局：左栏 Step Journal 因果版本轴，右栏 Frontier 审批与时间旅行分叉中枢 -->
     <main class="grid-main-workspace">
-      <!-- 左栏：Merkle DAG 状态因果链与增量快照 -->
+      <!-- 左栏：PG Step Journal 真实增量步骤轨道 -->
       <section class="glass-material-card left-timeline-panel">
         <div class="panel-section-header">
           <div class="section-title-wrap">
-            <h3 class="section-headline">状态因果版本链 (Merkle DAG)</h3>
-            <span class="section-caption">基于 ΔS 增量哈希 · O(log N) 二进制提升跳跃寻址</span>
+            <h3 class="section-headline">Step Journal 增量因果轨迹 ({{ currentBranchId }})</h3>
+            <span class="section-caption">基于 PG 预写增量通道 · 支持任意历史超步无损分叉</span>
           </div>
           <span class="status-badge-capsule">
-            已固化 {{ versionHistory.length }} 个版本快照
+            {{ versionHistory.length }} 条实态记录
           </span>
         </div>
 
-        <div class="dag-timeline-scroll">
+        <div class="journal-query-strip">
+          <input
+            v-model="inputExecutionId"
+            type="text"
+            class="journal-query-input font-mono"
+            placeholder="输入 executionId (例如 debug-bot-3-...)"
+          />
+          <input
+            v-model="currentBranchId"
+            type="text"
+            class="journal-branch-input font-mono"
+            placeholder="分支 (main)"
+          />
+          <button
+            type="button"
+            class="apple-liquid-btn btn-query-journal"
+            :disabled="loading"
+            @click="refreshAllData"
+          >
+            {{ loading ? '拉取中...' : '拉取实态日志' }}
+          </button>
+        </div>
+
+        <div v-if="versionHistory.length > 0" class="dag-timeline-scroll">
           <div
             v-for="(item, idx) in versionHistory"
-            :key="item.version"
+            :key="`${item.idempotencyKey}-${item.version}`"
             class="dag-version-card"
             :class="{
               'is-active-head': item.version === activeVersion,
-              'is-selected-revert': item.version === selectedRevertTarget,
-              'is-quarantined': item.isQuarantined
+              'is-selected-revert': item.version === selectedRevertTarget
             }"
             @click="selectVersion(item.version)"
           >
-            <!-- 左侧因果线与发光节点 -->
             <div class="dag-axis-col">
               <div class="axis-node-dot" :class="{ 'dot-active': item.version === activeVersion }"></div>
               <div v-if="idx < versionHistory.length - 1" class="axis-line"></div>
             </div>
 
-            <!-- 卡片核心内容 -->
             <div class="dag-card-body">
               <div class="dag-card-top">
-                <div class="version-badge font-mono">v{{ item.version }}</div>
+                <div class="version-badge font-mono">S{{ item.version }}</div>
                 <div class="node-id-text font-mono">{{ item.nodeId }}</div>
-                <!-- 虚拟内存分层分页标签 (Core / Recall / Archival) -->
-                <div class="memory-paging-chip font-mono" :class="`page-${(item.memoryLayer || 'recall').toLowerCase()}`">
-                  {{ item.memoryLayer || 'RECALL' }}
+                <div class="memory-paging-chip font-mono page-recall">
+                  {{ item.branchId }}
                 </div>
                 <div class="status-indicator-tag" :class="item.version === activeVersion ? 'tag-head' : 'tag-snapshot'">
-                  {{ item.version === activeVersion ? '活跃主干 (HEAD)' : '固化快照' }}
+                  {{ item.status || 'COMMITTED' }}
                 </div>
               </div>
 
-              <!-- 增量状态 ΔS 代码视窗 (Light Mode 极客清爽呈现) -->
               <div class="delta-diff-viewer font-mono">
                 <div v-for="(v, k) in item.deltaState" :key="k" class="delta-diff-row">
                   <span class="delta-prefix">+</span>
                   <span class="delta-param-key">{{ k }}:</span>
                   <span class="delta-param-val">{{ formatValue(v) }}</span>
                 </div>
-              </div>
-
-              <!-- DeepSeek 思考模式长思维链 (reasoning_content) 折叠面板 -->
-              <div v-if="item.reasoningContent" class="reasoning-accordion-box">
-                <div
-                  class="reasoning-header-bar"
-                  @click.stop="item.isReasoningExpanded = !item.isReasoningExpanded"
-                >
-                  <span class="reasoning-pulse-dot"></span>
-                  <span class="reasoning-title">DeepSeek 思维链 (reasoning_content)</span>
-                  <span class="reasoning-toggle-icon">{{ item.isReasoningExpanded ? '▲ 折叠' : '▼ 展开' }}</span>
-                </div>
-                <div v-if="item.isReasoningExpanded" class="reasoning-body-scroll font-mono">
-                  <p class="reasoning-text">{{ item.reasoningContent }}</p>
+                <div v-if="Object.keys(item.deltaState || {}).length === 0" class="delta-diff-row">
+                  <span class="delta-param-key">无增量载荷变更</span>
                 </div>
               </div>
 
               <div class="dag-card-bottom font-mono">
-                <span class="hash-tag">SHA: {{ truncateHash(item.stateHash) }}</span>
-                <span class="cache-tag">Cache: {{ ((item.promptCacheHitRate || 0.88) * 100).toFixed(0) }}%</span>
+                <span class="hash-tag">Idem: {{ truncateHash(item.idempotencyKey) }}</span>
+                <span class="cache-tag">Fence: {{ item.fencingToken }}</span>
                 <span class="time-tag">{{ formatTime(item.timestamp) }}</span>
               </div>
             </div>
           </div>
         </div>
+
+        <div v-else class="empty-spec-standby" style="margin-top: 24px;">
+          <span class="standby-icon">📜</span>
+          <span class="standby-text">
+            {{ inputExecutionId ? `轨迹 [${inputExecutionId}] 分支 [${currentBranchId}] 暂无 Step Journal 记录` : '暂无选中轨迹。请先执行一次工作流调试，或上方输入已有的 executionId 点击拉取。' }}
+          </span>
+        </div>
       </section>
 
-      <!-- 右栏：投机执行沙盒与时间旅行中枢 -->
+      <!-- 右栏：Frontier 审批沙盒与时间旅行分叉中枢 -->
       <section class="right-control-panel">
-        <!-- 模块 A: HITL 投机推演沙盒 -->
+        <!-- 模块 A: Frontier Epoch-Serializable 挂起审批区 -->
         <div class="glass-material-card spec-sandbox-card">
           <div class="panel-section-header">
             <div class="section-title-wrap">
-              <h3 class="section-headline">HITL 投机推演沙盒 (Speculative Sandbox)</h3>
-              <span class="section-caption">虚拟线程写隔离 · 人工审批期间预推演</span>
+              <h3 class="section-headline">Frontier 事务与 Plan-as-PR 审批</h3>
+              <span class="section-caption">不可逆副作用零泄漏 · 真实后端挂起队列轮询</span>
             </div>
-            <div class="gate-status-pill" :class="speculationEligible ? 'pill-gate-pass' : 'pill-gate-block'">
+            <div class="gate-status-pill" :class="activeSpecBranch ? 'pill-gate-block' : 'pill-gate-pass'">
               <span class="gate-dot"></span>
-              {{ speculationEligible ? '门控准入 (γ ≥ 0.88)' : '门控拦截 (γ < 0.88)' }}
+              {{ activeSpecBranch ? '存在待决不可逆工单' : '无待审挂起动作' }}
             </div>
           </div>
 
-          <!-- 核心三联度量仪表 -->
           <div class="spec-telemetry-grid">
             <div class="telemetry-metric-box">
-              <span class="metric-title">分支预测置信度</span>
+              <span class="metric-title">纪元已提交事务</span>
               <div class="metric-value-row">
-                <span class="metric-val highlight-blue font-mono">{{ (speculativeConfidence * 100).toFixed(1) }}%</span>
-                <span class="metric-sub">门控 88%</span>
+                <span class="metric-val highlight-green font-mono">{{ frontierCommittedCount }}</span>
+                <span class="metric-sub">可串行化提交</span>
               </div>
             </div>
 
             <div class="telemetry-metric-box">
-              <span class="metric-title">理论保真度损失 (Lemma 148.2)</span>
+              <span class="metric-title">挂起待审批数</span>
               <div class="metric-value-row">
-                <span class="metric-val font-mono">{{ (theoreticalFidelityLoss * 100).toFixed(2) }}%</span>
-                <span class="metric-sub">&lt; 15% 上界</span>
+                <span class="metric-val highlight-blue font-mono">{{ frontierPendingCount }}</span>
+                <span class="metric-sub">HITL 队列</span>
               </div>
             </div>
 
             <div class="telemetry-metric-box">
-              <span class="metric-title">预推演节约 Token</span>
+              <span class="metric-title">当前全局纪元</span>
               <div class="metric-value-row">
-                <span class="metric-val highlight-green font-mono">~62.5%</span>
-                <span class="metric-sub">0 冗余重跑</span>
+                <span class="metric-val font-mono">e={{ frontierLatestEpoch }}</span>
+                <span class="metric-sub">单调递增</span>
               </div>
             </div>
           </div>
 
-          <!-- 待决分支交互面板 -->
           <div v-if="activeSpecBranch" class="spec-branch-glass-banner">
             <div class="branch-meta-row">
-              <div class="branch-icon-tag">⚡ 待决分支</div>
+              <div class="branch-icon-tag">⚡ 挂起工单</div>
               <div class="branch-title font-mono">{{ activeSpecBranch.branchName }}</div>
             </div>
             <p class="branch-summary-text">
-              该分支已在只读隔离沙盒中预生成下游 2 个节点的认知决策结果，等待人工协同审批裁定。
+              {{ activeSpecBranch.reason || `ApprovalKey: ${activeSpecBranch.approvalKey} (${activeSpecBranch.sideEffectTier || 'IRREVERSIBLE'})` }}
             </p>
 
             <div class="branch-action-buttons">
@@ -189,7 +195,7 @@
                 @click="handleCommitSpeculation"
               >
                 <span class="btn-symbol">✓</span>
-                <span>原子合并分支 (0 重跑)</span>
+                <span>批准并放行事务</span>
               </button>
               <button
                 class="apple-liquid-btn btn-discard"
@@ -197,107 +203,105 @@
                 @click="handleDiscardSpeculation"
               >
                 <span class="btn-symbol">✕</span>
-                <span>安全隔离至冷备仓</span>
+                <span>驳回并冷备隔离</span>
               </button>
             </div>
           </div>
 
           <div v-else class="empty-spec-standby">
             <span class="standby-icon">🌿</span>
-            <span class="standby-text">当前无待决断的投机分支，引擎处于低功耗守候状态</span>
+            <span class="standby-text">当前无待决的 Frontier 不可逆审批工单，引擎处于稳态守候</span>
           </div>
         </div>
 
-        <!-- 模块 B: 时间旅行回滚中枢 -->
+        <!-- 模块 B: 时间旅行因果分叉中枢 -->
         <div class="glass-material-card time-travel-slider-card">
           <div class="panel-section-header">
             <div class="section-title-wrap">
-              <h3 class="section-headline">时间旅行回滚中枢 (Incremental Time-Travel)</h3>
-              <span class="section-caption">亚毫秒级二分跳跃 · 状态版本无损重构</span>
+              <h3 class="section-headline">时间旅行因果分叉 (Incremental Fork)</h3>
+              <span class="section-caption">真实调用 PG Step Journal 构建独立零污染派生分支</span>
             </div>
             <div class="latency-budget-pill font-mono">
-              实测 P99 ≤ 0.86ms (预算 ≤ 5.0ms)
+              {{ lastForkLatencyMs !== null ? `实测分叉耗时 ${lastForkLatencyMs.toFixed(2)}ms` : '实测耗时待采样' }}
             </div>
           </div>
 
           <div class="slider-interactive-workbench">
             <div class="slider-meta-header font-mono">
               <div class="target-version-display">
-                回退目标: <span class="v-num">v{{ selectedRevertTarget }}</span>
+                分叉起点: <span class="v-num">S{{ selectedRevertTarget }}</span>
               </div>
               <div class="jump-calc-display">
-                预估二分跳跃: <span class="highlight-blue">{{ estimatedJumpSteps }} 步</span>
+                预估跳数: <span class="highlight-blue">{{ estimatedJumpSteps }} 步</span>
               </div>
             </div>
 
-            <!-- Apple 风格胶囊轨道滑块 -->
             <div class="apple-slider-track-wrap">
               <input
                 v-model.number="selectedRevertTarget"
                 type="range"
-                :min="1"
-                :max="activeVersion"
+                :min="minSuperstep"
+                :max="maxSuperstep"
+                :disabled="versionHistory.length === 0"
                 class="apple-lux-slider"
               />
               <div class="slider-scale-ticks font-mono">
-                <span>根快照 v1</span>
-                <span>当前头 v{{ activeVersion }}</span>
+                <span>起始超步 S{{ minSuperstep }}</span>
+                <span>最新超步 S{{ maxSuperstep }}</span>
               </div>
             </div>
 
             <div class="revert-action-footer">
               <div class="revert-caution-note">
                 <span class="caution-icon">ℹ</span>
-                <span>回溯将沿因果链聚合重构状态，被跳过的后续快照将移入三级冷备环形仓保护。</span>
+                <span>从指定超步发起时间旅行分叉将在服务端生成全新派生分支，与原分支完全隔离，绝不污染主干历史。</span>
               </div>
               <button
                 class="apple-liquid-btn btn-revert-action"
-                :disabled="selectedRevertTarget === activeVersion || actionLoading"
+                :disabled="!inputExecutionId || versionHistory.length === 0 || actionLoading"
                 @click="handleExecuteTimeTravel"
               >
                 <span class="btn-symbol">↺</span>
-                <span>执行时间旅行回滚</span>
+                <span>执行真实时间旅行分叉</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 模块 C: Java 21 不可变审计凭单 (Apple Wallet Pass 纯净白金质感) -->
+        <!-- 模块 C: 实态交互操作回执凭单 -->
         <div class="glass-material-card audit-receipt-card">
           <div class="panel-section-header">
             <div class="section-title-wrap">
-              <h3 class="section-headline">Java 21 不可变审计凭单 (Cryptographic Receipt)</h3>
-              <span class="section-caption">纯 Java 21 Record 格式 · 常量时间自验真防侧信道</span>
+              <h3 class="section-headline">服务端实态操作回执 (Execution Receipt)</h3>
+              <span class="section-caption">来自 /hermes/phd-studio 真实响应与实测耗时</span>
             </div>
             <div class="receipt-verified-badge">
               <span class="shield-icon">🛡️</span>
-              <span>自验真通过 (100%)</span>
+              <span>{{ latestReceipt ? '实态已核验' : '待触发实态操作' }}</span>
             </div>
           </div>
 
           <div v-if="latestReceipt" class="wallet-pass-body font-mono">
             <div class="pass-row">
-              <span class="pass-key">凭单编号</span>
+              <span class="pass-key">回执标识</span>
               <span class="pass-val">{{ latestReceipt.receiptId }}</span>
             </div>
             <div class="pass-row">
-              <span class="pass-key">回溯因果链</span>
-              <span class="pass-val">v{{ latestReceipt.sourceVersion }} &rarr; v{{ latestReceipt.targetVersion }} (二分深度: {{ latestReceipt.revertDepth }})</span>
+              <span class="pass-key">分叉/动作说明</span>
+              <span class="pass-val">{{ latestReceipt.summary }}</span>
             </div>
             <div class="pass-row">
-              <span class="pass-key">测地核分</span>
-              <span class="pass-val highlight-green">{{ latestReceipt.kernelSimilarity.toFixed(4) }}</span>
-            </div>
-            <div class="pass-row">
-              <span class="pass-key">执行耗时</span>
-              <span class="pass-val highlight-blue">{{ latestReceipt.latencyMicros }} μs ({{ (latestReceipt.latencyMicros / 1000).toFixed(2) }} ms)</span>
+              <span class="pass-key">实测耗时</span>
+              <span class="pass-val highlight-blue">{{ latestReceipt.latencyMs.toFixed(2) }} ms</span>
             </div>
             <div class="pass-row pass-signature-row">
-              <span class="pass-key">SHA-256 签名</span>
-              <span class="pass-val signature-code" :title="latestReceipt.sha256Signature">
-                {{ latestReceipt.sha256Signature }}
-              </span>
+              <span class="pass-key">重构状态键数</span>
+              <span class="pass-val signature-code">{{ latestReceipt.stateKeysSummary }}</span>
             </div>
+          </div>
+
+          <div v-else class="empty-spec-standby">
+            <span class="standby-text">执行时间旅行分叉或审批决断后，此处将展示真实后端返回回执</span>
           </div>
         </div>
       </section>
@@ -306,130 +310,74 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import {
+  getPhdStudioTelemetry,
+  getPhdJournalTimeline,
+  forkPhdJournalBranch,
+  getPendingApprovals,
+  decideFrontierTransaction
+} from '@/api/audit'
+
+const props = defineProps({
+  executionId: { type: String, default: '' }
+})
 
 defineEmits(['close'])
 
-// 活跃与选中版本
-const activeVersion = ref(8)
-const selectedRevertTarget = ref(4)
-const merkleRootHash = ref('c79f4a8e52d39810bb73e91a0fc239104fa281b37498c3912093847e12f90a1b')
-const kernelSimilarity = ref(0.965)
-const speculativeConfidence = ref(0.94)
-const theoreticalFidelityLoss = ref(0.0125)
-const promptCacheHitRate = ref(0.894)
+const loading = ref(false)
 const actionLoading = ref(false)
+const inputExecutionId = ref(props.executionId || '')
+const currentBranchId = ref('main')
+const telemetrySnapshot = ref(null)
+const versionHistory = ref([])
+const activeSpecBranch = ref(null)
+const latestReceipt = ref(null)
+const lastForkLatencyMs = ref(null)
+const selectedRevertTarget = ref(1)
 
-// 投机门控准入
-const speculationEligible = computed(() => speculativeConfidence.value >= 0.88)
+const minSuperstep = computed(() => {
+  if (versionHistory.value.length === 0) return 1
+  return Math.min(...versionHistory.value.map((v) => v.version))
+})
 
-// 预估二进制提升跳跃步数
+const maxSuperstep = computed(() => {
+  if (versionHistory.value.length === 0) return 1
+  return Math.max(...versionHistory.value.map((v) => v.version))
+})
+
+const activeVersion = computed(() => maxSuperstep.value)
+
 const estimatedJumpSteps = computed(() => {
   const diff = Math.abs(activeVersion.value - selectedRevertTarget.value)
   if (diff === 0) return 0
   return Math.ceil(Math.log2(diff + 1))
 })
 
-// 当前活跃投机分支
-const activeSpecBranch = ref({
-  branchId: 'spec_branch_94a2f8',
-  branchName: '财务季度环比自动汇总生成',
-  confidence: 0.94,
-  baseVersion: 8,
-  speculativeDelta: {
-    generatedReport: '2026年Q3企业知识图谱资产增长42%，无异常因果分叉',
-    auditResult: '通过'
-  }
-})
-
-// 模拟历史版本快照 (内嵌虚拟内存分层与 DeepSeek 思考流 reasoning_content)
-const versionHistory = ref([
-  {
-    version: 8,
-    nodeId: 'NODE_FINANCIAL_SUMMARY',
-    memoryLayer: 'CORE',
-    promptCacheHitRate: 0.94,
-    stateHash: 'c79f4a8e52d39810bb73e91a0fc239104fa281b37498c3912093847e12f90a1b',
-    deltaState: { reportType: '季报', approved: true },
-    isQuarantined: false,
-    timestamp: Date.now() - 1000 * 30,
-    isReasoningExpanded: false,
-    reasoningContent: '首先评估各季度财务指标的一致性。根据前置节点抽取的 14 个因果实体，图谱资产环比上升 42%，因此直接汇总为企业资产增量分析表。该操作符合审计规则，无需进一步调用外部计算器。'
-  },
-  {
-    version: 7,
-    nodeId: 'NODE_NER_EXTRACTION',
-    memoryLayer: 'RECALL',
-    promptCacheHitRate: 0.91,
-    stateHash: '8b3f12e098471203984712039847120398471203984712039847120398471203',
-    deltaState: { extractedEntitiesCount: 14, confidence: 0.98 },
-    isQuarantined: false,
-    timestamp: Date.now() - 1000 * 90,
-    isReasoningExpanded: false,
-    reasoningContent: '对非结构化财报文本进行因果实体抽取。已识别出主体资产规模、净利润环比与因果关系指针。置信度 0.98，写入 RecallMemory 时序快轨。'
-  },
-  {
-    version: 6,
-    nodeId: 'NODE_KG_SUBGRAPH_REASON',
-    memoryLayer: 'RECALL',
-    promptCacheHitRate: 0.88,
-    stateHash: '7a12093847120398471203984712039847120398471203984712039847120398',
-    deltaState: { pathCount: 5, lcaFound: true },
-    isQuarantined: false,
-    timestamp: Date.now() - 1000 * 160,
-    isReasoningExpanded: false,
-    reasoningContent: '在知识图谱中执行时间感知因果子图推理。找到最近公共祖先节点 (LCA)，并剪枝去除了 2 条历史废弃时序路径。'
-  },
-  {
-    version: 5,
-    nodeId: 'NODE_MCP_TOOL_QUERY',
-    memoryLayer: 'ARCHIVAL',
-    promptCacheHitRate: 0.85,
-    stateHash: '6f01928301928301928301928301928301928301928301928301928301928301',
-    deltaState: { tool: 'DatabaseClient', affectedRows: 240 },
-    isQuarantined: false,
-    timestamp: Date.now() - 1000 * 240,
-    isReasoningExpanded: false,
-    reasoningContent: '调用企业本地只读 MCP 工具 DatabaseClient 执行受限 SQL 统计。影响行数 240 行，通过 Hoare 前置合约检查。'
-  },
-  {
-    version: 4,
-    nodeId: 'NODE_USER_INTENT_DISPATCH',
-    memoryLayer: 'CORE',
-    promptCacheHitRate: 0.98,
-    stateHash: '5e83910283910283910283910283910283910283910283910283910283910283',
-    deltaState: { intent: 'ANALYZE_FINANCIAL_ASSET', score: 0.99 },
-    isQuarantined: false,
-    timestamp: Date.now() - 1000 * 320,
-    isReasoningExpanded: false,
-    reasoningContent: '解析用户原始意图为 ANALYZE_FINANCIAL_ASSET，匹配千问 1536 维超球面质心余弦相似度 0.99，固化至常驻 CoreMemory。'
-  }
-])
-
-// 最新不可变审计凭单
-const latestReceipt = ref({
-  receiptId: 'receipt_tt_108',
-  sourceVersion: 8,
-  targetVersion: 4,
-  revertDepth: 2,
-  kernelSimilarity: 0.965,
-  latencyMicros: 860,
-  sha256Signature: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-})
+const hippoVertexCount = computed(() => telemetrySnapshot.value?.hippocampal?.vertexCount ?? 0)
+const hippoEdgeCount = computed(() => telemetrySnapshot.value?.hippocampal?.activeEdgeCount ?? 0)
+const hippoColdCount = computed(() => telemetrySnapshot.value?.hippocampal?.coldRingCount ?? 0)
+const promptCacheHitRate = computed(() => telemetrySnapshot.value?.prefixCache?.preservationRate ?? 0)
+const committedStepCount = computed(() => telemetrySnapshot.value?.stepJournal?.committedEntryCount ?? 0)
+const totalSupernetDecisions = computed(() => telemetrySnapshot.value?.supernet?.totalRoutingDecisions ?? 0)
+const frontierCommittedCount = computed(() => telemetrySnapshot.value?.frontierTx?.committedCount ?? 0)
+const frontierPendingCount = computed(() => telemetrySnapshot.value?.frontierTx?.pendingHitlCount ?? 0)
+const frontierLatestEpoch = computed(() => telemetrySnapshot.value?.frontierTx?.latestGlobalEpoch ?? 0)
 
 function truncateHash(hash) {
   if (!hash) return '--'
+  if (hash.length <= 16) return hash
   return hash.substring(0, 8) + '...' + hash.substring(hash.length - 6)
 }
 
 function formatValue(v) {
-  if (typeof v === 'object') return JSON.stringify(v)
+  if (typeof v === 'object' && v !== null) return JSON.stringify(v)
   return String(v)
 }
 
 function formatTime(ts) {
-  const d = new Date(ts)
+  const d = new Date(ts || Date.now())
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`
 }
 
@@ -437,74 +385,173 @@ function selectVersion(v) {
   selectedRevertTarget.value = v
 }
 
-// 模拟触发原子合并
-function handleCommitSpeculation() {
+async function loadTelemetryAndApprovals() {
+  try {
+    const res = await getPhdStudioTelemetry()
+    telemetrySnapshot.value = res?.data || res || null
+  } catch {
+    telemetrySnapshot.value = null
+  }
+  try {
+    const appRes = await getPendingApprovals()
+    const list = appRes?.data || appRes || []
+    if (Array.isArray(list) && list.length > 0) {
+      const first = list[0]
+      activeSpecBranch.value = {
+        approvalKey: first.approvalKey,
+        branchName: first.nodeId || first.approvalKey || 'frontier_pending_action',
+        reason: first.reason,
+        sideEffectTier: first.sideEffectTier
+      }
+    } else {
+      activeSpecBranch.value = null
+    }
+  } catch {
+    activeSpecBranch.value = null
+  }
+}
+
+async function loadJournalEntries() {
+  const execId = (inputExecutionId.value || '').trim()
+  if (!execId) {
+    versionHistory.value = []
+    return
+  }
+  const res = await getPhdJournalTimeline(execId, currentBranchId.value || 'main')
+  const rows = res?.data || res || []
+  versionHistory.value = Array.isArray(rows)
+    ? rows
+        .map((e) => ({
+          version: Number(e.superstep || 0),
+          nodeId: e.nodeId || 'step_node',
+          branchId: e.branchId || currentBranchId.value || 'main',
+          idempotencyKey: e.idempotencyKey || '',
+          fencingToken: e.fencingToken ?? 0,
+          status: e.status || 'COMMITTED',
+          deltaState: e.channelDeltas || {},
+          timestamp: e.createdAtEpochMs || Date.now()
+        }))
+        .sort((a, b) => b.version - a.version)
+    : []
+  if (versionHistory.value.length > 0) {
+    selectedRevertTarget.value = versionHistory.value[versionHistory.value.length - 1].version
+  }
+}
+
+async function refreshAllData() {
+  loading.value = true
+  try {
+    await Promise.all([loadTelemetryAndApprovals(), loadJournalEntries()])
+  } catch (err) {
+    ElMessage.error('拉取实态数据失败: ' + (err?.message || '未知错误'))
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleCommitSpeculation() {
+  if (!activeSpecBranch.value?.approvalKey) return
   actionLoading.value = true
-  setTimeout(() => {
-    activeVersion.value += 1
-    selectedRevertTarget.value = activeVersion.value
-    versionHistory.value.unshift({
-      version: activeVersion.value,
-      nodeId: 'SPEC_MERGED_SUMMARY',
-      stateHash: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
-      deltaState: { ...activeSpecBranch.value.speculativeDelta, merged: true },
-      isQuarantined: false,
-      timestamp: Date.now()
+  const t0 = performance.now()
+  try {
+    await decideFrontierTransaction({
+      approvalKey: activeSpecBranch.value.approvalKey,
+      approved: true,
+      reason: '通过 Time-Travel 中枢核准放行'
     })
+    const dt = performance.now() - t0
     latestReceipt.value = {
-      receiptId: 'receipt_spec_commit_' + Date.now().toString().slice(-4),
-      sourceVersion: activeVersion.value - 1,
-      targetVersion: activeVersion.value,
-      revertDepth: 1,
-      kernelSimilarity: 1.0,
-      latencyMicros: 640,
-      sha256Signature: 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2'
+      receiptId: activeSpecBranch.value.approvalKey,
+      summary: 'Frontier 挂起事务核准放行',
+      latencyMs: dt,
+      stateKeysSummary: 'APPROVED'
     }
-    activeSpecBranch.value = null
+    ElMessage.success(`审批已提交放行，耗时 ${dt.toFixed(2)}ms`)
+    await refreshAllData()
+  } catch (err) {
+    ElMessage.error('放行失败: ' + (err?.message || '未知错误'))
+  } finally {
     actionLoading.value = false
-    ElMessage.success('投机推演分支已原子合并入主干，耗时 0.64ms，节省后续全量重跑')
-  }, 350)
+  }
 }
 
-// 模拟触发驳回并隔离至三级冷备仓
-function handleDiscardSpeculation() {
+async function handleDiscardSpeculation() {
+  if (!activeSpecBranch.value?.approvalKey) return
   actionLoading.value = true
-  setTimeout(() => {
-    activeSpecBranch.value = null
+  const t0 = performance.now()
+  try {
+    await decideFrontierTransaction({
+      approvalKey: activeSpecBranch.value.approvalKey,
+      approved: false,
+      reason: '通过 Time-Travel 中枢驳回隔离'
+    })
+    const dt = performance.now() - t0
     latestReceipt.value = {
-      receiptId: 'receipt_spec_discard_' + Date.now().toString().slice(-4),
-      sourceVersion: activeVersion.value,
-      targetVersion: activeVersion.value,
-      revertDepth: 0,
-      kernelSimilarity: 0.5,
-      latencyMicros: 420,
-      sha256Signature: 'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3'
+      receiptId: activeSpecBranch.value.approvalKey,
+      summary: 'Frontier 挂起事务已驳回隔离',
+      latencyMs: dt,
+      stateKeysSummary: 'REJECTED'
     }
+    ElMessage.info(`挂起工单已安全冷备隔离，耗时 ${dt.toFixed(2)}ms`)
+    await refreshAllData()
+  } catch (err) {
+    ElMessage.error('驳回失败: ' + (err?.message || '未知错误'))
+  } finally {
     actionLoading.value = false
-    ElMessage.info('投机推演分支已安全隔离至三级冷备环形仓，主干零语义污染')
-  }, 250)
+  }
 }
 
-// 执行时间旅行回退
-function handleExecuteTimeTravel() {
-  if (selectedRevertTarget.value === activeVersion.value) return
+async function handleExecuteTimeTravel() {
+  const execId = (inputExecutionId.value || '').trim()
+  if (!execId) {
+    ElMessage.warning('请先提供有效的 executionId')
+    return
+  }
   actionLoading.value = true
-  setTimeout(() => {
-    const oldVersion = activeVersion.value
-    activeVersion.value = selectedRevertTarget.value
+  const t0 = performance.now()
+  try {
+    const parentBranch = currentBranchId.value || 'main'
+    const res = await forkPhdJournalBranch({
+      executionId: execId,
+      parentBranchId: parentBranch,
+      fromSuperstep: selectedRevertTarget.value,
+      stateOverrides: { forkedFromUi: true }
+    })
+    const dt = performance.now() - t0
+    lastForkLatencyMs.value = dt
+    const data = res?.data || res || {}
+    const newBranch = data.forkBranchId || 'fork'
+    const stateKeys = Object.keys(data.reconstructedState || {})
     latestReceipt.value = {
-      receiptId: 'receipt_tt_' + Date.now().toString().slice(-4),
-      sourceVersion: oldVersion,
-      targetVersion: activeVersion.value,
-      revertDepth: estimatedJumpSteps.value,
-      kernelSimilarity: 0.948,
-      latencyMicros: 820,
-      sha256Signature: 'd4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5'
+      receiptId: `fork_${newBranch}`,
+      summary: `${parentBranch}@S${selectedRevertTarget.value} → ${newBranch}`,
+      latencyMs: dt,
+      stateKeysSummary: stateKeys.length > 0 ? stateKeys.join(', ') : '(空增量)'
     }
+    currentBranchId.value = newBranch
+    await loadJournalEntries()
+    ElMessage.success(`时间旅行分叉成功：生成派生分支 ${newBranch}（耗时 ${dt.toFixed(2)}ms）`)
+  } catch (err) {
+    ElMessage.error('时间旅行分叉失败: ' + (err?.message || '未知错误'))
+  } finally {
     actionLoading.value = false
-    ElMessage.success(`时间旅行回退成功：v${oldVersion} → v${activeVersion.value}，回退耗时 0.82ms`)
-  }, 300)
+  }
 }
+
+watch(
+  () => props.executionId,
+  (val) => {
+    if (val && val !== inputExecutionId.value) {
+      inputExecutionId.value = val
+      currentBranchId.value = 'main'
+      refreshAllData()
+    }
+  }
+)
+
+onMounted(() => {
+  refreshAllData()
+})
 </script>
 
 <style scoped lang="scss">
@@ -538,6 +585,7 @@ function handleExecuteTimeTravel() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   padding: 10px 20px;
   border-radius: var(--ios26-radius-pill, 1000px);
   background: rgba(255, 255, 255, 0.88);
@@ -545,13 +593,14 @@ function handleExecuteTimeTravel() {
   -webkit-backdrop-filter: blur(50px);
   border: 0.5px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  gap: 16px;
+  gap: 10px 16px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .aurora-pulse-dot {
@@ -593,7 +642,7 @@ function handleExecuteTimeTravel() {
 }
 
 .version-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
@@ -603,23 +652,27 @@ function handleExecuteTimeTravel() {
   border-radius: 1000px;
   font-size: 11px;
   font-weight: 590;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   .chip-dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
     background: #0088ff;
+    flex-shrink: 0;
   }
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .telemetry-capsule {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 12px;
@@ -627,18 +680,23 @@ function handleExecuteTimeTravel() {
   border: 0.5px solid rgba(0, 0, 0, 0.06);
   border-radius: 1000px;
   font-size: 11px;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   .capsule-icon {
     font-size: 12px;
+    flex-shrink: 0;
   }
 
   .capsule-key {
     color: rgba(60, 60, 67, 0.7);
+    white-space: nowrap;
   }
 
   .capsule-val {
     color: #000000;
     font-weight: 400;
+    white-space: nowrap;
 
     &.highlight-green {
       color: #248a3d;
@@ -659,6 +717,8 @@ function handleExecuteTimeTravel() {
   color: #3d3d3d;
   font-size: 11px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
@@ -725,6 +785,48 @@ function handleExecuteTimeTravel() {
   background: rgba(0, 0, 0, 0.04);
   color: rgba(60, 60, 67, 0.8);
   border: 0.5px solid rgba(0, 0, 0, 0.06);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.journal-query-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.journal-query-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 0.5px solid rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  color: #000000;
+}
+
+.journal-branch-input {
+  width: 90px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 0.5px solid rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  color: #000000;
+}
+
+.btn-query-journal {
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 0.5px solid rgba(0, 136, 255, 0.28);
+  background: rgba(0, 136, 255, 0.1);
+  color: #0088ff;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* 3. 左栏 Merkle DAG 纵向整屏展开与平滑滚动 */
@@ -1008,13 +1110,15 @@ function handleExecuteTimeTravel() {
 }
 
 .gate-status-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 2px 9px;
   border-radius: 1000px;
   font-size: 11px;
   font-weight: 590;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   &.pill-gate-pass {
     background: rgba(52, 199, 89, 0.1);
@@ -1206,6 +1310,8 @@ function handleExecuteTimeTravel() {
   border: 0.5px solid rgba(0, 136, 255, 0.18);
   padding: 2px 8px;
   border-radius: 1000px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .slider-interactive-workbench {
@@ -1267,7 +1373,7 @@ function handleExecuteTimeTravel() {
 
 /* 6. Apple Wallet 浅色白金密码学凭单卡片 */
 .receipt-verified-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 10px;
@@ -1277,6 +1383,8 @@ function handleExecuteTimeTravel() {
   padding: 2px 8px;
   border-radius: 1000px;
   border: 0.5px solid rgba(52, 199, 89, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .wallet-pass-body {

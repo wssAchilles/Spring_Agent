@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request, { API_BASE_URL } from '@/utils/request'
 import {fetchEventSource} from "@microsoft/fetch-event-source";
 import { getToken } from '@/utils/auth'
 
@@ -70,7 +70,7 @@ export function runWorkflow (
     onClose
 )  {
   const token = getToken()
-  return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/app/log/runWorkflow`, {
+  return fetchEventSource(`${API_BASE_URL}/app/log/runWorkflow`, {
     method: 'post',
     headers: {
       'Content-Type': 'application/json',

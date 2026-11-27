@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request, { API_BASE_URL } from '@/utils/request'
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { getToken } from '@/utils/auth';
 
@@ -44,7 +44,7 @@ export function sendMessageStream(data, onMessage, onError, onClose) {
   const token = getToken();
   const ctrl = new AbortController();
 
-  return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/kb/conversation/send`, {
+  return fetchEventSource(`${API_BASE_URL}/kb/conversation/send`, {
     method: 'post',
     headers: {
       'Content-Type': 'application/json',

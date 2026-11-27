@@ -49,6 +49,7 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import { getToken } from "@/utils/auth";
 
 const props = defineProps({
@@ -86,8 +87,8 @@ const number = ref(0);
 const uploadList = ref([]);
 const dialogImageUrl = ref("");
 const dialogVisible = ref(false);
-const baseUrl = import.meta.env.VITE_APP_BASE_API;
-const uploadImgUrl = ref(import.meta.env.VITE_APP_BASE_API + "/upload"); // 上传的图片服务器地址
+const baseUrl = API_BASE_URL;
+const uploadImgUrl = ref(API_BASE_URL + "/upload"); // 上传的图片服务器地址
 const headers = ref({ Authorization: "Bearer " + getToken() });
 const fileList = ref([]);
 const uploadData = ref({
@@ -112,7 +113,7 @@ watch(
               ? baseUrl + item
               : item;
           if (url.indexOf("http") === -1) {
-            const path = import.meta.env.VITE_APP_BASE_API + "/profile" + url;
+            const path = API_BASE_URL + "/profile" + url;
             return { name: url, url: path };
           }
           return { name: url, url };

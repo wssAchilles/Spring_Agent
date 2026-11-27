@@ -15,6 +15,7 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import { isExternal } from "@/utils/validate";
 
 const props = defineProps({
@@ -40,7 +41,7 @@ const realSrc = computed(() => {
   if (isExternal(real_src)) {
     return real_src;
   }
-  return import.meta.env.VITE_APP_BASE_API + real_src;
+  return API_BASE_URL + real_src;
 });
 
 const realSrcList = computed(() => {
@@ -53,7 +54,7 @@ const realSrcList = computed(() => {
     if (isExternal(item)) {
       return srcList.push(item);
     }
-    return srcList.push(import.meta.env.VITE_APP_BASE_API + item);
+    return srcList.push(API_BASE_URL + item);
   });
   return srcList;
 });
