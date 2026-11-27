@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * 核心验证范围：
  * 1. 四级多模态金字塔层级包含与表格线性化 (TC-137-1)
- * 2. 阿里千问 1536 维超球面单位向量归一化与测地线单调性 (TC-137-2)
+ * 2. 阿里千问 1024 维超球面单位向量归一化与测地线单调性 (TC-137-2)
  * 3. 2-近似度量闭包 Steiner 树算法逼近性与紧凑性 |V*| <= 16 (TC-137-3)
  * 4. 拓扑可达矩阵门控虚假相关剔除率 >= 70% (TC-137-4)
  * 5. 微秒级因果路径抽取性能预算 <= 8.5ms (TC-137-5)
@@ -76,7 +76,7 @@ public class Phase137GraphRagCognitiveContractTest {
                 "依据 GB/T 1094.2 电力变压器温升标准制定"
         );
 
-        float[] seed = new float[1536];
+        float[] seed = new float[1024];
         Arrays.fill(seed, 0.05f);
 
         PyramidChunkResult result = pyramidChunker.buildPyramid(
@@ -105,30 +105,30 @@ public class Phase137GraphRagCognitiveContractTest {
     }
 
     // =========================================================================
-    // TC-137-2: 阿里千问 1536 维超球面单位向量归一化与测地线单调性
+    // TC-137-2: 阿里千问 1024 维超球面单位向量归一化与测地线单调性
     // =========================================================================
     @Test
-    @DisplayName("TC-137-2: 验证阿里千问 1536 维超球面单位向量归一化与测地线内积单调性")
+    @DisplayName("TC-137-2: 验证阿里千问 1024 维超球面单位向量归一化与测地线内积单调性")
     void testQwenEmbedding_1536dHypersphereNormalization() {
         // 构造任意未归一化长向量
-        float[] rawVec = new float[1536];
-        for (int i = 0; i < 1536; i++) {
+        float[] rawVec = new float[1024];
+        for (int i = 0; i < 1024; i++) {
             rawVec[i] = (float) (Math.cos(i) * 12.5 + Math.sin(i * 2) * 8.3);
         }
 
-        float[] normalized = MultimodalPyramidChunker.normalizeToQwen1536Hypersphere(rawVec);
-        assertEquals(1536, normalized.length, "向量维度必须严格为 1536 维");
+        float[] normalized = MultimodalPyramidChunker.normalizeToQwen1024Hypersphere(rawVec);
+        assertEquals(1024, normalized.length, "向量维度必须严格为 1024 维");
         assertTrue(MultimodalPyramidChunker.verifyHypersphereConstraint(normalized),
                 "向量模长必须严格满足 ||v||_2 = 1.0 ± 10^-4");
 
         // 验证测地线内积单调性：同一父节点下的子节点测地线距离必须显著小于不相关随机向量
-        float[] childVec1 = MultimodalPyramidChunker.normalizeToQwen1536Hypersphere(
+        float[] childVec1 = MultimodalPyramidChunker.normalizeToQwen1024Hypersphere(
                 Arrays.copyOf(normalized, normalized.length)
         );
         childVec1[0] += 0.005f;
-        childVec1 = MultimodalPyramidChunker.normalizeToQwen1536Hypersphere(childVec1);
+        childVec1 = MultimodalPyramidChunker.normalizeToQwen1024Hypersphere(childVec1);
 
-        float[] orthogonalVec = new float[1536];
+        float[] orthogonalVec = new float[1024];
         orthogonalVec[500] = 1.0f; // 垂直正交向量
 
         double intraClusterDist = MultimodalPyramidChunker.computeGeodesicDistance(normalized, childVec1);
@@ -148,7 +148,7 @@ public class Phase137GraphRagCognitiveContractTest {
         // 构造包含 20 个节点的候选全图
         List<CausalNode> allNodes = new ArrayList<>();
         for (int i = 1; i <= 20; i++) {
-            float[] vec = new float[1536];
+            float[] vec = new float[1024];
             vec[i] = 1.0f;
             allNodes.add(new CausalNode("N_" + i, "节点_" + i, "实体", vec));
         }
@@ -194,7 +194,7 @@ public class Phase137GraphRagCognitiveContractTest {
         List<CausalNode> allNodes = new ArrayList<>();
         // 构造 30 个节点的混杂图
         for (int i = 1; i <= 30; i++) {
-            float[] vec = new float[1536];
+            float[] vec = new float[1024];
             vec[i] = 1.0f;
             allNodes.add(new CausalNode("NODE_" + i, "概念_" + i, "实体", vec));
         }
@@ -234,7 +234,7 @@ public class Phase137GraphRagCognitiveContractTest {
     void testCausalPathExtraction_latencyBudgetEnforcement() {
         List<CausalNode> nodes = new ArrayList<>();
         for (int i = 1; i <= 25; i++) {
-            float[] vec = new float[1536];
+            float[] vec = new float[1024];
             vec[i] = 1.0f;
             nodes.add(new CausalNode("N_" + i, "Node_" + i, "Concept", vec));
         }
@@ -346,7 +346,7 @@ public class Phase137GraphRagCognitiveContractTest {
                 List.of(List.of("100%", "55K", "正常"), List.of("120%", "68K", "预警")),
                 "变压器热负荷实测数据"
         );
-        float[] seed = new float[1536];
+        float[] seed = new float[1024];
         Arrays.fill(seed, 0.02f);
 
         PyramidChunkResult pyramid = pyramidChunker.buildPyramid(
@@ -361,7 +361,7 @@ public class Phase137GraphRagCognitiveContractTest {
         }
         // 补充 15 个非因果噪声节点
         for (int i = 1; i <= 15; i++) {
-            float[] noiseVec = new float[1536];
+            float[] noiseVec = new float[1024];
             noiseVec[i] = 1.0f;
             graphNodes.add(new CausalNode("NOISE_" + i, "噪音节点_" + i, "NOISE", noiseVec));
         }

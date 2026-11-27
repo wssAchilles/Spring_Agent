@@ -187,7 +187,7 @@ public class Phase24AdaptiveRagContractTest {
     void contract05_discountedLinUcb_regretSublinearConvergence() {
         discountedLinUcbRouter.reset();
 
-        // 构造千问 1536 维测试向量
+        // 构造千问 1024 维测试向量
         float[] embedding = new float[DiscountedLinUcbRouter.EMBEDDING_DIM];
         for (int i = 0; i < embedding.length; i++) {
             embedding[i] = (float) Math.sin(i * 0.1);

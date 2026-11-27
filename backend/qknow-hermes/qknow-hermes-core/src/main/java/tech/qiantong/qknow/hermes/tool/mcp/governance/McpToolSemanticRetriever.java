@@ -19,7 +19,7 @@ public class McpToolSemanticRetriever {
     private static final Logger log = LoggerFactory.getLogger(McpToolSemanticRetriever.class);
 
     /** 兼容回退维度；实际维度由首次索引向量自动探测或显式设置 */
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     private volatile int embeddingDimension;
 
@@ -133,7 +133,7 @@ public class McpToolSemanticRetriever {
     }
 
     /**
-     * 在超球面 S^{1535} 上执行 MIPS 检索，选出 Top-K 最优工具标识列表
+     * 在超球面 S^{1023} 上执行 MIPS 检索，选出 Top-K 最优工具标识列表
      *
      * @param queryVector 用户意图查询向量（维度必须与索引维度一致）
      * @param k           检索深度 K (默认 5)

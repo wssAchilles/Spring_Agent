@@ -31,6 +31,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException
     {
+        // /mcp 端点使用独立的 McpHttpAuthGuard 常量时间 Bearer 令牌鉴权，跳过系统用户 JWT 解析
+        String requestUri = request.getRequestURI();
+        if (requestUri != null && ("/mcp".equals(requestUri) || requestUri.endsWith("/mcp"))) {
+            chain.doFilter(request, response);
+            return;
+        }
         LoginUser loginUser = tokenService.getLoginUser(request);
         if (StringUtils.isNotNull(loginUser) && StringUtils.isNull(SecurityUtils.getAuthentication()))
         {

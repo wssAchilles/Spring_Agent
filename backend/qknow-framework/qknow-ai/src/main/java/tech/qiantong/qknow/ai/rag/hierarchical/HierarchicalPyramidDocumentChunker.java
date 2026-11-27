@@ -10,7 +10,7 @@ import java.util.*;
  * 落实定理 1.1 四级层次化金字塔文档流形无损语义压缩与有界重建误差定理：
  * 1. 严格维系四级树状拓扑：Level 0 (Document) -> Level 1 (Section) -> Level 2 (Paragraph) -> Level 3 (Atomic Chunk)；
  * 2. 祖先路径元数据完整继承 (如 ["用户指南", "第三章 运维配置", "3.1 权限控制", "chunk_01"])，彻底根除跨章节语义割裂；
- * 3. 自底向上基于阿里千问 1536 维超球面的长度加权质心递归聚合归一化：\|\mathbf{e}_v\|_2 \equiv 1.0；
+ * 3. 自底向上基于阿里千问 1024 维超球面的长度加权质心递归聚合归一化：\|\mathbf{e}_v\|_2 \equiv 1.0；
  * 4. 自顶向下路径感知分支定界剪枝 (Branch & Bound)，保证长程宏观语义不丢失，非相关路径剪枝率 >= 75%。
  */
 public class HierarchicalPyramidDocumentChunker {
@@ -22,7 +22,7 @@ public class HierarchicalPyramidDocumentChunker {
     public static final int LEVEL_PARAGRAPH = 2;
     public static final int LEVEL_ATOMIC_CHUNK = 3;
 
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
 
     /**
      * 金字塔树节点结构体
@@ -33,7 +33,7 @@ public class HierarchicalPyramidDocumentChunker {
         private final String title;
         private final String content;
         private final List<String> path;
-        private float[] centroidEmbedding1536;
+        private float[] centroidEmbedding1024;
         private final List<PyramidNode> children = new ArrayList<>();
         private PyramidNode parent;
 
@@ -65,12 +65,12 @@ public class HierarchicalPyramidDocumentChunker {
             return path;
         }
 
-        public float[] getCentroidEmbedding1536() {
-            return centroidEmbedding1536;
+        public float[] getCentroidEmbedding1024() {
+            return centroidEmbedding1024;
         }
 
-        public void setCentroidEmbedding1536(float[] embedding) {
-            this.centroidEmbedding1536 = embedding;
+        public void setCentroidEmbedding1024(float[] embedding) {
+            this.centroidEmbedding1024 = embedding;
         }
 
         public List<PyramidNode> getChildren() {
@@ -148,7 +148,7 @@ public class HierarchicalPyramidDocumentChunker {
      *
      * @param node        当前金字塔节点
      * @param leafEmbedder 叶子切片向量获取器
-     * @return 当前节点的 1536 维超球面单位向量
+     * @return 当前节点的 1024 维超球面单位向量
      */
     public float[] computeCentroidsBottomUp(PyramidNode node, java.util.function.Function<PyramidNode, float[]> leafEmbedder) {
         if (node.getChildren().isEmpty()) {
@@ -159,7 +159,7 @@ public class HierarchicalPyramidDocumentChunker {
             } else {
                 normalizeToHypersphere(leafVec);
             }
-            node.setCentroidEmbedding1536(leafVec);
+            node.setCentroidEmbedding1024(leafVec);
             return leafVec;
         }
 
@@ -193,7 +193,7 @@ public class HierarchicalPyramidDocumentChunker {
             centroid = createDefaultUnitVector(node.getId().hashCode());
         }
 
-        node.setCentroidEmbedding1536(centroid);
+        node.setCentroidEmbedding1024(centroid);
         return centroid;
     }
 
@@ -211,7 +211,7 @@ public class HierarchicalPyramidDocumentChunker {
      * 自顶向下路径感知分支定界剪枝搜索 (Top-Down Branch & Bound)
      *
      * @param root           金字塔根节点
-     * @param queryEmbedding 阿里千问 1536 维查询超球面向量
+     * @param queryEmbedding 阿里千问 1024 维查询超球面向量
      * @param pruneThreshold 章节剪枝相似度门槛 (例如 0.40)
      * @param topK           返回的最大叶子切片数
      * @return 检索结果与剪枝效能统计
@@ -265,8 +265,8 @@ public class HierarchicalPyramidDocumentChunker {
         evaluatedCount[0]++;
 
         double score = 0.0;
-        if (node.getCentroidEmbedding1536() != null) {
-            score = computeDotProduct(queryVec, node.getCentroidEmbedding1536());
+        if (node.getCentroidEmbedding1024() != null) {
+            score = computeDotProduct(queryVec, node.getCentroidEmbedding1024());
         }
 
         // 叶子切片节点直接加入候选池
@@ -287,8 +287,8 @@ public class HierarchicalPyramidDocumentChunker {
         List<ScoredNode> sortedChildren = new ArrayList<>();
         for (PyramidNode child : node.getChildren()) {
             double childScore = 0.0;
-            if (child.getCentroidEmbedding1536() != null) {
-                childScore = computeDotProduct(queryVec, child.getCentroidEmbedding1536());
+            if (child.getCentroidEmbedding1024() != null) {
+                childScore = computeDotProduct(queryVec, child.getCentroidEmbedding1024());
             }
             sortedChildren.add(new ScoredNode(child, childScore));
         }

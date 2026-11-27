@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 第二阶段认知架构进阶核心契约测试套件 (TreeOfThoughtsAndDynamicRoleContractTest)
- * 验证 MCTS 认知树分支前瞻与回溯剪枝、千问 1536 维超球面动态角色涌现与夏普利博弈论公理化价值归因。
+ * 验证 MCTS 认知树分支前瞻与回溯剪枝、千问 1024 维超球面动态角色涌现与夏普利博弈论公理化价值归因。
  */
 public class TreeOfThoughtsAndDynamicRoleContractTest {
 
@@ -76,19 +76,19 @@ public class TreeOfThoughtsAndDynamicRoleContractTest {
     }
 
     @Test
-    @DisplayName("EXP-STAGE2-03: 验证千问 1536 维超球面动态角色修剪与自组织涌现")
+    @DisplayName("EXP-STAGE2-03: 验证千问 1024 维超球面动态角色修剪与自组织涌现")
     void testSphericalDyLANRolePruningAndEmergence() {
         DefaultSphericalDyLANRoleGovernor governor = new DefaultSphericalDyLANRoleGovernor(0.70);
 
-        // 构造千问 1536 维超球面单位向量 (L2 = 1.0)
-        float[] taskVec = new float[1536];
+        // 构造千问 1024 维超球面单位向量 (L2 = 1.0)
+        float[] taskVec = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             taskVec[i] = (float) Math.sin(i + 1);
             sumSq += taskVec[i] * taskVec[i];
         }
         float inv = (float) (1.0 / Math.sqrt(sumSq));
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             taskVec[i] *= inv;
         }
 

@@ -12,7 +12,7 @@ import java.util.*;
  * Phase 152 测地线谱剪枝子图多跳检索引擎 (Geodesic Spectral SubGraph RAG Governor)
  * <p>
  * 落实 Lemma 152.2 (超球面测地线马尔可夫图谱谱剪枝信息纯度引理)：
- * 1. 严格锁定阿里千问 1536 维超球面单位向量空间（||v||_2 = 1.0，cos\theta = u · v）；
+ * 1. 严格锁定阿里千问 1024 维超球面单位向量空间（||v||_2 = 1.0，cos\theta = u · v）；
  * 2. 结合冯·米塞斯-费希尔 (vMF) 测地线核构建对称亲和矩阵 W_ij = max(0, u_i · u_j)；
  * 3. 构造对称归一化拉普拉斯矩阵 L_sym = I - D^{-1/2} W D^{-1/2}，利用反幂迭代求解 Fiedler 特征向量 u_2 与代数连通度 \lambda_2；
  * 4. 依据 Cheeger 不等式双边控制，实施最优二分谱剪枝，精准截断高入度 Hub 实体引发的“噪声邻域爆炸”，
@@ -27,7 +27,7 @@ public class GeodesicSpectralSubGraphRagGovernor {
 
     private static final Logger log = LoggerFactory.getLogger(GeodesicSpectralSubGraphRagGovernor.class);
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final int DEEPSEEK_CACHE_BLOCK_TOKENS = 64;
     public static final double CHARS_PER_TOKEN = 3.2;
 
@@ -43,7 +43,7 @@ public class GeodesicSpectralSubGraphRagGovernor {
             Objects.requireNonNull(id, "id 不能为空");
             Objects.requireNonNull(content, "content 不能为空");
             if (embedding != null && embedding.length != EMBEDDING_DIM) {
-                throw new IllegalArgumentException("embedding 必须为 1536 维");
+                throw new IllegalArgumentException("embedding 必须为 1024 维");
             }
         }
     }
@@ -78,7 +78,7 @@ public class GeodesicSpectralSubGraphRagGovernor {
      *
      * @param candidateNodes 候选多跳节点集合 (建议 N <= 64)
      * @param rawEdges 原始子图边关系
-     * @param queryEmbedding 用户查询向量 (1536 维超球面单位向量)
+     * @param queryEmbedding 用户查询向量 (1024 维超球面单位向量)
      * @return 剪枝后的高纯度因果子图上下文
      */
     public SpectralPruningResult pruneAndAlign(
@@ -102,7 +102,7 @@ public class GeodesicSpectralSubGraphRagGovernor {
             idMap.put(candidateNodes.get(i).id(), i);
         }
 
-        // 2. 基于千问 1536 维测地线内积与拓扑边构建对称亲和矩阵 W
+        // 2. 基于千问 1024 维测地线内积与拓扑边构建对称亲和矩阵 W
         double[][] W = new double[n][n];
         for (int i = 0; i < n; i++) {
             float[] vi = candidateNodes.get(i).embedding();

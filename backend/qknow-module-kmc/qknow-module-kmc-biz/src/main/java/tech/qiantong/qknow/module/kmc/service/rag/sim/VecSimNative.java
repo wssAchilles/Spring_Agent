@@ -14,7 +14,7 @@ import java.nio.file.Path;
  *
  * 核心特性：
  * 1. 堆内 float[] 与堆外 DirectByteBuffer 零拷贝双模支持；
- * 2. AVX2 / NEON 硬件级 FMA 1536 维点积加速；
+ * 2. AVX2 / NEON 硬件级 FMA 1024 维点积加速；
  * 3. 严格浮点精度稳定性保障与单调性保持；
  * 4. JNI 加载失败或计算异常时无缝 Fail-Open 降级至 Java 高性能标量计算。
  */

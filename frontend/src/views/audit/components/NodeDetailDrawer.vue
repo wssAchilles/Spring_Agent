@@ -105,26 +105,27 @@ function formatDataJson(data: any): string {
 <style scoped lang="scss">
 .node-detail-drawer {
   :deep(.el-drawer) {
-    background: var(--glass-l3-bg, rgba(26, 26, 32, 0.96)) !important;
-    backdrop-filter: blur(12px) !important;
-    border-left: 1px solid var(--mono-border-strong, rgba(255, 255, 255, 0.15)) !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(50px) !important;
+    -webkit-backdrop-filter: blur(50px) !important;
+    border-left: 0.5px solid rgba(0, 0, 0, 0.08) !important;
   }
 
   :deep(.el-drawer__header) {
     margin-bottom: 12px;
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    color: var(--mono-text-primary, #EDEDEF);
-    font-weight: 600;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+    color: #000000;
+    font-weight: 590;
   }
 
   .drawer-content {
     padding: 0 10px;
 
     .meta-hero-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 0.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
       padding: 14px;
       margin-bottom: 16px;
 
@@ -140,20 +141,20 @@ function formatDataJson(data: any): string {
         }
 
         .label {
-          color: var(--mono-text-muted, #9E9EA4);
+          color: #6e6e73;
           font-weight: 500;
         }
 
         .value {
-          color: var(--mono-text-primary, #EDEDEF);
+          color: #000000;
 
           &.mono {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
           }
 
           &.stage-badge {
-            font-weight: 700;
-            color: #6366F1;
+            font-weight: 600;
+            color: #007aff;
           }
         }
       }
@@ -170,17 +171,17 @@ function formatDataJson(data: any): string {
 
     .section-title {
       font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: var(--mono-text-muted, #9E9EA4);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #6e6e73;
       margin-bottom: 8px;
       text-transform: uppercase;
     }
 
     .hash-spec-box {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
+      background: rgba(242, 242, 247, 0.85);
+      border: 0.5px solid rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
       padding: 12px;
       margin-bottom: 20px;
 
@@ -193,16 +194,16 @@ function formatDataJson(data: any): string {
 
         .field-name {
           font-size: 10px;
-          font-weight: 700;
-          color: #71717A;
+          font-weight: 600;
+          color: #6e6e73;
           margin-bottom: 2px;
         }
 
         .field-val {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
           font-size: 11px;
           word-break: break-all;
-          color: #D4D4D8;
+          color: #1d1d1f;
         }
       }
     }
@@ -210,19 +211,19 @@ function formatDataJson(data: any): string {
     .payload-box {
       .desc-text {
         font-size: 13px;
-        color: #EDEDEF;
+        color: #1d1d1f;
         line-height: 1.5;
         margin-bottom: 10px;
       }
 
       .json-code {
-        background: #0D0D11;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 6px;
+        background: rgba(242, 242, 247, 0.9);
+        border: 0.5px solid rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
         padding: 10px;
-        font-family: 'JetBrains Mono', monospace;
+        font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
         font-size: 11px;
-        color: #A1A1AA;
+        color: #3c3c43;
         max-height: 240px;
         overflow: auto;
       }

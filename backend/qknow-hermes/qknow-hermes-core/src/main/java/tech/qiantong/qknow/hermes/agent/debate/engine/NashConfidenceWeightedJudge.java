@@ -1,7 +1,10 @@
 package tech.qiantong.qknow.hermes.agent.debate.engine;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tech.qiantong.qknow.ai.vector.LocalitySensitiveFeatureHasher;
 import tech.qiantong.qknow.hermes.agent.debate.dto.AgentRoleNicheType;
 import tech.qiantong.qknow.hermes.agent.debate.dto.DebateConsensusStatus;
 import tech.qiantong.qknow.hermes.agent.debate.dto.MultiAgentConsensusReceipt;
@@ -11,7 +14,7 @@ import java.util.*;
 /**
  * 纳什自适应置信度共识仲裁者 (NashConfidenceWeightedJudge)
  * <p>
- * 1. 基于阿里千问 1536 维超球面测地线内积计算各方论据与客观法规事实的投影对齐得分；
+ * 1. 基于阿里千问 1024 维超球面测地线内积计算各方论据与客观法规事实的投影对齐得分；
  * 2. 构建多智能体博弈收益矩阵，求解各角色纳什均衡置信度权重向量；
  * 3. 拒绝单模型主观一票否决与盲从权威偏置，以数学期望收益最大化输出结构化终审决策。
  * </p>
@@ -23,9 +26,20 @@ import java.util.*;
 @Component
 public class NashConfidenceWeightedJudge {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double EPSILON_NASH_THRESHOLD = 0.05;
     public static final double MIN_FACT_ALIGNMENT_FLOOR = 0.20;
+
+    private final EmbeddingModel embeddingModel;
+
+    public NashConfidenceWeightedJudge() {
+        this(null);
+    }
+
+    @Autowired
+    public NashConfidenceWeightedJudge(@Autowired(required = false) EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
 
     /**
      * 单步论述帧结构体
@@ -55,10 +69,10 @@ public class NashConfidenceWeightedJudge {
     ) {}
 
     /**
-     * 计算阿里千问 1536 维单位超球面向量内积 (测地余弦相似度)
+     * 计算阿里千问 1024 维单位超球面向量内积 (测地余弦相似度)
      *
-     * @param u 向量 u (1536维)
-     * @param v 向量 v (1536维)
+     * @param u 向量 u (1024维)
+     * @param v 向量 v (1024维)
      * @return 测地线内积值，范围严格在 [-1.0, 1.0]
      */
     public double computeGeodesicInnerProduct(double[] u, double[] v) {
@@ -162,17 +176,20 @@ public class NashConfidenceWeightedJudge {
     }
 
     /**
-     * 构建多目标纳什收益矩阵
+     * 构建多目标纳什收益矩阵（基于各角色实测事实对齐度动态计算帕累托效率，摒弃静态魔数）
      */
     private Map<String, Double> computePayoffMatrix(Map<String, Double> alignmentScores, List<ArgumentTurn> history) {
         Map<String, Double> matrix = new LinkedHashMap<>();
         double avgAlignment = alignmentScores.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.85);
+        double maxAlignment = alignmentScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(avgAlignment);
+        double minAlignment = alignmentScores.values().stream().mapToDouble(Double::doubleValue).min().orElse(avgAlignment);
+        double dispersionPenalty = Math.min(0.25, Math.max(0.0, maxAlignment - minAlignment) * 0.15);
 
-        matrix.put("business_yield", Math.min(0.98, avgAlignment * 1.05));
-        matrix.put("risk_control_coverage", Math.min(0.99, avgAlignment * 1.10));
-        matrix.put("legal_compliance_score", Math.min(1.00, avgAlignment * 1.12));
-        matrix.put("architecture_feasibility", 0.95);
-        matrix.put("pareto_efficiency_index", 0.92);
+        matrix.put("business_yield", Math.min(0.98, Math.max(0.10, avgAlignment * 1.05)));
+        matrix.put("risk_control_coverage", Math.min(0.99, Math.max(0.15, avgAlignment * 1.10)));
+        matrix.put("legal_compliance_score", Math.min(1.00, Math.max(0.15, maxAlignment)));
+        matrix.put("architecture_feasibility", Math.min(0.99, Math.max(0.50, 0.75 + 0.24 * avgAlignment)));
+        matrix.put("pareto_efficiency_index", Math.min(0.99, Math.max(0.50, 0.96 - dispersionPenalty)));
         return matrix;
     }
 
@@ -187,21 +204,22 @@ public class NashConfidenceWeightedJudge {
     }
 
     /**
-     * 生成阿里千问 1536 维超球面单位向量 (L2 归一化 ||v||_2 = 1.0)
+     * 计算阿里千问 1024 维单位超球面嵌入向量 (L2 归一化 ||v||_2 = 1.0)。
+     * 生产环境优先委托注入的真实千问 {@link EmbeddingModel} (text-embedding-v4)；
+     * 无网络离线单测环境回退至基于 Weinberger 有符号特征哈希的局部敏感球面投影（零伪随机白噪声）。
      */
     public double[] embedTextWithQwen(String text) {
-        double[] vec = new double[EMBEDDING_DIM];
-        int seed = (text != null && !text.isBlank()) ? text.hashCode() : 42;
-        Random rand = new Random(seed);
-        double sumSquares = 0.0;
-        for (int i = 0; i < EMBEDDING_DIM; i++) {
-            vec[i] = rand.nextGaussian();
-            sumSquares += vec[i] * vec[i];
+        if (embeddingModel != null && text != null && !text.isBlank()) {
+            float[] raw = embeddingModel.embed(text);
+            if (raw != null && raw.length == EMBEDDING_DIM) {
+                double[] out = new double[EMBEDDING_DIM];
+                for (int i = 0; i < EMBEDDING_DIM; i++) {
+                    out[i] = raw[i];
+                }
+                LocalitySensitiveFeatureHasher.normalizeInPlace(out);
+                return out;
+            }
         }
-        double norm = Math.sqrt(sumSquares);
-        for (int i = 0; i < EMBEDDING_DIM; i++) {
-            vec[i] /= norm;
-        }
-        return vec;
+        return LocalitySensitiveFeatureHasher.projectToUnitSphereDouble(text, EMBEDDING_DIM);
     }
 }

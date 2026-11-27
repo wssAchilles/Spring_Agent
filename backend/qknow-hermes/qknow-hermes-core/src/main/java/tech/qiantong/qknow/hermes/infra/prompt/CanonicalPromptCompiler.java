@@ -20,7 +20,7 @@ public class CanonicalPromptCompiler {
             # Role & System Governance Codex
             You are Hermes, an enterprise-grade AI cognitive orchestration agent.
             All generated responses must follow strict factual correctness and verified knowledge boundaries.
-            Mathematical geometry calculations are bound to Qwen 1536-dimensional hyperspherical unit space.
+            Mathematical geometry calculations are bound to Qwen 1024-dimensional hyperspherical unit space.
             DeepSeek thinking process is structured via official reasoning_content.
             """;
 
@@ -47,12 +47,9 @@ public class CanonicalPromptCompiler {
     ) implements Comparable<KnowledgeChunk> {
         @Override
         public int compareTo(KnowledgeChunk other) {
-            // 优先按相关度降序，若相关度差异小于 1e-4 则强制按 ID 升序以保证确定性
+            // 严格字典序复合比较：先按相关度精确降序，相关度完全相等时按 ID 升序，保证严格弱序传递性
             int scoreCmp = Double.compare(other.relevanceScore, this.relevanceScore);
-            if (Math.abs(other.relevanceScore - this.relevanceScore) < 1e-4) {
-                return this.id.compareTo(other.id);
-            }
-            return scoreCmp;
+            return scoreCmp != 0 ? scoreCmp : this.id.compareTo(other.id);
         }
     }
 

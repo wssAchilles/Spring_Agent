@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 /**
- * 千问 1536 维超球面拉普拉斯谱剪枝 GraphRAG 融合算子 (Hyperspherical GraphRAG Governor)
+ * 千问 1024 维超球面拉普拉斯谱剪枝 GraphRAG 融合算子 (Hyperspherical GraphRAG Governor)
  * <p>
- * 落实 Lemma 155.2 (千问 1536 维超球面拉普拉斯谱剪枝多跳召回纯度引理)：
- * 1. 唯一向量模型几何基线：阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)；
+ * 落实 Lemma 155.2 (千问 1024 维超球面拉普拉斯谱剪枝多跳召回纯度引理)：
+ * 1. 唯一向量模型几何基线：阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)；
  * 2. 余弦亲和力邻接矩阵与对称归一化拉普拉斯算子构建；
  * 3. 幂迭代谱划分与 Token 预算驱动的最优因果子图截断，消除多跳组合爆炸与外围噪声。
  * </p>
@@ -21,7 +21,7 @@ import java.util.*;
 @Component
 public class HypersphericalGraphRagGovernor {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double VECTOR_NORM_TOLERANCE = 1e-4;
 
     /**
@@ -30,7 +30,7 @@ public class HypersphericalGraphRagGovernor {
     public record GraphEntityNode(
             String nodeId,
             String textContent,
-            float[] embedding1536,
+            float[] embedding1024,
             int estimatedTokens
     ) {}
 
@@ -47,7 +47,7 @@ public class HypersphericalGraphRagGovernor {
     ) {}
 
     /**
-     * 校验 1536 维超球面单位向量范数 (||v||_2 = 1.0)
+     * 校验 1024 维超球面单位向量范数 (||v||_2 = 1.0)
      */
     public boolean validateHypersphericalNorm(float[] vector) {
         if (vector == null || vector.length != EMBEDDING_DIM) {
@@ -78,7 +78,7 @@ public class HypersphericalGraphRagGovernor {
     /**
      * 执行超球面拉普拉斯谱剪枝
      *
-     * @param queryVector 查询词千问 1536 维超球面向量
+     * @param queryVector 查询词千问 1024 维超球面向量
      * @param candidates  图谱多跳扩展候选节点 (N <= 128)
      * @param maxNodeBudget 最大保留节点数量
      * @param maxTokenBudget 最大允许的 Token 预算
@@ -106,13 +106,13 @@ public class HypersphericalGraphRagGovernor {
         double[] querySim = new double[n];
 
         for (int i = 0; i < n; i++) {
-            float[] vi = candidates.get(i).embedding1536();
+            float[] vi = candidates.get(i).embedding1024();
             querySim[i] = (queryVector != null && vi != null) ? Math.max(0.0, computeCosine(queryVector, vi)) : 0.5;
             for (int j = 0; j < n; j++) {
                 if (i == j) {
                     W[i][j] = 0.0;
                 } else {
-                    float[] vj = candidates.get(j).embedding1536();
+                    float[] vj = candidates.get(j).embedding1024();
                     double sim = (vi != null && vj != null) ? Math.max(0.0, computeCosine(vi, vj)) : 0.0;
                     W[i][j] = sim;
                     D[i] += sim;

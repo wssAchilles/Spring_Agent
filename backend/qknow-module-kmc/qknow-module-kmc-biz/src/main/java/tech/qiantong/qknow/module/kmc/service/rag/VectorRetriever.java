@@ -127,6 +127,10 @@ public class VectorRetriever {
 
     private void rescoreWithVecSim(Long knowledgeBaseId, String query, EmbeddingModel embeddingModel,
                                    List<RetrievalResult> results) {
+        // 原生 SIMD 动态库未就绪时直接跳过，避免重复发起远程 embedQuery 与数据库向量拉取
+        if (!isVecSimAvailable()) {
+            return;
+        }
         if (CollUtil.isEmpty(results) || query == null || query.isBlank() || embeddingModel == null) {
             return;
         }
@@ -344,6 +348,10 @@ public class VectorRetriever {
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    boolean isVecSimAvailable() {
+        return VecSimNative.isAvailable();
     }
 
     float[] safeCosineBatch(float[] queryEmbedding, float[] corpus, int dim) {

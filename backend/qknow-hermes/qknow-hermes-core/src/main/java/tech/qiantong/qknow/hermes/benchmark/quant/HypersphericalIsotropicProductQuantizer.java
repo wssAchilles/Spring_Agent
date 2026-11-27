@@ -6,12 +6,12 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 /**
- * Phase 151 千问 1536 维单位流形各向同性分块量化算子 (Hyperspherical Isotropic Product Quantizer, HIPQ)
+ * Phase 151 千问 1024 维单位流形各向同性分块量化算子 (Hyperspherical Isotropic Product Quantizer, HIPQ)
  * <p>
- * 落实 Lemma 151.2 (千问 1536 维单位流形各向同性分块量化保角有界失真引理)：
- * 1. 严格锁定阿里千问 1536 维超球面单位向量空间（||v||_2 = 1.0，cos\theta = u · v）；
+ * 落实 Lemma 151.2 (千问 1024 维单位流形各向同性分块量化保角有界失真引理)：
+ * 1. 严格锁定阿里千问 1024 维超球面单位向量空间（||v||_2 = 1.0，cos\theta = u · v）；
  * 2. 结合 USearch 工业级最佳实践与积量化分块思想，采用超球面各向同性分块标量积量化：
- *    将 1536 维划分为正交子块，对各子分量实施保角对称量化，单向量内存常驻字节从 6,144 字节削减至 1,536 字节（甚至更低），
+ *    将 1024 维划分为正交子块，对各子分量实施保角对称量化，单向量内存常驻字节从 4,096 字节削减至 1,024 字节（甚至更低），
  *    实现常驻堆内存削减 75.0%（严格满足 >= 72.0% 门槛）；
  * 3. 关键几何修正：重构向量强制施加超球面流形重归一化（\hat{v} / ||\hat{v}||_2），
  *    彻底根除传统 Faiss 欧氏积量化的模长坍缩缺陷，确保余弦保真度 >= 98.2%（实测 >= 99.9%），
@@ -25,19 +25,19 @@ public class HypersphericalIsotropicProductQuantizer {
 
     private static final Logger log = LoggerFactory.getLogger(HypersphericalIsotropicProductQuantizer.class);
 
-    public static final int TOTAL_DIMENSIONS = 1536;
-    public static final int NUM_BLOCKS = 48;
-    public static final int BLOCK_DIM = 32; // 1536 / 48 = 32
+    public static final int TOTAL_DIMENSIONS = 1024;
+    public static final int NUM_BLOCKS = 32;
+    public static final int BLOCK_DIM = 32; // 1024 / 32 = 32
 
     /**
-     * 对输入千问 1536 维单位向量执行各向同性分块量化编码
+     * 对输入千问 1024 维单位向量执行各向同性分块量化编码
      *
-     * @param vector 1536 维单位向量 (必须满足 ||vector||_2 = 1.0)
-     * @return 压缩编码 (byte[1536])
+     * @param vector 1024 维单位向量 (必须满足 ||vector||_2 = 1.0)
+     * @return 压缩编码 (byte[1024])
      */
     public byte[] quantize(float[] vector) {
         if (vector.length != TOTAL_DIMENSIONS) {
-            throw new IllegalArgumentException("向量维度必须精确为 1536 维，实际: " + vector.length);
+            throw new IllegalArgumentException("向量维度必须精确为 1024 维，实际: " + vector.length);
         }
 
         byte[] codes = new byte[TOTAL_DIMENSIONS];
@@ -63,11 +63,11 @@ public class HypersphericalIsotropicProductQuantizer {
      * 解码重构向量，并执行超球面各向同性流形投影归一化 (保角重归一化)
      *
      * @param codes 量化编码
-     * @return 1536 维重构超球面单位向量
+     * @return 1024 维重构超球面单位向量
      */
     public float[] reconstruct(byte[] codes) {
         if (codes.length != TOTAL_DIMENSIONS) {
-            throw new IllegalArgumentException("编码长度必须为 1536 字节");
+            throw new IllegalArgumentException("编码长度必须为 1024 字节");
         }
 
         float[] reconstructed = new float[TOTAL_DIMENSIONS];
@@ -95,7 +95,7 @@ public class HypersphericalIsotropicProductQuantizer {
      */
     public float computeAsymmetricCosine(float[] queryVector, byte[] codes) {
         if (queryVector.length != TOTAL_DIMENSIONS || codes.length != TOTAL_DIMENSIONS) {
-            throw new IllegalArgumentException("维度必须一致为 1536");
+            throw new IllegalArgumentException("维度必须一致为 1024");
         }
 
         float dotSum = 0.0f;

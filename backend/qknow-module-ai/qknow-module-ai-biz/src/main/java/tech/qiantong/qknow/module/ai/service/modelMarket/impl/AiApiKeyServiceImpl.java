@@ -253,7 +253,7 @@ public class AiApiKeyServiceImpl extends ServiceImpl<AiApiKeyMapper, AiApiKeyDO>
         Page<AiApiKeyPageReqVO> page = MyBatisUtils.buildPage(aiApiKey);
         Page<AiApiKeyPageReqVO> resultPage = baseMapper.selectPage(page, aiApiKey);
         if (CollUtil.isEmpty(resultPage.getRecords())) {
-            new PageResult<>(new ArrayList<>(0), 0L);
+            return new PageResult<>(new ArrayList<>(0), 0L);
         }
         resultPage.getRecords().forEach(item -> {
             AiPlatformEnum aiPlatformEnum = AiPlatformEnum.validatePlatform(item.getPlatform());

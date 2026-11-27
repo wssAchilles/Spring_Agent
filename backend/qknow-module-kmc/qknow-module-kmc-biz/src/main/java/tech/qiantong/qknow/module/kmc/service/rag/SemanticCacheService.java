@@ -34,7 +34,7 @@ import java.util.Optional;
 public class SemanticCacheService {
 
     private static final double DEFAULT_THRESHOLD = 0.92D;
-    private static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
+    private static final int DEFAULT_EMBEDDING_DIMENSION = 1024;
 
     @Resource
     private JdbcTemplate jdbcTemplate;

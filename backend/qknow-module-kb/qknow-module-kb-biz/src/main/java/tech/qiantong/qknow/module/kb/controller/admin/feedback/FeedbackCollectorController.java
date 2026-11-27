@@ -20,9 +20,11 @@ import tech.qiantong.qknow.module.kb.service.feedback.FeedbackStreamQueueService
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -103,7 +105,7 @@ public class FeedbackCollectorController extends BaseController {
         }
 
         // 6. 负反馈强监督 Prompt 候选反思
-        if ("DOWNVOTE".equalsIgnoreCase(reqVO.getFeedbackType()) ||
+        if ((reqVO.getFeedbackType() != null && "DOWNVOTE".equals(reqVO.getFeedbackType().toUpperCase(Locale.ROOT))) ||
                 (reqVO.getCorrectedText() != null && !reqVO.getCorrectedText().isBlank())) {
 
             if (promptSelfEvolutionService != null) {
@@ -134,7 +136,10 @@ public class FeedbackCollectorController extends BaseController {
 
         String expected = calculateSignature(
                 reqVO.getMessageId(), reqVO.getFeedbackType(), reqVO.getTimestamp(), HMAC_SECRET);
-        return expected.equalsIgnoreCase(reqVO.getSignature());
+        // 使用常量时间比对校验客户端 HMAC 签名，防止时序侧信道攻击
+        return MessageDigest.isEqual(
+                expected.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                reqVO.getSignature().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     /**

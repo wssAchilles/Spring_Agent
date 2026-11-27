@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 检验假设 H-150 与 Lemma 150.1 / 150.2：
  * 1. 结构化虚拟线程并发原子快速短路与孤儿任务截断测试；
  * 2. 首胜竞速并发短路测试；
- * 3. 阿里千问 1536 维超球面 SIMD 硬件极速计算与几何公理恒等式测试；
+ * 3. 阿里千问 1024 维超球面 SIMD 硬件极速计算与几何公理恒等式测试；
  * 4. 变分信息瓶颈 (VIB) 认知通信压缩与 Shapley 因果信用归因测试；
  * 5. 局部语义认知熵与超球面曲率自适应 RAG 门控测试；
  * 6. 纯 Java 21 Record 密码学不可变存证凭单与常量时间防侧信道自验真测试；
@@ -130,10 +130,10 @@ public class Phase150CognitiveInfraContractTest {
     }
 
     @Test
-    @DisplayName("Contract 3: 千问 1536 维超球面 SIMD 向量内核精度与几何公理测试")
+    @DisplayName("Contract 3: 千问 1024 维超球面 SIMD 向量内核精度与几何公理测试")
     void testSimdVectorHypersphericalKernelGeometryAndPerformance() {
         int dim = SimdVectorHypersphericalKernel.EMBEDDING_DIM;
-        assertEquals(1536, dim);
+        assertEquals(1024, dim);
 
         // 生成测试向量 A 与 B
         double[] vecA = generateNormalizedVector(dim, 101);
@@ -167,14 +167,14 @@ public class Phase150CognitiveInfraContractTest {
         double avgUs = (durationNs / (double) iterations) / 1000.0;
 
         assertTrue(dummyAccumulator != 0.0);
-        // 单次 1536 维向量点积耗时必须压制在 300 微秒 (0.3ms) 以内
-        assertTrue(avgUs <= 300.0, "单次 1536 维向量余弦点积耗时应 <= 300us，实测平均耗时: " + avgUs + "us");
+        // 单次 1024 维向量点积耗时必须压制在 300 微秒 (0.3ms) 以内
+        assertTrue(avgUs <= 300.0, "单次 1024 维向量余弦点积耗时应 <= 300us，实测平均耗时: " + avgUs + "us");
     }
 
     @Test
     @DisplayName("Contract 4: 变分信息瓶颈 (VIB) 认知通信压缩与 Shapley 因果信用测试 (Lemma 150.1)")
     void testVibCommunicationCompressionAndShapleyCredits() {
-        int dim = 1536;
+        int dim = 1024;
         double[] targetVec = generateNormalizedVector(dim, 999);
 
         List<AgentMessageFrame> frames = List.of(
@@ -208,7 +208,7 @@ public class Phase150CognitiveInfraContractTest {
     @Test
     @DisplayName("Contract 5: 局部语义认知熵与自适应 RAG 门控测试 (Lemma 150.2)")
     void testEpistemicEntropyAdaptiveRagRouting() {
-        int dim = 1536;
+        int dim = 1024;
         double[] queryVec = generateNormalizedVector(dim, 555);
 
         // 场景 A: 紧密聚集的高置信度候选切片集合（模拟低熵常识查询）
@@ -296,7 +296,7 @@ public class Phase150CognitiveInfraContractTest {
     @Test
     @DisplayName("Contract 7: 消融测试 (Ablation Test: SIMD 并行 vs 标量循环数值绝对一致性)")
     void testAblationSimdVsScalarNumericalParity() {
-        int dim = 1536;
+        int dim = 1024;
         SimdVectorHypersphericalKernel kernelSimd = new SimdVectorHypersphericalKernel(true);
         SimdVectorHypersphericalKernel kernelScalar = new SimdVectorHypersphericalKernel(false);
 

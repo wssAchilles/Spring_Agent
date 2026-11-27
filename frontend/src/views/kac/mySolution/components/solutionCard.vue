@@ -183,6 +183,7 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import {
   getCurrentInstance,
   nextTick,
@@ -263,7 +264,7 @@ function getImage(row) {
   if (!row.coverImage) {
     return GraphCover;
   }
-  return `${import.meta.env.VITE_APP_BASE_API}/profile${row.coverImage}`;
+  return `${API_BASE_URL}/profile${row.coverImage}`;
 }
 
 function getTags(row) {

@@ -228,7 +228,7 @@ public class E2EFourMetacenterPipelineBus {
             if (chaosGovernor.isFaultActive(ChaosFaultType.GRAPH_SUPER_NODE_EXPANSION)) {
                 chaosFaultInjected = ChaosFaultType.GRAPH_SUPER_NODE_EXPANSION.name();
                 log.warn("[E2E-Chaos] 注入超级节点扩张故障，动态注入度数 5000+ 虚拟边");
-                SteinerCausalSubgraphPruner.GraphNode superNode = new SteinerCausalSubgraphPruner.GraphNode("node_super", "SuperDepartment", "ORGANIZATION", new float[1536]);
+                SteinerCausalSubgraphPruner.GraphNode superNode = new SteinerCausalSubgraphPruner.GraphNode("node_super", "SuperDepartment", "ORGANIZATION", new float[1024]);
                 nodes.add(superNode);
                 for (int i = 0; i < 500; i++) {
                     edges.add(new SteinerCausalSubgraphPruner.GraphEdge(superNode.id(), "node_sub_" + i, "HAS_SUB_ORG", 0.5));

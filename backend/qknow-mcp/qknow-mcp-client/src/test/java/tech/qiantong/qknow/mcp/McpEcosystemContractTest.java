@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 企业级 MCP 协议与工具生态全链路核心契约自动化测试 (McpEcosystemContractTest)
  * 验证：
  * 1. 密码学零时序泄漏验签与常量时间防侧信道比对
- * 2. OpenAPI 3.0 / Swagger 零代码动态逆向解析与千问 1536 维超球面归一化
+ * 2. OpenAPI 3.0 / Swagger 零代码动态逆向解析与千问 1024 维超球面归一化
  * 3. 百级工具两阶段超球面测地大圆弧动态路由与 Top-5 剪枝 (Token 压缩率 >= 85%, 延迟 <= 3ms)
  * 4. 两阶段安全网关 (Dry-Run 预演 -> Commit 幂等落盘) 与 AST 语法防注入阻断 (100% 阻断)
  */
@@ -62,7 +62,7 @@ public class McpEcosystemContractTest {
     }
 
     @Test
-    @DisplayName("契约二：OpenAPI 3.0 / Swagger 零代码动态逆向解析与千问 1536 维超球面契约")
+    @DisplayName("契约二：OpenAPI 3.0 / Swagger 零代码动态逆向解析与千问 1024 维超球面契约")
     void testOpenApiDynamicReverseEngineeringContract() {
         String mockOpenApiJson = """
         {
@@ -121,9 +121,9 @@ public class McpEcosystemContractTest {
         assertTrue(tools.stream().anyMatch(t -> t.toolName().equals("mcp__order_srv__cancelOrder")));
         assertTrue(tools.stream().anyMatch(t -> t.toolName().equals("mcp__order_srv__createOrder")));
 
-        // 2. 验证阿里千问 1536 维超球面几何约束 (||v||_2 = 1.0)
+        // 2. 验证阿里千问 1024 维超球面几何约束 (||v||_2 = 1.0)
         for (McpToolDescriptor tool : tools) {
-            assertEquals(1536, tool.embedding().length, "千问向量维度必须严格为 1536 维");
+            assertEquals(1024, tool.embedding().length, "千问向量维度必须严格为 1024 维");
             assertTrue(tool.isValidSphericalEmbedding(), "向量模长必须严格满足单位 L2 范数 ||v||_2 = 1.0");
         }
 

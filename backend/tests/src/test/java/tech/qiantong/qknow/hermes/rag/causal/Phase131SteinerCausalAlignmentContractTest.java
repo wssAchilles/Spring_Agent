@@ -19,10 +19,10 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class Phase131SteinerCausalAlignmentContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     /**
-     * 生成测试用的 1536 维超球面单位向量 (L2 范数 = 1.0)
+     * 生成测试用的 1024 维超球面单位向量 (L2 范数 = 1.0)
      */
     private float[] createUnitVector(int seed) {
         float[] vec = new float[DIM];
@@ -40,7 +40,7 @@ public class Phase131SteinerCausalAlignmentContractTest {
     }
 
     @Test
-    @DisplayName("契约 1：千问 1536 维超球面测地内积权重满足非负性、对称性与三角不等式")
+    @DisplayName("契约 1：千问 1024 维超球面测地内积权重满足非负性、对称性与三角不等式")
     void test01_QwenHypersphericalDistanceMetricProperties() {
         float[] u = createUnitVector(101);
         float[] v = createUnitVector(202);
@@ -58,11 +58,10 @@ public class Phase131SteinerCausalAlignmentContractTest {
         double dVU = SteinerCausalSubgraphPruner.computeHypersphericalDistance(v, u);
         assertEquals(dUV, dVU, 1e-5, "测地线距离权重必须严格对称");
 
-        // 4. 三角不等式: d(u, v) <= d(u, w) + d(w, v)
-        // 注：欧氏超球面弦长平方与内积距离具有次可加三角关系
+        // 4. 严格三角不等式: d_chord(u, v) <= d_chord(u, w) + d_chord(w, v)
         double dUW = SteinerCausalSubgraphPruner.computeHypersphericalDistance(u, w);
         double dWV = SteinerCausalSubgraphPruner.computeHypersphericalDistance(w, v);
-        assertTrue(dUV <= (dUW + dWV) * 1.5 + 0.1, "流形距离满足广义三角不等式关系");
+        assertTrue(dUV <= dUW + dWV + 1e-6, "S^1023 欧氏弦度量必须严格满足三角不等式");
     }
 
     @Test

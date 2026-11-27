@@ -107,21 +107,21 @@ function formatHash(hash: string): string {
 .audit-custom-node {
   width: 240px;
   min-height: 105px;
-  background: var(--glass-l2-bg, rgba(32, 32, 38, 0.88));
-  backdrop-filter: blur(var(--glass-l2-blur, 8px));
-  border: 1px solid var(--mono-border-subtle, rgba(255, 255, 255, 0.12));
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
   padding: 10px 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
   position: relative;
   cursor: pointer;
 
   &:hover {
-    border-color: var(--mono-border-hover, rgba(255, 255, 255, 0.35));
+    border-color: rgba(0, 122, 255, 0.45);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   }
 
   &.is-dimmed {
@@ -131,8 +131,8 @@ function formatHash(hash: string): string {
   }
 
   &.is-causal-active {
-    border-color: #EDEDEF !important;
-    box-shadow: 0 0 20px rgba(237, 237, 239, 0.5) !important;
+    border-color: #007aff !important;
+    outline: 2px solid rgba(0, 122, 255, 0.28);
     transform: scale(1.03);
     z-index: 5;
   }
@@ -140,8 +140,8 @@ function formatHash(hash: string): string {
   .node-handle {
     width: 8px;
     height: 8px;
-    background: #EDEDEF;
-    border: 2px solid #0A0A0C;
+    background: #007aff;
+    border: 2px solid #ffffff;
     border-radius: 50%;
   }
 
@@ -153,9 +153,9 @@ function formatHash(hash: string): string {
 
     .stage-tag {
       font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: var(--mono-text-muted, #9E9EA4);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #6e6e73;
       text-transform: uppercase;
     }
 
@@ -164,7 +164,7 @@ function formatHash(hash: string): string {
       padding: 1px 6px;
       border-radius: 4px;
       font-weight: 600;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
 
       &.status-passed {
         background: rgba(16, 185, 129, 0.15);
@@ -190,7 +190,7 @@ function formatHash(hash: string): string {
     .node-title {
       font-size: 12px;
       font-weight: 600;
-      color: var(--mono-text-primary, #EDEDEF);
+      color: #000000;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -202,14 +202,14 @@ function formatHash(hash: string): string {
       align-items: center;
       gap: 4px;
       font-size: 10px;
-      color: var(--mono-text-secondary, #71717A);
+      color: #6e6e73;
 
       .prefix {
         font-weight: 700;
       }
 
       .mono {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
       }
     }
   }
@@ -217,7 +217,7 @@ function formatHash(hash: string): string {
   .node-footer {
     margin-top: 8px;
     padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 0.5px solid rgba(0, 0, 0, 0.08);
 
     .attribution-row {
       display: flex;
@@ -225,24 +225,24 @@ function formatHash(hash: string): string {
       justify-content: space-between;
       font-size: 10px;
       margin-bottom: 3px;
-      color: var(--mono-text-muted, #9E9EA4);
+      color: #6e6e73;
 
       .attr-val {
         font-weight: 700;
-        color: #EDEDEF;
+        color: #000000;
       }
     }
 
     .attr-progress-bar {
       width: 100%;
       height: 3px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.08);
       border-radius: 2px;
       overflow: hidden;
 
       .bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, #6366F1, #EDEDEF);
+        background: linear-gradient(90deg, #007aff, #5856d6);
         border-radius: 2px;
         transition: width 0.4s ease;
       }

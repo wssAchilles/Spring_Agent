@@ -8,7 +8,7 @@ import java.util.*;
  * 多智能体合谋信息熵崩塌监测与动态反事实对抗审计中枢 (SwarmCollusionEntropyGuard)
  * <p>
  * 核心机制：
- * 1. 接收智能体在阿里千问 1536 维单位超球面空间的策略表征向量（||v||_2 = 1.0）；
+ * 1. 接收智能体在阿里千问 1024 维单位超球面空间的策略表征向量（||v||_2 = 1.0）；
  * 2. 实时量化群体发言的余弦相似度矩阵与谄媚趋同度（Sycophancy Score）；
  * 3. 基于 Softmax 概率分布计算集群香农信息熵 H_group；
  * 4. 当谄媚度 >= 0.85 时，触发合谋崩溃预警，毫秒级注入与群中心正交对偶的反事实魔鬼代言人（CRITIC）边界反例；
@@ -21,7 +21,7 @@ import java.util.*;
 @Slf4j
 public class SwarmCollusionEntropyGuard {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double SYCOPHANCY_COLLAPSE_THRESHOLD = 0.85;
     public static final double DEFAULT_TEMPERATURE = 1.0;
 
@@ -31,7 +31,7 @@ public class SwarmCollusionEntropyGuard {
      * @param agentId 智能体唯一标识
      * @param agentRole 智能体角色类型 (如 "PRO", "CON", "ANALYST")
      * @param proposalContent 提案正文
-     * @param qwenEmbedding 阿里千问 1536 维超球面归一化向量
+     * @param qwenEmbedding 阿里千问 1024 维超球面归一化向量
      */
     public record AgentProposal(
             String agentId,
@@ -59,7 +59,7 @@ public class SwarmCollusionEntropyGuard {
      * @param isDevilAdvocateInjected 是否注入了反事实魔鬼代言人反例
      * @param diversityIncreasePercent 注入扰动后群体多样性回升百分比
      * @param injectedCounterfactualContext 反事实魔鬼代言人提示词与对抗上下文
-     * @param counterfactualPerturbationVector 反事实对偶扰动向量 (1536维)
+     * @param counterfactualPerturbationVector 反事实对偶扰动向量 (1024维)
      * @param latencyNs 算法评估与扰动生成总纳秒耗时
      */
     public record EntropyGuardResult(
@@ -276,7 +276,7 @@ public class SwarmCollusionEntropyGuard {
     }
 
     /**
-     * 计算两个 1536 维超球面向量的内积 (余弦相似度)
+     * 计算两个 1024 维超球面向量的内积 (余弦相似度)
      */
     public double computeDotProduct(double[] u, double[] v) {
         if (u == null || v == null || u.length != EMBEDDING_DIM || v.length != EMBEDDING_DIM) {
@@ -290,7 +290,7 @@ public class SwarmCollusionEntropyGuard {
     }
 
     /**
-     * 将 1536 维向量就地进行 L2 范数归一化
+     * 将 1024 维向量就地进行 L2 范数归一化
      */
     public void normalizeVector(double[] vec) {
         if (vec == null || vec.length != EMBEDDING_DIM) {

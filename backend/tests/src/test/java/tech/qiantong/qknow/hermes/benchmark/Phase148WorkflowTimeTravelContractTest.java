@@ -17,11 +17,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Phase 148 核心契约测试套件：
- * 工作流状态版本 Merkle DAG 增量时间旅行、千问 1536 维超球面状态差异核与置信度门控投机执行中枢
+ * 工作流状态版本 Merkle DAG 增量时间旅行、千问 1024 维超球面状态差异核与置信度门控投机执行中枢
  * (Phase 148 Workflow Merkle DAG Time-Travel & Speculative Execution Contract Test)
  * <p>
  * 严格按照 AGENTS.md 规范与八大核心契约验证：
- * 1. 千问 1536 维超球面单位向量测地线核正定性与度规不变性检验 (TC-148-1)
+ * 1. 千问 1024 维超球面单位向量测地线核正定性与度规不变性检验 (TC-148-1)
  * 2. 状态版本 Merkle DAG 增量哈希确定性与因果链抗碰撞检验 (TC-148-2)
  * 3. 二进制提升跳转表 O(log N) 寻址与增量状态无损重构一致性 (TC-148-3, Lemma 148.1)
  * 4. 单次历史版本时间旅行回滚耗时控制在 <= 5.0ms 压测契约 (TC-148-4)
@@ -45,15 +45,15 @@ public class Phase148WorkflowTimeTravelContractTest {
     }
 
     /**
-     * TC-148-1: 千问 1536 维超球面单位向量测地线核正定性与度规不变性检验
+     * TC-148-1: 千问 1024 维超球面单位向量测地线核正定性与度规不变性检验
      */
     @Test
-    @DisplayName("TC-148-1: 千问 1536 维超球面单位向量测地线核正定性与度规不变性检验")
+    @DisplayName("TC-148-1: 千问 1024 维超球面单位向量测地线核正定性与度规不变性检验")
     void testHypersphericalGeodesicKernelProperties() {
         double[] v1 = StateDifferentialKernelEstimator.generateDeterministicSphericalEmbedding("state_node_1");
         double[] v2 = StateDifferentialKernelEstimator.generateDeterministicSphericalEmbedding("state_node_2");
 
-        // 1. 验证维度为 1536
+        // 1. 验证维度为 1024
         assertEquals(StateDifferentialKernelEstimator.EMBEDDING_DIMENSION, v1.length);
         assertEquals(StateDifferentialKernelEstimator.EMBEDDING_DIMENSION, v2.length);
 

@@ -8,7 +8,7 @@ import java.util.*;
 /**
  * 测地内积加权 Personalized PageRank 局部子图拓扑推理引擎 (GraphRAG Subgraph Reasoner)
  * <p>
- * 基于千问 1536 维超球面测地余弦内积动态加权有向边，以种子节点为根执行 2-跳局部诱导子图 PPR 极速幂迭代求解。
+ * 基于千问 1024 维超球面测地余弦内积动态加权有向边，以种子节点为根执行 2-跳局部诱导子图 PPR 极速幂迭代求解。
  * 硬限制最大探索跳数为 2 跳，阻尼衰减 gamma = 0.65，单步推理耗时 <= 5.0ms，彻底消除语义漂移与雪崩。
  * </p>
  *
@@ -73,7 +73,7 @@ public class GraphRagSubgraphReasoner {
     /**
      * 在局部子图上执行加权 PPR 拓扑推理 (耗时 <= 5.0ms)
      *
-     * @param queryEmbedding 用户意图 1536 维超球面向量
+     * @param queryEmbedding 用户意图 1024 维超球面向量
      * @param allNodes       实体节点池
      * @param allEdges       关系边池
      * @return 子图推理结果

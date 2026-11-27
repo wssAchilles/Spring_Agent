@@ -6,6 +6,8 @@ import net.devh.boot.grpc.server.interceptor.GrpcGlobalServerInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 /**
  * Hermes gRPC 核心服务鉴权拦截器 (P0-04)
@@ -39,9 +41,12 @@ public class HermesGrpcAuthInterceptor implements ServerInterceptor {
             return next.startCall(call, headers);
         }
 
-        // 1. 优先校验鉴权 Token（未配置 token 时视为 fail-close，仅回环可用）
+        // 1. 优先使用常量时间比对校验鉴权 Token（未配置 token 时视为 fail-close，仅回环可用）
         String clientToken = headers.get(AUTH_HEADER_KEY);
-        if (expectedToken != null && !expectedToken.isBlank() && expectedToken.equals(clientToken)) {
+        if (expectedToken != null && !expectedToken.isBlank() && clientToken != null
+                && MessageDigest.isEqual(
+                        expectedToken.getBytes(StandardCharsets.UTF_8),
+                        clientToken.getBytes(StandardCharsets.UTF_8))) {
             return next.startCall(call, headers);
         }
         if (expectedToken == null || expectedToken.isBlank()) {

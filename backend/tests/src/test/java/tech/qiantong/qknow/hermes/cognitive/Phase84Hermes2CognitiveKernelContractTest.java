@@ -102,7 +102,7 @@ public class Phase84Hermes2CognitiveKernelContractTest {
     @Test
     @DisplayName("契约测试 5: 因果时钟遮蔽彻底消除历史会话陈旧破坏性写动作反向污染")
     void testTemporalMemoryAligner_CausalMasking_EliminatesStaleAction() {
-        float[] queryVec = createUnitVector(1536, 0); // 假定第 0 维度为 1.0
+        float[] queryVec = createUnitVector(1024, 0); // 假定第 0 维度为 1.0
 
         // 构造 Node 1: 历史会话的破坏性清空动作
         Map<String, Object> meta1 = new HashMap<>();
@@ -113,7 +113,7 @@ public class Phase84Hermes2CognitiveKernelContractTest {
         MemoryNode node1 = MemoryNode.builder()
                 .id("mem_001")
                 .content("执行清理动作：清空所有测试临时表并重置数据库")
-                .embedding(createUnitVector(1536, 0)) // 极高语义相似度
+                .embedding(createUnitVector(1024, 0)) // 极高语义相似度
                 .importance(0.80)
                 .timestamp(System.currentTimeMillis() - 86400000L * 30) // 30天前
                 .metadata(meta1)
@@ -128,7 +128,7 @@ public class Phase84Hermes2CognitiveKernelContractTest {
         MemoryNode node2 = MemoryNode.builder()
                 .id("mem_002")
                 .content("企业生产网关标准配置：端口锁定为 9090，启用安全鉴权")
-                .embedding(createUnitVector(1536, 1)) // 余弦正交
+                .embedding(createUnitVector(1024, 1)) // 余弦正交
                 .importance(0.95) // 触发激活保护
                 .timestamp(System.currentTimeMillis() - 86400000L * 5)
                 .metadata(meta2)
@@ -161,7 +161,7 @@ public class Phase84Hermes2CognitiveKernelContractTest {
             CognitiveEventFrame frame = new CognitiveEventFrame(
                     "frame_" + i, "req_" + i, "sess_" + i,
                     CognitiveStrategy.SHORT_COT, System.nanoTime(),
-                    createUnitVector(1536, 0)
+                    createUnitVector(1024, 0)
             );
             boolean pub = controlBus.publishFrame(frame);
             assertTrue(pub, "无锁发布必须成功");
@@ -180,13 +180,13 @@ public class Phase84Hermes2CognitiveKernelContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 7: 阿里千问 1536 维超球面单位特征向量模长与测地几何强约束")
+    @DisplayName("契约测试 7: 阿里千问 1024 维超球面单位特征向量模长与测地几何强约束")
     void testHypersphereEmbedding_Qwen1536DimensionalConstraint() {
-        float[] v1 = createUnitVector(1536, 0);
-        float[] v2 = createUnitVector(1536, 1);
+        float[] v1 = createUnitVector(1024, 0);
+        float[] v2 = createUnitVector(1024, 1);
 
-        assertEquals(1536, v1.length, "千问向量维度必须严格锁定为 1536 维");
-        assertEquals(1536, v2.length);
+        assertEquals(1024, v1.length, "千问向量维度必须严格锁定为 1024 维");
+        assertEquals(1024, v2.length);
 
         double norm1 = computeNorm(v1);
         double norm2 = computeNorm(v2);
@@ -200,7 +200,7 @@ public class Phase84Hermes2CognitiveKernelContractTest {
         // 自身内积为 1
         double cosSelf = aligner.computeCosine(v1, v1);
         assertEquals(1.0, cosSelf, 1e-4, "同向单位向量余弦值必须为 1.0");
-        System.out.println("[Contract 7] 阿里千问 1536 维超球面单位测地向量约束验证通过");
+        System.out.println("[Contract 7] 阿里千问 1024 维超球面单位测地向量约束验证通过");
     }
 
     @Test

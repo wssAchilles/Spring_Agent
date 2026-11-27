@@ -103,3 +103,69 @@ export function verifyProofServer(data: VerifyProofRequest) {
     data
   });
 }
+
+export interface PhdJournalForkRequest {
+  executionId: string;
+  parentBranchId?: string;
+  fromSuperstep: number;
+  stateOverrides?: Record<string, any>;
+}
+
+export interface FrontierDecisionRequest {
+  approvalKey: string;
+  approved: boolean;
+  reason?: string;
+}
+
+/**
+ * 5. 读取 H-NSCDS 全系统真实引擎遥测快照 (第3/4/5/6章)
+ */
+export function getPhdStudioTelemetry() {
+  return request({
+    url: '/hermes/phd-studio/telemetry',
+    method: 'get'
+  });
+}
+
+/**
+ * 6. 获取 Step Journal 预写步骤日志与 DeltaChannel 增量时间线
+ */
+export function getPhdJournalTimeline(executionId: string, branchId = 'main') {
+  return request({
+    url: `/hermes/phd-studio/journal/${encodeURIComponent(executionId)}`,
+    method: 'get',
+    params: { branchId }
+  });
+}
+
+/**
+ * 7. 从指定历史超步发起零幽灵变量时间旅行分叉
+ */
+export function forkPhdJournalBranch(data: PhdJournalForkRequest) {
+  return request({
+    url: '/hermes/phd-studio/journal/fork',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 8. 审批或驳回 Frontier 事务挂起的不可逆副作用工单
+ */
+export function decideFrontierTransaction(data: FrontierDecisionRequest) {
+  return request({
+    url: '/hermes/phd-studio/frontier/decide',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 9. 拉取 Plan-as-PR 待审工作流与不可逆动作列表
+ */
+export function getPendingApprovals() {
+  return request({
+    url: '/hermes/approval/pending',
+    method: 'get'
+  });
+}

@@ -96,7 +96,7 @@ public class DataAgentService {
      * @param userPrompt   用户自然语言提问
      * @param datasourceId 数据源标识
      * @param queryType    查询类别 (SQL / CYPHER)
-     * @param queryVector  用户提问向量嵌入 (阿里千问 1536 维，可为 null)
+     * @param queryVector  用户提问向量嵌入 (阿里千问 1024 维，可为 null)
      * @return 端到端分析结果视图对象
      */
     public QueryResultVO query(String userPrompt, String datasourceId, String queryType, float[] queryVector) {

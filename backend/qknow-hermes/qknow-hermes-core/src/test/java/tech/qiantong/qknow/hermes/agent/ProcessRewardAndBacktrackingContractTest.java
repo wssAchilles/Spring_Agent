@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ProcessRewardAndBacktrackingContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
     private static final String SECRET_KEY = "CONTRACT_TEST_PRM_SECRET_2026";
 
     private float[] createUnitVector(int seed) {

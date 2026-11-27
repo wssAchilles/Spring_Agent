@@ -15,13 +15,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * 覆盖：
  * 1. 声明式 Hoare 逻辑工具合约网关的前置守卫拦截、防侧信道验签与后置 Saga 补偿
  * 2. 海马体双轨长程记忆引擎的在线快轨超球面测地召回与离线慢轨睡眠图谱法则沉淀
- * 3. 阿里千问 1536 维超球面单位向量约束 (||v||_2 = 1.0) 与三级冷备可逆隔离
+ * 3. 阿里千问 1024 维超球面单位向量约束 (||v||_2 = 1.0) 与三级冷备可逆隔离
  */
 public class FrontierCognitiveAndSafetyContractTest {
 
     private static final String TEST_SECRET = "TEST_SECRET_KEY_HOARE_HIPPOCAMPUS_2026";
 
-    // 辅助生成 1536 维超球面单位归一化向量
+    // 辅助生成 1024 维超球面单位归一化向量
     private float[] generateNormalizedVector(long seed) {
         Random random = new Random(seed);
         float[] v = new float[EpisodicTurnRecord.VECTOR_DIMENSION];
@@ -155,7 +155,7 @@ public class FrontierCognitiveAndSafetyContractTest {
         EpisodicTurnRecord r2 = engine.recordTurn(sessionId, "assistant", "需传入 extra_body 开启 thinking", v2,
                 Map.of("topic", "deepseek", "model", "deepseek-flash"));
         EpisodicTurnRecord r3 = engine.recordTurn(sessionId, "user", "千问超球面维度是多少？", v3,
-                Map.of("topic", "qwen", "dimension", "1536"));
+                Map.of("topic", "qwen", "dimension", "1024"));
 
         assertTrue(r1.verifySignature(TEST_SECRET));
         assertEquals(3, engine.getWorkingBufferSize(sessionId));
@@ -185,7 +185,7 @@ public class FrontierCognitiveAndSafetyContractTest {
             engine.recordTurn(sessionId, "system", "Agent execution turn " + i, vec,
                     Map.of(
                             "ACTIVE_MODEL", "deepseek-flash",
-                            "EMBEDDING_GEOMETRY", "hyperspherical_1536",
+                            "EMBEDDING_GEOMETRY", "hyperspherical_1024",
                             "JVM_ENV", "java_21_isolated"
                     ));
         }

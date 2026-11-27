@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Phase 155 核心契约测试套件：
  * 企业级多智能体 Handoff 权责交接、DeepSeek 64-token 动态前缀树调度、
- * 千问 1536 维超球面拉普拉斯谱剪枝 GraphRAG 与企业 MCP 租户配额网关
+ * 千问 1024 维超球面拉普拉斯谱剪枝 GraphRAG 与企业 MCP 租户配额网关
  *
  * @author Achilles
  * @version 1.0
@@ -213,22 +213,22 @@ public class Phase155MasterContractTest {
     }
 
     @Test
-    @DisplayName("契约 9：HypersphericalGraphRagGovernor 千问 1536 维超球面向量范数判定 (||v||_2 = 1.0)")
+    @DisplayName("契约 9：HypersphericalGraphRagGovernor 千问 1024 维超球面向量范数判定 (||v||_2 = 1.0)")
     void test09_HypersphericalVectorNormConstraint() {
         HypersphericalGraphRagGovernor governor = new HypersphericalGraphRagGovernor();
 
-        // 构造合法的 1536 维超球面单位向量
-        float[] validVec = new float[1536];
-        float val = (float) (1.0 / Math.sqrt(1536));
-        for (int i = 0; i < 1536; i++) {
+        // 构造合法的 1024 维超球面单位向量
+        float[] validVec = new float[1024];
+        float val = (float) (1.0 / Math.sqrt(1024));
+        for (int i = 0; i < 1024; i++) {
             validVec[i] = val;
         }
         assertTrue(governor.validateHypersphericalNorm(validVec), "单位归一化超球面向量必须通过几何校验");
 
         // 构造非归一化向量 (范数不等于 1.0)
-        float[] invalidVec = new float[1536];
-        for (int i = 0; i < 1536; i++) {
-            invalidVec[i] = 1.0f; // 模长 sqrt(1536) != 1.0
+        float[] invalidVec = new float[1024];
+        for (int i = 0; i < 1024; i++) {
+            invalidVec[i] = 1.0f; // 模长 sqrt(1024) != 1.0
         }
         assertFalse(governor.validateHypersphericalNorm(invalidVec), "未归一化向量必须严格判定非法");
     }
@@ -238,13 +238,13 @@ public class Phase155MasterContractTest {
     void test10_HypersphericalLaplacianSpectralPruning() {
         HypersphericalGraphRagGovernor governor = new HypersphericalGraphRagGovernor();
 
-        float[] queryVec = createUnitVector(1536, 0.1f);
+        float[] queryVec = createUnitVector(1024, 0.1f);
 
         // 构造 10 个候选节点，其中前 3 个与 query 高度相似，后 7 个为边缘无关噪音
         List<HypersphericalGraphRagGovernor.GraphEntityNode> candidates = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             float base = (i < 3) ? 0.1f : (float) (i * 0.5);
-            float[] nodeVec = createUnitVector(1536, base);
+            float[] nodeVec = createUnitVector(1024, base);
             candidates.add(new HypersphericalGraphRagGovernor.GraphEntityNode(
                     "node_" + i,
                     "知识实体内容 " + i,

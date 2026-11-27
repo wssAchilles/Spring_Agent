@@ -13,10 +13,13 @@ let downloadLoadingInstance;
 export let isRelogin = { show: false };
 
 axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8'
+// 统一解析前端 API 基础路径（无 .env 文件的开发环境自动回退至 /dev-api）
+export const API_BASE_URL = import.meta.env.VITE_APP_BASE_API || (import.meta.env.DEV ? '/dev-api' : '');
+
 // 创建axios实例
 const service = axios.create({
   // axios中请求配置有baseURL选项，表示请求URL公共部分
-  baseURL: import.meta.env.VITE_APP_BASE_API || (import.meta.env.DEV ? '/dev-api' : ''),
+  baseURL: API_BASE_URL,
   // 超时
   timeout: 30000
 })

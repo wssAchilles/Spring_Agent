@@ -169,5 +169,7 @@ public class Constants
      * 定时任务违规的字符
      */
     public static final String[] JOB_ERROR_STR = { "java.net.URL", "jakarta.naming.InitialContext", "org.yaml.snakeyaml",
-            "org.springframework", "org.apache", "tech.qiantong.common.utils.file", "tech.qiantong.common.config", "tech.qiantong.generator" };
+            "org.springframework", "org.apache",
+            "tech.qiantong.common.utils.file", "tech.qiantong.common.config", "tech.qiantong.generator",
+            "tech.qiantong.qknow.common.utils.file", "tech.qiantong.qknow.common.config", "tech.qiantong.qknow.generator" };
 }

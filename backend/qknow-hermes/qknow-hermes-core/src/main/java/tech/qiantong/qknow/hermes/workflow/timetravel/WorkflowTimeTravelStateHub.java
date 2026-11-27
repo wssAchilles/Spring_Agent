@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 严格贯彻 Phase 148 架构与工程铁律：
  * 1. 采用 Merkle DAG 增量版本树存储节点状态变化量 ΔS，彻底消除冗余全量深拷贝；
  * 2. 构建二进制提升 (Binary Lifting) 跳转表 Jump[t][k]，实现严格 O(log N) 树深度的亚毫秒级时间旅行回溯；
- * 3. 严格遵循阿里千问 1536 维超球面单位向量测地线核度规 K_diff(S_i, S_j) 与欧氏余弦恒等式；
+ * 3. 严格遵循阿里千问 1024 维超球面单位向量测地线核度规 K_diff(S_i, S_j) 与欧氏余弦恒等式；
  * 4. 置信度门控投机执行引擎：γ >= 0.88 时启动写隔离沙盒预执行，人工驳回时安全隔离于三级冷备环形仓；
  * 5. 全程生成纯 Java 21 Record 格式的不可变审计凭单，采用 MessageDigest.isEqual 常量时间自验真防侧信道。
  *
@@ -252,7 +252,7 @@ public class WorkflowTimeTravelStateHub {
      * @param workflowId  工作流 ID
      * @param nodeId      当前工作流节点名称
      * @param deltaState  当前节点产生的增量状态变化 ΔS
-     * @param stateVector 当前节点的 1536 维超球面单位向量
+     * @param stateVector 当前节点的 1024 维超球面单位向量
      * @return 新生成的不可变状态版本节点
      */
     public StateVersionNode commitStateDelta(

@@ -386,6 +386,7 @@
 </template>
 
 <script setup name="Datasource">
+import { API_BASE_URL } from '@/utils/request';
   import { listDatasource, getDatasource, delDatasource, addDatasource, updateDatasource } from "@/api/ext/extDatasource/datasource";
   import {getToken} from "@/utils/auth.js";
 
@@ -449,7 +450,7 @@
     // 设置上传的请求头部
     headers: { Authorization: "Bearer " + getToken() },
     // 上传的地址
-    url: import.meta.env.VITE_APP_BASE_API + "/ext/datasource/importData"
+    url: API_BASE_URL + "/ext/datasource/importData"
   });
 
   const data = reactive({

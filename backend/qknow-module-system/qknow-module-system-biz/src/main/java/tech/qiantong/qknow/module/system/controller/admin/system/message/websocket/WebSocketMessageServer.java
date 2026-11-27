@@ -31,14 +31,20 @@ public class WebSocketMessageServer {
      */
     @OnOpen
     public void onOpen(Session session, @PathParam("userId") String userId) throws Exception {
-        // 优先使用握手阶段通过 JWT Token 解析出的真实受信任用户 ID
+        // 强制要求握手阶段必须通过 JWT 认证，严禁回退信任未认证的路径参数 userId 防止身份冒充
         String authenticatedUserId = (String) session.getUserProperties().get(tech.qiantong.qknow.security.websocket.JwtServerEndpointConfigurator.AUTHENTICATED_USER_ID);
-        String finalUserId = (authenticatedUserId != null && !authenticatedUserId.isBlank()) ? authenticatedUserId : userId;
+        if (authenticatedUserId == null || authenticatedUserId.isBlank()) {
+            LOGGER.warn("拦截未认证 WebSocket 连接尝试 - 声称 userId: {}, sessionId: {}", userId, session.getId());
+            if (session.isOpen()) {
+                session.close(new jakarta.websocket.CloseReason(
+                        jakarta.websocket.CloseReason.CloseCodes.VIOLATED_POLICY, "Unauthorized WebSocket connection"));
+            }
+            return;
+        }
+        String finalUserId = authenticatedUserId;
         String key = finalUserId + '_' + session.getId();
         session.getUserProperties().put("SESSION_USER_ID", finalUserId);
-        LOGGER.info("连接成功 - 用户ID: {} (Token认证: {})", key, authenticatedUserId != null);
-        // 保存连接的 session 对象
-        // 一个客户可能会开启多个窗口,不同窗口session不一样, 存储key格式: userId_sessionId
+        LOGGER.info("连接成功 - 用户ID: {} (Token认证通过)", key);
         WebSocketMessage.put(key, session);
     }
 
@@ -47,11 +53,12 @@ public class WebSocketMessageServer {
      */
     @OnClose
     public void onClose(Session session, @PathParam("userId") String userId) {
-        String finalUserId = (String) session.getUserProperties().getOrDefault("SESSION_USER_ID", userId);
+        String finalUserId = (String) session.getUserProperties().get("SESSION_USER_ID");
+        if (finalUserId == null || finalUserId.isBlank()) {
+            return;
+        }
         String key = finalUserId + '_' + session.getId();
         LOGGER.info("连接关闭 - 用户ID: {}", key);
-        // 移除用户连接
-        //一个客户可能会开启多个窗口,不同窗口session不一样, 存储key格式: userId_sessionId
         WebSocketMessage.remove(key);
     }
 
@@ -60,12 +67,15 @@ public class WebSocketMessageServer {
      */
     @OnError
     public void onError(Session session, Throwable exception, @PathParam("userId") String userId) throws Exception {
+        String finalUserId = (String) session.getUserProperties().get("SESSION_USER_ID");
         if (session.isOpen()) {
             session.close();
         }
-        LOGGER.error("连接异常 - 用户ID: {} - 异常信息: {}", userId, exception.getMessage());
-        // 移除用户连接
-        WebSocketMessage.remove(userId);
+        LOGGER.error("连接异常 - 用户ID: {} - 异常信息: {}", finalUserId != null ? finalUserId : userId, exception.getMessage());
+        // 按 userId_sessionId 组合键精确清理连接，防止会话表泄漏
+        if (finalUserId != null && !finalUserId.isBlank()) {
+            WebSocketMessage.remove(finalUserId + '_' + session.getId());
+        }
     }
 
     /**

@@ -18,7 +18,7 @@ backend/**/maven-compiler-plugin/
 backend/**/maven-resources-plugin/
 
 # === Node / Vue ===
-frontend/node_modules/
+frontend/node_modules
 frontend/dist/
 frontend/.env.local
 frontend/.env.*.local

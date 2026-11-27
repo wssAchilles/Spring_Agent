@@ -98,8 +98,15 @@ public class StateGraphVisualSyncEngine {
         if (debounceBuffer.isEmpty()) {
             return List.of();
         }
-        List<VisualNodeStateEvent> flushed = new ArrayList<>(debounceBuffer.values());
-        debounceBuffer.clear();
+        // 使用两阶段原子 remove(key, value) 摘除已采集快照，防止 clear() 误删并发线程刚写入的新事件
+        List<VisualNodeStateEvent> flushed = new ArrayList<>();
+        for (Map.Entry<String, VisualNodeStateEvent> entry : debounceBuffer.entrySet()) {
+            String key = entry.getKey();
+            VisualNodeStateEvent val = entry.getValue();
+            if (val != null && debounceBuffer.remove(key, val)) {
+                flushed.add(val);
+            }
+        }
         return Collections.unmodifiableList(flushed);
     }
 

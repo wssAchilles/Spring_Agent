@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * (Temporal Causal GraphRAG Engine)
  * 遵循超球面余弦几何律、因果 DAG 拓扑偏序与冷备隔离工程铁律：
  * 1. 活跃三元组索引与实体倒排；
- * 2. 第一阶段：千问 1536 维超球面测地线内积粗筛 + 时间有效性半衰期衰减联合打分；
+ * 2. 第一阶段：千问 1024 维超球面测地线内积粗筛 + 时间有效性半衰期衰减联合打分；
  * 3. 第二阶段：因果前向可达子图寻径 (限定 2 跳)，杜绝全局子图发散；
  * 4. 第三阶段：Kahn 算法拓扑偏序投影，生成严格保序的因果命题链，节点规模钳位 <= 16；
  * 5. 三级冷备环形仓软删除隔离，杜绝物理硬删除；
@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class TemporalCausalGraphRagEngine {
 
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
     public static final int DEFAULT_TOP_SEEDS = 5;
     public static final int DEFAULT_MAX_PROPOSITION_NODES = 16;
     public static final int COLD_RING_CAPACITY = 50;
@@ -94,7 +94,7 @@ public class TemporalCausalGraphRagEngine {
      * 执行两阶段双轨融合因果检索
      *
      * @param queryText              查询语句
-     * @param queryVector            千问 1536 维超球面单位向量
+     * @param queryVector            千问 1024 维超球面单位向量
      * @param queryTimestampEpochMs  查询目标物理时间戳
      * @param topSeeds               第一阶段粗筛种子数 (默认 5)
      * @param maxPropositionNodes    命题节点上限 (默认 16)

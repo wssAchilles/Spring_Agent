@@ -270,65 +270,128 @@ public interface MathematicalCodeSandboxTool {
         }
 
         /**
-         * 简单四则表达式受控解析器 (支持 +, -, *, /)
+         * 确定性递归下降算术求值器（完整支持一元正负号、科学计数法 1.5e-3、嵌套括号与四则运算）
          */
         private static double evaluateSimpleExpression(String expr) {
-            if (expr.isEmpty()) return 0.0;
+            if (expr == null || expr.isBlank()) {
+                return 0.0;
+            }
             try {
-                // 递归下降或双栈简易解析
-                String[] tokens = expr.split("(?<=[-+*/()])|(?=[-+*/()])");
-                List<String> cleanTokens = new ArrayList<>();
-                for (String t : tokens) {
-                    String trimmed = t.trim();
-                    if (!trimmed.isEmpty()) cleanTokens.add(trimmed);
-                }
-
-                Stack<Double> values = new Stack<>();
-                Stack<Character> ops = new Stack<>();
-
-                for (int i = 0; i < cleanTokens.size(); i++) {
-                    String token = cleanTokens.get(i);
-                    if (token.equals("(")) {
-                        ops.push('(');
-                    } else if (token.equals(")")) {
-                        while (!ops.isEmpty() && ops.peek() != '(') {
-                            values.push(applyOp(ops.pop(), values.pop(), values.pop()));
-                        }
-                        if (!ops.isEmpty()) ops.pop();
-                    } else if (token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/")) {
-                        while (!ops.isEmpty() && hasPrecedence(token.charAt(0), ops.peek())) {
-                            values.push(applyOp(ops.pop(), values.pop(), values.pop()));
-                        }
-                        ops.push(token.charAt(0));
-                    } else {
-                        values.push(Double.parseDouble(token));
-                    }
-                }
-
-                while (!ops.isEmpty()) {
-                    values.push(applyOp(ops.pop(), values.pop(), values.pop()));
-                }
-
-                return values.isEmpty() ? 0.0 : values.pop();
+                RecursiveArithmeticParser parser = new RecursiveArithmeticParser(expr);
+                double val = parser.parseExpression();
+                return parser.hasMore() ? 0.0 : val;
             } catch (Exception e) {
                 log.warn("表达式求值发生异常，平滑降级: expr={}, err={}", expr, e.getMessage());
                 return 0.0;
             }
         }
 
-        private static boolean hasPrecedence(char op1, char op2) {
-            if (op2 == '(' || op2 == ')') return false;
-            return (op1 != '*' && op1 != '/') || (op2 != '+' && op2 != '-');
-        }
+        private static final class RecursiveArithmeticParser {
+            private final String input;
+            private int pos = 0;
 
-        private static double applyOp(char op, double b, double a) {
-            return switch (op) {
-                case '+' -> a + b;
-                case '-' -> a - b;
-                case '*' -> a * b;
-                case '/' -> (Math.abs(b) < 1e-12) ? 0.0 : a / b;
-                default -> 0.0;
-            };
+            RecursiveArithmeticParser(String input) {
+                this.input = input;
+            }
+
+            boolean hasMore() {
+                skipWhitespace();
+                return pos < input.length();
+            }
+
+            double parseExpression() {
+                double val = parseTerm();
+                while (true) {
+                    skipWhitespace();
+                    if (match('+')) {
+                        val += parseTerm();
+                    } else if (match('-')) {
+                        val -= parseTerm();
+                    } else {
+                        return val;
+                    }
+                }
+            }
+
+            private double parseTerm() {
+                double val = parseFactor();
+                while (true) {
+                    skipWhitespace();
+                    if (match('*')) {
+                        val *= parseFactor();
+                    } else if (match('/')) {
+                        double divisor = parseFactor();
+                        val = Math.abs(divisor) < 1e-12 ? 0.0 : (val / divisor);
+                    } else {
+                        return val;
+                    }
+                }
+            }
+
+            private double parseFactor() {
+                skipWhitespace();
+                if (match('+')) {
+                    return parseFactor();
+                }
+                if (match('-')) {
+                    return -parseFactor();
+                }
+                if (match('(')) {
+                    double inner = parseExpression();
+                    match(')');
+                    return inner;
+                }
+                return parseNumber();
+            }
+
+            private double parseNumber() {
+                skipWhitespace();
+                int start = pos;
+                boolean seenDigit = false;
+                while (pos < input.length() && Character.isDigit(input.charAt(pos))) {
+                    pos++;
+                    seenDigit = true;
+                }
+                if (pos < input.length() && input.charAt(pos) == '.') {
+                    pos++;
+                    while (pos < input.length() && Character.isDigit(input.charAt(pos))) {
+                        pos++;
+                        seenDigit = true;
+                    }
+                }
+                if (!seenDigit) {
+                    throw new IllegalArgumentException("非法数字语法位置: " + pos);
+                }
+                if (pos < input.length() && (input.charAt(pos) == 'e' || input.charAt(pos) == 'E')) {
+                    int expSave = pos++;
+                    if (pos < input.length() && (input.charAt(pos) == '+' || input.charAt(pos) == '-')) {
+                        pos++;
+                    }
+                    int expDigitsStart = pos;
+                    while (pos < input.length() && Character.isDigit(input.charAt(pos))) {
+                        pos++;
+                    }
+                    if (pos == expDigitsStart) {
+                        pos = expSave;
+                    }
+                }
+                return Double.parseDouble(input.substring(start, pos));
+            }
+
+            private void skipWhitespace() {
+                while (pos < input.length() && Character.isWhitespace(input.charAt(pos))) {
+                    pos++;
+                }
+            }
+
+            private boolean match(char expected) {
+                skipWhitespace();
+                if (pos < input.length() && input.charAt(pos) == expected) {
+                    pos++;
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

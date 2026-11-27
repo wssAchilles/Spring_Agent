@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>
  * 检验唯一假设 H-151 与两大核心引理：
  * 1. Lemma 151.1: 超球面多智能体复制动态李雅普诺夫收敛引理；
- * 2. Lemma 151.2: 千问 1536 维单位流形各向同性分块量化保角有界失真引理。
+ * 2. Lemma 151.2: 千问 1024 维单位流形各向同性分块量化保角有界失真引理。
  * </p>
  *
  * @author Achilles
@@ -148,26 +148,26 @@ public class Phase151EvolutionaryQuantizedInfraContractTest {
     }
 
     @Test
-    @DisplayName("Contract 4: 千问 1536 维超球面各向同性分块量化保角失真与保真度测试 (Lemma 151.2)")
+    @DisplayName("Contract 4: 千问 1024 维超球面各向同性分块量化保角失真与保真度测试 (Lemma 151.2)")
     void testHypersphericalIsotropicProductQuantizationFidelity() {
-        // 生成合成的千问 1536 维超球面单位向量 (||v||_2 = 1.0)
-        float[] originalVector = generateSyntheticQwenUnitVector(1536, 42L);
-        float[] secondVector = generateSyntheticQwenUnitVector(1536, 84L);
+        // 生成合成的千问 1024 维超球面单位向量 (||v||_2 = 1.0)
+        float[] originalVector = generateSyntheticQwenUnitVector(1024, 42L);
+        float[] secondVector = generateSyntheticQwenUnitVector(1024, 84L);
         assertEquals(1.0f, computeVectorNorm(originalVector), 1e-4f, "原始向量必须严格满足千问超球面单位模长");
 
         // 1. 各向同性分块量化编码
         byte[] codes = hipqQuantizer.quantize(originalVector);
         assertNotNull(codes);
-        assertEquals(1536, codes.length, "分块量化编码必须精确为 1536 字节");
+        assertEquals(1024, codes.length, "分块量化编码必须精确为 1024 字节");
 
         // 2. 解码重构并应用各向同性超球面重归一化
         float[] reconstructed = hipqQuantizer.reconstruct(codes);
-        assertEquals(1536, reconstructed.length, "重构向量维度必须为 1536");
+        assertEquals(1024, reconstructed.length, "重构向量维度必须为 1024");
         assertEquals(1.0f, computeVectorNorm(reconstructed), 1e-4f, "重构向量必须严格恢复到单位超球面模长");
 
         // 3. 计算超球面余弦保真度
         double fidelity = hipqQuantizer.evaluateFidelity(originalVector, reconstructed);
-        assertTrue(fidelity >= 0.982, String.format("千问 1536 维超球面量化余弦保真度必须 >= 98.2%%，实际: %.4f", fidelity));
+        assertTrue(fidelity >= 0.982, String.format("千问 1024 维超球面量化余弦保真度必须 >= 98.2%%，实际: %.4f", fidelity));
 
         // 4. 验证 Lemma 151.2 成对内积保持性保真度
         byte[] codes2 = hipqQuantizer.quantize(secondVector);
@@ -175,9 +175,9 @@ public class Phase151EvolutionaryQuantizedInfraContractTest {
         double pairwiseFidelity = hipqQuantizer.evaluatePairwiseCosineFidelity(originalVector, secondVector, reconstructed, reconstructed2);
         assertTrue(pairwiseFidelity >= 0.982, String.format("成对超球面余弦内积保真度必须 >= 98.2%%，实际: %.4f", pairwiseFidelity));
 
-        // 5. 验证内存压缩与常驻削减比例 (6144B -> 1536B，降低 75.0% >= 72.0%)
-        long rawBytes = 1536 * 4L; // 6144 字节
-        long compressedBytes = codes.length; // 1536 字节
+        // 5. 验证内存压缩与常驻削减比例 (4096B -> 1024B，降低 75.0% >= 72.0%)
+        long rawBytes = 1024 * 4L; // 4096 字节
+        long compressedBytes = codes.length; // 1024 字节
         double memoryReductionRatio = 1.0 - ((double) compressedBytes / rawBytes);
         assertTrue(memoryReductionRatio >= 0.72, String.format("常驻内存削减比例必须 >= 72.0%%，实际: %.2f%%", memoryReductionRatio * 100.0));
     }
@@ -185,8 +185,8 @@ public class Phase151EvolutionaryQuantizedInfraContractTest {
     @Test
     @DisplayName("Contract 5: 非对称余弦快速估计与全量重构一致性测试")
     void testAsymmetricCosineEstimationAccuracy() {
-        float[] queryVector = generateSyntheticQwenUnitVector(1536, 101L);
-        float[] docVector = generateSyntheticQwenUnitVector(1536, 202L);
+        float[] queryVector = generateSyntheticQwenUnitVector(1024, 101L);
+        float[] docVector = generateSyntheticQwenUnitVector(1024, 202L);
 
         byte[] codes = hipqQuantizer.quantize(docVector);
         float[] reconstructed = hipqQuantizer.reconstruct(codes);
@@ -208,7 +208,7 @@ public class Phase151EvolutionaryQuantizedInfraContractTest {
         List<String> transcripts = List.of(
                 "智能体 A: 针对高并发知识向量检索，建议保持 FP32 全精度常驻以确保最高精度。",
                 "智能体 B: 反对，FP32 堆内存开销过大导致 GC 停顿拉长，必须引入各向同性分块量化。",
-                "智能体 C: 仲裁结论，采用千问 1536 维超球面各向同性分块量化 (HIPQ)，在保持 98.2% 保真度的同时削减 75% 内存。",
+                "智能体 C: 仲裁结论，采用千问 1024 维超球面各向同性分块量化 (HIPQ)，在保持 98.2% 保真度的同时削减 75% 内存。",
                 "智能体 A: 接受仲裁，经李雅普诺夫相对熵检验，策略已收敛至演化稳定状态 (ESS)。"
         );
 

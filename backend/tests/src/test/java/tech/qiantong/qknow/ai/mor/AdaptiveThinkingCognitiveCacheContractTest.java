@@ -15,7 +15,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("Phase 108: 自适应思考调控中枢与千问 1536 维 CoT 认知缓存器契约测试")
+@DisplayName("Phase 108: 自适应思考调控中枢与千问 1024 维 CoT 认知缓存器契约测试")
 class AdaptiveThinkingCognitiveCacheContractTest {
 
     private CoTCognitiveCacheService cacheService;
@@ -34,14 +34,14 @@ class AdaptiveThinkingCognitiveCacheContractTest {
     }
 
     private float[] createNormalized1536Vector(float seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) Math.sin(seed + i * 0.1);
             sumSq += v[i] * v[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) (v[i] / norm);
         }
         return v;
@@ -120,15 +120,15 @@ class AdaptiveThinkingCognitiveCacheContractTest {
     }
 
     @Test
-    @DisplayName("契约5: 千问 1536 维超球面单位向量归一化与维度强校验")
+    @DisplayName("契约5: 千问 1024 维超球面单位向量归一化与维度强校验")
     void testHypersphericalDimensionAndNormAssertion() {
         float[] invalidDim = new float[512];
         List<String> slices = List.of("slice_1:v1");
 
         assertFalse(cacheService.putScaffold(invalidDim, slices, "test", "tenant", "sec", 60),
-                "非 1536 维向量必须拒绝入库");
+                "非 1024 维向量必须拒绝入库");
         assertTrue(cacheService.getScaffold(invalidDim, slices).isEmpty(),
-                "非 1536 维向量查询必须返回 Empty");
+                "非 1024 维向量查询必须返回 Empty");
 
         float[] valid = createNormalized1536Vector(5.0f);
         double norm = 0.0;
@@ -145,13 +145,13 @@ class AdaptiveThinkingCognitiveCacheContractTest {
         cacheService.putScaffold(baseVector, slices, "权威脚手架内容", "tenant_a", "sec_a", 3600);
 
         // 构造高相似向量 (cos >= 0.95)
-        float[] highSimVector = new float[1536];
+        float[] highSimVector = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             highSimVector[i] = (float) (baseVector[i] + 0.005 * Math.cos(i));
             sumSq += highSimVector[i] * highSimVector[i];
         }
-        for (int i = 0; i < 1536; i++) highSimVector[i] /= Math.sqrt(sumSq);
+        for (int i = 0; i < 1024; i++) highSimVector[i] /= Math.sqrt(sumSq);
 
         Optional<CognitiveScaffold> hit = cacheService.getScaffold(highSimVector, slices);
         assertTrue(hit.isPresent(), "相似度 >= 0.92 必须命中认知缓存");

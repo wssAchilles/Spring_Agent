@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class Phase103McpIntegrationTest {
 
     private static float[] createUnitHypersphereVector(double angleRad) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         v[0] = (float) Math.cos(angleRad);
         v[1] = (float) Math.sin(angleRad);
         return v;

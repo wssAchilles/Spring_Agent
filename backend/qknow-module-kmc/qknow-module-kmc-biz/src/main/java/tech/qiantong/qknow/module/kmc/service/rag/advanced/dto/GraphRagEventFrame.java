@@ -6,14 +6,14 @@ import java.util.Objects;
 /**
  * 1000Hz 知识流事件帧 (GraphRAG Event Frame)
  * <p>
- * 采用 Java 21 Record 封装图谱推理与检索事件单帧，内置阿里千问 1536 维超球面单位向量规范校验。
+ * 采用 Java 21 Record 封装图谱推理与检索事件单帧，内置阿里千问 1024 维超球面单位向量规范校验。
  * </p>
  *
  * @param frameId         事件帧唯一 ID
  * @param sessionId        知识检索会话 ID
  * @param queryText        用户查询或命中文本
  * @param nodeType         节点类型 (如 ENTITY, RELATION, SECTION, CHUNK)
- * @param embeddingVector  阿里千问 1536 维特征向量 (满足 ||v||_2 = 1.0 +- 1e-4)
+ * @param embeddingVector  阿里千问 1024 维特征向量 (满足 ||v||_2 = 1.0 +- 1e-4)
  * @param pprScore         Personalized PageRank 拓扑激活得分
  * @param timestampMs      事件生成时间戳 (毫秒)
  * @param sequenceNo       总线单调递增序列号
@@ -31,9 +31,9 @@ public record GraphRagEventFrame(
         long sequenceNo
 ) {
     /**
-     * 阿里千问基准嵌入向量维度 (1536)
+     * 阿里千问基准嵌入向量维度 (1024)
      */
-    public static final int EXPECTED_EMBEDDING_DIM = 1536;
+    public static final int EXPECTED_EMBEDDING_DIM = 1024;
 
     /**
      * 超球面单位向量范数容差 (1.0 +- 1e-4)
@@ -48,7 +48,7 @@ public record GraphRagEventFrame(
     }
 
     /**
-     * 校验当前事件帧的向量是否为合法的阿里千问 1536 维超球面单位向量
+     * 校验当前事件帧的向量是否为合法的阿里千问 1024 维超球面单位向量
      *
      * @return true 若向量满足规范，false 否则
      */

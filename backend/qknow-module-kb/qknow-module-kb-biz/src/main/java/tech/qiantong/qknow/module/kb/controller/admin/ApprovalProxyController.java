@@ -44,6 +44,9 @@ public class ApprovalProxyController extends BaseController {
     @Autowired(required = false)
     private DagCheckpointManager dagCheckpointManager;
 
+    @Autowired(required = false)
+    private tech.qiantong.qknow.hermes.transaction.frontier.FrontierGatedToolTransactionManager frontierTxManager;
+
     @Value("${qknow.approval.dev-endpoint-enabled:false}")
     private boolean devEndpointEnabled;
 
@@ -98,7 +101,29 @@ public class ApprovalProxyController extends BaseController {
                     item.put("nodeId", parts[2]);
                 }
                 item.put("status", "PENDING");
+                item.put("sideEffectTier", "EXTERNALIZED_REVERSIBLE");
                 if (canAccessApprovalItem(item)) {
+                    result.add(item);
+                }
+            }
+        }
+
+        // 3. 聚合 Frontier 事务网关中挂起的不可逆副作用工单（Plan-as-PR Diff 元数据）
+        if (frontierTxManager != null) {
+            for (var suspended : frontierTxManager.listPendingHitlApprovals()) {
+                Map<String, Object> item = new HashMap<>();
+                String key = suspended.branchId() + ":" + suspended.toolName() + ":" + suspended.resourceUri();
+                if (!processedKeys.contains(key)) {
+                    item.put("approvalKey", key);
+                    item.put("flowId", suspended.branchId());
+                    item.put("requestId", suspended.branchId());
+                    item.put("nodeId", suspended.toolName());
+                    item.put("resourceUri", suspended.resourceUri());
+                    item.put("epoch", suspended.epoch());
+                    item.put("reason", suspended.reason());
+                    item.put("sideEffectTier", "IRREVERSIBLE");
+                    item.put("formalGuardStatus", "UNSAT_PRECHECK_PASSED");
+                    item.put("status", "SUSPENDED_HITL");
                     result.add(item);
                 }
             }
@@ -124,6 +149,10 @@ public class ApprovalProxyController extends BaseController {
         String pendingJson = redisService != null ? redisService.get(pendingKey) : null;
 
         boolean success = ApprovalNodeExecutor.approve(flowId, requestId, nodeId);
+        if (!success && frontierTxManager != null) {
+            String key = flowId + ":" + nodeId + ":" + body.getOrDefault("resourceUri", "");
+            success = frontierTxManager.resolvePendingHitlApproval(key, true, "APPROVED");
+        }
         if (!success) {
             return CommonResult.error(404, "审批请求不存在或已处理");
         }
@@ -166,6 +195,10 @@ public class ApprovalProxyController extends BaseController {
         }
 
         boolean success = ApprovalNodeExecutor.reject(flowId, requestId, nodeId, reason);
+        if (!success && frontierTxManager != null) {
+            String key = flowId + ":" + nodeId + ":" + body.getOrDefault("resourceUri", "");
+            success = frontierTxManager.resolvePendingHitlApproval(key, false, reason);
+        }
         if (!success) {
             return CommonResult.error(404, "审批请求不存在或已处理");
         }

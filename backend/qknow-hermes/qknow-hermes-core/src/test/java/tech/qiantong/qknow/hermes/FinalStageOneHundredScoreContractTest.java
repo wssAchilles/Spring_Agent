@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 终局满分架构契约测试套件 (FinalStageOneHundredScoreContractTest)
  * 验证两大关键代际差距突破：
  * 1. 企业级生产容器代码沙箱运行时与资源配额看门狗
- * 2. 语言强化自反思长程情景记忆引擎与千问 1536 维超球面单位向量流形
+ * 2. 语言强化自反思长程情景记忆引擎与千问 1024 维超球面单位向量流形
  *
  * @author Achilles
  * @since 2026-10-13
@@ -95,7 +95,7 @@ public class FinalStageOneHundredScoreContractTest {
     }
 
     @Test
-    @DisplayName("契约三：自反思长程情景记忆生成与千问 1536 维超球面单位范数")
+    @DisplayName("契约三：自反思长程情景记忆生成与千问 1024 维超球面单位范数")
     void testReflexionEpisodicMemoryGenerationAndUnitNorm() throws Exception {
         String tenantId = "tenant_alpha";
         String taskDesc = "OrderDataProcessingTask";
@@ -112,10 +112,10 @@ public class FinalStageOneHundredScoreContractTest {
         assertTrue(receipt.verbalReflectionLesson().contains("DateTimeParseException")
                 || receipt.verbalReflectionLesson().contains("纠偏策略"), "应包含语言反思与纠偏策略");
 
-        // 验证千问 1536 维超球面向量
+        // 验证千问 1024 维超球面向量
         float[] vector = receipt.qwenHypersphericalVector();
         assertNotNull(vector, "千问向量不能为空");
-        assertEquals(1536, vector.length, "千问向量维度必须严格为 1536 维");
+        assertEquals(1024, vector.length, "千问向量维度必须严格为 1024 维");
 
         double normSq = 0.0;
         for (float v : vector) {

@@ -60,7 +60,7 @@ public class Phase45SelfEvolvingImmuneContractTest {
             normSq += val * val;
         }
         double norm = Math.sqrt(normSq);
-        assertEquals(1.0, norm, 1e-5, "千问 1536 维向量必须严格处于单位超球面上");
+        assertEquals(1.0, norm, 1e-5, "千问 1024 维向量必须严格处于单位超球面上");
 
         // 验证确定性
         assertEquals(antigen1.getLexicalSimHash(), antigen2.getLexicalSimHash());

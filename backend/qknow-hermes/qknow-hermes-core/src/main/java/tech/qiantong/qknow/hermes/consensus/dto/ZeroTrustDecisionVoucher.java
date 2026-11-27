@@ -3,6 +3,7 @@ package tech.qiantong.qknow.hermes.consensus.dto;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 不可变零信任决策存证凭单 Java 21 Record
@@ -47,11 +48,18 @@ public record ZeroTrustDecisionVoucher(
     }
 
     public boolean verifySignature() {
+        if (signature == null || signature.isEmpty()) {
+            return false;
+        }
         String data = voucherId + "|" + sessionId + "|" + topic + "|" + winningProposal + "|"
                 + quorumPercentage + "|" + totalRounds + "|" + nashResidualMargin + "|"
                 + (participantSignatures != null ? String.join(",", participantSignatures) : "") + "|"
                 + elapsedMicros + "|" + busStatus + "|" + timestamp;
-        return calculateSha256(data).equalsIgnoreCase(signature);
+        String expected = calculateSha256(data);
+        // 使用常量时间比对校验零信任存证签名
+        return MessageDigest.isEqual(
+                expected.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                signature.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     private static String calculateSha256(String raw) {

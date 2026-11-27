@@ -18,14 +18,14 @@ import java.util.regex.Pattern;
  * 严格执行学术理论与工业工程门禁：
  * 1. Crash-Stop 空白/崩溃节点拦截；
  * 2. 提示词注入（Prompt Injection）静态正则规则库 100% 硬核阻断；
- * 3. 阿里千问 1536 维超球面 L2 范数归一化映射；
+ * 3. 阿里千问 1024 维超球面 L2 范数归一化映射；
  * 4. 2.0-sigma 超球面语义离群统计学剪枝。
  */
 @Slf4j
 @Component
 public class ByzantineWorkerFilter {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double SIGMA_THRESHOLD = 2.0;
 
     // 严苛 Prompt Injection 静态正则规则库
@@ -106,7 +106,7 @@ public class ByzantineWorkerFilter {
             }
         }
 
-        // 阿里千问 1536 维超球面 L2 归一化向量计算
+        // 阿里千问 1024 维超球面 L2 归一化向量计算
         float[] rawEmbedding = embeddingGenerator.apply(content);
         float[] normalizedEmbedding = normalizeL2(rawEmbedding);
 
@@ -135,7 +135,7 @@ public class ByzantineWorkerFilter {
         for (WorkerProposal p : proposals) {
             InspectedProposal inspected = inspectIndividual(p);
             inspectedList.add(inspected);
-            if (inspected.isHonest() && inspected.embedding1536() != null) {
+            if (inspected.isHonest() && inspected.embedding1024() != null) {
                 candidateHonest.add(inspected);
             }
         }
@@ -147,11 +147,11 @@ public class ByzantineWorkerFilter {
 
             // 计算每个提案与候选集中其他诚实提案的平均余弦相似度
             for (int i = 0; i < m; i++) {
-                float[] vi = candidateHonest.get(i).embedding1536();
+                float[] vi = candidateHonest.get(i).embedding1024();
                 double simSum = 0.0;
                 for (int j = 0; j < m; j++) {
                     if (i != j) {
-                        float[] vj = candidateHonest.get(j).embedding1536();
+                        float[] vj = candidateHonest.get(j).embedding1024();
                         simSum += dotProduct(vi, vj);
                     }
                 }
@@ -191,7 +191,7 @@ public class ByzantineWorkerFilter {
                                 ByzantineFaultType.NOISY_OUTLIER,
                                 String.format("Noisy-Outlier: 语义偏离群体共识超过 2.0-sigma (Sim=%.4f < Thresh=%.4f)",
                                         meanSimilarities[i], outlierThreshold),
-                                outlier.embedding1536(),
+                                outlier.embedding1024(),
                                 reputationLedger.getReputationWeight(outlier.proposal().workerId())
                         );
 
@@ -225,7 +225,7 @@ public class ByzantineWorkerFilter {
     }
 
     /**
-     * L2 范数归一化至 S^1535 超球面
+     * L2 范数归一化至 S^1023 超球面
      */
     public static float[] normalizeL2(float[] vec) {
         if (vec == null) {
@@ -262,7 +262,7 @@ public class ByzantineWorkerFilter {
     }
 
     /**
-     * 默认确定性特征哈希嵌入生成器 (基于字符 2-gram 局部敏感特征哈希，映射至 1536 维)
+     * 默认确定性特征哈希嵌入生成器 (基于字符 2-gram 局部敏感特征哈希，映射至 1024 维)
      */
     private float[] defaultDeterministicEmbedding(String text) {
         float[] vec = new float[EMBEDDING_DIM];

@@ -37,14 +37,14 @@ public class Phase111MemoryConsolidationTest {
     private IRedisService redisService;
 
     private float[] createNormalized1536Vector(float seed) {
-        float[] vec = new float[1536];
+        float[] vec = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) Math.sin(seed + i * 0.005);
             sumSq += vec[i] * vec[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) (vec[i] / norm);
         }
         return vec;
@@ -52,7 +52,7 @@ public class Phase111MemoryConsolidationTest {
 
     private double computeGeodesicDistance(float[] u, float[] v) {
         double dot = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             dot += u[i] * v[i];
         }
         dot = Math.max(-1.0, Math.min(1.0, dot));
@@ -235,9 +235,9 @@ public class Phase111MemoryConsolidationTest {
     }
 
     @Test
-    @DisplayName("契约测试 4: 千问 1536 维超球面时空检索局部拓扑保序 (定理 1.3)")
+    @DisplayName("契约测试 4: 千问 1024 维超球面时空检索局部拓扑保序 (定理 1.3)")
     void testHypersphericalGeodesicTopologyOrderPreserving() {
-        // 构造千问 1536 维超球面向量
+        // 构造千问 1024 维超球面向量
         float[] queryVec = createNormalized1536Vector(0.5f);
 
         // 语义高度匹配的核心记忆 m1 (测地线距离极小)

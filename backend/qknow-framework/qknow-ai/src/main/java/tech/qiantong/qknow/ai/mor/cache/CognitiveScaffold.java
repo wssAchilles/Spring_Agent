@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record CognitiveScaffold(
-        String clusterId,            // 千问 1536 维超球面聚类簇 ID
+        String clusterId,            // 千问 1024 维超球面聚类簇 ID
         String knowledgeSlicesSha256,// 知识切片签名哈希
         String scaffoldContent,      // 200~400 字结构化决策树脚手架
         long createdAtTimestamp,     // 生成时间

@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * Phase 25: Fast-Pass 轻量混合保真打分算子
- * 结合阿里千问 1536 维向量内积 (0.50) + CJK Bi-gram 词重合度 (0.35) + 关键实体覆盖度 (0.15)。
+ * 结合阿里千问 1024 维向量内积 (0.50) + CJK Bi-gram 词重合度 (0.35) + 关键实体覆盖度 (0.15)。
  * 纯 CPU 纳秒/微秒级打分，严格在 5ms 内完成 Top-100 候选至 Top-20 的高效降维，保持 Top-10 高相关召回率 >= 90%。
  */
 @Slf4j
@@ -24,7 +24,7 @@ public class FastPassHybridScorer {
      *
      * @param query          查询语句
      * @param candidates     粗排候选列表 (例如 Top-100)
-     * @param queryEmbedding 1536 维千问查询向量 (可选)
+     * @param queryEmbedding 1024 维千问查询向量 (可选)
      * @param topK           期望截断返回的候选规模 (例如 20)
      * @return 经打分与排序后的高置信度子集 (Top-K)
      */
@@ -104,7 +104,7 @@ public class FastPassHybridScorer {
     }
 
     /**
-     * 1536 维点积计算 (假设已 L2 归一化)
+     * 1024 维点积计算 (假设已 L2 归一化)
      */
     private double dotProduct(float[] a, float[] b) {
         int len = Math.min(a.length, b.length);

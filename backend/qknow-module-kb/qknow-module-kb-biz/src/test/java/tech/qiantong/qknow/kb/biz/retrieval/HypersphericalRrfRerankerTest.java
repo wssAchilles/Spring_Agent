@@ -10,7 +10,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 阿里千问 1536 维超球面 RRF 融合重排与 Token 预算截断算子契约测试
+ * 阿里千问 1024 维超球面 RRF 融合重排与 Token 预算截断算子契约测试
  */
 public class HypersphericalRrfRerankerTest {
 
@@ -26,7 +26,7 @@ public class HypersphericalRrfRerankerTest {
     }
 
     /**
-     * 生成千问 1536 维单位超球面向量 (||v||_2 = 1.0)
+     * 生成千问 1024 维单位超球面向量 (||v||_2 = 1.0)
      */
     private static double[] createNormalizedVector(int seed) {
         double[] vec = new double[HypersphericalRrfReranker.EMBEDDING_DIM];
@@ -44,7 +44,7 @@ public class HypersphericalRrfRerankerTest {
     }
 
     @Test
-    @DisplayName("测试千问 1536 维超球面单位向量校验与余弦几何恒等式")
+    @DisplayName("测试千问 1024 维超球面单位向量校验与余弦几何恒等式")
     void testHypersphericalVectorGeometry() {
         double[] u = createNormalizedVector(42);
         double[] v = createNormalizedVector(99);

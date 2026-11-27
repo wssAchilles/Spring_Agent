@@ -9,7 +9,7 @@ import java.util.*;
  * 多智能体分层情节记忆增量超球面聚类巩固与元规则反思提炼引擎 (HierarchicalEpisodicMemoryConsolidator)
  * <p>
  * 理论与数学契约 (对齐 Lemma 142.1 信息保真引理)：
- * 1. 唯一向量模型：阿里千问 (Qwen) 1536 维超球面单位向量空间 (S^1535)；
+ * 1. 唯一向量模型：阿里千问 (Qwen) 1024 维超球面单位向量空间 (S^1023)；
  * 2. 增量超球面质心聚类：复杂度 O(N * K * D)，动态维护最多 200 个主题质心池；
  * 3. MRU 质心前置启发式 + 贪心早停：平均内积比对次数降低 80%，1000 规模巩固耗时 <= 2.0ms；
  * 4. 闭式保真度计算：直接代入 Lemma 142.1 证明公式 F_k = ||S_k||_2 / n_k，O(1) 极速结算；
@@ -25,9 +25,9 @@ import java.util.*;
 public class HierarchicalEpisodicMemoryConsolidator {
 
     /**
-     * 阿里千问向量维度基线：1536 维
+     * 阿里千问向量维度基线：1024 维
      */
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
 
     /**
      * 超球面余弦聚类相似度基准阈值 (Lemma 142.1 下界)
@@ -73,7 +73,7 @@ public class HierarchicalEpisodicMemoryConsolidator {
             Objects.requireNonNull(agentId, "agentId 不能为空");
             Objects.requireNonNull(episodeSummary, "episodeSummary 不能为空");
             if (qwenEmbedding != null && qwenEmbedding.length != VECTOR_DIMENSION) {
-                throw new IllegalArgumentException("千问向量维度必须为 1536 维，当前为: " + qwenEmbedding.length);
+                throw new IllegalArgumentException("千问向量维度必须为 1024 维，当前为: " + qwenEmbedding.length);
             }
         }
     }

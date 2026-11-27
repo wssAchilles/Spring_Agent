@@ -86,13 +86,13 @@ class Phase119HierarchicalGraphRagContractTest {
         Map<String, InMemoryHeuristicSubgraphPruner.GraphNodeRecord> registry = new HashMap<>();
         Map<String, List<InMemoryHeuristicSubgraphPruner.AdjacencyEdge>> adj = new HashMap<>();
 
-        // 构造具有 1536 维单位超球面向量的图节点
-        float[] queryVec = createUnitVector(1536, 1.0f);
+        // 构造具有 1024 维单位超球面向量的图节点
+        float[] queryVec = createUnitVector(1024, 1.0f);
 
         for (int i = 0; i < nodeCount; i++) {
             String nodeId = "node-" + i;
             // 构造不同角度的单位向量
-            float[] nodeVec = createUnitVector(1536, (float) Math.cos(i * 0.05));
+            float[] nodeVec = createUnitVector(1024, (float) Math.cos(i * 0.05));
             registry.put(nodeId, new InMemoryHeuristicSubgraphPruner.GraphNodeRecord(
                     nodeId, "Entity-" + i, "Type-" + (i % 3), nodeVec
             ));
@@ -143,7 +143,7 @@ class Phase119HierarchicalGraphRagContractTest {
         Map<String, InMemoryHeuristicSubgraphPruner.GraphNodeRecord> registry = new HashMap<>();
         Map<String, List<InMemoryHeuristicSubgraphPruner.AdjacencyEdge>> adj = new HashMap<>();
 
-        float[] queryVec = createUnitVector(1536, 1.0f);
+        float[] queryVec = createUnitVector(1024, 1.0f);
         String hubId = "hub-chemical";
         registry.put(hubId, new InMemoryHeuristicSubgraphPruner.GraphNodeRecord(
                 hubId, "通用聚碳酸酯", "ChemicalHub", queryVec
@@ -153,7 +153,7 @@ class Phase119HierarchicalGraphRagContractTest {
         List<InMemoryHeuristicSubgraphPruner.AdjacencyEdge> hubEdges = new ArrayList<>();
         for (int i = 0; i < 60; i++) {
             String childId = "child-" + i;
-            float[] childVec = createUnitVector(1536, (float) (0.9 - i * 0.01));
+            float[] childVec = createUnitVector(1024, (float) (0.9 - i * 0.01));
             registry.put(childId, new InMemoryHeuristicSubgraphPruner.GraphNodeRecord(
                     childId, "衍生料号-" + i, "Material", childVec
             ));
@@ -237,7 +237,7 @@ class Phase119HierarchicalGraphRagContractTest {
                 "你是一个专业物料专家", "请继续推荐", history, tools
         );
 
-        assertEquals("deepseek-chat", payloadWithTools.get("model"));
+        assertEquals("deepseek-flash", payloadWithTools.get("model"));
         assertEquals(Map.of("type", "enabled"), payloadWithTools.get("thinking"));
         assertEquals("high", payloadWithTools.get("reasoning_effort"));
         assertNotNull(payloadWithTools.get("tools"));
@@ -270,7 +270,7 @@ class Phase119HierarchicalGraphRagContractTest {
     @Test
     @DisplayName("契约 6：纯 Java 21 Record 存证凭单 SHA-256 自签名与单比特篡改拦截")
     void testReceiptSignatureAndTamperProof() {
-        float[] queryVec = createUnitVector(1536, 1.0f);
+        float[] queryVec = createUnitVector(1024, 1.0f);
         Map<String, InMemoryHeuristicSubgraphPruner.GraphNodeRecord> registry = Map.of(
                 "ent-1", new InMemoryHeuristicSubgraphPruner.GraphNodeRecord("ent-1", "PC-901", "Material", queryVec)
         );

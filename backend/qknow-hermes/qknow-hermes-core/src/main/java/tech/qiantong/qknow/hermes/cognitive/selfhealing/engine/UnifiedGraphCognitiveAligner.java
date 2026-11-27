@@ -41,12 +41,12 @@ public class UnifiedGraphCognitiveAligner {
             double[] fEmb = factEmbeddings.get(fact);
             double maxAlignmentScore = 0.0;
 
-            if (fEmb != null && fEmb.length == 1536) {
+            if (fEmb != null && fEmb.length == 1024) {
                 for (SubgraphEntity ent : entityRegistry.values()) {
                     double[] entEmb = ent.embedding();
-                    if (entEmb != null && entEmb.length == 1536) {
+                    if (entEmb != null && entEmb.length == 1024) {
                         double dot = 0.0;
-                        for (int i = 0; i < 1536; i++) {
+                        for (int i = 0; i < 1024; i++) {
                             dot += fEmb[i] * entEmb[i];
                         }
                         double cosNorm = (dot + 1.0) * 0.5;

@@ -163,7 +163,7 @@ export function getWorkflowDslCompletions(): SchemaCompletionItem[] {
       label: "nodeType: SWARM_HANDOFF",
       kind: "Enum",
       detail: "Swarm 动态上下文交接节点",
-      documentation: "多智能体通过阿里千问 1536 维超球面名片动态发现并移交控制权。",
+      documentation: "多智能体通过阿里千问 1024 维超球面名片动态发现并移交控制权。",
       insertText: "nodeType: SWARM_HANDOFF\n"
     },
     {

@@ -30,7 +30,7 @@ public class Phase92StreamingInteractionContractTest {
     }
 
     /**
-     * 辅助方法：生成归一化阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * 辅助方法：生成归一化阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
      */
     private float[] generateNormalizedQwenEmbedding(int seed) {
         float[] v = new float[ZeroCopyContextSlice.EXPECTED_DIMENSION];
@@ -104,7 +104,7 @@ public class Phase92StreamingInteractionContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 3: 千问 1536 维超球面测地线零拷贝切片路由耗时 <= 50μs 且无深拷贝 (定理 1.2)")
+    @DisplayName("契约测试 3: 千问 1024 维超球面测地线零拷贝切片路由耗时 <= 50μs 且无深拷贝 (定理 1.2)")
     public void testZeroCopyRouter_OptimalSliceRoutingWithin50Micros() {
         String rawDialogue = "这是一个企业级财务智能体与用户关于2025年Q4财报的深度对话，包含风险评估与现金流预测。";
         String sessionId = "sess_fin_001";
@@ -138,7 +138,7 @@ public class Phase92StreamingInteractionContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 4: 零拷贝切片严格强校验 1536 维与超球面单位范数 (命题 2.1)")
+    @DisplayName("契约测试 4: 零拷贝切片严格强校验 1024 维与超球面单位范数 (命题 2.1)")
     public void testZeroCopyRouter_Enforces1536DimensionNormValidation() {
         String raw = "测试文本";
         float[] wrongDim = new float[512]; // 错误维度
@@ -146,7 +146,7 @@ public class Phase92StreamingInteractionContractTest {
         assertFalse(invalidSlice1.isValidEmbedding());
         assertThrows(IllegalArgumentException.class, () -> sliceRouter.registerSlice(invalidSlice1));
 
-        float[] unnormalized = new float[1536];
+        float[] unnormalized = new float[1024];
         unnormalized[0] = 5.0f; // 模长不为 1.0
         ZeroCopyContextSlice invalidSlice2 = new ZeroCopyContextSlice("inv_2", "sess", raw, 0, 4, unnormalized, "TEST", System.currentTimeMillis());
         assertFalse(invalidSlice2.isValidEmbedding());

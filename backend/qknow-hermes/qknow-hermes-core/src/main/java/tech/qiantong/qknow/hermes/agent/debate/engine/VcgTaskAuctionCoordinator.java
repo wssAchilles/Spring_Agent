@@ -8,7 +8,7 @@ import java.util.*;
 /**
  * 拓展 VCG 机制分层任务拍卖协调器 (VCG Task Auction Coordinator)
  * <p>
- * 集成阿里千问 1536 维超球面单位向量测地线门禁（s >= 0.70 硬过滤），并执行 Vickrey-Clarke-Groves (VCG)
+ * 集成阿里千问 1024 维超球面单位向量测地线门禁（s >= 0.70 硬过滤），并执行 Vickrey-Clarke-Groves (VCG)
  * 二阶外部性计费，确保智能体真实汇报技能与延迟是弱占优策略，杜绝劣质智能体搭便车与恶意刷单。
  * </p>
  *
@@ -20,7 +20,7 @@ public class VcgTaskAuctionCoordinator {
     private static final Logger log = LoggerFactory.getLogger(VcgTaskAuctionCoordinator.class);
 
     /**
-     * 阿里千问 1536 维超球面门禁余弦相似度阈值 (s >= 0.70)
+     * 阿里千问 1024 维超球面门禁余弦相似度阈值 (s >= 0.70)
      */
     public static final double SPHERICAL_GATE_THRESHOLD = 0.70;
 
@@ -48,7 +48,7 @@ public class VcgTaskAuctionCoordinator {
     /**
      * 执行拓展 VCG 任务拍卖协调
      *
-     * @param taskDemandVector 任务需求 1536 维超球面嵌入向量
+     * @param taskDemandVector 任务需求 1024 维超球面嵌入向量
      * @param bids             所有参与竞标的智能体出价
      * @return 拍卖裁定结果
      */
@@ -61,7 +61,7 @@ public class VcgTaskAuctionCoordinator {
         List<String> eliminated = new ArrayList<>();
         List<BidOffer> qualifiedBids = new ArrayList<>();
 
-        // 1. 阿里千问 1536 维超球面门禁过滤
+        // 1. 阿里千问 1024 维超球面门禁过滤
         for (BidOffer bid : bids) {
             double cosineSimilarity = computeSphericalCosine(taskDemandVector, bid.capabilityVector());
             if (cosineSimilarity < SPHERICAL_GATE_THRESHOLD) {

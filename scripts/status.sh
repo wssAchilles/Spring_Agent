@@ -75,4 +75,9 @@ print_redis
 
 echo
 echo "=== Neo4j 容器状态 ==="
-docker compose -f "$PROJECT_DIR/docker-compose.yml" ps neo4j
+NEO4J_COMPOSE_OUT="$(docker compose -f "$PROJECT_DIR/docker-compose.yml" ps neo4j 2>/dev/null || true)"
+if [[ -n "$NEO4J_COMPOSE_OUT" ]] && [[ "$(printf '%s\n' "$NEO4J_COMPOSE_OUT" | wc -l)" -gt 1 ]]; then
+  printf '%s\n' "$NEO4J_COMPOSE_OUT"
+elif command -v docker >/dev/null 2>&1; then
+  docker ps -a --filter "name=agent-neo4j" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+fi

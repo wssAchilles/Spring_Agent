@@ -247,14 +247,14 @@ public class Phase156MasterContractTest {
     }
 
     @Test
-    @DisplayName("契约 12: HypersphericalHippoPprEngine 1536 维超球面拓扑实体扩散")
+    @DisplayName("契约 12: HypersphericalHippoPprEngine 1024 维超球面拓扑实体扩散")
     void testHypersphericalHippoPprEngineDiffusion() {
         HypersphericalHippoPprEngine engine = new HypersphericalHippoPprEngine();
 
-        // 构造两个 1536 维超球面单位向量
-        float[] v1 = createUnitVector(1536, 0);
-        float[] v2 = createUnitVector(1536, 1);
-        float[] qVec = createUnitVector(1536, 0);
+        // 构造两个 1024 维超球面单位向量
+        float[] v1 = createUnitVector(1024, 0);
+        float[] v2 = createUnitVector(1024, 1);
+        float[] qVec = createUnitVector(1024, 0);
 
         List<HypersphericalHippoPprEngine.GraphEntity> entities = List.of(
                 new HypersphericalHippoPprEngine.GraphEntity("e1", "Kubernetes", "TOPIC", v1, 100),

@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class HermesBenchmarkProbeRunner {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     public static void main(String[] args) {
         if (args == null || args.length == 0) {
@@ -108,7 +108,7 @@ public class HermesBenchmarkProbeRunner {
         int docLen = 16;
         int numDocs = 5;
 
-        // 构造满足 ||v||_2 = 1.0 的 1536 维超球面单位向量
+        // 构造满足 ||v||_2 = 1.0 的 1024 维超球面单位向量
         float[] queryVecs = createNormalizedVectors(queryLen, DIM);
         float[] docVecs = createNormalizedVectors(numDocs * docLen, DIM);
         int[] docLens = new int[numDocs];
@@ -430,8 +430,8 @@ public class HermesBenchmarkProbeRunner {
 
         engine.recordTurn(sessionId, "user", "如何配置生产级 DeepSeek 思考流？", v1, Map.of("FRAMEWORK", "hermes", "MODEL", "deepseek-flash"));
         engine.recordTurn(sessionId, "assistant", "传入 extra_body thinking 参数", v2, Map.of("FRAMEWORK", "hermes", "MODEL", "deepseek-flash"));
-        engine.recordTurn(sessionId, "user", "千问超球面向量维度是多少？", v3, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1536"));
-        engine.recordTurn(sessionId, "assistant", "固定为 1536 维超球面单位向量", v4, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1536"));
+        engine.recordTurn(sessionId, "user", "千问超球面向量维度是多少？", v3, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1024"));
+        engine.recordTurn(sessionId, "assistant", "固定为 1024 维超球面单位向量", v4, Map.of("FRAMEWORK", "hermes", "EMBEDDING", "qwen_1024"));
         engine.recordTurn(sessionId, "system", "基线检查完成", v5, Map.of("FRAMEWORK", "hermes", "STATUS", "active"));
 
         List<HippocampalWorkingBuffer.RetrievalResult> recalled = engine.retrieveSimilarMemories(sessionId, v1, 2, 0.0f);

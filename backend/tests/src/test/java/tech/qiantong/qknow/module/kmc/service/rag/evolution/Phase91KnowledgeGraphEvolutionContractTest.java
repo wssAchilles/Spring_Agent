@@ -16,15 +16,15 @@ import static org.junit.jupiter.api.Assertions.*;
 public class Phase91KnowledgeGraphEvolutionContractTest {
 
     private double[] createNormalizedSphericalEmbedding(int seed) {
-        double[] vec = new double[1536];
+        double[] vec = new double[1024];
         Random rnd = new Random(seed);
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = rnd.nextGaussian();
             sumSq += vec[i] * vec[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] /= norm;
         }
         return vec;
@@ -192,7 +192,7 @@ public class Phase91KnowledgeGraphEvolutionContractTest {
     void testOntologyEvolution_ContractionMappingWithin100Micros() {
         OntologyEvolutionGovernor governor = new OntologyEvolutionGovernor();
 
-        // 注册标准本体谓词与千问 1536 维概念中心向量
+        // 注册标准本体谓词与千问 1024 维概念中心向量
         double[] ownsStockEmb = createNormalizedSphericalEmbedding(501);
         double[] subsidiaryOfEmb = createNormalizedSphericalEmbedding(502);
         double[] employedByEmb = createNormalizedSphericalEmbedding(503);
@@ -201,7 +201,7 @@ public class Phase91KnowledgeGraphEvolutionContractTest {
         governor.registerStandardPredicate("employedBy", employedByEmb);
 
         // 构造候选谓词 “占有股权” (与 ownsStock 高度对齐，微小扰动)
-        double[] candidateEmb = Arrays.copyOf(ownsStockEmb, 1536);
+        double[] candidateEmb = Arrays.copyOf(ownsStockEmb, 1024);
 
         // JVM 预热
         for (int w = 0; w < 100; w++) {

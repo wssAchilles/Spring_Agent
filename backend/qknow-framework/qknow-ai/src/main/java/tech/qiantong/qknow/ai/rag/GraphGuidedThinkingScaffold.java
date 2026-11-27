@@ -79,7 +79,7 @@ public class GraphGuidedThinkingScaffold {
      *
      * @param sessionId      会话 ID
      * @param query          用户查询
-     * @param queryEmb       查询 1536 维超球面向量
+     * @param queryEmb       查询 1024 维超球面向量
      * @param seedNodeIds    种子实体 ID 集合
      * @param allNodes       候选知识节点集合 (按 ID 索引)
      * @param allEdges       候选知识边集合

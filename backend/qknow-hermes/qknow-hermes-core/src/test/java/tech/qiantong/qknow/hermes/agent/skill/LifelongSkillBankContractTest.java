@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 终身自进化技能库与经验回放网络专项物理断言契约测试 (LifelongSkillBankContractTest)
  * <p>
- * 遵循 Java 21 虚拟环境隔离规约与阿里千问 1536 维超球面几何约束，
+ * 遵循 Java 21 虚拟环境隔离规约与阿里千问 1024 维超球面几何约束，
  * 验证 5 大核心工程与算法物理断言。
  * </p>
  *
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class LifelongSkillBankContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
     private static final String TEST_SECRET = "HERMES_TEST_SECRET_SKILL_2026";
 
     @Test

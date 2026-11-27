@@ -384,6 +384,7 @@
 </template>
   
   <script setup name="ExtStruct">
+  import { API_BASE_URL } from '@/utils/request';
 import {
   listExtStruct,
   getExtStruct,
@@ -469,7 +470,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/ext/extStruct/importData",
+  url: API_BASE_URL + "/ext/extStruct/importData",
 });
 
 const data = reactive({

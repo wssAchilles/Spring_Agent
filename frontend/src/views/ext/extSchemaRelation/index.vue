@@ -347,6 +347,7 @@
 </template>
 
 <script setup name="Relation">
+import { API_BASE_URL } from '@/utils/request';
 import { listRelation, getRelation, delRelation, addRelation, updateRelation } from "@/api/ext/extSchemaRelation/relation";
 import { getExtSchemaAllList } from "@/api/ext/extSchema/schema";
 import {getToken} from "@/utils/auth.js";
@@ -411,7 +412,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/ext/relation/importData"
+  url: API_BASE_URL + "/ext/relation/importData"
 });
 
 const data = reactive({

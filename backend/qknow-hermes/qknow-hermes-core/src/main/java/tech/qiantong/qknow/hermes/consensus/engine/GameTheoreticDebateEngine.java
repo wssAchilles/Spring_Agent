@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 纳什均衡多智能体博弈对抗辩论引擎
  * 基于定理 1.1 多智能体博弈对抗辩论纳什均衡收敛与有限轮次论据完备性定理
- * 结合阿里千问 1536 维超球面测地投影，计算观点散度，至多 3 轮内收敛，单步求解耗时 <= 50μs
+ * 结合阿里千问 1024 维超球面测地投影，计算观点散度，至多 3 轮内收敛，单步求解耗时 <= 50μs
  */
 @Component
 public class GameTheoreticDebateEngine {
@@ -38,7 +38,7 @@ public class GameTheoreticDebateEngine {
 
     private void validateEmbedding(float[] embedding) {
         if (embedding == null || embedding.length != DebateArgumentFrame.EXPECTED_DIMENSION) {
-            throw new IllegalArgumentException("论据嵌入向量必须为 1536 维阿里千问超球面单位向量");
+            throw new IllegalArgumentException("论据嵌入向量必须为 1024 维阿里千问超球面单位向量");
         }
         double sumSq = 0.0;
         for (float v : embedding) {

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 1. 规范化 Prompt 编译器与 64-Token 边界规整对齐 (Context Caching)
  * 2. Panama FFM 堆外连续 Slab 内存池与零拷贝向量打分
  * 3. 智能体微秒级轻量持久化检查点引擎与时光倒流状态回溯
- * 4. 全链路密码学常量时间防侧信道与千问 1536 维超球面几何约束
+ * 4. 全链路密码学常量时间防侧信道与千问 1024 维超球面几何约束
  */
 public class AiInfraContractTest {
 
@@ -196,12 +196,12 @@ public class AiInfraContractTest {
     }
 
     @Test
-    @DisplayName("契约四：全链路密码学防侧信道与千问 1536 维超球面几何约束契约")
-    public void testCryptographicZeroLeakageAndQwen1536HypersphericalGeometry() {
-        int qwenDim = 1536;
+    @DisplayName("契约四：全链路密码学防侧信道与千问 1024 维超球面几何约束契约")
+    public void testCryptographicZeroLeakageAndQwen1024HypersphericalGeometry() {
+        int qwenDim = 1024;
         Random rand = new Random(42);
 
-        // 1. 生成千问 1536 维超球面单位向量
+        // 1. 生成千问 1024 维超球面单位向量
         float[] vector = new float[qwenDim];
         double sumSq = 0.0;
         for (int i = 0; i < qwenDim; i++) {

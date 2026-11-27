@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Phase 121: 多智能体自适应分层协同、意图委托网络与有界状态流转中枢 契约测试
  * 严格验证 8 大核心工程契约：
- * 1. 契约 1: 阿里千问 1536 维超球面单位向量流形几何约束校验
+ * 1. 契约 1: 阿里千问 1024 维超球面单位向量流形几何约束校验
  * 2. 契约 2: 超球面测地意图匹配精度与 tau_intent >= 0.82 门禁拦截
  * 3. 契约 3: 李雅普诺夫单调递减与最大深度 D_max <= 4 硬熔断
  * 4. 契约 4: 双向即时乒乓交接 (A -> B -> A) 死锁拦截
@@ -42,37 +42,37 @@ class Phase121SwarmDelegationContractTest {
     }
 
     /**
-     * 生成严格满足 ||v||_2 = 1.0 的 1536 维超球面归一化测试向量
+     * 生成严格满足 ||v||_2 = 1.0 的 1024 维超球面归一化测试向量
      */
     private float[] createNormalized1536Vector(float seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) Math.sin(seed + i * 0.05);
             sumSq += v[i] * v[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) (v[i] / norm);
         }
         return v;
     }
 
     @Test
-    @DisplayName("契约 1: 阿里千问 1536 维超球面单位向量流形几何约束校验")
+    @DisplayName("契约 1: 阿里千问 1024 维超球面单位向量流形几何约束校验")
     void testContract1_HypersphericalGeometryConstraint() {
         // 1. 合法超球面向量校验
         float[] validVec = createNormalized1536Vector(1.0f);
         assertDoesNotThrow(() -> intentMatcher.validateHypersphericalConstraint(validVec));
 
-        // 2. 维度不匹配校验 (非 1536 维)
+        // 2. 维度不匹配校验 (非 1024 维)
         float[] invalidDimVec = new float[768];
         IllegalArgumentException dimEx = assertThrows(IllegalArgumentException.class,
                 () -> intentMatcher.validateHypersphericalConstraint(invalidDimVec));
-        assertTrue(dimEx.getMessage().contains("1536"));
+        assertTrue(dimEx.getMessage().contains("1024"));
 
         // 3. 模长未归一化校验 (未投射至 S^1535)
-        float[] unnormalizedVec = new float[1536];
+        float[] unnormalizedVec = new float[1024];
         unnormalizedVec[0] = 5.0f; // 模长明显大于 1.0
         IllegalStateException normEx = assertThrows(IllegalStateException.class,
                 () -> intentMatcher.validateHypersphericalConstraint(unnormalizedVec));

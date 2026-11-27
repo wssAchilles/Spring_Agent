@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * 严格执行学术与工业双重规范：
  * 1. 拜占庭容错定理判定 (n >= 3f + 1, Quorum Q >= 2f + 1)；
  * 2. 离散/结构化决策加权多数投票；
- * 3. 自由文本阿里千问 1536 维超球面加权 Medoid 中心选取；
+ * 3. 自由文本阿里千问 1024 维超球面加权 Medoid 中心选取；
  * 4. Fast Quorum 提前截断与 Fail-Open 优雅降级。
  */
 @Slf4j
@@ -136,7 +136,7 @@ public class ConsensusArbiter {
     }
 
     // ==========================================
-    // 3. 阿里千问 1536 维超球面加权 Medoid 中心选取
+    // 3. 阿里千问 1024 维超球面加权 Medoid 中心选取
     // ==========================================
 
     /**
@@ -149,7 +149,7 @@ public class ConsensusArbiter {
 
         int total = inspectedProposals.size();
         List<InspectedProposal> honest = inspectedProposals.stream()
-                .filter(p -> p.isHonest() && p.embedding1536() != null)
+                .filter(p -> p.isHonest() && p.embedding1024() != null)
                 .collect(Collectors.toList());
 
         if (honest.isEmpty()) {
@@ -180,13 +180,13 @@ public class ConsensusArbiter {
         // 依据加权余弦测地线相似度计算 Medoid 得分
         // Score(i) = sum_{j != i} (w_j * cos(v_i, v_j))
         for (int i = 0; i < m; i++) {
-            float[] vi = honest.get(i).embedding1536();
+            float[] vi = honest.get(i).embedding1024();
             double scoreSum = 0.0;
             double otherWeightSum = 0.0;
 
             for (int j = 0; j < m; j++) {
                 if (i != j) {
-                    float[] vj = honest.get(j).embedding1536();
+                    float[] vj = honest.get(j).embedding1024();
                     double wj = Math.max(0.01, honest.get(j).reputationWeight());
                     double sim = ByzantineWorkerFilter.dotProduct(vi, vj);
                     scoreSum += wj * sim;

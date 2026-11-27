@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 阿里千问 1536 维超球面与检索切片不可变签名双重复合键认知缓存器 (定理 3 局部李普希茨零幻觉)
+ * 阿里千问 1024 维超球面与检索切片不可变签名双重复合键认知缓存器 (定理 3 局部李普希茨零幻觉)
  */
 @Service
 public class CoTCognitiveCacheService {
@@ -60,7 +60,7 @@ public class CoTCognitiveCacheService {
      * 生成语义聚类分桶 Key: 基于超球面重要维度的局部哈希 (LSH)
      */
     public String computeClusterId(float[] embedding) {
-        if (embedding == null || embedding.length != 1536) {
+        if (embedding == null || embedding.length != 1024) {
             return "cluster_default";
         }
         // 提取前 8 个超球面基底正负符号位构成二进制簇哈希
@@ -86,7 +86,7 @@ public class CoTCognitiveCacheService {
      * 查询认知脚手架 (定理 3: 测地线距离 <= 0.40 且知识签名严格匹配)
      */
     public Optional<CognitiveScaffold> getScaffold(float[] queryEmbedding, List<String> sliceSignatures) {
-        if (queryEmbedding == null || queryEmbedding.length != 1536) {
+        if (queryEmbedding == null || queryEmbedding.length != 1024) {
             return Optional.empty();
         }
         String targetSlicesHash = computeSlicesSignature(sliceSignatures);
@@ -102,7 +102,7 @@ public class CoTCognitiveCacheService {
             if (!targetSlicesHash.equals(ce.scaffold().knowledgeSlicesSha256())) {
                 continue;
             }
-            // 2. 计算阿里千问 1536 维超球面点积余弦相似度
+            // 2. 计算阿里千问 1024 维超球面点积余弦相似度
             double cosine = computeCosineSimilarity(queryEmbedding, ce.qwen1536Embedding());
             if (cosine >= SIMILARITY_THRESHOLD) {
                 log.info("[CoTCache] 命中认知脚手架! 余弦相似度: {}, cluster: {}", String.format("%.4f", cosine), ce.scaffold().clusterId());
@@ -117,7 +117,7 @@ public class CoTCognitiveCacheService {
      */
     public boolean putScaffold(float[] queryEmbedding, List<String> sliceSignatures, String distilledScaffold,
                               String tenantId, String securityScopeHash, long ttlSeconds) {
-        if (queryEmbedding == null || queryEmbedding.length != 1536 || distilledScaffold == null || distilledScaffold.isBlank()) {
+        if (queryEmbedding == null || queryEmbedding.length != 1024 || distilledScaffold == null || distilledScaffold.isBlank()) {
             return false;
         }
         if (localL1Cache.size() >= MAX_L1_CAPACITY) {
@@ -153,7 +153,7 @@ public class CoTCognitiveCacheService {
 
     private double computeCosineSimilarity(float[] a, float[] b) {
         double dot = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             dot += a[i] * b[i];
         }
         return Math.max(-1.0, Math.min(1.0, dot));

@@ -32,6 +32,15 @@ public class DagCheckpointManager {
      * 内存降级缓存（用于纯内存单测或无真实 DB 环境）
      */
     private final Map<String, DagCheckpoint> inMemoryStore = new ConcurrentHashMap<>();
+    private static final int COLD_STANDBY_CAPACITY = 256;
+    // 三级冷备可逆隔离环形缓冲区，严禁发生不可逆物理硬删除
+    private final Map<String, DagCheckpoint> coldStandbyRingBuffer = Collections.synchronizedMap(
+            new LinkedHashMap<>(COLD_STANDBY_CAPACITY, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, DagCheckpoint> eldest) {
+                    return size() > COLD_STANDBY_CAPACITY;
+                }
+            });
     private final java.util.concurrent.atomic.AtomicBoolean tableInitialized = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     @PostConstruct
@@ -163,7 +172,7 @@ public class DagCheckpointManager {
                            version, variables_json, status, compensation_log,
                            lease_owner_id, lease_expire_at, fencing_token
                     FROM dag_checkpoints
-                    WHERE runtime_id = ?
+                    WHERE runtime_id = ? AND status <> 'COLD_ARCHIVED'
                     """, (rs, rowNum) -> {
                 DagCheckpoint checkpoint = new DagCheckpoint();
                 checkpoint.setRuntimeId(rs.getString("runtime_id"));
@@ -187,18 +196,60 @@ public class DagCheckpointManager {
     }
 
     /**
-     * 删除检查点
+     * 软删除隔离检查点至三级冷备环形缓冲区（禁止不可逆物理硬删除）
      */
     public void deleteCheckpoint(String runtimeId) {
+        if (runtimeId == null) {
+            return;
+        }
         try {
             ensureTableExists();
             if (jdbcTemplate == null) {
-                inMemoryStore.remove(runtimeId);
+                DagCheckpoint removed = inMemoryStore.remove(runtimeId);
+                if (removed != null) {
+                    coldStandbyRingBuffer.put(runtimeId, removed);
+                }
                 return;
             }
-            jdbcTemplate.update("DELETE FROM dag_checkpoints WHERE runtime_id = ?", runtimeId);
+            DagCheckpoint existing = loadCheckpoint(runtimeId);
+            if (existing != null) {
+                coldStandbyRingBuffer.put(runtimeId, existing);
+            }
+            jdbcTemplate.update("""
+                    UPDATE dag_checkpoints
+                    SET status = 'COLD_ARCHIVED', lease_owner_id = NULL, updated_at = CURRENT_TIMESTAMP
+                    WHERE runtime_id = ?
+                    """, runtimeId);
         } catch (Exception e) {
-            log.warn("Failed to delete checkpoint: {}", e.getMessage());
+            log.warn("Failed to archive checkpoint to cold standby: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 从三级冷备环形缓冲区快速回滚恢复已归档检查点
+     */
+    public DagCheckpoint restoreFromColdStandby(String runtimeId) {
+        if (runtimeId == null) {
+            return null;
+        }
+        DagCheckpoint archived = coldStandbyRingBuffer.remove(runtimeId);
+        if (jdbcTemplate == null) {
+            if (archived != null) {
+                inMemoryStore.put(runtimeId, archived);
+            }
+            return archived;
+        }
+        try {
+            jdbcTemplate.update("""
+                    UPDATE dag_checkpoints
+                    SET status = 'SUSPENDED', version = version + 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE runtime_id = ? AND status = 'COLD_ARCHIVED'
+                    """, runtimeId);
+            DagCheckpoint reloaded = loadCheckpoint(runtimeId);
+            return reloaded != null ? reloaded : archived;
+        } catch (Exception e) {
+            log.warn("Failed to restore checkpoint from cold standby: {}", e.getMessage());
+            return archived;
         }
     }
 

@@ -87,13 +87,13 @@ public class SlaRoutingStageHandler implements PipelineStageHandler {
 
         try {
             ProviderChannel selected = slaRouter.selectOptimalChannel(defaultCandidates, scenario);
-            String model = selected.resolveUpstreamModel("deepseek-chat");
+            String model = selected.resolveUpstreamModel("deepseek-flash");
             context.setRoutingResult(selected.getChannelId(), model, selected.getCostPerMillionTokens());
             log.debug("[SlaRouting] 选路完成: scenario={}, channelId={}, model={}",
                     scenario, selected.getChannelId(), model);
         } catch (Exception e) {
             log.warn("[SlaRouting] 选路异常，Fail-Open 降级默认通道: {}", e.getMessage());
-            context.setRoutingResult("official-deepseek", "deepseek-chat", 2.0);
+            context.setRoutingResult("official-deepseek", "deepseek-flash", 2.0);
         }
     }
 }

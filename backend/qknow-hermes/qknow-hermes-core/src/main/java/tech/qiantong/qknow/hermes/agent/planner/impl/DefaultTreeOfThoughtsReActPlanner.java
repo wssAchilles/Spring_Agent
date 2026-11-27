@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 生产级 MCTS + ToT 认知树搜索规划器实现 (DefaultTreeOfThoughtsReActPlanner)
- * 结合 UCB1 置信上界与阿里千问 1536 维超球面单位向量几何偏角，实现多分支前瞻推演与错误回溯剪枝。
+ * 结合 UCB1 置信上界与阿里千问 1024 维超球面单位向量几何偏角，实现多分支前瞻推演与错误回溯剪枝。
  */
 @Slf4j
 public class DefaultTreeOfThoughtsReActPlanner implements TreeOfThoughtsReActPlanner {
@@ -289,15 +289,15 @@ public class DefaultTreeOfThoughtsReActPlanner implements TreeOfThoughtsReActPla
     }
 
     private float[] createSyntheticHypersphericalVector(String seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         int hash = seed.hashCode();
         double normSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) Math.sin(hash + i);
             normSq += v[i] * v[i];
         }
         float invNorm = (float) (1.0 / Math.sqrt(normSq));
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] *= invNorm; // L2 严格归一化为 1.0 (超球面单位向量)
         }
         return v;

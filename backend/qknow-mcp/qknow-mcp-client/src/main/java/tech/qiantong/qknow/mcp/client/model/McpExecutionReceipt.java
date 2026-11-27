@@ -3,6 +3,7 @@ package tech.qiantong.qknow.mcp.client.model;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.Locale;
 
 /**
  * 不可变 MCP 执行存证凭单 (McpExecutionReceipt)
@@ -90,7 +91,7 @@ public record McpExecutionReceipt(
      * 自签名验真：验证凭单是否未经篡改
      */
     public boolean verifySignature() {
-        if (this.signature == null) {
+        if (this.signature == null || this.signature.isEmpty()) {
             return false;
         }
         String expected = calculateSignature(
@@ -98,6 +99,9 @@ public record McpExecutionReceipt(
                 riskLevel, approvalStatus, approverUserId, executionStatus,
                 durationNanos, timestampMillis
         );
-        return expected.equalsIgnoreCase(this.signature);
+        // 使用常量时间比对校验 MCP 客户端执行凭单签名
+        return MessageDigest.isEqual(
+                expected.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                this.signature.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 }

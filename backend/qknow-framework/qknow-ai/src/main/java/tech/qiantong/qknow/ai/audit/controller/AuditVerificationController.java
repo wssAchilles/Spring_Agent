@@ -11,6 +11,7 @@ import tech.qiantong.qknow.ai.audit.merkle.MerkleProof;
 import tech.qiantong.qknow.ai.audit.merkle.MerkleTreeEngine;
 import tech.qiantong.qknow.ai.audit.model.CausalTopologyExportVO;
 import tech.qiantong.qknow.ai.audit.model.GuardrailMetricsVO;
+import tech.qiantong.qknow.ai.guardrail.GuardrailPolicyCoordinator;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,15 +33,22 @@ public class AuditVerificationController {
 
     private final MerkleTreeEngine merkleTreeEngine;
     private final CausalAttributionGraph causalGraph;
+    private final GuardrailPolicyCoordinator guardrailCoordinator;
 
     // 租户到 TraceId 的轻量映射账本，用于强制多租户数据隔离
     private final Map<String, String> traceTenantMap = new ConcurrentHashMap<>();
 
+    public AuditVerificationController(MerkleTreeEngine merkleTreeEngine, CausalAttributionGraph causalGraph) {
+        this(merkleTreeEngine, causalGraph, null);
+    }
+
     @Autowired
     public AuditVerificationController(MerkleTreeEngine merkleTreeEngine,
-                                       @Autowired(required = false) CausalAttributionGraph causalGraph) {
+                                       @Autowired(required = false) CausalAttributionGraph causalGraph,
+                                       @Autowired(required = false) GuardrailPolicyCoordinator guardrailCoordinator) {
         this.merkleTreeEngine = merkleTreeEngine;
         this.causalGraph = causalGraph != null ? causalGraph : new CausalAttributionGraph();
+        this.guardrailCoordinator = guardrailCoordinator;
     }
 
     /**
@@ -173,37 +181,13 @@ public class AuditVerificationController {
     }
 
     /**
-     * 4. 安全护栏态势感知大屏监控指标聚合接口
+     * 4. 安全护栏态势感知大屏监控指标聚合接口（读取真实 GuardrailPolicyCoordinator 实时统计，零静态模拟数据）
      */
     @GetMapping("/guardrail/metrics")
     public ResponseEntity<GuardrailMetricsVO> getGuardrailMetrics() {
-        // 构建聚合态势数据
-        Map<String, Long> piiDist = new LinkedHashMap<>();
-        piiDist.put("PHONE", 412L);
-        piiDist.put("ID_CARD", 188L);
-        piiDist.put("BANK_CARD", 96L);
-        piiDist.put("EMAIL", 325L);
-        piiDist.put("API_TOKEN", 45L);
-
-        List<GuardrailMetricsVO.HourlyRiskPoint> hourlyPoints = new ArrayList<>();
-        long now = System.currentTimeMillis();
-        for (int i = 23; i >= 0; i--) {
-            String hourLabel = String.format("%02d:00", (24 - i) % 24);
-            long interceptionCount = 10 + (long) (Math.sin(i) * 6 + 5);
-            double avgScore = 0.92 + (Math.cos(i) * 0.05);
-            hourlyPoints.add(new GuardrailMetricsVO.HourlyRiskPoint(hourLabel, interceptionCount, Math.min(1.0, avgScore)));
-        }
-
-        GuardrailMetricsVO metrics = new GuardrailMetricsVO(
-                12480L,
-                1066L,
-                89L,
-                0.092,
-                0.965,
-                piiDist,
-                hourlyPoints,
-                now
-        );
+        GuardrailMetricsVO metrics = guardrailCoordinator != null
+                ? guardrailCoordinator.snapshotMetrics()
+                : GuardrailMetricsVO.empty();
         return ResponseEntity.ok(metrics);
     }
 

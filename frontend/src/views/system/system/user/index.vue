@@ -377,6 +377,7 @@
 </template>
 
 <script setup name="User">
+import { API_BASE_URL } from '@/utils/request';
 import {getToken} from "@/utils/auth.js";
 import Cookies from "js-cookie";
 import DeptTree from "@/components/DeptTree";
@@ -426,7 +427,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: {Authorization: "Bearer " + getToken()},
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/system/user/importData"
+  url: API_BASE_URL + "/system/user/importData"
 });
 // 列显隐信息
 const columns = ref([

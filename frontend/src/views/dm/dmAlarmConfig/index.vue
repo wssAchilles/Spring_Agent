@@ -393,6 +393,7 @@
 </template>
 
 <script setup name="Config">
+import { API_BASE_URL } from '@/utils/request';
 import { listConfig, getConfig, delConfig, addConfig, updateConfig } from "@/api/dm/dmAlarmConfig/config";
 import {getToken} from "@/utils/auth.js";
 
@@ -468,7 +469,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/dm/config/importData"
+  url: API_BASE_URL + "/dm/config/importData"
 });
 
 const data = reactive({

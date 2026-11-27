@@ -6,6 +6,8 @@ import tech.qiantong.qknow.hermes.judge.AiJudgeService;
 import tech.qiantong.qknow.hermes.judge.JudgeResult;
 import tech.qiantong.qknow.hermes.proto.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -40,6 +42,7 @@ public class ReflectiveAgent {
             boolean passed = false;
 
             ChatRequest currentRequest = request;
+            List<ChatMessage> accumulatedHistory = new ArrayList<>(request.getHistoryList());
 
             for (int round = 1; round <= maxRetries + 1; round++) {
                 totalRounds = round;
@@ -77,12 +80,12 @@ public class ReflectiveAgent {
                     break;
                 }
 
-                // 3. AI Judge 评分
+                // 3. AI Judge 评分（严格对齐 query, context, answer 入参顺序）
                 String systemPrompt = currentRequest.getSystemPrompt();
                 String question = currentRequest.getQuestion();
                 String answer = fullText.get();
 
-                JudgeResult judgeResult = judgeService.judge(systemPrompt, question, answer);
+                JudgeResult judgeResult = judgeService.judge(question, systemPrompt, answer);
 
                 // 4. 发射 ReflectionScore
                 emitter.next(ChatEvent.newBuilder()
@@ -111,13 +114,22 @@ public class ReflectiveAgent {
                 log.info("反思循环第 {} 轮未通过评分 (score={}), 注入反思意见并重试...",
                         round, judgeResult.getOverallScore());
 
-                // 结构化回填上一轮的评审意见与改进建议
+                // 结构化回填上一轮的评审意见与改进建议至历史对话尾部，严格保持 SystemPrompt 字节级不变以保护 DeepSeek 1M Context Cache
                 String feedback = judgeResult.getFeedback() != null ? judgeResult.getFeedback() : "";
-                String critiqueNotice = "\n\n[reflection_critique: 上一轮回答未通过评估。评审意见与改进建议: " + feedback + "。请在本次回答中针对性修正该问题。]";
-                String enhancedSystemPrompt = (request.getSystemPrompt() != null ? request.getSystemPrompt() : "") + critiqueNotice;
+                String critiqueNotice = "[reflection_critique: 上一轮回答未通过评估。评审意见与改进建议: " + feedback + "。请在本次回答中针对性修正该问题。]";
+
+                accumulatedHistory.add(ChatMessage.newBuilder()
+                        .setRole("assistant")
+                        .setContent(answer != null ? answer : "")
+                        .build());
+                accumulatedHistory.add(ChatMessage.newBuilder()
+                        .setRole("user")
+                        .setContent(critiqueNotice)
+                        .build());
 
                 currentRequest = request.toBuilder()
-                        .setSystemPrompt(enhancedSystemPrompt)
+                        .clearHistory()
+                        .addAllHistory(accumulatedHistory)
                         .build();
             }
 

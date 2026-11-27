@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 覆盖 10 项核心契约：
  * 1. contract01: 拜占庭容错硬界限定理 (Theorem 1.1: n >= 3f + 1, Quorum Q >= 2f + 1)
  * 2. contract02: 离散结构化提案加权多数派快速投票 (FAST_QUORUM_DISCRETE)
- * 3. contract03: 自由文本阿里千问 1536 维超球面加权 Medoid 选取 (FAST_QUORUM_MEDOID)
+ * 3. contract03: 自由文本阿里千问 1024 维超球面加权 Medoid 选取 (FAST_QUORUM_MEDOID)
  * 4. contract04: 滑动窗口 EMA 信誉账本自适应奖惩与入狱隔离 (JAILED Quarantine & Recovery)
  * 5. contract05: 拜占庭对抗提示词越狱注入 100% 静态硬核阻断 (Prompt Injection 100% Block)
  * 6. contract06: 超球面语义离群节点 2.0-sigma 统计学剪枝过滤 (NOISY_OUTLIER Pruning)
@@ -100,7 +100,7 @@ public class Phase31MultiAgentConsensusContractTest {
     }
 
     @Test
-    @DisplayName("契约03: 自由文本阿里千问 1536 维超球面加权 Medoid 选取")
+    @DisplayName("契约03: 自由文本阿里千问 1024 维超球面加权 Medoid 选取")
     void contract03_continuousMedoid_selectsCentermostProposal() {
         String taskId = "task-medoid-001";
 
@@ -112,7 +112,7 @@ public class Phase31MultiAgentConsensusContractTest {
         List<InspectedProposal> inspected = workerFilter.filterProposals(List.of(p1, p2, p3));
         for (InspectedProposal p : inspected) {
             assertTrue(p.isHonest());
-            assertEquals(1536, p.embedding1536().length);
+            assertEquals(1024, p.embedding1024().length);
         }
 
         ConsensusResult result = arbiter.arbitrateContinuousMedoid(taskId, inspected);
@@ -188,7 +188,7 @@ public class Phase31MultiAgentConsensusContractTest {
 
         // 构造特征明确的向量生成器，模拟 3 个诚实节点语义高度聚集在方向 A，1 个离群节点偏向负方向
         workerFilter.setEmbeddingGenerator(text -> {
-            float[] vec = new float[1536];
+            float[] vec = new float[1024];
             if (text.contains("HONEST")) {
                 Arrays.fill(vec, 0.5f);
             } else {

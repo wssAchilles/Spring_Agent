@@ -23,12 +23,12 @@ public class DiscountedLinUcbRouter {
         MULTI_KB
     }
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final int FEATURE_DIM = 32;
 
     private final double alpha; // 探索置信区间缩放系数
     private final double gamma; // 折扣衰减因子
-    private final float[][] projectionMatrix; // 1536 -> 32 固定正交降维投影矩阵
+    private final float[][] projectionMatrix; // 1024 -> 32 固定正交降维投影矩阵
 
     // 每个 Action 对应的 LinUCB 状态
     public static class ArmState {
@@ -92,10 +92,10 @@ public class DiscountedLinUcbRouter {
     }
 
     /**
-     * 将 1536 维千问 Embedding 快速正交投影降维至 32 维特征
+     * 将 1024 维千问 Embedding 快速正交投影降维至 32 维特征
      */
-    public double[] projectEmbedding(float[] embedding1536) {
-        if (embedding1536 == null || embedding1536.length < EMBEDDING_DIM) {
+    public double[] projectEmbedding(float[] embedding1024) {
+        if (embedding1024 == null || embedding1024.length < EMBEDDING_DIM) {
             double[] fallback = new double[FEATURE_DIM];
             fallback[0] = 1.0;
             return fallback;
@@ -104,7 +104,7 @@ public class DiscountedLinUcbRouter {
         for (int j = 0; j < FEATURE_DIM; j++) {
             double sum = 0.0;
             for (int i = 0; i < EMBEDDING_DIM; i++) {
-                sum += embedding1536[i] * projectionMatrix[i][j];
+                sum += embedding1024[i] * projectionMatrix[i][j];
             }
             feature[j] = sum;
         }

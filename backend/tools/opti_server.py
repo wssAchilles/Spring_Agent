@@ -38,52 +38,54 @@ def startup_event():
     except Exception as e:
         print(f"Failed to initialize Gurobi WLS: {e}")
 
-class OptimizeRequest(BaseModel):
-    code: str
+class LinearProgramSpec(BaseModel):
+    # 声明式线性规划模型描述，替代危险的任意 Python 代码执行
+    sense: str = "MINIMIZE"
+    objective: dict[str, float] = {}
+    variables: dict[str, dict[str, float | str]] = {}
+    constraints: list[dict] = []
 
 @app.post("/solve")
-def solve_model(req: OptimizeRequest):
+def solve_model(spec: LinearProgramSpec):
     if not global_env:
         raise HTTPException(status_code=500, detail="Gurobi environment is not initialized (missing WLS credentials).")
-    
-    # 构建安全沙盒执行的 globals 和 locals
-    # 大模型生成的代码应当将结果写入预注入的 output_dict 中
-    output_dict = {}
-    
-    # 限制高危模块
-    safe_builtins = {
-        'print': print,
-        'range': range,
-        'len': len,
-        'sum': sum,
-        'Exception': Exception,
-        'dict': dict,
-        'list': list,
-        'tuple': tuple,
-        'set': set,
-        'int': int,
-        'float': float,
-        'str': str,
-        'bool': bool,
-    }
-    
-    exec_globals = {
-        '__builtins__': safe_builtins,
-        'gp': gp,
-        'GRB': GRB,
-        'global_env': global_env,
-        'output_dict': output_dict
-    }
-    
+
     try:
-        # 执行大模型生成的代码
-        exec(req.code, exec_globals, {})
-        
-        # 约定：如果模型遇到 Infeasible，必须由生成代码调用 computeIIS 或直接在捕获异常时处理
-        # 但我们也可以通过 output_dict 直接拿到模型对象吗？
-        # 最好是大模型生成的代码自行提取，因为沙盒外我们没有直接持有 Model 对象（除非约定变量名）
+        # 基于结构化声明式参数构建 Gurobi 模型，彻底移除动态代码执行入口以根除沙箱逃逸与 RCE 风险
+        model = gp.Model("declarative_lp", env=global_env)
+        var_map = {}
+        for name, cfg in spec.variables.items():
+            lb = float(cfg.get("lb", 0.0))
+            ub = float(cfg.get("ub", GRB.INFINITY))
+            vtype_str = str(cfg.get("vtype", "CONTINUOUS")).upper()
+            vtype = GRB.INTEGER if vtype_str == "INTEGER" else (GRB.BINARY if vtype_str == "BINARY" else GRB.CONTINUOUS)
+            var_map[name] = model.addVar(lb=lb, ub=ub, vtype=vtype, name=name)
+
+        obj_expr = gp.quicksum(float(coeff) * var_map[var_name] for var_name, coeff in spec.objective.items() if var_name in var_map)
+        sense_flag = GRB.MAXIMIZE if spec.sense.upper() == "MAXIMIZE" else GRB.MINIMIZE
+        model.setObjective(obj_expr, sense_flag)
+
+        for idx, c in enumerate(spec.constraints):
+            terms = c.get("terms", {})
+            op = c.get("op", "<=")
+            rhs = float(c.get("rhs", 0.0))
+            lhs = gp.quicksum(float(w) * var_map[vn] for vn, w in terms.items() if vn in var_map)
+            if op == "<=":
+                model.addConstr(lhs <= rhs, name=f"c_{idx}")
+            elif op == ">=":
+                model.addConstr(lhs >= rhs, name=f"c_{idx}")
+            elif op == "==":
+                model.addConstr(lhs == rhs, name=f"c_{idx}")
+            else:
+                raise ValueError(f"Unsupported constraint operator: {op}")
+
+        model.optimize()
+        output_dict = {
+            "status_code": model.Status,
+            "objective_value": model.ObjVal if model.SolCount > 0 else None,
+            "solution": {k: v.X for k, v in var_map.items()} if model.SolCount > 0 else {}
+        }
         return {"status": "SUCCESS", "data": output_dict}
-        
     except Exception as e:
         error_trace = traceback.format_exc()
         return {"status": "ERROR", "error": str(e), "traceback": error_trace}

@@ -10,10 +10,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 /**
- * 千问 1536 维超球面多意图正交投影与互斥工具路由解耦器 (Hyperspherical Intent Disentangler)
+ * 千问 1024 维超球面多意图正交投影与互斥工具路由解耦器 (Hyperspherical Intent Disentangler)
  * <p>
  * 核心理论契约与几何公理 (Lemma 144.2)：
- * 1. 严格锁定阿里千问 1536 维单位超球流形 (S^1535, ||v||_2 = 1.0)，使用余弦测地度量；
+ * 1. 严格锁定阿里千问 1024 维单位超球流形 (S^1023, ||v||_2 = 1.0)，使用余弦测地度量；
  * 2. 改进 Gram-Schmidt 正交投影：消除跨意图特征混叠，互信息上界理论趋近于零 (I(z_i; z_j) = 0)；
  * 3. 互斥工具写写冲突消歧：当语义重叠度超过阈值 (tau_conflict = 0.70) 或带有显式互斥副作用时，
  *    自动将其由危险的并发调用转换为因果 DAG 拓扑先后序，彻底杜绝跨智能体资源竞争死锁。
@@ -29,7 +29,7 @@ public class HypersphericalIntentDisentangler {
     /**
      * 阿里千问标准 Embedding 维度约束
      */
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     /**
      * 冲突消歧语义余弦阈值
@@ -94,10 +94,10 @@ public class HypersphericalIntentDisentangler {
     ) {}
 
     /**
-     * 执行千问 1536 维超球面多意图正交投影与冲突消歧主流程
+     * 执行千问 1024 维超球面多意图正交投影与冲突消歧主流程
      *
      * @param taskId 任务标识
-     * @param rawTaskEmbedding 复合任务原始向量 (1536 维)
+     * @param rawTaskEmbedding 复合任务原始向量 (1024 维)
      * @param candidateTools 候选工具元数据池
      * @param conflictThreshold 冲突消歧阈值 (默认 0.70)
      * @param minActivationThreshold 意图选拔最小激活得分 (默认 0.10)
@@ -115,7 +115,7 @@ public class HypersphericalIntentDisentangler {
             return new DisentangleResult(taskId, List.of(), List.of(), 0.0, 0.0, "EMPTY", 0L);
         }
 
-        // 1. 规范化任务向量至超球面单位球 S^1535
+        // 1. 规范化任务向量至超球面单位球 S^1023
         double[] normalizedTask = normalizeVector(rawTaskEmbedding);
 
         // 2. 改进 Gram-Schmidt 正交基底构建 (S_ortho)

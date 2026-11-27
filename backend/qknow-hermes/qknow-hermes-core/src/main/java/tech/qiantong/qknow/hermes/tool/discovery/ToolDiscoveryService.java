@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 /**
  * 工具发现与动态意图投影服务
- * 自动发现 Spring 容器中的内置工具，并联动 McpTwoPhaseProjectionGovernor 实现千问 1536 维超球面动态工具投影
+ * 自动发现 Spring 容器中的内置工具，并联动 McpTwoPhaseProjectionGovernor 实现千问 1024 维超球面动态工具投影
  */
 @Slf4j
 public class ToolDiscoveryService {
@@ -45,14 +45,14 @@ public class ToolDiscoveryService {
     ) {}
 
     /**
-     * 基于用户查询与千问 1536 维超球面向量执行两阶段动态投影发现
+     * 基于用户查询与千问 1024 维超球面向量执行两阶段动态投影发现
      *
      * @param query                         用户查询文本
-     * @param querySphericalEmbedding1536    1536 维超球面单位向量 (||v||_2 = 1.0)
+     * @param querySphericalEmbedding1024    1024 维超球面单位向量 (||v||_2 = 1.0)
      * @param topK                          保留候选上限 (默认 5)
      * @return 剪枝后的动态工具集与防篡改存证凭单
      */
-    public DynamicToolSet discoverProjectedTools(String query, float[] querySphericalEmbedding1536, int topK) {
+    public DynamicToolSet discoverProjectedTools(String query, float[] querySphericalEmbedding1024, int topK) {
         int safeK = topK > 0 ? topK : McpTwoPhaseProjectionGovernor.DEFAULT_TOP_K;
         Map<String, FunctionToolCallback<?, ?>> allMcpTools = mcpToolAdapter != null ?
                 mcpToolAdapter.getMcpTools() : Collections.emptyMap();
@@ -61,9 +61,9 @@ public class ToolDiscoveryService {
         List<String> projectedCodes = new ArrayList<>();
         double compressionRatio = 0.0;
 
-        // 若具备治理器且提供了合规的 1536 维向量，执行超球面 MIPS 检索与 Schema 剪枝
-        if (projectionGovernor != null && querySphericalEmbedding1536 != null &&
-                querySphericalEmbedding1536.length == McpTwoPhaseProjectionGovernor.EMBEDDING_DIMENSION) {
+        // 若具备治理器且提供了合规的 1024 维向量，执行超球面 MIPS 检索与 Schema 剪枝
+        if (projectionGovernor != null && querySphericalEmbedding1024 != null &&
+                querySphericalEmbedding1024.length == McpTwoPhaseProjectionGovernor.EMBEDDING_DIMENSION) {
 
             // 同步已发现的 MCP 工具元信息至治理器
             for (Map.Entry<String, FunctionToolCallback<?, ?>> entry : allMcpTools.entrySet()) {
@@ -80,7 +80,7 @@ public class ToolDiscoveryService {
             }
 
             McpTwoPhaseProjectionGovernor.ProjectionGovernanceReport report =
-                    projectionGovernor.projectAndPrune(querySphericalEmbedding1536, safeK);
+                    projectionGovernor.projectAndPrune(querySphericalEmbedding1024, safeK);
 
             for (McpTwoPhaseProjectionGovernor.ProjectedToolPayload payload : report.projectedTools()) {
                 FunctionToolCallback<?, ?> cb = allMcpTools.get(payload.toolCode());

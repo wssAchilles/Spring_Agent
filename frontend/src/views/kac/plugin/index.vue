@@ -355,6 +355,7 @@
 </template>
 
 <script setup name="Plugin">
+import { API_BASE_URL } from '@/utils/request';
 // import {
 //   listPlugin,
 //   getPlugin,
@@ -443,7 +444,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/kac/plugin/importData",
+  url: API_BASE_URL + "/kac/plugin/importData",
 });
 
 const data = reactive({
@@ -611,7 +612,7 @@ function getImage(row) {
   if (!row.coverImage) {
     return GraphCover;
   }
-  return `${import.meta.env.VITE_APP_BASE_API}/profile${row.coverImage}`;
+  return `${API_BASE_URL}/profile${row.coverImage}`;
 }
 
 /** 状态修改  */

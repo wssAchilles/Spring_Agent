@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class VirtualMemoryPagingContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
     private static final String SECRET_KEY = "test_virtual_memory_paging_secret";
 
     @Test
@@ -39,15 +39,15 @@ class VirtualMemoryPagingContractTest {
         assertTrue(core.verifySignature(SECRET_KEY), "合法密钥必须验签通过");
         assertFalse(core.verifySignature("WRONG_KEY"), "非法密钥必须验签失败");
 
-        // 2. RecallPage 1536 维超球面向量严格约束
-        float[] vector1536 = createNormalizedVector(DIM);
+        // 2. RecallPage 1024 维超球面向量严格约束
+        float[] vector1024 = createNormalizedVector(DIM);
         MemoryPage.RecallPage recall = MemoryPage.RecallPage.createAndSign(
-                2, "user", "执行企业对账核验", vector1536, Map.of("ENV", "PROD"), SECRET_KEY
+                2, "user", "执行企业对账核验", vector1024, Map.of("ENV", "PROD"), SECRET_KEY
         );
         assertTrue(recall.verifySignature(SECRET_KEY));
-        assertEquals(1536, recall.sphericalVector().length);
+        assertEquals(1024, recall.sphericalVector().length);
 
-        // 验证非 1536 维抛出异常
+        // 验证非 1024 维抛出异常
         assertThrows(IllegalArgumentException.class, () ->
                 new MemoryPage.RecallPage(3, "user", "bad", new float[100], Map.of(), System.currentTimeMillis(), "fake")
         );

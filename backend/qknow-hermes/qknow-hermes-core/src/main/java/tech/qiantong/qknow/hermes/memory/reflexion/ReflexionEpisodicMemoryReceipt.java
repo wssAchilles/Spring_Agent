@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * 语言强化自反思长效情景记忆不可变存证凭单 (纯 Java 21 Record)
- * 严格绑定阿里千问 1536 维超球面单位向量与 DeepSeek 思考链语言反思洞察
+ * 严格绑定阿里千问 1024 维超球面单位向量与 DeepSeek 思考链语言反思洞察
  *
  * @author Achilles
  * @since 2026-10-13
@@ -21,13 +21,13 @@ public record ReflexionEpisodicMemoryReceipt(
         String failedTrajectorySummary,   // 失败执行轨迹摘要
         String evaluatorFeedback,         // 评估器指出的核心失败原因
         String verbalReflectionLesson,    // DeepSeek 思考链生成的自然语言自反思先验规则
-        float[] qwenHypersphericalVector, // 阿里千问 1536 维超球面单位向量 (L2 norm = 1.0)
+        float[] qwenHypersphericalVector, // 阿里千问 1024 维超球面单位向量 (L2 norm = 1.0)
         double fidelityScore,             // 向量与反思语义的保真度
         long createdAtEpochMs,
         String cryptographicSeal
 ) implements Serializable {
 
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
 
     public ReflexionEpisodicMemoryReceipt {
         Objects.requireNonNull(receiptId, "receiptId 不能为空");
@@ -36,7 +36,7 @@ public record ReflexionEpisodicMemoryReceipt(
         Objects.requireNonNull(cryptographicSeal, "cryptographicSeal 不能为空");
         if (qwenHypersphericalVector != null) {
             if (qwenHypersphericalVector.length != VECTOR_DIMENSION) {
-                throw new IllegalArgumentException("千问向量维度必须为 1536 维，当前: " + qwenHypersphericalVector.length);
+                throw new IllegalArgumentException("千问向量维度必须为 1024 维，当前: " + qwenHypersphericalVector.length);
             }
             // 验证超球面 L2 单位范数
             double sumSq = 0.0;
@@ -58,7 +58,7 @@ public record ReflexionEpisodicMemoryReceipt(
             String failedSummary,
             String feedback,
             String reflectionLesson,
-            float[] vector1536,
+            float[] vector1024,
             double fidelity
     ) {
         long now = System.currentTimeMillis();
@@ -67,7 +67,7 @@ public record ReflexionEpisodicMemoryReceipt(
         String seal = computeSha256(payload);
         return new ReflexionEpisodicMemoryReceipt(
                 receiptId, tenantId, agentRole, taskId, trialSeq, failedSummary,
-                feedback, reflectionLesson, vector1536, fidelity, now, seal
+                feedback, reflectionLesson, vector1024, fidelity, now, seal
         );
     }
 

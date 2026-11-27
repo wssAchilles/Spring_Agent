@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Locale;
 
 /**
  * 不可变密码学 MCP 执行存证凭单 (Java 21 原生 Record)
@@ -58,7 +59,10 @@ public record McpExecutionReceipt(
         String rawData = buildPayloadString(receiptId, sessionId, serverId, toolName, contractType,
                 executionStatus, latencyUs, inputHash, outputHash, busStatus);
         String expectedSig = computeSha256(rawData);
-        return expectedSig.equalsIgnoreCase(signature);
+        // 使用常量时间比对校验 MCP 网关执行凭单签名
+        return MessageDigest.isEqual(
+                expectedSig.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                signature.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     private static String buildPayloadString(

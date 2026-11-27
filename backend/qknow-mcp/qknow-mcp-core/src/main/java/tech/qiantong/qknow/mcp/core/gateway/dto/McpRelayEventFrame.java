@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 /**
  * 1000Hz 高频 MCP 中继事件帧 (Java 21 原生 Record)
- * 封装阿里千问 1536 维超球面单位向量与微秒级时间戳
+ * 封装阿里千问 1024 维超球面单位向量与微秒级时间戳
  */
 public record McpRelayEventFrame(
         String frameId,
@@ -15,11 +15,11 @@ public record McpRelayEventFrame(
         long timestampMs,
         long sequenceNo
 ) {
-    public static final int EXPECTED_EMBEDDING_DIM = 1536;
+    public static final int EXPECTED_EMBEDDING_DIM = 1024;
     public static final double NORM_EPSILON = 1e-4;
 
     /**
-     * 校验阿里千问 1536 维超球面流形单位向量合法性 (||v||_2 = 1.0 +- 1e-4)
+     * 校验阿里千问 1024 维超球面流形单位向量合法性 (||v||_2 = 1.0 +- 1e-4)
      *
      * @return 是否满足超球面约束
      */

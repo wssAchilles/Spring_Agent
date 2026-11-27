@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Locale;
 
 /**
  * 不可变记忆巩固存证凭单（纯 Java 21 Record）。
@@ -38,9 +39,15 @@ public record MemoryConsolidationReceipt(
     }
 
     public boolean verifySignature() {
+        if (this.signature == null || this.signature.isEmpty()) {
+            return false;
+        }
         String expectedSig = calculateSignature(receiptId, sessionId, userId, consolidatedAt,
                 sourceMessageCount, retainedMessageCount, extractedProfileHash, status);
-        return expectedSig.equals(this.signature);
+        // 使用常量时间比对校验记忆巩固凭单签名
+        return MessageDigest.isEqual(
+                expectedSig.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8),
+                this.signature.toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     private static String calculateSignature(

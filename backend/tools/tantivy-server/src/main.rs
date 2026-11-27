@@ -89,7 +89,8 @@ impl Tokenizer for JiebaTokenizer {
 // --------------------------- Actor 单例写入与节流 ---------------------------
 
 pub enum IndexCommand {
-    Add(tantivy::TantivyDocument, oneshot::Sender<Result<(), String>>),
+    // 先清理旧同号切片再写入新文档，保证索引幂等性
+    Add(Term, tantivy::TantivyDocument, oneshot::Sender<Result<(), String>>),
     Delete(Term, oneshot::Sender<Result<(), String>>),
     Flush(oneshot::Sender<Result<(), String>>),
 }
@@ -108,7 +109,8 @@ impl IndexActor {
             tokio::select! {
                 cmd = self.receiver.recv() => {
                     match cmd {
-                        Some(IndexCommand::Add(doc, reply)) => {
+                        Some(IndexCommand::Add(term, doc, reply)) => {
+                            let _ = self.writer.delete_term(term);
                             let res = self.writer.add_document(doc);
                             match res {
                                 Ok(_) => {
@@ -205,6 +207,7 @@ pub struct BatchIndexReq {
 #[derive(Deserialize)]
 pub struct DeleteDocReq {
     pub segment_id: i64,
+    #[serde(default)]
     pub knowledge_base_id: i64,
 }
 
@@ -280,6 +283,7 @@ async fn index_document_handler(
     State(state): State<AppState>,
     Json(req): Json<IndexDocReq>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let term = Term::from_field_u64(state.segment_id_field, req.segment_id as u64);
     let tantivy_doc = doc!(
         state.segment_id_field => req.segment_id as u64,
         state.content_field => req.content.as_str(),
@@ -290,7 +294,7 @@ async fn index_document_handler(
     let (tx, rx) = oneshot::channel();
     state
         .command_tx
-        .send(IndexCommand::Add(tantivy_doc, tx))
+        .send(IndexCommand::Add(term, tantivy_doc, tx))
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, "Actor closed".into()))?;
 
@@ -307,6 +311,7 @@ async fn batch_index_handler(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     let mut count = 0;
     for doc_req in req.documents {
+        let term = Term::from_field_u64(state.segment_id_field, doc_req.segment_id as u64);
         let tantivy_doc = doc!(
             state.segment_id_field => doc_req.segment_id as u64,
             state.content_field => doc_req.content.as_str(),
@@ -317,7 +322,7 @@ async fn batch_index_handler(
         let (tx, rx) = oneshot::channel();
         if state
             .command_tx
-            .send(IndexCommand::Add(tantivy_doc, tx))
+            .send(IndexCommand::Add(term, tantivy_doc, tx))
             .await
             .is_ok()
             && rx.await.is_ok()

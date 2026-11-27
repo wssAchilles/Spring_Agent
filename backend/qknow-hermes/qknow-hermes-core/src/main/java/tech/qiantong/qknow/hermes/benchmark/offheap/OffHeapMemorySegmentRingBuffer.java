@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -90,6 +91,10 @@ public class OffHeapMemorySegmentRingBuffer implements AutoCloseable {
         this.sharedArena = Arena.ofShared();
         long totalBytes = (long) capacity * SLOT_SIZE;
         this.ringSegment = sharedArena.allocate(totalBytes, 8);
+        // 初始化全部槽位序列号为 -1L，防止 seq=0 在尚未发布完成时命中默认零值
+        for (int i = 0; i < capacity; i++) {
+            this.ringSegment.set(ValueLayout.JAVA_LONG, (long) i * SLOT_SIZE + OFFSET_SEQ, -1L);
+        }
         // 三级冷备暂存区 (容量为原队列的 1/4)
         this.coldStagingSegment = sharedArena.allocate(totalBytes / 4, 8);
 
@@ -122,28 +127,32 @@ public class OffHeapMemorySegmentRingBuffer implements AutoCloseable {
 
         long now = System.currentTimeMillis();
 
-        // 直接内存连续写入
-        ringSegment.set(ValueLayout.JAVA_LONG, slotOffset + OFFSET_SEQ, seq);
+        // SeqLock 写协议：先将槽位标记为写入中 (-1L)，写满全部载荷字节后通过 releaseFence 发布序列号
+        ringSegment.set(ValueLayout.JAVA_LONG, slotOffset + OFFSET_SEQ, -1L);
+        VarHandle.storeStoreFence();
         ringSegment.set(ValueLayout.JAVA_LONG, slotOffset + OFFSET_TIMESTAMP, now);
         ringSegment.set(ValueLayout.JAVA_INT, slotOffset + OFFSET_TENANT_HASH, tenantHash);
         ringSegment.set(ValueLayout.JAVA_INT, slotOffset + OFFSET_EVENT_TYPE, eventType);
         ringSegment.set(ValueLayout.JAVA_INT, slotOffset + OFFSET_PAYLOAD_LEN, len);
 
         MemorySegment.copy(payloadBytes, 0, ringSegment, ValueLayout.JAVA_BYTE, slotOffset + OFFSET_PAYLOAD_DATA, len);
+        VarHandle.releaseFence();
+        ringSegment.set(ValueLayout.JAVA_LONG, slotOffset + OFFSET_SEQ, seq);
 
         return seq;
     }
 
     /**
-     * 读取指定序列号的堆外事件
+     * 读取指定序列号的堆外事件（Acquire 内存屏障 + 二次序列号校验防并发撕裂读）
      */
     public OffHeapEvent readEvent(long seq) {
         int slotIndex = (int) (seq & mask);
         long slotOffset = (long) slotIndex * SLOT_SIZE;
 
         long storedSeq = ringSegment.get(ValueLayout.JAVA_LONG, slotOffset + OFFSET_SEQ);
+        VarHandle.acquireFence();
         if (storedSeq != seq) {
-            // 已被覆写或尚未写入
+            // 已被覆写或尚未写入发布完成
             return null;
         }
 
@@ -151,9 +160,17 @@ public class OffHeapMemorySegmentRingBuffer implements AutoCloseable {
         int tenantHash = ringSegment.get(ValueLayout.JAVA_INT, slotOffset + OFFSET_TENANT_HASH);
         int eventType = ringSegment.get(ValueLayout.JAVA_INT, slotOffset + OFFSET_EVENT_TYPE);
         int len = ringSegment.get(ValueLayout.JAVA_INT, slotOffset + OFFSET_PAYLOAD_LEN);
+        if (len < 0 || len > MAX_PAYLOAD_SIZE) {
+            return null;
+        }
 
         byte[] bytes = new byte[len];
         MemorySegment.copy(ringSegment, ValueLayout.JAVA_BYTE, slotOffset + OFFSET_PAYLOAD_DATA, bytes, 0, len);
+        VarHandle.loadLoadFence();
+        if (ringSegment.get(ValueLayout.JAVA_LONG, slotOffset + OFFSET_SEQ) != seq) {
+            // 读取期间发生环形覆写，丢弃撕裂帧
+            return null;
+        }
         String payloadStr = new String(bytes, StandardCharsets.UTF_8);
 
         readSequence.value.compareAndSet(seq, seq + 1);

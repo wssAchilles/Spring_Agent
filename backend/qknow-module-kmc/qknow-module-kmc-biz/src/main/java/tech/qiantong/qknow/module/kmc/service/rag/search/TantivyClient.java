@@ -212,9 +212,16 @@ public class TantivyClient {
     }
 
     /**
-     * 删除指定切片索引
+     * 删除指定切片索引（默认兼容缺省知识库 ID）
      */
     public boolean deleteDocument(long segmentId) {
+        return deleteDocument(segmentId, 0L);
+    }
+
+    /**
+     * 按切片 ID 与知识库 ID 删除指定索引
+     */
+    public boolean deleteDocument(long segmentId, long knowledgeBaseId) {
         if (!enabled || !isServiceAlive()) {
             return false;
         }
@@ -222,6 +229,7 @@ public class TantivyClient {
         try {
             JSONObject body = new JSONObject();
             body.put("segment_id", segmentId);
+            body.put("knowledge_base_id", knowledgeBaseId);
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(serviceUrl + "/delete"))
@@ -249,10 +257,12 @@ public class TantivyClient {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+        this.lastHealthCheckTime = 0L;
     }
 
     public void setServiceUrl(String serviceUrl) {
         this.serviceUrl = serviceUrl;
+        this.lastHealthCheckTime = 0L;
     }
 
     public void setTimeoutMs(long timeoutMs) {
@@ -260,12 +270,12 @@ public class TantivyClient {
     }
 
     /**
-     * 探活检查（带 2 秒轻量缓存）
+     * 探活检查（同时支持正向缓存与短时负缓存，避免服务未启动时每次检索阻塞等待超时）
      */
     public boolean isServiceAlive() {
         long now = System.currentTimeMillis();
-        if (now - lastHealthCheckTime < HEALTH_CHECK_CACHE_MS && lastHealthCheckResult) {
-            return true;
+        if (now - lastHealthCheckTime < HEALTH_CHECK_CACHE_MS) {
+            return lastHealthCheckResult;
         }
 
         try {
@@ -281,9 +291,11 @@ public class TantivyClient {
             return alive;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            lastHealthCheckTime = now;
             lastHealthCheckResult = false;
             return false;
         } catch (Exception e) {
+            lastHealthCheckTime = now;
             lastHealthCheckResult = false;
             return false;
         }

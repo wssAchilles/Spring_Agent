@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 3. 单调递增 Fencing Token 写屏障
  * 4. Java 21 虚拟线程高吞吐无锁调度
  * 5. 不可变审计凭单 SHA-256 常量时间自验真
- * 6. 阿里千问 1536 维超球面单位向量几何保真度
+ * 6. 阿里千问 1024 维超球面单位向量几何保真度
  * </p>
  */
 public class Phase154MasterContractTest {
@@ -178,9 +178,9 @@ public class Phase154MasterContractTest {
     }
 
     @Test
-    @DisplayName("契约 6：阿里千问 1536 维超球面单位向量几何 — L2 范数归一化与欧氏-余弦恒等律")
+    @DisplayName("契约 6：阿里千问 1024 维超球面单位向量几何 — L2 范数归一化与欧氏-余弦恒等律")
     void test06_HypersphericalUnitManifoldIntegrity() {
-        int dim = 1536;
+        int dim = 1024;
         Random rand = new Random(2026);
 
         // 生成两个高维随机向量并进行 L2 归一化至超球面
@@ -429,7 +429,7 @@ public class Phase154MasterContractTest {
     }
 
     @Test
-    @DisplayName("契约 12：AdaptiveHypersphericalRrfGovernor 意图熵自适应加权与千问 1536 维超球面 RRF 融合重排")
+    @DisplayName("契约 12：AdaptiveHypersphericalRrfGovernor 意图熵自适应加权与千问 1024 维超球面 RRF 融合重排")
     void test12_AdaptiveHypersphericalRrfRerankAndIntegrityVerification() {
         tech.qiantong.qknow.module.kb.service.agent.retrieval.AdaptiveHypersphericalRrfGovernor governor =
                 new tech.qiantong.qknow.module.kb.service.agent.retrieval.AdaptiveHypersphericalRrfGovernor();
@@ -441,10 +441,10 @@ public class Phase154MasterContractTest {
         double highEntropyAlpha = governor.computeAdaptiveAlpha("请问在超大规模分布式集群中，如何利用虚拟线程实现长程多智能体编排？");
         assertEquals(0.75, highEntropyAlpha, 1e-4, "复杂自然语言长问句应自适应偏向 Dense 超球面向量语义匹配");
 
-        // 2. 构造阿里千问 1536 维超球面单位向量 (L2 norm = 1.0)
-        float[] validHypersphericalVec = new float[1536];
-        float val = (float) (1.0 / Math.sqrt(1536));
-        for (int i = 0; i < 1536; i++) {
+        // 2. 构造阿里千问 1024 维超球面单位向量 (L2 norm = 1.0)
+        float[] validHypersphericalVec = new float[1024];
+        float val = (float) (1.0 / Math.sqrt(1024));
+        for (int i = 0; i < 1024; i++) {
             validHypersphericalVec[i] = val;
         }
         assertTrue(governor.validateHypersphericalNorm(validHypersphericalVec), "必须严格满足 ||v||_2 = 1.0 超球面几何约束");

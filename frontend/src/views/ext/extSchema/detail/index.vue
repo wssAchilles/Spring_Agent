@@ -649,6 +649,7 @@
 </template>
 
 <script setup name="Attribute">
+import { API_BASE_URL } from '@/utils/request';
 import {
   listAttribute,
   getAttribute,
@@ -733,7 +734,7 @@ const upload = reactive({
   // 设置上传的请求头部
   headers: { Authorization: "Bearer " + getToken() },
   // 上传的地址
-  url: import.meta.env.VITE_APP_BASE_API + "/ext/attribute/importData",
+  url: API_BASE_URL + "/ext/attribute/importData",
 });
 
 const data = reactive({

@@ -157,7 +157,7 @@ public class Phase29GraphRag2ContractTest {
     void contract05_neuroSymbolicGating_suppressesSemanticDiffusionAndHallucination() {
         // 构造实体与边：一条强因果依赖边，一条弱语义噪声边（如“相关于”）
         String query = "查询支付超时原因";
-        float[] queryVector = new float[1536];
+        float[] queryVector = new float[1024];
         Arrays.fill(queryVector, 0.05f);
 
         // 强因果边
@@ -249,7 +249,7 @@ public class Phase29GraphRag2ContractTest {
                     .build());
         }
 
-        float[] vector = new float[1536];
+        float[] vector = new float[1024];
         var assembled = graphRag2Coordinator.coordinateWithMockedData(
                 TEST_WORKSPACE_ID, "排查崩溃原因", vector, List.of("实体源_0"), heavyFacts, heavySummaries, heavySegments);
 
@@ -280,7 +280,7 @@ public class Phase29GraphRag2ContractTest {
 
         long startNs = System.nanoTime();
         var assembled = resilientCoordinator.coordinate(
-                TEST_WORKSPACE_ID, "查询信息", new float[1536], List.of("未知实体"), rawSegments);
+                TEST_WORKSPACE_ID, "查询信息", new float[1024], List.of("未知实体"), rawSegments);
         long elapsedMs = (System.nanoTime() - startNs) / 1_000_000;
 
         // 验证 Fail-Open 降级：耗时 <= 5ms，标记降级，切片保留，图提示段安全清空
@@ -305,7 +305,7 @@ public class Phase29GraphRag2ContractTest {
                 RetrievalResult.builder().segmentId(1L).content("订单网关配置了默认 QPS=1000 的流控规则。").score(0.88).build()
         );
 
-        float[] vector = new float[1536];
+        float[] vector = new float[1024];
         Arrays.fill(vector, 0.02f);
 
         long startNs = System.nanoTime();

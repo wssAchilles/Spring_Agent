@@ -86,19 +86,14 @@ public class AiModelApiServiceImpl extends ServiceImpl<AiModelMapper, AiModelDO>
     private AiApiKeyDO selectApiKeyByPlatform(String platform, String defaultPlatform) {
         String targetPlatform = (platform == null || platform.isBlank()) ? defaultPlatform : platform.trim();
         List<AiApiKeyDO> keys = apiKeyMapper.selectList(Wrappers.<AiApiKeyDO>lambdaQuery());
+        // 严格匹配目标平台可用密钥，禁止将异构平台密钥盲目张冠李戴
         AiApiKeyDO selected = keys.stream()
                 .filter(key -> key.getApiKey() != null && !key.getApiKey().isBlank())
                 .filter(key -> key.getPlatform() != null && key.getPlatform().equalsIgnoreCase(targetPlatform))
                 .findFirst()
-                .orElseGet(() -> keys.stream()
-                        .filter(key -> key.getApiKey() != null && !key.getApiKey().isBlank())
-                        .findFirst()
-                        .orElse(null));
+                .orElse(null);
         if (selected == null) {
             throw new ServiceException("未找到可用的模型 API Key 配置，平台=" + targetPlatform);
-        }
-        if (!targetPlatform.equalsIgnoreCase(selected.getPlatform())) {
-            log.warn("平台 [{}] 未配置 API Key，回退使用平台 [{}] 的可用 Key", targetPlatform, selected.getPlatform());
         }
         return selected;
     }

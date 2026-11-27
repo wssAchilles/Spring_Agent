@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /**
  * MCTS 认知树搜索节点不可变凭单 (纯 Java 21 Record)
- * 记录单步推演思考、拟调用工具、前瞻价值与阿里千问 1536 维超球面单位向量。
+ * 记录单步推演思考、拟调用工具、前瞻价值与阿里千问 1024 维超球面单位向量。
  */
 public record MctsSearchNodeRecord(
         String nodeId,
@@ -19,7 +19,7 @@ public record MctsSearchNodeRecord(
         int visitCount,
         double accumulatedValue,
         double ucb1Score,
-        float[] hypersphericalEmbedding, // 阿里千问 1536 维超球面单位向量 (L2 = 1.0)
+        float[] hypersphericalEmbedding, // 阿里千问 1024 维超球面单位向量 (L2 = 1.0)
         boolean isPruned,
         boolean isTerminal,
         String stateChecksumSha256,
@@ -32,8 +32,8 @@ public record MctsSearchNodeRecord(
         toolArguments = toolArguments != null ? Map.copyOf(toolArguments) : Map.of();
         actionThought = actionThought != null ? actionThought : "";
         observationPayload = observationPayload != null ? observationPayload : "";
-        if (hypersphericalEmbedding != null && hypersphericalEmbedding.length != 1536) {
-            throw new IllegalArgumentException("千问超球面向量维度必须严格为 1536 维，当前为: " + hypersphericalEmbedding.length);
+        if (hypersphericalEmbedding != null && hypersphericalEmbedding.length != 1024) {
+            throw new IllegalArgumentException("千问超球面向量维度必须严格为 1024 维，当前为: " + hypersphericalEmbedding.length);
         }
         hypersphericalEmbedding = hypersphericalEmbedding != null ? hypersphericalEmbedding.clone() : null;
     }

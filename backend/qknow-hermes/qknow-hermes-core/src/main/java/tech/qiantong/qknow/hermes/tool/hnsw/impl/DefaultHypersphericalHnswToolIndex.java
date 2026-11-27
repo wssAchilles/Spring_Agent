@@ -140,14 +140,46 @@ public class DefaultHypersphericalHnswToolIndex implements HypersphericalHnswToo
 
         if (level <= other.maxLevel) {
             List<Integer> listB = other.neighbors.get(level);
-            if (!listB.contains(newNode.id)) {
-                listB.add(newNode.id);
-                // 超出度数上限时修剪
-                if (listB.size() > maxM) {
-                    listB.remove(listB.size() - 1);
+            synchronized (listB) {
+                if (!listB.contains(newNode.id)) {
+                    listB.add(newNode.id);
+                    // 超出度数上限时按超球面角距离淘汰最远邻居，保留更近的新反向边
+                    if (listB.size() > maxM) {
+                        int worstIdx = 0;
+                        float worstDist = -1.0f;
+                        for (int i = 0; i < listB.size(); i++) {
+                            Node cand = nodesById.get(listB.get(i));
+                            float dist = cand == null ? Float.MAX_VALUE : distanceBetweenNodes(other, cand);
+                            if (dist >= worstDist) {
+                                worstDist = dist;
+                                worstIdx = i;
+                            }
+                        }
+                        listB.remove(worstIdx);
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * 计算两个索引节点在单位超球面上的角距离（兼容浮点与 SQ8 量化存储）
+     */
+    private float distanceBetweenNodes(Node a, Node b) {
+        if (a.floatVector != null) {
+            return b.getDistance(a.floatVector);
+        }
+        if (b.floatVector != null) {
+            return a.getDistance(b.floatVector);
+        }
+        if (a.sq8Vector != null && b.sq8Vector != null) {
+            float[] approxA = new float[a.sq8Vector.length];
+            for (int i = 0; i < a.sq8Vector.length; i++) {
+                approxA[i] = a.sq8Vector[i] / 127.0f;
+            }
+            return b.getDistance(approxA);
+        }
+        return Float.MAX_VALUE;
     }
 
     private List<Integer> searchLevel(int startNodeId, float[] query, int ef, int level) {

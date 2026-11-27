@@ -6,7 +6,7 @@
       </div>
       <div class="workflow-debug-run-panel__actions">
         <el-button v-ripple class="glass-btn debug-action-btn" plain @click="triggerDemoHitl">
-          模拟审批
+          检查挂起审批
         </el-button>
         <el-button v-ripple class="glass-btn debug-action-btn" plain type="warning" @click="triggerFloatingHitlIsland">
           悬浮审批
@@ -118,7 +118,7 @@
       :with-header="false"
       class="apple-liquid-timetravel-drawer"
     >
-      <WorkflowTimeTravelWidget @close="showTimeTravelWidget = false" />
+      <WorkflowTimeTravelWidget :execution-id="activeExecutionId" @close="showTimeTravelWidget = false" />
     </el-drawer>
 
     <el-drawer
@@ -198,8 +198,9 @@
       @rejected="handleHitlRejected"
     />
 
-    <!-- 里程碑六：新一代 Apple iOS 26 非模态悬浮岛审批组件 -->
+    <!-- 新一代 Apple iOS 26 非模态悬浮岛审批组件 -->
     <HitlApprovalModal
+      v-if="floatingHitlTicket"
       :visible="showFloatingHitlIsland"
       :ticket="floatingHitlTicket"
       @close="showFloatingHitlIsland = false"
@@ -247,6 +248,7 @@ import { ref, computed, watch } from "vue";
 import { ArrowRight } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { ProcessFlow, resumeFlow } from "@/api/kb/bot/flow.js";
+import { getPendingApprovals, decideFrontierTransaction } from "@/api/audit";
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
 import "highlight.js/styles/xcode.min.css";
@@ -262,40 +264,100 @@ import { PersistentSnapshotManager } from "./debug/engine/PersistentSnapshotTree
 const conversationInAbortController = ref(); // 对话进行中 abort 控制器(控制 stream 对话)
 const forkEngine = new TimeTravelForkEngine();
 const snapshotManager = new PersistentSnapshotManager();
+const activeExecutionId = ref("");
 
-// 里程碑六：新一代 Apple iOS 26 非模态悬浮岛审批状态
+// 新一代 Apple iOS 26 非模态悬浮岛真实审批状态
 const showFloatingHitlIsland = ref(false);
-const floatingHitlTicket = ref({
-  ticketId: "TICKET-HITL-ISLAND-001",
-  workflowId: "flow_causal_009",
-  nodeId: "node_mcp_database_update",
-  toolName: "DatabaseClient.executeBatchUpdate",
-  serverId: "enterprise-mcp-cluster",
-  riskLevel: "CRITICAL",
-  argumentsPayload: {
-    table: "financial_ledger_q3",
-    action: "UPDATE",
-    filter: "asset_id = 9012",
-    patchFields: { status: "VERIFIED", auditApproved: true }
-  },
-  operatorUserId: "auditor-admin",
-  reasoningContent: "该更新动作直接变更核心财务总账凭证，由于触发高危操作合约，引擎已挂起只读线程并启动非模态审批悬浮岛等待审批员裁决。"
-});
+const floatingHitlTicket = ref(null);
 
-function triggerFloatingHitlIsland() {
-  showFloatingHitlIsland.value = true;
+function mapPendingApprovalToFloatingTicket(item) {
+  const approvalKey = item.approvalKey || "";
+  return {
+    approvalKey,
+    ticketId: approvalKey || item.requestId || "PENDING_TX",
+    workflowId: item.flowId || "workflow_active",
+    nodeId: item.nodeId || "frontier_gate",
+    toolName: item.nodeId || "frontier_tool",
+    serverId: "hermes-frontier-tx",
+    riskLevel: item.sideEffectTier || "CRITICAL",
+    argumentsPayload: {
+      approvalKey,
+      resourceUri: item.resourceUri || "",
+      epoch: item.epoch ?? 0,
+      sideEffectTier: item.sideEffectTier || "IRREVERSIBLE",
+    },
+    operatorUserId: "auditor",
+    reasoningContent: item.reason || "工具调用触发 Frontier 事务边界门禁，当前已挂起等待人工核准。",
+  };
 }
-function onFloatingHitlApprove(receipt) {
-  showFloatingHitlIsland.value = false;
-  ElMessage.success(`审批放行！自验真凭单: ${receipt.receiptId}`);
+
+async function triggerFloatingHitlIsland() {
+  try {
+    const res = await getPendingApprovals();
+    const list = res?.data || res || [];
+    if (!Array.isArray(list) || list.length === 0) {
+      ElMessage.info("当前无待处理的实时 Frontier / HITL 挂起审批工单");
+      return;
+    }
+    floatingHitlTicket.value = mapPendingApprovalToFloatingTicket(list[0]);
+    showFloatingHitlIsland.value = true;
+  } catch (err) {
+    ElMessage.error("拉取实时挂起审批工单失败: " + (err?.message || "未知错误"));
+  }
 }
-function onFloatingHitlHotPatch({ receipt, patchedState }) {
+
+async function onFloatingHitlApprove(receipt) {
+  const ticket = floatingHitlTicket.value;
+  if (ticket?.approvalKey) {
+    try {
+      await decideFrontierTransaction({
+        approvalKey: ticket.approvalKey,
+        approved: true,
+        reason: "悬浮审批面板核准放行",
+      });
+    } catch (err) {
+      ElMessage.error("提交 Frontier 审批放行失败: " + (err?.message || "未知错误"));
+      return;
+    }
+  }
   showFloatingHitlIsland.value = false;
-  ElMessage.success(`热补丁生效！生成凭单: ${receipt.receiptId}`);
+  ElMessage.success(`审批放行已提交！凭单: ${receipt?.receiptId || ticket?.ticketId || "OK"}`);
 }
-function onFloatingHitlReject(receipt) {
+
+async function onFloatingHitlHotPatch({ receipt, patchedState }) {
+  const ticket = floatingHitlTicket.value;
+  if (ticket?.approvalKey) {
+    try {
+      await decideFrontierTransaction({
+        approvalKey: ticket.approvalKey,
+        approved: true,
+        reason: "参数热修补放行: " + JSON.stringify(patchedState || {}),
+      });
+    } catch (err) {
+      ElMessage.error("提交热修补审批失败: " + (err?.message || "未知错误"));
+      return;
+    }
+  }
   showFloatingHitlIsland.value = false;
-  ElMessage.warning(`审批拒绝！存证凭单: ${receipt.receiptId}`);
+  ElMessage.success(`热补丁已提交！凭单: ${receipt?.receiptId || ticket?.ticketId || "OK"}`);
+}
+
+async function onFloatingHitlReject(receipt) {
+  const ticket = floatingHitlTicket.value;
+  if (ticket?.approvalKey) {
+    try {
+      await decideFrontierTransaction({
+        approvalKey: ticket.approvalKey,
+        approved: false,
+        reason: "人工驳回阻断",
+      });
+    } catch (err) {
+      ElMessage.error("提交 Frontier 审批驳回失败: " + (err?.message || "未知错误"));
+      return;
+    }
+  }
+  showFloatingHitlIsland.value = false;
+  ElMessage.warning(`审批已驳回！存证凭单: ${receipt?.receiptId || ticket?.ticketId || "REJECTED"}`);
 }
 
 // 多智能体协同流转与企业观测看板状态
@@ -524,6 +586,14 @@ async function handleRun() {
         const outer = JSON.parse(res.data.replace(/^data:/, ""));
         const inner = typeof outer.data === "string" ? JSON.parse(outer.data) : (outer.data || {});
 
+        const detectedExecId = inner.executionId || outer.executionId;
+        if (detectedExecId) {
+          activeExecutionId.value = String(detectedExecId);
+          if (dagExecutionEvents.value.length > 0 && inner.event === "started") {
+            dagExecutionEvents.value[0].payloadSummary = `工作流启动成功 (executionId: ${detectedExecId})`;
+          }
+        }
+
         if (outer.code !== 200) {
           ElMessage.error(`对话异常! ${outer.msg || ''}`);
           return;
@@ -533,7 +603,8 @@ async function handleRun() {
         if (inner.status === 'SUSPENDED' || inner.type === 'SUSPENDED' || outer.status === 'SUSPENDED') {
           console.warn('⚠️ [HITL] 捕获到后端安全审批挂起事件:', inner);
           hitlActiveTicket.value = {
-            ticketId: inner.ticketId || `TICKET-${Date.now().toString().slice(-6)}`,
+            approvalKey: inner.approvalKey,
+            ticketId: inner.ticketId || inner.approvalKey || `TICKET-${Date.now().toString().slice(-6)}`,
             runtimeId: inner.runtimeId || outer.runtimeId || payload.flow?.id,
             workflowId: props.workflowData?.id || "workflow_active",
             nodeId: inner.nodeId || "hitl_gate",
@@ -617,23 +688,36 @@ function finalizeExecution() {
   }
 }
 
-function triggerDemoHitl() {
-  hitlActiveTicket.value = {
-    ticketId: "TICKET-PHASE120-001",
-    workflowId: "flow_retrieval_001",
-    nodeId: "node_hitl_security_gate",
-    riskLevel: "CRITICAL",
-    contextSummary: "检索任务命中企业敏感知识资产外发门禁，已挂起等待审批员人工核验与参数修订。",
-    stateDigest: "sha256_7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069",
-    inputData: {
-      action: "EXECUTE_DEEP_RETRIEVAL",
-      scope: "CONFIDENTIAL_ARCHIVE",
-      user: "admin",
-      params: { max_docs: 50, bypass_cache: true }
-    },
-    suggestedDecision: "REVISE_SCOPE"
-  };
-  hitlDrawerVisible.value = true;
+async function triggerDemoHitl() {
+  try {
+    const res = await getPendingApprovals();
+    const list = res?.data || res || [];
+    if (!Array.isArray(list) || list.length === 0) {
+      ElMessage.info("当前无待处理的实时 Frontier / HITL 挂起审批工单");
+      return;
+    }
+    const item = list[0];
+    hitlActiveTicket.value = {
+      approvalKey: item.approvalKey,
+      ticketId: item.approvalKey || item.requestId || "PENDING_APPROVAL",
+      runtimeId: item.requestId,
+      workflowId: item.flowId || props.workflowData?.id || "workflow_active",
+      nodeId: item.nodeId || "frontier_gate",
+      nodeName: item.nodeName || item.nodeId || "高危操作审批门禁",
+      riskLevel: item.sideEffectTier || "CRITICAL",
+      contextSummary: item.reason || "检测到真实后端挂起工单，请审查资源路径与上下文变量后裁定是否放行。",
+      inputData: {
+        approvalKey: item.approvalKey,
+        resourceUri: item.resourceUri || "",
+        epoch: item.epoch ?? 0,
+        sideEffectTier: item.sideEffectTier || "IRREVERSIBLE"
+      },
+      suggestedDecision: "APPROVE_OR_REJECT"
+    };
+    hitlDrawerVisible.value = true;
+  } catch (err) {
+    ElMessage.error("查询待审批工单失败: " + (err?.message || "未知错误"));
+  }
 }
 
 /** 停止 stream 流式调用 */
@@ -675,6 +759,18 @@ function handleTimeTravelChange(stepIndex) {
 /** HITL 审批中枢确认放行回调 */
 async function handleHitlApproved(payload) {
   console.log('✅ [HITL] 审批通过并注入热修改:', payload);
+  if (hitlActiveTicket.value?.approvalKey) {
+    try {
+      await decideFrontierTransaction({
+        approvalKey: hitlActiveTicket.value.approvalKey,
+        approved: true,
+        reason: "审批中心核准放行"
+      });
+      ElMessage.success("已提交 Frontier 事务审批放行");
+    } catch (err) {
+      ElMessage.error("提交 Frontier 审批放行失败: " + (err?.message || "未知错误"));
+    }
+  }
   if (dagExecutionEvents.value.length > 0) {
     dagExecutionEvents.value.push({
       eventId: `evt_hitl_resumed_${Date.now().toString().slice(-4)}`,
@@ -682,10 +778,10 @@ async function handleHitlApproved(payload) {
       nodeType: 'HITL_RESUMED',
       status: 'SUCCEEDED',
       latencyMicros: 15000,
-      payloadSummary: `人机热修改已放行, SHA-256: ${payload.hotPatchHash ? payload.hotPatchHash.substring(0, 12) : ''}...`
+      payloadSummary: `人机审批已放行${payload.hotPatchHash ? `, SHA-256: ${payload.hotPatchHash.substring(0, 12)}...` : ''}`
     });
   }
-  if (payload.runtimeId) {
+  if (payload.runtimeId && /^\d+$/.test(String(payload.runtimeId))) {
     try {
       await resumeFlow({
         runtimeId: payload.runtimeId,
@@ -700,8 +796,20 @@ async function handleHitlApproved(payload) {
 }
 
 /** HITL 审批中枢拒绝终止回调 */
-function handleHitlRejected(payload) {
+async function handleHitlRejected(payload) {
   console.warn('❌ [HITL] 审批已被拒绝终止:', payload);
+  if (hitlActiveTicket.value?.approvalKey) {
+    try {
+      await decideFrontierTransaction({
+        approvalKey: hitlActiveTicket.value.approvalKey,
+        approved: false,
+        reason: payload.reason || "人工驳回阻断"
+      });
+      ElMessage.info("已提交 Frontier 事务审批驳回");
+    } catch (err) {
+      ElMessage.error("提交 Frontier 审批驳回失败: " + (err?.message || "未知错误"));
+    }
+  }
   if (dagExecutionEvents.value.length > 0) {
     dagExecutionEvents.value.push({
       eventId: `evt_hitl_rejected_${Date.now().toString().slice(-4)}`,

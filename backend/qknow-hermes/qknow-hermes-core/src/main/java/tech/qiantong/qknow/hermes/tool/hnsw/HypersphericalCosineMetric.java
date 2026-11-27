@@ -1,28 +1,28 @@
 package tech.qiantong.qknow.hermes.tool.hnsw;
 
 /**
- * 阿里千问 1536 维超球面单位向量余弦度量与 SIMD 优化器
+ * 阿里千问 1024 维超球面单位向量余弦度量与 SIMD 优化器
  * 满足 ||v||_2 = 1.0 几何恒等式，计算角距离 D = 1.0 - (u · v)
  */
 public final class HypersphericalCosineMetric {
 
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
 
     private HypersphericalCosineMetric() {}
 
     /**
      * 计算两个已归一化千问超球面单位向量的角距离
      *
-     * @param u 1536 维单位向量
-     * @param v 1536 维单位向量
+     * @param u 1024 维单位向量
+     * @param v 1024 维单位向量
      * @return 角距离 [0.0, 2.0]，值越小越相似 (0 表示完全共线重合)
      */
     public static float angularDistance(float[] u, float[] v) {
         if (u == null || v == null || u.length != VECTOR_DIMENSION || v.length != VECTOR_DIMENSION) {
-            throw new IllegalArgumentException("向量必须为严格 1536 维千问单位超球面向量");
+            throw new IllegalArgumentException("向量必须为严格 1024 维千问单位超球面向量");
         }
 
-        // 8 路循环展开优化 (1536 / 8 = 192 次严格整数循环，充分榨干 CPU 超标量流水线)
+        // 8 路循环展开优化 (1024 / 8 = 192 次严格整数循环，充分榨干 CPU 超标量流水线)
         float dot = 0.0f;
         for (int i = 0; i < VECTOR_DIMENSION; i += 8) {
             dot += u[i] * v[i]
@@ -41,11 +41,11 @@ public final class HypersphericalCosineMetric {
     }
 
     /**
-     * 将 1536 维 float32 单位向量量化为 int8 标量 (SQ8 压缩 75% 内存)
+     * 将 1024 维 float32 单位向量量化为 int8 标量 (SQ8 压缩 75% 内存)
      */
     public static byte[] quantizeSq8(float[] vector) {
         if (vector == null || vector.length != VECTOR_DIMENSION) {
-            throw new IllegalArgumentException("向量必须为严格 1536 维千问单位超球面向量");
+            throw new IllegalArgumentException("向量必须为严格 1024 维千问单位超球面向量");
         }
         byte[] quantized = new byte[VECTOR_DIMENSION];
         for (int i = 0; i < VECTOR_DIMENSION; i++) {
@@ -60,7 +60,7 @@ public final class HypersphericalCosineMetric {
      */
     public static float[] dequantizeSq8(byte[] quantized) {
         if (quantized == null || quantized.length != VECTOR_DIMENSION) {
-            throw new IllegalArgumentException("量化字节必须为严格 1536 字节");
+            throw new IllegalArgumentException("量化字节必须为严格 1024 字节");
         }
         float[] vector = new float[VECTOR_DIMENSION];
         for (int i = 0; i < VECTOR_DIMENSION; i++) {

@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * 千问 1536 维超球面个性化 PageRank (Hippo-PPR) 拓扑实体扩散引擎
+ * 千问 1024 维超球面个性化 PageRank (Hippo-PPR) 拓扑实体扩散引擎
  * 模拟人脑海马体记忆整合机制，基于超球面余弦亲和力转移概率执行带阻尼的多跳拓扑扩散，
  * 解决复杂多跳关系检索中传统平面向量检索的语义断层问题。
  */
@@ -14,22 +14,22 @@ public class HypersphericalHippoPprEngine {
 
     private static final Logger log = LoggerFactory.getLogger(HypersphericalHippoPprEngine.class);
 
-    public static final int EXPECTED_DIMENSION = 1536;
+    public static final int EXPECTED_DIMENSION = 1024;
     public static final double NORM_TOLERANCE = 1e-3;
 
     public record GraphEntity(
             String entityId,
             String entityName,
             String entityType,
-            float[] embedding1536,
+            float[] embedding1024,
             int estimatedTokens
     ) {
         public GraphEntity {
-            if (embedding1536 != null) {
-                if (embedding1536.length != EXPECTED_DIMENSION) {
-                    throw new IllegalArgumentException("向量维度必须精确为 1536 维: actual=" + embedding1536.length);
+            if (embedding1024 != null) {
+                if (embedding1024.length != EXPECTED_DIMENSION) {
+                    throw new IllegalArgumentException("向量维度必须精确为 1024 维: actual=" + embedding1024.length);
                 }
-                double norm = computeNorm(embedding1536);
+                double norm = computeNorm(embedding1024);
                 if (Math.abs(norm - 1.0) > NORM_TOLERANCE) {
                     throw new IllegalArgumentException("向量必须严格满足超球面单位范数 ||v||_2 = 1.0: norm=" + norm);
                 }
@@ -58,7 +58,7 @@ public class HypersphericalHippoPprEngine {
      *
      * @param entities       实体节点候选集合
      * @param seedEntityIds  Query 识别出的种子实体 ID
-     * @param queryVector    Query 1536 维单位向量
+     * @param queryVector    Query 1024 维单位向量
      * @param dampingFactor  阻尼系数 (默认 0.85)
      * @param maxIterations  最大迭代轮次 (推荐 5~10 轮)
      * @param topKEntities   激活保留的顶层实体数量
@@ -96,7 +96,7 @@ public class HypersphericalHippoPprEngine {
             // 若无显式种子，按与 queryVector 的余弦相似度初始化
             double sumCos = 0.0;
             for (int i = 0; i < n; i++) {
-                double cos = Math.max(0.0, dotProduct(entities.get(i).embedding1536(), queryVector));
+                double cos = Math.max(0.0, dotProduct(entities.get(i).embedding1024(), queryVector));
                 p0[i] = cos;
                 sumCos += cos;
             }
@@ -115,7 +115,7 @@ public class HypersphericalHippoPprEngine {
             double rowSum = 0.0;
             for (int j = 0; j < n; j++) {
                 if (i != j) {
-                    double cos = Math.max(0.0, dotProduct(entities.get(i).embedding1536(), entities.get(j).embedding1536()));
+                    double cos = Math.max(0.0, dotProduct(entities.get(i).embedding1024(), entities.get(j).embedding1024()));
                     m[i][j] = cos;
                     rowSum += cos;
                 }

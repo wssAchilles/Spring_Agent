@@ -55,16 +55,29 @@ public class SemanticSplitter extends TextSplitter {
     }
 
     /**
-     * 按中文/英文句子结束符拆分文本
+     * 按中文/英文句子结束符拆分文本（保护数字小数点与版本号如 v2.2.1 / 3.11 不被误切碎）
      */
     private List<String> splitIntoSentences(String text) {
         List<String> sentences = new ArrayList<>();
         StringBuilder current = new StringBuilder();
+        int len = text.length();
 
-        for (char c : text.toCharArray()) {
+        for (int i = 0; i < len; i++) {
+            char c = text.charAt(i);
             current.append(c);
+            boolean isSentenceEnd = false;
             if (c == '。' || c == '！' || c == '？' || c == '；'
-                    || c == '.' || c == '!' || c == '?' || c == '\n') {
+                    || c == '!' || c == '?' || c == '\n') {
+                isSentenceEnd = true;
+            } else if (c == '.') {
+                boolean prevDigit = (i > 0 && Character.isDigit(text.charAt(i - 1)));
+                boolean nextDigit = (i + 1 < len && Character.isDigit(text.charAt(i + 1)));
+                // 小数点或版本号中间的点号不视为句末，仅在非数字相邻点号处切分
+                if (!(prevDigit && nextDigit)) {
+                    isSentenceEnd = true;
+                }
+            }
+            if (isSentenceEnd) {
                 String s = current.toString().trim();
                 if (!s.isEmpty()) {
                     sentences.add(s);
@@ -126,34 +139,47 @@ public class SemanticSplitter extends TextSplitter {
     }
 
     /**
-     * 将句子按断点分组，并遵守 maxChunkSize / minChunkSize 约束
+     * 将句子按语义断点分组，并在单组累积超过 maxChunkSize 时执行硬边界强制切分
      */
     private List<String> groupIntoChunks(List<String> sentences, List<Integer> breakPoints) {
         List<String> chunks = new ArrayList<>();
         StringBuilder currentChunk = new StringBuilder();
-        int lastBreak = 0;
+        java.util.Set<Integer> breakSet = new java.util.HashSet<>(breakPoints);
 
-        for (int bp : breakPoints) {
-            StringBuilder group = new StringBuilder();
-            for (int i = lastBreak; i < bp; i++) {
-                group.append(sentences.get(i));
-            }
+        for (int i = 0; i < sentences.size(); i++) {
+            String sentence = sentences.get(i);
+            boolean hitSemanticBreak = breakSet.contains(i);
+            boolean exceedsMax = currentChunk.length() > 0
+                    && (currentChunk.length() + 1 + sentence.length() > maxChunkSize);
 
-            if (currentChunk.length() + group.length() > maxChunkSize
-                    && currentChunk.length() >= minChunkSize) {
-                chunks.add(currentChunk.toString().trim());
+            if ((hitSemanticBreak && currentChunk.length() >= minChunkSize) || exceedsMax) {
+                String chunk = currentChunk.toString().trim();
+                if (!chunk.isEmpty()) {
+                    chunks.add(chunk);
+                }
                 currentChunk.setLength(0);
             }
 
-            for (int i = lastBreak; i < bp; i++) {
-                currentChunk.append(sentences.get(i));
+            // 单句自身超长时按 maxChunkSize 步进安全切分
+            if (sentence.length() > maxChunkSize && currentChunk.length() == 0) {
+                int pos = 0;
+                while (pos < sentence.length()) {
+                    int end = Math.min(pos + maxChunkSize, sentence.length());
+                    String slice = sentence.substring(pos, end).trim();
+                    if (!slice.isEmpty()) {
+                        chunks.add(slice);
+                    }
+                    pos = end;
+                }
+                continue;
             }
-            lastBreak = bp;
+
+            if (currentChunk.length() > 0) {
+                currentChunk.append(' ');
+            }
+            currentChunk.append(sentence);
         }
 
-        for (int i = lastBreak; i < sentences.size(); i++) {
-            currentChunk.append(sentences.get(i));
-        }
         if (currentChunk.length() > 0) {
             String chunk = currentChunk.toString().trim();
             if (!chunk.isEmpty()) {

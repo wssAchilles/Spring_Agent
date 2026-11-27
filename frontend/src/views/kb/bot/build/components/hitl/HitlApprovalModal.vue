@@ -343,6 +343,7 @@ function handleReject() {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 1;
     border-radius: inherit;
     background: rgba(255, 255, 255, 0.82);
     mix-blend-mode: plus-lighter;
@@ -354,6 +355,7 @@ function handleReject() {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 2;
     border-radius: inherit;
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
@@ -459,25 +461,30 @@ function handleReject() {
 
 .meta-capsules-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .meta-chip {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 4px 10px;
   border-radius: 1000px;
   background: rgba(0, 0, 0, 0.03);
   border: 0.5px solid rgba(0, 0, 0, 0.06);
   font-size: 11px;
+  max-width: 100%;
 
   .chip-label {
     color: rgba(60, 60, 67, 0.65);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .chip-value {
     color: #000000;
     font-weight: 500;
+    word-break: break-all;
   }
 }
 

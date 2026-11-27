@@ -148,8 +148,8 @@ class RagRetrievalServiceDebugTest {
                 new CandidateFusionService.FusionResult(List.of(candidate), List.of(), List.of()));
         when(ragRerankService.rerank(eq("hi"), anyList(), eq(intent), eq(5), isNull(), isNull()))
                 .thenReturn(List.of(candidate));
-        when(ragContextBuilder.buildContext(anyList(), eq(true))).thenReturn("ctx");
-        when(ragContextBuilder.getMaxContextBytes()).thenReturn(1024);
+        lenient().when(ragContextBuilder.buildContext(anyList(), eq(true))).thenReturn("ctx");
+        lenient().when(ragContextBuilder.getMaxContextBytes()).thenReturn(1024);
         when(cragRetrievalEvaluator.evaluate(eq("hi"), any(RagResult.class))).thenReturn(
                 CragRetrievalEvaluation.builder()
                         .label(CragRetrievalEvaluation.Label.CORRECT)
@@ -209,8 +209,8 @@ class RagRetrievalServiceDebugTest {
                 new CandidateFusionService.FusionResult(List.of(metadata, graph), List.of(), List.of("graph")));
         when(ragRerankService.rerank(eq("graph metadata query"), anyList(), eq(intent), eq(5), isNull(), isNull()))
                 .thenReturn(List.of(metadata, graph));
-        when(ragContextBuilder.buildContext(anyList(), eq(true))).thenReturn("ctx");
-        when(ragContextBuilder.getMaxContextBytes()).thenReturn(1024);
+        lenient().when(ragContextBuilder.buildContext(anyList(), eq(true))).thenReturn("ctx");
+        lenient().when(ragContextBuilder.getMaxContextBytes()).thenReturn(1024);
         when(cragRetrievalEvaluator.evaluate(eq("graph metadata query"), any(RagResult.class))).thenReturn(
                 CragRetrievalEvaluation.builder()
                         .label(CragRetrievalEvaluation.Label.CORRECT)
@@ -319,6 +319,34 @@ class RagRetrievalServiceDebugTest {
         assertTrue(future.cancelled);
     }
 
+    @Test
+    @DisplayName("非调试模式下 CRAG 判定为 AMBIGUOUS 时不得因 debugInfo 为空抛出 NPE")
+    void retrieve_whenAmbiguousAndDebugFalse_doesNotThrowNpe() {
+        String query = "模糊查询词";
+        stubFusionPassthrough();
+        stubSuccessfulRetrieval(
+                query,
+                QueryRouter.QueryRoute.MEDIUM,
+                List.of(resultFor(11L, "meta", "metadata")),
+                List.of()
+        );
+        lenient().when(cragRetrievalEvaluator.evaluate(eq(query), any(RagResult.class))).thenReturn(
+                CragRetrievalEvaluation.builder()
+                        .label(CragRetrievalEvaluation.Label.AMBIGUOUS)
+                        .confidence(0.55)
+                        .reason("ambiguous_topic")
+                        .clarificationOptions(List.of("选项A", "选项B"))
+                        .rewrittenQuery(query)
+                        .build()
+        );
+
+        RagResult result = assertDoesNotThrow(() -> service.retrieve(1L, query, 5, false));
+
+        assertNotNull(result);
+        assertEquals(Boolean.TRUE, result.getAmbiguous());
+        assertEquals(List.of("选项A", "选项B"), result.getClarificationOptions());
+    }
+
     private static class TimeoutFuture implements Future<List<String>> {
         private boolean cancelled;
 
@@ -362,9 +390,9 @@ class RagRetrievalServiceDebugTest {
                 .thenReturn(graphResults);
         when(ragRerankService.rerank(eq(query), anyList(), eq(intent), eq(5), isNull(), isNull()))
                 .thenAnswer(invocation -> invocation.getArgument(1));
-        when(ragContextBuilder.buildContext(anyList(), eq(true))).thenReturn("ctx");
-        when(ragContextBuilder.getMaxContextBytes()).thenReturn(1024);
-        when(cragRetrievalEvaluator.evaluate(eq(query), any(RagResult.class))).thenReturn(
+        lenient().when(ragContextBuilder.buildContext(anyList(), eq(true))).thenReturn("ctx");
+        lenient().when(ragContextBuilder.getMaxContextBytes()).thenReturn(1024);
+        lenient().when(cragRetrievalEvaluator.evaluate(eq(query), any(RagResult.class))).thenReturn(
                 CragRetrievalEvaluation.builder()
                         .label(CragRetrievalEvaluation.Label.CORRECT)
                         .confidence(1.0)

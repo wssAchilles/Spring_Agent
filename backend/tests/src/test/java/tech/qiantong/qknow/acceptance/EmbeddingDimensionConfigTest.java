@@ -55,13 +55,13 @@ class EmbeddingDimensionConfigTest {
     }
 
     @Test
-    @DisplayName("无数据库时兼容回退 1536，不阻塞既有链路")
+    @DisplayName("无数据库时统一默认回退千问 v4 标准 1024 维，拦截 1536 维错配")
     void fallbackDimensionWhenNoDatabase() {
         EmbeddingDimensionGuard guard = new EmbeddingDimensionGuard();
-        assertEquals(1536, guard.getEffectiveDimension());
-        assertDoesNotThrow(() -> guard.validateBeforeWrite(new float[1536]));
-        assertThrows(IllegalArgumentException.class, () -> guard.validateBeforeWrite(new float[1024]));
-        assertEquals(1536, guard.buildModelMetadata(null, null)
+        assertEquals(1024, guard.getEffectiveDimension());
+        assertDoesNotThrow(() -> guard.validateBeforeWrite(new float[1024]));
+        assertThrows(IllegalArgumentException.class, () -> guard.validateBeforeWrite(new float[1536]));
+        assertEquals(1024, guard.buildModelMetadata(null, null)
                 .get(EmbeddingDimensionGuard.KEY_EMBEDDING_DIM));
     }
 

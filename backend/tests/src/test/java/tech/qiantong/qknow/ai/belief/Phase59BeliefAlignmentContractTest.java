@@ -63,8 +63,8 @@ public class Phase59BeliefAlignmentContractTest {
         List<float[]> observations = new ArrayList<>();
         Random rnd = new Random(42);
         for (int i = 0; i < 6; i++) {
-            float[] obs = new float[1536];
-            for (int j = 0; j < 1536; j++) {
+            float[] obs = new float[1024];
+            for (int j = 0; j < 1024; j++) {
                 obs[j] = queryAnchor[j] + (float) (rnd.nextGaussian() * 0.05);
             }
             observations.add(obs);
@@ -213,7 +213,7 @@ public class Phase59BeliefAlignmentContractTest {
     @DisplayName("契约 8: 统筹中枢边界异常防御与空参数拦截测试")
     void testCoordinatorRejectsInvalidInputs() {
         assertThrows(IllegalArgumentException.class, () -> coordinator.coordinateBeliefAndAction(
-                null, "MACRO", "MICRO", List.of(new float[1536]), Map.of("S", 1.0), Map.of("S", 1.0),
+                null, "MACRO", "MICRO", List.of(new float[1024]), Map.of("S", 1.0), Map.of("S", 1.0),
                 1, List.of("A"), List.of("A"), Map.of()
         ), "空 roundId 必须抛出 IllegalArgumentException");
 

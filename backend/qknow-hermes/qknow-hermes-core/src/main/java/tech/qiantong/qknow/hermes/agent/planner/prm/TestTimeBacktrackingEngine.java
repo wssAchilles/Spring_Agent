@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 遵循有界局部树搜索（D_max <= 2, B <= 3）与冷备隔离防硬删除工程铁律：
  * 1. 拦截低分步骤（r_step < 0.60），彻底消除中间逻辑幻觉级联雪崩；
  * 2. 状态撤销与快照恢复：回滚至父步骤检查点，剪枝分支平滑转储入三级冷备环形仓；
- * 3. 超球面加权 UCB1 探索：结合千问 1536 维超球面测地余弦与访问频次选取最优备选分支；
+ * 3. 超球面加权 UCB1 探索：结合千问 1024 维超球面测地余弦与访问频次选取最优备选分支；
  * 4. 签发带 SHA-256 常量时间验真的 BacktrackingDecisionReceipt 凭单。
  */
 public class TestTimeBacktrackingEngine {
@@ -35,8 +35,8 @@ public class TestTimeBacktrackingEngine {
     ) implements Serializable {
         public CandidateAction {
             Objects.requireNonNull(actionKey, "actionKey cannot be null");
-            if (actionVector != null && actionVector.length != 1536) {
-                throw new IllegalArgumentException("Vector dimension must be strictly 1536, got: " + actionVector.length);
+            if (actionVector != null && actionVector.length != 1024) {
+                throw new IllegalArgumentException("Vector dimension must be strictly 1024, got: " + actionVector.length);
             }
             actionVector = actionVector != null ? actionVector.clone() : null;
         }
@@ -170,7 +170,7 @@ public class TestTimeBacktrackingEngine {
      * @param failedStepIndex      发生幻觉或断裂的步骤
      * @param failedReceipt        低分 PRM 凭单
      * @param fallbackAlternatives 备选分支动作池
-     * @param targetEmbedding      千问 1536 维目标向量
+     * @param targetEmbedding      千问 1024 维目标向量
      * @return 局部回溯不可变凭单 BacktrackingDecisionReceipt
      */
     public BacktrackingDecisionReceipt executeBacktracking(
@@ -278,7 +278,7 @@ public class TestTimeBacktrackingEngine {
     }
 
     /**
-     * 结合千问 1536 维超球面测地余弦与 UCB1 策略选取最佳备选分支
+     * 结合千问 1024 维超球面测地余弦与 UCB1 策略选取最佳备选分支
      */
     private CandidateAction selectBestActionByUcb1(List<CandidateAction> candidates, float[] targetEmbedding) {
         if (candidates == null || candidates.isEmpty()) {

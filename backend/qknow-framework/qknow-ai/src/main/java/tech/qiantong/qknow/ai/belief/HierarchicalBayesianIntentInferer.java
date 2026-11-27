@@ -15,14 +15,14 @@ public class HierarchicalBayesianIntentInferer {
 
     private static final Logger log = LoggerFactory.getLogger(HierarchicalBayesianIntentInferer.class);
 
-    // 千问 1536 维超球面集中度参数 kappa
+    // 千问 1024 维超球面集中度参数 kappa
     public static final double KAPPA = 4.0;
     // 信念熵收敛阈值 ln(2) 约 0.6931
     public static final double ENTROPY_CONVERGENCE_THRESHOLD = Math.log(2.0);
     // 最小置信度阈值
     public static final double MIN_CONFIDENCE_THRESHOLD = 0.85;
 
-    // 意图空间在千问 1536 维超球面上的中心锚点
+    // 意图空间在千问 1024 维超球面上的中心锚点
     private final ConcurrentHashMap<String, float[]> intentAnchors = new ConcurrentHashMap<>();
 
     /**
@@ -37,14 +37,14 @@ public class HierarchicalBayesianIntentInferer {
     ) {}
 
     public HierarchicalBayesianIntentInferer() {
-        // 默认初始化三类典型协同意图及伪中心 (1536 维超球面正交特征占位)
+        // 默认初始化三类典型协同意图及伪中心 (1024 维超球面正交特征占位)
         registerIntent("QUERY_EXPLAIN", generateNormalizedAnchor(1));
         registerIntent("TRANSFORM_EXECUTE", generateNormalizedAnchor(2));
         registerIntent("AUDIT_REFLECT", generateNormalizedAnchor(3));
     }
 
     public void registerIntent(String intentName, float[] anchor) {
-        if (intentName != null && anchor != null && anchor.length == 1536) {
+        if (intentName != null && anchor != null && anchor.length == 1024) {
             intentAnchors.put(intentName, normalizeHypersphere(anchor));
         }
     }
@@ -141,9 +141,9 @@ public class HierarchicalBayesianIntentInferer {
     }
 
     public static float[] generateNormalizedAnchor(int seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         Random rnd = new Random(seed * 7919L);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) rnd.nextGaussian();
         }
         return normalizeHypersphere(v);

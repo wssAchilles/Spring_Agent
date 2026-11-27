@@ -163,6 +163,22 @@ public class KnowledgeNodeBO extends BaseNodeBO {
             outputData.put("text", formattedResult);
             // 兼容历史模板 {{chunks}} 变量：知识库节点统一输出合并后的切片上下文别名
             outputData.put("chunks", formattedResult);
+            if (StrUtil.isNotBlank(nodeDefinition.getOutput())) {
+                try {
+                    JSONArray outputDefs = JSONArray.parseArray(nodeDefinition.getOutput());
+                    if (outputDefs != null) {
+                        for (int i = 0; i < outputDefs.size(); i++) {
+                            JSONObject outputDef = outputDefs.getJSONObject(i);
+                            String varName = outputDef != null ? outputDef.getString("name") : null;
+                            if (StrUtil.isNotBlank(varName)) {
+                                outputData.putIfAbsent(varName, formattedResult);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // 输出定义解析失败时保留既有默认变量映射
+                }
+            }
 
             return NodeRunResultBO.success(nodeDefinition.getUuid(), nodeDefinition.getName(), outputData);
 

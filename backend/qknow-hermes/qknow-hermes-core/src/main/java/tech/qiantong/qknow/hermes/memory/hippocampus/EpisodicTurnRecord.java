@@ -9,7 +9,7 @@ import java.util.Objects;
 
 /**
  * 海马体单轮回合情境记忆不可变凭单
- * 承载用户或 Agent 的交互情境事实，并严格绑定阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+ * 承载用户或 Agent 的交互情境事实，并严格绑定阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
  */
 public record EpisodicTurnRecord(
         String turnId,
@@ -21,7 +21,7 @@ public record EpisodicTurnRecord(
         long timestamp,
         String signature
 ) {
-    public static final int VECTOR_DIMENSION = 1536;
+    public static final int VECTOR_DIMENSION = 1024;
     private static final double NORM_TOLERANCE = 1e-3;
 
     public EpisodicTurnRecord {

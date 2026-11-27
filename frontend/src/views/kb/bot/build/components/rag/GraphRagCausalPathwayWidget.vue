@@ -60,7 +60,7 @@
         </div>
       </div>
 
-      <!-- 阿里千问 1536 维超球面约束 -->
+      <!-- 阿里千问 1024 维超球面约束 -->
       <div class="metric-card">
         <div class="card-label">千问超球面模长约束</div>
         <div class="card-value-row">

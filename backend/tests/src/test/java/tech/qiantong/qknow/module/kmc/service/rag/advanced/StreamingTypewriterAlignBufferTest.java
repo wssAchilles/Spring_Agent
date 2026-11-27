@@ -21,7 +21,7 @@ public class StreamingTypewriterAlignBufferTest {
         StreamingTypewriterAlignBuffer buffer = new StreamingTypewriterAlignBuffer();
 
         // 模拟突发推送 100 个字符
-        String burstText = "基于千问1536维超球面测地余弦内积加权局部诱导子图PPR幂迭代收敛推理，全面提升大模型RAG检索保真度与回答质量！";
+        String burstText = "基于千问1024维超球面测地余弦内积加权局部诱导子图PPR幂迭代收敛推理，全面提升大模型RAG检索保真度与回答质量！";
         buffer.ingestChunk(burstText);
 
         assertEquals(StreamingPlaybackState.PLAYING, buffer.getState());

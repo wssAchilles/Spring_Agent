@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 /**
  * 自反思长程情景记忆引擎默认实现 (DefaultReflexionEpisodicMemoryEngine)
  * 基于 NeurIPS 2023 Reflexion 语言强化学习范式，实现跨试次轨迹反思、
- * 阿里千问 1536 维超球面单位向量归档与三级冷备环形隔离缓冲
+ * 阿里千问 1024 维超球面单位向量归档与三级冷备环形隔离缓冲
  *
  * @author Achilles
  * @since 2026-10-13
@@ -51,8 +51,8 @@ public class DefaultReflexionEpisodicMemoryEngine implements ReflexionEpisodicMe
             // 1. 生成自然语言反思教训 (Verbal Reflection)
             String reflectionLesson = extractVerbalReflectionLesson(agentRole, taskIdentifier, executionTrajectory, environmentFeedback);
 
-            // 2. 构造 1536 维阿里千问超球面单位向量
-            float[] vector1536 = generateDeterministicQwenVector(taskIdentifier + "::" + reflectionLesson);
+            // 2. 构造 1024 维阿里千问超球面单位向量
+            float[] vector1024 = generateDeterministicQwenVector(taskIdentifier + "::" + reflectionLesson);
 
             // 3. 计算语义保真度
             double fidelity = 0.92;
@@ -67,7 +67,7 @@ public class DefaultReflexionEpisodicMemoryEngine implements ReflexionEpisodicMe
                     executionTrajectory != null ? truncate(executionTrajectory, 500) : "N/A",
                     environmentFeedback != null ? truncate(environmentFeedback, 500) : "N/A",
                     reflectionLesson,
-                    vector1536,
+                    vector1024,
                     fidelity
             );
 
@@ -83,13 +83,13 @@ public class DefaultReflexionEpisodicMemoryEngine implements ReflexionEpisodicMe
     @Override
     public List<ReflexionEpisodicMemoryReceipt> recallRelevantReflections(
             String tenantId,
-            float[] queryVector1536,
+            float[] queryVector1024,
             int topK,
             double minCosineThreshold
     ) {
         String safeTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : "default_tenant";
         List<ReflexionEpisodicMemoryReceipt> records = tenantMemoryStore.getOrDefault(safeTenant, List.of());
-        if (records.isEmpty() || queryVector1536 == null || queryVector1536.length != ReflexionEpisodicMemoryReceipt.VECTOR_DIMENSION) {
+        if (records.isEmpty() || queryVector1024 == null || queryVector1024.length != ReflexionEpisodicMemoryReceipt.VECTOR_DIMENSION) {
             return List.of();
         }
 
@@ -100,7 +100,7 @@ public class DefaultReflexionEpisodicMemoryEngine implements ReflexionEpisodicMe
         for (ReflexionEpisodicMemoryReceipt rec : records) {
             float[] docVec = rec.qwenHypersphericalVector();
             if (docVec != null && docVec.length == ReflexionEpisodicMemoryReceipt.VECTOR_DIMENSION) {
-                double sim = calculateCosineSimilarity(queryVector1536, docVec);
+                double sim = calculateCosineSimilarity(queryVector1024, docVec);
                 if (sim >= minCosineThreshold) {
                     scoredList.add(new ScoredReflection(rec, sim));
                 }
@@ -145,7 +145,7 @@ public class DefaultReflexionEpisodicMemoryEngine implements ReflexionEpisodicMe
     }
 
     /**
-     * 计算阿里千问 1536 维超球面单位向量 (满足 ||v||_2 = 1.0)
+     * 计算阿里千问 1024 维超球面单位向量 (满足 ||v||_2 = 1.0)
      */
     public static float[] generateDeterministicQwenVector(String text) {
         float[] vector = new float[ReflexionEpisodicMemoryReceipt.VECTOR_DIMENSION];

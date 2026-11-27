@@ -17,12 +17,14 @@ import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tech.qiantong.qknow.ai.constant.WeaviateConstant;
 import tech.qiantong.qknow.ai.service.IVectorStoreService;
 import tech.qiantong.qknow.ai.transformer.ContinuousWhitespaceEnricher;
@@ -57,6 +59,8 @@ import tech.qiantong.qknow.module.kmc.service.rag.GraphRagSyncService;
 import tech.qiantong.qknow.module.kmc.service.rag.HyPEIndexer;
 import tech.qiantong.qknow.module.kmc.service.rag.RagCacheService;
 import tech.qiantong.qknow.module.kmc.service.rag.SemanticCacheService;
+import tech.qiantong.qknow.module.kmc.service.rag.guard.EmbeddingDimensionGuard;
+import tech.qiantong.qknow.module.kmc.service.rag.guard.GuardedEmbeddingModel;
 import tech.qiantong.qknow.module.kmc.service.sync.IKmcSyncService;
 import tech.qiantong.qknow.module.kmc.service.sync.ILuceneService;
 import tech.qiantong.qknow.mybatis.core.query.LambdaQueryWrapperX;
@@ -113,6 +117,10 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     private ContextualEnrichmentService contextualEnrichmentService;
     @Resource
     private HyPEIndexer hypeIndexer;
+    @Autowired(required = false)
+    private EmbeddingDimensionGuard embeddingDimensionGuard;
+    @Autowired(required = false)
+    private TransactionTemplate transactionTemplate;
 
     @Value("${dromara.x-file-storage.local-plus[0].storage-path}")
     private String prefix;
@@ -225,35 +233,18 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
         if (kmcDocumentDO == null) {
             return false;
         }
-        Path tempDir = null;
         try {
             KmcKnowledgeBaseDO knowledgeBase = kmcKnowledgeBaseService.getKmcKnowledgeBaseById(kmcDocumentDO.getKnowledgeBaseId());
-            File file = getFile(kmcDocumentDO);
-
-            // 1. 创建一个随机临时目录
-            tempDir = Files.createTempDirectory("upload_");
-
-            // 2. 在该目录下创建你想要名字的文件（名字不变！）
-            Path targetPath = tempDir.resolve(kmcDocumentDO.getName());
-            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-            File copiedFile = targetPath.toFile();
-
-            // 知识库参数请求对象
-            CreateFile createFile = BeanUtils.toBean(kmcDocumentDO, CreateFile.class);
-            createFile.setFile(copiedFile);
-            createFile.setIndexingTechnique(knowledgeBase.getIndexingTechnique());
-
+            if (knowledgeBase == null) {
+                throw new ServiceException("关联知识库不存在");
+            }
+            // 直接标记为待分块向量化同步中状态，避免无用的临时目录文件拷贝
             kmcDocumentDO.setSyncStatus(DocumentSyncStatus.IN.code);
             kmcDocumentService.updateById(kmcDocumentDO);
         } catch (Exception e) {
             log.error("同步文件失败：{}", e.getMessage());
             kmcDocumentDO.setSyncStatus(DocumentSyncStatus.ERROR.code);
             kmcDocumentService.updateById(kmcDocumentDO);
-        } finally {
-            if (tempDir != null) {
-                FileUtils.deleteQuietly(tempDir.toFile());
-            }
         }
 
         return true;
@@ -261,34 +252,21 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
 
     @Override
     public Boolean syncToUpdate(KmcDocumentDO kmcDocumentDO) {
-        Path tempDir = null;
+        if (kmcDocumentDO == null) {
+            return false;
+        }
         try {
             KmcKnowledgeBaseDO knowledgeBase = kmcKnowledgeBaseService.getKmcKnowledgeBaseById(kmcDocumentDO.getKnowledgeBaseId());
-
-            File file = this.getFile(kmcDocumentDO);
-
-            // 1. 创建一个随机临时目录
-            tempDir = Files.createTempDirectory("upload_");
-            // 2. 在该目录下创建你想要名字的文件（名字不变！）
-            Path targetPath = tempDir.resolve(kmcDocumentDO.getName());
-            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            File copiedFile = targetPath.toFile();
-
-            // 知识库参数请求对象
-            CreateFile createFile = BeanUtils.toBean(kmcDocumentDO, CreateFile.class);
-            createFile.setFile(copiedFile);
-            createFile.setIndexingTechnique(knowledgeBase.getIndexingTechnique());
-
+            if (knowledgeBase == null) {
+                throw new ServiceException("关联知识库不存在");
+            }
+            // 直接标记为待重新分块向量化状态，避免无用的临时目录文件拷贝
             kmcDocumentDO.setSyncStatus(DocumentSyncStatus.IN.code);
             kmcDocumentService.updateById(kmcDocumentDO);
         } catch (Exception e) {
             log.error("同步文件失败：{}", e.getMessage());
             kmcDocumentDO.setSyncStatus(DocumentSyncStatus.ERROR.code);
             kmcDocumentService.updateById(kmcDocumentDO);
-        } finally {
-            if (tempDir != null) {
-                FileUtils.deleteQuietly(tempDir.toFile());
-            }
         }
         return true;
     }
@@ -301,12 +279,15 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     @Override
     public Boolean syncToRemove(KmcDocumentDO kmcDocumentDO) {
         KmcKnowledgeBaseDO knowledgeBase = kmcKnowledgeBaseService.getKmcKnowledgeBaseById(kmcDocumentDO.getKnowledgeBaseId());
-        luceneService.deleteByDocumentId(String.valueOf(kmcDocumentDO.getId()));// 删除索引
-        this.removeVectorStoreByDocument(knowledgeBase,kmcDocumentDO);// 删除向量数据库
+        luceneService.deleteByDocumentId(String.valueOf(kmcDocumentDO.getId())); // 删除索引
+        this.removeVectorStoreByDocument(knowledgeBase, kmcDocumentDO); // 删除向量数据库
         LambdaQueryWrapper<KmcDocumentSegmentDO> queryWrapper = Wrappers.<KmcDocumentSegmentDO>lambdaQuery()
                 .eq(KmcDocumentSegmentDO::getDocumentId, kmcDocumentDO.getId());
         iKmcDocumentSegmentService.remove(queryWrapper);
-        baseMapper.deleteById(kmcDocumentDO.getId());
+        // 按关联文档 ID 删除同步记录，避免误将文档 ID 当作 kmc_sync 主键删除
+        LambdaQueryWrapper<KmcSyncDO> syncDeleteWrapper = Wrappers.<KmcSyncDO>lambdaQuery()
+                .eq(KmcSyncDO::getDocumentId, kmcDocumentDO.getId());
+        baseMapper.delete(syncDeleteWrapper);
         evictKnowledgeCaches(kmcDocumentDO.getKnowledgeBaseId());
         return true;
     }
@@ -350,9 +331,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
                 String mode = kmcDocumentDO.getMode() != null ? kmcDocumentDO.getMode() : SplitterFactory.MODE_RECURSIVE;
                 TextSplitter splitter;
                 if (SplitterFactory.MODE_SEMANTIC.equals(mode)) {
-                    EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
-                            Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
-                            knowledgeBaseDO.getEmbeddingModel());
+                    EmbeddingModel embeddingModel = resolveGuardedEmbeddingModel(knowledgeBaseDO);
                     splitter = new SemanticSplitter(embeddingModel, maxTokens, 100, 0.5);
                 } else {
                     splitter = SplitterFactory.create(mode, separator, maxTokens, chunkOverlap);
@@ -500,7 +479,10 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
      * 保存分段信息
      */
     private void saveSegment(KmcKnowledgeBaseDO knowledgeBaseDO, KmcDocumentDO documentDO, List<Document> segmentList) {
-        Map<String, Long> map = save2sql(documentDO, segmentList);
+        // 使用编程式事务包裹 SQL 持久化，防止同类内部自调用导致 @Transactional 失效
+        Map<String, Long> map = transactionTemplate != null
+                ? transactionTemplate.execute(status -> save2sql(documentDO, segmentList))
+                : save2sql(documentDO, segmentList);
         luceneService.saveAiDocumentBatch(map, documentDO, segmentList);
         // 如果是高质量索引，需要往向量数据库中添加
         if (Objects.equals(knowledgeBaseDO.getIndexingTechnique(), "high_quality")) {
@@ -581,14 +563,20 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
     }
 
     /**
-     * 保存到向量数据库
-     *
-     * @param knowledgeBaseDO 知识库对象
-     * @param documentDO      文档对象
-     * @param segmentList     分段列表
+     * 解析经过 1024 维与单位超球面范数门禁包装的 EmbeddingModel
      */
+    private EmbeddingModel resolveGuardedEmbeddingModel(KmcKnowledgeBaseDO knowledgeBaseDO) {
+        EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
+                Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
+                knowledgeBaseDO.getEmbeddingModel());
+        if (embeddingDimensionGuard != null && embeddingModel != null && !(embeddingModel instanceof GuardedEmbeddingModel)) {
+            embeddingModel = new GuardedEmbeddingModel(embeddingModel, embeddingDimensionGuard);
+        }
+        return embeddingModel;
+    }
+
     /**
-     * 保存到向量数据库（带自动重试）
+     * 保存到向量数据库（带自动重试与维度门禁）
      *
      * @param knowledgeBaseDO 知识库对象
      * @param documentDO      文档对象
@@ -596,9 +584,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
      */
     public void save2VectorStore(Map<String, Long> map, KmcKnowledgeBaseDO knowledgeBaseDO, KmcDocumentDO documentDO,
                                  List<Document> segmentList) {
-        EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
-                Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
-                knowledgeBaseDO.getEmbeddingModel());
+        EmbeddingModel embeddingModel = resolveGuardedEmbeddingModel(knowledgeBaseDO);
         VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
         List<Document> vectorDocuments = segmentList.stream()
@@ -671,9 +657,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
      * @param documentDO      文档对象
      */
     public void removeVectorStoreByDocument( KmcKnowledgeBaseDO knowledgeBaseDO, KmcDocumentDO documentDO) {
-        EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
-                Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
-                knowledgeBaseDO.getEmbeddingModel());
+        EmbeddingModel embeddingModel = resolveGuardedEmbeddingModel(knowledgeBaseDO);
         VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
         FilterExpressionBuilder b = new FilterExpressionBuilder();
@@ -690,9 +674,7 @@ public class KmcSyncServiceImpl extends ServiceImpl<KmcSyncMapper, KmcSyncDO> im
      */
     public void saveHypotheticalToVectorStore(KmcKnowledgeBaseDO knowledgeBaseDO, KmcDocumentDO documentDO,
                                               List<Document> hypotheticalDocs) {
-        EmbeddingModel embeddingModel = aiModelService.getEmbeddingModel(
-                Long.valueOf(knowledgeBaseDO.getEmbeddingModelProvider()),
-                knowledgeBaseDO.getEmbeddingModel());
+        EmbeddingModel embeddingModel = resolveGuardedEmbeddingModel(knowledgeBaseDO);
         VectorStore vectorStore = vectorStoreService.getVectorStore(embeddingModel);
 
         hypotheticalDocs.forEach(doc -> {

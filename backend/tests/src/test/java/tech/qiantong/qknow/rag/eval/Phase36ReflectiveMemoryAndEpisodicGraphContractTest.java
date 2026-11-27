@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 长程跨会话反思演进记忆流与个性化情境图谱 (Long-Horizon Cross-Session Reflective Memory Stream & Personalized Episodic Graph)
  *
  * 覆盖 10 项严苛核心契约：
- * 1. contract01: 三维协同检索得分计算 (Recency, Importance, Relevance) 与千问 1536 维超球面余弦度量契约
+ * 1. contract01: 三维协同检索得分计算 (Recency, Importance, Relevance) 与千问 1024 维超球面余弦度量契约
  * 2. contract02: 激活保护引理 (Lemma 1.1) 长程防遗忘契约 (重要记忆永不因时间流逝沉没)
  * 3. contract03: 反思折叠树 (Reflection Tree) 信息论压缩不变量契约 (Theorem 1.1: 压缩率 >= 70%)
  * 4. contract04: 工作记忆字节预算器 (ByteBudgeter <= 4KB) 物理硬截断契约
@@ -72,25 +72,25 @@ public class Phase36ReflectiveMemoryAndEpisodicGraphContractTest {
     }
 
     /**
-     * 辅助方法：生成 1536 维归一化超球面向量
+     * 辅助方法：生成 1024 维归一化超球面向量
      */
     private float[] generateNormalizedEmbedding(long seed) {
         Random rnd = new Random(seed);
-        float[] vec = new float[1536];
+        float[] vec = new float[1024];
         double norm = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) rnd.nextGaussian();
             norm += vec[i] * vec[i];
         }
         norm = Math.sqrt(norm);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) (vec[i] / norm);
         }
         return vec;
     }
 
     @Test
-    @DisplayName("契约 1: 三维协同检索得分计算 (Recency, Importance, Relevance) 与千问 1536 维超球面余弦度量契约")
+    @DisplayName("契约 1: 三维协同检索得分计算 (Recency, Importance, Relevance) 与千问 1024 维超球面余弦度量契约")
     void contract01_threeDimensionalScoringAndHypersphereProjection() {
         float[] vecA = generateNormalizedEmbedding(42L);
         float[] vecB = generateNormalizedEmbedding(42L); // 同一向量

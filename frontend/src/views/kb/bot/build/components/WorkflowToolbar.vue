@@ -170,17 +170,20 @@ defineEmits([
 
       .title {
         font-size: 15px;
-        font-weight: 700;
-        color: #f8fafc;
-        letter-spacing: 0.3px;
+        font-weight: 590;
+        color: var(--mono-text-primary, #000000);
+        letter-spacing: -0.23px;
+        white-space: nowrap;
       }
 
       .type-tag {
         font-size: 11px;
-        border-radius: 6px;
-        background: rgba(99, 102, 241, 0.25);
-        border: 1px solid rgba(99, 102, 241, 0.4);
-        color: #c7d2fe;
+        font-weight: 600;
+        border-radius: 999px;
+        background: rgba(0, 122, 255, 0.1);
+        border: 0.5px solid rgba(0, 122, 255, 0.28);
+        color: #007aff;
+        white-space: nowrap;
       }
 
       .internally {

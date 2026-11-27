@@ -106,7 +106,7 @@ public class Phase28ModelGatewayContractTest {
     @DisplayName("Contract 01: 统一 OpenAI 协议兼容端点入参与出参标准化转录验证")
     void contract01_unifiedProtocol_standardizesOpenAiCompatibleEndpoints() {
         GatewayDto.GatewayChatRequest request = GatewayDto.GatewayChatRequest.builder()
-                .model("deepseek-chat")
+                .model("deepseek-flash")
                 .messages(List.of(GatewayDto.ChatMessageDto.builder().role("user").content("你好").build()))
                 .stream(false)
                 .tenantId("tenant_test_01")
@@ -126,11 +126,11 @@ public class Phase28ModelGatewayContractTest {
         assertEquals(60, response.getUsage().getTotalTokens());
         assertNotNull(response.getRoutedChannelId(), "响应必须包含内部路由通道跟踪元数据");
 
-        // 验证 models 列表端点
+        // 验证 models 列表端点（收敛至官方活跃模型 deepseek-flash 与 text-embedding-v4）
         ResponseEntity<Map<String, Object>> modelsResp = controller.listModels();
         assertTrue(modelsResp.getStatusCode().is2xxSuccessful());
         assertNotNull(modelsResp.getBody());
-        assertTrue(((List<?>) modelsResp.getBody().get("data")).size() >= 3);
+        assertTrue(((List<?>) modelsResp.getBody().get("data")).size() >= 2);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class Phase28ModelGatewayContractTest {
         proxyService.enqueueResponse("ch_deepseek_official", new IOException("503 Service Unavailable: 上游机房网络中断"));
 
         GatewayDto.GatewayChatRequest request = GatewayDto.GatewayChatRequest.builder()
-                .model("deepseek-chat")
+                .model("deepseek-flash")
                 .messages(List.of(GatewayDto.ChatMessageDto.builder().role("user").content("测试故障倒换").build()))
                 .tenantId("tenant_failover")
                 .build();
@@ -341,7 +341,7 @@ public class Phase28ModelGatewayContractTest {
     @DisplayName("Contract 09: 响应式流式代理中途取消级联中断与 TTFT 准确捕获")
     void contract09_streamingResilience_propagatesCancellationAndMeasuresTtft() {
         GatewayDto.GatewayChatRequest request = GatewayDto.GatewayChatRequest.builder()
-                .model("deepseek-chat")
+                .model("deepseek-flash")
                 .messages(List.of(GatewayDto.ChatMessageDto.builder().role("user").content("测试流式").build()))
                 .stream(true)
                 .build();
@@ -377,7 +377,7 @@ public class Phase28ModelGatewayContractTest {
             pool.submit(() -> {
                 try {
                     GatewayDto.GatewayChatRequest req = GatewayDto.GatewayChatRequest.builder()
-                            .model("deepseek-chat")
+                            .model("deepseek-flash")
                             .messages(List.of(GatewayDto.ChatMessageDto.builder().role("user").content("并发请求 " + idx).build()))
                             .tenantId("tenant_perf_" + (idx % 3))
                             .build();

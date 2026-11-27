@@ -34,14 +34,14 @@ public class Phase49LongContextCompressorContractTest {
     }
 
     private float[] createHypersphericalVector(float seed) {
-        float[] vec = new float[1536];
+        float[] vec = new float[1024];
         double normSq = 0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] = (float) Math.sin(seed + i * 0.05);
             normSq += vec[i] * vec[i];
         }
         float norm = (float) Math.sqrt(normSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             vec[i] /= norm;
         }
         return vec;
@@ -150,7 +150,7 @@ public class Phase49LongContextCompressorContractTest {
     }
 
     @Test
-    @DisplayName("Contract 5: 认知页面 Record 创建与千问 1536 维超球面嵌入绑定")
+    @DisplayName("Contract 5: 认知页面 Record 创建与千问 1024 维超球面嵌入绑定")
     void test5_CognitivePageCreationAndHypersphericalEmbedding() {
         float[] qwenVec = createHypersphericalVector(1.0f);
         CognitivePage page = new CognitivePage(
@@ -167,7 +167,7 @@ public class Phase49LongContextCompressorContractTest {
         assertNotNull(page);
         assertEquals("page_alpha_001", page.pageId());
         assertEquals(1001L, page.tenantId());
-        assertEquals(1536, page.qwen1536Embedding().length);
+        assertEquals(1024, page.qwen1536Embedding().length);
         assertEquals(1, page.causalPointers().size());
         assertEquals("slice_infra_jdk21", page.causalPointers().get(0));
     }

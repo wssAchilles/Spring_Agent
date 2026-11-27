@@ -59,18 +59,14 @@ public class JdbcStateCheckpointStorage implements StateCheckpointStorageSpi {
                         }
 
                         try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                            bindRecordToStatement(updateStmt, record);
-                            updateStmt.setString(13, record.runtimeId());
-                            updateStmt.setLong(14, fencingToken);
+                            bindUpdateStatement(updateStmt, record, fencingToken);
                             int rows = updateStmt.executeUpdate();
                             conn.commit();
                             return rows > 0;
                         }
                     } else {
                         try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                            insertStmt.setString(1, record.runtimeId());
-                            bindRecordToStatement(insertStmt, record);
-                            insertStmt.setLong(12, record.createdAtMs());
+                            bindInsertStatement(insertStmt, record);
                             int rows = insertStmt.executeUpdate();
                             conn.commit();
                             return rows > 0;
@@ -87,7 +83,10 @@ public class JdbcStateCheckpointStorage implements StateCheckpointStorageSpi {
         }
     }
 
-    private void bindRecordToStatement(PreparedStatement stmt, StateCheckpointRecord record) throws SQLException {
+    /**
+     * 绑定 UPDATE 语句全部 14 个占位符参数
+     */
+    private void bindUpdateStatement(PreparedStatement stmt, StateCheckpointRecord record, long maxAllowedFencingToken) throws SQLException {
         stmt.setString(1, record.flowId());
         stmt.setInt(2, record.groupIndex());
         stmt.setString(3, record.completedResultsJson());
@@ -100,6 +99,28 @@ public class JdbcStateCheckpointStorage implements StateCheckpointStorageSpi {
         stmt.setInt(10, record.version());
         stmt.setLong(11, record.updatedAtMs());
         stmt.setBytes(12, record.integrityHmac());
+        stmt.setString(13, record.runtimeId());
+        stmt.setLong(14, maxAllowedFencingToken);
+    }
+
+    /**
+     * 绑定 INSERT 语句全部 14 个占位符参数，严格对齐列顺序
+     */
+    private void bindInsertStatement(PreparedStatement stmt, StateCheckpointRecord record) throws SQLException {
+        stmt.setString(1, record.runtimeId());
+        stmt.setString(2, record.flowId());
+        stmt.setInt(3, record.groupIndex());
+        stmt.setString(4, record.completedResultsJson());
+        stmt.setString(5, record.variablesJson());
+        stmt.setString(6, record.status());
+        stmt.setString(7, record.compensationLog());
+        stmt.setString(8, record.leaseOwnerId());
+        stmt.setLong(9, record.leaseExpireAtMs());
+        stmt.setLong(10, record.fencingToken());
+        stmt.setInt(11, record.version());
+        stmt.setLong(12, record.createdAtMs());
+        stmt.setLong(13, record.updatedAtMs());
+        stmt.setBytes(14, record.integrityHmac());
     }
 
     @Override

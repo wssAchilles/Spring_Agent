@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * (Multi-Agent Adaptive Coalition Game Formation, Hyperspherical Reputation Negotiation & Routing Hub)
  * <p>
  * 严格按照 AGENTS.md 规范与八大核心契约验证：
- * 1. 千问 1536 维超球面次模贪心联盟组建：近似比 >= 63.2%，耗时 <= 3.0ms (TC-143-1)
+ * 1. 千问 1024 维超球面次模贪心联盟组建：近似比 >= 63.2%，耗时 <= 3.0ms (TC-143-1)
  * 2. 夏普利值公平分配公理体系：效率性误差 <= 1e-6，虚拟玩家零收益 (零搭便车) (TC-143-2)
  * 3. 对数阻尼信誉动力学：高频女巫刷单边际增益递减率 >= 80.0%，单次违约超线性重罚 (TC-143-3)
  * 4. 三级冷备隔离环形缓冲区：软删除可逆隔离、零物理硬删与沙盒自愈复活 (TC-143-4)
@@ -39,7 +39,7 @@ public class Phase143AdaptiveCoalitionContractTest {
     private final AdaptiveCoalitionGameFormer gameFormer = new AdaptiveCoalitionGameFormer(reputationTracker);
 
     /**
-     * 辅助工具：生成指定基底与扰动的高维 1536 维超球面单位向量
+     * 辅助工具：生成指定基底与扰动的高维 1024 维超球面单位向量
      */
     private double[] createPerturbedEmbedding(int seedTopic, double perturbationRatio) {
         double[] vec = new double[AdaptiveCoalitionGameFormer.EMBEDDING_DIM];
@@ -56,7 +56,7 @@ public class Phase143AdaptiveCoalitionContractTest {
     // TC-143-1: 次模贪心联盟组建与近似比保证
     // =========================================================================
     @Test
-    @DisplayName("TC-143-1: 千问 1536 维超球面次模贪心联盟组建：近似比 >= 63.2%，耗时 <= 3.0ms (Lemma 143.1)")
+    @DisplayName("TC-143-1: 千问 1024 维超球面次模贪心联盟组建：近似比 >= 63.2%，耗时 <= 3.0ms (Lemma 143.1)")
     void testCoalitionFormation_submodularGreedyApproximationRatio() {
         // JVM 预热消除类加载抖动
         for (int w = 0; w < 10; w++) {
@@ -115,7 +115,7 @@ public class Phase143AdaptiveCoalitionContractTest {
 
         // 构造一个与任务完全正交的虚拟玩家向量
         double[] orthogonalDummy = new double[AdaptiveCoalitionGameFormer.EMBEDDING_DIM];
-        orthogonalDummy[1535] = 1.0; // 假定第 1535 维与主任务正交
+        orthogonalDummy[AdaptiveCoalitionGameFormer.EMBEDDING_DIM - 1] = 1.0; // 假定末维（第 1023 维）与主任务正交
 
         List<AgentGameProfile> pool = List.of(
                 new AgentGameProfile("core-01", "tenant-sh", "推理专家", createPerturbedEmbedding(5, 0.05), 0.95, 1.0, false),

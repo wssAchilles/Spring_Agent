@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 /**
  * MoA 专家混合委员会共识调度器 (MoAExpertConsensusEngine)
  * 协调多个异构领域专家异步并发生成专业初答分片
- * 施加独立事实 RAG 检索与阿里千问 1536 维超球面测地散度双重验真
+ * 施加独立事实 RAG 检索与阿里千问 1024 维超球面测地散度双重验真
  * 具备一票否决专家群体从众伪共识能力 (FALSE_CONSENSUS_REJECTED)
  */
 @Slf4j
@@ -81,7 +81,7 @@ public class MoAExpertConsensusEngine {
         }
         String aggregatedSynthesis = synthesisBuilder.toString().trim();
 
-        // 3. 计算专家群体在阿里千问 1536 维超球面上的合成质心单位向量
+        // 3. 计算专家群体在阿里千问 1024 维超球面上的合成质心单位向量
         float[] centroidVector = computeNormalizedCentroid(responses.stream().map(ExpertResponseBO::embedding).toList());
 
         // 4. 独立事实 RAG 检索校验
@@ -89,7 +89,7 @@ public class MoAExpertConsensusEngine {
         String groundTruthFact = factRetrievalService.retrieveGroundTruth(taskPrompt, aggregatedSynthesis);
         float[] factVector = factRetrievalService.getEmbedding(groundTruthFact);
 
-        // 5. 阿里千问 1536 维超球面测地大圆弧散度研判
+        // 5. 阿里千问 1024 维超球面测地大圆弧散度研判
         double geodesicDivergence = computeGeodesicDivergence(centroidVector, factVector);
         log.info("[MoA] 专家断言与客观事实基底测地散度计算: divergence={}, 判定门限={}",
                 geodesicDivergence, GEODESIC_FALSE_CONSENSUS_THRESHOLD);
@@ -128,15 +128,15 @@ public class MoAExpertConsensusEngine {
     }
 
     /**
-     * 计算多向量合成质心并归一化为千问 1536 维超球面单位向量
+     * 计算多向量合成质心并归一化为千问 1024 维超球面单位向量
      */
     private float[] computeNormalizedCentroid(List<float[]> embeddings) {
-        float[] centroid = new float[1536];
+        float[] centroid = new float[1024];
         int count = 0;
         for (float[] emb : embeddings) {
-            if (emb != null && emb.length == 1536) {
+            if (emb != null && emb.length == 1024) {
                 count++;
-                for (int i = 0; i < 1536; i++) {
+                for (int i = 0; i < 1024; i++) {
                     centroid[i] += emb[i];
                 }
             }
@@ -145,17 +145,17 @@ public class MoAExpertConsensusEngine {
             centroid[0] = 1.0f; // 默认单位基向量
             return centroid;
         }
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             centroid[i] /= count;
         }
         // 归一化到 ||v|| = 1.0
         double normSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             normSq += (double) centroid[i] * centroid[i];
         }
         double norm = Math.sqrt(normSq);
         if (norm > 1e-8) {
-            for (int i = 0; i < 1536; i++) {
+            for (int i = 0; i < 1024; i++) {
                 centroid[i] = (float) (centroid[i] / norm);
             }
         } else {
@@ -165,15 +165,15 @@ public class MoAExpertConsensusEngine {
     }
 
     /**
-     * 计算阿里千问 1536 维超球面测地大圆弧散度 [0.0, 1.0]
+     * 计算阿里千问 1024 维超球面测地大圆弧散度 [0.0, 1.0]
      * d_g = arccos(clamp(u · v, -1.0, 1.0)) / PI
      */
     private double computeGeodesicDivergence(float[] u, float[] v) {
-        if (u == null || v == null || u.length != 1536 || v.length != 1536) {
+        if (u == null || v == null || u.length != 1024 || v.length != 1024) {
             return 1.0;
         }
         double dot = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             dot += (double) u[i] * v[i];
         }
         dot = Math.max(-1.0, Math.min(1.0, dot));

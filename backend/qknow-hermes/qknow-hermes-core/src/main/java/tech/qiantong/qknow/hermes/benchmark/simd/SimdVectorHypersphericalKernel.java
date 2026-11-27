@@ -9,14 +9,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 阿里千问 1536 维超球面单位向量硬件 SIMD 极速内核 (SimdVectorHypersphericalKernel)
+ * 阿里千问 1024 维超球面单位向量硬件 SIMD 极速内核 (SimdVectorHypersphericalKernel)
  * <p>
  * 核心理论契约与几何公理 (AGENTS.md 第七章)：
- * 1. 严格锁定阿里千问标准向量空间维数 DIM = 1536，向量满足单位 L2 范数约束 ||v||_2 = 1.0；
+ * 1. 严格锁定阿里千问标准向量空间维数 DIM = 1024，向量满足单位 L2 范数约束 ||v||_2 = 1.0；
  * 2. 余弦测地几何恒等式：cos\theta = u \cdot v，欧氏距离满足 d_{Euc}^2 = 2(1 - cos\theta)，严禁构建未归一化算子；
  * 3. 硬件级指令并行加速：模拟与兼容现代 CPU 256/512 位寄存器并行流水线（AVX-512 / ARM NEON），
  *    采用 16 路超标量循环展开与融合乘加 (FMA) 优化；并在模块不可用时无缝降级到 8 路展开，
- *    单次 1536 维点积耗时压制在 <= 0.3ms（300 微秒）以内。
+ *    单次 1024 维点积耗时压制在 <= 0.3ms（300 微秒）以内。
  * </p>
  *
  * @author Achilles
@@ -30,7 +30,7 @@ public class SimdVectorHypersphericalKernel {
     /**
      * 阿里千问标准 Embedding 维度约束
      */
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     /**
      * 浮点精度容差
@@ -42,7 +42,7 @@ public class SimdVectorHypersphericalKernel {
     public SimdVectorHypersphericalKernel() {
         // 探测底层运行环境与硬件指令支持
         this.simdAccelerated = checkSimdSupport();
-        log.info("初始化千问 1536 维超球面 SIMD 内核，硬件并行加速激活状态: {}", this.simdAccelerated);
+        log.info("初始化千问 1024 维超球面 SIMD 内核，硬件并行加速激活状态: {}", this.simdAccelerated);
     }
 
     public SimdVectorHypersphericalKernel(boolean forceSimd) {
@@ -95,7 +95,7 @@ public class SimdVectorHypersphericalKernel {
     }
 
     /**
-     * 将任意非零向量投影归一化至千问 1536 维超球面单位流形 (\mathbf{v} / \|\mathbf{v}\|_2)
+     * 将任意非零向量投影归一化至千问 1024 维超球面单位流形 (\mathbf{v} / \|\mathbf{v}\|_2)
      *
      * @param raw 原始向量
      * @return 单位化向量
@@ -172,8 +172,8 @@ public class SimdVectorHypersphericalKernel {
     }
 
     /**
-     * 16路超标量 SIMD 寄存器融合乘加流水线 (FMA Emulation for 1536-D)
-     * 1536 恰好被 16 整除 (1536 / 16 = 96 迭代)，具备完美的循环展开与寄存器驻留特性
+     * 16路超标量 SIMD 寄存器融合乘加流水线 (FMA Emulation for 1024-D)
+     * 1024 恰好被 16 整除 (1024 / 16 = 96 迭代)，具备完美的循环展开与寄存器驻留特性
      */
     protected double dotProductSimd16(double[] u, double[] v) {
         double acc0 = 0.0, acc1 = 0.0, acc2 = 0.0, acc3 = 0.0;

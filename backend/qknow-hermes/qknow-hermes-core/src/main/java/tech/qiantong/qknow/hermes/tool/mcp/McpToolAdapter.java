@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * MCP 工具适配器 (强化治理版：内嵌千问 1536 维超球面动态投影与 Java 21 虚拟线程三态断路器)
+ * MCP 工具适配器 (强化治理版：内嵌千问 1024 维超球面动态投影与 Java 21 虚拟线程三态断路器)
  * 将外部 MCP Server 的工具转换为 Spring AI FunctionToolCallback，并提供语义检索、Schema 裁剪与故障隔离
  *
  * MCP (Model Context Protocol) 是一种标准协议，用于连接 LLM 与外部工具/数据源
@@ -321,7 +321,7 @@ public class McpToolAdapter {
      * 执行意图驱动的工具动态投影并生成不可变密码学存证凭单
      *
      * @param userQuery   用户查询或上下文意图
-     * @param queryVector 阿里千问 1536 维超球面意图向量
+     * @param queryVector 阿里千问 1024 维超球面意图向量
      * @param topK        检索深度 K (默认 5)
      * @return 密码学存证凭单
      */

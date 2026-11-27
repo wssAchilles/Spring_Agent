@@ -66,6 +66,7 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import { getToken } from "@/utils/auth";
 
 const props = defineProps({
@@ -110,9 +111,9 @@ const { proxy } = getCurrentInstance();
 const emit = defineEmits();
 const number = ref(0);
 const uploadList = ref([]);
-const baseUrl = import.meta.env.VITE_APP_BASE_API;
+const baseUrl = API_BASE_URL;
 const env = import.meta.env.VITE_APP_ENV;
-const uploadFileUrl = ref(import.meta.env.VITE_APP_BASE_API + "/upload"); // 上传文件服务器地址
+const uploadFileUrl = ref(API_BASE_URL + "/upload"); // 上传文件服务器地址
 const headers = ref({ Authorization: "Bearer " + getToken() });
 const fileList = ref([]);
 const uploadData = ref({

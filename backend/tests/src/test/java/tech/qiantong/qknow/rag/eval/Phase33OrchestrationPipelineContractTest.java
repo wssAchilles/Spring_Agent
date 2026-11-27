@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 9. 契约 09: 声明式 AOP 切面零侵入业务编排
  * 10. 契约 10: 切面防重入防御与堆栈溢出杜绝
  *
- * 严格遵循 Java 21 隔离运行环境与 DeepSeek API / 阿里千问 1536 维架构模型基线。
+ * 严格遵循 Java 21 隔离运行环境与 DeepSeek API / 阿里千问 1024 维架构模型基线。
  *
  * @author qknow
  */

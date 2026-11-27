@@ -73,7 +73,7 @@ public class CognitivePageTable {
             // 时效衰减得分 (0~1)
             double recency = Math.exp(-0.0001 * Math.max(0, now - cp.accessTimestamp()));
 
-            // 千问 1536 维语义相似度
+            // 千问 1024 维语义相似度
             double cosine = 0.0;
             if (queryEmbedding != null && cp.qwen1536Embedding() != null) {
                 cosine = computeCosine(queryEmbedding, cp.qwen1536Embedding());

@@ -9,7 +9,7 @@ import java.util.*;
  * 超长多模态异构知识图谱四级金字塔切分与超球面向量投影引擎 (Phase 137 防线一)
  * <p>
  * 1. 构建 L1(文档摘要) -> L2(章节主题) -> L3(微观实体) -> L4(多模态表格) 层次化金字塔包含树；
- * 2. 向量表征强制投影至阿里千问 1536 维单位超球面 S^1535 (||v||_2 = 1.0 ± 10^-4)；
+ * 2. 向量表征强制投影至阿里千问 1024 维单位超球面 S^1023 (||v||_2 = 1.0 ± 10^-4)；
  * 3. 支持跨页表格与图表结构化 Markdown 线性化与行列元数据对齐，消除传统平铺分块的事实断裂。
  * </p>
  *
@@ -20,7 +20,7 @@ import java.util.*;
 @Component
 public class MultimodalPyramidChunker {
 
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
     public static final double HYPERSPHERE_NORM_TOLERANCE = 1e-4;
 
     /**
@@ -96,12 +96,12 @@ public class MultimodalPyramidChunker {
     ) {}
 
     /**
-     * 将输入任意维度/未归一化向量归一化投影至阿里千问 1536 维超球面单位向量
+     * 将输入任意维度/未归一化向量归一化投影至阿里千问 1024 维超球面单位向量
      *
      * @param rawEmbedding 原始嵌入向量
-     * @return 模长严格等于 1.0 的 1536 维单位向量
+     * @return 模长严格等于 1.0 的 1024 维单位向量
      */
-    public static float[] normalizeToQwen1536Hypersphere(float[] rawEmbedding) {
+    public static float[] normalizeToQwen1024Hypersphere(float[] rawEmbedding) {
         float[] normalized = new float[EMBEDDING_DIM];
         if (rawEmbedding == null || rawEmbedding.length == 0) {
             // 安全回退：生成首分量为 1 的确定性基底向量
@@ -130,7 +130,7 @@ public class MultimodalPyramidChunker {
     }
 
     /**
-     * 校验向量是否满足阿里千问 1536 维超球面单位模长约束 (||v||_2 = 1.0 ± 10^-4)
+     * 校验向量是否满足阿里千问 1024 维超球面单位模长约束 (||v||_2 = 1.0 ± 10^-4)
      */
     public static boolean verifyHypersphereConstraint(float[] embedding) {
         if (embedding == null || embedding.length != EMBEDDING_DIM) {
@@ -215,7 +215,7 @@ public class MultimodalPyramidChunker {
 
         // 1. 构建 L1 文档宏观摘要节点
         String l1Id = docId + "_L1_ROOT";
-        float[] l1Vec = normalizeToQwen1536Hypersphere(baseSeedVector);
+        float[] l1Vec = normalizeToQwen1024Hypersphere(baseSeedVector);
         List<String> l2ChildrenIds = new ArrayList<>();
 
         // 2. 遍历构建 L2 章节主题与下属 L3 微观事实
@@ -336,6 +336,6 @@ public class MultimodalPyramidChunker {
             float noise = (float) (Math.sin(i * 0.17 + delta) * 0.05);
             copy[i] = baseVector[i] + noise;
         }
-        return normalizeToQwen1536Hypersphere(copy);
+        return normalizeToQwen1024Hypersphere(copy);
     }
 }

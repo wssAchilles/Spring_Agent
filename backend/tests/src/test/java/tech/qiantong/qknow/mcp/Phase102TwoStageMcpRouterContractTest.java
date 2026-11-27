@@ -30,7 +30,7 @@ public class Phase102TwoStageMcpRouterContractTest {
     }
 
     /**
-     * 辅助方法: 生成严格归一化的阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * 辅助方法: 生成严格归一化的阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
      */
     private double[] createNormalizedSphericalEmbedding(int seed) {
         double[] vec = new double[McpToolDescriptor.EXPECTED_DIMENSION];
@@ -207,7 +207,7 @@ public class Phase102TwoStageMcpRouterContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 6: 千问 1536 维超球面单位向量模长强校验，非法输入 100% 拒绝")
+    @DisplayName("契约测试 6: 千问 1024 维超球面单位向量模长强校验，非法输入 100% 拒绝")
     public void testSphericalEmbedding_ValidationAndDimensionCheck() {
         // 错误维度
         double[] badDim = new double[768];
@@ -215,7 +215,7 @@ public class Phase102TwoStageMcpRouterContractTest {
                 new McpToolDescriptor("t", "名称", "CAT", badDim, Set.of(), Set.of(), List.of(), true, false));
 
         // 错误模长 (未归一化)
-        double[] badNorm = new double[1536];
+        double[] badNorm = new double[1024];
         badNorm[0] = 5.0; // 模长不为 1.0
         McpToolDescriptor descriptor = new McpToolDescriptor(
                 "t", "名称", "CAT", badNorm, Set.of(), Set.of(), List.of(), true, false

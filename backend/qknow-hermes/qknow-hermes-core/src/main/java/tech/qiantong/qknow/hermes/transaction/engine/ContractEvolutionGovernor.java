@@ -10,7 +10,7 @@ import java.util.*;
 
 /**
  * 动态契约自适应演化适配器 (定理 1.1 与命题 2.1)
- * 集成阿里千问 1536 维超球面语义测地漂移检验与双向兼容性状态机
+ * 集成阿里千问 1024 维超球面语义测地漂移检验与双向兼容性状态机
  * 单步校验与适配耗时严格 <= 60μs
  */
 @Component
@@ -18,16 +18,16 @@ public class ContractEvolutionGovernor {
 
     private static final Logger log = LoggerFactory.getLogger(ContractEvolutionGovernor.class);
 
-    public static final int EMBEDDING_DIMENSION = 1536;
+    public static final int EMBEDDING_DIMENSION = 1024;
     public static final double EMBEDDING_NORM_EPSILON = 1e-4;
     public static final double GEODESIC_DRIFT_THRESHOLD = 0.35; // 弧度门限，约 20 度
 
     /**
-     * 强校验阿里千问 1536 维超球面单位向量
+     * 强校验阿里千问 1024 维超球面单位向量
      */
     public void validateSphericalEmbedding(double[] emb) {
         if (emb == null || emb.length != EMBEDDING_DIMENSION) {
-            throw new IllegalArgumentException("向量必须严格为 1536 维阿里千问嵌入");
+            throw new IllegalArgumentException("向量必须严格为 1024 维阿里千问嵌入");
         }
         double sumSq = 0.0;
         for (double v : emb) {

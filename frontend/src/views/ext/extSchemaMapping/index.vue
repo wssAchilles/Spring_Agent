@@ -364,6 +364,7 @@
 </template>
 
 <script setup name="Schema">
+import { API_BASE_URL } from '@/utils/request';
   import { listSchema, getSchema, delSchema, addSchema, updateSchema } from "@/api/ext/extSchemaMapping/schema";
   import {getToken} from "@/utils/auth.js";
 
@@ -424,7 +425,7 @@
     // 设置上传的请求头部
     headers: { Authorization: "Bearer " + getToken() },
     // 上传的地址
-    url: import.meta.env.VITE_APP_BASE_API + "/ext/schema/importData"
+    url: API_BASE_URL + "/ext/schema/importData"
   });
 
   const data = reactive({

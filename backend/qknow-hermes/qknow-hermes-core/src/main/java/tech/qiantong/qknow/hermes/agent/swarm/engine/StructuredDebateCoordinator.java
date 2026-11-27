@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 结构化对抗辩论控制器 (StructuredDebateCoordinator)
  * 严格管理“提案者 (Proponent) - 反对者 (Opponent) - 裁判仲裁 (Judge)”三方结构化会话协议
- * 刚性限制最大轮次 (2~3 轮) 与单轮 Token 配额，基于千问 1536 维超球面测地散度执行收敛截断
+ * 刚性限制最大轮次 (2~3 轮) 与单轮 Token 配额，基于千问 1024 维超球面测地散度执行收敛截断
  */
 @Slf4j
 @Component
@@ -58,7 +58,7 @@ public class StructuredDebateCoordinator {
             lastOpponentArgument = applyTokenQuota(rawOppOutput, MAX_TOKEN_QUOTA_PER_ROUND);
             transcript.add("Round " + currentRound + " [Opponent]: " + lastOpponentArgument);
 
-            // 3. 阿里千问 1536 维超球面测地散度收敛性研判
+            // 3. 阿里千问 1024 维超球面测地散度收敛性研判
             float[] propVec = proponent.getArgumentEmbedding(lastProponentArgument);
             float[] oppVec = opponent.getArgumentEmbedding(lastOpponentArgument);
 
@@ -106,15 +106,15 @@ public class StructuredDebateCoordinator {
     }
 
     /**
-     * 计算阿里千问 1536 维超球面测地大圆弧散度 [0.0, 1.0]
+     * 计算阿里千问 1024 维超球面测地大圆弧散度 [0.0, 1.0]
      * d_g = arccos(clamp(u · v, -1.0, 1.0)) / PI
      */
     private double computeGeodesicDivergence(float[] u, float[] v) {
-        if (u == null || v == null || u.length != 1536 || v.length != 1536) {
+        if (u == null || v == null || u.length != 1024 || v.length != 1024) {
             return 1.0;
         }
         double dot = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             dot += (double) u[i] * v[i];
         }
         dot = Math.max(-1.0, Math.min(1.0, dot));

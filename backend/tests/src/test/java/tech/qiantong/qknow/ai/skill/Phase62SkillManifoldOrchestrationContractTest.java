@@ -42,7 +42,7 @@ public class Phase62SkillManifoldOrchestrationContractTest {
     }
 
     @Test
-    @DisplayName("契约 1: 阿里千问 1536 维超球面技能向量归一化与测地线检索保真测试 (定理 1.1)")
+    @DisplayName("契约 1: 阿里千问 1024 维超球面技能向量归一化与测地线检索保真测试 (定理 1.1)")
     void test01_HypersphereGeodesicSkillRetrievalAccuracyAndNorm() {
         float[] raw = createDummyVector(42);
         SkillMetadata skill = SkillMetadata.create(
@@ -59,12 +59,12 @@ public class Phase62SkillManifoldOrchestrationContractTest {
             sumSq += v * v;
         }
         double norm = Math.sqrt(sumSq);
-        assertEquals(1.0, norm, 1e-5, "千问 1536 维超球面技能嵌入向量 L2 模长必须精确归一化为 1.0");
+        assertEquals(1.0, norm, 1e-5, "千问 1024 维超球面技能嵌入向量 L2 模长必须精确归一化为 1.0");
 
-        // 验证非 1536 维向量抛出 IllegalArgumentException
+        // 验证非 1024 维向量抛出 IllegalArgumentException
         assertThrows(IllegalArgumentException.class, () -> {
             new SkillMetadata("ERR-01", "错误技能", "错误", 1, new float[128], "{}", "{}", List.of(), 1.0, false);
-        }, "非 1536 维向量必须被严格阻断拒绝");
+        }, "非 1024 维向量必须被严格阻断拒绝");
 
         // 注册至流形索引
         manifoldIndex.registerSkill(skill);

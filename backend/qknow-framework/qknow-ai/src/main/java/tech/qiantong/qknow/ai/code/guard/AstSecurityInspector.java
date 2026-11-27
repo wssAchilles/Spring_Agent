@@ -18,17 +18,18 @@ public class AstSecurityInspector {
 
     private static final Logger log = LoggerFactory.getLogger(AstSecurityInspector.class);
 
-    // 禁止导入的高危系统、进程与网络模块 (定理 1.1)
+    // 禁止导入的高危系统、进程、资源篡改与网络模块 (定理 1.1 & 定理 8.2)
     private static final List<String> DANGEROUS_PYTHON_MODULES = Arrays.asList(
             "os", "sys", "subprocess", "socket", "shutil", "urllib", "requests", "http",
             "ftplib", "telnetlib", "posix", "pty", "commands", "ctypes", "importlib",
-            "code", "pickle", "multiprocessing", "threading", "webbrowser", "platform"
+            "code", "pickle", "multiprocessing", "threading", "webbrowser", "platform",
+            "pathlib", "io", "signal", "resource"
     );
 
     // 禁止调用的底层反射与动态执行内置函数
     private static final List<String> DANGEROUS_CALLS = Arrays.asList(
-            "eval(", "exec(", "__import__(", "compile(", "globals()", "locals()",
-            "getattr(", "setattr(", "delattr(", "open("
+            "eval(", "exec(", "__import__(", "__import__", "compile(", "globals()", "locals()",
+            "getattr(", "setattr(", "delattr(", "open(", "breakpoint(", "input("
     );
 
     // 禁止访问的面向对象元类继承与反射逃逸魔术属性 (定理 1.1 剪枝归纳)
@@ -63,10 +64,10 @@ public class AstSecurityInspector {
      * Python 静态 AST 符号分析
      */
     private String inspectPython(String code) {
-        // 1. 拦截危险模块导入 (import mod / from mod import)
+        // 1. 拦截危险模块导入 (支持跨行及分号分隔绕过: x=1; import os / from mod import)
         for (String mod : DANGEROUS_PYTHON_MODULES) {
-            Pattern p1 = Pattern.compile("(?m)^\\s*import\\s+(.*?,\\s*)*" + Pattern.quote(mod) + "(\\s*,|\\s*$|\\s+as\\b)");
-            Pattern p2 = Pattern.compile("(?m)^\\s*from\\s+" + Pattern.quote(mod) + "\\s+import\\b");
+            Pattern p1 = Pattern.compile("(?:^|[;\\n])\\s*import\\s+(.*?,\\s*)*" + Pattern.quote(mod) + "(\\s*,|\\s*;|$|\\s+as\\b|\\.)", Pattern.MULTILINE);
+            Pattern p2 = Pattern.compile("(?:^|[;\\n])\\s*from\\s+" + Pattern.quote(mod) + "(?:\\.|\\s+import\\b)", Pattern.MULTILINE);
             Pattern p3 = Pattern.compile("\\b__import__\\s*\\(\\s*['\"]" + Pattern.quote(mod) + "['\"]\\s*\\)");
             if (p1.matcher(code).find() || p2.matcher(code).find() || p3.matcher(code).find()) {
                 log.warn("[AstSecurityInspector] Blocked dangerous Python module import: {}", mod);

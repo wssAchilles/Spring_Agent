@@ -153,13 +153,17 @@ public final class UsageCapturingChatModel implements ChatModel {
             }
             long promptTokens = positive(usage.getPromptTokens());
             long completionTokens = positive(usage.getCompletionTokens());
-            long cacheHitTokens = nativeNumber(usage.getNativeUsage(), "prompt_cache_hit_tokens");
+            Object nativeUsage = usage.getNativeUsage();
+            long cacheHitTokens = nativeNumber(nativeUsage, "prompt_cache_hit_tokens");
+            if (cacheHitTokens <= 0L) {
+                // 兼容阿里云百炼 OpenAI 兼容协议返回的 prompt_tokens_details.cached_tokens 字段
+                cacheHitTokens = nativeNumber(nativeField(nativeUsage, "prompt_tokens_details"), "cached_tokens");
+            }
             totals.promptTokens += promptTokens;
             totals.completionTokens += completionTokens;
             long reportedTotal = positive(usage.getTotalTokens());
             totals.totalTokens += reportedTotal > 0 ? reportedTotal
                     : promptTokens + completionTokens;
-            Object nativeUsage = usage.getNativeUsage();
             totals.cacheHitTokens += cacheHitTokens;
             long nestedReasoning = nativeNumber(nativeField(nativeUsage, "completion_tokens_details"), "reasoning_tokens");
             totals.reasoningTokens += nestedReasoning > 0 ? nestedReasoning : nativeNumber(nativeUsage, "reasoning_tokens");

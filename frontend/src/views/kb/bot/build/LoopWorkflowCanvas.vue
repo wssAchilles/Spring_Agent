@@ -5,6 +5,14 @@
     @pointerdown.stop
     @click.stop
   >
+    <!-- KbFlowStateGraphCompiler 有环受控循环治理条（iOS 26 光学材质） -->
+    <div class="cyclic-guard-strip">
+      <span class="guard-pill">Cyclic Back-Edge Guard</span>
+      <span class="ios26-text-caption-1 guard-meta">
+        受控回边上界 maxIterations = {{ maxIterations }} · StepJournal 增量存档
+      </span>
+    </div>
+
     <WorkflowCanvas
       :nodes="nodes"
       :edges="edges"
@@ -45,6 +53,10 @@ const props = defineProps({
   selectedNodeId: {
     type: String,
     default: null,
+  },
+  maxIterations: {
+    type: Number,
+    default: 8,
   },
 });
 
@@ -96,7 +108,6 @@ function onDeleteNode(nodeId) {
 }
 
 function onConnect(connection) {
-  // 子图连线逻辑
   const newEdge = {
     id: `edge_${connection.source}_${connection.target}_${Date.now()}`,
     source: connection.source,
@@ -112,21 +123,72 @@ function onConnect(connection) {
 .loop-workflow-canvas {
   width: 100%;
   height: 100%;
-  min-height: 160px;
+  min-height: 168px;
   position: relative;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  background: transparent;
+  border: 0.5px solid rgba(0, 0, 0, 0.12);
   overflow: hidden;
 
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, 0.25);
+    mix-blend-mode: plus-lighter;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    background: rgba(255, 255, 255, 0.6);
+    mix-blend-mode: color-dodge;
+    pointer-events: none;
+  }
+
+  > :where(*) {
+    position: relative;
+    z-index: 3;
+  }
+
+  .cyclic-guard-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.12);
+
+    .guard-pill {
+      padding: 2px 8px;
+      border-radius: 1000px;
+      background: rgba(0, 136, 255, 0.12);
+      color: #0088ff;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.06px;
+    }
+
+    .guard-meta {
+      color: #3d3d3d;
+      font-weight: 400;
+    }
+  }
+
   &.compact {
-    min-height: 120px;
+    min-height: 128px;
   }
 
   &.is-empty {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
   }
 }
 </style>

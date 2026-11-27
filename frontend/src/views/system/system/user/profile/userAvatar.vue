@@ -59,6 +59,7 @@
 </template>
 
 <script setup>
+import { API_BASE_URL } from '@/utils/request';
 import "vue-cropper/dist/index.css";
 import { VueCropper } from "vue-cropper";
 import { uploadAvatar } from "@/api/system/system/user.js";
@@ -133,7 +134,7 @@ function uploadImg() {
     formData.append("avatarfile", data, options.filename);
     uploadAvatar(formData).then(response => {
       open.value = false;
-      options.img = import.meta.env.VITE_APP_BASE_API + response.imgUrl;
+      options.img = API_BASE_URL + response.imgUrl;
       userStore.avatar = options.img;
       proxy.$modal.msgSuccess("修改成功");
       visible.value = false;

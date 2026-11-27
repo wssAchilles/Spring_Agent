@@ -568,6 +568,7 @@
 </template>
 
 <script setup name="DaDatasource">
+import { API_BASE_URL } from '@/utils/request';
     import {
         listDaDatasource,
         getDaDatasource,
@@ -634,7 +635,7 @@
         // 设置上传的请求头部
         headers: { Authorization: 'Bearer ' + getToken() },
         // 上传的地址
-        url: import.meta.env.VITE_APP_BASE_API + '/da/daDatasource/importData'
+        url: API_BASE_URL + '/da/daDatasource/importData'
     });
 
     const data = reactive({

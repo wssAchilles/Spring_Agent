@@ -49,7 +49,7 @@ import static org.mockito.Mockito.*;
  */
 class Phase18NativeAccelerationAndTantivyGateTest {
 
-    private static final int DIM_1536 = 1536;
+    private static final int DIM_1024 = 1024;
     private HttpServer mockHttpServer;
     private int mockServerPort;
 
@@ -93,41 +93,41 @@ class Phase18NativeAccelerationAndTantivyGateTest {
     void testContract1_simdPrecisionAndRankingMonotonicity() {
         Random rng = new Random(42);
 
-        // 构造 1536 维归一化 query 向量
-        float[] query = new float[DIM_1536];
+        // 构造 1024 维归一化 query 向量
+        float[] query = new float[DIM_1024];
         double qNormSq = 0.0;
-        for (int i = 0; i < DIM_1536; i++) {
+        for (int i = 0; i < DIM_1024; i++) {
             query[i] = rng.nextFloat() * 2.0f - 1.0f;
             qNormSq += query[i] * query[i];
         }
         float qNorm = (float) Math.sqrt(qNormSq);
-        for (int i = 0; i < DIM_1536; i++) {
+        for (int i = 0; i < DIM_1024; i++) {
             query[i] /= qNorm;
         }
 
-        // 构造 10 个 1536 维归一化语料向量
+        // 构造 10 个 1024 维归一化语料向量
         int numDocs = 10;
-        float[] corpus = new float[numDocs * DIM_1536];
+        float[] corpus = new float[numDocs * DIM_1024];
         for (int d = 0; d < numDocs; d++) {
             double cNormSq = 0.0;
-            int offset = d * DIM_1536;
-            for (int i = 0; i < DIM_1536; i++) {
+            int offset = d * DIM_1024;
+            for (int i = 0; i < DIM_1024; i++) {
                 corpus[offset + i] = rng.nextFloat() * 2.0f - 1.0f;
                 cNormSq += corpus[offset + i] * corpus[offset + i];
             }
             float cNorm = (float) Math.sqrt(cNormSq);
-            for (int i = 0; i < DIM_1536; i++) {
+            for (int i = 0; i < DIM_1024; i++) {
                 corpus[offset + i] /= cNorm;
             }
         }
 
         // 1. 计算标量结果
-        float[] javaScores = VecSimNative.javaFallbackCosineBatch(query, corpus, DIM_1536);
+        float[] javaScores = VecSimNative.javaFallbackCosineBatch(query, corpus, DIM_1024);
         assertNotNull(javaScores);
         assertEquals(numDocs, javaScores.length);
 
         // 2. 验证 fallback/生产级方法
-        float[] productionScores = VecSimNative.cosineBatchWithFallback(query, corpus, DIM_1536);
+        float[] productionScores = VecSimNative.cosineBatchWithFallback(query, corpus, DIM_1024);
         assertNotNull(productionScores);
         assertEquals(numDocs, productionScores.length);
 
@@ -154,21 +154,21 @@ class Phase18NativeAccelerationAndTantivyGateTest {
     @DisplayName("Contract 2: 堆外直接内存 (DirectByteBuffer) 零拷贝接口契约与边界防护")
     void testContract2_directByteBufferZeroCopyAndGuard() {
         int numDocs = 4;
-        ByteBuffer queryBuf = ByteBuffer.allocateDirect(DIM_1536 * Float.BYTES).order(ByteOrder.nativeOrder());
-        ByteBuffer corpusBuf = ByteBuffer.allocateDirect(numDocs * DIM_1536 * Float.BYTES).order(ByteOrder.nativeOrder());
+        ByteBuffer queryBuf = ByteBuffer.allocateDirect(DIM_1024 * Float.BYTES).order(ByteOrder.nativeOrder());
+        ByteBuffer corpusBuf = ByteBuffer.allocateDirect(numDocs * DIM_1024 * Float.BYTES).order(ByteOrder.nativeOrder());
 
-        for (int i = 0; i < DIM_1536; i++) {
+        for (int i = 0; i < DIM_1024; i++) {
             queryBuf.putFloat(0.1f);
         }
         queryBuf.flip();
 
-        for (int i = 0; i < numDocs * DIM_1536; i++) {
+        for (int i = 0; i < numDocs * DIM_1024; i++) {
             corpusBuf.putFloat(0.1f);
         }
         corpusBuf.flip();
 
         // 1. 正常 DirectBuffer 契约调用 (如果 JNI 未加载，safe 方法返回 null 触发降级；若已加载，返回正确分数)
-        float[] scores = VecSimNative.safeCosineBatchDirect(queryBuf, corpusBuf, DIM_1536, numDocs);
+        float[] scores = VecSimNative.safeCosineBatchDirect(queryBuf, corpusBuf, DIM_1024, numDocs);
         if (VecSimNative.isAvailable()) {
             assertNotNull(scores);
             assertEquals(numDocs, scores.length);
@@ -181,12 +181,12 @@ class Phase18NativeAccelerationAndTantivyGateTest {
         // 2. 异常参数边界防护验证：非法维度
         assertNull(VecSimNative.safeCosineBatchDirect(queryBuf, corpusBuf, -1, numDocs));
         // 非法切片数量
-        assertNull(VecSimNative.safeCosineBatchDirect(queryBuf, corpusBuf, DIM_1536, 0));
+        assertNull(VecSimNative.safeCosineBatchDirect(queryBuf, corpusBuf, DIM_1024, 0));
         // 空指针
-        assertNull(VecSimNative.safeCosineBatchDirect(null, corpusBuf, DIM_1536, numDocs));
+        assertNull(VecSimNative.safeCosineBatchDirect(null, corpusBuf, DIM_1024, numDocs));
         // 非直接内存（堆内 ByteBuffer）安全拒绝
-        ByteBuffer heapBuf = ByteBuffer.allocate(DIM_1536 * Float.BYTES);
-        assertNull(VecSimNative.safeCosineBatchDirect(heapBuf, corpusBuf, DIM_1536, numDocs));
+        ByteBuffer heapBuf = ByteBuffer.allocate(DIM_1024 * Float.BYTES);
+        assertNull(VecSimNative.safeCosineBatchDirect(heapBuf, corpusBuf, DIM_1024, numDocs));
     }
 
     @Test
@@ -393,5 +393,69 @@ class Phase18NativeAccelerationAndTantivyGateTest {
         assertEquals(1, resultsB.size());
         assertEquals(7001L, resultsB.get(0).getSegmentId());
         verify(mockJdbcTemplate, atLeastOnce()).query(anyString(), any(RowMapper.class), any(Object[].class));
+    }
+
+    @Test
+    @DisplayName("Contract 6: Tantivy 探活负缓存、带知识库 ID 删除与 LocalRerankerProvider 状态码门禁")
+    void testContract6_tantivyNegativeHealthCacheAndLocalRerankerStatusCodeCheck() throws IOException {
+        java.util.concurrent.atomic.AtomicInteger healthHits = new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicReference<String> lastDeleteBody = new java.util.concurrent.atomic.AtomicReference<>();
+
+        mockHttpServer = HttpServer.create(new InetSocketAddress(0), 0);
+        mockServerPort = mockHttpServer.getAddress().getPort();
+
+        // 模拟 /health 返回 503 不可用
+        mockHttpServer.createContext("/health", exchange -> {
+            int hit = healthHits.incrementAndGet();
+            int code = (hit == 1) ? 503 : 200;
+            byte[] resp = "status".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(code, resp.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(resp);
+            }
+        });
+
+        mockHttpServer.createContext("/delete", exchange -> {
+            lastDeleteBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] resp = "{\"status\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, resp.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(resp);
+            }
+        });
+
+        // 模拟 LocalReranker /rerank HEAD 请求返回 405 Method Not Allowed 或 500
+        mockHttpServer.createContext("/rerank", exchange -> {
+            exchange.sendResponseHeaders(500, -1);
+            exchange.close();
+        });
+
+        mockHttpServer.start();
+
+        TantivyClient client = new TantivyClient();
+        client.setEnabled(true);
+        client.setServiceUrl("http://127.0.0.1:" + mockServerPort);
+
+        // 首次探活返回 false，紧接着第二次调用应命中短时负缓存而不重复发起网络请求
+        assertFalse(client.isServiceAlive());
+        assertFalse(client.isServiceAlive(), "短时负缓存窗口内第二次探活不应穿透打向服务端");
+        assertEquals(1, healthHits.get(), "短时负缓存生效时 /health 仅应被请求 1 次");
+
+        // 重置 URL 清空探活缓存，使下一次探活命中 200 并验证删除协议包含 knowledge_base_id
+        client.setServiceUrl("http://127.0.0.1:" + mockServerPort);
+        assertTrue(client.isServiceAlive());
+        assertTrue(client.deleteDocument(9009L, 1001L));
+        JSONObject deleteJson = JSONObject.parse(lastDeleteBody.get());
+        assertEquals(9009L, deleteJson.getLongValue("segment_id"));
+        assertEquals(1001L, deleteJson.getLongValue("knowledge_base_id"), "删除请求必须携带 knowledge_base_id 对齐 Rust 端协议");
+
+        // 验证 LocalRerankerProvider 对 HTTP 500 响应判定为不可用 (isAvailable = false)
+        tech.qiantong.qknow.module.kmc.service.rag.rerank.LocalRerankerProvider.LocalRerankerConfig cfg =
+                new tech.qiantong.qknow.module.kmc.service.rag.rerank.LocalRerankerProvider.LocalRerankerConfig();
+        cfg.setEnabled(true);
+        cfg.setServiceUrl("http://127.0.0.1:" + mockServerPort);
+        tech.qiantong.qknow.module.kmc.service.rag.rerank.LocalRerankerProvider reranker =
+                new tech.qiantong.qknow.module.kmc.service.rag.rerank.LocalRerankerProvider(cfg);
+        assertFalse(reranker.supports(null), "当 /rerank HEAD 返回 500 错误码时 LocalRerankerProvider.supports() 必须返回 false");
     }
 }

@@ -1,7 +1,6 @@
-import request from '@/utils/request.js';
+import request, { API_BASE_URL } from '@/utils/request.js';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import { getToken } from '@/utils/auth';
-const token = getToken();
 // 获取流程
 export function getFlow(botIdOrParams) {
     const id = typeof botIdOrParams === 'object' && botIdOrParams !== null
@@ -54,7 +53,7 @@ export function executeFlowStream(data) {
 
 export const ProcessFlow = {
     executeFlowStream: async (flow, input, ctrl, onMessage, onError, onClose) => {
-        return fetchEventSource(`${import.meta.env.VITE_APP_BASE_API}/kb/flow/testExecuteFlow`, {
+        return fetchEventSource(`${API_BASE_URL}/kb/flow/testExecuteFlow`, {
             method: 'post',
             headers: {
                 'Content-Type': 'application/json',
@@ -93,12 +92,12 @@ export const ProcessChstFlow = {
         onClose
     ) => {
         return fetchEventSource(
-            `${import.meta.env.VITE_APP_BASE_API}/kb/flow/testExecuteChatFlow`,
+            `${API_BASE_URL}/kb/flow/testExecuteChatFlow`,
             {
                 method: 'post',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${getToken()}`
                 },
                 openWhenHidden: true,
                 body: JSON.stringify({

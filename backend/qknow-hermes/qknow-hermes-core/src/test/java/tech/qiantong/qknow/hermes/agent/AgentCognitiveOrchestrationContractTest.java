@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 覆盖：
  * 1. 人机协同 (HITL) 零阻塞中断挂起、常量时间令牌比对与超时 Saga 补偿
  * 2. 三方结构化博弈对抗辩论、有界收敛与夏普利值边际效用归因
- * 3. 全链路密码学防侧信道与千问 1536 维超球面单位几何约束
+ * 3. 全链路密码学防侧信道与千问 1024 维超球面单位几何约束
  */
 public class AgentCognitiveOrchestrationContractTest {
 
@@ -123,12 +123,12 @@ public class AgentCognitiveOrchestrationContractTest {
     }
 
     @Test
-    @DisplayName("契约三：全链路密码学防侧信道与千问 1536 维超球面几何约束契约")
-    public void testCryptographicZeroLeakageAndQwen1536HypersphericalGeometry() {
-        int qwenDim = 1536;
+    @DisplayName("契约三：全链路密码学防侧信道与千问 1024 维超球面几何约束契约")
+    public void testCryptographicZeroLeakageAndQwen1024HypersphericalGeometry() {
+        int qwenDim = 1024;
         Random rand = new Random(2026);
 
-        // 1. 验证千问 1536 维超球面单位向量归一化约束
+        // 1. 验证千问 1024 维超球面单位向量归一化约束
         float[] vector = new float[qwenDim];
         double sumSq = 0.0;
         for (int i = 0; i < qwenDim; i++) {

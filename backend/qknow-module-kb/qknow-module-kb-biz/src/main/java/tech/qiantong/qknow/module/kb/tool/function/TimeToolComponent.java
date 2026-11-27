@@ -60,10 +60,10 @@ public class TimeToolComponent {
 
         @Override
         public String apply(FormatTimeRequest request) {
-            // 公共逻辑复用：处理默认格式
-            String pattern = request.getFormatPattern() == null ? defaultFormatter.format(LocalDateTime.now()) : request.getFormatPattern();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
-            // 核心逻辑
+            // 未指定目标格式时直接复用默认格式化器，避免将当前时间字符串误传给 ofPattern
+            DateTimeFormatter formatter = (request.getFormatPattern() == null || request.getFormatPattern().isBlank())
+                    ? defaultFormatter
+                    : DateTimeFormatter.ofPattern(request.getFormatPattern());
             LocalDateTime time = LocalDateTimeUtil.parse(request.getTimeStr(), defaultFormatter);
             return time.format(formatter);
         }

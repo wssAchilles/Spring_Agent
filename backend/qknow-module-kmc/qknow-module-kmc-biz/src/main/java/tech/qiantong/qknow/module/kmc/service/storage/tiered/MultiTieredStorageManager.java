@@ -31,7 +31,7 @@ public class MultiTieredStorageManager {
         private Long segmentId;
         private Long kbId;
         private String content;
-        private float[] vector1536;
+        private float[] vector1024;
         private StorageTier storageTier;
         private double heatScore;
         private long lastAccessTime;
@@ -125,8 +125,8 @@ public class MultiTieredStorageManager {
 
         // 计算余弦得分并排序
         allActive.sort((a, b) -> {
-            double simA = dotProduct(queryVector, a.getVector1536());
-            double simB = dotProduct(queryVector, b.getVector1536());
+            double simA = dotProduct(queryVector, a.getVector1024());
+            double simB = dotProduct(queryVector, b.getVector1024());
             return Double.compare(simB, simA);
         });
 

@@ -17,7 +17,7 @@ public class OntologyEvolutionGovernor {
 
     private static final Logger log = LoggerFactory.getLogger(OntologyEvolutionGovernor.class);
 
-    // 标准受控本体关系谓词 -> 阿里千问 1536 维超球面中心概念向量
+    // 标准受控本体关系谓词 -> 阿里千问 1024 维超球面中心概念向量
     private final Map<String, double[]> standardOntology = new ConcurrentHashMap<>();
 
     // 未达标长尾新概念隔离待审缓冲区: rawPredicate -> 频次与特征
@@ -28,7 +28,7 @@ public class OntologyEvolutionGovernor {
     private final AtomicInteger contractedQueries = new AtomicInteger(0);
 
     public void registerStandardPredicate(String predicateName, double[] conceptEmbedding) {
-        if (predicateName != null && conceptEmbedding != null && conceptEmbedding.length == 1536) {
+        if (predicateName != null && conceptEmbedding != null && conceptEmbedding.length == 1024) {
             standardOntology.put(predicateName, conceptEmbedding);
         }
     }
@@ -53,9 +53,9 @@ public class OntologyEvolutionGovernor {
         String bestStandard = null;
         double bestCosine = -1.0;
 
-        if (predicateEmbedding != null && predicateEmbedding.length == 1536) {
+        if (predicateEmbedding != null && predicateEmbedding.length == 1024) {
             for (Map.Entry<String, double[]> entry : standardOntology.entrySet()) {
-                double dot = DynamicEntityAlignmentEngine.calculateDotProduct1536(predicateEmbedding, entry.getValue());
+                double dot = DynamicEntityAlignmentEngine.calculateDotProduct1024(predicateEmbedding, entry.getValue());
                 if (dot > bestCosine) {
                     bestCosine = dot;
                     bestStandard = entry.getKey();

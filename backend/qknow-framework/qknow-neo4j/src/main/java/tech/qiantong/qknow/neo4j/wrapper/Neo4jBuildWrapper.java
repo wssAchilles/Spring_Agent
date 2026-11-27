@@ -15,6 +15,32 @@ public class Neo4jBuildWrapper<T> {
     }
 
     /**
+     * 校验 Cypher 动态标识符（标签、关系类型、属性名），阻断语法注入
+     */
+    private static String validateCypherIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank() || !identifier.matches("^[\\p{L}_][\\p{L}\\p{N}_]*$")) {
+            throw new IllegalArgumentException("非法的 Cypher 标识符: " + identifier);
+        }
+        return identifier;
+    }
+
+    /**
+     * 转义 Cypher 字符串字面量中的反斜杠与单引号，阻断字符串逃逸注入
+     */
+    private static String formatCypherLiteral(Object value) {
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof Number || value instanceof Boolean) {
+            return value.toString();
+        }
+        String escaped = value.toString()
+                .replace("\\", "\\\\")
+                .replace("'", "\\'");
+        return "'" + escaped + "'";
+    }
+
+    /**
      * 根据条件修改属性
      *
      * @param paramMap
@@ -22,10 +48,11 @@ public class Neo4jBuildWrapper<T> {
      * @return
      */
     public String updateQuery(String label, Map<String, Object> paramMap, Map<String, Object> updateMap) {
+        String safeLabel = validateCypherIdentifier(label);
         ArrayList<String> arrayList = getUpdateListByMap("n",paramMap);
-        StringBuilder query = new StringBuilder("MATCH (n:" + label + ")");
+        StringBuilder query = new StringBuilder("MATCH (n:" + safeLabel + ")");
         if(paramMap.get("id") != null){
-            query.append(" WHERE ID(n) = ").append(paramMap.get("id"));
+            query.append(" WHERE ID(n) = ").append(((Number) paramMap.get("id")).longValue());
         }else if (paramMap.size() > 0) {
             query.append(" WHERE ").append(String.join(" AND ", arrayList));
         }
@@ -33,57 +60,34 @@ public class Neo4jBuildWrapper<T> {
             ArrayList<String> listByMap = getUpdateListByMap("n",updateMap);
             query.append(" SET ").append(String.join(",", listByMap));
         }
-//        query.append(" RETURN n");
         return query.toString();
     }
 
     /**
      * 如果节点存在, 更新此节点的属性, 如果节点不存在, 创建节点和属性
-     * MERGE 语法用于确保某个节点或关系存在。如果它已经存在，则返回该节点或关系；如果不存在，则创建新的节点或关系
-     *
-     * @return
      */
     public String mergeCreateNode(String label, Map<String, Object> mergeMap, Map<String, Object> attributeMap) {
+        String safeLabel = validateCypherIdentifier(label);
         String prefixName = LambdaUtils.processCompositeProperties(this.entityClass);
 
-        StringBuilder query = new StringBuilder();
+        StringBuilder query;
         if(!mergeMap.isEmpty()){
             ArrayList<String> arrayList = mergeAttByMap(mergeMap);
-            query = new StringBuilder("MERGE (n:" + label + "{ " + String.join(",", arrayList) + "})");
+            query = new StringBuilder("MERGE (n:" + safeLabel + "{ " + String.join(",", arrayList) + "})");
         }else {
-            query = new StringBuilder("MATCH (n:" + label + ")");
+            query = new StringBuilder("MATCH (n:" + safeLabel + ")");
         }
         if (attributeMap.size() > 0) {
             query.append(" SET n += {");
 
-            // 遍历 attributeMap，构建属性列表
             StringBuilder attributes = new StringBuilder();
             for (Map.Entry<String, Object> entry : attributeMap.entrySet()) {
-                // 获取键和值
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                // 用于存储格式化后的值
-                String valueString;
-                // 判断值的类型并格式化
-                if (value instanceof String) {
-                    // 对于 String 类型，添加单引号
-                    valueString = "'" + value + "'";
-                } else if (value instanceof Number || value instanceof Boolean) {
-                    // 对于 Number 和 Boolean 类型，直接使用其 toString() 结果，不需要引号
-                    valueString = value.toString();
-                } else if (value == null) {
-                    // 对于 null 值，处理成 "null"
-                    valueString = "null";
-                } else {
-                    // 对于其他类型，调用 toString() 获取其字符串表示
-                    valueString = "'" + value + "'";;
-                }
-                // 为每个属性对生成格式化的 key: 'value' 字符串，并加入到 attributes 中
+                String key = validateCypherIdentifier(entry.getKey());
+                String valueString = formatCypherLiteral(entry.getValue());
                 if (attributes.length() > 0) {
-                    attributes.append(", ");  // 每个属性对之间添加逗号
+                    attributes.append(", ");
                 }
-                // 拼接属性字符串
-                attributes.append(prefixName + key + ": " + valueString);
+                attributes.append(prefixName).append(key).append(": ").append(valueString);
             }
 
             query.append(attributes);
@@ -94,20 +98,16 @@ public class Neo4jBuildWrapper<T> {
 
     /**
      * 根据起点和结点创建关系 如果a和b不存在, 会创建节点
-     *
-     * @param startNodeMap
-     * @param endNodeMap
-     * @param rel
-     * @param relMap
-     * @return
      */
     public String createRelationship(String label, Map<String, Object> startNodeMap, Map<String, Object> endNodeMap, String rel, Map<String, Object> relMap) {
+        String safeLabel = validateCypherIdentifier(label);
+        String safeRel = validateCypherIdentifier(rel);
         ArrayList<String> aList = mergeAttByMap(startNodeMap);
         ArrayList<String> bList = mergeAttByMap(endNodeMap);
         ArrayList<String> rList = getUpdateListByMap("r",relMap);
-        StringBuilder aquery = new StringBuilder("MERGE (a:" + label + "{ " + String.join(",", aList) + "})\n");
-        StringBuilder bquery = new StringBuilder("MERGE (b:" + label + "{ " + String.join(",", bList) + "})\n");
-        StringBuilder query = aquery.append(bquery).append("MERGE (a)-[r:" + rel + "]->(b) \n");
+        StringBuilder aquery = new StringBuilder("MERGE (a:" + safeLabel + "{ " + String.join(",", aList) + "})\n");
+        StringBuilder bquery = new StringBuilder("MERGE (b:" + safeLabel + "{ " + String.join(",", bList) + "})\n");
+        StringBuilder query = aquery.append(bquery).append("MERGE (a)-[r:" + safeRel + "]->(b) \n");
         if(!relMap.isEmpty()){
             query.append("ON CREATE SET " + String.join(",", rList));
         }
@@ -116,18 +116,16 @@ public class Neo4jBuildWrapper<T> {
 
     /**
      * 根据起点id和结点id创建关系
-     * @param label
-     * @param startNodeId
-     * @param endNodeId
-     * @param rel
-     * @param relMap
-     * @return
      */
     public String createRelationship(String label, Long startNodeId, Long endNodeId, String rel, Map<String, Object> relMap) {
+        String safeLabel = validateCypherIdentifier(label);
+        String safeRel = validateCypherIdentifier(rel);
+        Objects.requireNonNull(startNodeId, "startNodeId 不能为空");
+        Objects.requireNonNull(endNodeId, "endNodeId 不能为空");
         ArrayList<String> rList = getUpdateListByMap("r",relMap);
-        StringBuilder aquery = new StringBuilder("MATCH (a:" + label + ") WHERE id(a) = + " + startNodeId  + "\n");
-        StringBuilder bquery = new StringBuilder("MATCH (b:" + label + ") WHERE id(b) = + " + endNodeId  + "\n");
-        StringBuilder query = aquery.append(bquery).append("MERGE (a)-[r:" + rel + "]->(b) \n");
+        StringBuilder aquery = new StringBuilder("MATCH (a:" + safeLabel + ") WHERE id(a) = " + startNodeId + "\n");
+        StringBuilder bquery = new StringBuilder("MATCH (b:" + safeLabel + ") WHERE id(b) = " + endNodeId + "\n");
+        StringBuilder query = aquery.append(bquery).append("MERGE (a)-[r:" + safeRel + "]->(b) \n");
         if(!relMap.isEmpty()){
             query.append("ON CREATE SET " + String.join(",", rList));
         }
@@ -140,26 +138,8 @@ public class Neo4jBuildWrapper<T> {
 
         ArrayList<String> arrayList = new ArrayList<>();
         for (Map.Entry<String, Object> objectEntry : mergeMap.entrySet()) {
-            String key = objectEntry.getKey();
-            Object value = objectEntry.getValue();
-
-            String valueString;
-            // 根据不同的类型处理值
-            if (value instanceof String) {
-                // 对于字符串，添加引号
-                valueString = "'" + value + "'";
-            } else if (value instanceof Number || value instanceof Boolean) {
-                // 对于数字和布尔值，直接使用它们
-                valueString = value.toString();
-            } else if (value == null) {
-                // 对于null值，根据需要处理
-                valueString = "null";
-            } else {
-                // 其他类型的值，可以根据需求处理（例如日期、集合等）
-                valueString = value.toString();
-            }
-
-            // 拼接字符串
+            String key = validateCypherIdentifier(objectEntry.getKey());
+            String valueString = formatCypherLiteral(objectEntry.getValue());
             arrayList.add(prefixName + key + ": " + valueString);
         }
         return arrayList;
@@ -170,35 +150,20 @@ public class Neo4jBuildWrapper<T> {
         String prefixName = LambdaUtils.processCompositeProperties(this.entityClass);
         ArrayList<String> rList = new ArrayList<>();
         for (Map.Entry<String, Object> objectEntry : relMap.entrySet()) {
-            String key = objectEntry.getKey();
-            Object value = objectEntry.getValue();
-
-            String valueString;
-            // 判断值的类型并格式化
-            if (value instanceof String) {
-                // 对于String类型，添加单引号
-                valueString = "'" + value + "'";
-            } else if (value instanceof Number || value instanceof Boolean) {
-                // 对于Number和Boolean类型，直接使用它们的toString()结果
-                valueString = value.toString();
-            } else if (value == null) {
-                // 对于null值，可以选择处理成 null 或者其他值
-                valueString = "null";
-            } else {
-                // 其他类型，调用toString()来获取字符串表示
-                valueString = value.toString();
-            }
-            // 拼接字符串并添加到列表
+            String key = validateCypherIdentifier(objectEntry.getKey());
+            String valueString = formatCypherLiteral(objectEntry.getValue());
             rList.add(as + "." + prefixName + key + "= " + valueString);
         }
         return rList;
     }
 
     public String deleteNodeAttribute(Long nodeId,String attributeKey){
+        Objects.requireNonNull(nodeId, "nodeId 不能为空");
+        String safeAttrKey = validateCypherIdentifier(attributeKey);
         String prefixName = LambdaUtils.processCompositeProperties(this.entityClass);
 
         return "MATCH (n) WHERE id(n) = " + nodeId +
-                " REMOVE n." + prefixName + attributeKey + " " +
+                " REMOVE n." + prefixName + safeAttrKey + " " +
                 " RETURN n";
     }
 

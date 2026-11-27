@@ -5,7 +5,7 @@ import java.util.*;
 
 /**
  * 数据库表/图模式元数据卡片
- * 封装表名、表中文注释、字段列表、主外键依赖关系、高基数列真实样本值以及千问 1536 维超球面向量
+ * 封装表名、表中文注释、字段列表、主外键依赖关系、高基数列真实样本值以及千问 1024 维超球面向量
  */
 public class SchemaCard implements Serializable {
 
@@ -25,7 +25,7 @@ public class SchemaCard implements Serializable {
     private Map<String, String> foreignKeys = new LinkedHashMap<>();
     /** 高基数或枚举字段代表性样本值: 列名 -> 样本取值列表 */
     private Map<String, List<String>> sampleValues = new LinkedHashMap<>();
-    /** 阿里千问 1536 维超球面归一化嵌入向量 */
+    /** 阿里千问 1024 维超球面归一化嵌入向量 */
     private float[] embedding;
 
     public SchemaCard() {}

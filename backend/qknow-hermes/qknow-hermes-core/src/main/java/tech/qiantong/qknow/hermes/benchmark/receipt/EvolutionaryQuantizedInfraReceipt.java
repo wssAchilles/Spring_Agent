@@ -9,7 +9,7 @@ import java.security.NoSuchAlgorithmException;
  * <p>
  * 遵循企业级最高工程法典（AGENTS.md）与第七章工程铁律：
  * 1. 纯 Java 21 Record 强不可变类型；
- * 2. 存证李雅普诺夫复制动态演化收敛轮数（<= 6）、ESS 纳什均衡策略分布、千问 1536 维超球面积量化余弦保真度（>= 98.2%）、
+ * 2. 存证李雅普诺夫复制动态演化收敛轮数（<= 6）、ESS 纳什均衡策略分布、千问 1024 维超球面积量化余弦保真度（>= 98.2%）、
  *    ScopedValue 栈帧零拷贝深度与 DeepSeek 64-token 上下文对齐哈希；
  * 3. 内嵌 SHA-256 密码学防篡改签名，使用 {@link MessageDigest#isEqual(byte[], byte[])} 进行常量时间比对，
  *    彻底杜绝时序侧信道（Timing Side-Channel）攻击风险。

@@ -307,7 +307,31 @@ public class MultiAgentOrchestrationService {
                                                  ToolCallbackResolver guardedResolver,
                                                  ChatModel agentModel,
                                                  boolean globalTokenBudgetExceeded) {
+        return executeWithForcedMode(
+                request, finalUserPrompt, systemPrompt, enabledToolNames,
+                guardedTools, guardedResolver, agentModel, globalTokenBudgetExceeded, null
+        );
+    }
+
+    /**
+     * 执行受控多智能体编排（支持由超网控制面按 {@code forcedModeOverride} 强制切换为 SWARM 或 DEBATE）。
+     */
+    public OrchestrationOutcome executeWithForcedMode(ChatRequest request,
+                                                      String finalUserPrompt,
+                                                      String systemPrompt,
+                                                      List<String> enabledToolNames,
+                                                      List<ToolCallback> guardedTools,
+                                                      ToolCallbackResolver guardedResolver,
+                                                      ChatModel agentModel,
+                                                      boolean globalTokenBudgetExceeded,
+                                                      OrchestrationMode forcedModeOverride) {
         ModeResolution resolution = resolveOrchestrationMode(request);
+        if (forcedModeOverride != null
+                && forcedModeOverride != OrchestrationMode.ORCHESTRATION_MODE_SINGLE) {
+            resolution = new ModeResolution(
+                    forcedModeOverride, forcedModeOverride, false, AgentOrchestrator.ERR_NONE
+            );
+        }
         if (resolution.effectiveMode() == OrchestrationMode.ORCHESTRATION_MODE_SINGLE) {
             recordOrchestrationReceipt(
                     request != null ? request.getRequestId() : "anonymous",

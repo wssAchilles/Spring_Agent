@@ -146,7 +146,8 @@ public class SecurityConfig
                             "/websocket/**",
                             "/payment/**",
                             "/oauth2/**",
-                            "/api/app/**"
+                            "/api/app/**",
+                            "/mcp"
                     ).permitAll()
                     // Phase 03: ASYNC must be authenticated (was permitAll bypass)
                     .dispatcherTypeMatchers(DispatcherType.ASYNC).authenticated()

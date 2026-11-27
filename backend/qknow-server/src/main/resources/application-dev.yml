@@ -152,8 +152,10 @@ flow:
   enable: false
   url: http://127.0.0.1:26859/
 
-# Hermes 微服务 gRPC 配置
+# Hermes 微服务 gRPC 与 HTTP 联邦控制面配置
 hermes:
+  http:
+    base-url: ${HERMES_HTTP_BASE_URL:http://127.0.0.1:8081}
   memory:
     sleep-agent:
       enabled: false
@@ -187,7 +189,7 @@ hermes:
       strategy: rewrite
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY}
+      api-key: ${HERMES_OPENAI_API_KEY:}
       model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       max-chunk-chars: 2000
       timeout-seconds: 30
@@ -206,14 +208,14 @@ qknow:
       enabled: true
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY}
+      api-key: ${HERMES_OPENAI_API_KEY:}
       model-name: ${DEEPSEEK_MODEL:deepseek-flash}
       threshold: 0.85
     query-entity:
       enabled: false
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY}
+      api-key: ${HERMES_OPENAI_API_KEY:}
       model: ${DEEPSEEK_MODEL:deepseek-flash}
       temperature: 0.0
     crag:
@@ -222,7 +224,7 @@ qknow:
       sample-rate: 0.10
       platform: DeepSeek
       base-url: https://api.deepseek.com
-      api-key: ${HERMES_OPENAI_API_KEY}
+      api-key: ${HERMES_OPENAI_API_KEY:}
       model: ${DEEPSEEK_MODEL:deepseek-flash}
       temperature: 0.0
     local-reranker:

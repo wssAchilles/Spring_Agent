@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 4. 争辩僵局快速仲裁专家降级裁决软着陆
  * 5. 1000Hz 4096 槽位 Disruptor 无锁总线纳秒级吞吐与 JitterGuard 抖动监控
  * 6. 不可变仲裁存证凭单 SHA-256 密码学自签名与防篡改验真
- * 7. 阿里千问 1536 维超球面单位向量范数严格校验
+ * 7. 阿里千问 1024 维超球面单位向量范数严格校验
  * 8. 端到端多智能体全流程协同编排闭环
  * </p>
  *
@@ -89,22 +89,22 @@ public class Phase86MultiAgentDebateContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 2：拓展 VCG 拍卖真实竞标激励相容与千问 1536 维超球面门禁")
+    @DisplayName("契约测试 2：拓展 VCG 拍卖真实竞标激励相容与千问 1024 维超球面门禁")
     void testVcgAuction_TruthfulBiddingAndSphericalGate() {
         VcgTaskAuctionCoordinator coordinator = new VcgTaskAuctionCoordinator();
 
-        // 构造基准任务需求向量 (1536 维超球面单位向量)
-        float[] taskVector = createNormalizedSphericalVector(1536, 42L);
+        // 构造基准任务需求向量 (1024 维超球面单位向量)
+        float[] taskVector = createNormalizedSphericalVector(1024, 42L);
 
         // 候选智能体 1：高度契合需求 (相关性很高，s > 0.85)
         float[] matchVector1 = Arrays.copyOf(taskVector, taskVector.length);
         matchVector1[0] += 0.01f; // 微小扰动
 
         // 候选智能体 2：中度契合需求 (s 约 0.75)
-        float[] matchVector2 = createNormalizedSphericalVector(1536, 42L);
+        float[] matchVector2 = createNormalizedSphericalVector(1024, 42L);
 
         // 候选智能体 3：劣质智能体 (随机噪声向量，s 极低接近 0)
-        float[] noiseVector = createNormalizedSphericalVector(1536, 9999L);
+        float[] noiseVector = createNormalizedSphericalVector(1024, 9999L);
 
         List<VcgTaskAuctionCoordinator.BidOffer> bids = List.of(
                 new VcgTaskAuctionCoordinator.BidOffer("agent-high-skill", matchVector1, 95.0, 15.0),
@@ -242,15 +242,15 @@ public class Phase86MultiAgentDebateContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 7：阿里千问 1536 维超球面单位向量范数严格校验")
+    @DisplayName("契约测试 7：阿里千问 1024 维超球面单位向量范数严格校验")
     void testSphericalEmbedding_StrictNormValidation() {
-        // 1. 合法超球面向量校验 (1536 维，单位模长)
-        float[] validVec = createNormalizedSphericalVector(1536, 12345L);
+        // 1. 合法超球面向量校验 (1024 维，单位模长)
+        float[] validVec = createNormalizedSphericalVector(1024, 12345L);
         DebateEventFrame validFrame = new DebateEventFrame(
                 "f-valid", "deb-1", "ag-1", AgentRoleNicheType.ANALYST,
                 "观点论证", validVec, 0.4, 1, System.currentTimeMillis(), 1L
         );
-        assertTrue(validFrame.isValidEmbedding(), "合法 1536 维单位向量必须通过校验");
+        assertTrue(validFrame.isValidEmbedding(), "合法 1024 维单位向量必须通过校验");
 
         // 2. 维度非法校验 (例如 512 维)
         float[] wrongDimVec = createNormalizedSphericalVector(512, 12345L);
@@ -258,7 +258,7 @@ public class Phase86MultiAgentDebateContractTest {
                 "f-wrong-dim", "deb-1", "ag-1", AgentRoleNicheType.ANALYST,
                 "观点论证", wrongDimVec, 0.4, 1, System.currentTimeMillis(), 2L
         );
-        assertFalse(wrongDimFrame.isValidEmbedding(), "非 1536 维向量校验必须失败");
+        assertFalse(wrongDimFrame.isValidEmbedding(), "非 1024 维向量校验必须失败");
 
         // 3. 模长非单位向量校验 (模长 = 2.0)
         float[] unnormalizedVec = Arrays.copyOf(validVec, validVec.length);
@@ -292,9 +292,9 @@ public class Phase86MultiAgentDebateContractTest {
         assertEquals(AgentRoleNicheType.CODER, roleGovernor.getAgentRole("agent-coder"));
 
         // 3. 任务生成与拓展 VCG 拍卖
-        float[] taskVector = createNormalizedSphericalVector(1536, 777L);
-        float[] coderSkillVector = createNormalizedSphericalVector(1536, 777L); // 契合
-        float[] badSkillVector = createNormalizedSphericalVector(1536, 888L);   // 离散偏离
+        float[] taskVector = createNormalizedSphericalVector(1024, 777L);
+        float[] coderSkillVector = createNormalizedSphericalVector(1024, 777L); // 契合
+        float[] badSkillVector = createNormalizedSphericalVector(1024, 888L);   // 离散偏离
 
         List<VcgTaskAuctionCoordinator.BidOffer> bids = List.of(
                 new VcgTaskAuctionCoordinator.BidOffer("agent-coder", coderSkillVector, 90.0, 10.0),
@@ -305,7 +305,7 @@ public class Phase86MultiAgentDebateContractTest {
         assertEquals("agent-coder", auctionResult.winnerAgentId(), "VCG 拍卖应由高契合高质量智能体胜出");
 
         // 4. 进入黑板争辩网络对抗反思
-        float[] frameVec = createNormalizedSphericalVector(1536, 100L);
+        float[] frameVec = createNormalizedSphericalVector(1024, 100L);
         DebateEventFrame coderFrame = new DebateEventFrame("df1", "deb-e2e", "agent-coder",
                 AgentRoleNicheType.CODER, "实施方案：响应式分布式黑板事件流", frameVec, 0.8, 1, System.currentTimeMillis(), 1L);
         DebateEventFrame criticFrame = new DebateEventFrame("df2", "deb-e2e", "agent-critic",

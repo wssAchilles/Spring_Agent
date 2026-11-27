@@ -6,9 +6,9 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 /**
- * 千问 1536 维超球面度量与 2-近似 Steiner 树因果子图紧凑剪枝器 (第二道工业防线，定理 1.1)
+ * 千问 1024 维超球面弦度量与 2-近似 Steiner 树因果子图紧凑剪枝器 (定理 4.2)
  * <p>
- * 1. 采用阿里千问 1536 维超球面测地线内积构建非负边权重 w(u, v) = 1.0 - <e_u, e_v> in [0, 2]；
+ * 1. 采用阿里千问 1024 维单位超球面 S^1023 欧氏弦度量 d_chord(u, v) = sqrt(2 * (1.0 - <e_u, e_v>)) in [0, 2]，严格满足正定性、对称性与三角不等式；
  * 2. 结合度量闭包 (Metric Closure) 与 Kruskal 最小生成树求解 Steiner 最小树，满足 2(1 - 1/|S|) 严格逼近比；
  * 3. 剪除非端点度数为 1 的叶子节点，节点数严格有界于 N <= 16，边数 M <= 15，单步堆内耗时 <= 15ms。
  * </p>
@@ -66,27 +66,28 @@ public class SteinerCausalSubgraphPruner {
     ) {}
 
     /**
-     * 计算阿里千问 1536 维超球面测地线距离权重: w(u, v) = 1.0 - <u, v> in [0, 2]
-     * 满足非负性、对称性与三角不等式
+     * 计算阿里千问 1024 维单位超球面 S^1023 欧氏弦距离度量:
+     * d_chord(u, v) = ||u - v||_2 = sqrt(2 * (1.0 - <u, v>)) in [0, 2]
+     * 作为 (R^1024, ||·||_2) 诱导的子空间度量，严格满足同一性、非负性、对称性与三角不等式。
      */
     public static double computeHypersphericalDistance(float[] v1, float[] v2) {
         if (v1 == null || v2 == null || v1.length != v2.length) {
-            return 1.0;
+            return Math.sqrt(2.0);
         }
         double dot = 0.0;
         double norm1 = 0.0;
         double norm2 = 0.0;
         for (int i = 0; i < v1.length; i++) {
-            dot += v1[i] * v2[i];
-            norm1 += v1[i] * v1[i];
-            norm2 += v2[i] * v2[i];
+            dot += (double) v1[i] * v2[i];
+            norm1 += (double) v1[i] * v1[i];
+            norm2 += (double) v2[i] * v2[i];
         }
         if (norm1 <= 1e-12 || norm2 <= 1e-12) {
-            return 1.0;
+            return Math.sqrt(2.0);
         }
         double cos = dot / (Math.sqrt(norm1) * Math.sqrt(norm2));
         cos = Math.max(-1.0, Math.min(1.0, cos));
-        return Math.max(0.0, 1.0 - cos);
+        return Math.sqrt(Math.max(0.0, 2.0 * (1.0 - cos)));
     }
 
     /**
@@ -134,8 +135,9 @@ public class SteinerCausalSubgraphPruner {
             return new SteinerSubgraphResult(List.of(single), List.of(), 0.0, rawNodeCount, 1, 1.0 - 1.0 / rawNodeCount, latency);
         }
 
-        // 1. 构建原图无向邻接表 (对于超球面距离，原图边权结合超球面测地线内积)
+        // 1. 构建原图无向邻接表用于 Steiner 连通性求解，并建立反向边到原图真实因果有向边的映射
         Map<String, List<GraphEdge>> adj = new HashMap<>();
+        Map<GraphEdge, GraphEdge> canonicalDirectedEdgeMap = new IdentityHashMap<>();
         for (GraphEdge e : allEdges) {
             if (!nodeMap.containsKey(e.source()) || !nodeMap.containsKey(e.target())) {
                 continue;
@@ -148,10 +150,12 @@ public class SteinerCausalSubgraphPruner {
             } else if (w <= 0.0) {
                 w = 0.5;
             }
-            GraphEdge forward = new GraphEdge(e.source(), e.target(), e.relation(), w);
+            GraphEdge canonicalDirected = new GraphEdge(e.source(), e.target(), e.relation(), w);
             GraphEdge backward = new GraphEdge(e.target(), e.source(), e.relation(), w);
+            canonicalDirectedEdgeMap.put(canonicalDirected, canonicalDirected);
+            canonicalDirectedEdgeMap.put(backward, canonicalDirected);
 
-            adj.computeIfAbsent(e.source(), k -> new ArrayList<>()).add(forward);
+            adj.computeIfAbsent(e.source(), k -> new ArrayList<>()).add(canonicalDirected);
             adj.computeIfAbsent(e.target(), k -> new ArrayList<>()).add(backward);
         }
 
@@ -215,15 +219,16 @@ public class SteinerCausalSubgraphPruner {
             }
         }
 
-        // 5. 步骤 4: 将 T_M 中的边按原图最短路展开为原图子图 G_S
-        Set<GraphEdge> candidateEdges = new HashSet<>();
+        // 5. 步骤 4: 将 T_M 中的边按原图最短路展开为原图子图 G_S，并恢复原图真实有向因果方向
+        Set<GraphEdge> candidateEdges = new LinkedHashSet<>();
         Set<String> candidateNodeIds = new HashSet<>(validSeeds);
 
         for (MetricEdge me : selectedMetricEdges) {
             for (GraphEdge pe : me.originalPath()) {
-                candidateEdges.add(pe);
-                candidateNodeIds.add(pe.source());
-                candidateNodeIds.add(pe.target());
+                GraphEdge directedEdge = canonicalDirectedEdgeMap.getOrDefault(pe, pe);
+                candidateEdges.add(directedEdge);
+                candidateNodeIds.add(directedEdge.source());
+                candidateNodeIds.add(directedEdge.target());
             }
         }
 

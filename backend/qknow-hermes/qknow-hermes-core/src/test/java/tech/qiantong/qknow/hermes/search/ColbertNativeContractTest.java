@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * 第一阶段核心工程契约测试：
- * Rust SIMD 算子修复、Project Panama 纳秒级零拷贝与千问 1536 维超球面打分验证
+ * Rust SIMD 算子修复、Project Panama 纳秒级零拷贝与千问 1024 维超球面打分验证
  */
 public class ColbertNativeContractTest {
 
@@ -106,9 +106,9 @@ public class ColbertNativeContractTest {
     }
 
     @Test
-    @DisplayName("契约三：千问 1536 维超球面单位向量扩展性与 Top-500 算力延迟契约")
+    @DisplayName("契约三：千问 1024 维超球面单位向量扩展性与 Top-500 算力延迟契约")
     public void testHypersphericalQwenScaleStressContract() {
-        int dim = 1536; // 阿里千问 1536 维空间
+        int dim = 1024; // 阿里千问 1024 维空间
         int queryLen = 4;
         int numDocs = 500; // 粗排候选池由 50 扩大 10 倍至 500
         int docLenPerDoc = 6;
@@ -122,7 +122,7 @@ public class ColbertNativeContractTest {
         float[] query = generateNormalizedVectors(queryLen, dim, random);
         float[] docs = generateNormalizedVectors(numDocs * docLenPerDoc, dim, random);
 
-        // 验证千问 1536 维单位向量约束
+        // 验证千问 1024 维单位向量约束
         for (int i = 0; i < queryLen; i++) {
             float norm = calculateL2Norm(query, i * dim, dim);
             assertEquals(1.0f, norm, 1e-3f, "Query 向量必须满足 L2 范数单位归一化");
@@ -136,7 +136,7 @@ public class ColbertNativeContractTest {
         assertEquals(numDocs, receipt.scores().size());
         assertTrue(receipt.verifySignature(), "大样本压测凭单必须防篡改验签成功");
 
-        System.out.printf("[契约测试] Top-500 千问 1536 维候选打分完成，耗时: %d ms, 模式: %s%n",
+        System.out.printf("[契约测试] Top-500 千问 1024 维候选打分完成，耗时: %d ms, 模式: %s%n",
                 elapsedMs, receipt.executionMode());
 
         // 验证各文档得分均在合理区间内 [-queryLen, queryLen]
@@ -151,7 +151,7 @@ public class ColbertNativeContractTest {
     public void testScoreReceiptCryptographicIntegrityContract() {
         float[] scores = new float[]{1.5f, 2.8f, 0.3f};
         ColbertScoreReceipt receipt = ColbertScoreReceipt.create(
-                2, 3, 1536, "NATIVE_SIMD_NEON", 125000L, scores
+                2, 3, 1024, "NATIVE_SIMD_NEON", 125000L, scores
         );
 
         assertTrue(receipt.verifySignature(), "初始生成凭单必须通过验签");

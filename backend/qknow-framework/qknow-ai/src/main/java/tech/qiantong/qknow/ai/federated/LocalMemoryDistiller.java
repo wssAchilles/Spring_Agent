@@ -1,17 +1,30 @@
 package tech.qiantong.qknow.ai.federated;
 
+import org.springframework.ai.embedding.EmbeddingModel;
+import tech.qiantong.qknow.ai.vector.LocalitySensitiveFeatureHasher;
+
 import java.util.*;
 
 /**
  * 本地私有记忆提炼器
  * <p>
  * 智能体在本地针对公开无害的公共参考锚点查询（Public Anchors），
- * 结合私有长程记忆流提炼紧凑条件响应向量（千问 1536 维超球面单位向量），私有数据零明文出域。
+ * 结合私有长程记忆流提炼紧凑条件响应向量（千问 1024 维超球面单位向量 S^1023），私有数据零明文出域。
  *
  * @author Qknow AI Team
  * @since 2026-09-15
  */
 public class LocalMemoryDistiller {
+
+    private final EmbeddingModel embeddingModel;
+
+    public LocalMemoryDistiller() {
+        this(null);
+    }
+
+    public LocalMemoryDistiller(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
 
     public record LocalInsight(
             String agentId,
@@ -34,25 +47,36 @@ public class LocalMemoryDistiller {
         Objects.requireNonNull(anchorQuery, "anchorQuery 不能为空");
 
         int memoryCount = privateMemories != null ? privateMemories.size() : 0;
-        float[] vector = new float[1536];
+        float[] vector = new float[1024];
 
-        if (baseEmbedding != null && baseEmbedding.length == 1536) {
-            System.arraycopy(baseEmbedding, 0, vector, 0, 1536);
+        if (baseEmbedding != null && baseEmbedding.length == 1024) {
+            System.arraycopy(baseEmbedding, 0, vector, 0, 1024);
+        } else if (embeddingModel != null) {
+            float[] embedded = embeddingModel.embed(anchorQuery);
+            if (embedded != null && embedded.length == 1024) {
+                System.arraycopy(embedded, 0, vector, 0, 1024);
+            } else {
+                vector = LocalitySensitiveFeatureHasher.projectToUnitSphereFloat(agentId + ":" + anchorQuery, 1024);
+            }
         } else {
-            // 根据 agentId 与 anchorQuery 种子生成确定性基底向量
-            Random rnd = new Random((agentId + anchorQuery).hashCode());
-            for (int i = 0; i < 1536; i++) {
-                vector[i] = rnd.nextFloat() - 0.5f;
+            vector = LocalitySensitiveFeatureHasher.projectToUnitSphereFloat(agentId + ":" + anchorQuery, 1024);
+        }
+
+        // 融合本地私有记忆的归一化语义方向分量（不暴露原始文本）
+        if (privateMemories != null && !privateMemories.isEmpty()) {
+            float modulationWeight = (float) Math.min(0.25, memoryCount * 0.04);
+            for (String mem : privateMemories) {
+                if (mem != null && !mem.isBlank()) {
+                    float[] memVec = LocalitySensitiveFeatureHasher.projectToUnitSphereFloat(mem, 1024);
+                    for (int i = 0; i < 1024; i++) {
+                        vector[i] += modulationWeight * memVec[i];
+                    }
+                }
             }
         }
 
-        // 模拟本地记忆对向量特征维度的调制微调
-        float memoryModulation = (float) Math.min(0.2, memoryCount * 0.02);
-        vector[0] += memoryModulation;
-        vector[1] -= memoryModulation * 0.5f;
-
-        // 重新执行千问 1536 维超球面保模归一化 (||v||_2 = 1.0)
-        normalizeToHypersphere(vector);
+        // 重新执行千问 1024 维超球面保模归一化 (||v||_2 = 1.0)
+        LocalitySensitiveFeatureHasher.normalizeInPlace(vector);
 
         double confidence = Math.min(0.99, 0.70 + memoryCount * 0.05);
 

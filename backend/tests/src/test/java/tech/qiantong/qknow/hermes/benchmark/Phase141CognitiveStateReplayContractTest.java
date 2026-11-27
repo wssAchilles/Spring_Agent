@@ -43,8 +43,8 @@ public class Phase141CognitiveStateReplayContractTest {
      * 工具方法：构造指定角色的测试快照 Agent
      */
     private SwarmAgentSnapshotState createAgentState(String id, String role, String thought) {
-        double[] dummyVec = new double[1536];
-        Arrays.fill(dummyVec, 1.0 / Math.sqrt(1536));
+        double[] dummyVec = new double[1024];
+        Arrays.fill(dummyVec, 1.0 / Math.sqrt(1024));
         return new SwarmAgentSnapshotState(id, role, thought, Map.of("key_" + id, "val_" + id), dummyVec);
     }
 

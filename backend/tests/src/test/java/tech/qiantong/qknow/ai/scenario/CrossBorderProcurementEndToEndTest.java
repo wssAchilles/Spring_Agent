@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 严格验证 5 大核心业务与技术契约：
  * 1. GraphRAG 2026 最新关税知识检索与 2025 旧政策时序指数衰减
  * 2. DeepSeek 官方思考模式 (Thinking Mode) 协议对齐与 reasoning_content 完整回传
- * 3. 千问 1536 维超球面 MCP 工具动态匹配与 60s 瞬态租约防越权
+ * 3. 千问 1024 维超球面 MCP 工具动态匹配与 60s 瞬态租约防越权
  * 4. 思考流异常注入 (低熵/高重复) 与因果自愈截断重构
  * 5. 端到端不可变存证凭单 SHA-256 密码学自签名与防篡改验真
  */
@@ -41,14 +41,14 @@ class CrossBorderProcurementEndToEndTest {
     }
 
     private float[] createNormalized1536Vector(float seed) {
-        float[] v = new float[1536];
+        float[] v = new float[1024];
         double sumSq = 0.0;
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) Math.sin(seed + i * 0.1);
             sumSq += v[i] * v[i];
         }
         double norm = Math.sqrt(sumSq);
-        for (int i = 0; i < 1536; i++) {
+        for (int i = 0; i < 1024; i++) {
             v[i] = (float) (v[i] / norm);
         }
         return v;
@@ -162,7 +162,7 @@ class CrossBorderProcurementEndToEndTest {
     }
 
     @Test
-    @DisplayName("契约3: 千问 1536 维超球面 MCP 工具动态匹配与 60s 瞬态租约强管控")
+    @DisplayName("契约3: 千问 1024 维超球面 MCP 工具动态匹配与 60s 瞬态租约强管控")
     void testContract3_McpToolDynamicLeaseControl() {
         long now = System.currentTimeMillis();
         String toolName = "mcp_erp_create_purchase_order";

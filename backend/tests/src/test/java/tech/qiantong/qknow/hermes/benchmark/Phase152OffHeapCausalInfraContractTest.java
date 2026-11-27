@@ -54,10 +54,10 @@ public class Phase152OffHeapCausalInfraContractTest {
     @Test
     @DisplayName("Contract 1: 超球面因果后门截断反思与去偏置率测试 (Lemma 152.1)")
     void testHypersphericalCausalBackdoorDebias() {
-        // 生成千问 1536 维超球面单位向量 (||v||_2 = 1.0)
-        float[] actionObs = generateSyntheticQwenUnitVector(1536, 101L);
-        float[] confounder = generateSyntheticQwenUnitVector(1536, 202L);
-        float[] counterfactualAction = generateSyntheticQwenUnitVector(1536, 303L);
+        // 生成千问 1024 维超球面单位向量 (||v||_2 = 1.0)
+        float[] actionObs = generateSyntheticQwenUnitVector(1024, 101L);
+        float[] confounder = generateSyntheticQwenUnitVector(1024, 202L);
+        float[] counterfactualAction = generateSyntheticQwenUnitVector(1024, 303L);
 
         CausalTrajectory trajectory = new CausalTrajectory(
                 "Agent-RiskAssessor",
@@ -66,7 +66,7 @@ public class Phase152OffHeapCausalInfraContractTest {
                 0.82
         );
 
-        List<float[]> confounderPool = List.of(confounder, generateSyntheticQwenUnitVector(1536, 404L));
+        List<float[]> confounderPool = List.of(confounder, generateSyntheticQwenUnitVector(1024, 404L));
 
         CounterfactualAdjustment adjustment = causalReflector.reflectAndAdjust(
                 trajectory, confounderPool, counterfactualAction
@@ -75,7 +75,7 @@ public class Phase152OffHeapCausalInfraContractTest {
         assertNotNull(adjustment);
         assertTrue(adjustment.debiasReductionPercent() >= 40.0,
                 String.format("因果后门去偏置消除比例必须 >= 40.0%%，实际: %.2f%%", adjustment.debiasReductionPercent()));
-        assertEquals(1536, adjustment.counterfactualDeltaVector().length, "反事实纠偏向量必须为 1536 维");
+        assertEquals(1024, adjustment.counterfactualDeltaVector().length, "反事实纠偏向量必须为 1024 维");
         assertNotNull(adjustment.debiasedPromptGuidance(), "必须生成无偏反思指令文本");
 
         // 验证正交截断几何性质: 投影后与混杂因子内积为 0
@@ -129,16 +129,16 @@ public class Phase152OffHeapCausalInfraContractTest {
     @Test
     @DisplayName("Contract 4: 知识图谱拉普拉斯谱剪枝最优切与 Token 削减测试 (Lemma 152.2)")
     void testGeodesicSpectralSubGraphPruning() {
-        float[] queryEmbedding = generateSyntheticQwenUnitVector(1536, 1L);
+        float[] queryEmbedding = generateSyntheticQwenUnitVector(1024, 1L);
 
         // 构造 6 个节点子图 (前 3 个为因果高相关核心节点，后 3 个为边缘噪声节点)
         List<SubGraphNode> candidateNodes = new ArrayList<>();
         candidateNodes.add(new SubGraphNode("N1", "智能体多跳检索核心因果定理说明", queryEmbedding)); // 极高相关
-        candidateNodes.add(new SubGraphNode("N2", "基于拉普拉斯谱剪枝的 Cheeger 不等式边界", generateSyntheticQwenUnitVector(1536, 2L)));
-        candidateNodes.add(new SubGraphNode("N3", "超球面测地线内积各向同性度量", generateSyntheticQwenUnitVector(1536, 3L)));
-        candidateNodes.add(new SubGraphNode("N4", "系统通用的默认网络状态配置信息", generateSyntheticQwenUnitVector(1536, 400L))); // 噪声
-        candidateNodes.add(new SubGraphNode("N5", "日常操作日志与历史访问记录流水", generateSyntheticQwenUnitVector(1536, 500L))); // 噪声
-        candidateNodes.add(new SubGraphNode("N6", "数据库底层连接池保活心跳参数", generateSyntheticQwenUnitVector(1536, 600L))); // 噪声
+        candidateNodes.add(new SubGraphNode("N2", "基于拉普拉斯谱剪枝的 Cheeger 不等式边界", generateSyntheticQwenUnitVector(1024, 2L)));
+        candidateNodes.add(new SubGraphNode("N3", "超球面测地线内积各向同性度量", generateSyntheticQwenUnitVector(1024, 3L)));
+        candidateNodes.add(new SubGraphNode("N4", "系统通用的默认网络状态配置信息", generateSyntheticQwenUnitVector(1024, 400L))); // 噪声
+        candidateNodes.add(new SubGraphNode("N5", "日常操作日志与历史访问记录流水", generateSyntheticQwenUnitVector(1024, 500L))); // 噪声
+        candidateNodes.add(new SubGraphNode("N6", "数据库底层连接池保活心跳参数", generateSyntheticQwenUnitVector(1024, 600L))); // 噪声
 
         List<SubGraphEdge> rawEdges = List.of(
                 new SubGraphEdge("N1", "N2", 0.95),
@@ -161,10 +161,10 @@ public class Phase152OffHeapCausalInfraContractTest {
     @Test
     @DisplayName("Contract 5: DeepSeek 官方 1M 规约 64-token 确定性块边界对齐测试")
     void testDeepSeek64TokenAlignmentAccuracy() {
-        float[] queryEmbedding = generateSyntheticQwenUnitVector(1536, 999L);
+        float[] queryEmbedding = generateSyntheticQwenUnitVector(1024, 999L);
         List<SubGraphNode> nodes = List.of(
                 new SubGraphNode("DocA", "企业级知识库因果检索核心实体文档", queryEmbedding),
-                new SubGraphNode("DocB", "Java 21 堆外原生 Arena 内存安全管理", generateSyntheticQwenUnitVector(1536, 888L))
+                new SubGraphNode("DocB", "Java 21 堆外原生 Arena 内存安全管理", generateSyntheticQwenUnitVector(1024, 888L))
         );
 
         SpectralPruningResult result = graphGovernor.pruneAndAlign(nodes, Collections.emptyList(), queryEmbedding);
@@ -224,8 +224,8 @@ public class Phase152OffHeapCausalInfraContractTest {
     @DisplayName("Contract 7: 消融实验矩阵验证 (EXP-0 到 EXP-4 指标门槛)")
     void testAblationMatrixContract() {
         // 验证去偏置下界 (>= 40.0%)
-        float[] x = generateSyntheticQwenUnitVector(1536, 11L);
-        float[] z = generateSyntheticQwenUnitVector(1536, 22L);
+        float[] x = generateSyntheticQwenUnitVector(1024, 11L);
+        float[] z = generateSyntheticQwenUnitVector(1024, 22L);
         CausalTrajectory t = new CausalTrajectory("TestAgent", x, z, 0.75);
         CounterfactualAdjustment adj = causalReflector.reflectAndAdjust(t, List.of(z), x);
         assertTrue(adj.debiasReductionPercent() >= 40.0, "去偏置率必须达到消融门槛");

@@ -8,10 +8,10 @@ import tech.qiantong.qknow.thirdparty.domain.dify.knowledge.RetrieveResult;
 import java.util.*;
 
 /**
- * 阿里千问 1536 维超球面 RRF 融合重排与 Token 预算截断算子 (Hyperspherical RRF Reranker)
+ * 阿里千问 1024 维超球面 RRF 融合重排与 Token 预算截断算子 (Hyperspherical RRF Reranker)
  * <p>
  * 遵循系统工程总纲 (AGENTS.md)：
- * 1. 唯一向量模型基线：千问 1536 维超球面单位向量空间 (||v||_2 = 1.0)，相似度度量为余弦测度 cos\theta = u \cdot v；
+ * 1. 唯一向量模型基线：千问 1024 维超球面单位向量空间 (||v||_2 = 1.0)，相似度度量为余弦测度 cos\theta = u \cdot v；
  * 2. 倒数排名融合 (RRF: Reciprocal Rank Fusion)：融合 Dense 向量、Sparse 关键字与多知识库多通道召回结果；
  * 3. 动态 Token 预算截断机制：从源头严控上下文膨胀，防止 DeepSeek API 首字延迟暴涨与 Token 费用失控；
  * 4. 产出纯 Java 21 Record 不可变凭单，具备完整审计可追溯性。
@@ -22,9 +22,9 @@ import java.util.*;
 public class HypersphericalRrfReranker {
 
     /**
-     * 千问 1536 维空间维度基线
+     * 千问 1024 维空间维度基线
      */
-    public static final int EMBEDDING_DIM = 1536;
+    public static final int EMBEDDING_DIM = 1024;
 
     /**
      * RRF 默认平滑常数 k
@@ -103,8 +103,8 @@ public class HypersphericalRrfReranker {
      * 多通道多路检索 RRF 融合重排与超球面几何调制及 Token 截断
      *
      * @param channels       多通道排名结果列表 (如 Dense 通道、Sparse 通道、各知识库通道)
-     * @param queryVector    查询词千问 1536 维超球面单位向量 (可选，为空时不进行余弦调制)
-     * @param chunkVectors   切片 ID/内容映射的千问 1536 维超球面向量表 (可选)
+     * @param queryVector    查询词千问 1024 维超球面单位向量 (可选，为空时不进行余弦调制)
+     * @param chunkVectors   切片 ID/内容映射的千问 1024 维超球面向量表 (可选)
      * @param rrfK           RRF 平滑常数 (推荐 60.0)
      * @param alpha          超球面几何调制权重 (0.0~1.0)
      * @param maxTokenBudget 最大允许注入的 Token 预算门限
@@ -242,11 +242,11 @@ public class HypersphericalRrfReranker {
     }
 
     /**
-     * 计算阿里千问 1536 维超球面单位向量的余弦相似度 (内积 \cos\theta = \mathbf{u} \cdot \mathbf{v})
+     * 计算阿里千问 1024 维超球面单位向量的余弦相似度 (内积 \cos\theta = \mathbf{u} \cdot \mathbf{v})
      */
     public double computeCosineSimilarity(double[] u, double[] v) {
         if (u == null || v == null || u.length != EMBEDDING_DIM || v.length != EMBEDDING_DIM) {
-            throw new IllegalArgumentException("向量必须严格符合千问 1536 维基线约束");
+            throw new IllegalArgumentException("向量必须严格符合千问 1024 维基线约束");
         }
         double dot = 0.0;
         // 循环累加内积
@@ -258,7 +258,7 @@ public class HypersphericalRrfReranker {
     }
 
     /**
-     * 校验是否为合法千问 1536 维超球面单位向量
+     * 校验是否为合法千问 1024 维超球面单位向量
      */
     public boolean isValidHypersphericalVector(double[] vec) {
         if (vec == null || vec.length != EMBEDDING_DIM) {

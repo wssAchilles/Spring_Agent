@@ -30,7 +30,7 @@ public class Phase94DebateConsensusContractTest {
     }
 
     /**
-     * 辅助方法：生成归一化阿里千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * 辅助方法：生成归一化阿里千问 1024 维超球面单位向量 (||v||_2 = 1.0)
      */
     private float[] generateNormalizedQwenEmbedding(int seed) {
         float[] v = new float[DebateArgumentFrame.EXPECTED_DIMENSION];
@@ -94,7 +94,7 @@ public class Phase94DebateConsensusContractTest {
     }
 
     @Test
-    @DisplayName("契约测试 2: 阿里千问 1536 维超球面单位向量强校验 (命题 2.1)")
+    @DisplayName("契约测试 2: 阿里千问 1024 维超球面单位向量强校验 (命题 2.1)")
     public void testGameTheoreticDebate_QwenEmbeddingValidation() {
         String sessionId = "debate-session-dim";
 
@@ -330,7 +330,7 @@ public class Phase94DebateConsensusContractTest {
     public void testEndToEnd_DebateToConsensusToVoucherPipeline() {
         String sessionId = "pipeline-e2e-001";
         String proposal = "UPGRADE_KNOWLEDGE_BASE_EMBEDDING_MODEL";
-        String proposalHash = "hash_qwen_1536_v2";
+        String proposalHash = "hash_qwen_1024_v2";
 
         // 步骤 1: 辩论阶段 (正方提出, 反方对立, 核查方验证)
         float[] embP = generateNormalizedQwenEmbedding(1);

@@ -28,14 +28,14 @@ public class Phase54WorldModelContractTest {
     }
 
     @Test
-    @DisplayName("契约 1: 验证定理 1.1，世界模型多步推演在千问 1536 维超球面上严格保模且测地线误差有界收敛")
+    @DisplayName("契约 1: 验证定理 1.1，世界模型多步推演在千问 1024 维超球面上严格保模且测地线误差有界收敛")
     void test1_WorldModelPredictorStateTransitionAndGeodesicBound() {
         WorldModelPredictor.LatentState s0 = worldModelPredictor.createInitialState(12345L);
         assertEquals(WorldModelPredictor.EMBEDDING_DIMENSION, s0.vector().length);
 
         // 验证初始状态模长为 1.0
         double norm0 = computeNorm(s0.vector());
-        assertEquals(1.0, norm0, 1e-6, "千问 1536 维超球面单位向量模长必须严格为 1.0");
+        assertEquals(1.0, norm0, 1e-6, "千问 1024 维超球面单位向量模长必须严格为 1.0");
 
         // 模拟 10 步前向自回归预测
         WorldModelPredictor.LatentState current = s0;

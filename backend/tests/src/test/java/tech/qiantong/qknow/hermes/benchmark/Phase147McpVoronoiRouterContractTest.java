@@ -30,7 +30,7 @@ public class Phase147McpVoronoiRouterContractTest {
     }
 
     /**
-     * 辅助工具：生成指定 seed 的千问 1536 维超球面单位向量 (||v||_2 = 1.0)
+     * 辅助工具：生成指定 seed 的千问 1024 维超球面单位向量 (||v||_2 = 1.0)
      */
     private double[] createSphericalVector(String seed) {
         return StreamingToolCentroidDistiller.generateDeterministicSphericalEmbedding(seed);
@@ -55,14 +55,14 @@ public class Phase147McpVoronoiRouterContractTest {
 
             // 构造局部高斯微扰 (ε = 0.25)，真实模拟企业特定领域内的 API 语义聚集
             double[] noise = createSphericalVector("tool_noise_" + i);
-            double[] emb = new double[1536];
+            double[] emb = new double[1024];
             double sumSq = 0.0;
-            for (int d = 0; d < 1536; d++) {
+            for (int d = 0; d < 1024; d++) {
                 emb[d] = center[d] + 0.25 * noise[d];
                 sumSq += emb[d] * emb[d];
             }
             double inv = 1.0 / Math.sqrt(sumSq);
-            for (int d = 0; d < 1536; d++) {
+            for (int d = 0; d < 1024; d++) {
                 emb[d] *= inv;
             }
 
@@ -83,10 +83,10 @@ public class Phase147McpVoronoiRouterContractTest {
     }
 
     /**
-     * TC-147-1: 千问 1536 维超球面测地线 Voronoi 胞腔质心归一化与划分守恒契约
+     * TC-147-1: 千问 1024 维超球面测地线 Voronoi 胞腔质心归一化与划分守恒契约
      */
     @Test
-    @DisplayName("TC-147-1: 千问 1536 维超球面测地线 Voronoi 胞腔质心归一化与划分守恒契约")
+    @DisplayName("TC-147-1: 千问 1024 维超球面测地线 Voronoi 胞腔质心归一化与划分守恒契约")
     void testVoronoiCellCentroidNormalizationAndPartitionInvariance() {
         List<McpToolDescriptor> tools = generateMockTools(64);
         router.registerToolsBatch(tools);
@@ -122,14 +122,14 @@ public class Phase147McpVoronoiRouterContractTest {
         // 构造针对 DATABASE 业务领域的仿真查询意图向量
         double[] dbCenter = createSphericalVector("DOMAIN_CLUSTER_CENTER_DATABASE");
         double[] noise = createSphericalVector("query_noise_database");
-        double[] queryVec = new double[1536];
+        double[] queryVec = new double[1024];
         double sumSq = 0.0;
-        for (int d = 0; d < 1536; d++) {
+        for (int d = 0; d < 1024; d++) {
             queryVec[d] = dbCenter[d] + 0.10 * noise[d];
             sumSq += queryVec[d] * queryVec[d];
         }
         double inv = 1.0 / Math.sqrt(sumSq);
-        for (int d = 0; d < 1536; d++) {
+        for (int d = 0; d < 1024; d++) {
             queryVec[d] *= inv;
         }
 

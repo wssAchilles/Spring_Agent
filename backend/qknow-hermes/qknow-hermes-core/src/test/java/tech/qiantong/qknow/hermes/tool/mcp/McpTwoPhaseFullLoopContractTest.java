@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
  */
 class McpTwoPhaseFullLoopContractTest {
 
-    private static final int DIM = 1536;
+    private static final int DIM = 1024;
 
     /**
      * EXP-01: 验证 McpToolProjectionReceipt 不可变性与常量时间自验真防侧信道
@@ -68,7 +68,7 @@ class McpTwoPhaseFullLoopContractTest {
     }
 
     /**
-     * EXP-02: 验证千问 1536 维超球面动态投影 Top-5 与 Safe Schema 剪枝 Token 压缩率 >= 50%
+     * EXP-02: 验证千问 1024 维超球面动态投影 Top-5 与 Safe Schema 剪枝 Token 压缩率 >= 50%
      */
     @Test
     @DisplayName("EXP-02: 两阶段超球面投影 Top-5 检索与 Safe Schema 剪枝 (Token 压缩率 >= 50%)")
@@ -181,7 +181,7 @@ class McpTwoPhaseFullLoopContractTest {
                 discoveryService
         );
 
-        // 准备带有千问 1536 维超球面意图向量的上下文
+        // 准备带有千问 1024 维超球面意图向量的上下文
         float[] queryVec = new float[DIM];
         queryVec[0] = 1.0f;
         Map<String, Object> context = new HashMap<>();

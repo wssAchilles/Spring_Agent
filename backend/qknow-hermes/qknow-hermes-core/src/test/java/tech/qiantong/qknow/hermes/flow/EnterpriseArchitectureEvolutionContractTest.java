@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 1. Java 21 虚拟线程超步并发屏障与 StateGraphScheduler 无感加速；
  * 2. WalDurableStateGraphCheckpointer 追加写持久化与冷启动重放一致性；
  * 3. DeterministicRuleEvaluator 确定性规则与数值校验拦截；
- * 4. McpTwoPhaseProjectionGovernor 千问 1536 维超球面两阶段投影与 Safe Schema 剪枝；
+ * 4. McpTwoPhaseProjectionGovernor 千问 1024 维超球面两阶段投影与 Safe Schema 剪枝；
  * 5. 常量时间 SHA-256 验签防时序侧信道漏洞自验真。
  */
 public class EnterpriseArchitectureEvolutionContractTest {
@@ -210,12 +210,12 @@ public class EnterpriseArchitectureEvolutionContractTest {
     }
 
     @Test
-    @DisplayName("契约四：McpTwoPhaseProjectionGovernor 千问 1536 维超球面两阶段投影与 Safe Schema 剪枝")
+    @DisplayName("契约四：McpTwoPhaseProjectionGovernor 千问 1024 维超球面两阶段投影与 Safe Schema 剪枝")
     void testMcpTwoPhaseProjectionAndPruning() {
         McpTwoPhaseProjectionGovernor governor = new McpTwoPhaseProjectionGovernor();
 
         // 注册两个不同领域的工具
-        float[] dbVec = new float[1536];
+        float[] dbVec = new float[1024];
         Arrays.fill(dbVec, 0.05f); // 数据库类向量
         JSONObject dbSchema = new JSONObject();
         dbSchema.put("type", "object");
@@ -231,8 +231,8 @@ public class EnterpriseArchitectureEvolutionContractTest {
 
         governor.registerTool("mcp.db.execute_sql", "execute_sql", "执行高保真 SQL 语句并返回结构化数据", dbVec, dbSchema);
 
-        float[] emailVec = new float[1536];
-        for (int i = 0; i < 1536; i++) {
+        float[] emailVec = new float[1024];
+        for (int i = 0; i < 1024; i++) {
             emailVec[i] = (i % 2 == 0) ? 0.08f : -0.08f; // 邮件类向量
         }
         JSONObject emailSchema = new JSONObject();
@@ -248,7 +248,7 @@ public class EnterpriseArchitectureEvolutionContractTest {
         assertEquals(2, governor.getRegisteredCount());
 
         // 意图：针对数据库查询意图检索 Top-1
-        float[] queryVec = Arrays.copyOf(dbVec, 1536);
+        float[] queryVec = Arrays.copyOf(dbVec, 1024);
         McpTwoPhaseProjectionGovernor.ProjectionGovernanceReport report = governor.projectAndPrune(queryVec, 1);
 
         assertNotNull(report);

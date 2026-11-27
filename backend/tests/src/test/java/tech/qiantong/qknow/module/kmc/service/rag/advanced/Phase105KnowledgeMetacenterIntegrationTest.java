@@ -54,7 +54,7 @@ public class Phase105KnowledgeMetacenterIntegrationTest {
 
                 第二章 运行时高保真度保证
                 通过向上父指针展开，叶子节点能够在 50 微秒内无损回溯所属段落与章节。
-                基于千问 1536 维超球面测地内积加权局部子图，5 轮迭代收敛，杜绝语义漫游。
+                基于千问 1024 维超球面测地内积加权局部子图，5 轮迭代收敛，杜绝语义漫游。
                 """;
 
         HierarchicalDocumentChunker.ChunkNode root = metacenter.ingestDocument("spec-doc-105", docContent);
@@ -64,14 +64,14 @@ public class Phase105KnowledgeMetacenterIntegrationTest {
         // 挑选一个第二章中的叶子句子
         String leafSentenceId = "doc-spec-doc-105-sec-2-p-1-s-1";
 
-        // 2. 准备千问 1536 维超球面向量与知识图谱实体/关系
-        float[] queryEmbedding = createNormalizedSphericalVector(1536, 8888L);
+        // 2. 准备千问 1024 维超球面向量与知识图谱实体/关系
+        float[] queryEmbedding = createNormalizedSphericalVector(1024, 8888L);
 
         List<GraphRagSubgraphReasoner.EntityNode> graphNodes = new ArrayList<>();
         graphNodes.add(new GraphRagSubgraphReasoner.EntityNode("ent-kmc", "知识中枢", "CORE_ARCH", queryEmbedding));
-        graphNodes.add(new GraphRagSubgraphReasoner.EntityNode("ent-chunker", "四级树状切片器", "COMPONENT", createNormalizedSphericalVector(1536, 1111L)));
-        graphNodes.add(new GraphRagSubgraphReasoner.EntityNode("ent-ppr", "局部子图推理", "COMPONENT", createNormalizedSphericalVector(1536, 2222L)));
-        graphNodes.add(new GraphRagSubgraphReasoner.EntityNode("ent-align", "打字机对齐缓冲", "COMPONENT", createNormalizedSphericalVector(1536, 3333L)));
+        graphNodes.add(new GraphRagSubgraphReasoner.EntityNode("ent-chunker", "四级树状切片器", "COMPONENT", createNormalizedSphericalVector(1024, 1111L)));
+        graphNodes.add(new GraphRagSubgraphReasoner.EntityNode("ent-ppr", "局部子图推理", "COMPONENT", createNormalizedSphericalVector(1024, 2222L)));
+        graphNodes.add(new GraphRagSubgraphReasoner.EntityNode("ent-align", "打字机对齐缓冲", "COMPONENT", createNormalizedSphericalVector(1024, 3333L)));
 
         List<GraphRagSubgraphReasoner.RelationEdge> graphEdges = List.of(
                 new GraphRagSubgraphReasoner.RelationEdge("ent-kmc", "ent-chunker", "CONTAINS", 0.96),

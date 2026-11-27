@@ -30,8 +30,8 @@ public class MemoryConfiguration {
                 org.springframework.ai.openai.api.OpenAiApi.builder().baseUrl(baseUrl).apiKey(apiKey).build(),
                 org.springframework.ai.document.MetadataMode.EMBED,
                 org.springframework.ai.openai.OpenAiEmbeddingOptions.builder()
-                        .model("text-embedding-v3")
-                        .dimensions(1536)
+                        .model("text-embedding-v4")
+                        .dimensions(1024)
                         .build());
     }
 

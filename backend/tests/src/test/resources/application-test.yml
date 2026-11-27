@@ -7,7 +7,7 @@ spring:
   ai:
     openai:
       api-key: test-key
-      base-url: http://localhost:11434
+      base-url: https://api.deepseek.com
   data:
     redis:
       host: localhost
